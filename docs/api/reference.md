@@ -4331,6 +4331,33 @@ Replaces a recurring invoice's name, schedule and content (FR-AR-07; PRD-001 rev
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `INVOICE-08`, `INVOICE-09`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `MONEY-05`, `RECURRING-01`, `RECURRING-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+### `POST /v1/recurring-invoices/{recurring_invoice_id}/approval`
+
+**Ask for a recurring invoice to be approved to issue and send** (`requestRecurringInvoiceApproval`)
+
+Asks for the current content version of a recurring invoice set to issue and send to be approved (FR-AR-07; the owner's decision of 24 Oct 2026): another person who holds A on "Invoices, credit notes", never who wrote that version (SOD-3), approves it through the approvals, and the scheduler then issues and emails each occurrence's invoice, each listed for the weekly review (FM-3). A change of content withdraws the approval. Refused for one set to make drafts, or whose content is approved already (RECURRING-03). Side effects: the request and its audit event. Needs If-Match; idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+
+- **Permission:** Create on Invoices, credit notes
+- **Parameters:**
+  - `recurring_invoice_id` (path, required): The recurring invoice's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `RECURRING-02` The recurring journal is not in that state; `RECURRING-03` The recurring invoice needs no approval now; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid; `MONEY-05` An exchange rate is not valid; `RECURRING-01` The schedule has no occurrence.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `INVOICE-08`, `INVOICE-09`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `MONEY-05`, `RECURRING-01`, `RECURRING-02`, `RECURRING-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
 ### `POST /v1/recurring-invoices/{recurring_invoice_id}/pause`
 
 **Pause a recurring invoice** (`pauseRecurringInvoice`)

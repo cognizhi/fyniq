@@ -158,7 +158,8 @@ func TestTheSchedulerRevaluesAnEndedMonth(t *testing.T) {
 	for _, c := range []struct{ role, stmt, state string }{
 		// The worker makes documents only through its functions.
 		{"fyniq_worker", "INSERT INTO fyniq.document (type) VALUES ('fx_revaluation')", "42501"},
-		{"fyniq_worker", "UPDATE fyniq.document SET posted_by = 'user:x' WHERE id = '" + r.Document.ID.String() + "'", "42501"},
+		// It may set who posted a scheduled recurring invoice since rev 0.136 (FY201 fences it); a poster never changes.
+		{"fyniq_worker", "UPDATE fyniq.document SET posted_by = 'user:x' WHERE id = '" + r.Document.ID.String() + "'", "FY053"},
 		// Only a revaluation of that period, at its last day, reversed the day after.
 		{"fyniq_worker", "SELECT fyniq.create_scheduled_revaluation('" + nov + "', " + payload(b.Oct.ID.String(), "2026-11-30", "2026-12-01") + ", now())", "FY169"},
 		{"fyniq_worker", "SELECT fyniq.create_scheduled_revaluation('" + nov + "', " + payload(nov, "2026-11-15", "2026-12-01") + ", now())", "FY169"},

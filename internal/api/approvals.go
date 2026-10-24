@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -57,9 +58,9 @@ type ApprovalSignature struct {
 // and its signatures.
 type Approval struct {
 	ID              string              `json:"id" format:"uuid" doc:"The request's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
-	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit" doc:"What it changes." example:"organisation_setting"`
+	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit,recurring_invoice" doc:"What it changes." example:"organisation_setting"`
 	ObjectKey       string              `json:"object_key" doc:"Which one: the setting's key, the membership's ID, the invitation's code hash, the object type whose approval policy changes, the statutory pack version, or organisation for the team mode." example:"bank.tolerance_base"`
-	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void" doc:"What executes on its approval." example:"organisation_setting.change"`
+	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void,recurring_invoice.approve" doc:"What executes on its approval." example:"organisation_setting.change"`
 	Summary         string              `json:"summary" doc:"What it does, in a sentence." example:"Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20"`
 	Status          string              `json:"status" enum:"pending,approved,rejected,void,expired" doc:"pending waits for approval; approved executed it; void means its record, a dependency, its approval policy or the team mode changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days." example:"pending"`
 	StatusReason    string              `json:"status_reason,omitempty" doc:"Why it was rejected or voided." example:"the setting changed after the request"`
@@ -271,6 +272,17 @@ type stored struct {
 	Diff    []ApprovalDiff    `json:"diff"`
 	Amounts []approval.Amount `json:"amounts"`
 	Content json.RawMessage   `json:"content,omitempty"`
+}
+
+// intIn is the whole number a change holds at key, as storedOf reads it.
+func intIn(x map[string]any, key string) (int64, error) {
+	switch n := x[key].(type) {
+	case json.Number:
+		return n.Int64()
+	case int:
+		return int64(n), nil
+	}
+	return 0, fmt.Errorf("api: the change holds no whole number %s", key)
 }
 
 // storedOf reads what a request keeps of its change, its numbers as exact integers, so the envelope rebuilt from it is
@@ -641,6 +653,18 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		e.ObjectVersion = doc.Version
 		e.Dependencies["status"] = string(doc.Status)
 		e.Dependencies["received"] = x.Amount.Amount + " " + x.Amount.Currency
+	case approval.ObjectRecurringInvoice: // its content version and mode (FR-AR-07)
+		id, err := uuid.Parse(c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		r, err := u.RecurringInvoices().Get(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = r.ContentVersion
+		e.Dependencies["content_version"] = strconv.Itoa(r.ContentVersion)
+		e.Dependencies["mode"] = r.Mode
 	case approval.ObjectCustomerRefund:
 		id, err := uuid.Parse(c.ObjectKey)
 		if err != nil {
@@ -1045,6 +1069,24 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 			}
 		}
 		return nil
+	case approval.OpRecurringApprove: // SOD-3: whoever wrote the content version never approves it for issue and send
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		version, err := intIn(s.Execute, "content_version")
+		if err != nil {
+			return err
+		}
+		v, err := u.RecurringInvoices().Version(ctx, id, int(version))
+		if err != nil {
+			return err
+		}
+		if v.EditedBy == (storage.Actor{Type: "user", ID: signer.String()}).String() {
+			return problem(CodeOwnInvoice, "You wrote this version of the recurring invoice, so another person approves it (SOD-3).",
+				"Ask another person who holds the approval right")
+		}
+		return nil
 	case approval.OpInvoicePost: // SOD-3: whoever prepared the invoice never approves its issue
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {
@@ -1367,6 +1409,17 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 			return err
 		}
 		_, err = a.deposits.Void(ctx, o.ID, id, date, text("reason"))
+		return err
+	case approval.OpRecurringApprove: // FR-AR-07: the version approved for issue and send
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		version, err := intIn(x, "content_version")
+		if err != nil {
+			return err
+		}
+		_, err = u.RecurringInvoices().Approve(ctx, id, int(version))
 		return err
 	case approval.OpCustomerRefundVoid:
 		id, err := uuid.Parse(r.ObjectKey)

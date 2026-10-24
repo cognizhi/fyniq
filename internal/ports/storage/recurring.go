@@ -174,6 +174,29 @@ type RecurringInvoice struct {
 	// LastOn and LastInvoiceID are the last occurrence a draft was made for, and that draft invoice.
 	LastOn        *time.Time
 	LastInvoiceID *uuid.UUID
+	// Mode is RecurringDraft or RecurringIssueAndSend; ApprovedVersion is the content version a second person approved
+	// for issue and send, by ApprovedBy at ApprovedAt, nil until one is (FR-AR-07; rev 0.136).
+	Mode            string
+	ApprovedVersion *int
+	ApprovedBy      string
+	ApprovedAt      *time.Time
+}
+
+// The modes of a recurring invoice (the owner's decision of 24 Oct 2026): make a draft, the default, or issue and send
+// once a second person approved its content.
+const (
+	RecurringDraft        = "draft"
+	RecurringIssueAndSend = "issue_and_send"
+)
+
+// ScheduledSendFor is how long after issuing it the scheduler keeps trying to email an invoice it issued (FR-AR-07);
+// one it could not send by then waits for a person.
+const ScheduledSendFor = 7 * 24 * time.Hour
+
+// IssuesAndSends says whether the scheduler issues and sends a recurring invoice's drafts: it is set to, and its current
+// content version is the one approved.
+func (r RecurringInvoice) IssuesAndSends() bool {
+	return r.Mode == RecurringIssueAndSend && r.ApprovedVersion != nil && *r.ApprovedVersion == r.ContentVersion
 }
 
 // RecurringInvoiceDetails is what a person sets on a recurring invoice. Content nil on an update keeps the content; any
@@ -184,6 +207,7 @@ type RecurringInvoiceDetails struct {
 	Schedule Schedule
 	NextOn   *time.Time
 	Content  []byte
+	Mode     string // RecurringDraft when empty
 }
 
 // RecurringInvoiceVersion is one version of a recurring invoice's content, which never changes (FY200).
@@ -215,4 +239,10 @@ type RecurringInvoices interface {
 	// no number until it is issued; CodeRecurring when on is not its active next occurrence), and moves its next
 	// occurrence to next (nil when the schedule has ended).
 	MakeDraft(ctx context.Context, id uuid.UUID, on time.Time, next *time.Time) (Document, error)
+	// Approve records that the unit of work's actor approved content version for issue and send (FR-AR-07): CodeVersion
+	// when it is no longer the current version.
+	Approve(ctx context.Context, id uuid.UUID, version int) (RecurringInvoice, error)
+	// Unsent lists, by ID, at most limit invoices the scheduler issued in the last ScheduledSendFor that have no send yet:
+	// what it still emails. One older is left for a person to send.
+	Unsent(ctx context.Context, limit int) ([]uuid.UUID, error)
 }

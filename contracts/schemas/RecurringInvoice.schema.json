@@ -2,8 +2,28 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "approved_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-24T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "approved_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who approved it."
+    },
+    "approved_version": {
+      "description": "The content version another person approved for issue and send; the scheduler issues only while it is the current one.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
     "checks": {
-      "description": "Its statuses (Appendix C.1 #28, #29): every problem the invoice rules find in its content (a missing rate aside, which a draft takes when it is issued), as Templates incomplete (✖); a warning when an occurrence before today has no draft yet; or OK, Paused or Ended.",
+      "description": "Its statuses (Appendix C.1 #28, #29): every problem the invoice rules find in its content (a missing rate aside, which a draft takes when it is issued), as Templates incomplete (✖); a warning when an occurrence before today has no draft yet, or when it is set to issue and send but its content is not approved; or OK, Paused or Ended.",
       "items": {
         "$ref": "JournalCheck.schema.json"
       },
@@ -48,6 +68,13 @@
       "format": "uuid",
       "type": "string"
     },
+    "issues_and_sends": {
+      "description": "Whether the scheduler issues and emails its invoices now: set to, and its current content approved.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "last_invoice_id": {
       "description": "That draft invoice.",
       "examples": [
@@ -70,6 +97,17 @@
         "$ref": "InvoiceLine.schema.json"
       },
       "type": "array"
+    },
+    "mode": {
+      "description": "draft: the scheduler makes drafts; issue_and_send: it issues and emails each invoice once the current content is approved.",
+      "enum": [
+        "draft",
+        "issue_and_send"
+      ],
+      "examples": [
+        "draft"
+      ],
+      "type": "string"
     },
     "name": {
       "description": "What it is.",
@@ -139,7 +177,9 @@
     "version",
     "content_version",
     "edited_at",
-    "checks"
+    "checks",
+    "mode",
+    "issues_and_sends"
   ],
   "title": "RecurringInvoice",
   "type": "object"

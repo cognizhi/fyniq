@@ -170,15 +170,20 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 ## 6. Recurring invoices
 
-- [ ] 6.1 Recurring invoices made by the scheduler as drafts, or issued and sent once a second person approved
+- [x] 6.1 Recurring invoices made by the scheduler as drafts, or issued and sent once a second person approved
   their content (the owner's decision of 24 Oct 2026), listed for the weekly review; month-end dates. Tests
   `// req: FR-AR-07`, `// req: FM-3`
   (In part, 24 Oct 2026, PRD-001 rev 0.135: making drafts, with weekly and fortnightly schedules beside the monthly
   ones: `recurring_invoice`, `create_scheduled_invoice_draft` (migration 000134), `journal.Invoices.CreateRecurring`
   and `MakeDue`, the job `invoices.recurring`, `/v1/recurring-invoices`, SOD-3 on its drafts. Tests:
   `TestRecurringInvoicesMakeDraftsTheSchedulerCannotIssue`, `TestRecurringInvoicesThroughTheAPI`,
-  `TestARecurringInvoicesAuthorDoesNotApproveItsDrafts`, `TestRecurringOccurrences`, the matrix rows. Still to come:
-  issue and send once a second person approved the content, and the weekly review.)
+  `TestARecurringInvoicesAuthorDoesNotApproveItsDrafts`, `TestRecurringOccurrences`, the matrix rows.)
+  (25 Oct 2026, PRD-001 rev 0.136: issue and send, done by the worker and fenced by the database (the owner's
+  decision of 24 Oct 2026): the recurring invoice's `mode` and approved version, the approval object
+  `recurring_invoice` and `requestRecurringInvoiceApproval`, the review kind `scheduled_issue`, `salesmail.Sender`
+  shared by `emailInvoice` and the job, the worker's fenced grants (FY201, FY202; migrations 000135 and 000136);
+  `docs/security/threat-models/scheduled-invoices.md`. Tests: `TestTheSchedulerIssuesOnlyApprovedRecurringInvoices`,
+  `TestARecurringInvoiceIsApprovedBeforeTheSchedulerIssuesIt`, the matrix row.)
 
 ## 7. Reminders and statements
 

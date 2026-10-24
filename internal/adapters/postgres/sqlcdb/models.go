@@ -954,21 +954,25 @@ type FyniqRecurringBillVersion struct {
 }
 
 type FyniqRecurringInvoice struct {
-	OrganisationID uuid.UUID
-	ID             uuid.UUID
-	Name           string
-	Status         string
-	EveryMonths    int32
-	EveryWeeks     int32
-	DayOfMonth     int32
-	StartsOn       time.Time
-	EndsOn         pgtype.Date
-	NextOn         pgtype.Date
-	Version        int32
-	ContentVersion int32
-	LastOn         pgtype.Date
-	LastInvoiceID  *uuid.UUID
-	CreatedAt      time.Time
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	Name            string
+	Status          string
+	EveryMonths     int32
+	EveryWeeks      int32
+	DayOfMonth      int32
+	StartsOn        time.Time
+	EndsOn          pgtype.Date
+	NextOn          pgtype.Date
+	Version         int32
+	ContentVersion  int32
+	LastOn          pgtype.Date
+	LastInvoiceID   *uuid.UUID
+	CreatedAt       time.Time
+	Mode            string
+	ApprovedVersion *int32
+	ApprovedBy      *string
+	ApprovedAt      *time.Time
 }
 
 type FyniqRecurringInvoiceVersion struct {

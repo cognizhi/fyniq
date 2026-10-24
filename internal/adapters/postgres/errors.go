@@ -81,6 +81,8 @@ var fyCodes = map[string]string{
 	"FY198": storage.CodeLink,
 	"FY199": storage.CodeRecurring,
 	"FY200": storage.CodeRecurring,
+	"FY201": storage.CodeScheduled,
+	"FY202": storage.CodeScheduled,
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

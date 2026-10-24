@@ -38,6 +38,9 @@ type RecurringInvoiceInput struct {
 	Name     string
 	Schedule storage.Schedule
 	Content  invoice.Draft
+	// Mode is storage.RecurringDraft, the default, or storage.RecurringIssueAndSend: the scheduler issues and sends each
+	// draft once a second person approved the current content (the owner's decision of 24 Oct 2026).
+	Mode string
 }
 
 // EncodeInvoiceContent is a recurring invoice's content as its version stores it: the invoice's payload without a
@@ -85,7 +88,7 @@ func (s Invoices) CreateRecurring(ctx context.Context, org uuid.UUID, in Recurri
 	var out storage.RecurringInvoice
 	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		out, err = u.RecurringInvoices().Create(ctx, storage.RecurringInvoiceDetails{Name: in.Name, Status: storage.RecurringActive,
-			Schedule: in.Schedule, NextOn: next, Content: b})
+			Schedule: in.Schedule, NextOn: next, Content: b, Mode: in.Mode})
 		return err
 	})
 	return out, err
@@ -119,7 +122,7 @@ func (s Invoices) UpdateRecurring(ctx context.Context, org, id uuid.UUID, versio
 			}
 		}
 		out, err = u.RecurringInvoices().Update(ctx, id, version, storage.RecurringInvoiceDetails{Name: in.Name, Status: cur.Status,
-			Schedule: in.Schedule, NextOn: next, Content: content})
+			Schedule: in.Schedule, NextOn: next, Content: content, Mode: in.Mode})
 		return err
 	})
 	return out, err
@@ -159,7 +162,7 @@ func (s Invoices) setRecurring(ctx context.Context, org, id uuid.UUID, version i
 			next = FirstOn(cur.Schedule, from)
 		}
 		out, err = u.RecurringInvoices().Update(ctx, id, version, storage.RecurringInvoiceDetails{Name: cur.Name, Status: to,
-			Schedule: cur.Schedule, NextOn: next})
+			Schedule: cur.Schedule, NextOn: next, Mode: cur.Mode})
 		return err
 	})
 	return out, err
@@ -202,6 +205,11 @@ func RecurringInvoiceStatuses(ctx context.Context, u storage.UnitOfWork, rs []st
 			}
 			st = append(st, status(SeverityError, p.Code, p.Field, p.Message, p.Fix))
 		}
+		if r.Mode == storage.RecurringIssueAndSend && !r.IssuesAndSends() {
+			st = append(st, status(SeverityWarning, StatusRecurringUnapproved, "mode",
+				"It is set to issue and send, but its current content is not approved: it makes drafts until it is.",
+				"Ask another person who holds the approval right on invoices to approve it"))
+		}
 		switch {
 		case r.NextOn == nil:
 			st = append(st, status(SeverityOK, StatusRecurringEnded, "", "Its schedule has ended: it makes no more drafts.", ""))
@@ -236,21 +244,34 @@ func (s Invoices) MakeDue(ctx context.Context, org uuid.UUID, day time.Time) (Re
 	for _, id := range due {
 		for range maxCatchUp {
 			made := false
+			var r storage.RecurringInvoice
+			var draft storage.Document
+			var on time.Time
 			err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-				r, err := u.RecurringInvoices().Lock(ctx, id)
+				var err error
+				r, err = u.RecurringInvoices().Lock(ctx, id)
 				if err != nil || r.Status != storage.RecurringActive || r.NextOn == nil || r.NextOn.After(day) {
 					return err
 				}
-				draft, err := u.RecurringInvoices().MakeDraft(ctx, id, *r.NextOn, NextAfter(r.Schedule, *r.NextOn))
-				if err != nil {
+				on = *r.NextOn
+				if draft, err = u.RecurringInvoices().MakeDraft(ctx, id, on, NextAfter(r.Schedule, on)); err != nil {
 					return err
 				}
 				made = true
-				if s.AfterMaking == nil {
-					return nil
+				if s.AfterMaking == nil || r.IssuesAndSends() {
+					return nil // one the scheduler issues is listed for the weekly review instead
 				}
-				return s.AfterMaking(ctx, u, org, r.Name, draft, *r.NextOn)
+				return s.AfterMaking(ctx, u, org, r.Name, draft, on)
 			})
+			if err == nil && made && r.IssuesAndSends() {
+				issued, ierr := s.issueScheduled(ctx, org, r, draft, on)
+				if ierr != nil {
+					return run, fmt.Errorf("recurring invoice %s: %w", id, ierr)
+				}
+				if issued {
+					run.Issued++
+				}
+			}
 			if storage.CodeOf(err) == storage.CodeRecurring {
 				break // changed meanwhile: the next run sees it as it is
 			}
@@ -294,4 +315,39 @@ func (s Invoices) MakeDueAll(ctx context.Context, now time.Time) ([]RecurringRun
 		}
 	}
 	return runs, errors.Join(errs...)
+}
+
+// issueScheduled issues draft, made on on from recurring invoice r set to issue and send with its current content
+// approved (FR-AR-07; the owner's decisions of 24 Oct 2026), as the scheduler, and lists it for the weekly review (FM-3),
+// in one unit of work: the database lets the scheduler post only such a draft (FY201). A draft the invoice rules refuse
+// stays a draft, and those who issue invoices are told, as for a draft made to be issued by a person; it answers false.
+func (s Invoices) issueScheduled(ctx context.Context, org uuid.UUID, r storage.RecurringInvoice, draft storage.Document, on time.Time) (bool, error) {
+	logged := on
+	if s.Clock != nil {
+		logged = s.Clock.Now()
+	}
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		if _, err := s.Post(ctx, org, draft.ID); err != nil {
+			return err
+		}
+		doc, err := u.Documents().Get(ctx, draft.ID)
+		if err != nil {
+			return err
+		}
+		_, err = u.ReviewLog().Log(ctx, storage.NewReviewLogEntry{Kind: storage.ReviewScheduledIssue, ObjectType: "invoice", ObjectKey: draft.ID.String(),
+			Summary:  fmt.Sprintf("Issued %s of %s from the recurring invoice %q, content version %d", doc.Number, on.Format("2 Jan 2006"), r.Name, r.ContentVersion),
+			LoggedAt: logged})
+		return err
+	})
+	var probs ledger.Problems
+	var ie *invoice.Error
+	if !errors.As(err, &probs) && !errors.As(err, &ie) {
+		return err == nil, err
+	}
+	if s.AfterMaking == nil {
+		return false, nil
+	}
+	return false, s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		return s.AfterMaking(ctx, u, org, r.Name, draft, on)
+	})
 }

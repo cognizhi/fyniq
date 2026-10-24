@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -124,4 +125,55 @@ func TestARecurringInvoicesAuthorDoesNotApproveItsDrafts(t *testing.T) {
 		t.Fatalf("asking to issue the draft: %d %s", asked.Status, asked.Raw)
 	}
 	e.problemIs(f.decide(weiling, asked.str("id"), "approve", hashOf(asked)), "approveApproval", 403, CodeOwnInvoice)
+}
+
+// FR-AR-07 (the owner's decisions of 24 Oct 2026, built in rev 0.136): a recurring invoice set to issue and send waits
+// for another person's approval of its content, and shows so. Asked by Ah Kow, Wei Ling, who wrote it, cannot approve
+// it (SOD-3); asked by Wei Ling, Ah Kow approves it, and asking again is refused. The scheduler then issues the 1
+// October invoice as itself, and the weekly review lists it (FM-3).
+// req: FR-AR-07
+// req: SOD-3
+// req: FM-3
+func TestARecurringInvoiceIsApprovedBeforeTheSchedulerIssuesIt(t *testing.T) {
+	f := newFounders(t)
+	e := f.e
+	ahkow := f.as(f.ahkow, authz.Accountant, authz.Controller)
+	weiling := f.as(f.weiling, authz.Accountant, authz.Controller)
+	body := e.recurringInvoice("Retainer", "800.00", monthly(1, "2026-10-01"))
+	body["mode"] = "issue_and_send"
+	c := e.call(http.MethodPost, "/v1/recurring-invoices", weiling, body)
+	checks, _ := c.Body["checks"].([]any)
+	if c.Status != http.StatusCreated || c.str("mode") != "issue_and_send" || c.Body["issues_and_sends"] != false || len(checks) == 0 ||
+		checks[0].(map[string]any)["code"] != journal.StatusRecurringUnapproved {
+		t.Fatalf("a recurring invoice to issue and send: %d %s", c.Status, c.Raw)
+	}
+	id := c.str("id")
+	asked := e.call(http.MethodPost, "/v1/recurring-invoices/"+id+"/approval", ahkow, nil, "If-Match", c.Header.Get("ETag"))
+	if asked.Status != http.StatusAccepted || asked.str("object_type") != "recurring_invoice" || asked.str("operation") != "recurring_invoice.approve" {
+		t.Fatalf("asking for its approval: %d %s", asked.Status, asked.Raw)
+	}
+	e.problemIs(f.decide(weiling, asked.str("id"), "approve", hashOf(asked)), "approveApproval", 403, CodeOwnInvoice)
+	e.call(http.MethodPost, "/v1/approvals/"+asked.str("id")+"/withdraw", ahkow, nil, "If-Match", `"1"`)
+	asked = e.call(http.MethodPost, "/v1/recurring-invoices/"+id+"/approval", weiling, nil, "If-Match", c.Header.Get("ETag"))
+	if a := f.decide(ahkow, asked.str("id"), "approve", hashOf(asked)); a.Status != 200 || a.str("status") != "approved" {
+		t.Fatalf("approving it: %d %s", a.Status, a.Raw)
+	}
+	g := e.call(http.MethodGet, "/v1/recurring-invoices/"+id, weiling, nil)
+	if g.Body["issues_and_sends"] != true || g.Body["approved_version"] != float64(1) || g.str("approved_by", "id") == "" {
+		t.Fatalf("approved: %s", g.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/recurring-invoices/"+id+"/approval", weiling, nil, "If-Match", g.Header.Get("ETag")),
+		"requestRecurringInvoiceApproval", 409, journal.CodeRecurringMode)
+
+	if run := e.makeInvoiceDrafts(time.Date(2026, 10, 15, 0, 0, 0, 0, time.UTC)); run.Made != 1 || run.Issued != 1 {
+		t.Fatalf("the scheduler: %+v", run)
+	}
+	g = e.call(http.MethodGet, "/v1/recurring-invoices/"+id, weiling, nil)
+	inv := e.call(http.MethodGet, "/v1/invoices/"+g.str("last_invoice_id"), weiling, nil)
+	if inv.str("status") != "posted" || inv.str("number") != "INV-0001" || inv.str("date") != "2026-10-01" {
+		t.Fatalf("the invoice it issued: %s", inv.Raw)
+	}
+	if l := e.call(http.MethodGet, "/v1/review-log", weiling, nil); !strings.Contains(l.Raw, `"kind":"scheduled_issue","object_type":"invoice","object_key":"`+inv.str("id")+`"`) {
+		t.Errorf("the weekly review lacks it: %s", l.Raw)
+	}
 }

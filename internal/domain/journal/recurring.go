@@ -26,6 +26,7 @@ import (
 const (
 	CodeRecurringSchedule = "RECURRING-01" // the schedule has no occurrence: it ends before its first
 	CodeRecurringPaused   = "RECURRING-02" // pausing a paused one, or resuming an active or ended one
+	CodeRecurringMode     = "RECURRING-03" // approving a recurring invoice set to make drafts, or one whose content is approved already
 )
 
 // The codes of a recurring journal's statuses that are not problems of its content.
@@ -34,6 +35,10 @@ const (
 	StatusRecurringDue    = "RECURRING-DUE"    // an occurrence before today has no draft yet: ⚠ (Appendix C.1 #28)
 	StatusRecurringPaused = "RECURRING-PAUSED" // paused by a person: ✔ Paused
 	StatusRecurringEnded  = "RECURRING-ENDED"  // its schedule has ended: ✔ Ended
+
+	// StatusRecurringUnapproved is a recurring invoice set to issue and send whose current content no second person has
+	// approved yet: it makes drafts until one does (FR-AR-07): ⚠.
+	StatusRecurringUnapproved = "RECURRING-UNAPPROVED"
 )
 
 // RecurringMaker is the scheduler's principal for recurring journals (FR-AUT-02): the database's create_scheduled_draft
@@ -341,6 +346,7 @@ type RecurringRun struct {
 	Organisation uuid.UUID
 	Day          time.Time // the organisation's day the run made drafts up to
 	Made         int
+	Issued       int // of them, a recurring invoice's the scheduler issued (FR-AR-07)
 }
 
 // MakeDue makes the draft journal of every occurrence of org's active recurring journals on or before day (FR-GL-02,

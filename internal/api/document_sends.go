@@ -1,15 +1,13 @@
 package api
 
 import (
-	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"maps"
 	"net/http"
 	netmail "net/mail"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
@@ -17,14 +15,11 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
-	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
-	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
-	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
-	"github.com/cognizhi/fyniq/internal/render"
+	"github.com/cognizhi/fyniq/internal/salesmail"
 )
 
 // ------------------------------------------------------------- quotes and invoices sent by email (FR-AR-06; p1-sales task 5.2)
@@ -99,177 +94,30 @@ func sentBy(sends []DocumentSendOut) []*Person {
 	return out
 }
 
-// sending is what emailing a document takes, read and rendered before its unit of work.
-type sending struct {
-	docType  string // the template's document type: invoice or quote
-	purpose  string // the email's
-	kind     string // in words: invoice, quote or sales order
-	version  int
-	etag     string
-	to       string
-	subject  string
-	body     string
-	fileName string
-	applied  doctemplate.Applied
-	pdf      []byte
-	sha      string
-	link     string // the online link's token's SHA-256 (FR-AR-06, task 5.3); empty when the deployment has no web origin
+// sender is the API's sender of quotes and invoices (package salesmail), rendering through the render service.
+func (a *API) sender() salesmail.Sender {
+	out := salesmail.Sender{Store: a.deps.Store, Staging: a.deps.Staging, Origin: a.deps.Origin, Clock: a.deps.Clock}
+	if a.deps.Outbox != nil {
+		out.Outbox = *a.deps.Outbox
+	}
+	if a.deps.Renderer != nil {
+		out.Render = a.renderDocumentAt
+	}
+	return out
 }
 
-// prepareSend reads a document for emailing (FR-AR-06): an issued invoice, or a sent quote or order, at its current
-// version; the recipient; the email's subject and body from the email template that applies to the customer; and,
-// unless previewing, its PDF from the document template that applies, which a tax invoice must show every particular
-// in. etagOf is the ETag of the document as the API shows it.
-func (a *API) prepareSend(ctx context.Context, id uuid.UUID, invoiceSend bool, to string, rendering bool,
-	etagOf func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) (string, error)) (sending, error) {
-	to = strings.TrimSpace(to)
-	if to != "" {
-		addr, err := netmail.ParseAddress(to)
-		if err != nil || addr.Name != "" || addr.Address != to || strings.ContainsAny(to, "\r\n") {
-			return sending{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.to", Message: "is not an email address",
-				Fix: "Send one address, such as accounts@acme.example"}})
-		}
-	}
-	p, _ := authn.From(ctx)
-	var s sending
-	var data salesdoc.Invoice
-	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-		doc, err := u.Documents().Get(ctx, id)
-		if err != nil {
-			return err
-		}
-		settings, err := journal.LoadSettings(ctx, u)
-		if err != nil {
-			return err
-		}
-		var customer uuid.UUID
-		switch {
-		case invoiceSend && doc.Type == storage.DocumentInvoice:
-			s.docType, s.purpose, s.kind = doctemplate.Invoice, email.PurposeInvoice, "invoice"
-		case !invoiceSend && quote.IsQuote(doc):
-			s.docType, s.purpose, s.kind = doctemplate.Quote, email.PurposeQuote, quote.Kind(doc)
-		case invoiceSend:
-			return &invoice.Error{Code: invoice.CodeNotInvoice, Message: fmt.Sprintf("document %s is not an invoice", doc.ID), Fix: "Email an invoice"}
-		default:
-			return &quote.Error{Code: quote.CodeNotQuote, Message: fmt.Sprintf("document %s is not a quote or a sales order", doc.ID), Fix: "Email a quote"}
-		}
-		if doc.Status != storage.DocumentPosted {
-			what := map[storage.DocumentStatus]string{storage.DocumentDraft: "a draft", storage.DocumentReversed: "voided"}[doc.Status]
-			if !invoiceSend && doc.Status == storage.DocumentReversed {
-				what = "cancelled"
-			}
-			return &salesdoc.Error{Code: salesdoc.CodeNotSent, Message: fmt.Sprintf("the %s is %s", s.kind, what),
-				Fix: "Email an issued invoice or a sent quote; a draft is issued or sent first"}
-		}
-		if invoiceSend {
-			if data, err = salesdoc.InvoiceData(ctx, u, doc, settings); err != nil {
-				return err
-			}
-			d, err := invoice.Read(doc, settings.Base)
-			if err != nil {
-				return err
-			}
-			customer = d.CustomerID
-		} else {
-			if data, err = salesdoc.QuoteData(ctx, u, doc, settings); err != nil {
-				return err
-			}
-			d, err := quote.Read(doc, settings.Base)
-			if err != nil {
-				return err
-			}
-			customer = d.Content.CustomerID
-		}
-		if s.to = to; s.to == "" {
-			s.to = strings.TrimSpace(data.Data.Fields["customer.email"].Text)
-		}
-		if s.to == "" {
-			return &salesdoc.Error{Code: salesdoc.CodeNoRecipient, Message: "the customer has no billing email", Fix: "Give the address to send it to, or add the customer's billing email"}
-		}
-		if s.applied, err = doctemplate.Applying(ctx, u, doctemplate.KindDocument, s.docType, &customer); err != nil {
-			return err
-		}
-		mail, err := doctemplate.Applying(ctx, u, doctemplate.KindEmail, s.docType, &customer)
-		if err != nil {
-			return err
-		}
-		// The email carries the online link, its token in the URL's fragment, never sent to a server (task 5.3); the PDF
-		// does not.
-		emailed := data.Data
-		if origin := strings.TrimRight(a.deps.Origin, "/"); origin != "" {
-			token, hash, err := salesdoc.NewToken()
-			if err != nil {
-				return err
-			}
-			emailed.Fields = maps.Clone(data.Data.Fields)
-			emailed.Fields["document.link"] = render.Value{Text: origin + "/d/#" + token}
-			s.link = hash
-		}
-		if s.subject, s.body, err = render.Email(mail.Content, emailed); err != nil {
-			return err
-		}
-		if utf8.RuneCountInString(s.subject) > 200 {
-			s.subject = string([]rune(s.subject)[:199]) + "…"
-		}
-		s.version, s.fileName = doc.Version, doc.Number+".pdf"
-		s.etag, err = etagOf(ctx, u, doc)
-		return err
-	})
-	if err != nil || !rendering {
-		return s, err
-	}
-	if a.deps.Renderer == nil {
-		return s, problem(doctemplate.CodeRenderer, "No render service is configured, so the document cannot be sent.", "Ask the operator to configure the render service")
-	}
-	res, err := a.renderDocumentAt(ctx, s.docType, s.applied.Content, data.Data, data.Created)
-	if err != nil {
-		return s, err
-	}
-	if len(res.Missing) > 0 {
-		return s, problem(salesdoc.CodeParticulars, fmt.Sprintf("The tax invoice lacks %s, which IRAS requires, so it is not sent.", strings.Join(res.Missing, ", ")),
+// sendProblem words salesmail's refusals for the API.
+func sendProblem(kind string, err error) error {
+	var missing *salesmail.MissingParticulars
+	switch {
+	case errors.Is(err, salesmail.ErrNoRenderer):
+		return problem(doctemplate.CodeRenderer, "No render service is configured, so the document cannot be sent.", "Ask the operator to configure the render service")
+	case errors.Is(err, salesmail.ErrChanged):
+		return problem(CodeStale, fmt.Sprintf("The %s changed while it was being sent.", kind), "Read it again and send it again")
+	case errors.As(err, &missing):
+		return problem(salesdoc.CodeParticulars, fmt.Sprintf("The tax invoice lacks %s, which IRAS requires, so it is not sent.", strings.Join(missing.Missing, ", ")),
 			"Add the missing details in Settings › Organisation or on the customer, then send it again")
 	}
-	s.pdf, s.sha = res.PDF, res.SHA256
-	return s, nil
-}
-
-// recordSend keeps a send in u (FR-AR-06): the PDF as the document's evidence, the email with it attached from the
-// invoices sender, and the send; the evidence is committed to the locked store by the worker. The document must still
-// be posted at the version rendered. Previewing records nothing.
-func (a *API) recordSend(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, s sending, key string, preview bool) error {
-	doc, err := u.Documents().Lock(ctx, id)
-	if err != nil {
-		return err
-	}
-	if doc.Status != storage.DocumentPosted || doc.Version != s.version {
-		return problem(CodeStale, fmt.Sprintf("The %s changed while it was being sent.", s.kind), "Read it again and send it again")
-	}
-	if preview {
-		return nil
-	}
-	p, _ := authn.From(ctx)
-	e, err := u.Evidence().Attach(ctx, storage.NewEvidence{DocumentID: id, EvidenceType: strings.ToUpper(s.kind[:1]) + s.kind[1:] + " as sent",
-		FileName: s.fileName, MediaType: "application/pdf", Size: int64(len(s.pdf)), SHA256: s.sha, OriginalSHA256: s.sha,
-		Source: storage.SourceGenerated, DataClass: storage.ClassGeneral, StagingKey: key, UploadedBy: uploader(ctx)})
-	if err != nil {
-		return err
-	}
-	m, err := email.QueueWith(ctx, *a.deps.Outbox, u, p.Organisation, s.purpose, s.to, s.subject, s.body, []uuid.UUID{e.ID})
-	if err != nil {
-		return err
-	}
-	if s.link != "" {
-		if _, err := u.DocumentLinks().Create(ctx, storage.NewDocumentLink{DocumentID: id, DocumentVersion: s.version, MessageID: m.ID, TokenHash: s.link,
-			ExpiresAt: a.deps.Clock.Now().Add(salesdoc.LinkDays * 24 * time.Hour)}); err != nil {
-			return err
-		}
-	}
-	if _, err := u.DocumentSends().Record(ctx, storage.NewDocumentSend{DocumentID: id, DocumentVersion: s.version, MessageID: m.ID, EvidenceID: e.ID,
-		Recipient: s.to, TemplateSource: s.applied.Source, TemplateID: s.applied.TemplateID, TemplateVersion: s.applied.Version,
-		TemplateHash: fmt.Sprintf("%x", s.applied.Hash), PDFSHA256: s.sha}); err != nil {
-		return err
-	}
-	_, err = a.deps.Outbox.Enqueue(ctx, u, p.Organisation, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: EvidenceCommitKind, Payload: []byte(`{}`)})
 	return err
 }
 
@@ -287,29 +135,47 @@ func emailDocument[B any](ctx context.Context, a *API, id uuid.UUID, invoiceSend
 	preview := wantsPreview(in.Prefer)
 	to := ""
 	if in.Body != nil {
-		to = in.Body.To
+		to = strings.TrimSpace(in.Body.To)
 	}
-	s, err := a.prepareSend(ctx, id, invoiceSend, to, !preview, etagOf)
-	if err != nil {
-		return written[B]{}, err
-	}
-	if err := checkIfMatch(in.IfMatch, s.etag); err != nil {
-		return written[B]{}, err
+	if to != "" {
+		addr, err := netmail.ParseAddress(to)
+		if err != nil || addr.Name != "" || addr.Address != to || strings.ContainsAny(to, "\r\n") {
+			return written[B]{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.to", Message: "is not an email address",
+				Fix: "Send one address, such as accounts@acme.example"}})
+		}
 	}
 	p, _ := authn.From(ctx)
+	sender := a.sender()
+	var tag string
+	s, err := sender.Prepare(ctx, p.Organisation, id, invoiceSend, to, !preview, func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) (err error) {
+		tag, err = etagOf(ctx, u, doc)
+		return err
+	})
+	if err != nil {
+		return written[B]{}, sendProblem(s.Kind, err)
+	}
+	if err := checkIfMatch(in.IfMatch, tag); err != nil {
+		return written[B]{}, err
+	}
 	key := ""
 	if !preview {
-		// Staged before the unit of work: if it rolls back, the sweeper deletes the file (FR-DOC-13).
-		key = evidence.StagingKey(p.Organisation, uuid.Must(uuid.NewV7()))
-		if err := a.deps.Staging.Put(ctx, key, bytes.NewReader(s.pdf)); err != nil {
+		if key, err = sender.Stage(ctx, p.Organisation, s); err != nil {
 			logFailure(ctx, err)
 			return written[B]{}, problem(CodeUnavailable, "The PDF could not be stored.", "Try again in a few minutes.")
 		}
 	}
 	w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, request, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (B, error) {
-		if err := a.recordSend(ctx, u, id, s, key, preview); err != nil {
-			var zero B
-			return zero, err
+		var zero B
+		if preview {
+			doc, err := u.Documents().Lock(ctx, id)
+			if err != nil {
+				return zero, err
+			}
+			if doc.Status != storage.DocumentPosted || doc.Version != s.Version {
+				return zero, sendProblem(s.Kind, salesmail.ErrChanged)
+			}
+		} else if err := sender.Record(ctx, u, p.Organisation, id, s, key); err != nil {
+			return zero, sendProblem(s.Kind, err)
 		}
 		return view(ctx, u)
 	})

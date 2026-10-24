@@ -542,6 +542,9 @@ var codeFacts = map[string]struct {
 
 	storage.CodeSend: {409, "A send is of an issued invoice's or sent quote's current version"},
 	storage.CodeLink: {409, "A link changes only in its first view and its revocation, once each"},
+
+	journal.CodeRecurringMode: {409, "The recurring invoice needs no approval now"},
+	storage.CodeScheduled:     {409, "The scheduler issues only approved recurring invoices"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -564,6 +567,8 @@ var storageFixes = map[string]string{
 
 	storage.CodeSend: "Send the issued invoice or sent quote as it stands now",
 	storage.CodeLink: "Email the document again for a new link",
+
+	storage.CodeScheduled: "Issue and send it as a person, or approve the recurring invoice it came from",
 }
 
 // problem builds a Problem for one of the catalogue's codes.

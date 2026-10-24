@@ -574,6 +574,9 @@ var (
 	ReplaceRecurringInvoice = Policy{Operation: "replaceRecurringInvoice", Capability: Invoices, Need: Create}
 	PauseRecurringInvoice   = Policy{Operation: "pauseRecurringInvoice", Capability: Invoices, Need: Create}
 	ResumeRecurringInvoice  = Policy{Operation: "resumeRecurringInvoice", Capability: Invoices, Need: Create}
+	// Asking for its content to be approved for issue and send (FR-AR-07; rev 0.136) is asked under C; another person
+	// who holds A approves it through the approvals.
+	RequestRecurringInvoiceApproval = Policy{Operation: "requestRecurringInvoiceApproval", Capability: Invoices, Need: Create}
 	// Purchase orders (FR-AP-01; rev 0.87) sit on the bills' row: whoever prepares bills (C) raises, changes, closes and
 	// bills them, and approves one at or below the self-approval threshold (FM-2, the owner's decision of 23 Oct 2026);
 	// above it another person who holds A approves it through the approval engine (SOD-3).
@@ -757,6 +760,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListContactDocumentTemplates, SetContactDocumentTemplate,
 	ListRecurringBills, GetRecurringBill, CreateRecurringBill, ReplaceRecurringBill, PauseRecurringBill, ResumeRecurringBill,
 	ListRecurringInvoices, GetRecurringInvoice, CreateRecurringInvoice, ReplaceRecurringInvoice, PauseRecurringInvoice, ResumeRecurringInvoice,
+	RequestRecurringInvoiceApproval,
 	ListPurchaseOrders, GetPurchaseOrder, CreatePurchaseOrder, ReplacePurchaseOrder, ApprovePurchaseOrder, RequestPurchaseOrderApproval, ClosePurchaseOrder, BillPurchaseOrder,
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,
 	GetCreditApplication, ApplyCredit, VoidCreditApplication, RequestCreditApplicationVoid,
