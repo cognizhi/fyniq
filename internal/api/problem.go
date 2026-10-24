@@ -39,6 +39,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/receipt"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/team"
+	"github.com/cognizhi/fyniq/internal/domain/writeoff"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -386,6 +387,18 @@ var codeFacts = map[string]struct {
 	receipt.CodeTolerance:         {422, "What is left of the invoice is above the settlement tolerance"},
 	billpayment.CodeTolerance:     {422, "What is left of the bill is above the settlement tolerance"},
 	CodeReceiptVoidApproval:       {409, "Voiding needs a second person"},
+	writeoff.CodeNotWriteOff:      {404, "Not a write-off"},
+	writeoff.CodeBadDraft:         {422, "The saved write-off cannot be read"},
+	writeoff.CodeInvoice:          {422, "Not an issued invoice"},
+	writeoff.CodeTooMuch:          {422, "More than the invoice has open"},
+	writeoff.CodeReason:           {422, "Not a reason for a write-off"},
+	writeoff.CodeAccount:          {422, "No account for the reason"},
+	writeoff.CodeNotDraft:         {409, "The write-off is not a draft"},
+	writeoff.CodeNotPosted:        {409, "The write-off is not posted"},
+	writeoff.CodeVoidDate:         {422, "The void is dated before the write-off"},
+	writeoff.CodeTooLong:          {422, "The explanation is missing or too long"},
+	CodeWriteOffVoidApproval:      {409, "Voiding needs a second person"},
+	CodeOwnWriteOff:               {403, "Another person approves the write-off (SOD-9)"},
 	billpayment.CodeNotPayment:    {404, "Not a payment of bills"},
 	billpayment.CodeBadDraft:      {422, "The saved payment cannot be read"},
 	billpayment.CodeSupplier:      {422, "The payment's supplier is not a vendor"},
@@ -601,6 +614,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		be  *bill.Error
 		ie  *invoice.Error
 		re  *receipt.Error
+		we  *writeoff.Error
 		bpe *billpayment.Error
 		cre *credits.Error
 		poe *purchaseorder.Error
@@ -629,6 +643,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(ie.Code, sentence(ie.Message), sentence(ie.Fix))
 	case errors.As(err, &re):
 		return problem(re.Code, sentence(re.Message), sentence(re.Fix))
+	case errors.As(err, &we):
+		return problem(we.Code, sentence(we.Message), sentence(we.Fix))
 	case errors.As(err, &bpe):
 		return problem(bpe.Code, sentence(bpe.Message), sentence(bpe.Fix))
 	case errors.As(err, &cre):

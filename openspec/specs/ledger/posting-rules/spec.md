@@ -270,6 +270,11 @@ Source: PRD-001 §10.2
 - **WHEN** it is posted
 - **THEN** it posts Dr bad-debt expense; Dr GST control (relief, when eligible); Cr AR 1100
 
+#### Scenario: Built as write_off@1 (rev 0.122)
+- **WHEN** an approved write-off of an invoice posts
+- **THEN** it posts Dr the reason's account with the carrying amount cleared and Cr 1100 with the amount at the invoice's stored rate, with the residual RND-FX left on a base-only 1100 line when it takes all that is open
+- **AND** the GST relief leg waits for FR-AR-11 (P2)
+
 ### Requirement: Founder loans, directors' fees and repayments
 Money a founder lends, an approved director's fee and a repayment to a director SHALL post to that director's 2500 or 2120 balance.
 

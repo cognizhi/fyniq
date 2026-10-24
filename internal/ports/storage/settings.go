@@ -85,6 +85,7 @@ var DefaultSequences = map[DocumentType]SequenceSettings{
 	DocumentPurchaseOrder:   {Prefix: "PO-", NextNumber: 1, Digits: 4, GapFree: true},
 	DocumentInvoice:         {Prefix: "INV-", NextNumber: 1, Digits: 4, GapFree: true},
 	DocumentCustomerReceipt: {Prefix: "RC-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentWriteOff:        {Prefix: "WO-", NextNumber: 1, Digits: 4, GapFree: true},
 }
 
 // FormatNumber is a document number as the sequence s prints it: its prefix and the number, zero-padded.

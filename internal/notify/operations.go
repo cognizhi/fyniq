@@ -30,6 +30,7 @@ var kinds = map[storage.DocumentType]struct{ name, object, path string }{
 	storage.DocumentSupplierRefund:    {"supplier refund", approval.ObjectRefund, "/purchases/bills"},
 	storage.DocumentInvoice:           {"invoice", approval.ObjectInvoice, ""}, // no link until the invoice screens (p1-sales task 8.1)
 	storage.DocumentCustomerReceipt:   {"receipt", approval.ObjectReceipt, ""}, // nor the receipts'
+	storage.DocumentWriteOff:          {"write-off", approval.ObjectWriteOff, ""},
 }
 
 // Posted tells those who approve postings of doc's kind (A on its row) that actor, named name, posted it, or voided or

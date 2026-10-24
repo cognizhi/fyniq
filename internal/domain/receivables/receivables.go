@@ -258,10 +258,10 @@ type (
 	Reconciliation = subledger.Reconciliation
 )
 
-// own says whether a source type is one of the documents the AR sub-ledger accounts for: invoices and receipts (and, as
-// they arrive, credit notes and applications).
+// own says whether a source type is one of the documents the AR sub-ledger accounts for: invoices, receipts and
+// write-offs (and, as they arrive, credit notes and applications).
 func own(sourceType string) bool {
-	return sourceType == ledger.SourceInvoice || sourceType == ledger.SourceCustomerReceipt
+	return sourceType == ledger.SourceInvoice || sourceType == ledger.SourceCustomerReceipt || sourceType == ledger.SourceWriteOff
 }
 
 // Reconcile is INV-07 for accounts receivable as at a day (FR-CTL-05): the sub-ledger's open documents against the

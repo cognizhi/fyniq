@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "WriteOff.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Pass it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjIwMjYtMTAtMzF8MDE5MiJ9"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "WriteOffPage",
+  "type": "object"
+}

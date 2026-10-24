@@ -117,7 +117,7 @@ type InvoiceStates struct {
 	Approval   string `json:"approval" enum:"draft,awaiting_approval,approved,rejected" doc:"draft until it is issued or asked for; awaiting_approval while a request to issue it waits; approved once issued; rejected when the latest request was rejected and it is still a draft." example:"draft"`
 	Ledger     string `json:"ledger" enum:"not_posted,posted,voided" doc:"not_posted, posted (issued), or voided by a reversal." example:"not_posted"`
 	Delivery   string `json:"delivery" enum:"not_sent,sent,delivered,viewed,bounced" doc:"not_sent until sending arrives (FR-AR-06): then sent, delivered, viewed (the customer first opened its secure link) or bounced." example:"not_sent"`
-	Settlement string `json:"settlement" enum:"open,part_paid,paid,written_off" doc:"What is settled of it, from the receipts and credits applied to it net of their voids (FR-AR-18): open, part_paid or paid; written_off arrives with write-offs." example:"open"`
+	Settlement string `json:"settlement" enum:"open,part_paid,paid,written_off" doc:"What is settled of it, from the receipts, credits and write-offs applied to it net of their voids (FR-AR-18): open, part_paid, paid, or written_off when it is settled and a write-off settles part of it (FR-AR-17)." example:"open"`
 	Due        string `json:"due" enum:"not_due,overdue" doc:"overdue once its due date has passed while it is issued and not paid in full; not_due otherwise." example:"not_due"`
 }
 
@@ -577,7 +577,11 @@ func invoiceSettled(ctx context.Context, u storage.UnitOfWork, i *Invoice, total
 		return err
 	}
 	open := total
+	reversed := map[uuid.UUID]bool{}
 	for _, x := range allocs {
+		if x.ReversesID != nil {
+			reversed[*x.ReversesID] = true
+		}
 		amount, err := money.ParseStored(string(x.Amount), total.Currency())
 		if err != nil {
 			return err
@@ -589,9 +593,19 @@ func invoiceSettled(ctx context.Context, u storage.UnitOfWork, i *Invoice, total
 	if i.Status != string(storage.DocumentPosted) {
 		return nil
 	}
+	writtenOff := false // a write-off that still stands settles part of it (FR-AR-17)
+	for _, x := range allocs {
+		if x.ReversesID == nil && !reversed[x.ID] {
+			if src, err := u.Documents().Get(ctx, x.SourceID); err == nil && src.Type == storage.DocumentWriteOff {
+				writtenOff = true
+			}
+		}
+	}
 	o := moneyOut(open)
 	i.Open = &o
 	switch {
+	case open.Sign() <= 0 && writtenOff:
+		i.States.Settlement = "written_off"
 	case open.Sign() <= 0:
 		i.States.Settlement = "paid"
 	case !open.Equal(total):

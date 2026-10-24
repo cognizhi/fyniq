@@ -359,6 +359,11 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **WHEN** a bad-debt write-off is recorded
 - **THEN** it is tagged for later relief review
 
+#### Scenario: Write-offs as built (rev 0.122)
+- **WHEN** a write-off of an issued invoice is asked for
+- **THEN** it posts write_off@1 only when another person approves it, never one who prepared it or recorded a receipt of the invoice (WRITEOFF-11, SOD-9), and at most what is open (WRITEOFF-04)
+- **AND** a discount goes to 4095 and charges and cross-currency differences to 7030 unless named; a bad debt or migrated residual names its account; the invoice then shows written off
+
 ### Requirement: FR-AR-12 InvoiceNow (Peppol)
 The system SHALL send invoices, credit notes and debit notes by InvoiceNow (Peppol) in PINT-SG format through an IMDA-accredited Access Point, and MUST be live before Cognizhi registers voluntarily for GST.
 

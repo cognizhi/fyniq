@@ -404,6 +404,8 @@ const (
 	// DocumentCustomerReceipt is money a customer paid, recorded by hand until bank import matches it (FR-AR-18; the
 	// owner's decision of 24 Oct 2026).
 	DocumentCustomerReceipt DocumentType = "customer_receipt"
+	// DocumentWriteOff writes off what is left of an invoice, for a reason, on another person's approval (FR-AR-17).
+	DocumentWriteOff DocumentType = "write_off"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).

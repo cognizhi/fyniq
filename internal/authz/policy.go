@@ -467,6 +467,16 @@ var (
 	RecordCustomerReceipt      = Policy{Operation: "recordCustomerReceipt", Capability: Invoices, Need: Post}
 	VoidCustomerReceipt        = Policy{Operation: "voidCustomerReceipt", Capability: Invoices, Need: Post}
 	RequestCustomerReceiptVoid = Policy{Operation: "requestCustomerReceiptVoid", Capability: Invoices, Need: Post}
+	// Write-offs of invoices (FR-AR-17): read under V, drafted under C, and posted only on another person's approval
+	// (FR-APR-01; SOD-9), asked for under P, as issuing is; voiding one is FM-1's void of a posted document.
+	ListWriteOffs       = Policy{Operation: "listWriteOffs", Capability: Invoices, Need: View}
+	GetWriteOff         = Policy{Operation: "getWriteOff", Capability: Invoices, Need: View}
+	CreateWriteOff      = Policy{Operation: "createWriteOff", Capability: Invoices, Need: Create}
+	ReplaceWriteOff     = Policy{Operation: "replaceWriteOff", Capability: Invoices, Need: Create}
+	RequestWriteOffPost = Policy{Operation: "requestWriteOffPost", Capability: Invoices, Need: Post,
+		Note: "Every write-off posts only on another person's approval: never the one who prepared it or recorded a receipt of the invoice (SOD-9)."}
+	VoidWriteOff        = Policy{Operation: "voidWriteOff", Capability: Invoices, Need: Post}
+	RequestWriteOffVoid = Policy{Operation: "requestWriteOffVoid", Capability: Invoices, Need: Post}
 	// AR ageing and the FX exposure (FR-AR-10) are read under V on "Invoices, credit notes", as the invoices are.
 	GetReceivables = Policy{Operation: "getReceivables", Capability: Invoices, Need: View}
 	// The tax agent's withholding decisions for a non-resident supplier (FR-AP-19; rev 0.90): read with the bills (V),
@@ -698,6 +708,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListInvoices, GetInvoice, CreateInvoice, ReplaceInvoice, IssueInvoice, VoidInvoice, EditInvoice, RequestInvoiceIssue, RequestInvoiceVoid,
 	RequestInvoiceEdit, AddInvoiceEvidence, ListInvoiceEvidence, GetInvoiceEvidence, RemoveInvoiceEvidence, GetReceivables,
 	ListCustomerReceipts, GetCustomerReceipt, RecordCustomerReceipt, VoidCustomerReceipt, RequestCustomerReceiptVoid,
+	ListWriteOffs, GetWriteOff, CreateWriteOff, ReplaceWriteOff, RequestWriteOffPost, VoidWriteOff, RequestWriteOffVoid,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,

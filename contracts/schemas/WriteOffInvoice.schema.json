@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The invoice.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number.",
+      "examples": [
+        "INV-0042"
+      ],
+      "type": "string"
+    },
+    "open": {
+      "$ref": "Money.schema.json",
+      "description": "A draft write-off: what is open of the invoice now, in its currency."
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "title": "WriteOffInvoice",
+  "type": "object"
+}

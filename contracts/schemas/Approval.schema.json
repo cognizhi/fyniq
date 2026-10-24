@@ -91,7 +91,8 @@
         "purchase_order",
         "document_template",
         "invoice",
-        "customer_receipt"
+        "customer_receipt",
+        "write_off"
       ],
       "examples": [
         "organisation_setting"
@@ -124,7 +125,9 @@
         "invoice.post",
         "invoice.void",
         "invoice.edit",
-        "customer_receipt.void"
+        "customer_receipt.void",
+        "write_off.post",
+        "write_off.void"
       ],
       "examples": [
         "organisation_setting.change"
