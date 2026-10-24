@@ -35,24 +35,31 @@ const (
 )
 
 // Type is a kind of notification: what preferences call it, how severe it is, whether it links to an Inbox item, and
-// how it goes by email unless a person chooses otherwise. A locked type (security) is never turned off and is emailed
-// at once.
+// how it goes by email unless a person chooses otherwise. A locked type (security) is never turned off, and goes by
+// email as it says, whatever the person chose: at once, or not at all where another channel already sends it.
 type Type struct {
 	Key        string
 	Label      string
 	Category   string
 	Severity   string // info, warning or critical
 	Actionable bool
-	Email      string // the recommended email delivery: storage.Email…
+	Email      string // the recommended email delivery: storage.Email…; a locked type's, fixed
 	Locked     bool
+	Note       string // why a locked type goes by email as it does, where that needs saying
 }
 
 // Catalogue is every notification type, on the owner's decisions of 24 Oct 2026: approvals and security emailed at
 // once, the rest in the daily digest; in-app always. More types join as their events are emitted.
 var Catalogue = []Type{
+	{Key: "security.sign_in", Label: "You signed in", Category: Security, Severity: "info", Email: storage.EmailOff, Locked: true,
+		Note: "Every sign-in is emailed at once by the sign-in alert, so it is not emailed again here"},
+	{Key: "security.second_factor", Label: "A passkey was added or removed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: "security.roles", Label: "Your roles changed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: "approval.requested", Label: "An approval waits for you", Category: Approvals, Severity: "info", Actionable: true, Email: storage.EmailImmediate},
 	{Key: "approval.decided", Label: "Your request was decided", Category: Approvals, Severity: "info", Email: storage.EmailImmediate},
+	{Key: "email.quarantined", Label: "Mail waits in quarantine", Category: Email, Severity: "info", Actionable: true, Email: storage.EmailDaily},
+	{Key: "email.suppressed", Label: "Email to an address stopped", Category: Email, Severity: "warning", Email: storage.EmailDaily},
+	{Key: "email.domain_failed", Label: "A sending domain failed its check", Category: Email, Severity: "warning", Email: storage.EmailDaily},
 }
 
 // Lookup is the type with key.
@@ -119,6 +126,10 @@ func subject(n storage.Notification, details bool) string {
 	return "Something happened in Fyniq"
 }
 
+// maxTitle is the longest title an event keeps (migration 000105); a longer one, such as an approval's with a long
+// reason, is cut short, never refused.
+const maxTitle = 300
+
 type fanoutPayload struct {
 	EventID uuid.UUID `json:"event_id"`
 }
@@ -131,6 +142,9 @@ func Emit(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org uu
 	audience, err := json.Marshal(e.Audience)
 	if err != nil {
 		return storage.NotificationEvent{}, err
+	}
+	if r := []rune(e.Title); len(r) > maxTitle {
+		e.Title = string(r[:maxTitle-1]) + "…"
 	}
 	ev, err := u.Notifications().Emit(ctx, storage.NewNotificationEvent{Type: e.Type, RecordType: e.RecordType, RecordID: e.RecordID,
 		Title: e.Title, Link: e.Link, Audience: audience, OccurredAt: e.At})
@@ -168,10 +182,10 @@ func Recipients(a Audience, members []storage.Member) []uuid.UUID {
 }
 
 // Cadence is how a notification of t goes by email to a person with preferences prefs: their choice for t, else t's
-// recommendation; a locked type always at once.
+// recommendation; a locked type as it says, whatever they chose.
 func Cadence(t Type, prefs []storage.NotificationPreference) string {
 	if t.Locked {
-		return storage.EmailImmediate
+		return t.Email
 	}
 	for _, p := range prefs {
 		if p.Type == t.Key && p.Email != "" {

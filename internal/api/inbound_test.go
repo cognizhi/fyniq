@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/mailhooks"
+	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -48,9 +49,10 @@ func received(t *testing.T, e *env, srv *httptest.Server, address, sender string
 
 // Mail to the organisation's email-in address is recorded from Resend's signed webhook and its fetch queued; the worker
 // quarantines a stranger's; the Administrator lists it and accepts the sender, which accepts their quarantined mail,
-// or rejects another, which deletes theirs. A member lists and decides at their own address. Mail to a name that
-// routes nowhere is ignored.
+// or rejects another, which deletes theirs. A member lists and decides at their own address, and is told of the mail
+// waiting there. Mail to a name that routes nowhere is ignored.
 // req: FR-INT-22
+// req: FR-NTF-01
 // req: FR-DOC-12
 func TestReceivedMailIsQuarantinedUntilSomeoneDecides(t *testing.T) {
 	f := newFounders(t)
@@ -96,11 +98,13 @@ func TestReceivedMailIsQuarantinedUntilSomeoneDecides(t *testing.T) {
 		if k != email.FetchKind {
 			t.Fatalf("queued %q; want %s", k, email.FetchKind)
 		}
-		fetcher := email.Fetcher{Mail: strangerMail{from: sender}, Store: worker, Files: staging, Scanner: local.EICARScanner{}, Clock: e.clock}
+		fetcher := email.Fetcher{Mail: strangerMail{from: sender}, Store: worker, Files: staging, Scanner: local.EICARScanner{}, Clock: e.clock,
+			Quarantined: notify.Quarantined(outbox.Dispatcher{Store: worker, Queue: e.queue, Clock: e.clock})}
 		if err := fetcher.Work()(context.Background(), e.books.Org, row); err != nil {
 			t.Fatal(err)
 		}
 	}
+	fanOutAll(t, e)
 	q := e.call(http.MethodGet, "/v1/organisation/email/inbound-messages?status=quarantined", e.as(authz.Auditor), nil)
 	if items, _ := q.Body["items"].([]any); len(items) != 2 || len(items[0].(map[string]any)["files"].([]any)) != 2 || items[0].(map[string]any)["expires_at"] == nil {
 		t.Fatalf("the quarantine: %s", q.Raw)
@@ -139,6 +143,21 @@ func TestReceivedMailIsQuarantinedUntilSomeoneDecides(t *testing.T) {
 		t.Fatalf("naming Ah Kow's: %d %s", r.Status, r.Raw)
 	}
 	received(t, e, srv, "ahkow-"+name+"@in.example.com", "friend@example.net")
+	if k, row := nextWorkRow(t, e); k != email.FetchKind {
+		t.Fatalf("queued %q; want %s", k, email.FetchKind)
+	} else if err := (email.Fetcher{Mail: strangerMail{from: "friend@example.net"}, Store: worker, Files: staging, Scanner: local.EICARScanner{},
+		Clock: e.clock, Quarantined: notify.Quarantined(outbox.Dispatcher{Store: worker, Queue: e.queue, Clock: e.clock})}).Work()(context.Background(), e.books.Org, row); err != nil {
+		t.Fatal(err)
+	}
+	fanOutAll(t, e)
+	told := e.call(http.MethodGet, "/v1/notifications", me, nil).Body["items"].([]any)
+	if len(told) != 1 || told[0].(map[string]any)["type"] != "email.quarantined" || told[0].(map[string]any)["actionable"] != true ||
+		!strings.Contains(told[0].(map[string]any)["title"].(string), "friend@example.net") {
+		t.Fatalf("Ah Kow was not told of the mail waiting at his address: %v", told)
+	}
+	if r := e.call(http.MethodGet, "/v1/notifications", f.as(f.weiling, authz.Employee), nil); strings.Contains(r.Raw, "friend@example.net") {
+		t.Fatalf("Wei Ling was told of Ah Kow's mail: %s", r.Raw)
+	}
 	mine := e.call(http.MethodGet, "/v1/organisation/email/inbound-messages/mine", me, nil)
 	if items, _ := mine.Body["items"].([]any); len(items) != 1 || items[0].(map[string]any)["for"] != "member" {
 		t.Fatalf("Ah Kow's mail: %s", mine.Raw)
@@ -151,7 +170,7 @@ func TestReceivedMailIsQuarantinedUntilSomeoneDecides(t *testing.T) {
 	}
 	trail := auditTrail(t, e)
 	for _, action := range []string{"inbound_message.received", "inbound_message.quarantined", "inbound_message.accepted", "inbound_message.rejected",
-		"inbound_message.file_removed", "capture_sender.accepted", "capture_sender.rejected"} {
+		"inbound_message.file_removed", "capture_sender.accepted", "capture_sender.rejected", `"email.quarantined"`} {
 		if !strings.Contains(trail, action) {
 			t.Errorf("the audit trail lacks %s", action)
 		}

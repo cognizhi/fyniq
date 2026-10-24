@@ -14,6 +14,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -200,5 +201,101 @@ func TestNotificationsKeepTheirHistory(t *testing.T) {
 	})
 	if err != nil && !strings.Contains(err.Error(), "audit") {
 		t.Fatalf("the worker queueing a notification email: %v", err)
+	}
+}
+
+// joined adds a member with roles to org, as an invitation accepted, and returns their user.
+func joined(t *testing.T, org uuid.UUID, n byte, roles []string, now time.Time) uuid.UUID {
+	t.Helper()
+	ctx := context.Background()
+	st := store(t, "fyniq_api")
+	hash := make([]byte, 32)
+	hash[0], hash[1], hash[2] = 7, n, org[15]
+	if err := st.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: "Member", Roles: roles,
+			ExpiresAt: now.Add(time.Hour), CreatedAt: now})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	j, err := st.JoinOrganisation(ctx, storage.NewJoin{CodeHash: hash, DisplayName: "Member", Issuer: "urn:fyniq:notify", Subject: uuid.NewString(), Now: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return j.UserID
+}
+
+// fanQueued fans out every event queued on q, as the worker.
+func fanQueued(t *testing.T, org uuid.UUID, q *local.Memory, at time.Time) {
+	t.Helper()
+	ctx := context.Background()
+	worker := store(t, "fyniq_worker")
+	f := notify.Fanout{Store: worker, Dispatcher: outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: clock.NewFrozen(at)},
+		Clock: clock.NewFrozen(at), Origin: "https://fyniq.test"}
+	for {
+		task, err := q.Next(ctx, "worker")
+		if err != nil {
+			return
+		}
+		var m outbox.Message
+		if err := json.Unmarshal(task.Payload, &m); err != nil {
+			t.Fatal(err)
+		}
+		var row storage.OutboxRow
+		if err := worker.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			row, err = u.Outbox().Get(ctx, m.OutboxID)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if err := f.Work()(ctx, org, row); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+type installationOf uuid.UUID
+
+func (i installationOf) InstallationOrganisation(context.Context) (uuid.UUID, error) {
+	return uuid.UUID(i), nil
+}
+
+// A sending domain that failed the nightly check reaches those who act on the installation organisation's email (the
+// Administrator), not the Owner; a sign-in shows in the centre and is never emailed there, since the sign-in alert has
+// emailed it, even to a person with a verified email. A title too long to keep is cut short, never refused.
+// req: FR-NTF-01
+// req: FR-NTF-02
+func TestSecurityAndEmailNoticesReachTheirPeople(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Notify sources Pte Ltd")
+	now := time.Date(2026, 10, 24, 4, 30, 0, 0, clock.Singapore)
+	owner := founder(t, store(t, "fyniq_api"), b.Org, 63, now)
+	admin := joined(t, b.Org, 64, []string{"administrator"}, now)
+	verified(t, b.Org, owner, "owner@example.com")
+
+	q := local.NewMemory()
+	worker := store(t, "fyniq_worker")
+	d := outbox.Dispatcher{Store: worker, Queue: q, Clock: clock.NewFrozen(now)}
+	results := []maildns.Result{{Domain: "mail.example.com", DMARC: "none"}, {Domain: "ok.example.com", DMARC: "reject", OK: true}}
+	if err := notify.DomainChecks(ctx, worker, installationOf(b.Org), d, results, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		return notify.SignedIn(ctx, outbox.Dispatcher{Store: store(t, "fyniq_api"), Queue: q, Clock: clock.NewFrozen(now)}, u, b.Org, owner, "google", now)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	fanQueued(t, b.Org, q, now)
+	if ns := mine(t, b.Org, admin); len(ns) != 1 || ns[0].Type != "email.domain_failed" || !strings.Contains(ns[0].Title, "mail.example.com") {
+		t.Fatalf("the Administrator's: %+v", ns)
+	}
+	ns := mine(t, b.Org, owner)
+	if len(ns) != 1 || ns[0].Type != "security.sign_in" || ns[0].Email != storage.EmailOff || ns[0].EmailMessageID != nil ||
+		ns[0].Title != "You signed in with google on 24 Oct 2026 at 04:30 Singapore time" {
+		t.Fatalf("the Owner's: %+v", ns)
+	}
+	if ev := emitted(t, b.Org, admin, "approval.decided", "Approved: "+strings.Repeat("a long reason ", 30), now); len([]rune(ev.Title)) != 300 ||
+		!strings.HasSuffix(ev.Title, "…") {
+		t.Fatalf("a title over 300 characters is kept as %d characters", len([]rune(ev.Title)))
 	}
 }

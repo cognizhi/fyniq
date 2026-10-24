@@ -7090,10 +7090,15 @@ components:
             - An approval waits for you
           type: string
         locked:
-          description: true for security notices, which are always on and emailed at once.
+          description: true for security notices, which are always on and go by email as email says, whatever the caller chooses.
           examples:
             - false
           type: boolean
+        note:
+          description: Why a locked type goes by email as it does, where that needs saying; absent otherwise.
+          examples:
+            - Every sign-in is emailed at once by the sign-in alert, so it is not emailed again here
+          type: string
         recommended:
           description: How it goes by email unless the caller chooses otherwise.
           enum:

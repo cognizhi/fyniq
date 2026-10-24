@@ -8410,10 +8410,15 @@ export interface components {
              */
             label: string;
             /**
-             * @description true for security notices, which are always on and emailed at once.
+             * @description true for security notices, which are always on and go by email as email says, whatever the caller chooses.
              * @example false
              */
             locked: boolean;
+            /**
+             * @description Why a locked type goes by email as it does, where that needs saying; absent otherwise.
+             * @example Every sign-in is emailed at once by the sign-in alert, so it is not emailed again here
+             */
+            note?: string;
             /**
              * @description How it goes by email unless the caller chooses otherwise.
              * @example immediate

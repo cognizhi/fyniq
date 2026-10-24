@@ -60,7 +60,8 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	if registerSignIn != nil {
 		var alert signin.Alert // a sign-in alert needs the database and the outbox
 		if err == nil {
-			alert = signin.EmailAlert(kit.Store, kit.Store, outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock})
+			out := outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}
+			alert = signin.Alerts(signin.EmailAlert(kit.Store, kit.Store, out), signin.NotifyAlert(kit.Store, kit.Store, out))
 		}
 		d.SignIn = registerSignIn(s, deps.Clock, sessions, alert)
 	}
@@ -86,7 +87,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	d.Outbox = &outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}
 	// The email providers' webhooks (FR-INT-21), each only with its secret: delivery events and the suppression list.
 	hooks := &mailhooks.Receiver{Store: kit.Store, Clock: deps.Clock, ResendSecret: kit.Mail.ResendWebhookSecret,
-		ZeptoMailKey: kit.Mail.ZeptoMailWebhookKey, MailpitSecret: kit.Mail.MailpitWebhook, Log: d.Log}
+		ZeptoMailKey: kit.Mail.ZeptoMailWebhookKey, MailpitSecret: kit.Mail.MailpitWebhook, Log: d.Log, Notify: d.Outbox}
 	if kit.Mail.CaptureDomain != "" { // mail for the email-in addresses (FR-INT-22)
 		hooks.Inbound = &mailhooks.Inbound{Domain: kit.Mail.CaptureDomain, Routes: kit.Store, Dispatcher: *d.Outbox}
 	}
