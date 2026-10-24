@@ -62,15 +62,27 @@ type InvoiceLineDraft struct {
 	Discount    string `json:"discount_percent,omitempty" pattern:"^(100(\\.0{1,2})?|[0-9]{1,2}(\\.[0-9]{1,2})?)$" doc:"A discount off the line, as a percentage with at most two decimals. The line's net is RND-LINE: quantity × unit price × (100 − discount) ÷ 100, rounded once to the currency's minor units, half away from zero." example:"10"`
 	AccountID   string `json:"account_id" format:"uuid" doc:"The revenue account the line earns." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"`
 	GSTCode     string `json:"gst_code" pattern:"^[A-Z]{2,4}$" doc:"The line's GST code for supplies, from the sg-gst pack in force at the invoice's date, such as SR (standard-rated), ZR (zero-rated), ES (exempt) or OS (out of scope). No GST is charged before the organisation is GST-registered." example:"SR"`
-	// Spreads (FR-GL-03); the monthly releases arrive with p1-sales task 1.5.
-	SpreadMonths int    `json:"spread_months,omitempty" minimum:"1" maximum:"120" doc:"Spread the line's revenue over this many months (FR-GL-03): issuing puts its net on 2400 Deferred revenue in the base currency, to be released one part a month (ALLOC-EVEN)." example:"12"`
-	SpreadFrom   string `json:"spread_from,omitempty" format:"date" doc:"The spread's first month, as any day of it: when the service starts. Left out, the invoice's month." example:"2026-10-01"`
+	// Spreads (FR-GL-03; rev 0.118).
+	SpreadMonths int    `json:"spread_months,omitempty" minimum:"1" maximum:"120" doc:"Spread the line's revenue over this many months (FR-GL-03): issuing puts its net on 2400 Deferred revenue in the base currency, and one part a month (ALLOC-EVEN) is released to the line's account by the scheduler, up to the organisation's today and never ahead (ENG-05)." example:"12"`
+	SpreadFrom   string `json:"spread_from,omitempty" format:"date" doc:"The spread's first month, as any day of it: when the service starts. Left out, the invoice's month. Months before the invoice's date release on its date." example:"2026-10-01"`
 }
 
 // InvoiceLine is one line of an invoice as the API shows it: as entered, with its net.
 type InvoiceLine struct {
 	InvoiceLineDraft
 	Net *Money `json:"net,omitempty" doc:"The line's net under RND-LINE, in the invoice's currency; absent while its quantity, price or discount cannot be one."`
+}
+
+// InvoiceRelease is one month's release of an invoice line's spread revenue (FR-GL-03, ENG-05).
+type InvoiceRelease struct {
+	Line    int    `json:"line" doc:"The invoice's line it releases, from 1." example:"1"`
+	Month   string `json:"month" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The month it releases." example:"2026-11"`
+	Part    int    `json:"part" doc:"Which month of the spread it is, from 1." example:"2"`
+	Of      int    `json:"of" doc:"How many months the line is spread over." example:"12"`
+	Date    string `json:"date" format:"date" doc:"The day it posts: the first of its month, or the invoice's date when that is later." example:"2026-11-01"`
+	Amount  Money  `json:"amount" doc:"What it moves from 2400 Deferred revenue to the line's account, in the base currency: its ALLOC-EVEN part of the line's net."`
+	Status  string `json:"status" enum:"posted,waiting,projected,reversed" doc:"posted; waiting: due by the organisation's today but not in the ledger yet (the hourly job posts it, or waits for its period to open); projected: in the future, or of a draft, and not in the ledger (ENG-05); reversed by a void or an edit of the invoice." example:"posted"`
+	EntryID string `json:"entry_id,omitempty" format:"uuid" doc:"Its entry, once posted." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e71"`
 }
 
 // InvoiceDraft is an invoice as entered: checked for its form when saved, and by the posting rules when it is issued.
@@ -140,6 +152,7 @@ type Invoice struct {
 	Receivable    *Money           `json:"receivable,omitempty" doc:"What it adds to accounts receivable in the base currency: as issued, or as issuing would post it; absent while it cannot be issued."`
 	Open          *Money           `json:"open,omitempty" doc:"An issued invoice: what is still to be received of it, in its currency: its total less what receipts and credits settle (FR-AR-18)."`
 	States        InvoiceStates    `json:"states" doc:"Its approval, ledger, delivery, settlement and due states."`
+	Releases      []InvoiceRelease `json:"releases" nullable:"false" doc:"getInvoice only: the monthly releases of its spread lines (FR-GL-03), by line and month, each with its state; the months still to come are projections, not in the ledger (ENG-05)."`
 	Checks        []InvoiceCheck   `json:"checks" nullable:"false" doc:"getInvoice only: what stops a draft being issued (✖)."`
 	LedgerImpact  []EntryLine      `json:"ledger_impact" nullable:"false" doc:"getInvoice only: the lines issuing it writes (a draft), or wrote (issued): debits positive."`
 	PreparedBy    *Person          `json:"prepared_by,omitempty" doc:"Who saved the current version."`
@@ -411,10 +424,24 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 	}
 	out := Invoice{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Reference: d.Reference,
 		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: invoiceLinesOut(d),
-		GST: []InvoiceGST{}, Checks: []InvoiceCheck{}, LedgerImpact: []EntryLine{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
+		GST: []InvoiceGST{}, Releases: []InvoiceRelease{}, Checks: []InvoiceCheck{}, LedgerImpact: []EntryLine{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
 		PostedAt: utc(doc.PostedAt)}
 	if d.Rate != nil {
 		out.FXRate = d.Rate.String()
+	}
+	if withChecks {
+		rs, err := journal.ReleasesOf(ctx, u, doc, v.today)
+		if err != nil {
+			return Invoice{}, err
+		}
+		for _, r := range rs {
+			x := InvoiceRelease{Line: r.Release.Line, Month: r.Release.Month.Format("2006-01"), Part: r.Release.Part, Of: r.Release.Of,
+				Date: dayText(r.Release.Date), Amount: moneyOut(r.Release.Amount), Status: r.Status}
+			if r.EntryID != uuid.Nil {
+				x.EntryID = r.EntryID.String()
+			}
+			out.Releases = append(out.Releases, x)
+		}
 	}
 	if d.CustomerID != uuid.Nil {
 		out.Customer = &InvoiceCustomer{ID: d.CustomerID.String()}
@@ -990,8 +1017,9 @@ func registerInvoices(a *API) {
 		OperationID: "getInvoice", Method: http.MethodGet, Path: "/v1/invoices/{invoice_id}", Tags: []string{"Sales"},
 		Summary: "Get an invoice",
 		Description: "Returns an invoice's current version with its ETag: its customer, lines with their nets, its GST by code and " +
-			"totals, its approval, ledger, delivery, settlement and due states, what stops a draft being issued (✖), the lines " +
-			"issuing it writes or wrote (ledger_impact), and the pending request to issue, void or edit it. Read-only; no side effects.",
+			"totals, its approval, ledger, delivery, settlement and due states, the monthly releases of its spread lines (FR-GL-03), " +
+			"what stops a draft being issued (✖), the lines issuing it writes or wrote (ledger_impact), and the pending request to " +
+			"issue, void or edit it. Read-only; no side effects.",
 	}, readCodes, func(ctx context.Context, in *InvoicePath) (*invoiceReadOutput, error) {
 		id, err := parseID("invoice_id", in.InvoiceID)
 		if err != nil {

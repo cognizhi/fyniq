@@ -336,3 +336,41 @@ func TestEvidenceOnAnInvoice(t *testing.T) {
 	billID, _ := e.createBill("20.00", "1.80")
 	e.problemIs(e.call(http.MethodGet, "/v1/invoices/"+billID+"/evidence", acc, nil), "listInvoiceEvidence", 404, invoice.CodeNotInvoice)
 }
+
+// FR-GL-03 through the API (rev 0.118): an invoice line spread over months shows its releases, all projected while the
+// invoice is a draft; once it is issued, those due by the organisation's today are in the ledger at once and the rest
+// stay projections (ENG-05); issuing posts the line's net to 2400 Deferred revenue.
+// req: FR-GL-03
+// req: ENG-05
+func TestSpreadInvoicesThroughTheAPI(t *testing.T) {
+	e := newEnv(t)
+	acc := e.as(authz.Accountant)
+	e.customer()
+	releases := func(r response) string {
+		var out []string
+		for _, x := range r.Body["releases"].([]any) {
+			m := x.(map[string]any)
+			out = append(out, m["month"].(string)+" "+m["date"].(string)+" "+m["amount"].(map[string]any)["amount"].(string)+" "+m["status"].(string))
+		}
+		return strings.Join(out, "; ")
+	}
+	d := e.invoiceDraft("1", "1200.00")
+	d["lines"].([]map[string]any)[0]["spread_months"], d["lines"].([]map[string]any)[0]["spread_from"] = 3, "2026-09-20"
+	r := e.call(http.MethodPost, "/v1/invoices", acc, d)
+	if r.Status != 201 || !strings.Contains(r.Raw, `"spread_months":3,"spread_from":"2026-09-20"`) {
+		t.Fatalf("saving a spread invoice: %d %s", r.Status, r.Raw)
+	}
+	id, tag := r.str("id"), r.Header.Get("ETag")
+	g := e.call(http.MethodGet, "/v1/invoices/"+id, acc, nil)
+	if got := releases(g); got != "2026-09 2026-10-14 400.00 projected; 2026-10 2026-10-14 400.00 projected; 2026-11 2026-11-01 400.00 projected" {
+		t.Fatalf("the draft's releases: %s\n%s", got, g.Raw)
+	}
+	if p := e.call(http.MethodPost, "/v1/invoices/"+id+"/issue", acc, nil, "If-Match", tag); p.Status != 200 {
+		t.Fatalf("issuing: %d %s", p.Status, p.Raw)
+	}
+	g = e.call(http.MethodGet, "/v1/invoices/"+id, e.as(authz.Auditor), nil)
+	if got := releases(g); got != "2026-09 2026-10-14 400.00 posted; 2026-10 2026-10-14 400.00 posted; 2026-11 2026-11-01 400.00 projected" ||
+		!strings.Contains(g.Raw, `"entry_id":"`) {
+		t.Fatalf("the issued invoice's releases: %s\n%s", got, g.Raw)
+	}
+}

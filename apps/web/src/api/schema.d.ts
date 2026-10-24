@@ -1365,7 +1365,7 @@ export interface paths {
         };
         /**
          * Get an invoice
-         * @description Returns an invoice's current version with its ETag: its customer, lines with their nets, its GST by code and totals, its approval, ledger, delivery, settlement and due states, what stops a draft being issued (✖), the lines issuing it writes or wrote (ledger_impact), and the pending request to issue, void or edit it. Read-only; no side effects.
+         * @description Returns an invoice's current version with its ETag: its customer, lines with their nets, its GST by code and totals, its approval, ledger, delivery, settlement and due states, the monthly releases of its spread lines (FR-GL-03), what stops a draft being issued (✖), the lines issuing it writes or wrote (ledger_impact), and the pending request to issue, void or edit it. Read-only; no side effects.
          */
         get: operations["getInvoice"];
         /**
@@ -8179,6 +8179,8 @@ export interface components {
              * @example PO-88213
              */
             reference?: string;
+            /** @description getInvoice only: the monthly releases of its spread lines (FR-GL-03), by line and month, each with its state; the months still to come are projections, not in the ledger (ENG-05). */
+            releases: components["schemas"]["InvoiceRelease"][];
             /** @description Its approval, ledger, delivery, settlement and due states. */
             states: components["schemas"]["InvoiceStates"];
             /**
@@ -8493,13 +8495,13 @@ export interface components {
             quantity: string;
             /**
              * Format: date
-             * @description The spread's first month, as any day of it: when the service starts. Left out, the invoice's month.
+             * @description The spread's first month, as any day of it: when the service starts. Left out, the invoice's month. Months before the invoice's date release on its date.
              * @example 2026-10-01
              */
             spread_from?: string;
             /**
              * Format: int64
-             * @description Spread the line's revenue over this many months (FR-GL-03): issuing puts its net on 2400 Deferred revenue in the base currency, to be released one part a month (ALLOC-EVEN).
+             * @description Spread the line's revenue over this many months (FR-GL-03): issuing puts its net on 2400 Deferred revenue in the base currency, and one part a month (ALLOC-EVEN) is released to the line's account by the scheduler, up to the organisation's today and never ahead (ENG-05).
              * @example 12
              */
             spread_months?: number;
@@ -8544,13 +8546,13 @@ export interface components {
             quantity: string;
             /**
              * Format: date
-             * @description The spread's first month, as any day of it: when the service starts. Left out, the invoice's month.
+             * @description The spread's first month, as any day of it: when the service starts. Left out, the invoice's month. Months before the invoice's date release on its date.
              * @example 2026-10-01
              */
             spread_from?: string;
             /**
              * Format: int64
-             * @description Spread the line's revenue over this many months (FR-GL-03): issuing puts its net on 2400 Deferred revenue in the base currency, to be released one part a month (ALLOC-EVEN).
+             * @description Spread the line's revenue over this many months (FR-GL-03): issuing puts its net on 2400 Deferred revenue in the base currency, and one part a month (ALLOC-EVEN) is released to the line's account by the scheduler, up to the organisation's today and never ahead (ENG-05).
              * @example 12
              */
             spread_months?: number;
@@ -8573,6 +8575,51 @@ export interface components {
             entry: components["schemas"]["Entry"];
             /** @description The invoice after the command. */
             invoice: components["schemas"]["Invoice"];
+        };
+        InvoiceRelease: {
+            /** @description What it moves from 2400 Deferred revenue to the line's account, in the base currency: its ALLOC-EVEN part of the line's net. */
+            amount: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description The day it posts: the first of its month, or the invoice's date when that is later.
+             * @example 2026-11-01
+             */
+            date: string;
+            /**
+             * Format: uuid
+             * @description Its entry, once posted.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e71
+             */
+            entry_id?: string;
+            /**
+             * Format: int64
+             * @description The invoice's line it releases, from 1.
+             * @example 1
+             */
+            line: number;
+            /**
+             * @description The month it releases.
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * Format: int64
+             * @description How many months the line is spread over.
+             * @example 12
+             */
+            of: number;
+            /**
+             * Format: int64
+             * @description Which month of the spread it is, from 1.
+             * @example 2
+             */
+            part: number;
+            /**
+             * @description posted; waiting: due by the organisation's today but not in the ledger yet (the hourly job posts it, or waits for its period to open); projected: in the future, or of a draft, and not in the ledger (ENG-05); reversed by a void or an edit of the invoice.
+             * @example posted
+             * @enum {string}
+             */
+            status: "posted" | "waiting" | "projected" | "reversed";
         };
         InvoiceStates: {
             /**

@@ -140,6 +140,13 @@
       ],
       "type": "string"
     },
+    "releases": {
+      "description": "getInvoice only: the monthly releases of its spread lines (FR-GL-03), by line and month, each with its state; the months still to come are projections, not in the ledger (ENG-05).",
+      "items": {
+        "$ref": "InvoiceRelease.schema.json"
+      },
+      "type": "array"
+    },
     "states": {
       "$ref": "InvoiceStates.schema.json",
       "description": "Its approval, ledger, delivery, settlement and due states."
@@ -178,6 +185,7 @@
     "gst_charged",
     "gst_subtotals",
     "states",
+    "releases",
     "checks",
     "ledger_impact"
   ],

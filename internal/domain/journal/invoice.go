@@ -11,6 +11,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -22,6 +23,22 @@ type Invoices struct {
 	Store storage.Store
 	// AfterPosting runs inside the unit of work after an entry (or its reversal) is written and the document updated.
 	AfterPosting func(ctx context.Context, uow storage.UnitOfWork, doc storage.Document, entry storage.Entry) error
+	// Clock, when set, makes issuing or editing an invoice post at once the releases of its spread already due by the
+	// organisation's today (FR-GL-03), so its revenue is never held on 2400 until the hourly job; nil leaves them to it.
+	Clock ports.Clock
+}
+
+// releaseNow posts a just-issued invoice's releases due by the organisation's today, after its unit of work commits.
+// What it cannot post the hourly job invoices.releases posts, so it never fails the issue.
+func (s Invoices) releaseNow(ctx context.Context, org, id uuid.UUID) {
+	if s.Clock == nil {
+		return
+	}
+	day, err := todayIn(ctx, s.Store, org, s.Clock.Now())
+	if err != nil {
+		return
+	}
+	_, _ = Releases{Store: s.Store}.ReleaseInvoice(ctx, org, id, day)
 }
 
 // CheckedInvoice is an invoice version as issuing it would post it, written nowhere: what the rules read, the entry,
@@ -190,6 +207,9 @@ func (s Invoices) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, e
 		doc.Status = storage.DocumentPosted
 		return s.after(ctx, u, doc, out)
 	})
+	if err == nil {
+		s.releaseNow(ctx, org, id)
+	}
 	return out, err
 }
 
@@ -232,6 +252,11 @@ func (s Invoices) Void(ctx context.Context, org, id uuid.UUID, date time.Time, r
 			return err
 		}
 		if out, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+			return err
+		}
+		// Its spread's releases go back on the void's date, or on their own when later (FR-GL-03): 2400 and the line's
+		// account are left as if nothing had posted.
+		if err := reverseReleases(ctx, u, doc, settings, func(e ledger.Entry) time.Time { return later(reversal.PostingDate, e.PostingDate) }, reason); err != nil {
 			return err
 		}
 		if err := u.Documents().SetStatus(ctx, id, storage.DocumentReversed); err != nil {
@@ -296,6 +321,10 @@ func (s Invoices) Edit(ctx context.Context, org, id uuid.UUID, d invoice.Draft, 
 		if err != nil {
 			return err
 		}
+		// The releases of the version it had go back on their own dates; the new version's are posted after (FR-GL-03).
+		if err := reverseReleases(ctx, u, doc, settings, func(e ledger.Entry) time.Time { return e.PostingDate }, reason); err != nil {
+			return err
+		}
 		edited, err := u.Documents().Edit(ctx, id, b, preparer)
 		if err != nil {
 			return err
@@ -312,6 +341,9 @@ func (s Invoices) Edit(ctx context.Context, org, id uuid.UUID, d invoice.Draft, 
 		}
 		return s.after(ctx, u, edited, out.Entry)
 	})
+	if err == nil {
+		s.releaseNow(ctx, org, id)
+	}
 	return out, err
 }
 

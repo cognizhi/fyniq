@@ -145,10 +145,10 @@ type Documents interface {
 	// DueReversals lists the posted journals whose automatic reversal is dated on or before day (YYYY-MM-DD), earliest
 	// first, at most limit (FR-GL-02).
 	DueReversals(ctx context.Context, day string, limit int) ([]uuid.UUID, error)
-	// SpreadBills lists, by ID after the cursor afterID, at most limit posted bills whose current version spreads a
-	// line's cost over months that run past from (YYYY-MM-DD), or that are dated on or after it: the bills whose
-	// releases a period from that day on may still take (FR-GL-03, ENG-05).
-	SpreadBills(ctx context.Context, from string, afterID *uuid.UUID, limit int) ([]uuid.UUID, error)
+	// Spread lists, by ID after the cursor afterID, at most limit posted documents of type t (a bill or an invoice) whose
+	// current version spreads a line over months that run past from (YYYY-MM-DD), or that are dated on or after it: the
+	// documents whose releases a period from that day on may still take (FR-GL-03, ENG-05).
+	Spread(ctx context.Context, t DocumentType, from string, afterID *uuid.UUID, limit int) ([]uuid.UUID, error)
 	// BillsOfOrder lists the bills, drafts and posted, not reversed, whose current version has a line made from the
 	// purchase order (FR-AP-01), by ID.
 	BillsOfOrder(ctx context.Context, orderID uuid.UUID) ([]Document, error)
@@ -544,7 +544,7 @@ const (
 	CodeFXRate         = "STORAGE-FX-01"         // a rate of the base currency, a monthly rate not on a month's first day, a rate changed, or a feed rate changed
 	CodeFXRevaluation  = "STORAGE-FX-02"         // the scheduler saves a revaluation only of an open period, as that period's
 	CodeAllocation     = "STORAGE-ALLOCATION-01" // an allocation settles a bill from a bill payment, never changes, and is reversed exactly
-	CodeBillRelease    = "STORAGE-RELEASE-01"    // a release releases the spread of a posted bill's current version
+	CodeBillRelease    = "STORAGE-RELEASE-01"    // a release releases the spread of a posted bill's or invoice's current version
 	CodePurchaseOrder  = "STORAGE-PO-01"         // a purchase order posts nothing: no entry names one
 	CodeWithholding    = "STORAGE-WHT-01"        // a withholding decision never changes: a later one replaces it
 	CodeBillPlan       = "STORAGE-PLAN-01"       // a bill's payment plan never changes: a later one replaces it

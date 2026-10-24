@@ -29,8 +29,14 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   `/v1/invoices`, issuing as `issueInvoice` with `issue-approval`; issuing notifies those who approve invoices. Tests:
   `TestInvoicesThroughTheAPI`, `TestInvoiceDraftsAndGSTThroughTheAPI`, `TestEvidenceOnAnInvoice`, the matrix rows,
   `TestEverySequenceIsInTheContract`)
-- [ ] 1.5 Spreads: a spread line to 2400 and its monthly releases by the scheduler (`ALLOC-EVEN`), reversed with a
+- [x] 1.5 Spreads: a spread line to 2400 and its monthly releases by the scheduler (`ALLOC-EVEN`), reversed with a
   void or edit. Tests `// req: ledger/posting-rules Spreading an invoice or bill`
+  (24 Oct 2026, PRD-001 rev 0.118: `ledger.Release` shared by bills and invoices, `ledger.InvoiceReleases` and
+  `invoice_release@1` with its replay golden; `journal.Releases` releases invoices as `scheduler:invoices.releases` by
+  the hourly job `invoices.releases` and at issue and edit, reversed with a void or an edit; migration 000111; getInvoice
+  lists the releases. Tests: `TestInvoiceReleasesAreTheSpreadSplitByMonth`, `TestPostInvoiceRelease`,
+  `TestInvoiceReleasesProperties`, `TestEveryInvoiceReleaseRuleVersionReplaysItsGoldenEntries`,
+  `TestTheSchedulerReleasesASpreadInvoice`, `TestAttackAReleaseIsNotTheInvoicesEntry`, `TestSpreadInvoicesThroughTheAPI`)
 - [ ] 1.6 The AR sub-ledger equal to 1100 (INV-07), shown at the close; AR ageing by customer and currency with the
   unrealised FX exposure. Tests `// req: INV-07`, `// req: FR-AR-10`
 

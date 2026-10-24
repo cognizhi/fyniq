@@ -170,7 +170,7 @@ func New(mux humago.Mux, d Deps) *API {
 	}
 	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store, Clock: d.Clock},
 		payments: journal.BillPayments{Store: d.Store}, applications: journal.CreditApplications{Store: d.Store},
-		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store},
+		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
 		closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)

@@ -137,6 +137,12 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** a spread bill is voided or edited
 - **THEN** a void reverses its posted releases on the void's date, or a release's own when later, and an edit reverses them on their own dates and releases the new version's
 
+#### Scenario: Built for invoices: a line spread over months (rev 0.118)
+- **GIVEN** an invoice line on a revenue account spread over 1 to 120 months from the month its service starts (by default the invoice's)
+- **WHEN** the invoice is issued
+- **THEN** 2400 Deferred revenue takes the line's net in the base currency, and each month's ALLOC-EVEN part is released from 2400 to the line's account (`invoice_release@1`), dated as a bill's releases are
+- **AND** a void or an edit reverses its releases as a bill's, and the database refuses a release that names no issued invoice at its current version (FY172)
+
 ### Requirement: FR-GL-04 FX revaluation
 The system SHALL revalue the open foreign-currency monetary items at month end at the period-end rate, posting the unrealised gain or loss as base-only lines (INV-05) with automatic reversal on day 1 of the next period.
 
