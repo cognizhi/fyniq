@@ -71,14 +71,17 @@ type API struct {
 	invoices     journal.Invoices
 	receipts     journal.CustomerReceipts
 	writeOffs    journal.WriteOffs
-	// customerApplications applies credits with customers to their invoices (FR-AR-04).
-	customerApplications journal.CustomerCreditApplications
 	payments     journal.BillPayments
 	applications journal.CreditApplications
 	refunds      journal.SupplierRefunds
 	orders       journal.PurchaseOrders
 	closing      closing.Service
 	passkeys     *passkey.RelyingParty // nil without an origin
+
+	// customerApplications applies credits with customers to their invoices, and customerRefunds records money paid back
+	// to customers against their credits (FR-AR-04).
+	customerApplications journal.CustomerCreditApplications
+	customerRefunds      journal.CustomerRefunds
 }
 
 func init() {
@@ -176,7 +179,7 @@ func New(mux humago.Mux, d Deps) *API {
 		payments: journal.BillPayments{Store: d.Store}, applications: journal.CreditApplications{Store: d.Store},
 		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
 		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store},
-		customerApplications: journal.CustomerCreditApplications{Store: d.Store},
+		customerApplications: journal.CustomerCreditApplications{Store: d.Store}, customerRefunds: journal.CustomerRefunds{Store: d.Store},
 		closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
@@ -195,6 +198,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.receipts.AfterPosting = a.afterPosting
 	a.writeOffs.AfterPosting = a.afterPosting
 	a.customerApplications.AfterPosting = a.afterPosting
+	a.customerRefunds.AfterPosting = a.afterPosting
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(limitUploads{mux}, cfg)
@@ -251,6 +255,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerCustomerReceipts(a)
 	registerWriteOffs(a)
 	registerCustomerCreditApplications(a)
+	registerCustomerRefunds(a)
 	registerPurchaseOrders(a)
 	registerWithholding(a)
 	registerBillPlans(a)

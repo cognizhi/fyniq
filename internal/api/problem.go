@@ -495,6 +495,8 @@ var codeFacts = map[string]struct {
 	customercredit.CodeVoidDate:         {422, "The void is dated before the application"},
 	customercredit.CodeApplied:          {409, "The receipt's unapplied amount is applied to invoices"},
 	CodeCustomerApplicationVoidApproval: {409, "Voiding needs a second person"},
+	customercredit.CodeNotRefund:        {404, "Not a customer refund"},
+	CodeCustomerRefundVoidApproval:      {409, "Voiding needs a second person"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).

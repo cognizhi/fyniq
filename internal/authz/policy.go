@@ -473,6 +473,12 @@ var (
 	ApplyCustomerCredit                  = Policy{Operation: "applyCustomerCredit", Capability: Invoices, Need: Post}
 	VoidCustomerCreditApplication        = Policy{Operation: "voidCustomerCreditApplication", Capability: Invoices, Need: Post}
 	RequestCustomerCreditApplicationVoid = Policy{Operation: "requestCustomerCreditApplicationVoid", Capability: Invoices, Need: Post}
+	// Refunds to customers (FR-AR-04, FR-AR-18): recording one posts (P on "Invoices, credit notes"), as recording a refund
+	// from a supplier does; voiding one is FM-1's void of a posted document.
+	GetCustomerRefund         = Policy{Operation: "getCustomerRefund", Capability: Invoices, Need: View}
+	RecordCustomerRefund      = Policy{Operation: "recordCustomerRefund", Capability: Invoices, Need: Post}
+	VoidCustomerRefund        = Policy{Operation: "voidCustomerRefund", Capability: Invoices, Need: Post}
+	RequestCustomerRefundVoid = Policy{Operation: "requestCustomerRefundVoid", Capability: Invoices, Need: Post}
 	// Write-offs of invoices (FR-AR-17): read under V, drafted under C, and posted only on another person's approval
 	// (FR-APR-01; SOD-9), asked for under P, as issuing is; voiding one is FM-1's void of a posted document.
 	ListWriteOffs       = Policy{Operation: "listWriteOffs", Capability: Invoices, Need: View}
@@ -716,6 +722,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListCustomerReceipts, GetCustomerReceipt, RecordCustomerReceipt, VoidCustomerReceipt, RequestCustomerReceiptVoid,
 	ListWriteOffs, GetWriteOff, CreateWriteOff, ReplaceWriteOff, RequestWriteOffPost, VoidWriteOff, RequestWriteOffVoid,
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
+	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,
