@@ -22,6 +22,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
 	"github.com/cognizhi/fyniq/internal/domain/credits"
+	"github.com/cognizhi/fyniq/internal/domain/customercredit"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
@@ -483,6 +484,17 @@ var codeFacts = map[string]struct {
 	evidence.CodeImage:            {422, "The picture cannot be read"},
 	evidence.CodeMacro:            {422, "Office files with macros are refused"},
 	evidence.CodeArchive:          {422, "The office file's archive is not safe to open"},
+
+	// Customer credits applied to invoices (FR-AR-04).
+	customercredit.CodeNotApplication:   {404, "Not a customer credit application"},
+	customercredit.CodeBadDraft:         {422, "The saved application cannot be read"},
+	customercredit.CodeCredit:           {422, "Not an issued credit note or a receipt with an amount unapplied"},
+	customercredit.CodeInvoice:          {422, "Not an issued invoice of the credit's customer in its currency"},
+	customercredit.CodeTooMuch:          {422, "More than the invoice has open or the credit has left"},
+	customercredit.CodeNotPosted:        {409, "The application is not posted"},
+	customercredit.CodeVoidDate:         {422, "The void is dated before the application"},
+	customercredit.CodeApplied:          {409, "The receipt's unapplied amount is applied to invoices"},
+	CodeCustomerApplicationVoidApproval: {409, "Voiding needs a second person"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).

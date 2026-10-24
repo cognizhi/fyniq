@@ -32,6 +32,8 @@ var kinds = map[storage.DocumentType]struct{ name, object, path string }{
 	storage.DocumentCreditNote:        {"credit note", approval.ObjectInvoice, ""},
 	storage.DocumentCustomerReceipt:   {"receipt", approval.ObjectReceipt, ""}, // nor the receipts'
 	storage.DocumentWriteOff:          {"write-off", approval.ObjectWriteOff, ""},
+
+	storage.DocumentCustomerCreditApplication: {"credit applied to an invoice", approval.ObjectCustomerApplication, ""},
 }
 
 // Posted tells those who approve postings of doc's kind (A on its row) that actor, named name, posted it, or voided or

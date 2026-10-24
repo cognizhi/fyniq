@@ -86,6 +86,14 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   000119. Tests: `TestPostCreditNoteReversesAnInvoicesLegs`, `TestACreditNoteIsAnInvoiceNegated`,
   `TestEveryCreditNoteRuleVersionReplaysItsGoldenEntries`, `TestCreditNotesPostThroughThePostingService`,
   `TestCreditNotesThroughTheAPI`. Still to come: applying customer credits to invoices, and customer refunds.)
+  (In part, 24 Oct 2026, PRD-001 rev 0.124: applying customer credits (credit notes and receipts' unapplied amounts)
+  to invoices: `internal/domain/customercredit`, `customer_credit_application@1` with its replay golden,
+  `journal.CustomerCreditApplications` (apply, void), migrations 000120 and 000121, four operations under
+  `/v1/customer-credit-applications` with the approval object `customer_credit_application`. Tests:
+  `TestPostCustomerCreditApplication`, `TestPostCustomerCreditApplicationRefuses`,
+  `TestPostCustomerCreditApplicationProperties`, `TestEveryCustomerCreditApplicationRuleVersionReplaysItsGoldenEntries`,
+  `TestCustomerCreditsApplyToInvoices`, `TestCustomerCreditsThroughTheAPI`, the matrix rows. Still to come: customer
+  refunds.)
 - [ ] 3.2 Deposits and retainers to 2410 (role `customer-deposits`), applied to invoices; security deposits without
   GST; a part-payment deposit's GST when GST-registered. Tests `// req: FR-AR-09`,
   `// req: ledger/posting-rules Customer refunds and deposits`

@@ -67,6 +67,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/credit-applications/{application_id}` (getCreditApplication): Get a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void` (voidCreditApplication): Void a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void-approval` (requestCreditApplicationVoid): Ask for approval to void a credit applied to a bill
+- `POST /v1/customer-credit-applications` (applyCustomerCredit): Apply a customer credit to an invoice
+- `GET /v1/customer-credit-applications/{application_id}` (getCustomerCreditApplication): Get a credit applied to an invoice
+- `POST /v1/customer-credit-applications/{application_id}/void` (voidCustomerCreditApplication): Void a credit applied to an invoice
+- `POST /v1/customer-credit-applications/{application_id}/void-approval` (requestCustomerCreditApplicationVoid): Ask for approval to void a credit applied to an invoice
 - `GET /v1/customer-receipts` (listCustomerReceipts): List the customer receipts
 - `POST /v1/customer-receipts` (recordCustomerReceipt): Record a customer receipt
 - `GET /v1/customer-receipts/{receipt_id}` (getCustomerReceipt): Get a customer receipt

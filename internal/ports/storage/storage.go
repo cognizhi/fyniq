@@ -404,6 +404,9 @@ const (
 	// DocumentCreditNote is a credit note to a customer (FR-AR-04; p1-sales): entered as an invoice is, linked to the
 	// invoice it credits or standalone, and posted as an invoice's reverse.
 	DocumentCreditNote DocumentType = "credit_note"
+	// DocumentCustomerCreditApplication applies a credit with a customer (a credit note, or what a receipt left unapplied)
+	// to one of the customer's invoices (FR-AR-04, FR-AR-18; p1-sales): it is posted when made, and voided by a reversal.
+	DocumentCustomerCreditApplication DocumentType = "customer_credit_application" // #nosec G101 -- a document type's name, not a credential
 	// DocumentCustomerReceipt is money a customer paid, recorded by hand until bank import matches it (FR-AR-18; the
 	// owner's decision of 24 Oct 2026).
 	DocumentCustomerReceipt DocumentType = "customer_receipt"

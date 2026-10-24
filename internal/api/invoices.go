@@ -121,7 +121,7 @@ type InvoiceStates struct {
 	Approval   string `json:"approval" enum:"draft,awaiting_approval,approved,rejected" doc:"draft until it is issued or asked for; awaiting_approval while a request to issue it waits; approved once issued; rejected when the latest request was rejected and it is still a draft." example:"draft"`
 	Ledger     string `json:"ledger" enum:"not_posted,posted,voided" doc:"not_posted, posted (issued), or voided by a reversal." example:"not_posted"`
 	Delivery   string `json:"delivery" enum:"not_sent,sent,delivered,viewed,bounced" doc:"not_sent until sending arrives (FR-AR-06): then sent, delivered, viewed (the customer first opened its secure link) or bounced." example:"not_sent"`
-	Settlement string `json:"settlement" enum:"open,part_paid,paid,written_off" doc:"What is settled of it, from the receipts, credits and write-offs applied to it net of their voids (FR-AR-18): open, part_paid, paid, or written_off when it is settled and a write-off settles part of it (FR-AR-17)." example:"open"`
+	Settlement string `json:"settlement" enum:"open,part_paid,paid,written_off,part_applied,applied" doc:"What is settled of it, from the receipts, credits and write-offs applied to it net of their voids (FR-AR-18): open, part_paid, paid, or written_off when it is settled and a write-off settles part of it (FR-AR-17). A credit note: open, part_applied or applied, by what is applied to invoices or refunded of it (FR-AR-04)." example:"open"`
 	Due        string `json:"due" enum:"not_due,overdue" doc:"overdue once its due date has passed while it is issued and not paid in full; not_due otherwise." example:"not_due"`
 }
 
@@ -662,11 +662,16 @@ func invoiceSettled(ctx context.Context, u storage.UnitOfWork, i *Invoice, total
 	}
 	o := moneyOut(open)
 	i.Open = &o
+	credit := i.Kind == "credit_note"
 	switch {
 	case open.Sign() <= 0 && writtenOff:
 		i.States.Settlement = "written_off"
+	case open.Sign() <= 0 && credit:
+		i.States.Settlement = "applied"
 	case open.Sign() <= 0:
 		i.States.Settlement = "paid"
+	case !open.Equal(total) && credit:
+		i.States.Settlement = "part_applied"
 	case !open.Equal(total):
 		i.States.Settlement = "part_paid"
 	}
@@ -726,7 +731,7 @@ func (a *API) logInvoiceSelfApproval(ctx context.Context, u storage.UnitOfWork, 
 	_, err = u.ReviewLog().Log(ctx, storage.NewReviewLogEntry{Kind: storage.ReviewSelfApproved, ObjectType: approval.ObjectInvoice, ObjectKey: id.String(),
 		Summary: fmt.Sprintf("Issued %s %s of %s %s alone, at or below the self-approval threshold", invoice.Kind(doc), cmpText(doc.Number, "(a draft)"), total,
 			total.Currency().Code),
-		Actor:   actor, LoggedAt: a.deps.Clock.Now()})
+		Actor: actor, LoggedAt: a.deps.Clock.Now()})
 	return err
 }
 
