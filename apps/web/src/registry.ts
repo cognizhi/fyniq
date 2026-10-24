@@ -199,6 +199,8 @@ export const actions = [
   { kind: "action", id: "invoice.spread", mode: "expert", help: "invoice.spread", guide: "sales.invoices#spread-revenue-over-months" },
   { kind: "action", id: "invoice.discount", mode: "expert", help: "invoice.discount", guide: "sales.invoices#enter-an-invoice" },
   { kind: "action", id: "credit-note.credits", mode: "basic", help: "credit-note.credits", guide: "sales.invoices#credit-notes" },
+  { kind: "action", id: "invoice.record-payment", mode: "basic", help: "invoice.record-payment", guide: "sales.invoices#record-a-payment" },
+  { kind: "action", id: "invoice.settle-in-full", mode: "basic", help: "invoice.settle-in-full", guide: "sales.invoices#record-a-payment" },
   // Quotes and sales orders (FR-AR-01, FR-AR-02): Basic.
   { kind: "action", id: "quote.save", mode: "basic", help: "quote.save", guide: "sales.quotes#prepare-a-quote" },
   { kind: "action", id: "quote.send", mode: "basic", help: "quote.send", guide: "sales.quotes#send-a-quote" },

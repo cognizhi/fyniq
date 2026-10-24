@@ -63,6 +63,20 @@ with its delivery. Sending again sends the same version again.
 A tax invoice that lacks a particular IRAS requires, such as the customer's address, is not sent:
 add the detail, then send it again.
 
+## Record a payment
+
+Until bank import matches payments by itself, record each payment a customer makes by hand: select
+**Record a payment** on an issued invoice, enter the **Date received**, the account it was **Paid into**
+and the **Amount received**. It posts at once, and the invoice shows **Part paid** or **Paid**.
+
+- A customer who paid more than is open: the rest stays as their credit, never as income, to apply to
+  another invoice or refund.
+- A customer who paid a little less, such as after a bank charge: tick **Settle the invoice in full**.
+  What is left clears as a settlement difference when it is within the organisation's settlement
+  tolerance, S$1.00 by default; a larger shortfall stays open, or is written off.
+- An invoice in another currency paid into an account in that currency takes the rate on the bank's
+  advice, or the day's rate; paid into an SGD account, enter what the account received in SGD.
+
 ## Invoices above the self-approval threshold
 
 An invoice whose total is above the self-approval threshold is not issued by the person issuing it.
@@ -112,6 +126,8 @@ again; once it is issued its files are kept, and never deleted, for as long as t
 | A line's quantity, price or discount cannot be one (INVOICE-09) | Enter a quantity and a price with up to 6 decimals, and a discount from 0 to 100 |
 | The invoice needs another person's approval (INVOICE-10) | Select **Ask for approval** |
 | Receipts or credits settle the invoice (INVOICE-13) | Void its receipts and credit applications first, then void or edit it |
+| More than the invoice has open (RECEIPT-05) | Record at most what is open; the rest is kept as the customer's credit |
+| What is left is above the settlement tolerance (RECEIPT-11) | Leave the invoice open, or write the rest off |
 | The credit note cannot credit that invoice (INVOICE-15) | Choose an issued invoice of the same customer and currency, for at least the credit |
 | The customer has no billing email (SALESDOC-04) | Add the customer's billing email, or give the address to send it to |
 | The tax invoice lacks a particular IRAS requires (SALESDOC-05) | Add the missing detail in Settings › Organisation or on the customer, then send it again |

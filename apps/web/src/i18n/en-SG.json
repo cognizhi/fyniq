@@ -799,6 +799,14 @@
     "sales.pipeline": {
       "label": "Pipeline",
       "tooltip": "What the open quotes and sales orders come to in the base currency: those sent or accepted and still valid."
+    },
+    "invoice.record-payment": {
+      "label": "Record a payment",
+      "tooltip": "Record money the customer has already paid into the bank: it posts at once, and what they owe goes down."
+    },
+    "invoice.settle-in-full": {
+      "label": "Settle the invoice in full",
+      "tooltip": "Clear what is left as a settlement difference, within the organisation's settlement tolerance (S$1.00 by default); a larger shortfall stays open, or is written off."
     }
   }
 }

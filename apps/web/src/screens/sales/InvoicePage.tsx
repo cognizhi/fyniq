@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate, useParams } from "@tanstack/react-router";
-import { Mail, Pencil, Save, Send, Undo2, UserCheck, X } from "lucide-react";
+import { Banknote, Mail, Pencil, Save, Send, Undo2, UserCheck, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -21,6 +21,7 @@ import { who } from "../accounting/Journals";
 import { InvoiceLines, lineKey, newLine, type Errors, type Line } from "./InvoiceLines";
 import { issuers, preparers, StateChips, total, type Invoice } from "./Invoices";
 import { Checks, EmailDialog, Sends, Totals } from "./parts";
+import { RecordReceipt } from "./Receipts";
 
 type Draft = components["schemas"]["InvoiceDraft"];
 type EntryLine = components["schemas"]["EntryLine"];
@@ -331,6 +332,7 @@ export function InvoicePage() {
   const [status, setStatus] = useState("");
   const [voiding, setVoiding] = useState(false);
   const [emailing, setEmailing] = useState(false);
+  const [receiving, setReceiving] = useState(false);
 
   const editable = isNew || (invoice?.status === "draft" && mayPrepare) || editing;
   const f: Form | null =
@@ -451,6 +453,9 @@ export function InvoicePage() {
   const needsApproval = problem?.code === overThreshold && invoice?.status === "draft";
   // A document receipts or credits settle is voided or edited only once they are voided (INVOICE-13).
   const settled = Boolean(invoice?.open && invoice.total && invoice.open.amount !== invoice.total.amount);
+  // An issued invoice with something still open is paid by recording the receipt (FR-AR-18); the server refuses more than
+  // is open of it unless the rest is the customer's credit.
+  const open = invoice?.status === "posted" && !credit && invoice.open && !invoice.open.amount.startsWith("-") && !/^0(\.0*)?$/.test(invoice.open.amount) ? invoice.open : undefined;
   const err = (k: string) =>
     errors[k] ? (
       <span className="fy-error" id={`${id}-${k}-error`}>
@@ -695,8 +700,14 @@ export function InvoicePage() {
           )}
           {invoice?.status === "posted" && mayIssue && !editing && (
             <>
+              {open && (
+                <Button variant="primary" type="button" onClick={() => setReceiving(true)} title={h("invoice.record-payment").tooltip}>
+                  <Icon of={Banknote} />
+                  {h("invoice.record-payment").label}…
+                </Button>
+              )}
               {!credit && (
-                <Button variant="primary" type="button" onClick={() => setEmailing(true)} title={h("invoice.email").tooltip}>
+                <Button variant={open ? "secondary" : "primary"} type="button" onClick={() => setEmailing(true)} title={h("invoice.email").tooltip}>
                   <Icon of={Mail} />
                   {h("invoice.email").label}…
                 </Button>
@@ -756,6 +767,19 @@ export function InvoicePage() {
           onClose={() => setEmailing(false)}
           onDone={(message) => {
             setEmailing(false);
+            void refresh().then(() => setStatus(message));
+          }}
+        />
+      )}
+      {invoice && receiving && (
+        <RecordReceipt
+          open={receiving}
+          invoice={invoice}
+          base={base}
+          accounts={accounts.data ?? []}
+          onClose={() => setReceiving(false)}
+          onDone={(message) => {
+            setReceiving(false);
             void refresh().then(() => setStatus(message));
           }}
         />

@@ -216,8 +216,12 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   (In part, 25 Oct 2026: quotes-list. **Sales › Quotes and orders**: the list of quotes or sales orders with their
   status and email, the pipeline, and the quote page: a draft saved and sent, emailed, the customer's answer
   recorded, cancelled with a reason, and an accepted one made into a draft invoice; its invoicing line by line.
-  `docs/user-guide/quotes.md` and `kb/pages/task/sales-quotes.md`. Tests: `src/screens/sales/quotes.test.tsx`.
-  Still to come: record-payment, recurring-documents, statements-reminders and customer-document-view.)
+  `docs/user-guide/quotes.md` and `kb/pages/task/sales-quotes.md`. Tests: `src/screens/sales/quotes.test.tsx`.)
+  (In part, 25 Oct 2026: record-payment. **Record a payment** on an issued invoice: the date, the account it came
+  into and what the customer paid; what is beyond the invoice stays as their credit, and a small shortfall settles in
+  full within the tolerance. Not yet: applying one receipt across several invoices. Tests: the receipt cases in
+  `src/screens/sales/invoices.test.tsx`.)
+  (Still to come: recurring-documents, statements-reminders and customer-document-view.)
 
 ## 9. The oracle and finishing
 

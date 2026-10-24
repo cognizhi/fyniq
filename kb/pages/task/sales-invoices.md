@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:a9613ef5712e6c75321abad9c472e33a823c3554853c8fe54095420d0bb6c5de
+  - docs/user-guide/invoices.md sha256:7b0a9b370d1d0b866abc127a14715a9422fb02d89a6be5a3dcbf3d5202659e68
 data_class: general
 taint: trusted
 status: draft
@@ -36,6 +36,13 @@ aliases:
   - spread revenue
   - invoice attachment
   - customer purchase order
+  - record a payment
+  - customer paid
+  - receipt
+  - payment received
+  - short payment
+  - overpayment
+  - settlement tolerance
 ---
 
 # Invoices
@@ -70,6 +77,14 @@ aliases:
 - A tax invoice missing a particular IRAS requires, such as the customer's address, is not sent until the detail is added ([[settings.templates]]).
 
 (src: docs/user-guide/invoices.md#email-an-invoice)
+
+## Record a payment
+
+- Until bank import matches payments, **Record a payment** on an issued invoice records what the customer paid by hand: the **Date received**, the account **Paid into** and the **Amount received**; it posts at once and the invoice shows **Part paid** or **Paid**.
+- Paid more than is open, the rest stays as the customer's credit, never as income; paid a little less, **Settle the invoice in full** clears the rest as a settlement difference within the tolerance, S$1.00 by default, while a larger shortfall stays open or is written off.
+- In another currency, an account in that currency takes the bank's or the day's rate; an SGD account needs what it received in SGD.
+
+(src: docs/user-guide/invoices.md#record-a-payment)
 
 ## Approval
 
@@ -106,6 +121,6 @@ aliases:
 
 - INVOICE-05: choose an active customer. INVOICE-06: choose a code for supplies (SR, ZR, ES or OS). INVOICE-07: a due date on or after the invoice date, or blank.
 - INVOICE-09: a quantity and a price with up to 6 decimals, a discount from 0 to 100. INVOICE-10: **Ask for approval**. INVOICE-13: void its receipts and credit applications first. INVOICE-15: an issued invoice of the same customer and currency, for at least the credit.
-- SALESDOC-04: add the customer's billing email or give an address. SALESDOC-05: add the missing detail in Settings › Organisation or on the customer.
+- RECEIPT-05: record at most what is open. RECEIPT-11: leave it open or write the rest off. SALESDOC-04: add the customer's billing email or give an address. SALESDOC-05: add the missing detail in Settings › Organisation or on the customer.
 
 (src: docs/user-guide/invoices.md#common-problems)
