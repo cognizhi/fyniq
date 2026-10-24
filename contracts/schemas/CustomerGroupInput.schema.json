@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "active": {
+      "description": "false makes it inactive; a new group is active.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "name": {
+      "description": "Its name, unique in the organisation.",
+      "examples": [
+        "Retainer clients"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "reminder_days": {
+      "description": "At most 6 days from -30 to 365, earliest first, each once; [] sends no reminders.",
+      "examples": [
+        [
+          -3,
+          0,
+          7,
+          30
+        ]
+      ],
+      "items": {
+        "description": "Days from an invoice's due date, negative before it.",
+        "examples": [
+          7
+        ],
+        "format": "int32",
+        "maximum": 365,
+        "minimum": -30,
+        "type": "integer"
+      },
+      "maxItems": 6,
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "reminder_days"
+  ],
+  "title": "CustomerGroupInput",
+  "type": "object"
+}

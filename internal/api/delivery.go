@@ -33,7 +33,7 @@ type TestNotification struct {
 type emailMessagesInput struct {
 	PageQuery
 	Status  string `query:"status" enum:"queued,accepted,failed,unknown" doc:"Only messages with this outcome." example:"failed"`
-	Purpose string `query:"purpose" enum:"test,sign_in_alert,notification,digest,invoice,quote" doc:"Only messages of this purpose." example:"notification"`
+	Purpose string `query:"purpose" enum:"test,sign_in_alert,notification,digest,invoice,quote,reminder" doc:"Only messages of this purpose." example:"notification"`
 }
 
 type emailMessagesOutput struct{ Body EmailMessagePage }

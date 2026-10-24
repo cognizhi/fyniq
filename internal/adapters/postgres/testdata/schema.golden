@@ -213,6 +213,7 @@ contact | created_at | timestamp with time zone | not null | now()
 contact | tax_residence | text | null | 
 contact | discount_percent | numeric(5,2) | null | 
 contact | discount_days | smallint | null | 
+contact | customer_group_id | uuid | null | 
 contact_document_template | organisation_id | uuid | not null | current_org()
 contact_document_template | id | uuid | not null | uuidv7()
 contact_document_template | contact_id | uuid | not null | 
@@ -227,6 +228,13 @@ currencies | name | text | null |
 currency | code | text | not null | 
 currency | minor_units | smallint | not null | 
 currency | name | text | not null | 
+customer_group | organisation_id | uuid | not null | current_org()
+customer_group | id | uuid | not null | uuidv7()
+customer_group | name | text | not null | 
+customer_group | reminder_days | integer[] | not null | 
+customer_group | active | boolean | not null | true
+customer_group | version | integer | not null | 1
+customer_group | created_at | timestamp with time zone | not null | now()
 document | organisation_id | uuid | not null | current_org()
 document | id | uuid | not null | uuidv7()
 document | type | text | not null | 
@@ -790,6 +798,15 @@ role_assignment | role | text | not null |
 role_assignment | expires_at | timestamp with time zone | null | 
 role_assignment | created_at | timestamp with time zone | not null | now()
 role_assignment | revoked_at | timestamp with time zone | null | 
+sales_reminder | organisation_id | uuid | not null | current_org()
+sales_reminder | id | uuid | not null | uuidv7()
+sales_reminder | document_id | uuid | not null | 
+sales_reminder | step | integer | not null | 
+sales_reminder | outcome | text | not null | 
+sales_reminder | send_id | uuid | null | 
+sales_reminder | reason | text | null | 
+sales_reminder | decided_by | text | not null | 
+sales_reminder | decided_at | timestamp with time zone | not null | now()
 sod_override | organisation_id | uuid | not null | current_org()
 sod_override | id | uuid | not null | uuidv7()
 sod_override | team_mode_version | integer | not null | 
@@ -1250,6 +1267,7 @@ close_checklist_template | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 contact | contact_country_format | CHECK ((country ~ '^[A-Z]{2}$'::text))
 contact | contact_created_at_not_null | NOT NULL created_at
 contact | contact_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+contact | contact_customer_group_fkey | FOREIGN KEY (organisation_id, customer_group_id) REFERENCES customer_group(organisation_id, id)
 contact | contact_default_account_fkey | FOREIGN KEY (organisation_id, default_account_id) REFERENCES account(organisation_id, id)
 contact | contact_discount_terms | CHECK ((((discount_percent IS NULL) = (discount_days IS NULL)) AND ((discount_percent IS NULL) OR ((discount_percent <> 'NaN'::numeric) AND (discount_percent > (0)::numeric) AND (discount_percent < (100)::numeric))) AND ((discount_days IS NULL) OR ((discount_days >= 1) AND (discount_days <= 365)))))
 contact | contact_gst_code_format | CHECK ((default_gst_code ~ '^[A-Z]{2,4}$'::text))
@@ -1290,6 +1308,19 @@ currency | currency_minor_units_range | CHECK (((minor_units >= 0) AND (minor_un
 currency | currency_name_length | CHECK (((length(name) >= 1) AND (length(name) <= 100)))
 currency | currency_name_not_null | NOT NULL name
 currency | currency_pkey | PRIMARY KEY (code)
+customer_group | customer_group_active_not_null | NOT NULL active
+customer_group | customer_group_created_at_not_null | NOT NULL created_at
+customer_group | customer_group_id_not_null | NOT NULL id
+customer_group | customer_group_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 80)))
+customer_group | customer_group_name_not_null | NOT NULL name
+customer_group | customer_group_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+customer_group | customer_group_organisation_id_not_null | NOT NULL organisation_id
+customer_group | customer_group_pkey | PRIMARY KEY (organisation_id, id)
+customer_group | customer_group_reminder_days | CHECK (((cardinality(reminder_days) <= 6) AND (array_position(reminder_days, NULL::integer) IS NULL) AND ('-30'::integer <= ALL (reminder_days)) AND (365 >= ALL (reminder_days))))
+customer_group | customer_group_reminder_days_not_null | NOT NULL reminder_days
+customer_group | customer_group_version_not_null | NOT NULL version
+customer_group | customer_group_version_positive | CHECK ((version > 0))
+customer_group | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | document_created_at_not_null | NOT NULL created_at
 document | document_current_version_fkey | FOREIGN KEY (organisation_id, id, current_version) REFERENCES document_version(organisation_id, document_id, version) DEFERRABLE INITIALLY DEFERRED
 document | document_current_version_not_null | NOT NULL current_version
@@ -1469,7 +1500,7 @@ email_message | email_message_lengths | CHECK ((((length(recipient) >= 3) AND (l
 email_message | email_message_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 email_message | email_message_organisation_id_not_null | NOT NULL organisation_id
 email_message | email_message_pkey | PRIMARY KEY (organisation_id, id)
-email_message | email_message_purpose_known | CHECK ((purpose = ANY (ARRAY['test'::text, 'sign_in_alert'::text, 'notification'::text, 'digest'::text, 'invoice'::text, 'quote'::text])))
+email_message | email_message_purpose_known | CHECK ((purpose = ANY (ARRAY['test'::text, 'sign_in_alert'::text, 'notification'::text, 'digest'::text, 'invoice'::text, 'quote'::text, 'reminder'::text])))
 email_message | email_message_purpose_not_null | NOT NULL purpose
 email_message | email_message_recipient_not_null | NOT NULL recipient
 email_message | email_message_scheduled_send | TRIGGER DEFERRABLE INITIALLY DEFERRED
@@ -2170,6 +2201,22 @@ role_assignment | role_assignment_pkey | PRIMARY KEY (organisation_id, id)
 role_assignment | role_assignment_revoked_after_creation | CHECK ((revoked_at >= created_at))
 role_assignment | role_assignment_role_known | CHECK ((role = ANY (ARRAY['employee'::text, 'approver'::text, 'bookkeeper'::text, 'ar_specialist'::text, 'ap_specialist'::text, 'payment_releaser'::text, 'payroll_administrator'::text, 'accountant'::text, 'controller'::text, 'owner'::text, 'administrator'::text, 'auditor'::text, 'tax_agent'::text, 'board_viewer'::text, 'company_secretary'::text, 'dpo'::text])))
 role_assignment | role_assignment_role_not_null | NOT NULL role
+sales_reminder | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+sales_reminder | sales_reminder_decided_at_not_null | NOT NULL decided_at
+sales_reminder | sales_reminder_decided_by_format | CHECK ((decided_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+sales_reminder | sales_reminder_decided_by_not_null | NOT NULL decided_by
+sales_reminder | sales_reminder_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
+sales_reminder | sales_reminder_document_id_not_null | NOT NULL document_id
+sales_reminder | sales_reminder_id_not_null | NOT NULL id
+sales_reminder | sales_reminder_once | UNIQUE (organisation_id, document_id, step)
+sales_reminder | sales_reminder_organisation_id_not_null | NOT NULL organisation_id
+sales_reminder | sales_reminder_outcome_known | CHECK ((((outcome = 'sent'::text) AND (send_id IS NOT NULL) AND (reason IS NULL)) OR ((outcome = 'skipped'::text) AND (send_id IS NULL))))
+sales_reminder | sales_reminder_outcome_not_null | NOT NULL outcome
+sales_reminder | sales_reminder_pkey | PRIMARY KEY (organisation_id, id)
+sales_reminder | sales_reminder_reason_length | CHECK (((reason IS NULL) OR ((length(btrim(reason)) >= 1) AND (length(btrim(reason)) <= 500))))
+sales_reminder | sales_reminder_send_fkey | FOREIGN KEY (organisation_id, send_id) REFERENCES document_send(organisation_id, id)
+sales_reminder | sales_reminder_step_not_null | NOT NULL step
+sales_reminder | sales_reminder_step_range | CHECK (((step >= '-30'::integer) AND (step <= 365)))
 sod_override | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 sod_override | sod_override_conflict_known | CHECK ((conflict ~ '^SOD-([1-9]|10)$'::text))
 sod_override | sod_override_conflict_not_null | NOT NULL conflict
@@ -2460,6 +2507,8 @@ CREATE UNIQUE INDEX contact_document_template_pkey ON fyniq.contact_document_tem
 CREATE UNIQUE INDEX contact_pkey ON fyniq.contact USING btree (organisation_id, id)
 CREATE UNIQUE INDEX currency_code_minor_units_key ON fyniq.currency USING btree (code, minor_units)
 CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
+CREATE UNIQUE INDEX customer_group_name_key ON fyniq.customer_group USING btree (organisation_id, lower(btrim(name)))
+CREATE UNIQUE INDEX customer_group_pkey ON fyniq.customer_group USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_link_message_once ON fyniq.document_link USING btree (organisation_id, message_id)
 CREATE UNIQUE INDEX document_link_pkey ON fyniq.document_link USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_link_token_pkey ON fyniq.document_link_token USING btree (token_hash)
@@ -2546,6 +2595,8 @@ CREATE UNIQUE INDEX review_log_review_once ON fyniq.review_log_review USING btre
 CREATE UNIQUE INDEX review_log_review_pkey ON fyniq.review_log_review USING btree (organisation_id, id)
 CREATE UNIQUE INDEX role_assignment_one_live ON fyniq.role_assignment USING btree (organisation_id, membership_id, role) WHERE (revoked_at IS NULL)
 CREATE UNIQUE INDEX role_assignment_pkey ON fyniq.role_assignment USING btree (organisation_id, id)
+CREATE UNIQUE INDEX sales_reminder_once ON fyniq.sales_reminder USING btree (organisation_id, document_id, step)
+CREATE UNIQUE INDEX sales_reminder_pkey ON fyniq.sales_reminder USING btree (organisation_id, id)
 CREATE UNIQUE INDEX sod_override_once ON fyniq.sod_override USING btree (organisation_id, request_id, user_id, conflict)
 CREATE UNIQUE INDEX sod_override_pkey ON fyniq.sod_override USING btree (organisation_id, id)
 CREATE UNIQUE INDEX statutory_pack_activation_pkey ON fyniq.statutory_pack_activation USING btree (organisation_id, id)
@@ -2605,6 +2656,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_invoice_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_journal_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'recurring_journal_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_review', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sales_reminder DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sales_reminder', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sod_override DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sod_override', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.statutory_pack_activation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statutory_pack_activation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.team_mode DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('team_mode', 'id')
@@ -2620,6 +2672,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.announce
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.capture_address DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_address', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.customer_group DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('customer_group', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_link', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template', 'id')
@@ -2761,6 +2814,8 @@ CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.revie
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_review FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER role_assignment_guard BEFORE UPDATE ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION membership_guard()
 CREATE TRIGGER role_assignment_voids AFTER INSERT OR UPDATE ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION role_assignment_voids()
+CREATE TRIGGER sales_reminder_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.sales_reminder FOR EACH ROW EXECUTE FUNCTION sales_reminder_guard()
+CREATE TRIGGER sales_reminder_no_truncate BEFORE TRUNCATE ON fyniq.sales_reminder FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.document_link FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.document_number FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.document_send FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
@@ -2800,6 +2855,7 @@ close_checklist_entry | tenant_isolation | * | (organisation_id = current_org())
 close_checklist_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact_document_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+customer_group | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_link | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_number | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -2849,6 +2905,7 @@ recurring_journal_version | tenant_isolation | * | (organisation_id = current_or
 review_log_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 role_assignment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+sales_reminder | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 sod_override | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 statutory_pack_activation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 team_mode | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -2975,6 +3032,7 @@ require_passkey_audit() → trigger | security definer | v | search_path=pg_cata
 require_super_admin(p_user uuid) → void | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c817be869461445bf3e2ff0f94e5b146
 review_log_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ba89ef09634a7863076fa4da1d77bebb
 role_assignment_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 802ca214ce4476cbc77f0a6d8d36eb9e
+sales_reminder_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cbd827bdca43d21c794de23c30d61fd7
 scheduled_invoice_email_sent() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7b1f59fc29d82c1dc9f6f4ae5afc9272
 scheduled_issue_allowed(p_document uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 574b7af4c2dbb0a7e81f6dedebde4a8b
 scheduled_issue_fence() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c7a938be12a6bfff45c2077d5158d7ca

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "description": "Why, for whoever reads it later.",
+      "examples": [
+        "Paid by cheque on 6 Nov; receipt to record"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "step": {
+      "description": "The reminder's step, as the list gives it.",
+      "examples": [
+        7
+      ],
+      "format": "int64",
+      "maximum": 365,
+      "minimum": -30,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "step"
+  ],
+  "title": "SkipSalesReminder",
+  "type": "object"
+}

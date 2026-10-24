@@ -41,6 +41,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/receipt"
 	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
+	"github.com/cognizhi/fyniq/internal/domain/salesreminder"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/domain/writeoff"
@@ -467,6 +468,7 @@ var codeFacts = map[string]struct {
 	storage.CodeShareCapital:      {422, "A manual journal cannot post to share capital"},
 	storage.CodeImmutable:         {409, "Posted history cannot change"},
 	storage.CodePeriodClosed:      {409, "The period is closed"},
+	storage.CodeNoPeriod:          {409, "No period covers the date"},
 	storage.CodeAccountNotPost:    {422, "The account cannot take postings"},
 	storage.CodeAmount:            {422, "An amount or rate is not valid"},
 	storage.CodeNoTenant:          {404, "Not found"},
@@ -545,6 +547,11 @@ var codeFacts = map[string]struct {
 
 	journal.CodeRecurringMode: {409, "The recurring invoice needs no approval now"},
 	storage.CodeScheduled:     {409, "The scheduler issues only approved recurring invoices"},
+
+	salesreminder.CodeDays:   {422, "The reminder schedule is not valid"},
+	salesreminder.CodeNotDue: {409, "That reminder is not due"},
+	salesreminder.CodeGroup:  {422, "The customer group cannot be used that way"},
+	storage.CodeReminder:     {409, "A reminder is decided once, for an issued invoice or a sent quote"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -569,6 +576,7 @@ var storageFixes = map[string]string{
 	storage.CodeLink: "Email the document again for a new link",
 
 	storage.CodeScheduled: "Issue and send it as a person, or approve the recurring invoice it came from",
+	storage.CodeReminder:  "Read the reminders again: this one was sent or skipped already",
 }
 
 // problem builds a Problem for one of the catalogue's codes.
@@ -690,6 +698,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		dpe *deposit.Error
 		qe  *quote.Error
 		sde *salesdoc.Error
+		sre *salesreminder.Error
 		pe  *period.Error
 		ae  *accounting.Error
 		ce  *closing.Error
@@ -731,6 +740,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(qe.Code, sentence(qe.Message), sentence(qe.Fix))
 	case errors.As(err, &sde):
 		return problem(sde.Code, sentence(sde.Message), sentence(sde.Fix))
+	case errors.As(err, &sre):
+		return problem(sre.Code, sentence(sre.Message), sentence(sre.Fix))
 	case errors.As(err, &pe):
 		return problem(pe.Code, sentence(pe.Message), sentence(pe.Fix))
 	case errors.As(err, &ae):

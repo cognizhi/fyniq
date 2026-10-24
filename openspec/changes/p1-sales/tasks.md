@@ -187,9 +187,14 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 ## 7. Reminders and statements
 
-- [ ] 7.1 Reminder schedules per customer group with their templates; a due reminder waits in the Inbox to be sent
+- [x] 7.1 Reminder schedules per customer group with their templates; a due reminder waits in the Inbox to be sent
   or skipped until bank import (the owner's decision of 24 Oct 2026); quotes about to expire. Tests
   `// req: FR-AR-08`
+  (25 Oct 2026, PRD-001 rev 0.137: `customer_group` and `sales_reminder` (FY203; migrations 000137 and 000138), the
+  contact's `customer_group_id`, `salesreminder.Due`, `salesmail.Sender.PrepareReminder` (the PDF already sent, the
+  reminders sender), the customer group operations and `listSalesReminders`, `sendSalesReminder`, `skipSalesReminder`;
+  threats T15 and T16 in `email-delivery.md`. Tests: `TestRemindersWaitForAPerson`, `TestARemindersStepIsDecidedOnce`,
+  the matrix rows. The Inbox screen comes with 8.1; automatic reminders with bank import.)
 - [ ] 7.2 Statements of account by date range, adding up, as a PDF sent like an invoice. Tests `// req: FR-AR-08`
 
 ## 8. Screens

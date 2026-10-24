@@ -1,5 +1,6 @@
 // Package salesmail emails quotes and invoices to customers (FR-AR-06; p1-sales tasks 5.2 and 5.3), for the API's
-// emailInvoice and emailQuote and for the scheduler's recurring invoices set to issue and send (task 6.1): the
+// emailInvoice and emailQuote, its reminders (FR-AR-08, task 7.1) and the scheduler's recurring invoices set to issue
+// and send (task 6.1): the
 // document's current version rendered with the template that applies to its customer, its PDF kept as the document's
 // evidence, an online link, the email from the organisation's invoices sender, and the send. A sending is prepared
 // (read and rendered, outside any unit of work, since rendering is a call to the render service), its PDF staged, and
@@ -9,6 +10,7 @@ package salesmail
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"maps"
@@ -22,8 +24,10 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
+	"github.com/cognizhi/fyniq/internal/domain/salesreminder"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -73,6 +77,11 @@ type Sending struct {
 	PDF      []byte
 	SHA      string
 	Link     string // the online link's token's SHA-256 (task 5.3); empty when the deployment has no web origin
+
+	// A reminder (task 7.1) sends again the PDF already sent of the version, this evidence, when there is one; it renders
+	// one otherwise. Evidence is uuid.Nil when the sending carries a PDF of its own.
+	Evidence uuid.UUID
+	Reminder *salesreminder.Reminder
 }
 
 // Prepare reads document id of org for emailing to to (empty: the customer's billing email): an issued invoice
@@ -82,7 +91,20 @@ type Sending struct {
 // document, such as for an ETag.
 func (s Sender) Prepare(ctx context.Context, org, id uuid.UUID, invoiceSend bool, to string, rendering bool,
 	inUnit func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) error) (Sending, error) {
-	var out Sending
+	return s.prepare(ctx, org, id, invoiceSend, to, rendering, inUnit, nil)
+}
+
+// PrepareReminder is Prepare for reminder r (FR-AR-08): an email of purpose reminder, from the reminders sender, its
+// subject and body from the reminder email template once the invoice is overdue, and from the invoice's or quote's own
+// before; the PDF of the version already sent, if one was, else rendered.
+func (s Sender) PrepareReminder(ctx context.Context, org uuid.UUID, r salesreminder.Reminder, to string, rendering bool,
+	inUnit func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) error) (Sending, error) {
+	return s.prepare(ctx, org, r.DocumentID, r.Kind == salesreminder.KindInvoice, to, rendering, inUnit, &r)
+}
+
+func (s Sender) prepare(ctx context.Context, org, id uuid.UUID, invoiceSend bool, to string, rendering bool,
+	inUnit func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) error, reminder *salesreminder.Reminder) (Sending, error) {
+	out := Sending{Reminder: reminder}
 	var data salesdoc.Invoice
 	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		doc, err := u.Documents().Get(ctx, id)
@@ -141,21 +163,34 @@ func (s Sender) Prepare(ctx context.Context, org, id uuid.UUID, invoiceSend bool
 		if out.Applied, err = doctemplate.Applying(ctx, u, doctemplate.KindDocument, out.DocType, &customer); err != nil {
 			return err
 		}
-		mail, err := doctemplate.Applying(ctx, u, doctemplate.KindEmail, out.DocType, &customer)
+		mailType := out.DocType
+		if reminder != nil {
+			out.Purpose = email.PurposeReminder
+			if reminder.Overdue() {
+				mailType = doctemplate.Reminder
+			}
+		}
+		mail, err := doctemplate.Applying(ctx, u, doctemplate.KindEmail, mailType, &customer)
 		if err != nil {
 			return err
 		}
 		// The email carries the online link, its token in the URL's fragment, never sent to a server (task 5.3); the PDF
 		// does not.
 		emailed := data.Data
+		emailed.Fields = maps.Clone(data.Data.Fields)
 		if origin := strings.TrimRight(s.Origin, "/"); origin != "" {
 			token, hash, err := salesdoc.NewToken()
 			if err != nil {
 				return err
 			}
-			emailed.Fields = maps.Clone(data.Data.Fields)
 			emailed.Fields["document.link"] = render.Value{Text: origin + "/d/#" + token}
 			out.Link = hash
+		}
+		if reminder != nil {
+			reminderFields(emailed.Fields, *reminder)
+			if out.Evidence, err = sentPDF(ctx, u, &out, doc); err != nil {
+				return err
+			}
 		}
 		if out.Subject, out.Body, err = render.Email(mail.Content, emailed); err != nil {
 			return err
@@ -169,7 +204,7 @@ func (s Sender) Prepare(ctx context.Context, org, id uuid.UUID, invoiceSend bool
 		}
 		return nil
 	})
-	if err != nil || !rendering {
+	if err != nil || !rendering || out.Evidence != uuid.Nil {
 		return out, err
 	}
 	if s.Render == nil {
@@ -187,15 +222,20 @@ func (s Sender) Prepare(ctx context.Context, org, id uuid.UUID, invoiceSend bool
 }
 
 // Stage keeps a sending's PDF in the staging store until its evidence row is committed, and returns where; if the unit
-// of work that records it rolls back, the sweeper deletes the file (FR-DOC-13).
+// of work that records it rolls back, the sweeper deletes the file (FR-DOC-13). A sending that sends again a PDF
+// already kept stages nothing.
 func (s Sender) Stage(ctx context.Context, org uuid.UUID, x Sending) (string, error) {
+	if x.Evidence != uuid.Nil {
+		return "", nil
+	}
 	key := evidence.StagingKey(org, uuid.Must(uuid.NewV7()))
 	return key, s.Staging.Put(ctx, key, bytes.NewReader(x.PDF))
 }
 
 // Record keeps a sending of document id in u, as the unit of work's actor: the PDF staged at key as the document's
-// evidence, the email with it attached from the invoices sender, the online link, and the send; the evidence is
-// committed to the locked store by the worker. The document must still be posted at the version rendered (ErrChanged).
+// evidence (or the one already kept), the email with it attached from the invoices or reminders sender, the online
+// link, the send, and for a reminder the decision; the evidence is committed to the locked store by the worker. The
+// document must still be posted at the version rendered (ErrChanged).
 func (s Sender) Record(ctx context.Context, u storage.UnitOfWork, org, id uuid.UUID, x Sending, key string) error {
 	doc, err := u.Documents().Lock(ctx, id)
 	if err != nil {
@@ -208,13 +248,17 @@ func (s Sender) Record(ctx context.Context, u storage.UnitOfWork, org, id uuid.U
 	if a := storage.AuditFrom(ctx).Actor; a != nil {
 		by = a.String()
 	}
-	e, err := u.Evidence().Attach(ctx, storage.NewEvidence{DocumentID: id, EvidenceType: strings.ToUpper(x.Kind[:1]) + x.Kind[1:] + " as sent",
-		FileName: x.FileName, MediaType: "application/pdf", Size: int64(len(x.PDF)), SHA256: x.SHA, OriginalSHA256: x.SHA,
-		Source: storage.SourceGenerated, DataClass: storage.ClassGeneral, StagingKey: key, UploadedBy: by})
-	if err != nil {
-		return err
+	evidenceID := x.Evidence
+	if evidenceID == uuid.Nil {
+		e, err := u.Evidence().Attach(ctx, storage.NewEvidence{DocumentID: id, EvidenceType: strings.ToUpper(x.Kind[:1]) + x.Kind[1:] + " as sent",
+			FileName: x.FileName, MediaType: "application/pdf", Size: int64(len(x.PDF)), SHA256: x.SHA, OriginalSHA256: x.SHA,
+			Source: storage.SourceGenerated, DataClass: storage.ClassGeneral, StagingKey: key, UploadedBy: by})
+		if err != nil {
+			return err
+		}
+		evidenceID = e.ID
 	}
-	m, err := email.QueueWith(ctx, s.Outbox, u, org, x.Purpose, x.To, x.Subject, x.Body, []uuid.UUID{e.ID})
+	m, err := email.QueueWith(ctx, s.Outbox, u, org, x.Purpose, x.To, x.Subject, x.Body, []uuid.UUID{evidenceID})
 	if err != nil {
 		return err
 	}
@@ -224,13 +268,59 @@ func (s Sender) Record(ctx context.Context, u storage.UnitOfWork, org, id uuid.U
 			return err
 		}
 	}
-	if _, err := u.DocumentSends().Record(ctx, storage.NewDocumentSend{DocumentID: id, DocumentVersion: x.Version, MessageID: m.ID, EvidenceID: e.ID,
+	send, err := u.DocumentSends().Record(ctx, storage.NewDocumentSend{DocumentID: id, DocumentVersion: x.Version, MessageID: m.ID, EvidenceID: evidenceID,
 		Recipient: x.To, TemplateSource: x.Applied.Source, TemplateID: x.Applied.TemplateID, TemplateVersion: x.Applied.Version,
-		TemplateHash: fmt.Sprintf("%x", x.Applied.Hash), PDFSHA256: x.SHA}); err != nil {
+		TemplateHash: fmt.Sprintf("%x", x.Applied.Hash), PDFSHA256: x.SHA})
+	if err != nil {
 		return err
+	}
+	if x.Reminder != nil {
+		if _, err := u.SalesReminders().Record(ctx, storage.NewSalesReminder{DocumentID: id, Step: x.Reminder.Step, Outcome: storage.ReminderSent,
+			SendID: &send.ID}); err != nil {
+			return err
+		}
+	}
+	if x.Evidence != uuid.Nil {
+		return nil // the PDF was committed with its first send
 	}
 	_, err = s.Outbox.Enqueue(ctx, u, org, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: evidence.CommitKind, Payload: []byte(`{}`)})
 	return err
+}
+
+// reminderFields are the reminder email template's fields for r (doctemplate.Reminder): what is due, what of it is
+// overdue, since when, and by how many days.
+func reminderFields(f map[string]render.Value, r salesreminder.Reminder) {
+	f["document.amount_due"] = render.Value{Amount: &render.Amount{Amount: r.Amount.String(), Currency: r.Amount.Currency().Code}}
+	overdue := money.Zero(r.Amount.Currency())
+	if r.Overdue() {
+		overdue = r.Amount
+	}
+	f["document.overdue"] = render.Value{Amount: &render.Amount{Amount: overdue.String(), Currency: overdue.Currency().Code}}
+	f["document.oldest_due_date"] = render.Value{Date: r.DueOn.Format(time.DateOnly)}
+	days := int64(r.DaysOverdue)
+	f["document.days_overdue"] = render.Value{Number: &days}
+}
+
+// sentPDF is the evidence of the PDF last sent of doc's current version, with the template that rendered it, written
+// into x: what a reminder sends again. uuid.Nil when no send carried that version.
+func sentPDF(ctx context.Context, u storage.UnitOfWork, x *Sending, doc storage.Document) (uuid.UUID, error) {
+	sends, err := u.DocumentSends().OfDocument(ctx, doc.ID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	for _, s := range sends { // newest first
+		if s.DocumentVersion != doc.Version {
+			continue
+		}
+		hash, err := hex.DecodeString(s.TemplateHash)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		x.Applied = doctemplate.Applied{Source: s.TemplateSource, TemplateID: s.TemplateID, Version: s.TemplateVersion, Hash: hash}
+		x.SHA = s.PDFSHA256
+		return s.EvidenceID, nil
+	}
+	return uuid.Nil, nil
 }
 
 // SendScheduled emails, as the scheduler, the invoices of org it issued from recurring invoices and has not sent yet

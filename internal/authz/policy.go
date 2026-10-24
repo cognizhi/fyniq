@@ -325,6 +325,13 @@ var (
 	UpdateItem        = Policy{Operation: "updateItem", Capability: ContactsAndItems, Need: Create}
 	LoadStandardChart = Policy{Operation: "loadStandardChart", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
+
+	// Customer groups and their reminder schedules (FR-AR-08) are contact master data.
+	ListCustomerGroups   = Policy{Operation: "listCustomerGroups", Capability: ContactsAndItems, Need: View}
+	GetCustomerGroup     = Policy{Operation: "getCustomerGroup", Capability: ContactsAndItems, Need: View}
+	CreateCustomerGroup  = Policy{Operation: "createCustomerGroup", Capability: ContactsAndItems, Need: Create}
+	ReplaceCustomerGroup = Policy{Operation: "replaceCustomerGroup", Capability: ContactsAndItems, Need: Create}
+
 	CreateJournal             = Policy{Operation: "createJournal", Capability: Journals, Need: Create}
 	BulkCreateJournals        = Policy{Operation: "bulkCreateJournals", Capability: Journals, Need: Create}
 	GetOrganisationProfile    = Policy{Operation: "getOrganisationProfile", Capability: OrganisationProfile, Need: View}
@@ -492,6 +499,11 @@ var (
 	// issuing does: P on "Invoices, credit notes".
 	EmailInvoice = Policy{Operation: "emailInvoice", Capability: Invoices, Need: Post}
 	EmailQuote   = Policy{Operation: "emailQuote", Capability: Invoices, Need: Post}
+	// Reminders to customers (FR-AR-08): listed to those who read invoices; sent or skipped, which speaks for the company
+	// or decides not to, under P as emailing an invoice is.
+	ListSalesReminders = Policy{Operation: "listSalesReminders", Capability: Invoices, Need: View}
+	SendSalesReminder  = Policy{Operation: "sendSalesReminder", Capability: Invoices, Need: Post}
+	SkipSalesReminder  = Policy{Operation: "skipSalesReminder", Capability: Invoices, Need: Post}
 	// The online link (FR-AR-06, FR-AR-16): opened by whoever holds it, with no session (public); revoked under P.
 	GetPublicDocument    = Policy{Operation: "getPublicDocument", Capability: Invoices, Need: View, Public: true}
 	GetPublicDocumentPDF = Policy{Operation: "getPublicDocumentPDF", Capability: Invoices, Need: View, Public: true}
@@ -745,7 +757,7 @@ var (
 // Policies are every policy, by operation. An operation without one is refused.
 var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
-	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
+	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
@@ -765,7 +777,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,
 	GetCreditApplication, ApplyCredit, VoidCreditApplication, RequestCreditApplicationVoid,
 	GetSupplierRefund, RecordSupplierRefund, VoidSupplierRefund, RequestSupplierRefundVoid,
-	ListInvoices, GetInvoice, GetInvoiceDocument, EmailInvoice, EmailQuote, GetPublicDocument, GetPublicDocumentPDF, AcceptQuoteByLink,
+	ListInvoices, GetInvoice, GetInvoiceDocument, EmailInvoice, EmailQuote, ListSalesReminders, SendSalesReminder, SkipSalesReminder, GetPublicDocument, GetPublicDocumentPDF, AcceptQuoteByLink,
 	DeclineQuoteByLink, RevokeDocumentLink, CreateInvoice, ReplaceInvoice, IssueInvoice, VoidInvoice, EditInvoice, RequestInvoiceIssue, RequestInvoiceVoid,
 	RequestInvoiceEdit, AddInvoiceEvidence, ListInvoiceEvidence, GetInvoiceEvidence, RemoveInvoiceEvidence, GetReceivables,
 	ListCustomerReceipts, GetCustomerReceipt, RecordCustomerReceipt, VoidCustomerReceipt, RequestCustomerReceiptVoid,

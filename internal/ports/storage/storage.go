@@ -90,6 +90,10 @@ type UnitOfWork interface {
 	DocumentSends() DocumentSends
 	DocumentLinks() DocumentLinks
 	RecurringInvoices() RecurringInvoices
+	// CustomerGroups are the groups of customers and their reminder schedules; SalesReminders the reminders sent or
+	// skipped (FR-AR-08).
+	CustomerGroups() CustomerGroups
+	SalesReminders() SalesReminders
 	BillPlans() BillPlans
 	DocumentTemplates() DocumentTemplates
 	AccountingBasis() AccountingBasis
@@ -580,6 +584,7 @@ const (
 	CodeSend           = "STORAGE-SEND-01"       // a send is of a sent quote's or issued invoice's current version, never changed
 	CodeLink           = "STORAGE-LINK-01"       // a link is of a sent quote's or issued invoice's current version, and changes only in its view and revocation
 	CodeScheduled      = "STORAGE-SCHEDULED-01"  // the scheduler issues and sends only the invoices of an approved recurring invoice set to issue and send
+	CodeReminder       = "STORAGE-REMINDER-01"   // a reminder is of an issued invoice or a sent quote, decided once per step, never changed
 	CodeBillPlan       = "STORAGE-PLAN-01"       // a bill's payment plan never changes: a later one replaces it
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation

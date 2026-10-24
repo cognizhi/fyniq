@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "decided_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-08T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "decided_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who sent or skipped it."
+    },
+    "document_id": {
+      "description": "The invoice, quote or order.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The decision's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "outcome": {
+      "description": "sent, with the send that carried it; or skipped.",
+      "enum": [
+        "sent",
+        "skipped"
+      ],
+      "examples": [
+        "sent"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why it was skipped, if given.",
+      "examples": [
+        "Paid by cheque on 6 Nov; receipt to record"
+      ],
+      "type": "string"
+    },
+    "send_id": {
+      "description": "The send of the document that carried the reminder: its email, recipient and PDF.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "step": {
+      "description": "The reminder's day in the schedule.",
+      "examples": [
+        7
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "document_id",
+    "step",
+    "outcome",
+    "decided_at"
+  ],
+  "title": "SalesReminderDecision",
+  "type": "object"
+}

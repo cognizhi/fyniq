@@ -1022,7 +1022,7 @@ func registerJournals(a *API) {
 // postingCodes are the codes an operation that posts may answer.
 func postingCodes() []string {
 	codes := []string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
-		journal.CodeNotJournal, journal.CodeBadDraft, journal.CodeReverseOn, storage.CodeUnbalanced, storage.CodeImmutable, storage.CodePeriodClosed,
+		journal.CodeNotJournal, journal.CodeBadDraft, journal.CodeReverseOn, storage.CodeUnbalanced, storage.CodeImmutable, storage.CodePeriodClosed, storage.CodeNoPeriod,
 		storage.CodeAccountNotPost, storage.CodeAmount, storage.CodeDocumentStatus, storage.CodeDuplicate, storage.CodeRetry, storage.CodeLockTimeout,
 		storage.CodeShareCapital, team.CodeAction}
 	return append(codes, LedgerCodes...)
