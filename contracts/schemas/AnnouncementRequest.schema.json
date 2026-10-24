@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "dismissible": {
+      "description": "Whether a person may dismiss it; true unless critical, which never is.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "ends_at": {
+      "description": "When it stops showing, after it starts.",
+      "examples": [
+        "2026-11-03T16:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "link": {
+      "description": "Where it leads: a path in the web app, such as /help/…, or an https address.",
+      "examples": [
+        "/help/organisation-settings"
+      ],
+      "maxLength": 300,
+      "type": "string"
+    },
+    "message": {
+      "description": "What it says, in plain words.",
+      "examples": [
+        "The office is closed on 3 November; bills due that day are paid on 4 November."
+      ],
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+    },
+    "roles": {
+      "description": "The roles it shows to; leave it out for everyone.",
+      "items": {
+        "description": "A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.",
+        "examples": [
+          "owner"
+        ],
+        "type": "string"
+      },
+      "maxItems": 20,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "severity": {
+      "description": "info, warning, or critical for what everyone must see.",
+      "enum": [
+        "info",
+        "warning",
+        "critical"
+      ],
+      "examples": [
+        "info"
+      ],
+      "type": "string"
+    },
+    "starts_at": {
+      "description": "When it starts showing, now or later; leave it out to start now.",
+      "examples": [
+        "2026-10-24T01:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "message",
+    "severity",
+    "ends_at"
+  ],
+  "title": "AnnouncementRequest",
+  "type": "object"
+}

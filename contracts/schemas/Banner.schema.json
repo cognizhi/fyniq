@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "dismissible": {
+      "description": "false for a critical banner, or one published as not dismissible: it stays until it ends.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "ends_at": {
+      "description": "When it stops showing.",
+      "examples": [
+        "2026-11-03T16:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The banner's ID: dismiss it with this.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "link": {
+      "description": "Where it leads: a path in the web app or an https address; absent for none.",
+      "examples": [
+        "/help/organisation-settings"
+      ],
+      "type": "string"
+    },
+    "message": {
+      "description": "What it says.",
+      "examples": [
+        "The office is closed on 3 November; bills due that day are paid on 4 November."
+      ],
+      "type": "string"
+    },
+    "scope": {
+      "description": "organisation: published by its Owner or Administrator; installation: by a Super admin, to everyone.",
+      "enum": [
+        "organisation",
+        "installation"
+      ],
+      "examples": [
+        "organisation"
+      ],
+      "type": "string"
+    },
+    "severity": {
+      "description": "info and warning are announced politely (role=status), critical at once (role=alert).",
+      "enum": [
+        "info",
+        "warning",
+        "critical"
+      ],
+      "examples": [
+        "info"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "scope",
+    "message",
+    "severity",
+    "dismissible",
+    "ends_at"
+  ],
+  "title": "Banner",
+  "type": "object"
+}

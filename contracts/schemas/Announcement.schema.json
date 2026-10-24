@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "dismissible": {
+      "description": "Whether a person may dismiss it; never a critical one.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "ends_at": {
+      "description": "When it stops showing.",
+      "examples": [
+        "2026-11-03T16:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The announcement's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "link": {
+      "description": "Where it leads; absent for none.",
+      "examples": [
+        "/help/organisation-settings"
+      ],
+      "type": "string"
+    },
+    "message": {
+      "description": "What it says.",
+      "examples": [
+        "The office is closed on 3 November; bills due that day are paid on 4 November."
+      ],
+      "type": "string"
+    },
+    "published_at": {
+      "description": "When it was published.",
+      "examples": [
+        "2026-10-24T01:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "published_by": {
+      "description": "Who published it, as type:id.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "type": "string"
+    },
+    "roles": {
+      "description": "The roles it shows to; empty for everyone.",
+      "items": {
+        "description": "A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.",
+        "examples": [
+          "owner"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "severity": {
+      "description": "How it shows.",
+      "enum": [
+        "info",
+        "warning",
+        "critical"
+      ],
+      "examples": [
+        "info"
+      ],
+      "type": "string"
+    },
+    "starts_at": {
+      "description": "When it starts showing.",
+      "examples": [
+        "2026-10-24T01:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "status": {
+      "description": "scheduled before it starts, live while it shows, ended after it ends or is withdrawn.",
+      "enum": [
+        "scheduled",
+        "live",
+        "ended"
+      ],
+      "examples": [
+        "live"
+      ],
+      "type": "string"
+    },
+    "withdrawn_at": {
+      "description": "When it was withdrawn early; absent unless it was.",
+      "examples": [
+        "2026-10-25T01:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "message",
+    "severity",
+    "roles",
+    "starts_at",
+    "ends_at",
+    "dismissible",
+    "status",
+    "published_by",
+    "published_at"
+  ],
+  "title": "Announcement",
+  "type": "object"
+}

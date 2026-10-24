@@ -143,6 +143,7 @@ func Config(version string) huma.Config {
 		{Name: "Statutory packs", Description: "Statutory parameters as versioned packs from official sources, with pinned tests, and the organisation's activation of each version (ENG-30, ENG-32)."},
 		{Name: "Evidence", Description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."},
 		{Name: "Notifications", Description: "Each person's notification centre and preferences, produced from one event stream (FR-NTF-01, FR-NTF-02, FR-NTF-05)."},
+		{Name: "Announcements", Description: "Banners under the header: those each person sees now, and the announcements the Owner and Administrator publish to their organisation (FR-NTF-03)."},
 		{Name: "Templates", Description: "Document and email templates as data: drafts, and numbered versions published under approval that never change (FR-TPL-01…05)."},
 	}
 	cfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
@@ -212,6 +213,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerCapture(a)
 	registerInbound(a)
 	registerNotifications(a)
+	registerBanners(a)
 	registerMembers(a)
 	registerApprovals(a)
 	registerApprovalPolicies(a)

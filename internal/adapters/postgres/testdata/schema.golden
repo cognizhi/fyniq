@@ -58,6 +58,25 @@ allocation | realised_fx | numeric(20,4) | not null |
 allocation | reverses_id | uuid | null | 
 allocation | written_by | text | not null | 
 allocation | written_at | timestamp with time zone | not null | 
+announcement | organisation_id | uuid | not null | current_org()
+announcement | id | uuid | not null | uuidv7()
+announcement | message | text | not null | 
+announcement | link | text | null | 
+announcement | severity | text | not null | 
+announcement | roles | text[] | not null | '{}'::text[]
+announcement | starts_at | timestamp with time zone | not null | 
+announcement | ends_at | timestamp with time zone | not null | 
+announcement | dismissible | boolean | not null | 
+announcement | published_by | text | not null | 
+announcement | published_at | timestamp with time zone | not null | 
+announcement | withdrawn_at | timestamp with time zone | null | 
+announcement | withdrawn_by | text | null | 
+announcement_dismissal | organisation_id | uuid | not null | current_org()
+announcement_dismissal | id | uuid | not null | uuidv7()
+announcement_dismissal | announcement_id | uuid | not null | 
+announcement_dismissal | installation | boolean | not null | 
+announcement_dismissal | user_id | uuid | not null | 
+announcement_dismissal | dismissed_at | timestamp with time zone | not null | 
 app_user | user_id | uuid | not null | uuidv7()
 app_user | display_name | text | not null | 
 app_user | status | text | not null | 'active'::text
@@ -410,6 +429,18 @@ installation | singleton | boolean | not null | true
 installation | setup_code_hash | bytea | null | 
 installation | setup_completed_at | timestamp with time zone | null | 
 installation | installation_org | uuid | null | 
+installation_announcement | id | uuid | not null | uuidv7()
+installation_announcement | message | text | not null | 
+installation_announcement | link | text | null | 
+installation_announcement | severity | text | not null | 
+installation_announcement | roles | text[] | not null | '{}'::text[]
+installation_announcement | starts_at | timestamp with time zone | not null | 
+installation_announcement | ends_at | timestamp with time zone | not null | 
+installation_announcement | dismissible | boolean | not null | 
+installation_announcement | published_by | uuid | not null | 
+installation_announcement | published_at | timestamp with time zone | not null | 
+installation_announcement | withdrawn_at | timestamp with time zone | null | 
+installation_announcement | withdrawn_by | uuid | null | 
 item | organisation_id | uuid | not null | current_org()
 item | id | uuid | not null | uuidv7()
 item | code | text | not null | 
@@ -924,6 +955,36 @@ allocation | allocation_version_positive | CHECK ((source_version > 0))
 allocation | allocation_written_at_not_null | NOT NULL written_at
 allocation | allocation_written_by_not_null | NOT NULL written_by
 allocation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+announcement | announcement_by_format | CHECK (((published_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (withdrawn_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
+announcement | announcement_critical_stays | CHECK (((severity <> 'critical'::text) OR (NOT dismissible)))
+announcement | announcement_dismissible_not_null | NOT NULL dismissible
+announcement | announcement_ends_at_not_null | NOT NULL ends_at
+announcement | announcement_id_not_null | NOT NULL id
+announcement | announcement_link_form | CHECK (((link ~ '^(/[A-Za-z0-9/_?=&.#-]*|https://[!-~]+)$'::text) AND (length(link) <= 300)))
+announcement | announcement_message_length | CHECK (((length(message) >= 1) AND (length(message) <= 300)))
+announcement | announcement_message_not_null | NOT NULL message
+announcement | announcement_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+announcement | announcement_organisation_id_not_null | NOT NULL organisation_id
+announcement | announcement_pkey | PRIMARY KEY (organisation_id, id)
+announcement | announcement_published_at_not_null | NOT NULL published_at
+announcement | announcement_published_by_not_null | NOT NULL published_by
+announcement | announcement_roles_form | CHECK (((cardinality(roles) <= 20) AND (array_to_string(roles, ','::text) ~ '^([a-z_]{1,40}(,[a-z_]{1,40})*)?$'::text)))
+announcement | announcement_roles_not_null | NOT NULL roles
+announcement | announcement_severity_known | CHECK ((severity = ANY (ARRAY['info'::text, 'warning'::text, 'critical'::text])))
+announcement | announcement_severity_not_null | NOT NULL severity
+announcement | announcement_starts_at_not_null | NOT NULL starts_at
+announcement | announcement_window | CHECK ((ends_at > starts_at))
+announcement | announcement_withdrawn_whole | CHECK (((withdrawn_at IS NULL) = (withdrawn_by IS NULL)))
+announcement | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+announcement_dismissal | announcement_dismissal_announcement_id_not_null | NOT NULL announcement_id
+announcement_dismissal | announcement_dismissal_dismissed_at_not_null | NOT NULL dismissed_at
+announcement_dismissal | announcement_dismissal_id_not_null | NOT NULL id
+announcement_dismissal | announcement_dismissal_installation_not_null | NOT NULL installation
+announcement_dismissal | announcement_dismissal_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+announcement_dismissal | announcement_dismissal_once | UNIQUE (organisation_id, user_id, announcement_id)
+announcement_dismissal | announcement_dismissal_organisation_id_not_null | NOT NULL organisation_id
+announcement_dismissal | announcement_dismissal_pkey | PRIMARY KEY (organisation_id, id)
+announcement_dismissal | announcement_dismissal_user_id_not_null | NOT NULL user_id
 app_user | app_user_created_at_not_null | NOT NULL created_at
 app_user | app_user_display_name_length | CHECK (((length(display_name) >= 1) AND (length(display_name) <= 200)))
 app_user | app_user_display_name_not_null | NOT NULL display_name
@@ -1470,6 +1531,25 @@ installation | installation_code_sha256 | CHECK ((length(setup_code_hash) = 32))
 installation | installation_one_row | CHECK (singleton)
 installation | installation_pkey | PRIMARY KEY (singleton)
 installation | installation_singleton_not_null | NOT NULL singleton
+installation_announcement | installation_announcement_by_fkey | FOREIGN KEY (published_by) REFERENCES app_user(user_id)
+installation_announcement | installation_announcement_critical_stays | CHECK (((severity <> 'critical'::text) OR (NOT dismissible)))
+installation_announcement | installation_announcement_dismissible_not_null | NOT NULL dismissible
+installation_announcement | installation_announcement_ends_at_not_null | NOT NULL ends_at
+installation_announcement | installation_announcement_id_not_null | NOT NULL id
+installation_announcement | installation_announcement_link_form | CHECK (((link ~ '^(/[A-Za-z0-9/_?=&.#-]*|https://[!-~]+)$'::text) AND (length(link) <= 300)))
+installation_announcement | installation_announcement_message_length | CHECK (((length(message) >= 1) AND (length(message) <= 300)))
+installation_announcement | installation_announcement_message_not_null | NOT NULL message
+installation_announcement | installation_announcement_pkey | PRIMARY KEY (id)
+installation_announcement | installation_announcement_published_at_not_null | NOT NULL published_at
+installation_announcement | installation_announcement_published_by_not_null | NOT NULL published_by
+installation_announcement | installation_announcement_roles_form | CHECK (((cardinality(roles) <= 20) AND (array_to_string(roles, ','::text) ~ '^([a-z_]{1,40}(,[a-z_]{1,40})*)?$'::text)))
+installation_announcement | installation_announcement_roles_not_null | NOT NULL roles
+installation_announcement | installation_announcement_severity_known | CHECK ((severity = ANY (ARRAY['info'::text, 'warning'::text, 'critical'::text])))
+installation_announcement | installation_announcement_severity_not_null | NOT NULL severity
+installation_announcement | installation_announcement_starts_at_not_null | NOT NULL starts_at
+installation_announcement | installation_announcement_window | CHECK ((ends_at > starts_at))
+installation_announcement | installation_announcement_withdrawn_by_fkey | FOREIGN KEY (withdrawn_by) REFERENCES app_user(user_id)
+installation_announcement | installation_announcement_withdrawn_whole | CHECK (((withdrawn_at IS NULL) = (withdrawn_by IS NULL)))
 item | item_code_format | CHECK ((code ~ '^[0-9A-Za-z][0-9A-Za-z._/-]{0,29}$'::text))
 item | item_code_key | UNIQUE (organisation_id, code)
 item | item_code_not_null | NOT NULL code
@@ -2125,6 +2205,7 @@ withholding_decision | withholding_decision_tax_agent_not_null | NOT NULL tax_ag
 CREATE INDEX account_parent_idx ON fyniq.account USING btree (organisation_id, parent_id)
 CREATE INDEX allocation_document ON fyniq.allocation USING btree (organisation_id, document_id, on_date)
 CREATE INDEX allocation_source ON fyniq.allocation USING btree (organisation_id, source_id)
+CREATE INDEX announcement_ends ON fyniq.announcement USING btree (organisation_id, ends_at)
 CREATE INDEX approval_request_by_status ON fyniq.approval_request USING btree (organisation_id, status, requested_at)
 CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisation_id, created_xact, object_type, object_id)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
@@ -2177,6 +2258,9 @@ CREATE UNIQUE INDEX accounting_policy_pkey ON fyniq.accounting_policy USING btre
 CREATE UNIQUE INDEX accounting_policy_version_key ON fyniq.accounting_policy USING btree (organisation_id, area, version)
 CREATE UNIQUE INDEX allocation_pkey ON fyniq.allocation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX allocation_reversed_once ON fyniq.allocation USING btree (organisation_id, reverses_id)
+CREATE UNIQUE INDEX announcement_dismissal_once ON fyniq.announcement_dismissal USING btree (organisation_id, user_id, announcement_id)
+CREATE UNIQUE INDEX announcement_dismissal_pkey ON fyniq.announcement_dismissal USING btree (organisation_id, id)
+CREATE UNIQUE INDEX announcement_pkey ON fyniq.announcement USING btree (organisation_id, id)
 CREATE UNIQUE INDEX app_user_pkey ON fyniq.app_user USING btree (user_id)
 CREATE UNIQUE INDEX approval_policy_pkey ON fyniq.approval_policy USING btree (organisation_id, id)
 CREATE UNIQUE INDEX approval_policy_request_once ON fyniq.approval_policy USING btree (organisation_id, request_id)
@@ -2231,6 +2315,7 @@ CREATE UNIQUE INDEX idempotency_key_pkey ON fyniq.idempotency_key USING btree (o
 CREATE UNIQUE INDEX inbound_file_pkey ON fyniq.inbound_file USING btree (organisation_id, id)
 CREATE UNIQUE INDEX inbound_message_once ON fyniq.inbound_message USING btree (organisation_id, provider, provider_id, address_id)
 CREATE UNIQUE INDEX inbound_message_pkey ON fyniq.inbound_message USING btree (organisation_id, id)
+CREATE UNIQUE INDEX installation_announcement_pkey ON fyniq.installation_announcement USING btree (id)
 CREATE UNIQUE INDEX installation_pkey ON fyniq.installation USING btree (singleton)
 CREATE UNIQUE INDEX item_code_key ON fyniq.item USING btree (organisation_id, code)
 CREATE UNIQUE INDEX item_pkey ON fyniq.item USING btree (organisation_id, id)
@@ -2343,6 +2428,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyni
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('account', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_framework DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_framework', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_policy', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.announcement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('announcement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.capture_address DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_address', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
@@ -2369,6 +2455,11 @@ CREATE TRIGGER accounting_framework_guard BEFORE DELETE OR UPDATE ON fyniq.accou
 CREATE TRIGGER accounting_policy_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_policy FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('policy', 'approved')
 CREATE TRIGGER allocation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.allocation FOR EACH ROW EXECUTE FUNCTION allocation_guard()
 CREATE TRIGGER allocation_no_truncate BEFORE TRUNCATE ON fyniq.allocation FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER announcement_dismissal_guard BEFORE DELETE OR UPDATE ON fyniq.announcement_dismissal FOR EACH ROW EXECUTE FUNCTION announcement_dismissal_guard()
+CREATE TRIGGER announcement_dismissal_no_truncate BEFORE TRUNCATE ON fyniq.announcement_dismissal FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER announcement_dismissible BEFORE INSERT ON fyniq.announcement_dismissal FOR EACH ROW EXECUTE FUNCTION announcement_dismissible()
+CREATE TRIGGER announcement_guard BEFORE DELETE OR UPDATE ON fyniq.announcement FOR EACH ROW EXECUTE FUNCTION announcement_guard()
+CREATE TRIGGER announcement_no_truncate BEFORE TRUNCATE ON fyniq.announcement FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER approval_policy_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.approval_policy FOR EACH ROW EXECUTE FUNCTION approval_policy_guard()
 CREATE TRIGGER approval_policy_voids AFTER INSERT ON fyniq.approval_policy FOR EACH ROW EXECUTE FUNCTION approval_policy_voids()
 CREATE TRIGGER approval_request_guard BEFORE UPDATE ON fyniq.approval_request FOR EACH ROW EXECUTE FUNCTION approval_request_guard()
@@ -2421,6 +2512,8 @@ CREATE TRIGGER inbound_file_guard BEFORE DELETE OR UPDATE ON fyniq.inbound_file 
 CREATE TRIGGER inbound_file_no_truncate BEFORE TRUNCATE ON fyniq.inbound_file FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER inbound_message_guard BEFORE DELETE OR UPDATE ON fyniq.inbound_message FOR EACH ROW EXECUTE FUNCTION inbound_message_guard()
 CREATE TRIGGER inbound_message_no_truncate BEFORE TRUNCATE ON fyniq.inbound_message FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER installation_announcement_guard BEFORE DELETE OR UPDATE ON fyniq.installation_announcement FOR EACH ROW EXECUTE FUNCTION announcement_guard()
+CREATE TRIGGER installation_announcement_no_truncate BEFORE TRUNCATE ON fyniq.installation_announcement FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER journal_entry_assign BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_assign()
 CREATE TRIGGER journal_entry_bill_release BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = 'bill_release'::text) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_bill_release()
 CREATE TRIGGER journal_entry_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_immutable()
@@ -2485,6 +2578,8 @@ account | tenant_isolation | * | (organisation_id = current_org()) | (organisati
 accounting_framework | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 accounting_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 allocation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+announcement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+announcement_dismissal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_signature | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -2554,6 +2649,9 @@ accept_super_admin_invitation(p_hash bytea, p_display_name text, p_issuer text, 
 account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 78889030731483263211599be66a7331
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
 allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9cbe66a42bfb181352ec8ce6da352e27
+announcement_dismissal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5e05644e02afe264e8eef087f5ad7218
+announcement_dismissible() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c4dc44e3777faec4069ed0a9f0f172bd
+announcement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aef10077836a4f9111749cb3181c5788
 approval_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 54bfd8bf483ebb04da99069f2b6836cf
 approval_policy_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5c96f4771b1eddd81ec69ad86520e32a
 approval_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c3359e1c6e373efc4111560e22c9c455
@@ -2606,6 +2704,7 @@ fx_feed_rate_immutable() → trigger | security invoker | v | search_path=pg_cat
 fx_rate_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df1d5890f30041246e4b0ce50b864488
 inbound_file_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9b3c6d083223c4f8e6521e1cd4cad263
 inbound_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3bd01c80a7acafbbc22e6ab62d336849
+installation_announcements() → TABLE(id uuid, message text, link text, severity text, roles text[], starts_at timestamp with time zone, ends_at timestamp with time zone, dismissible boolean, published_by uuid, published_at timestamp with time zone, withdrawn_at timestamp with time zone, withdrawn_by uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 0028b2bdb61c586e84ebdc774b1cfb72
 installation_org() → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9731da83e60ff6283071958a473dc801
 invite_super_admin(p_by uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a982d2e3cd5f5da8d5c1851b7fe08001
 issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1c6a399b76934acce5ae3a3dc9d8d7e8
@@ -2641,6 +2740,7 @@ period_close_guard() → trigger | security invoker | v | search_path=pg_catalog
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bd7af6699cf1474f70577dbea9a60dc6
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
+publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
 record_feed_rate(p_base text, p_currency text, p_on date, p_rate numeric, p_quote numeric, p_quote_form text, p_feed text) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c0b4a6a1f6f33b96ce2869ab4921553f
 record_identity_email(p_issuer text, p_subject text, p_email text, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2f631281b01b5872840eb07594f8bbe1
@@ -2686,6 +2786,7 @@ webauthn_credential_guard() → trigger | security invoker | v | search_path=pg_
 webauthn_credential_register(p_challenge uuid, p_session bytea, p_credential_id bytea, p_public_key bytea, p_sign_count bigint, p_aaguid bytea, p_transports text[], p_backup_eligible boolean, p_backup_state boolean, p_name text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 39bda4fc155535c79e2260a4c795eb56
 webauthn_credential_revoke(p_user uuid, p_credential uuid, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | db067f4b644964dd08eab59fb859a341
 webauthn_credentials(p_user uuid, p_all boolean) → SETOF webauthn_credential | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1b6421434f028a41ac3647af4f1fd4f1
+withdraw_installation_announcement(p_by uuid, p_id uuid, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | caf961eaa1cce1a0fac2670193fc940f
 withholding_decision_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1b6bc116037949c933d0c5d75c0da1f0
 
 ## extensions
