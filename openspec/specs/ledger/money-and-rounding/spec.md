@@ -229,6 +229,10 @@ Source: PRD-001 §10.4
 - **THEN** GST = round(gross × rate ÷ (1 + rate), 2), half-up
 - **AND** net = gross − GST
 
+#### Scenario: Built for customer deposits (rev 0.126)
+- **WHEN** a part-payment deposit bears GST when received
+- **THEN** its GST is RND-GST-INCL of its gross in the base currency, at the base currency's minor units
+
 ### Requirement: RND-CPF CPF rounding
 Total CPF SHALL be rounded to the dollar half-up, the employee share rounded down to the dollar and the employer share the difference, on the employee-month total (rules from the CPF Board, re-checked each January, and the workbook).
 

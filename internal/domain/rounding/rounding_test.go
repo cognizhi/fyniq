@@ -810,3 +810,65 @@ func TestLineDiscountedProperties(t *testing.T) {
 		}
 	})
 }
+
+// Worked by hand (PRD-001 §10.4, RND-GST-INCL): S$109.00 at 9% holds S$9.00 of GST (109 × 0.09 ÷ 1.09); S$100.00
+// holds 8.2568…, so S$8.26; S$1.00 holds 0.0826, S$0.08; S$0.06 holds 0.00495, nothing; S$0.12 holds 0.0099, S$0.01;
+// a negative gross mirrors it; at 0 there is none; at 8% S$108.00 holds S$8.00.
+// req: RND-GST-INCL
+func TestGSTInclPinnedCases(t *testing.T) {
+	for _, c := range []struct {
+		gross, rate, want string
+	}{
+		{"109.00", "0.09", "9.00"},
+		{"100.00", "0.09", "8.26"},
+		{"1.00", "0.09", "0.08"},
+		{"0.06", "0.09", "0.00"},
+		{"0.12", "0.09", "0.01"},
+		{"-100.00", "0.09", "-8.26"},
+		{"109.00", "0", "0.00"},
+		{"108.00", "0.08", "8.00"},
+	} {
+		g, err := money.Parse(c.gross, sgd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := GSTIncl(g, c.rate)
+		if err != nil || got.String() != c.want || got.Currency() != sgd {
+			t.Errorf("GSTIncl(%s, %s) = %v, %v; want %s", c.gross, c.rate, got, err, c.want)
+		}
+	}
+	g, _ := money.Parse("109.00", sgd)
+	for _, bad := range []string{"9", "1", "0.0900001", "", "-0.09"} {
+		if _, err := GSTIncl(g, bad); err == nil {
+			t.Errorf("GSTIncl at %q: no error", bad)
+		}
+	}
+}
+
+// Any GST RND-GST-INCL takes is within half a minor unit of the exact share, and net and GST add back to the gross.
+// req: RND-GST-INCL
+// req: QA-ENG-03
+func TestGSTInclProperties(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		units := rapid.Int64Range(-100_000_000, 100_000_000).Draw(t, "gross minor units")
+		g := money.FromMinor(units, sgd)
+		rate := rapid.SampledFrom([]string{"0.07", "0.08", "0.09", "0", "0.1"}).Draw(t, "rate")
+		got, err := GSTIncl(g, rate)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r, _, _ := apd.NewFromString(rate)
+		var one, exact, diff apd.Decimal
+		_, _ = work.Add(&one, r, apd.New(1, 0))
+		_, _ = work.Mul(&exact, g.Decimal(), r)
+		_, _ = work.Quo(&exact, &exact, &one)
+		_, _ = work.Sub(&diff, got.Decimal(), &exact)
+		if diff.Abs(&diff).Cmp(apd.New(5, -3)) > 0 {
+			t.Fatalf("%s at %s: GST %s, exact %s", g, rate, got, &exact)
+		}
+		net, _ := g.Sub(got)
+		if back, _ := net.Add(got); !back.Equal(g) {
+			t.Fatalf("%s: net %s and GST %s add to %s", g, net, got, back)
+		}
+	})
+}

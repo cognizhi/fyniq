@@ -663,6 +663,10 @@ Source: PRD-001 §B.5
 - **WHEN** a bill withholds tax from a non-resident supplier (FR-AP-19)
 - **THEN** the tax goes to 2330 Withholding tax payable, the account with the role withholding-tax-payable [accountant to confirm the code]
 
+#### Scenario: Customer deposits (rev 0.126)
+- **WHEN** a customer deposit is recorded (FR-AR-09)
+- **THEN** it goes to 2410 Customer deposits & retainers, the account with the role customer-deposits, never revalued [accountant to confirm the classification]
+
 #### Scenario: New accounts still to be assigned
 - **WHEN** the unrealised FX, payment-provider clearing, gain or loss on disposal and bad debts accounts are needed
 - **THEN** the standard chart assigns them provisionally until the CoA review: 7040 unrealised FX gain or loss, 7050 gain or loss on disposal (the workbook's 7040, moved), 1050 payment gateway as the payment-provider clearing account, and the workbook's 5040 for payment fees (rev 0.31)

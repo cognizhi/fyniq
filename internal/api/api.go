@@ -82,6 +82,7 @@ type API struct {
 	// to customers against their credits (FR-AR-04).
 	customerApplications journal.CustomerCreditApplications
 	customerRefunds      journal.CustomerRefunds
+	deposits             journal.CustomerDeposits // customer deposits (FR-AR-09)
 }
 
 func init() {
@@ -180,7 +181,7 @@ func New(mux humago.Mux, d Deps) *API {
 		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
 		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store},
 		customerApplications: journal.CustomerCreditApplications{Store: d.Store}, customerRefunds: journal.CustomerRefunds{Store: d.Store},
-		closing: closing.Service{Store: d.Store, Clock: d.Clock}}
+		deposits: journal.CustomerDeposits{Store: d.Store}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {
@@ -199,6 +200,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.writeOffs.AfterPosting = a.afterPosting
 	a.customerApplications.AfterPosting = a.afterPosting
 	a.customerRefunds.AfterPosting = a.afterPosting
+	a.deposits.AfterPosting = a.afterPosting
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(limitUploads{mux}, cfg)
@@ -256,6 +258,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerWriteOffs(a)
 	registerCustomerCreditApplications(a)
 	registerCustomerRefunds(a)
+	registerDeposits(a)
 	registerPurchaseOrders(a)
 	registerWithholding(a)
 	registerBillPlans(a)

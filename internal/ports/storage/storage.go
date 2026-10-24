@@ -326,7 +326,7 @@ const RoleUnrealisedFX AccountRole = "unrealised-fx"
 var SystemRoles = []AccountRole{"accounts-receivable", "accounts-payable", "gst-control", "fx-rounding", "unrealised-fx",
 	"deferred-revenue", "prepayments", "salaries-payable", "cpf-sdl-payable", "employer-cpf", "sdl", "depreciation",
 	"accumulated-depreciation", "suspense", "retained-earnings", "expense-claims-payable", "income-tax-payable", "income-tax-expense",
-	"director-loan", "deferred-remuneration", RoleShareCapital, "capital-contribution", "withholding-tax-payable"}
+	"director-loan", "deferred-remuneration", RoleShareCapital, "capital-contribution", "withholding-tax-payable", "customer-deposits"}
 
 // AccountChange is what may change on an account: never its code, type or role (FR-COA-03).
 type AccountChange struct {
@@ -409,6 +409,9 @@ const (
 	DocumentCustomerCreditApplication DocumentType = "customer_credit_application" // #nosec G101 -- a document type's name, not a credential
 	// DocumentCustomerRefund is money paid back to a customer against a credit with it (FR-AR-04, FR-AR-18; p1-sales).
 	DocumentCustomerRefund DocumentType = "customer_refund"
+	// DocumentCustomerDeposit is money a customer paid ahead of an invoice: a part payment, or a security deposit
+	// (FR-AR-09; p1-sales), recorded by hand and held on 2410 until an invoice deducts it or it is refunded.
+	DocumentCustomerDeposit DocumentType = "customer_deposit"
 	// DocumentCustomerReceipt is money a customer paid, recorded by hand until bank import matches it (FR-AR-18; the
 	// owner's decision of 24 Oct 2026).
 	DocumentCustomerReceipt DocumentType = "customer_receipt"

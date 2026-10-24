@@ -102,6 +102,15 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 - [ ] 3.2 Deposits and retainers to 2410 (role `customer-deposits`), applied to invoices; security deposits without
   GST; a part-payment deposit's GST when GST-registered. Tests `// req: FR-AR-09`,
   `// req: ledger/posting-rules Customer refunds and deposits`
+  (In part, 24 Oct 2026, PRD-001 rev 0.126, on the owner's decisions of 24 Oct 2026: a deposit is deducted on the final
+  invoice, and may be in any currency at the rate it came in. Receiving built: `internal/domain/deposit`,
+  `customer_deposit@1` with its replay golden, `RND-GST-INCL` (`rounding.GSTIncl`), the role `customer-deposits` on 2410,
+  `journal.CustomerDeposits` (record, void), migrations 000124 and 000125, five operations under `/v1/customer-deposits`
+  with the approval object `customer_deposit`. Tests: `TestPostCustomerDeposit`, `TestPostCustomerDepositRefuses`,
+  `TestPostCustomerDepositProperties`, `TestEveryCustomerDepositRuleVersionReplaysItsGoldenEntries`,
+  `TestGSTInclPinnedCases`, `TestGSTInclProperties`, `TestCustomerDepositsPostThroughThePostingService`,
+  `TestCustomerDepositsThroughTheAPI`, the matrix rows. Still to come: deducting on the invoice, refunds of deposits,
+  and the 2410 reconciliation.)
 
 ## 4. Quotes and sales orders
 

@@ -81,7 +81,7 @@ func TestTheStandardChart(t *testing.T) {
 			"2120", "2500"}},
 		"share capital": {flagged(func(a Account) bool { return a.Role == storage.RoleShareCapital }), []string{"3010", "3020"}},
 		"system": {flagged(func(a Account) bool { return a.Role != "" }), []string{"1100", "1210", "1590", "2010", "2100", "2110", "2120",
-			"2150", "2200", "2300", "2330", "2400", "2500", "2999", "3010", "3020", "3100", "3300", "6020", "6030", "6610", "7030", "7040", "8010"}},
+			"2150", "2200", "2300", "2330", "2400", "2410", "2500", "2999", "3010", "3020", "3100", "3300", "6020", "6030", "6610", "7030", "7040", "8010"}},
 		"money": {flagged(func(a Account) bool { return a.MoneyAccount }), []string{"1010", "1020", "1030", "1040", "1050", "2030", "2150"}},
 	} {
 		if !slices.Equal(c.got, c.want) {

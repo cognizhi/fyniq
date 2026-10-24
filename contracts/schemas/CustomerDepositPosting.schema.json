@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "deposit": {
+      "$ref": "CustomerDeposit.schema.json",
+      "description": "The deposit after the command."
+    },
+    "entry": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry the command posted: the deposit's entry, or its reversing entry."
+    }
+  },
+  "required": [
+    "deposit",
+    "entry"
+  ],
+  "title": "CustomerDepositPosting",
+  "type": "object"
+}

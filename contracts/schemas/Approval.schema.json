@@ -94,7 +94,8 @@
         "customer_receipt",
         "write_off",
         "customer_credit_application",
-        "customer_refund"
+        "customer_refund",
+        "customer_deposit"
       ],
       "examples": [
         "organisation_setting"
@@ -131,7 +132,8 @@
         "write_off.post",
         "write_off.void",
         "customer_credit_application.void",
-        "customer_refund.void"
+        "customer_refund.void",
+        "customer_deposit.void"
       ],
       "examples": [
         "organisation_setting.change"

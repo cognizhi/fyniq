@@ -1,8 +1,8 @@
 // Package rounding holds Fyniq's named rounding and allocation policies (PRD-001 §10.4). Every
 // rounding in the system goes through one of these functions, called by its name, and "half-up"
 // means half away from zero. The policies the P0 posting source needs are here; the statutory ones
-// (RND-GST-INCL, RND-CPF*, RND-SDL) and RND-SHARE and RND-MILEAGE arrive with their P1 sources, as
-// RND-GST-EXCL did with bills (p1-purchases).
+// (RND-CPF*, RND-SDL) and RND-SHARE and RND-MILEAGE arrive with their P1 sources, as RND-GST-EXCL did
+// with bills (p1-purchases) and RND-GST-INCL with customer deposits (p1-sales).
 package rounding
 
 import (
@@ -28,6 +28,7 @@ const (
 	GSTShareName     = "RND-GST-SHARE"
 	WHTName          = "RND-WHT"
 	DiscountName     = "RND-DISCOUNT"
+	GSTInclName      = "RND-GST-INCL"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -277,6 +278,30 @@ func Percent(part, whole money.Money) (string, error) {
 type GSTMethod string
 
 // The two methods of RND-GST-EXCL.
+// GSTIncl is RND-GST-INCL (PRD-001 §10.4): the GST inside a gross amount = round(gross × rate ÷ (1 + rate), the
+// currency's minor units), half away from zero, computed exactly before its one rounding; the net is gross − GST. rate
+// is the GST code's rate as a fraction, such as "0.09", from the sg-gst pack in force at the tax point.
+func GSTIncl(gross money.Money, rate string) (money.Money, error) {
+	if !gstRate.MatchString(rate) {
+		return money.Money{}, fmt.Errorf("%s: the rate %q is not a fraction such as 0.09", GSTInclName, rate)
+	}
+	r, _, err := apd.NewFromString(rate)
+	if err != nil {
+		return money.Money{}, fmt.Errorf("%s: the rate %q: %w", GSTInclName, rate, err)
+	}
+	var onePlus, product, quotient apd.Decimal
+	if _, err := work.Add(&onePlus, r, apd.New(1, 0)); err != nil {
+		return money.Money{}, err
+	}
+	if _, err := work.Mul(&product, gross.Decimal(), r); err != nil {
+		return money.Money{}, err
+	}
+	if _, err := work.Quo(&quotient, &product, &onePlus); err != nil {
+		return money.Money{}, err
+	}
+	return money.FromRounded(halfAwayFromZero(&quotient, gross.Currency().MinorUnits), gross.Currency())
+}
+
 const (
 	GSTPerSubtotal GSTMethod = "subtotal"
 	GSTPerLine     GSTMethod = "line"
