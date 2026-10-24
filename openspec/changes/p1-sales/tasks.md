@@ -1,0 +1,85 @@
+# Tasks
+
+Each slice is one pull request, merged when green. Tests carry `// req:` tags (QA-TRACE-01); every new
+✖ or ⚠ message is triggered by a fixture (QA-RPT-02).
+
+## 1. Invoices: the document, its rule and its approval
+
+- [ ] 1.1 The invoice document: versions, the payload of `design.md` (lines or one amount, service period,
+  template, notes), the customer's terms and due date, the invoice sequence numbered at issue. Tests
+  `// req: FR-AR-03`
+- [ ] 1.2 The posting rule `invoice@1`: 1100 the total, revenue or 2400 the net under `RND-FX`, 2200 the output
+  GST under `RND-GST-EXCL` once GST-registered, a foreign invoice's GST in SGD; a replay golden. Tests
+  `// req: ledger/posting-rules Posting an invoice`, `// req: ledger/posting-rules Amounts of a posted invoice`
+- [ ] 1.3 Issue, void and edit through the posting service: FM-2's threshold, FM-1 for a void, SOD-3, FR-GL-12;
+  the five states. Tests `// req: FR-AR-03`, `// req: FM-2`, `// req: SOD-3`
+- [ ] 1.4 The API: list, get, create, revise, issue, void, edit and preview invoices, with ETags, idempotency,
+  attachments and the matrix rows; Spectral clean. Tests `// req: FR-INT-01`
+- [ ] 1.5 Spreads: a spread line to 2400 and its monthly releases by the scheduler (`ALLOC-EVEN`), reversed with a
+  void or edit. Tests `// req: ledger/posting-rules Spreading an invoice or bill`
+- [ ] 1.6 The AR sub-ledger equal to 1100 (INV-07), shown at the close; AR ageing by customer and currency with the
+  unrealised FX exposure. Tests `// req: INV-07`, `// req: FR-AR-10`
+
+## 2. Receipts, allocations, tolerances and write-offs
+
+- [ ] 2.1 Customer receipts recorded by hand (the owner's decision of 24 Oct 2026): from a money account against
+  one or more invoices, realised FX per allocation, unapplied amounts and overpayments as customer credits,
+  voided by reversal; the allocations generalised from the bills'. Tests
+  `// req: ledger/posting-rules Customer and supplier payments`, `// req: FR-AR-18`, G4-045, G4-054
+- [ ] 2.2 Settlement tolerances after realised FX, for invoices and bills, within the caps per document and month
+  (provisional until question 32). Tests `// req: ledger/posting-rules Settlement tolerances`,
+  `// req: ledger/posting-rules Settlement difference on an invoice or bill`
+- [ ] 2.3 Write-offs: reason-coded, with evidence, approved by someone other than whoever recorded the receipt
+  (SOD-9), posted to the reason's account; a bad debt tagged for the relief review. Tests `// req: FR-AR-17`,
+  `// req: ledger/posting-rules Bad-debt write-off`, `// req: SOD-9`
+
+## 3. Credit notes, refunds and deposits
+
+- [ ] 3.1 Credit notes linked to an invoice in full or part, or standalone, posting the reverse of its legs;
+  applied by allocation; refunded from a money account. Tests `// req: FR-AR-04`,
+  `// req: ledger/posting-rules Credit documents and opening items`
+- [ ] 3.2 Deposits and retainers to 2410 (role `customer-deposits`), applied to invoices; security deposits without
+  GST; a part-payment deposit's GST when GST-registered. Tests `// req: FR-AR-09`,
+  `// req: ledger/posting-rules Customer refunds and deposits`
+
+## 4. Quotes and sales orders
+
+- [ ] 4.1 Quotes and sales orders: lines, validity, statuses, the pipeline value, nothing posted; expiry by the
+  scheduler. Tests `// req: FR-AR-01`
+- [ ] 4.2 Conversion to a draft invoice in full or in part, linked both ways. Tests `// req: FR-AR-02`
+
+## 5. Sending, the online link and tax-invoice particulars
+
+- [ ] 5.1 The tax invoice's particulars in the invoice template: the IRAS particulars, SGD amounts for a foreign
+  currency, "Tax invoice" only once GST-registered, the 30-day ⚠, the simplified tax invoice. Tests
+  `// req: FR-AR-05`
+- [ ] 5.2 Sending quotes and invoices: the issued version's PDF, the email template, the invoices sender, the
+  delivery state from the providers' events. Tests `// req: FR-AR-06`, `// req: FR-AR-16`
+- [ ] 5.3 The online link: a hashed 256-bit token per version, the public read endpoint, viewed recorded once, the
+  quote accepted or declined as evidence, expiry and revocation; its threat model. Tests `// req: FR-AR-06`,
+  `// req: FR-AR-16`
+
+## 6. Recurring invoices
+
+- [ ] 6.1 Recurring invoices made by the scheduler as drafts, or issued and sent once a second person approved
+  their content (the owner's decision of 24 Oct 2026), listed for the weekly review; month-end dates. Tests
+  `// req: FR-AR-07`, `// req: FM-3`
+
+## 7. Reminders and statements
+
+- [ ] 7.1 Reminder schedules per customer group with their templates; a due reminder waits in the Inbox to be sent
+  or skipped until bank import (the owner's decision of 24 Oct 2026); quotes about to expire. Tests
+  `// req: FR-AR-08`
+- [ ] 7.2 Statements of account by date range, adding up, as a PDF sent like an invoice. Tests `// req: FR-AR-08`
+
+## 8. Screens
+
+- [ ] 8.1 Build invoice-editor, invoice-record, quotes-list, record-payment, recurring-documents,
+  statements-reminders and customer-document-view as designed. Add help keys and `docs/user-guide/` pages
+  compiled into `kb/`
+
+## 9. The oracle and finishing
+
+- [ ] 9.1 The invoice, receipt, credit, deposit, write-off and spread rules in the independent oracle, with scenario
+  shapes and differential tests: an oracle session (QA-ENG-01), never a build session
+- [ ] 9.2 Finish with `make check` and `make test`

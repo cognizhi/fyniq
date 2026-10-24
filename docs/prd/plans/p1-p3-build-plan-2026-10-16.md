@@ -165,6 +165,10 @@ its "After" changes are built far enough, while `p1-sales` needs `p1-templates-e
 started. By the owner's decisions of the same day it also records supplier payments by hand until bank
 import, spreads prepayments with releases the scheduler posts, and has the scheduler draft recurring
 bills.
+`p1-sales` is proposed (24 Oct 2026), once `p1-templates-email` was built, on the pipeline `p1-purchases`
+built. By the owner's decisions of that day it records customer receipts by hand until bank import, sets
+each recurring invoice to make drafts or, once its content is approved, to issue and send, tracks "viewed"
+through the online link instead of email opens, and holds reminders in the Inbox until bank import.
 
 **Wave 3 · Money in and out.** Connectors, bank import and reconciliation, payment files and payment
 providers.
