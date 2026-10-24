@@ -492,6 +492,12 @@ var (
 	// issuing does: P on "Invoices, credit notes".
 	EmailInvoice = Policy{Operation: "emailInvoice", Capability: Invoices, Need: Post}
 	EmailQuote   = Policy{Operation: "emailQuote", Capability: Invoices, Need: Post}
+	// The online link (FR-AR-06, FR-AR-16): opened by whoever holds it, with no session (public); revoked under P.
+	GetPublicDocument    = Policy{Operation: "getPublicDocument", Capability: Invoices, Need: View, Public: true}
+	GetPublicDocumentPDF = Policy{Operation: "getPublicDocumentPDF", Capability: Invoices, Need: View, Public: true}
+	AcceptQuoteByLink    = Policy{Operation: "acceptQuoteByLink", Capability: Invoices, Need: Post, Public: true}
+	DeclineQuoteByLink   = Policy{Operation: "declineQuoteByLink", Capability: Invoices, Need: Post, Public: true}
+	RevokeDocumentLink   = Policy{Operation: "revokeDocumentLink", Capability: Invoices, Need: Post}
 
 	// Quotes and sales orders (FR-AR-01): they post nothing, so they are drafted under C and sent or cancelled under P, as
 	// issuing an invoice is posted; the pipeline is read under V.
@@ -745,7 +751,8 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,
 	GetCreditApplication, ApplyCredit, VoidCreditApplication, RequestCreditApplicationVoid,
 	GetSupplierRefund, RecordSupplierRefund, VoidSupplierRefund, RequestSupplierRefundVoid,
-	ListInvoices, GetInvoice, GetInvoiceDocument, EmailInvoice, EmailQuote, CreateInvoice, ReplaceInvoice, IssueInvoice, VoidInvoice, EditInvoice, RequestInvoiceIssue, RequestInvoiceVoid,
+	ListInvoices, GetInvoice, GetInvoiceDocument, EmailInvoice, EmailQuote, GetPublicDocument, GetPublicDocumentPDF, AcceptQuoteByLink,
+	DeclineQuoteByLink, RevokeDocumentLink, CreateInvoice, ReplaceInvoice, IssueInvoice, VoidInvoice, EditInvoice, RequestInvoiceIssue, RequestInvoiceVoid,
 	RequestInvoiceEdit, AddInvoiceEvidence, ListInvoiceEvidence, GetInvoiceEvidence, RemoveInvoiceEvidence, GetReceivables,
 	ListCustomerReceipts, GetCustomerReceipt, RecordCustomerReceipt, VoidCustomerReceipt, RequestCustomerReceiptVoid,
 	ListWriteOffs, GetWriteOff, CreateWriteOff, ReplaceWriteOff, RequestWriteOffPost, VoidWriteOff, RequestWriteOffVoid,

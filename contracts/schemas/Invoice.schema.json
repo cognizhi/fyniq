@@ -117,6 +117,13 @@
       },
       "type": "array"
     },
+    "links": {
+      "description": "getInvoice only: the online links its emails carried, newest first, with their status; never their tokens (FR-AR-06).",
+      "items": {
+        "$ref": "DocumentLinkOut.schema.json"
+      },
+      "type": "array"
+    },
     "net": {
       "$ref": "Money.schema.json",
       "description": "Every line's net, in the invoice's currency."
@@ -223,7 +230,8 @@
     "releases",
     "checks",
     "ledger_impact",
-    "sends"
+    "sends",
+    "links"
   ],
   "title": "Invoice",
   "type": "object"

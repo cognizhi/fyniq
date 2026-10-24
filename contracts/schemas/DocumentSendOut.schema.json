@@ -3,10 +3,11 @@
   "additionalProperties": false,
   "properties": {
     "delivery": {
-      "description": "sent until the provider says more; delivered; or bounced, when the provider refused or returned it.",
+      "description": "sent until the provider says more; delivered; viewed, once the customer opened the link it carried; or bounced, when the provider refused or returned it.",
       "enum": [
         "sent",
         "delivered",
+        "viewed",
         "bounced"
       ],
       "examples": [

@@ -90,6 +90,10 @@ The registry of email-in address names (000102, FR-INT-22): `capture_name` (a na
 and its live address there and that address's member, if any), written only by `capture_address`'s trigger and read only through `capture_route`, which
 the receiver of inbound mail calls before any tenant is set; no role holds a grant on it, and a name never passes to
 another organisation (`FY183`).
+The registry of online links' hashes (000133, FR-AR-06): `document_link_token` (the SHA-256 of a quote's or invoice's
+link token, its organisation and its link), written only by `document_link`'s trigger and read only through
+`document_link_route`, which the public read endpoint calls before any tenant is set; no role holds a grant on it, it
+holds no token, and a row never changes or goes (`FY197`).
 The installation's banners (000108, FR-NTF-03): `installation_announcement` (a Super admin's banner to everyone),
 published and withdrawn only through `publish_installation_announcement` and `withdraw_installation_announcement`, which
 refuse anyone but an active Super admin (`FY085`), and read only through `installation_announcements` (the API); a
@@ -224,6 +228,8 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY194 | STORAGE-QUOTE-01 | An outcome is only of a sent quote or sales order |
 | FY195 | STORAGE-SEND-01 | A send of a quote or invoice never changes or goes: send it again instead |
 | FY196 | STORAGE-SEND-01 | Only the current version of a sent quote or an issued invoice is sent; a draft never is |
+| FY197 | STORAGE-LINK-01 | A document's online link changes only in its first view and its revocation, each once, and is never deleted |
+| FY198 | STORAGE-LINK-01 | An online link is only of the current version of a sent quote or an issued invoice |
 | FY060 | STORAGE-AUDIT-01 | The audit trail cannot be changed or deleted |
 | FY061 | STORAGE-AUDIT-01 | A change has no audit event in its transaction |
 | FY070 | STORAGE-OUTBOX-01 | An outbox row cannot change what it is, count backwards or be deleted |

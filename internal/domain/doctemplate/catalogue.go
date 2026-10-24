@@ -160,6 +160,8 @@ var (
 		{"document.gst_total", TypeMoney, "GST"},
 		{"document.total", TypeMoney, "Total"},
 	}
+	// linkField is the online link an email carries to the document it sends (FR-AR-06): empty in the document itself.
+	linkField = Field{"document.link", TypeText, "Link to view it online"}
 	sgdFields = []Field{
 		{"document.subtotal_sgd", TypeMoney, "Total before GST in SGD"},
 		{"document.gst_total_sgd", TypeMoney, "GST in SGD"},
@@ -184,9 +186,10 @@ func Fields(documentType string) []Field {
 			{"document.payment_terms", TypeText, "Payment terms"},
 			{"document.amount_paid", TypeMoney, "Amount paid"},
 			{"document.amount_due", TypeMoney, "Amount due"},
+			linkField,
 		}, paymentFields)
 	case Quote:
-		out = slices.Concat(out, totalFields, []Field{{"document.valid_until", TypeDate, "Valid until"}}, paymentFields)
+		out = slices.Concat(out, totalFields, []Field{{"document.valid_until", TypeDate, "Valid until"}, linkField}, paymentFields)
 	case CreditNote:
 		out = slices.Concat(out, totalFields, sgdFields, []Field{
 			{"document.invoice_number", TypeText, "Invoice credited"},

@@ -3503,6 +3503,29 @@ Asks for another person's approval to void a refund on the date given, with a re
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APPLY-02`, `APPLY-06`, `APPLY-07`, `APPLY-10`, `APR-06`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/document-links/{link_id}/revoke`
+
+**Revoke a quote's or invoice's online link** (`revokeDocumentLink`)
+
+Stops a link working at once (FR-AR-06): whoever holds it then gets LINK-01. A link is revoked once; to share the document again, email it again, which makes a new link. Side effects: the revocation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview revokes nothing.
+
+- **Permission:** Post on Invoices, credit notes
+- **Parameters:**
+  - `link_id` (path, required): The link's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`DocumentLinkOut`](../../contracts/schemas/DocumentLinkOut.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LINK-01` A link changes only in its first view and its revocation, once each; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LINK-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/invoices`
 
 **List the invoices** (`listInvoices`)
@@ -3830,6 +3853,92 @@ Asks for another person's approval to void an issued invoice with a reversing en
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `FX-01`, `INVOICE-01`, `INVOICE-02`, `INVOICE-03`, `INVOICE-04`, `INVOICE-05`, `INVOICE-06`, `INVOICE-07`, `INVOICE-08`, `INVOICE-09`, `INVOICE-13`, `INVOICE-15`, `INVOICE-16`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `LEDGER-22`, `LEDGER-23`, `LEDGER-24`, `LEDGER-28`, `LEDGER-31`, `LEDGER-32`, `LEDGER-33`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/public/document`
+
+**Open a quote or invoice through its link** (`getPublicDocument`)
+
+Public: no session. Opens the quote or invoice a link's token (in the Fyniq-Link header, from the link's fragment) was made for (FR-AR-06, FR-AR-16): what its PDF shows, a quote's status and answer, and whether the customer can answer it here. The first opening is recorded as the document's delivery viewed (the time only, never the reader's address). A link opens its own document's version and nothing else, for 180 days at most, until revoked, voided or cancelled, or an invoice is paid in full; every link that opens nothing answers the same 404 LINK-01. At most 30 a minute per link. Never cached or indexed.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `Fyniq-Link` (header, required): The link's token, from the fragment of the link the email carried (after #/d/#). Never put it in a URL.
+- **Responses:**
+  - `200` OK [`PublicDocument`](../../contracts/schemas/PublicDocument.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `LINK-01` The link opens no document.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `SALESDOC-02` The invoice's checks stop it being laid out.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `LINK-01`, `SALESDOC-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/public/document/accept`
+
+**Accept a quote through its link** (`acceptQuoteByLink`)
+
+Public: no session. The customer accepts the sent quote or order a link's token opens (FR-AR-16), with the name of who accepts and a comment, kept as the quote's answer and its evidence (FR-DOC-05): recorded as the link, with the request's address in the audit trail. Only a sent quote, still valid, with no answer: a quote has one answer, which never changes (QUOTE-07). At most 5 answers a minute per link. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing.
+
+- **Permission:** Post on Invoices, credit notes
+- **Parameters:**
+  - `Fyniq-Link` (header, required): The link's token, from the fragment of the link the email carried (after #/d/#). Never put it in a URL.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PublicAnswerRequest`](../../contracts/schemas/PublicAnswerRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PublicDocument`](../../contracts/schemas/PublicDocument.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `LINK-01` The link opens no document.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `QUOTE-05` The quote is not sent; `QUOTE-07` The quote has its answer already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-QUOTE-01` The quote's answer is recorded once, of a sent quote.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `QUOTE-03` The quote's validity date is missing or before its date; `QUOTE-08` The answer has no date, or a text is too long; `SALESDOC-02` The invoice's checks stop it being laid out.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `LINK-01`, `QUOTE-03`, `QUOTE-05`, `QUOTE-07`, `QUOTE-08`, `SALESDOC-02`, `STORAGE-LOCK-01`, `STORAGE-QUOTE-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/public/document/decline`
+
+**Decline a quote through its link** (`declineQuoteByLink`)
+
+Public: no session. The customer declines the sent quote or order a link's token opens (FR-AR-16), with a comment, kept as the quote's answer: recorded as the link, with the request's address in the audit trail. Only a sent quote, still valid, with no answer (QUOTE-07). At most 5 answers a minute per link. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing.
+
+- **Permission:** Post on Invoices, credit notes
+- **Parameters:**
+  - `Fyniq-Link` (header, required): The link's token, from the fragment of the link the email carried (after #/d/#). Never put it in a URL.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PublicAnswerRequest`](../../contracts/schemas/PublicAnswerRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PublicDocument`](../../contracts/schemas/PublicDocument.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `LINK-01` The link opens no document.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `QUOTE-05` The quote is not sent; `QUOTE-07` The quote has its answer already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-QUOTE-01` The quote's answer is recorded once, of a sent quote.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `QUOTE-03` The quote's validity date is missing or before its date; `QUOTE-08` The answer has no date, or a text is too long; `SALESDOC-02` The invoice's checks stop it being laid out.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `LINK-01`, `QUOTE-03`, `QUOTE-05`, `QUOTE-07`, `QUOTE-08`, `SALESDOC-02`, `STORAGE-LOCK-01`, `STORAGE-QUOTE-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/public/document/pdf`
+
+**Get the PDF of a quote or invoice through its link** (`getPublicDocumentPDF`)
+
+Public: no session. The PDF of the quote or invoice a link's token opens (FR-AR-06), rendered with the template that applies to its customer, as emailing it rendered it. Refused as getPublicDocument refuses. At most 30 a minute per link. Never cached or indexed.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `Fyniq-Link` (header, required): The link's token, from the fragment of the link the email carried (after #/d/#). Never put it in a URL.
+- **Responses:**
+  - `200` OK [`PublicPDF`](../../contracts/schemas/PublicPDF.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `LINK-01` The link opens no document.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `SALESDOC-02` The invoice's checks stop it being laid out.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `LINK-01`, `SALESDOC-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `TPL-17`
 
 ### `GET /v1/quotes`
 

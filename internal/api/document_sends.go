@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 	netmail "net/mail"
 	"strings"
@@ -42,7 +43,7 @@ type DocumentSendOut struct {
 	To              string    `json:"to" doc:"Whom it was sent to." example:"accounts@acme.example"`
 	SentAt          time.Time `json:"sent_at" doc:"When it was sent." example:"2026-10-24T09:30:00Z"`
 	SentBy          *Person   `json:"sent_by,omitempty" doc:"Who sent it."`
-	Delivery        string    `json:"delivery" enum:"sent,delivered,bounced" doc:"sent until the provider says more; delivered; or bounced, when the provider refused or returned it." example:"sent"`
+	Delivery        string    `json:"delivery" enum:"sent,delivered,viewed,bounced" doc:"sent until the provider says more; delivered; viewed, once the customer opened the link it carried; or bounced, when the provider refused or returned it." example:"sent"`
 	Status          string    `json:"message_status" enum:"queued,accepted,failed,unknown" doc:"The email message's own outcome, as the delivery log shows it." example:"accepted"`
 	EvidenceID      string    `json:"evidence_id" format:"uuid" doc:"The PDF that was sent, kept in the document's evidence." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e80"`
 	PDFSHA256       string    `json:"pdf_sha256" doc:"The PDF's SHA-256, in hex." example:"a18760db1dd480808a9d4b2fd9b460608c4312c8998317e5ef444d83c0061bda"`
@@ -77,12 +78,13 @@ type emailQuoteInput struct {
 	Body *EmailDocument `required:"false"`
 }
 
-func sendsOut(sends []storage.DocumentSend) []DocumentSendOut {
+// sendsOut are a document's sends; viewed says which messages' links were opened.
+func sendsOut(sends []storage.DocumentSend, viewed map[uuid.UUID]bool) []DocumentSendOut {
 	out := []DocumentSendOut{}
 	for i := range sends {
 		s := sends[i]
 		out = append(out, DocumentSendOut{ID: s.ID.String(), Version: s.DocumentVersion, To: s.Recipient, SentAt: s.SentAt.UTC(), SentBy: personOf(s.SentBy),
-			Delivery: salesdoc.Delivery(&s), Status: s.MessageStatus, EvidenceID: s.EvidenceID.String(), PDFSHA256: s.PDFSHA256,
+			Delivery: salesdoc.Delivery(&s, viewed[s.MessageID]), Status: s.MessageStatus, EvidenceID: s.EvidenceID.String(), PDFSHA256: s.PDFSHA256,
 			TemplateSource: s.TemplateSource, TemplateVersion: s.TemplateVersion})
 	}
 	return out
@@ -111,6 +113,7 @@ type sending struct {
 	applied  doctemplate.Applied
 	pdf      []byte
 	sha      string
+	link     string // the online link's token's SHA-256 (FR-AR-06, task 5.3); empty when the deployment has no web origin
 }
 
 // prepareSend reads a document for emailing (FR-AR-06): an issued invoice, or a sent quote or order, at its current
@@ -190,7 +193,19 @@ func (a *API) prepareSend(ctx context.Context, id uuid.UUID, invoiceSend bool, t
 		if err != nil {
 			return err
 		}
-		if s.subject, s.body, err = render.Email(mail.Content, data.Data); err != nil {
+		// The email carries the online link, its token in the URL's fragment, never sent to a server (task 5.3); the PDF
+		// does not.
+		emailed := data.Data
+		if origin := strings.TrimRight(a.deps.Origin, "/"); origin != "" {
+			token, hash, err := salesdoc.NewToken()
+			if err != nil {
+				return err
+			}
+			emailed.Fields = maps.Clone(data.Data.Fields)
+			emailed.Fields["document.link"] = render.Value{Text: origin + "/d/#" + token}
+			s.link = hash
+		}
+		if s.subject, s.body, err = render.Email(mail.Content, emailed); err != nil {
 			return err
 		}
 		if utf8.RuneCountInString(s.subject) > 200 {
@@ -242,6 +257,12 @@ func (a *API) recordSend(ctx context.Context, u storage.UnitOfWork, id uuid.UUID
 	m, err := email.QueueWith(ctx, *a.deps.Outbox, u, p.Organisation, s.purpose, s.to, s.subject, s.body, []uuid.UUID{e.ID})
 	if err != nil {
 		return err
+	}
+	if s.link != "" {
+		if _, err := u.DocumentLinks().Create(ctx, storage.NewDocumentLink{DocumentID: id, DocumentVersion: s.version, MessageID: m.ID, TokenHash: s.link,
+			ExpiresAt: a.deps.Clock.Now().Add(salesdoc.LinkDays * 24 * time.Hour)}); err != nil {
+			return err
+		}
 	}
 	if _, err := u.DocumentSends().Record(ctx, storage.NewDocumentSend{DocumentID: id, DocumentVersion: s.version, MessageID: m.ID, EvidenceID: e.ID,
 		Recipient: s.to, TemplateSource: s.applied.Source, TemplateID: s.applied.TemplateID, TemplateVersion: s.applied.Version,

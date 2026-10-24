@@ -196,6 +196,7 @@ type Invoice struct {
 
 	// Email (FR-AR-06; rev 0.133).
 	Sends []DocumentSendOut `json:"sends" nullable:"false" doc:"getInvoice only: each time it was emailed, newest first, with its delivery (FR-AR-06)."`
+	Links []DocumentLinkOut `json:"links" nullable:"false" doc:"getInvoice only: the online links its emails carried, newest first, with their status; never their tokens (FR-AR-06)."`
 }
 
 // InvoiceRef names an invoice another document refers to.
@@ -527,7 +528,7 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 	}
 	out := Invoice{ID: doc.ID.String(), Kind: invoiceKind(doc), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Reference: d.Reference,
 		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: invoiceLinesOut(d),
-		GST: []InvoiceGST{}, Deposits: []InvoiceDeposit{}, Releases: []InvoiceRelease{}, Checks: []InvoiceCheck{}, Sends: []DocumentSendOut{}, LedgerImpact: []EntryLine{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
+		GST: []InvoiceGST{}, Deposits: []InvoiceDeposit{}, Releases: []InvoiceRelease{}, Checks: []InvoiceCheck{}, Sends: []DocumentSendOut{}, Links: []DocumentLinkOut{}, LedgerImpact: []EntryLine{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
 		PostedAt: utc(doc.PostedAt)}
 	if d.Rate != nil {
 		out.FXRate = d.Rate.String()
@@ -676,11 +677,17 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 	if err != nil {
 		return Invoice{}, err
 	}
+	links, err := u.DocumentLinks().OfDocument(ctx, doc.ID)
+	if err != nil {
+		return Invoice{}, err
+	}
+	viewed := viewedBy(links)
 	if len(sends) > 0 {
-		out.States.Delivery = salesdoc.Delivery(&sends[0])
+		out.States.Delivery = salesdoc.Delivery(&sends[0], viewed[sends[0].MessageID])
 	}
 	if withChecks {
-		out.Sends = sendsOut(sends)
+		out.Sends = sendsOut(sends, viewed)
+		out.Links = linksOut(links, doc, out.States.Settlement == "paid" || out.States.Settlement == "written_off", a.deps.Clock.Now())
 	}
 	return out, a.name(ctx, u, append(sentBy(out.Sends), out.PreparedBy, out.PostedBy)...)
 }
