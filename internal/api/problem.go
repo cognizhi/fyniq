@@ -43,6 +43,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
 	"github.com/cognizhi/fyniq/internal/domain/salesreminder"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
+	"github.com/cognizhi/fyniq/internal/domain/statement"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/domain/writeoff"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -552,6 +553,13 @@ var codeFacts = map[string]struct {
 	salesreminder.CodeNotDue: {409, "That reminder is not due"},
 	salesreminder.CodeGroup:  {422, "The customer group cannot be used that way"},
 	storage.CodeReminder:     {409, "A reminder is decided once, for an issued invoice or a sent quote"},
+
+	statement.CodeRange:        {422, "The statement's period is not valid"},
+	statement.CodeCustomer:     {422, "Statements are of customers"},
+	statement.CodeAddsUp:       {409, "The statement does not add up"},
+	statement.CodeCurrency:     {422, "The customer has nothing in that currency"},
+	statement.CodeNotStatement: {404, "Not a statement"},
+	storage.CodeStatement:      {409, "A statement is sent as it was made"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -577,6 +585,7 @@ var storageFixes = map[string]string{
 
 	storage.CodeScheduled: "Issue and send it as a person, or approve the recurring invoice it came from",
 	storage.CodeReminder:  "Read the reminders again: this one was sent or skipped already",
+	storage.CodeStatement: "Make and send a new statement instead",
 }
 
 // problem builds a Problem for one of the catalogue's codes.
@@ -699,6 +708,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		qe  *quote.Error
 		sde *salesdoc.Error
 		sre *salesreminder.Error
+		sme *statement.Error
 		pe  *period.Error
 		ae  *accounting.Error
 		ce  *closing.Error
@@ -742,6 +752,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(sde.Code, sentence(sde.Message), sentence(sde.Fix))
 	case errors.As(err, &sre):
 		return problem(sre.Code, sentence(sre.Message), sentence(sre.Fix))
+	case errors.As(err, &sme):
+		return problem(sme.Code, sentence(sme.Message), sentence(sme.Fix))
 	case errors.As(err, &pe):
 		return problem(pe.Code, sentence(pe.Message), sentence(pe.Fix))
 	case errors.As(err, &ae):

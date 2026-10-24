@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "adds_up": {
+      "description": "The balance brought forward and the lines come to the balance due. A statement that does not is never made or sent.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "ageing": {
+      "$ref": "StatementAgeing.schema.json",
+      "description": "The balance due by days past due."
+    },
+    "balance_due": {
+      "$ref": "Money.schema.json",
+      "description": "What the customer owes at the end of to, from the AR sub-ledger."
+    },
+    "currencies": {
+      "description": "Worked out: the currencies the customer's documents and balances are in over the period, a statement each.",
+      "examples": [
+        [
+          "SGD",
+          "USD"
+        ]
+      ],
+      "items": {
+        "description": "An ISO 4217 currency code.",
+        "examples": [
+          "SGD"
+        ],
+        "pattern": "^[A-Z]{3}$",
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "currency": {
+      "description": "Its currency, ISO 4217: a statement each currency the customer trades in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "customer": {
+      "$ref": "StatementCustomer.schema.json",
+      "description": "Its customer."
+    },
+    "date": {
+      "description": "The day it was made.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "difference": {
+      "$ref": "Money.schema.json",
+      "description": "When it does not add up: the balance due less the balance brought forward and the lines."
+    },
+    "from": {
+      "description": "Its first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "A made statement's ID; absent when worked out only.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "lines": {
+      "description": "What moved the balance, by date.",
+      "items": {
+        "$ref": "StatementLine.schema.json"
+      },
+      "type": "array"
+    },
+    "number": {
+      "description": "A made statement's number.",
+      "examples": [
+        "ST-0001"
+      ],
+      "type": "string"
+    },
+    "opening_balance": {
+      "$ref": "Money.schema.json",
+      "description": "Brought forward: what the customer owed at the end of the day before from."
+    },
+    "overdue": {
+      "$ref": "Money.schema.json",
+      "description": "What of the balance due is past due on to."
+    },
+    "sends": {
+      "description": "A made statement's emails, newest first.",
+      "items": {
+        "$ref": "DocumentSendOut.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "to": {
+      "description": "Its last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "version": {
+      "description": "A made statement's version; it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "customer",
+    "currency",
+    "from",
+    "to",
+    "opening_balance",
+    "lines",
+    "balance_due",
+    "overdue",
+    "ageing",
+    "adds_up"
+  ],
+  "title": "Statement",
+  "type": "object"
+}

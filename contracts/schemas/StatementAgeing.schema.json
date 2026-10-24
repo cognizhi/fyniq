@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "not_yet_due": {
+      "$ref": "Money.schema.json",
+      "description": "Not yet due, or due on the last day."
+    },
+    "overdue_1_30": {
+      "$ref": "Money.schema.json",
+      "description": "1 to 30 days past due."
+    },
+    "overdue_31_60": {
+      "$ref": "Money.schema.json",
+      "description": "31 to 60 days past due."
+    },
+    "overdue_61_90": {
+      "$ref": "Money.schema.json",
+      "description": "61 to 90 days past due."
+    },
+    "overdue_over_90": {
+      "$ref": "Money.schema.json",
+      "description": "More than 90 days past due."
+    },
+    "unapplied_credits": {
+      "$ref": "Money.schema.json",
+      "description": "Credit notes and payments not yet applied to an invoice: negative."
+    }
+  },
+  "required": [
+    "not_yet_due",
+    "overdue_1_30",
+    "overdue_31_60",
+    "overdue_61_90",
+    "overdue_over_90",
+    "unapplied_credits"
+  ],
+  "title": "StatementAgeing",
+  "type": "object"
+}

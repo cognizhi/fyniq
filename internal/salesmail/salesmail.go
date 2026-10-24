@@ -28,6 +28,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
 	"github.com/cognizhi/fyniq/internal/domain/salesreminder"
+	"github.com/cognizhi/fyniq/internal/domain/statement"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -84,14 +85,24 @@ type Sending struct {
 	Reminder *salesreminder.Reminder
 }
 
-// Prepare reads document id of org for emailing to to (empty: the customer's billing email): an issued invoice
-// (invoiceSend) or a sent quote or order, at its current version; the email's subject and body from the email template
-// that applies to the customer, with the online link; and, when rendering, its PDF from the document template that
-// applies, which a tax invoice must show every particular in. inUnit, when set, runs in the read's unit of work with the
-// document, such as for an ETag.
-func (s Sender) Prepare(ctx context.Context, org, id uuid.UUID, invoiceSend bool, to string, rendering bool,
+// What is what a sending is of.
+type What int
+
+// The documents emailed to customers.
+const (
+	Invoice   What = iota // an issued invoice
+	Quote                 // a sent quote or sales order
+	Statement             // a statement of account (FR-AR-08; task 7.2)
+)
+
+// Prepare reads document id of org for emailing to to (empty: the customer's billing email): an issued invoice, a sent
+// quote or order, or a statement, as what says, at its current version; the email's subject and body from the email
+// template that applies to the customer, with the online link (none for a statement); and, when rendering, its PDF from
+// the document template that applies, which a tax invoice must show every particular in. inUnit, when set, runs in the
+// read's unit of work with the document, such as for an ETag.
+func (s Sender) Prepare(ctx context.Context, org, id uuid.UUID, what What, to string, rendering bool,
 	inUnit func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) error) (Sending, error) {
-	return s.prepare(ctx, org, id, invoiceSend, to, rendering, inUnit, nil)
+	return s.prepare(ctx, org, id, what, to, rendering, inUnit, nil)
 }
 
 // PrepareReminder is Prepare for reminder r (FR-AR-08): an email of purpose reminder, from the reminders sender, its
@@ -99,10 +110,14 @@ func (s Sender) Prepare(ctx context.Context, org, id uuid.UUID, invoiceSend bool
 // before; the PDF of the version already sent, if one was, else rendered.
 func (s Sender) PrepareReminder(ctx context.Context, org uuid.UUID, r salesreminder.Reminder, to string, rendering bool,
 	inUnit func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) error) (Sending, error) {
-	return s.prepare(ctx, org, r.DocumentID, r.Kind == salesreminder.KindInvoice, to, rendering, inUnit, &r)
+	what := Quote
+	if r.Kind == salesreminder.KindInvoice {
+		what = Invoice
+	}
+	return s.prepare(ctx, org, r.DocumentID, what, to, rendering, inUnit, &r)
 }
 
-func (s Sender) prepare(ctx context.Context, org, id uuid.UUID, invoiceSend bool, to string, rendering bool,
+func (s Sender) prepare(ctx context.Context, org, id uuid.UUID, what What, to string, rendering bool,
 	inUnit func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) error, reminder *salesreminder.Reminder) (Sending, error) {
 	out := Sending{Reminder: reminder}
 	var data salesdoc.Invoice
@@ -117,24 +132,38 @@ func (s Sender) prepare(ctx context.Context, org, id uuid.UUID, invoiceSend bool
 		}
 		var customer uuid.UUID
 		switch {
-		case invoiceSend && doc.Type == storage.DocumentInvoice:
+		case what == Invoice && doc.Type == storage.DocumentInvoice:
 			out.DocType, out.Purpose, out.Kind = doctemplate.Invoice, email.PurposeInvoice, "invoice"
-		case !invoiceSend && quote.IsQuote(doc):
+		case what == Quote && quote.IsQuote(doc):
 			out.DocType, out.Purpose, out.Kind = doctemplate.Quote, email.PurposeQuote, quote.Kind(doc)
-		case invoiceSend:
+		case what == Statement && doc.Type == storage.DocumentStatement:
+			out.DocType, out.Purpose, out.Kind = doctemplate.Statement, email.PurposeStatement, "statement"
+		case what == Invoice:
 			return &invoice.Error{Code: invoice.CodeNotInvoice, Message: fmt.Sprintf("document %s is not an invoice", doc.ID), Fix: "Email an invoice"}
+		case what == Statement:
+			return &statement.Error{Code: statement.CodeNotStatement, Message: fmt.Sprintf("document %s is not a statement", doc.ID), Fix: "Email a statement"}
 		default:
 			return &quote.Error{Code: quote.CodeNotQuote, Message: fmt.Sprintf("document %s is not a quote or a sales order", doc.ID), Fix: "Email a quote"}
 		}
 		if doc.Status != storage.DocumentPosted {
-			what := map[storage.DocumentStatus]string{storage.DocumentDraft: "a draft", storage.DocumentReversed: "voided"}[doc.Status]
-			if !invoiceSend && doc.Status == storage.DocumentReversed {
-				what = "cancelled"
+			state := map[storage.DocumentStatus]string{storage.DocumentDraft: "a draft", storage.DocumentReversed: "voided"}[doc.Status]
+			if what == Quote && doc.Status == storage.DocumentReversed {
+				state = "cancelled"
 			}
-			return &salesdoc.Error{Code: salesdoc.CodeNotSent, Message: fmt.Sprintf("the %s is %s", out.Kind, what),
+			return &salesdoc.Error{Code: salesdoc.CodeNotSent, Message: fmt.Sprintf("the %s is %s", out.Kind, state),
 				Fix: "Email an issued invoice or a sent quote; a draft is issued or sent first"}
 		}
-		if invoiceSend {
+		switch what {
+		case Statement:
+			if data, err = salesdoc.StatementData(ctx, u, doc); err != nil {
+				return err
+			}
+			st, err := statement.Read(doc)
+			if err != nil {
+				return err
+			}
+			customer = st.CustomerID
+		case Invoice:
 			if data, err = salesdoc.InvoiceData(ctx, u, doc, settings); err != nil {
 				return err
 			}
@@ -143,7 +172,7 @@ func (s Sender) prepare(ctx context.Context, org, id uuid.UUID, invoiceSend bool
 				return err
 			}
 			customer = d.CustomerID
-		} else {
+		default:
 			if data, err = salesdoc.QuoteData(ctx, u, doc, settings); err != nil {
 				return err
 			}
@@ -178,7 +207,7 @@ func (s Sender) prepare(ctx context.Context, org, id uuid.UUID, invoiceSend bool
 		// does not.
 		emailed := data.Data
 		emailed.Fields = maps.Clone(data.Data.Fields)
-		if origin := strings.TrimRight(s.Origin, "/"); origin != "" {
+		if origin := strings.TrimRight(s.Origin, "/"); origin != "" && what != Statement { // a statement has no online view
 			token, hash, err := salesdoc.NewToken()
 			if err != nil {
 				return err
@@ -339,7 +368,7 @@ func (s Sender) SendScheduled(ctx context.Context, org uuid.UUID) (int, error) {
 	n := 0
 	var errs []error
 	for _, id := range ids {
-		x, err := s.Prepare(ctx, org, id, true, "", true, nil)
+		x, err := s.Prepare(ctx, org, id, Invoice, "", true, nil)
 		var missing *MissingParticulars
 		var se *salesdoc.Error
 		switch {

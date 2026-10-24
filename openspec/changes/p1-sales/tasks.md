@@ -195,7 +195,12 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   reminders sender), the customer group operations and `listSalesReminders`, `sendSalesReminder`, `skipSalesReminder`;
   threats T15 and T16 in `email-delivery.md`. Tests: `TestRemindersWaitForAPerson`, `TestARemindersStepIsDecidedOnce`,
   the matrix rows. The Inbox screen comes with 8.1; automatic reminders with bank import.)
-- [ ] 7.2 Statements of account by date range, adding up, as a PDF sent like an invoice. Tests `// req: FR-AR-08`
+- [x] 7.2 Statements of account by date range, adding up, as a PDF sent like an invoice. Tests `// req: FR-AR-08`
+  (25 Oct 2026, PRD-001 rev 0.138: `internal/domain/statement` (`Of`, `Make`, `Read`), the document type `statement`
+  (ST-; FY204; migrations 000139 and 000140), `salesdoc.StatementData`, `salesmail.Statement`, the statement template's
+  ageing rows; `getCustomerStatement`, `createStatement`, `listStatements`, `getStatement`, `emailStatement`. Tests:
+  `TestAStatementAddsUpAndIsSentAsMade`, `TestAStatementStaysAsItWasMade`, `TestAStatementsPeriod`,
+  `TestAStatementsLinesInWords`, the matrix rows.)
 
 ## 8. Screens
 

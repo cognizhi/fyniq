@@ -79,7 +79,7 @@ func SenderOf(messagePurpose string) string {
 	switch messagePurpose {
 	case "sign_in_alert":
 		return storage.SenderSecurity
-	case PurposeInvoice, PurposeQuote:
+	case PurposeInvoice, PurposeQuote, PurposeStatement:
 		return storage.SenderInvoices
 	case PurposeReminder:
 		return storage.SenderReminders
@@ -92,6 +92,8 @@ const (
 	PurposeInvoice  = "invoice"
 	PurposeQuote    = "quote"
 	PurposeReminder = "reminder"
+	// PurposeStatement is a statement of account (FR-AR-08), from the invoices sender.
+	PurposeStatement = "statement"
 )
 
 // fromOf is the address a message of purpose is sent from: the organisation's sender in force for it, or the

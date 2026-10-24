@@ -61,6 +61,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PATCH /v1/contacts/{contact_id}` (updateContact): Change a contact
 - `GET /v1/contacts/{contact_id}/document-templates` (listContactDocumentTemplates): List a contact's templates
 - `PUT /v1/contacts/{contact_id}/document-templates/{kind}/{document_type}` (setContactDocumentTemplate): Choose a contact's template
+- `GET /v1/contacts/{contact_id}/statement` (getCustomerStatement): Work out a customer's statement
 - `GET /v1/contacts/{contact_id}/withholding-decisions` (listWithholdingDecisions): List a supplier's withholding decisions
 - `POST /v1/contacts/{contact_id}/withholding-decisions` (recordWithholdingDecision): Record the tax agent's withholding decision
 - `POST /v1/credit-applications` (applyCredit): Apply a supplier credit to a bill
@@ -283,6 +284,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/setup` (getSetupStatus): Get the setup status
 - `POST /v1/setup` (completeSetup): Complete first-run setup
 - `GET /v1/sign-in-providers` (listSignInProviders): List the sign-in providers
+- `GET /v1/statements` (listStatements): List the statements made
+- `POST /v1/statements` (createStatement): Make a statement to send
+- `GET /v1/statements/{statement_id}` (getStatement): Get a statement made
+- `POST /v1/statements/{statement_id}/email` (emailStatement): Email a statement to the customer
 - `GET /v1/statutory-packs` (listStatutoryPacks): List the statutory pack versions
 - `GET /v1/statutory-packs/{version_id}` (getStatutoryPack): Get a statutory pack version
 - `POST /v1/statutory-packs/{version_id}/activate` (activateStatutoryPack): Ask to activate a statutory pack version

@@ -391,8 +391,12 @@ func (b *builder) totals(blk *Block) {
 		blk.Rows = b.row("Amount paid", "document.amount", "", true)
 		return
 	case doctemplate.Statement:
-		blk.Rows = slices.Concat(b.row("Opening balance", "document.opening_balance", "", false), b.row("Overdue", "document.overdue", "", false),
-			b.row("Balance due", "document.balance_due", "", true))
+		// The ageing of the balance due adds up to it, with any unapplied credits (FR-AR-08).
+		blk.Rows = slices.Concat(b.row("Opening balance", "document.opening_balance", "", false),
+			b.row("Not yet due", "document.not_yet_due", "", false), b.row("1–30 days overdue", "document.overdue_month_one", "", false),
+			b.row("31–60 days overdue", "document.overdue_month_two", "", false), b.row("61–90 days overdue", "document.overdue_month_three", "", false),
+			b.row("Over 90 days overdue", "document.overdue_older", "", false), b.row("Unapplied credits", "document.unapplied_credits", "", false),
+			b.row("Overdue", "document.overdue", "", false), b.row("Balance due", "document.balance_due", "", true))
 		return
 	case doctemplate.Reminder:
 		blk.Rows = slices.Concat(b.row("Overdue", "document.overdue", "", false), b.row("Amount due", "document.amount_due", "", true))

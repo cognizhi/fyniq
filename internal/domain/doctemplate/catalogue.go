@@ -208,6 +208,12 @@ func Fields(documentType string) []Field {
 			{"document.opening_balance", TypeMoney, "Opening balance"},
 			{"document.balance_due", TypeMoney, "Balance due"},
 			{"document.overdue", TypeMoney, "Overdue"},
+			{"document.not_yet_due", TypeMoney, "Not yet due"},
+			{"document.overdue_month_one", TypeMoney, "1 to 30 days overdue"},
+			{"document.overdue_month_two", TypeMoney, "31 to 60 days overdue"},
+			{"document.overdue_month_three", TypeMoney, "61 to 90 days overdue"},
+			{"document.overdue_older", TypeMoney, "Over 90 days overdue"},
+			{"document.unapplied_credits", TypeMoney, "Unapplied credits"},
 		}, paymentFields)
 	case Reminder:
 		out = slices.Concat(out, []Field{
