@@ -86,6 +86,11 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **THEN** the ledger changes
 - **AND** a delivery failure or the invoice becoming overdue never changes the ledger
 
+#### Scenario: Invoices as built (rev 0.116)
+- **WHEN** an invoice is issued through the posting service
+- **THEN** it takes its number from `INV-`, posts by `invoice@1` (1100 the total; revenue or 2400 the net; 2200 the output GST once GST-registered) and replays exactly
+- **AND** it is voided or edited only by reversal, and not while receipts or credits settle it
+
 #### Scenario: G4-045 Overpayment, credit applied, allocation reversed, bounce and overdue
 - **GIVEN** an invoice of S$1,000.00 paid S$1,050.00, whose S$50.00 credit is later applied to the next invoice
 - **WHEN** one allocation is then reversed, a sent email bounces and the invoice becomes overdue

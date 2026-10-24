@@ -5,14 +5,21 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 ## 1. Invoices: the document, its rule and its approval
 
-- [ ] 1.1 The invoice document: versions, the payload of `design.md` (lines or one amount, service period,
+- [x] 1.1 The invoice document: versions, the payload of `design.md` (lines or one amount, service period,
   template, notes), the customer's terms and due date, the invoice sequence numbered at issue. Tests
   `// req: FR-AR-03`
-- [ ] 1.2 The posting rule `invoice@1`: 1100 the total, revenue or 2400 the net under `RND-FX`, 2200 the output
+- [x] 1.2 The posting rule `invoice@1`: 1100 the total, revenue or 2400 the net under `RND-FX`, 2200 the output
   GST under `RND-GST-EXCL` once GST-registered, a foreign invoice's GST in SGD; a replay golden. Tests
   `// req: ledger/posting-rules Posting an invoice`, `// req: ledger/posting-rules Amounts of a posted invoice`
 - [ ] 1.3 Issue, void and edit through the posting service: FM-2's threshold, FM-1 for a void, SOD-3, FR-GL-12;
   the five states. Tests `// req: FR-AR-03`, `// req: FM-2`, `// req: SOD-3`
+  (24 Oct 2026, PRD-001 rev 0.116, tasks 1.1 and 1.2 and this in part: `internal/domain/invoice` (the payload, lines under
+  `RND-LINE` with its discount, the customer's terms, GST codes for supplies and the rate only once GST-registered),
+  `ledger.PostInvoice` with `testdata/replay/invoice@1.golden`, `journal.Invoices` (create, revise, check, issue with its
+  `INV-` number, void, edit, refused while settled), the replay of invoices, migrations 000109 and 000110. Tests:
+  `TestInvoicesPostThroughThePostingService`, `TestPostInvoiceInTheBaseCurrency`, `TestPostInvoiceInAnotherCurrency`,
+  `TestEveryPostedInvoiceBalances`, `TestLineDiscountedPinnedCases`. **Left:** the approvals (FM-2, FM-1, SOD-3) with
+  the API, task 1.4, and the delivery and settlement states with sending and receipts)
 - [ ] 1.4 The API: list, get, create, revise, issue, void, edit and preview invoices, with ETags, idempotency,
   attachments and the matrix rows; Spectral clean. Tests `// req: FR-INT-01`
 - [ ] 1.5 Spreads: a spread line to 2400 and its monthly releases by the scheduler (`ALLOC-EVEN`), reversed with a

@@ -92,6 +92,11 @@ Source: PRD-001 §10.8 · Priority M · Phase P1
 - **WHEN** a tax invoice is issued in a foreign currency
 - **THEN** it shows net, GST and gross in SGD
 
+#### Scenario: Invoices as built (rev 0.116)
+- **WHEN** a foreign-currency invoice is issued
+- **THEN** its nets in SGD under `RND-FX` bear `RND-GST-EXCL`, credited to 2200, and the cents against its total at the rate go to 7030
+- **AND** until the organisation's GST exchange-rate source exists, the invoice's own rate stands in for it
+
 #### Scenario: Purchase input tax as stated
 - **WHEN** a foreign-currency bill or import is recorded
 - **THEN** the input tax is the SGD GST stated on the supplier's tax invoice, or on the import permit for imports

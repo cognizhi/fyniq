@@ -4,11 +4,15 @@
 package gst
 
 import (
+	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
+	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/packs"
 )
 
 // The codes of a registration's rules.
@@ -102,4 +106,40 @@ func ReturnPeriod(r storage.GSTRegistration, d time.Time) (start, end time.Time,
 		end = r.DeregisteredFrom.AddDate(0, 0, -1)
 	}
 	return start, end, true
+}
+
+// releasePacks are the pack versions this release carries.
+var releasePacks = func() ([]pack.Version, error) { return pack.LoadAll(packs.FS) }
+
+// Version is the sg-gst version in force on the document's date among the organisation's active versions, else among
+// the versions this release carries: the GST codes and rates the document is read with (ENG-31).
+func Version(ctx context.Context, u storage.UnitOfWork, on time.Time) (pack.Version, error) {
+	all, err := releasePacks()
+	if err != nil {
+		return pack.Version{}, err
+	}
+	if on.IsZero() { // a document without a date has no tax point yet: its codes are read from the newest version
+		for _, v := range all {
+			if v.Pack == "sg-gst" && v.EffectiveFrom.After(on) {
+				on = v.EffectiveFrom
+			}
+		}
+	}
+	acts, err := u.Packs().Activations(ctx)
+	if err != nil {
+		return pack.Version{}, err
+	}
+	var active []pack.Version
+	for _, v := range all {
+		if slices.ContainsFunc(acts, func(a storage.PackActivation) bool { return a.VersionID == v.ID }) {
+			active = append(active, v)
+		}
+	}
+	if v, ok := pack.At(active, "sg-gst", on); ok {
+		return v, nil
+	}
+	if v, ok := pack.At(all, "sg-gst", on); ok {
+		return v, nil
+	}
+	return pack.Version{}, fmt.Errorf("this release carries no sg-gst version in force on %s", on.Format(time.DateOnly))
 }

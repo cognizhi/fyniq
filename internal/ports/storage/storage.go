@@ -399,6 +399,8 @@ const (
 	// DocumentPurchaseOrder is an order to a supplier, with quantities and unit prices (FR-AP-01; p1-purchases): it posts
 	// nothing; posted is approved, and reversed is closed.
 	DocumentPurchaseOrder DocumentType = "purchase_order"
+	// DocumentInvoice is a customer's invoice (FR-AR-03; p1-sales).
+	DocumentInvoice DocumentType = "invoice"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
