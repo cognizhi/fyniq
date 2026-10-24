@@ -55,7 +55,7 @@
       "type": "string"
     },
     "spread_from": {
-      "description": "The spread's first month, as any day of it: when the service starts. Left out, the invoice's month.",
+      "description": "The spread's first month, as any day of it: when the service starts. Left out, the invoice's month. Months before the invoice's date release on its date.",
       "examples": [
         "2026-10-01"
       ],
@@ -63,7 +63,7 @@
       "type": "string"
     },
     "spread_months": {
-      "description": "Spread the line's revenue over this many months (FR-GL-03): issuing puts its net on 2400 Deferred revenue in the base currency, to be released one part a month (ALLOC-EVEN).",
+      "description": "Spread the line's revenue over this many months (FR-GL-03): issuing puts its net on 2400 Deferred revenue in the base currency, and one part a month (ALLOC-EVEN) is released to the line's account by the scheduler, up to the organisation's today and never ahead (ENG-05).",
       "examples": [
         12
       ],

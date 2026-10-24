@@ -113,8 +113,8 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 	if err != nil {
 		return "", err
 	}
-	if e.Source.Type == ledger.SourceBillRelease { // a month of a bill's spread cost, from the bill version and its entry (FR-GL-03)
-		want, err := replayBillRelease(ctx, u, doc, s, e)
+	if e.Source.Type == ledger.SourceBillRelease || e.Source.Type == ledger.SourceInvoiceRelease { // a month of a spread, from its document version and entry (FR-GL-03)
+		want, err := replayRelease(ctx, u, doc, s, e)
 		if err != nil {
 			return err.Error(), nil
 		}

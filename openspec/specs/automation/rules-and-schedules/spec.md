@@ -51,6 +51,10 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **THEN** it posts the releases of bills' spread costs due by each organisation's own today (FR-GL-03, ENG-05), as `scheduler:bills.releases`
 - **AND** one whose date no open period covers waits, with an audit event, and the next run tries again
 
+#### Scenario: Releases of invoices' spread revenue run hourly (rev 0.118)
+- **WHEN** the tick runs `invoices.releases`, hourly at quarter to
+- **THEN** it posts the releases of invoices' spread revenue due by each organisation's own today (FR-GL-03, ENG-05), as `scheduler:invoices.releases`
+
 ### Requirement: FR-AUT-02 Automated postings under a system principal
 Every automated posting SHALL run under a named system principal with its own audit identity, and SHALL respect period locks and approval policies.
 

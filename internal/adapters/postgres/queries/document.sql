@@ -26,14 +26,15 @@ WHERE d.type = 'journal' AND d.status = 'posted'
 ORDER BY v.payload->>'reverse_on', d.id
 LIMIT sqlc.arg(max_rows);
 
--- name: SpreadBills :many
--- Posted bills whose current version spreads a line's cost over months (FR-GL-03, ENG-05; rev 0.83) with releases a
--- period from from_day on may still take: a spread that runs past that day, or a bill dated on or after it, whose
--- earlier months release on its date. By ID after a cursor. A spread with no first month starts in the bill's month.
+-- name: SpreadDocuments :many
+-- Posted documents of one type (a bill or an invoice) whose current version spreads a line over months (FR-GL-03,
+-- ENG-05; rev 0.83, invoices rev 0.118) with releases a period from from_day on may still take: a spread that runs past
+-- that day, or a document dated on or after it, whose earlier months release on its date. By ID after a cursor. A
+-- spread with no first month starts in the document's month.
 SELECT d.id
 FROM fyniq.document d
 JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
-WHERE d.type = 'bill' AND d.status = 'posted'
+WHERE d.type = sqlc.arg(doc_type)::text AND d.status = 'posted'
   AND EXISTS (
     SELECT 1 FROM jsonb_array_elements(v.payload->'lines') l
     WHERE coalesce(l->>'spread_months', '') <> ''

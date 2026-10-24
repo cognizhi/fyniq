@@ -493,33 +493,40 @@ func (q *Queries) SetDocumentVersion(ctx context.Context, arg SetDocumentVersion
 	return err
 }
 
-const spreadBills = `-- name: SpreadBills :many
+const spreadDocuments = `-- name: SpreadDocuments :many
 SELECT d.id
 FROM fyniq.document d
 JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
-WHERE d.type = 'bill' AND d.status = 'posted'
+WHERE d.type = $1::text AND d.status = 'posted'
   AND EXISTS (
     SELECT 1 FROM jsonb_array_elements(v.payload->'lines') l
     WHERE coalesce(l->>'spread_months', '') <> ''
-      AND (v.payload->>'date' >= $1::text
+      AND (v.payload->>'date' >= $2::text
         OR to_char(to_date(coalesce(nullif(l->>'spread_from', ''), v.payload->>'date'), 'YYYY-MM-DD')
-                   + make_interval(months => (l->>'spread_months')::int), 'YYYY-MM-DD') > $1::text))
-  AND ($2::uuid IS NULL OR d.id > $2::uuid)
+                   + make_interval(months => (l->>'spread_months')::int), 'YYYY-MM-DD') > $2::text))
+  AND ($3::uuid IS NULL OR d.id > $3::uuid)
 ORDER BY d.id
-LIMIT $3
+LIMIT $4
 `
 
-type SpreadBillsParams struct {
+type SpreadDocumentsParams struct {
+	DocType string
 	FromDay string
 	AfterID *uuid.UUID
 	MaxRows int32
 }
 
-// Posted bills whose current version spreads a line's cost over months (FR-GL-03, ENG-05; rev 0.83) with releases a
-// period from from_day on may still take: a spread that runs past that day, or a bill dated on or after it, whose
-// earlier months release on its date. By ID after a cursor. A spread with no first month starts in the bill's month.
-func (q *Queries) SpreadBills(ctx context.Context, arg SpreadBillsParams) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, spreadBills, arg.FromDay, arg.AfterID, arg.MaxRows)
+// Posted documents of one type (a bill or an invoice) whose current version spreads a line over months (FR-GL-03,
+// ENG-05; rev 0.83, invoices rev 0.118) with releases a period from from_day on may still take: a spread that runs past
+// that day, or a document dated on or after it, whose earlier months release on its date. By ID after a cursor. A
+// spread with no first month starts in the document's month.
+func (q *Queries) SpreadDocuments(ctx context.Context, arg SpreadDocumentsParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, spreadDocuments,
+		arg.DocType,
+		arg.FromDay,
+		arg.AfterID,
+		arg.MaxRows,
+	)
 	if err != nil {
 		return nil, err
 	}

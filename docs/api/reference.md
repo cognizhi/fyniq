@@ -3073,7 +3073,7 @@ Saves a customer's invoice as a draft (✎) at version 1 (FR-AR-03), without a n
 
 **Get an invoice** (`getInvoice`)
 
-Returns an invoice's current version with its ETag: its customer, lines with their nets, its GST by code and totals, its approval, ledger, delivery, settlement and due states, what stops a draft being issued (✖), the lines issuing it writes or wrote (ledger_impact), and the pending request to issue, void or edit it. Read-only; no side effects.
+Returns an invoice's current version with its ETag: its customer, lines with their nets, its GST by code and totals, its approval, ledger, delivery, settlement and due states, the monthly releases of its spread lines (FR-GL-03), what stops a draft being issued (✖), the lines issuing it writes or wrote (ledger_impact), and the pending request to issue, void or edit it. Read-only; no side effects.
 
 - **Permission:** View on Invoices, credit notes
 - **Parameters:**

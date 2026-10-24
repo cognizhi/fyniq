@@ -9,21 +9,46 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/bill"
+	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// Releaser is the scheduler's principal for the releases of spread costs (FR-AUT-02, FR-GL-03): its own audit identity,
-// recorded as "scheduler:bills.releases" on every release, whether the hourly job posts it or the posting of its bill.
-var Releaser = storage.Actor{Type: "scheduler", ID: "bills.releases"}
+// Releaser and InvoiceReleaser are the scheduler's principals for the releases of spreads (FR-AUT-02, FR-GL-03), each
+// its own audit identity, recorded on every release whether the hourly job posts it or the posting of its document:
+// "scheduler:bills.releases" for bills' spread costs, "scheduler:invoices.releases" for invoices' spread revenue.
+var (
+	Releaser        = storage.Actor{Type: "scheduler", ID: "bills.releases"}
+	InvoiceReleaser = storage.Actor{Type: "scheduler", ID: "invoices.releases"}
+)
 
-// ActionReleaseWaiting is the audit event of a release that a run could not post: no open period covers its date, or
-// the rule refuses it (its account was deactivated). The next run tries it again.
-const ActionReleaseWaiting = "bill.release_waiting"
+// ActionReleaseWaiting and ActionInvoiceReleaseWaiting are the audit events of a release that a run could not post: no
+// open period covers its date, or the rule refuses it (its account was deactivated). The next run tries it again.
+const (
+	ActionReleaseWaiting        = "bill.release_waiting"
+	ActionInvoiceReleaseWaiting = "invoice.release_waiting"
+)
 
-// ReleaseReason is the reason the releases carry.
-const ReleaseReason = "Release of a spread cost"
+// ReleaseReason and InvoiceReleaseReason are the reasons the releases carry.
+const (
+	ReleaseReason        = "Release of a spread cost"
+	InvoiceReleaseReason = "Release of spread revenue"
+)
+
+// spreading is what releasing a document type's spreads needs: the principal and reason it posts with, and the audit
+// event of a release that waits.
+type spreading struct {
+	actor   storage.Actor
+	reason  string
+	waiting string
+}
+
+// spreads are the document types whose lines spread (FR-GL-03): bills' costs and invoices' revenue.
+var spreads = map[storage.DocumentType]spreading{
+	storage.DocumentBill:    {Releaser, ReleaseReason, ActionReleaseWaiting},
+	storage.DocumentInvoice: {InvoiceReleaser, InvoiceReleaseReason, ActionInvoiceReleaseWaiting},
+}
 
 // ReleaseRun is what a run of the releases did in one organisation.
 type ReleaseRun struct {
@@ -33,19 +58,19 @@ type ReleaseRun struct {
 	Waiting      int
 }
 
-// Releases posts the monthly releases of bills' spread costs (FR-GL-03, ENG-05; rev 0.83) against a store: each release
-// in its own unit of work, under the scheduler's principal, with the bill locked so that a void or an edit of it and
-// its release never interleave (ENG-47).
+// Releases posts the monthly releases of bills' spread costs (FR-GL-03, ENG-05; rev 0.83) and invoices' spread revenue
+// (rev 0.118) against a store: each release in its own unit of work, under the scheduler's principal, with the document
+// locked so that a void or an edit of it and its release never interleave (ENG-47).
 type Releases struct {
 	Store storage.Store
 }
 
-// errSettled is a release that needs nothing any more: posted, or its bill voided or edited, meanwhile.
+// errSettled is a release that needs nothing any more: posted, or its document voided or edited, meanwhile.
 var errSettled = errors.New("the release is posted, or its bill changed")
 
 // billSchedule is the release schedule of a posted bill version (ledger.BillReleases): its spread lines as saved, and
 // what the entry it posted put on 1210 for each.
-func billSchedule(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings) ([]ledger.BillRelease, error) {
+func billSchedule(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings) ([]ledger.Release, error) {
 	d, err := bill.Read(doc, s.Base)
 	if err != nil {
 		return nil, err
@@ -72,9 +97,49 @@ func billSchedule(ctx context.Context, u storage.UnitOfWork, doc storage.Documen
 	return ledger.BillReleases(b, e, s)
 }
 
+// invoiceSchedule is the release schedule of an issued invoice version (ledger.InvoiceReleases): its spread lines as
+// saved, and what the entry it posted put on 2400 for each.
+func invoiceSchedule(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings) ([]ledger.Release, error) {
+	d, err := invoice.Read(doc, s.Base)
+	if err != nil {
+		return nil, err
+	}
+	spread := false
+	i := ledger.Invoice{ID: doc.ID, Version: doc.Version, Date: d.Date, Currency: d.Currency}
+	for _, l := range d.Lines {
+		x := l.Spread(d.Date)
+		spread = spread || x != nil
+		i.Lines = append(i.Lines, ledger.InvoiceLine{AccountID: l.AccountID, Description: l.Description, Spread: x})
+	}
+	if !spread {
+		return nil, nil
+	}
+	stored, err := u.Ledger().ByIdentity(ctx, InvoiceIdentityOf(doc))
+	if err != nil {
+		return nil, err
+	}
+	e, err := fromStorage(stored, s.Base)
+	if err != nil {
+		return nil, err
+	}
+	i.Memo = e.Memo // the invoice as its entry named it
+	return ledger.InvoiceReleases(i, e, s)
+}
+
+// scheduleOf is the release schedule of a posted document version: a bill's or an invoice's; nothing for another type.
+func scheduleOf(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings) ([]ledger.Release, error) {
+	switch doc.Type {
+	case storage.DocumentBill:
+		return billSchedule(ctx, u, doc, s)
+	case storage.DocumentInvoice:
+		return invoiceSchedule(ctx, u, doc, s)
+	}
+	return nil, nil
+}
+
 // postedRelease is the entry a release posted under any rule version the engine has, or ports.ErrNotFound.
-func postedRelease(ctx context.Context, u storage.UnitOfWork, r ledger.BillRelease) (storage.Entry, error) {
-	for rule := range ledger.BillReleaseRules {
+func postedRelease(ctx context.Context, u storage.UnitOfWork, r ledger.Release) (storage.Entry, error) {
+	for rule := range ledger.ReleaseRules(r.Source) {
 		e, err := u.Ledger().ByIdentity(ctx, r.Identity(rule))
 		if !errors.Is(err, ports.ErrNotFound) {
 			return e, err
@@ -83,11 +148,11 @@ func postedRelease(ctx context.Context, u storage.UnitOfWork, r ledger.BillRelea
 	return storage.Entry{}, ports.ErrNotFound
 }
 
-// reverseReleases reverses in u every release a bill version posted and nothing has reversed yet, each dated by on from
-// the release's entry, with a reason: what a void or an edit of the bill does with them.
+// reverseReleases reverses in u every release a document version posted and nothing has reversed yet, each dated by on
+// from the release's entry, with a reason: what a void or an edit of the bill or invoice does with them.
 func reverseReleases(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings, on func(ledger.Entry) time.Time,
 	reason string) error {
-	rs, err := billSchedule(ctx, u, doc, s)
+	rs, err := scheduleOf(ctx, u, doc, s)
 	if err != nil {
 		return err
 	}
@@ -122,22 +187,34 @@ func reverseReleases(ctx context.Context, u storage.UnitOfWork, doc storage.Docu
 // ReleaseBill posts the releases of one posted bill dated on or before day (ENG-05: up to the current period, never the
 // future), under the scheduler's principal: what a run does for the bill, and what posting or editing it does at once.
 func (s Releases) ReleaseBill(ctx context.Context, org, id uuid.UUID, day time.Time) (ReleaseRun, error) {
-	return s.release(storage.WithAudit(ctx, storage.AuditContext{Actor: &Releaser, Reason: ReleaseReason}), org, id, day)
+	return s.release(withSpreading(ctx, storage.DocumentBill), org, id, day, storage.DocumentBill)
 }
 
-func (s Releases) release(ctx context.Context, org, id uuid.UUID, day time.Time) (ReleaseRun, error) {
+// ReleaseInvoice posts the releases of one issued invoice dated on or before day (ENG-05), under the scheduler's
+// principal for invoices: what a run does for the invoice, and what issuing or editing it does at once.
+func (s Releases) ReleaseInvoice(ctx context.Context, org, id uuid.UUID, day time.Time) (ReleaseRun, error) {
+	return s.release(withSpreading(ctx, storage.DocumentInvoice), org, id, day, storage.DocumentInvoice)
+}
+
+// withSpreading is ctx acting as the scheduler's principal for releasing a document type's spreads.
+func withSpreading(ctx context.Context, t storage.DocumentType) context.Context {
+	k := spreads[t]
+	return storage.WithAudit(ctx, storage.AuditContext{Actor: &k.actor, Reason: k.reason})
+}
+
+func (s Releases) release(ctx context.Context, org, id uuid.UUID, day time.Time, t storage.DocumentType) (ReleaseRun, error) {
 	run := ReleaseRun{Organisation: org, Day: day}
-	var due []ledger.BillRelease
+	var due []ledger.Release
 	if err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		doc, err := u.Documents().Get(ctx, id)
-		if err != nil || doc.Type != storage.DocumentBill || doc.Status != storage.DocumentPosted {
+		if err != nil || doc.Type != t || doc.Status != storage.DocumentPosted {
 			return err
 		}
 		settings, err := loadSettings(ctx, u)
 		if err != nil {
 			return err
 		}
-		rs, err := billSchedule(ctx, u, doc, settings)
+		rs, err := scheduleOf(ctx, u, doc, settings)
 		if err != nil {
 			return err
 		}
@@ -157,7 +234,7 @@ func (s Releases) release(ctx context.Context, org, id uuid.UUID, day time.Time)
 	}
 	for _, r := range due {
 		err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-			doc, err := u.Documents().Lock(ctx, id) // ENG-47 step 1: a void or an edit of the bill waits for its release
+			doc, err := u.Documents().Lock(ctx, id) // ENG-47 step 1: a void or an edit of the document waits for its release
 			if err != nil {
 				return err
 			}
@@ -173,7 +250,7 @@ func (s Releases) release(ctx context.Context, org, id uuid.UUID, day time.Time)
 			if err != nil {
 				return err
 			}
-			e, err := ledger.PostBillRelease(r, settings)
+			e, err := ledger.ReleaseRules(r.Source)[ledger.CurrentRelease(r.Source)](r, settings)
 			if err != nil {
 				return err
 			}
@@ -192,14 +269,14 @@ func (s Releases) release(ctx context.Context, org, id uuid.UUID, day time.Time)
 				why = err.Error()
 			}
 			if err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-				return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionReleaseWaiting, ObjectType: "document", ObjectID: id,
-					Changes: map[string][2]any{"release": {nil, r.Identity(ledger.RuleBillRelease)}, "date": {nil, r.Date.Format(time.DateOnly)},
+				return u.Audit().Record(ctx, storage.AuditRecord{Action: spreads[t].waiting, ObjectType: "document", ObjectID: id,
+					Changes: map[string][2]any{"release": {nil, r.Identity(ledger.CurrentRelease(r.Source))}, "date": {nil, r.Date.Format(time.DateOnly)},
 						"waiting_for": {nil, why}}})
 			}); err != nil {
 				return run, err
 			}
 		default:
-			return run, fmt.Errorf("bill %s, release of %s: %w", id, r.Month.Format("2006-01"), err)
+			return run, fmt.Errorf("%s %s, release of %s: %w", t, id, r.Month.Format("2006-01"), err)
 		}
 	}
 	return run, nil
@@ -209,7 +286,17 @@ func (s Releases) release(ctx context.Context, org, id uuid.UUID, day time.Time)
 // hourly job bills.releases. It looks only at bills with a release a period not closed can take; one that cannot post
 // waits, with an audit event that says why, and the next run tries it again.
 func (s Releases) ReleaseDue(ctx context.Context, org uuid.UUID, day time.Time) (ReleaseRun, error) {
-	ctx = storage.WithAudit(ctx, storage.AuditContext{Actor: &Releaser, Reason: ReleaseReason})
+	return s.releaseDue(ctx, org, day, storage.DocumentBill)
+}
+
+// ReleaseInvoicesDue posts every release dated on or before day of the organisation's issued invoices (FR-GL-03,
+// ENG-05; rev 0.118): the hourly job invoices.releases, as ReleaseDue is for bills.
+func (s Releases) ReleaseInvoicesDue(ctx context.Context, org uuid.UUID, day time.Time) (ReleaseRun, error) {
+	return s.releaseDue(ctx, org, day, storage.DocumentInvoice)
+}
+
+func (s Releases) releaseDue(ctx context.Context, org uuid.UUID, day time.Time, t storage.DocumentType) (ReleaseRun, error) {
+	ctx = withSpreading(ctx, t)
 	run := ReleaseRun{Organisation: org, Day: day}
 	from := ""
 	if err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
@@ -229,13 +316,13 @@ func (s Releases) ReleaseDue(ctx context.Context, org uuid.UUID, day time.Time) 
 		var ids []uuid.UUID
 		if err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 			var err error
-			ids, err = u.Documents().SpreadBills(ctx, from, after, MaxDue)
+			ids, err = u.Documents().Spread(ctx, t, from, after, MaxDue)
 			return err
 		}); err != nil {
 			return run, err
 		}
 		for _, id := range ids {
-			r, err := s.release(ctx, org, id, day)
+			r, err := s.release(ctx, org, id, day, t)
 			run.Released += r.Released
 			run.Waiting += r.Waiting
 			if err != nil {
@@ -249,9 +336,20 @@ func (s Releases) ReleaseDue(ctx context.Context, org uuid.UUID, day time.Time) 
 	}
 }
 
-// ReleaseDueAll runs the releases of every organisation up to its own today, in its time zone, at now. An organisation
-// that fails does not stop the others; their errors come back together.
+// ReleaseDueAll runs the bills' releases of every organisation up to its own today, in its time zone, at now. An
+// organisation that fails does not stop the others; their errors come back together.
 func ReleaseDueAll(ctx context.Context, store storage.Store, now time.Time) ([]ReleaseRun, error) {
+	return releaseDueAll(ctx, store, now, Releases.ReleaseDue)
+}
+
+// ReleaseInvoicesDueAll runs the invoices' releases of every organisation up to its own today, as ReleaseDueAll does
+// the bills'.
+func ReleaseInvoicesDueAll(ctx context.Context, store storage.Store, now time.Time) ([]ReleaseRun, error) {
+	return releaseDueAll(ctx, store, now, Releases.ReleaseInvoicesDue)
+}
+
+func releaseDueAll(ctx context.Context, store storage.Store, now time.Time,
+	due func(Releases, context.Context, uuid.UUID, time.Time) (ReleaseRun, error)) ([]ReleaseRun, error) {
 	orgs, err := store.Organisations(ctx)
 	if err != nil {
 		return nil, err
@@ -265,7 +363,7 @@ func ReleaseDueAll(ctx context.Context, store storage.Store, now time.Time) ([]R
 			errs = append(errs, fmt.Errorf("organisation %s: %w", org, err))
 			continue
 		}
-		run, err := s.ReleaseDue(ctx, org, day)
+		run, err := due(s, ctx, org, day)
 		runs = append(runs, run)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("organisation %s: %w", org, err))
@@ -274,49 +372,51 @@ func ReleaseDueAll(ctx context.Context, store storage.Store, now time.Time) ([]R
 	return runs, errors.Join(errs...)
 }
 
-// replayBillRelease posts a stored release again under the rule that posted e (ENG-06): the release of the bill
+// replayRelease posts a stored release again under the rule that posted e (ENG-06): the release of the document
 // version's schedule that has e's identity.
-func replayBillRelease(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings, e storage.Entry) (ledger.Entry, error) {
-	rs, err := billSchedule(ctx, u, doc, s)
+func replayRelease(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings, e storage.Entry) (ledger.Entry, error) {
+	rs, err := scheduleOf(ctx, u, doc, s)
 	if err != nil {
 		return ledger.Entry{}, err
 	}
 	for _, r := range rs {
 		if r.Identity(e.RuleVersion) == e.PostingIdentity {
-			return ledger.ReplayBillRelease(e.RuleVersion, r, s)
+			return ledger.ReplayRelease(e.RuleVersion, r, s)
 		}
 	}
 	return ledger.Entry{}, fmt.Errorf("the schedule of %s version %d has no release %s", doc.Number, doc.Version, e.PostingIdentity)
 }
 
-// The states of a release, as a bill shows it (ENG-05: the future is a projection, never mixed with actuals).
+// The states of a release, as a bill or an invoice shows it (ENG-05: the future is a projection, never mixed with
+// actuals).
 const (
 	ReleasePosted    = "posted"    // in the ledger
-	ReleaseReversed  = "reversed"  // posted, and reversed by a void or an edit of its bill
+	ReleaseReversed  = "reversed"  // posted, and reversed by a void or an edit of its document
 	ReleaseWaiting   = "waiting"   // due by the organisation's today, not posted yet: the hourly job posts it, or its period is not open
 	ReleaseProjected = "projected" // in the future, or of a bill not posted: not in the ledger
 )
 
-// ReleaseState is one release of a bill's schedule and its state, with its entry once posted.
+// ReleaseState is one release of a document's schedule and its state, with its entry once posted.
 type ReleaseState struct {
-	Release ledger.BillRelease
+	Release ledger.Release
 	Status  string
 	EntryID uuid.UUID
 }
 
-// ReleasesOf is the release schedule of a bill's current version and each release's state on today, leaving out the
-// months whose part is zero: for a draft, what posting it would release, all projected; nothing for a vendor credit, a
-// bill without a spread, or a draft that cannot post.
+// ReleasesOf is the release schedule of a bill's or an invoice's current version and each release's state on today,
+// leaving out the months whose part is zero: for a draft, what posting it would release, all projected; nothing for
+// another type, a document without a spread, or a draft that cannot post.
 func ReleasesOf(ctx context.Context, u storage.UnitOfWork, doc storage.Document, today time.Time) ([]ReleaseState, error) {
-	if doc.Type != storage.DocumentBill {
+	if _, ok := spreads[doc.Type]; !ok {
 		return nil, nil
 	}
 	settings, err := loadSettings(ctx, u)
 	if err != nil {
 		return nil, err
 	}
-	var rs []ledger.BillRelease
-	if doc.Status == storage.DocumentDraft {
+	var rs []ledger.Release
+	switch {
+	case doc.Status == storage.DocumentDraft && doc.Type == storage.DocumentBill:
 		c, err := checkBill(ctx, u, doc, settings)
 		if err != nil || len(c.Problems) > 0 {
 			return nil, err
@@ -324,8 +424,18 @@ func ReleasesOf(ctx context.Context, u storage.UnitOfWork, doc storage.Document,
 		if rs, err = ledger.BillReleases(c.Prepared.Bill, c.Entry, settings); err != nil {
 			return nil, err
 		}
-	} else if rs, err = billSchedule(ctx, u, doc, settings); err != nil {
-		return nil, err
+	case doc.Status == storage.DocumentDraft:
+		c, err := checkInvoice(ctx, u, doc, settings)
+		if err != nil || len(c.Problems) > 0 {
+			return nil, err
+		}
+		if rs, err = ledger.InvoiceReleases(c.Prepared.Invoice, c.Entry, settings); err != nil {
+			return nil, err
+		}
+	default:
+		if rs, err = scheduleOf(ctx, u, doc, settings); err != nil {
+			return nil, err
+		}
 	}
 	out := make([]ReleaseState, 0, len(rs))
 	for _, r := range rs {

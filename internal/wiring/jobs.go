@@ -119,6 +119,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := journal.ReleaseDueAll(ctx, k.Store, clock.Now())
 			return err
 		},
+		"invoices.releases": func(ctx context.Context) error {
+			_, err := journal.ReleaseInvoicesDueAll(ctx, k.Store, clock.Now())
+			return err
+		},
 		"evidence.verify": func(ctx context.Context) error {
 			if k.Evidence == nil {
 				return nil
