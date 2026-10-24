@@ -21,6 +21,7 @@ type Allocation struct {
 	BaseCurrency  string
 	BaseAmount    Decimal
 	RealisedFX    Decimal // the gain (+) or loss (−), in the base currency
+	Tolerance     Decimal // the carrying amount a settlement tolerance cleared, in the base currency (FR-BNK-08); 0 for none
 	ReversesID    *uuid.UUID
 	WrittenBy     string
 	WrittenAt     time.Time
@@ -37,6 +38,7 @@ type NewAllocation struct {
 	BaseCurrency  string
 	BaseAmount    Decimal
 	RealisedFX    Decimal
+	Tolerance     Decimal // empty for none
 	ReversesID    *uuid.UUID
 }
 
@@ -52,4 +54,7 @@ type Allocations interface {
 	// Settled is the amount settled of each document named, in its currency, net of reversals; a document nothing settled
 	// is not in it.
 	Settled(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]Decimal, error)
+	// Tolerance is the carrying amount settlement tolerances cleared on allocations dated from from to to, net of
+	// reversals, in the base currency (FR-BNK-08).
+	Tolerance(ctx context.Context, from, to time.Time) (Decimal, error)
 }

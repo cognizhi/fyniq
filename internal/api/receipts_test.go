@@ -89,3 +89,37 @@ func TestCustomerReceiptsThroughTheAPI(t *testing.T) {
 		t.Errorf("the posted receipts: %d %s", l.Status, l.Raw)
 	}
 }
+
+// FR-BNK-08 through the API (p1-sales task 2.2): a receipt or a payment in full with a little less clears what is left
+// within the settlement tolerance, shown on what it settled; a larger difference is refused with its own code.
+// req: FR-BNK-08
+// req: ledger/posting-rules Settlement tolerances
+func TestSettlementDifferencesThroughTheAPI(t *testing.T) {
+	e := newEnv(t)
+	acc := e.as(authz.Accountant)
+	inv, _ := e.issuedInvoice("1", "1000.00")
+	r := e.receiptOf(inv, "999.50")
+	r["invoices"].([]map[string]any)[0]["in_full"] = true
+	got := e.call(http.MethodPost, "/v1/customer-receipts", acc, r)
+	if got.Status != 201 || !strings.Contains(got.Raw, `"tolerance":{"amount":"0.50","currency":"SGD"}`) ||
+		!strings.Contains(got.Raw, `"description":"Settlement difference within tolerance"`) {
+		t.Fatalf("a receipt in full: %d %s", got.Status, got.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/invoices/"+inv, acc, nil); g.str("states", "settlement") != "paid" || g.str("open", "amount") != "0.00" {
+		t.Errorf("the invoice: %s", g.Raw)
+	}
+	other, _ := e.issuedInvoice("1", "1000.00")
+	short := e.receiptOf(other, "998.00")
+	short["invoices"].([]map[string]any)[0]["in_full"] = true
+	e.problemIs(e.call(http.MethodPost, "/v1/customer-receipts", acc, short), "recordCustomerReceipt", 422, receipt.CodeTolerance)
+
+	b, _ := e.postedBill("1000.00", "90.00")
+	p := e.payment(b, "1089.50")
+	p["bills"].([]map[string]any)[0]["in_full"] = true
+	if got := e.call(http.MethodPost, "/v1/bill-payments", acc, p); got.Status != 201 || !strings.Contains(got.Raw, `"tolerance":{"amount":"0.50","currency":"SGD"}`) {
+		t.Fatalf("a payment in full: %d %s", got.Status, got.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/bills/"+b, acc, nil); g.str("states", "payment") != "paid" {
+		t.Errorf("the bill: %s", g.Raw)
+	}
+}

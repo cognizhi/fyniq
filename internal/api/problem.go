@@ -383,6 +383,8 @@ var codeFacts = map[string]struct {
 	receipt.CodeVoidDate:          {422, "The void is dated before the receipt"},
 	receipt.CodeTooLong:           {422, "A text of the receipt is too long"},
 	receipt.CodeTooMany:           {422, "The receipt settles too many invoices"},
+	receipt.CodeTolerance:         {422, "What is left of the invoice is above the settlement tolerance"},
+	billpayment.CodeTolerance:     {422, "What is left of the bill is above the settlement tolerance"},
 	CodeReceiptVoidApproval:       {409, "Voiding needs a second person"},
 	billpayment.CodeNotPayment:    {404, "Not a payment of bills"},
 	billpayment.CodeBadDraft:      {422, "The saved payment cannot be read"},

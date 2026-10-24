@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings and recommended values: features, terms, tolerances, thresholds, close variances, email-in, notification email, region, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:92dad07b69786b1789c55cd3156fea7ba7b48140188d0ae4f50acd495c7e2071
+  - docs/user-guide/organisation-settings.md sha256:f03dc987e7f8ceb582c79c4fdc06a8a5e5effbe595aaf16279de0c1c128b8292
 data_class: general
 taint: trusted
 status: draft
@@ -73,6 +73,7 @@ aliases:
 - A small difference between a payment and its document clears to **FX and rounding** (7030) instead of leaving it part-paid.
 - Base currency: up to S$1.00. Foreign currency: the greater of S$1.00 and 3% of the document.
 - Never more than S$50 on one document, or S$200 in a month in all.
+- The difference clears only when the payment or receipt is recorded as settling the document **in full**; a part payment leaves the rest open, and the receipt or payment shows the difference it cleared.
 - Exchange-rate gains and losses come first and are never limited by a tolerance.
 - An overpayment above S$1.00 stays with the customer as a credit; anything above tolerance needs a reason-coded adjustment.
 

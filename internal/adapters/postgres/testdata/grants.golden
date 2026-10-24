@@ -12,7 +12,7 @@ fyniq_api       UPDATE    accounting_framework (confirmed_at, confirmed_by)
 fyniq_api       INSERT    accounting_policy (area, from_on, version, wording, written_by)
 fyniq_api       SELECT    accounting_policy
 fyniq_api       UPDATE    accounting_policy (approved_at, approved_by)
-fyniq_api       INSERT    allocation (amount, base_amount, base_currency, base_minor_units, currency, document_id, minor_units, on_date, realised_fx, reverses_id, source_id, source_version, written_at, written_by)
+fyniq_api       INSERT    allocation (amount, base_amount, base_currency, base_minor_units, currency, document_id, minor_units, on_date, realised_fx, reverses_id, source_id, source_version, tolerance, written_at, written_by)
 fyniq_api       SELECT    allocation
 fyniq_api       INSERT    announcement (dismissible, ends_at, link, message, published_at, published_by, roles, severity, starts_at)
 fyniq_api       SELECT    announcement

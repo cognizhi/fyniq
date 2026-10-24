@@ -62,6 +62,8 @@ closes the month.
      month's end, in the same way (✖ when they differ by anything Fyniq cannot explain); amounts on
      accounts receivable from opening balances or manual journals, which no invoice supports, show
      ⚠: support them with the customers' statements, or enter the invoices;
+   - settlement differences cleared to FX and rounding in the month above the monthly cap in
+     **Settings → Organisation** (⚠: the cap was lowered after they cleared; review them);
    - income and expense accounts that moved against the previous month by more than both
      thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no
      explanation of their totals as they are now (✖; see [Explain the variances](#explain-the-variances));

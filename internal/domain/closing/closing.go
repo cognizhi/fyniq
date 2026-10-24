@@ -24,6 +24,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/payables"
 	"github.com/cognizhi/fyniq/internal/domain/receivables"
+	"github.com/cognizhi/fyniq/internal/domain/subledger"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -211,6 +212,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		return nil, err
 	}
 	out = append(out, receivables...)
+	tolerances, err := toleranceCheck(ctx, u, cur, p)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, tolerances...)
 	recurring, err := recurringChecks(ctx, u, p, today)
 	if err != nil {
 		return nil, err
@@ -390,6 +396,31 @@ func receivablesChecks(ctx context.Context, u storage.UnitOfWork, cur money.Curr
 			fmt.Sprintf("%s holds %s: support them with the customers' statements, or enter the invoices", ar.Code, strings.Join(held, ", "))})
 	}
 	return out, nil
+}
+
+// toleranceCheck warns when the settlement differences cleared to 7030 in the period exceed the cap per month in force
+// at its end (Appendix C.2 #49; FR-BNK-08): recording refuses a difference above the cap, so this sees a cap lowered
+// since. Nothing is said for a period with no difference.
+func toleranceCheck(ctx context.Context, u storage.UnitOfWork, cur money.Currency, p storage.Period) ([]Check, error) {
+	t, err := subledger.LoadTolerance(ctx, u, cur, p.EndsOn)
+	if err != nil {
+		return nil, err
+	}
+	used, err := u.Allocations().Tolerance(ctx, p.StartsOn, p.EndsOn)
+	if err != nil {
+		return nil, err
+	}
+	total, err := money.ParseStored(string(used), cur)
+	if err != nil || total.IsZero() {
+		return nil, err
+	}
+	if c, err := total.Cmp(t.Month); err != nil {
+		return nil, err
+	} else if c > 0 {
+		return []Check{{"tolerances", Warning, "Settlement differences exceed the monthly cap",
+			fmt.Sprintf("%s %s cleared to 7030 as settlement differences, above the cap of %s: review them", total, cur, t.Month)}}, nil
+	}
+	return []Check{{"tolerances", OK, "Settlement differences are within the monthly cap", fmt.Sprintf("%s %s cleared to 7030", total, cur)}}, nil
 }
 
 func clean(checks []Check) bool {

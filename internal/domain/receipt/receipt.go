@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/subledger"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -33,6 +34,7 @@ const (
 	CodeVoidDate   = "RECEIPT-07" // a void dated before the receipt
 	CodeTooLong    = "RECEIPT-08" // the reference or the notes are too long
 	CodeTooMany    = "RECEIPT-09" // more invoices than one receipt settles
+	CodeTolerance  = "RECEIPT-11" // what a receipt in full leaves of an invoice is above the settlement tolerance (FR-BNK-08)
 )
 
 // The longest reference and notes a receipt keeps, and the most invoices it settles.
@@ -51,10 +53,12 @@ type Error struct {
 
 func (e *Error) Error() string { return fmt.Sprintf("%s: %s (%s)", e.Code, e.Message, e.Fix) }
 
-// Part is what a receipt settles of one invoice, in the invoice's currency.
+// Part is what a receipt settles of one invoice, in the invoice's currency. InFull settles the invoice in full: what
+// is left of it after Amount clears as a settlement difference within tolerance (FR-BNK-08).
 type Part struct {
 	InvoiceID uuid.UUID
 	Amount    money.Money
+	InFull    bool
 }
 
 // Draft is a receipt as recorded: the customer, the date the money came in, the money account it came into, the
@@ -91,6 +95,7 @@ type payload struct {
 type payloadPart struct {
 	InvoiceID uuid.UUID   `json:"invoice_id"`
 	Amount    money.Money `json:"amount"`
+	InFull    bool        `json:"in_full,omitempty"`
 }
 
 // Encode is a draft as a document version stores it.
@@ -113,7 +118,7 @@ func Encode(d Draft) ([]byte, error) {
 		p.FXRate, p.FXRateSource = d.Rate.String(), d.Rate.Source
 	}
 	for _, x := range d.Invoices {
-		p.Invoices = append(p.Invoices, payloadPart{InvoiceID: x.InvoiceID, Amount: x.Amount})
+		p.Invoices = append(p.Invoices, payloadPart{InvoiceID: x.InvoiceID, Amount: x.Amount, InFull: x.InFull})
 	}
 	return json.Marshal(p)
 }
@@ -153,7 +158,7 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 		d.Rate = &r
 	}
 	for _, x := range p.Invoices {
-		d.Invoices = append(d.Invoices, Part{InvoiceID: x.InvoiceID, Amount: x.Amount})
+		d.Invoices = append(d.Invoices, Part{InvoiceID: x.InvoiceID, Amount: x.Amount, InFull: x.InFull})
 	}
 	return d, nil
 }
@@ -322,6 +327,7 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s 
 	}
 
 	seen := map[uuid.UUID]bool{}
+	var tol *subledger.Tolerance // read once, when a part settles in full with a difference
 	for i, x := range d.Invoices {
 		field := fmt.Sprintf("invoices[%d].invoice_id", i+1)
 		if seen[x.InvoiceID] {
@@ -365,6 +371,32 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s 
 			case c == 0:
 				left := o.Carrying
 				part.Clears = &left
+			case x.InFull: // a settlement difference within tolerance clears the rest (FR-BNK-08)
+				short, diff, total, err := subledger.Difference(x.Amount, o.Open, o.Total, o.Rate)
+				if err != nil {
+					return Prepared{}, nil, err
+				}
+				if tol == nil {
+					t, err := subledger.LoadTolerance(ctx, u, s.Base, d.Date)
+					if err != nil {
+						return Prepared{}, nil, err
+					}
+					tol = &t
+				}
+				ok, why, err := tol.Allows(diff, total, d.Currency != s.Base)
+				if err != nil {
+					return Prepared{}, nil, err
+				}
+				if !ok {
+					add(CodeTolerance, fmt.Sprintf("invoices[%d].in_full", i+1), fmt.Sprintf("%s has %s %s open after this receipt: %s", name, short, d.Currency, why),
+						"Leave it open, or record a reason-coded write-off of what is left (FR-AR-17)")
+					break
+				}
+				if err := tol.Take(diff); err != nil {
+					return Prepared{}, nil, err
+				}
+				left := o.Carrying
+				part.Clears, part.Short = &left, &short
 			}
 		}
 		r.Invoices = append(r.Invoices, part)

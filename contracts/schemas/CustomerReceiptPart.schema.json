@@ -6,6 +6,13 @@
       "$ref": "Money.schema.json",
       "description": "What the receipt settles of it, in the invoice's currency: at most what is open of it (RECEIPT-05)."
     },
+    "in_full": {
+      "description": "Settle the invoice in full: what is left of it after the amount clears to 7030 in this receipt's month as a settlement difference, when it is within the organisation's settlement tolerances (FR-BNK-08: S$1.00, or for another currency the greater of S$1.00 and 3% of the invoice, at most S$50.00 an invoice and S$200.00 a month by default); a larger difference is refused (RECEIPT-11) and is a write-off.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "invoice_id": {
       "description": "The invoice: one of the customer's issued invoices, in the receipt's currency.",
       "examples": [

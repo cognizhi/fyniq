@@ -23,11 +23,16 @@ const (
 // amount left in the base currency when the receipt settles all that is open of it; nil otherwise: what the last part
 // leaves of RND-FX is the residual, cleared to 7030 in the month of the last receipt (Appendix B, "Settlement
 // difference"), so no cent of the invoice stays on 1100.
+//
+// Short, when set, is what is left of the invoice after Amount, cleared as a settlement difference within tolerance
+// (FR-BNK-08), as a payment's is of a bill (PaidBill): the receipt settles Amount + Short and received Amount, and
+// Short's carrying amount goes to 7030 on a line of its own, a loss.
 type ReceivedInvoice struct {
 	InvoiceID  uuid.UUID
 	Amount     money.Money
 	StoredRate money.Rate
 	Clears     *money.Money
+	Short      *money.Money
 }
 
 // CustomerReceipt is one version of money a customer paid, as the rules read it: the money account it came into, the
@@ -63,6 +68,8 @@ var asReceipt = strings.NewReplacer(
 	"what the account paid", "what the account received",
 	"the bill carries", "the invoice carries",
 	"Settle what is open of the bill", "Settle what is open of the invoice",
+	"a settlement difference clears only what is left of a bill paid in full", "a settlement difference clears only what is left of an invoice received in full",
+	"Settle the bill in full, or leave the difference open", "Settle the invoice in full, or leave the difference open",
 	"the bill's stored rate is not of the payment's currency", "the invoice's stored rate is not of the receipt's currency",
 	"the bills are", "the invoices are",
 	"the bills'", "the invoices'",
@@ -95,7 +102,7 @@ func PostCustomerReceipt(r CustomerReceipt, s Settings) (Entry, []Settlement, er
 	p := BillPayment{ID: r.ID, Version: r.Version, Date: r.Date, Memo: r.Memo, Account: r.Account, Currency: r.Currency, Rate: r.Rate, Paid: r.Received,
 		Unapplied: r.Unapplied}
 	for _, x := range r.Invoices {
-		p.Bills = append(p.Bills, PaidBill{BillID: x.InvoiceID, Amount: x.Amount, StoredRate: x.StoredRate, Clears: x.Clears})
+		p.Bills = append(p.Bills, PaidBill{BillID: x.InvoiceID, Amount: x.Amount, StoredRate: x.StoredRate, Clears: x.Clears, Short: x.Short})
 	}
 	e, settled, err := postPayment(p, s, RoleAccountsReceivable)
 	if probs, ok := err.(Problems); ok {

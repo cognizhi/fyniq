@@ -35,7 +35,7 @@ import (
 const CodeReceiptVoidApproval = "RECEIPT-10"
 
 // ReceiptCodes are the codes the posting rule and the receipt's own checks answer.
-var ReceiptCodes = []string{receipt.CodeCustomer, receipt.CodeInvoice, receipt.CodeOverpaid, receipt.CodeTooLong, receipt.CodeTooMany,
+var ReceiptCodes = []string{receipt.CodeCustomer, receipt.CodeInvoice, receipt.CodeOverpaid, receipt.CodeTooLong, receipt.CodeTooMany, receipt.CodeTolerance,
 	ledger.CodeNotMoneyAccount, ledger.CodePaymentAmount, ledger.CodePaidAmount, ledger.CodeSystemRole, ledger.CodeLineCurrency}
 
 // ReceiptApprovalCodes are the codes an approval of a receipt's void may answer.
@@ -47,6 +47,7 @@ func ReceiptApprovalCodes() []string {
 type CustomerReceiptPart struct {
 	InvoiceID string `json:"invoice_id" format:"uuid" doc:"The invoice: one of the customer's issued invoices, in the receipt's currency." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
 	Amount    Money  `json:"amount" doc:"What the receipt settles of it, in the invoice's currency: at most what is open of it (RECEIPT-05)."`
+	InFull    bool   `json:"in_full,omitempty" doc:"Settle the invoice in full: what is left of it after the amount clears to 7030 in this receipt's month as a settlement difference, when it is within the organisation's settlement tolerances (FR-BNK-08: S$1.00, or for another currency the greater of S$1.00 and 3% of the invoice, at most S$50.00 an invoice and S$200.00 a month by default); a larger difference is refused (RECEIPT-11) and is a write-off." example:"false"`
 }
 
 // CustomerReceiptDraft is a receipt as recorded.
@@ -70,6 +71,7 @@ type InvoiceSettled struct {
 	Amount        Money  `json:"amount" doc:"What it settled, in the invoice's currency."`
 	Base          Money  `json:"base" doc:"The invoice's carrying amount it cleared, in the base currency: the amount at the invoice's stored rate, and for the part that settles what is left of an invoice, what was left (ENG-14)."`
 	RealisedFX    Money  `json:"realised_fx" doc:"The realised gain (positive) or loss (negative) in the base currency: the amount at the receipt's rate against the invoice's stored rate, with no tolerance (ENG-41)."`
+	Tolerance     *Money `json:"tolerance,omitempty" doc:"For an invoice received in full with a little less: the carrying amount the settlement difference cleared to 7030, in the base currency (FR-BNK-08)."`
 }
 
 // CustomerReceipt is money a customer paid, recorded by hand.
@@ -225,7 +227,7 @@ func receiptDraftOf(in CustomerReceiptDraft, base money.Currency) (receipt.Draft
 			fields = append(fields, *bad)
 			continue
 		}
-		d.Invoices = append(d.Invoices, receipt.Part{InvoiceID: id, Amount: m})
+		d.Invoices = append(d.Invoices, receipt.Part{InvoiceID: id, Amount: m, InFull: x.InFull})
 	}
 	if len(fields) > 0 {
 		return d, invalid(fields)
@@ -324,7 +326,7 @@ func (a *API) receiptOf(ctx context.Context, u storage.UnitOfWork, v receiptView
 			continue
 		}
 		s := InvoiceSettled{InvoiceID: x.DocumentID.String(), Amount: storedOut(x.Amount, x.Currency), Base: storedOut(x.BaseAmount, x.BaseCurrency),
-			RealisedFX: storedOut(x.RealisedFX, x.BaseCurrency)}
+			RealisedFX: storedOut(x.RealisedFX, x.BaseCurrency), Tolerance: toleranceOut(x)}
 		if inv, err := u.Documents().Get(ctx, x.DocumentID); err == nil {
 			s.InvoiceNumber = inv.Number
 		}

@@ -99,6 +99,8 @@ rounding** (7030) instead of leaving the document part-paid.
 - In the base currency: a difference of up to S$1.00.
 - In a foreign currency: the greater of S$1.00 and 3% of the document.
 - Never more than S$50 on one document, or S$200 in a month in all.
+- The difference clears only when the payment or receipt is recorded as settling the document **in
+  full**; a part payment leaves the rest open. The receipt or payment shows the difference it cleared.
 - Exchange-rate gains and losses are worked out first and are never limited by a tolerance.
 - An overpayment above S$1.00 stays with the customer as a credit.
 - Anything above the tolerance needs an adjustment with a reason, such as a discount or bank

@@ -14,7 +14,7 @@ import (
 
 const allocationsOfDocument = `-- name: AllocationsOfDocument :many
 SELECT id, source_id, source_version, document_id, on_date, currency, amount, base_currency, base_amount, realised_fx,
-  reverses_id, written_by, written_at
+  tolerance, reverses_id, written_by, written_at
 FROM fyniq.allocation
 WHERE document_id = $1
 ORDER BY on_date, written_at, id
@@ -31,6 +31,7 @@ type AllocationsOfDocumentRow struct {
 	BaseCurrency  string
 	BaseAmount    string
 	RealisedFx    string
+	Tolerance     string
 	ReversesID    *uuid.UUID
 	WrittenBy     string
 	WrittenAt     time.Time
@@ -57,6 +58,7 @@ func (q *Queries) AllocationsOfDocument(ctx context.Context, documentID uuid.UUI
 			&i.BaseCurrency,
 			&i.BaseAmount,
 			&i.RealisedFx,
+			&i.Tolerance,
 			&i.ReversesID,
 			&i.WrittenBy,
 			&i.WrittenAt,
@@ -73,7 +75,7 @@ func (q *Queries) AllocationsOfDocument(ctx context.Context, documentID uuid.UUI
 
 const allocationsOfSource = `-- name: AllocationsOfSource :many
 SELECT id, source_id, source_version, document_id, on_date, currency, amount, base_currency, base_amount, realised_fx,
-  reverses_id, written_by, written_at
+  tolerance, reverses_id, written_by, written_at
 FROM fyniq.allocation
 WHERE source_id = $1
 ORDER BY on_date, written_at, id
@@ -90,6 +92,7 @@ type AllocationsOfSourceRow struct {
 	BaseCurrency  string
 	BaseAmount    string
 	RealisedFx    string
+	Tolerance     string
 	ReversesID    *uuid.UUID
 	WrittenBy     string
 	WrittenAt     time.Time
@@ -116,6 +119,7 @@ func (q *Queries) AllocationsOfSource(ctx context.Context, sourceID uuid.UUID) (
 			&i.BaseCurrency,
 			&i.BaseAmount,
 			&i.RealisedFx,
+			&i.Tolerance,
 			&i.ReversesID,
 			&i.WrittenBy,
 			&i.WrittenAt,
@@ -132,14 +136,15 @@ func (q *Queries) AllocationsOfSource(ctx context.Context, sourceID uuid.UUID) (
 
 const insertAllocation = `-- name: InsertAllocation :one
 INSERT INTO fyniq.allocation (source_id, source_version, document_id, on_date, currency, minor_units, amount, base_currency,
-  base_minor_units, base_amount, realised_fx, reverses_id, written_by, written_at)
+  base_minor_units, base_amount, realised_fx, tolerance, reverses_id, written_by, written_at)
 SELECT $1::uuid, $2::integer, $3::uuid, $4::date,
   c.code, c.minor_units, $5::numeric, b.code, b.minor_units, $6::numeric,
-  $7::numeric, $8::uuid, $9::text, $10::timestamptz
+  $7::numeric, $8::numeric, $9::uuid, $10::text,
+  $11::timestamptz
 FROM fyniq.currencies c, fyniq.currencies b
-WHERE c.code = $11::text AND b.code = $12::text
+WHERE c.code = $12::text AND b.code = $13::text
 RETURNING id, source_id, source_version, document_id, on_date, currency, amount, base_currency, base_amount, realised_fx,
-  reverses_id, written_by, written_at
+  tolerance, reverses_id, written_by, written_at
 `
 
 type InsertAllocationParams struct {
@@ -150,6 +155,7 @@ type InsertAllocationParams struct {
 	Amount        string
 	BaseAmount    string
 	RealisedFx    string
+	Tolerance     string
 	ReversesID    *uuid.UUID
 	WrittenBy     string
 	WrittenAt     time.Time
@@ -168,6 +174,7 @@ type InsertAllocationRow struct {
 	BaseCurrency  string
 	BaseAmount    string
 	RealisedFx    string
+	Tolerance     string
 	ReversesID    *uuid.UUID
 	WrittenBy     string
 	WrittenAt     time.Time
@@ -183,6 +190,7 @@ func (q *Queries) InsertAllocation(ctx context.Context, arg InsertAllocationPara
 		arg.Amount,
 		arg.BaseAmount,
 		arg.RealisedFx,
+		arg.Tolerance,
 		arg.ReversesID,
 		arg.WrittenBy,
 		arg.WrittenAt,
@@ -201,6 +209,7 @@ func (q *Queries) InsertAllocation(ctx context.Context, arg InsertAllocationPara
 		&i.BaseCurrency,
 		&i.BaseAmount,
 		&i.RealisedFx,
+		&i.Tolerance,
 		&i.ReversesID,
 		&i.WrittenBy,
 		&i.WrittenAt,
@@ -239,4 +248,24 @@ func (q *Queries) SettledOfDocuments(ctx context.Context, documentIds []uuid.UUI
 		return nil, err
 	}
 	return items, nil
+}
+
+const toleranceBetween = `-- name: ToleranceBetween :one
+SELECT coalesce(sum(tolerance), 0)::numeric(20, 4) AS tolerance
+FROM fyniq.allocation
+WHERE on_date BETWEEN $1::date AND $2::date
+`
+
+type ToleranceBetweenParams struct {
+	FromDay time.Time
+	ToDay   time.Time
+}
+
+// The carrying amounts settlement tolerances cleared on allocations dated from from_day to to_day, net of reversals
+// (FR-BNK-08's cap per month).
+func (q *Queries) ToleranceBetween(ctx context.Context, arg ToleranceBetweenParams) (string, error) {
+	row := q.db.QueryRow(ctx, toleranceBetween, arg.FromDay, arg.ToDay)
+	var tolerance string
+	err := row.Scan(&tolerance)
+	return tolerance, err
 }
