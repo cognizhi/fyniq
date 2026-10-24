@@ -1079,8 +1079,18 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		if err != nil {
 			return err
 		}
-		_, _, err = closing.Reopen(storage.WithReason(ctx, text("reason")), u, id, r.ID, text("reason"))
-		return err
+		if _, _, err = closing.Reopen(storage.WithReason(ctx, text("reason")), u, id, r.ID, text("reason")); err != nil || a.deps.Outbox == nil {
+			return err
+		}
+		pd, err := u.Periods().Get(ctx, id)
+		if err != nil {
+			return err
+		}
+		o, err := u.Organisation(ctx)
+		if err != nil {
+			return err
+		}
+		return notify.PeriodReopened(ctx, *a.deps.Outbox, u, o.ID, signer, id, monthName(pd), text("reason")) // FR-NTF-01
 	case approval.OpJournalPost, approval.OpJournalReverse:
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {

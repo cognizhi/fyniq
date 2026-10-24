@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/logging"
 	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/mailhooks"
+	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -95,7 +96,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	api.New(s, d)
 	s.AddReadiness("database", kit.Store.Ping)
 	t := outbox.Ticker{Store: kit.Store, Platform: kit.Store, Jobs: kit.Jobs, Clock: deps.Clock, Holder: app.Holder("api"),
-		Schedules: outbox.PlatformSchedules, Dispatcher: *d.Outbox}
+		Schedules: outbox.PlatformSchedules, Dispatcher: *d.Outbox, Dead: notify.JobDead(*d.Outbox)}
 	s.HandleFunc("POST /internal/tick", func(w http.ResponseWriter, r *http.Request) {
 		if kit.Tokens.Verify(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "), "scheduler") != nil {
 			http.Error(w, "only the Scheduler may call the tick", http.StatusForbidden)

@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -321,6 +322,11 @@ func registerClose(a *API) {
 				}
 				if _, _, err := a.closing.Close(ctx, p.Organisation, id, checks, statement); err != nil {
 					return PeriodCloseState{}, err
+				}
+				if a.deps.Outbox != nil { // those who close and post to it hear it closed (FR-NTF-01)
+					if err := notify.PeriodClosed(ctx, *a.deps.Outbox, u, p.Organisation, p.UserID, id, monthName(before)); err != nil {
+						return PeriodCloseState{}, err
+					}
 				}
 				return a.closeState(ctx, u, id)
 			})

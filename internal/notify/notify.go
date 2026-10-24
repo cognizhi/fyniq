@@ -60,6 +60,12 @@ var Catalogue = []Type{
 	{Key: "email.quarantined", Label: "Mail waits in quarantine", Category: Email, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: "email.suppressed", Label: "Email to an address stopped", Category: Email, Severity: "warning", Email: storage.EmailDaily},
 	{Key: "email.domain_failed", Label: "A sending domain failed its check", Category: Email, Severity: "warning", Email: storage.EmailDaily},
+	{Key: "ledger.posted", Label: "Someone else posted or voided a document", Category: Operations, Severity: "info", Email: storage.EmailDaily},
+	{Key: "period.closed", Label: "A month was closed", Category: Operations, Severity: "info", Email: storage.EmailDaily},
+	{Key: "period.reopened", Label: "A closed month was reopened", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
+	{Key: "recurring.made", Label: "A recurring journal or bill made a draft", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
+	{Key: "bills.due", Label: "Bills to pay soon", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
+	{Key: "jobs.failed", Label: "A background job failed", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
 }
 
 // Lookup is the type with key.
@@ -71,12 +77,12 @@ func Lookup(key string) (Type, bool) {
 	return Catalogue[i], true
 }
 
-// Audience is whom an event concerns: these users, and the members whose roles hold Need on the Appendix D row
-// Capability, except these.
+// Audience is whom an event concerns: these users, and the members whose roles hold one of Need's rights on the
+// Appendix D row Capability, except these.
 type Audience struct {
 	Users      []uuid.UUID `json:"users,omitempty"`
 	Capability string      `json:"capability,omitempty"`
-	Need       string      `json:"need,omitempty"` // "A", "C" or "V"
+	Need       string      `json:"need,omitempty"` // the rights, any of which will do: "A", "CA", "P"…
 	Except     []uuid.UUID `json:"except,omitempty"`
 }
 
@@ -167,12 +173,14 @@ func Recipients(a Audience, members []storage.Member) []uuid.UUID {
 			continue
 		}
 		in := slices.Contains(a.Users, m.UserID)
-		if !in && a.Capability != "" && len(a.Need) == 1 {
+		if !in && a.Capability != "" {
 			var roles []authz.Role
 			for _, r := range m.Roles {
 				roles = append(roles, authz.Role(r.Role))
 			}
-			in = authz.Decide(authz.Policy{Operation: "notify", Capability: authz.Capability(a.Capability), Need: authz.Right(a.Need[0])}, roles, false).Allowed
+			for i := range len(a.Need) {
+				in = in || authz.Decide(authz.Policy{Operation: "notify", Capability: authz.Capability(a.Capability), Need: authz.Right(a.Need[i])}, roles, false).Allowed
+			}
 		}
 		if in {
 			out = append(out, m.UserID)

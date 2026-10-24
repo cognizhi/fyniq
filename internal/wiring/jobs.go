@@ -16,6 +16,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/notify"
+	"github.com/cognizhi/fyniq/internal/notify/reminders"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -53,6 +54,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := superadmin.Verify(ctx, k.Store, k.Store)
 			return err
 		},
+		reminders.Job: func(ctx context.Context) error {
+			_, err := reminders.BillsDue(ctx, k.Store, k.dispatcher(clock))
+			return err
+		},
 		notify.DigestJob: func(ctx context.Context) error {
 			_, err := k.Fanout(clock).Digest(ctx)
 			return err
@@ -88,7 +93,7 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 		"journals.recurring": func(ctx context.Context) error {
-			_, err := journal.MakeDueAll(ctx, k.Store, clock.Now())
+			_, err := journal.Service{Store: k.Store, AfterMaking: notify.RecurringMade(k.dispatcher(clock))}.MakeDueAll(ctx, clock.Now()) // FR-NTF-01
 			return err
 		},
 		"fx.feed": func(ctx context.Context) error {
@@ -107,7 +112,7 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 		"bills.recurring": func(ctx context.Context) error {
-			_, err := journal.MakeDueBillsAll(ctx, k.Store, clock.Now())
+			_, err := journal.Bills{Store: k.Store, AfterMaking: notify.RecurringMade(k.dispatcher(clock))}.MakeDueAll(ctx, clock.Now()) // FR-NTF-01
 			return err
 		},
 		"bills.releases": func(ctx context.Context) error {
@@ -134,6 +139,11 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 // Fanout fans notification events out and sends their digests (FR-NTF-01, FR-NTF-02, FR-NTF-05).
 func (k *Kit) Fanout(clock ports.Clock) notify.Fanout {
 	return notify.Fanout{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Origin: k.Origin}
+}
+
+// JobDead tells those who look after an organisation of its background work that died (FR-NTF-01).
+func (k *Kit) JobDead(clock ports.Clock) outbox.Dead {
+	return notify.JobDead(k.dispatcher(clock))
 }
 
 // dispatcher queues work through the kit's outbox.

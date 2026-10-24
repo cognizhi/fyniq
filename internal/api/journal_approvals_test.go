@@ -63,8 +63,9 @@ func inStandardMode(e *env) *env {
 // A journal whose debits are above the self-approval threshold (S$2,000 by default, a dual-controlled setting) posts
 // only on another person's approval, and whoever prepared it never approves it; at or below the threshold a
 // Founder-mode post is logged as self-approved for the weekly review. In Founder mode a void needs a second person
-// too: it is asked for, then approved.
+// too: it is asked for, then approved. The other Controller hears of each posting and reversal.
 // req: FR-GL-01
+// req: FR-NTF-01
 // req: FM-1
 // req: FM-2
 // req: FM-3
@@ -165,6 +166,16 @@ func TestJournalApprovals(t *testing.T) {
 		if !strings.Contains(trail, want) {
 			t.Errorf("the audit trail lacks %s", want)
 		}
+	}
+
+	// The other Controller hears of each posting and reversal; nobody hears of their own.
+	fanOutAll(t, e)
+	theirs, his := e.call(http.MethodGet, "/v1/notifications", weiling, nil).Raw, e.call(http.MethodGet, "/v1/notifications", ahkow, nil).Raw
+	if !strings.Contains(theirs, `"title":"Ah Kow posted journal JNL-`) || strings.Contains(theirs, `"title":"Wei Ling `) {
+		t.Errorf("Wei Ling's notifications of postings: %s", theirs)
+	}
+	if !strings.Contains(his, `"title":"Wei Ling reversed journal JNL-`) || strings.Contains(his, `"title":"Ah Kow `) {
+		t.Errorf("Ah Kow's notifications of postings: %s", his)
 	}
 }
 

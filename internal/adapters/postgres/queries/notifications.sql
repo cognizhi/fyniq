@@ -8,6 +8,9 @@ RETURNING id, type, record_type, record_id, title, link, actor, audience, occurr
 SELECT id, type, record_type, record_id, title, link, actor, audience, occurred_at, fanned_out_at
 FROM fyniq.notification_event WHERE id = sqlc.arg(id);
 
+-- name: NotificationEventEmitted :one
+SELECT EXISTS (SELECT 1 FROM fyniq.notification_event WHERE type = sqlc.arg(type) AND record_id = sqlc.arg(record_id));
+
 -- name: FannedOutNotificationEvent :execrows
 UPDATE fyniq.notification_event SET fanned_out_at = sqlc.arg(at) WHERE id = sqlc.arg(id) AND fanned_out_at IS NULL;
 

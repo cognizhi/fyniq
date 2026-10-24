@@ -54,6 +54,14 @@ func (r notifications) Emit(ctx context.Context, e storage.NewNotificationEvent)
 	return out, nil
 }
 
+func (r notifications) Emitted(ctx context.Context, typ string, record uuid.UUID) (bool, error) {
+	if err := r.u.check(); err != nil {
+		return false, err
+	}
+	ok, err := r.u.q.NotificationEventEmitted(ctx, sqlcdb.NotificationEventEmittedParams{Type: typ, RecordID: &record})
+	return ok, mapError(err)
+}
+
 func (r notifications) Event(ctx context.Context, id uuid.UUID) (storage.NotificationEvent, error) {
 	if err := r.u.check(); err != nil {
 		return storage.NotificationEvent{}, err

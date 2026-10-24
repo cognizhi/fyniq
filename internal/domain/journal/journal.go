@@ -79,7 +79,13 @@ type Service struct {
 	// document updated, for work that must commit with the posting. An error rolls everything back.
 	// (The audit events need no hook: the unit of work records every change it makes.)
 	AfterPosting func(ctx context.Context, uow storage.UnitOfWork, doc storage.Document, entry storage.Entry) error
+	// AfterMaking runs inside the unit of work that made a recurring journal's draft (Made); nil does nothing.
+	AfterMaking Made
 }
+
+// Made runs inside the unit of work that made a draft dated on from the recurring journal or bill named name, for work
+// that must commit with it, such as telling those who post it (notify.RecurringMade). An error rolls the draft back.
+type Made func(ctx context.Context, uow storage.UnitOfWork, org uuid.UUID, name string, draft storage.Document, on time.Time) error
 
 // encode is a draft as a document version stores it.
 func encode(d Draft) ([]byte, error) {

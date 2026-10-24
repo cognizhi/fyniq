@@ -100,7 +100,7 @@
 
 ## 3. Notifications
 
-- [ ] 3.1 The notification centre and preferences (channels, digests, quiet hours; security notices always on). Tests `// req: FR-NTF-01` and `// req: FR-NTF-02`
+- [x] 3.1 The notification centre and preferences (channels, digests, quiet hours; security notices always on). Tests `// req: FR-NTF-01` and `// req: FR-NTF-02`
   (24 Oct 2026, part, PRD-001 rev 0.108, on the owner's decisions: the P1 types are those to act on, security and
   operations; security and approvals emailed at once, the rest in a daily digest at 08:00 Singapore time; notification
   email names only the type unless the organisation turns on `notify.email_details`. First slice: `internal/notify`
@@ -116,7 +116,12 @@
   operations, `email.Fetcher.Quarantined`, `mailhooks.Receiver.Notify`, `notify.DomainChecks` after the nightly job);
   a locked type's email is fixed (a sign-in never, as the sign-in alert sends it). Tests:
   `TestSecurityAndEmailNoticesReachTheirPeople`, and checks in `TestPasskeys`, `TestReceivedMailIsQuarantinedUntilSomeoneDecides`
-  and `TestTheProvidersWebhooksRecordEventsAndSuppressHardBounces`. Still to come: the operations types.)
+  and `TestTheProvidersWebhooksRecordEventsAndSuppressHardBounces`. Rev 0.110, third slice: the operations types
+  (`notify.Posted` through the API's posting hook, `notify.PeriodClosed` and `PeriodReopened`, `journal.Made` with
+  `notify.RecurringMade`, the daily job `notify.bills_due`, `outbox.Dead` with `notify.JobDead`); audiences may name
+  several rights. Tests: `TestDeadWorkReachesThoseWhoLookAfterTheOrganisation`, and checks in `TestJournalApprovals`,
+  `TestReopeningAClosedPeriod`, `TestRecurringJournals`, `TestRecurringBillsThroughTheAPI` and
+  `TestBillPlansThroughTheAPI`. The screens are task 4.1.)
 - [ ] 3.2 Announcement banners for everyone (Super admin) and per organisation (Owner, Administrator), with critical banners non-dismissable and publishing audited. Test `// req: FR-NTF-03`
 - [ ] 3.3 One event stream feeding every channel, with delivery attempts logged and retried and a test message per channel. Test `// req: FR-NTF-05`
 

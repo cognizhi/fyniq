@@ -11,10 +11,15 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/adapters/local"
+	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/notify/reminders"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -448,8 +453,10 @@ func TestWithholdingThroughTheAPI(t *testing.T) {
 }
 
 // FR-AP-13 through the API (rev 0.93): a supplier's discount terms give its bill an early-payment discount; a posted
-// bill's payment date is planned with its ETag, previewed, and unscheduled; the bills to pay soon list it.
+// bill's payment date is planned with its ETag, previewed, and unscheduled; the bills to pay soon list it, and those
+// who record bill payments are told of them each day.
 // req: FR-AP-13
+// req: FR-NTF-01
 func TestBillPlansThroughTheAPI(t *testing.T) {
 	e := newEnv(t)
 	sup := e.supplier()
@@ -491,5 +498,22 @@ func TestBillPlansThroughTheAPI(t *testing.T) {
 	}
 	if x := e.call(http.MethodPost, path, e.as(authz.Bookkeeper), nil, "If-Match", tag); x.Status != 200 || x.str("planned_payment_on") != "" {
 		t.Errorf("unscheduling: %d %s", x.Status, x.Raw)
+	}
+
+	// The day before it falls due, those who record bill payments are told of it, once that day however often the
+	// job runs (FR-NTF-01).
+	worker, err := postgres.Open(context.Background(), db.URL("fyniq_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer worker.Close()
+	d := outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: clock.NewFrozen(time.Date(2026, 11, 12, 1, 0, 0, 0, time.UTC))}
+	for i, want := range []bool{true, false} {
+		if told, err := reminders.BillsDueIn(context.Background(), worker, d, e.books.Org); err != nil || told != want {
+			t.Fatalf("run %d of the bills to pay: told %v, %v", i+1, told, err)
+		}
+	}
+	if trail := auditTrail(t, e); strings.Count(trail, `"bills.due"`) != 1 || !strings.Contains(trail, "1 bill to pay: due or planned within 3 days") {
+		t.Errorf("the bills to pay were not told once: %d", strings.Count(trail, `"bills.due"`))
 	}
 }

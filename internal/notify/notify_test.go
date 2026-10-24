@@ -21,7 +21,8 @@ func member(user uuid.UUID, status string, roles ...string) storage.Member {
 
 // An event concerns the users it names and the active members whose roles hold its right on its row, except those it
 // leaves out: a journal's approval waits for the Controller, not the Owner, who only views journals (Appendix D), the
-// Accountant who asked, or a removed member.
+// Accountant who asked, or a removed member. Any of several rights will do: C or A on users and roles is the
+// Administrator and the Owner.
 // req: FR-NTF-01
 // req: FR-NTF-05
 func TestAnEventConcernsItsAudience(t *testing.T) {
@@ -31,6 +32,11 @@ func TestAnEventConcernsItsAudience(t *testing.T) {
 	got := Recipients(Audience{Users: []uuid.UUID{named}, Capability: "Journals", Need: "A", Except: []uuid.UUID{accountant}}, members)
 	if len(got) != 2 || got[0] != controller || got[1] != named {
 		t.Fatalf("recipients %v", got)
+	}
+	admin := uuid.New()
+	members = append(members, member(admin, "active", "administrator"))
+	if got := Recipients(Audience{Capability: "Users, roles, team mode", Need: "CA"}, members); len(got) != 2 || got[0] != owner || got[1] != admin {
+		t.Fatalf("any of the rights: %v", got)
 	}
 }
 
