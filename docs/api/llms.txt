@@ -252,3 +252,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/supplier-refunds/{refund_id}/void-approval` (requestSupplierRefundVoid): Ask for approval to void a refund from a supplier
 - `GET /v1/team-mode` (getTeamMode): Get the team mode
 - `PATCH /v1/team-mode` (switchTeamMode): Ask to switch the team mode
+- `GET /v1/write-offs` (listWriteOffs): List the write-offs
+- `POST /v1/write-offs` (createWriteOff): Save a draft write-off
+- `GET /v1/write-offs/{write_off_id}` (getWriteOff): Get a write-off
+- `PUT /v1/write-offs/{write_off_id}` (replaceWriteOff): Change a draft write-off
+- `POST /v1/write-offs/{write_off_id}/post-approval` (requestWriteOffPost): Ask for approval to post a write-off
+- `POST /v1/write-offs/{write_off_id}/void` (voidWriteOff): Void a write-off
+- `POST /v1/write-offs/{write_off_id}/void-approval` (requestWriteOffVoid): Ask for approval to void a write-off

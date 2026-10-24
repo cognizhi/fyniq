@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entry": {
+      "$ref": "Entry.schema.json",
+      "description": "The reversing entry the void posted."
+    },
+    "write_off": {
+      "$ref": "WriteOff.schema.json",
+      "description": "The write-off after the command."
+    }
+  },
+  "required": [
+    "write_off",
+    "entry"
+  ],
+  "title": "WriteOffPosting",
+  "type": "object"
+}

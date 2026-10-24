@@ -1498,6 +1498,62 @@ var matrixCalls = map[string]matrixCall{
 			return s.call(http.MethodGet, "/v1/customer-receipts/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
 		}
 	},
+	// Write-offs (FR-AR-17): read under V, drafted under C, asked for and voided under P; posting is the approval's.
+	"listWriteOffs": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/write-offs", tok, nil), nil
+	},
+	"getWriteOff": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.draftWriteOff()
+		return e.call(http.MethodGet, "/v1/write-offs/"+id, tok, nil), nil
+	},
+	"createWriteOff": func(e *env, tok string) (response, func() bool) {
+		inv, _ := e.issuedInvoice("1", "10.00")
+		return e.call(http.MethodPost, "/v1/write-offs", tok, e.writeOffDraft(inv, "10.00")), nil
+	},
+	"replaceWriteOff": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.draftWriteOff()
+		g := e.call(http.MethodGet, "/v1/write-offs/"+id, e.as(authz.Accountant), nil)
+		r := e.call(http.MethodPut, "/v1/write-offs/"+id, tok, e.writeOffDraft(g.str("invoice", "id"), "5.00"), "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/write-offs/"+id, e.as(authz.Accountant), nil).Body["version"] == float64(1)
+		}
+	},
+	"requestWriteOffPost": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "write_off")
+		id, tag := e.draftWriteOff()
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/write-offs/"+id+"/post-approval", person, nil, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "write_off") == was }
+	},
+	"requestWriteOffVoid": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "write_off")
+		id, tag := e.postedWriteOff()
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/write-offs/"+id+"/void-approval", person, map[string]any{"date": "2026-10-31", "reason": "Matrix test"}, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "write_off") == was }
+	},
+	// A void in Founder mode is asked for, so the row voids in an organisation in Standard mode.
+	"voidWriteOff": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org {
+			p.Organisation = s.books.Org
+			tok = s.principal(p)
+		}
+		id, tag := s.postedWriteOff()
+		r := s.call(http.MethodPost, "/v1/write-offs/"+id+"/void", tok, map[string]any{"date": "2026-10-31", "reason": "Matrix test"}, "If-Match", tag)
+		return r, func() bool {
+			return s.call(http.MethodGet, "/v1/write-offs/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
+		}
+	},
 	"getReceivables": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/receivables?as_at=2026-10-31", tok, nil), nil
 	},

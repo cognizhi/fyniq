@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account it writes off to; left out, the reason's. Required for bad_debt and migrated (WRITEOFF-06).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What is written off, in the invoice's currency: at most what is open of it (WRITEOFF-04); all of it clears the invoice."
+    },
+    "date": {
+      "description": "The day it is written off; the month it posts in.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "invoice_id": {
+      "description": "The invoice it writes off: an issued invoice with something open.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "note": {
+      "description": "Why it is written off, in plain words: the approver reads it, and the audit trail keeps it.",
+      "examples": [
+        "The customer went into liquidation; the liquidator's notice is attached to the invoice"
+      ],
+      "maxLength": 1000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why: discount, an agreed discount, to 4095 Discounts \u0026 refunds given unless another account is named; charges, bank or provider charges, and cross_currency, an unexplained cross-currency difference with the bank's advice, to 7030 FX \u0026 rounding unless named; bad_debt and migrated name their account (provisional until the chart-of-accounts review). A bad debt is tagged for the GST bad-debt relief review (FR-AR-11, P2).",
+      "enum": [
+        "discount",
+        "charges",
+        "bad_debt",
+        "cross_currency",
+        "migrated"
+      ],
+      "examples": [
+        "bad_debt"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "invoice_id",
+    "amount",
+    "reason",
+    "note"
+  ],
+  "title": "WriteOffDraft",
+  "type": "object"
+}

@@ -53,7 +53,7 @@
       "type": "string"
     },
     "settlement": {
-      "description": "What is settled of it, from the receipts and credits applied to it net of their voids (FR-AR-18): open, part_paid or paid; written_off arrives with write-offs.",
+      "description": "What is settled of it, from the receipts, credits and write-offs applied to it net of their voids (FR-AR-18): open, part_paid, paid, or written_off when it is settled and a write-off settles part of it (FR-AR-17).",
       "enum": [
         "open",
         "part_paid",

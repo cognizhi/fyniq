@@ -65,9 +65,15 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   allocations; the allocation's `tolerance` (migrations 000114 and 000115); the close's `tolerances` check (C.2 #49).
   Tests: `TestASettlementDifferenceClearsWithinItsOwnLine`, `TestSettlementDifferencesWithinTolerance`,
   `TestSettlementDifferencesThroughTheAPI`)
-- [ ] 2.3 Write-offs: reason-coded, with evidence, approved by someone other than whoever recorded the receipt
+- [x] 2.3 Write-offs: reason-coded, with evidence, approved by someone other than whoever recorded the receipt
   (SOD-9), posted to the reason's account; a bad debt tagged for the relief review. Tests `// req: FR-AR-17`,
   `// req: ledger/posting-rules Bad-debt write-off`, `// req: SOD-9`
+  (24 Oct 2026, PRD-001 rev 0.122: `internal/domain/writeoff`, `write_off@1` with its replay golden, `journal.WriteOffs`
+  (draft, post on approval, void), migrations 000116 and 000117, seven operations under `/v1/write-offs` with the
+  approval object `write_off`; the invoice's `written_off` state. The reasons' default accounts (4095, 7030) and a bad
+  debt's named account are `[verify]`; evidence files on write-offs wait for FR-DOC-06. Tests: `TestPostWriteOff`,
+  `TestTheWriteOffRuleRefusesWhatCannotPost`, `TestEveryWriteOffRuleVersionReplaysItsGoldenEntries`,
+  `TestWriteOffsSettleWhatIsLeft`, `TestWriteOffsThroughTheAPI`, the matrix rows)
 
 ## 3. Credit notes, refunds and deposits
 

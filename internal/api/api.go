@@ -70,6 +70,7 @@ type API struct {
 	bills        journal.Bills
 	invoices     journal.Invoices
 	receipts     journal.CustomerReceipts
+	writeOffs    journal.WriteOffs
 	payments     journal.BillPayments
 	applications journal.CreditApplications
 	refunds      journal.SupplierRefunds
@@ -172,8 +173,8 @@ func New(mux humago.Mux, d Deps) *API {
 	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store, Clock: d.Clock},
 		payments: journal.BillPayments{Store: d.Store}, applications: journal.CreditApplications{Store: d.Store},
 		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
-		receipts: journal.CustomerReceipts{Store: d.Store},
-		closing:  closing.Service{Store: d.Store, Clock: d.Clock}}
+		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store},
+		closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {
@@ -189,6 +190,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.refunds.AfterPosting = a.afterPosting
 	a.invoices.AfterPosting = a.afterPosting
 	a.receipts.AfterPosting = a.afterPosting
+	a.writeOffs.AfterPosting = a.afterPosting
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(limitUploads{mux}, cfg)
@@ -243,6 +245,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerInvoiceEvidence(a)
 	registerReceivables(a)
 	registerCustomerReceipts(a)
+	registerWriteOffs(a)
 	registerPurchaseOrders(a)
 	registerWithholding(a)
 	registerBillPlans(a)
