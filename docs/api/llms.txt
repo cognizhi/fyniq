@@ -93,6 +93,20 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/installation/announcements` (listInstallationAnnouncements): List the announcements to everyone
 - `POST /v1/installation/announcements` (publishInstallationAnnouncement): Publish a banner to everyone
 - `POST /v1/installation/announcements/{announcement_id}/withdraw` (withdrawInstallationAnnouncement): Withdraw an announcement to everyone
+- `GET /v1/invoices` (listInvoices): List the invoices
+- `POST /v1/invoices` (createInvoice): Save a draft invoice
+- `GET /v1/invoices/{invoice_id}` (getInvoice): Get an invoice
+- `PUT /v1/invoices/{invoice_id}` (replaceInvoice): Change a draft invoice
+- `POST /v1/invoices/{invoice_id}/edit` (editInvoice): Edit an issued invoice
+- `POST /v1/invoices/{invoice_id}/edit-approval` (requestInvoiceEdit): Ask for approval to edit an issued invoice
+- `GET /v1/invoices/{invoice_id}/evidence` (listInvoiceEvidence): List an invoice's evidence
+- `POST /v1/invoices/{invoice_id}/evidence` (addInvoiceEvidence): Attach evidence to an invoice
+- `GET /v1/invoices/{invoice_id}/evidence/{evidence_id}` (getInvoiceEvidence): Get an invoice's evidence file
+- `DELETE /v1/invoices/{invoice_id}/evidence/{evidence_id}` (removeInvoiceEvidence): Remove evidence from a draft invoice
+- `POST /v1/invoices/{invoice_id}/issue` (issueInvoice): Issue a draft invoice
+- `POST /v1/invoices/{invoice_id}/issue-approval` (requestInvoiceIssue): Ask for approval to issue an invoice
+- `POST /v1/invoices/{invoice_id}/void` (voidInvoice): Void an issued invoice
+- `POST /v1/invoices/{invoice_id}/void-approval` (requestInvoiceVoid): Ask for approval to void an invoice
 - `GET /v1/items` (listItems): List the items
 - `POST /v1/items` (createItem): Add an item
 - `GET /v1/items/{item_id}` (getItem): Get an item

@@ -68,6 +68,7 @@ type API struct {
 	policies     map[string]authz.Policy
 	journals     journal.Service
 	bills        journal.Bills
+	invoices     journal.Invoices
 	payments     journal.BillPayments
 	applications journal.CreditApplications
 	refunds      journal.SupplierRefunds
@@ -133,6 +134,7 @@ func Config(version string) huma.Config {
 		{Name: "Chart of accounts", Description: "Accounts: what the ledger posts to (PRD-001 §8.2)."},
 		{Name: "Journals", Description: "Manual journals: drafted, posted and reversed; posted history never changes (FR-GL-12)."},
 		{Name: "Purchases", Description: "Bills from suppliers: drafted, approved, posted and voided; posted history never changes (FR-AP-02, FR-GL-12)."},
+		{Name: "Sales", Description: "Invoices to customers: drafted, approved, issued and voided; posted history never changes (FR-AR-03, FR-GL-12)."},
 		{Name: "Periods", Description: "Accounting periods and financial years: a posting's period is the month of its date (FR-ORG-02, FR-GL-08)."},
 		{Name: "Exchange rates", Description: "Rates into the base currency: the daily feed, the organisation's own rates for a day and its monthly table, and the cascade a posting takes its rate from (FR-GL-05, ENG-40)."},
 		{Name: "Reports", Description: "Reports read from the ledger at one revision: the general ledger (FR-GL-11), and the statements as they arrive."},
@@ -168,7 +170,7 @@ func New(mux humago.Mux, d Deps) *API {
 	}
 	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store, Clock: d.Clock},
 		payments: journal.BillPayments{Store: d.Store}, applications: journal.CreditApplications{Store: d.Store},
-		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store},
+		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store},
 		closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
@@ -183,6 +185,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.payments.AfterPosting = a.afterPosting
 	a.applications.AfterPosting = a.afterPosting
 	a.refunds.AfterPosting = a.afterPosting
+	a.invoices.AfterPosting = a.afterPosting
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(limitUploads{mux}, cfg)
@@ -233,6 +236,8 @@ func New(mux humago.Mux, d Deps) *API {
 	registerRecurringJournals(a)
 	registerRecurringBills(a)
 	registerBillEvidence(a)
+	registerInvoices(a)
+	registerInvoiceEvidence(a)
 	registerPurchaseOrders(a)
 	registerWithholding(a)
 	registerBillPlans(a)

@@ -18,7 +18,7 @@ import (
 
 // Sequence is a document type's number sequence.
 type Sequence struct {
-	DocumentType string `json:"document_type" enum:"journal,bill" doc:"The documents it numbers." example:"journal"`
+	DocumentType string `json:"document_type" enum:"journal,bill,bill_payment,vendor_credit,supplier_refund,purchase_order,invoice" doc:"The documents it numbers." example:"journal"`
 	Prefix       string `json:"prefix" doc:"What every number starts with." example:"JNL-"`
 	NextNumber   int64  `json:"next_number" doc:"The number the next document takes." example:"42"`
 	Digits       int    `json:"digits" doc:"The number is padded with zeros to this many digits." example:"4"`
@@ -43,7 +43,7 @@ type SequencePage struct {
 
 // SequencePath names a document type's sequence.
 type SequencePath struct {
-	DocumentType string `path:"document_type" enum:"journal,bill" doc:"The document type." example:"journal"`
+	DocumentType string `path:"document_type" enum:"journal,bill,bill_payment,vendor_credit,supplier_refund,purchase_order,invoice" doc:"The document type." example:"journal"`
 }
 
 type sequenceListInput struct {

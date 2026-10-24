@@ -26,6 +26,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
+	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/item"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -358,6 +359,20 @@ var codeFacts = map[string]struct {
 	CodeOwnBill:                   {403, "You prepared it, so another person approves it"},
 	CodeBillEditApproval:          {409, "Editing needs a second person"},
 	bill.CodePaid:                 {409, "Payments settle the bill"},
+	invoice.CodeNotInvoice:        {404, "Not an invoice"},
+	invoice.CodeNotDraft:          {409, "The invoice is not a draft"},
+	invoice.CodeNotPosted:         {409, "The invoice is not issued"},
+	invoice.CodeBadDraft:          {422, "The saved invoice cannot be read"},
+	invoice.CodeCustomer:          {422, "The invoice's customer is not an active customer"},
+	invoice.CodeGSTCode:           {422, "Not a GST code for supplies"},
+	invoice.CodeDueDate:           {422, "The due date is before the invoice's date"},
+	invoice.CodeTooLong:           {422, "A text of the invoice is too long"},
+	invoice.CodeLine:              {422, "A line's quantity, price or discount cannot be one"},
+	invoice.CodeSettled:           {409, "Receipts or credits settle the invoice"},
+	CodeInvoiceNeedsApproval:      {409, "The invoice needs another person's approval"},
+	CodeInvoiceVoidApproval:       {409, "Voiding needs a second person"},
+	CodeOwnInvoice:                {403, "You prepared it, so another person approves it"},
+	CodeInvoiceEditApproval:       {409, "Editing needs a second person"},
 	billpayment.CodeNotPayment:    {404, "Not a payment of bills"},
 	billpayment.CodeBadDraft:      {422, "The saved payment cannot be read"},
 	billpayment.CodeSupplier:      {422, "The payment's supplier is not a vendor"},
@@ -391,6 +406,8 @@ var codeFacts = map[string]struct {
 	ledger.CodeSpread:             {422, "A line's spread is not one the rules allow"},
 	ledger.CodeClaimShare:         {422, "A share of a line's GST is not a percentage from 0 to 100"},
 	ledger.CodeWithholding:        {422, "The bill's withholding tax cannot be worked out"},
+	ledger.CodeInvoiceTotal:       {422, "An invoice's total is not more than zero"},
+	ledger.CodeGSTRate:            {422, "A line's GST rate is not one the rules read"},
 	journal.CodeNotOpening:        {404, "Not the opening balances"},
 	journal.CodeNoBooksStart:      {409, "The books start is not set"},
 	ledger.CodeNoDate:             {422, "The journal has no date"},
@@ -569,6 +586,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		lp  ledger.Problems
 		je  *journal.Error
 		be  *bill.Error
+		ie  *invoice.Error
 		bpe *billpayment.Error
 		cre *credits.Error
 		poe *purchaseorder.Error
@@ -593,6 +611,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(je.Code, sentence(je.Message), sentence(je.Fix))
 	case errors.As(err, &be):
 		return problem(be.Code, sentence(be.Message), sentence(be.Fix))
+	case errors.As(err, &ie):
+		return problem(ie.Code, sentence(ie.Message), sentence(ie.Fix))
 	case errors.As(err, &bpe):
 		return problem(bpe.Code, sentence(bpe.Message), sentence(bpe.Fix))
 	case errors.As(err, &cre):

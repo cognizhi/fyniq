@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entry": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry the command posted: the invoice's entry, or its reversing entry."
+    },
+    "invoice": {
+      "$ref": "Invoice.schema.json",
+      "description": "The invoice after the command."
+    }
+  },
+  "required": [
+    "invoice",
+    "entry"
+  ],
+  "title": "InvoicePosting",
+  "type": "object"
+}

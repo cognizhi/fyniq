@@ -28,6 +28,7 @@ var kinds = map[storage.DocumentType]struct{ name, object, path string }{
 	storage.DocumentVendorCredit:      {"supplier credit", approval.ObjectBill, "/purchases/bills"},
 	storage.DocumentCreditApplication: {"credit applied to a bill", approval.ObjectApplication, "/purchases/bills"},
 	storage.DocumentSupplierRefund:    {"supplier refund", approval.ObjectRefund, "/purchases/bills"},
+	storage.DocumentInvoice:           {"invoice", approval.ObjectInvoice, ""}, // no link until the invoice screens (p1-sales task 8.1)
 }
 
 // Posted tells those who approve postings of doc's kind (A on its row) that actor, named name, posted it, or voided or
@@ -47,6 +48,9 @@ func Posted(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org,
 		if doc.Type == storage.DocumentJournal || doc.Type == storage.DocumentOpeningBalance {
 			verb = "reversed"
 		}
+	}
+	if verb == "posted" && doc.Type == storage.DocumentInvoice {
+		verb = "issued" // the user's word for posting an invoice
 	}
 	what, link := k.name, k.path
 	if doc.Number != "" {

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "gst": {
+      "$ref": "Money.schema.json",
+      "description": "Their GST, in the invoice's currency."
+    },
+    "gst_code": {
+      "description": "The GST code.",
+      "examples": [
+        "SR"
+      ],
+      "type": "string"
+    },
+    "net": {
+      "$ref": "Money.schema.json",
+      "description": "The code's lines' net, in the invoice's currency."
+    },
+    "rate": {
+      "description": "Its rate as a fraction, from the sg-gst pack in force at the invoice's date.",
+      "examples": [
+        "0.09"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "gst_code",
+    "rate",
+    "net",
+    "gst"
+  ],
+  "title": "InvoiceGST",
+  "type": "object"
+}

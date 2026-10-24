@@ -27,16 +27,16 @@ import (
 
 // The stable codes of an invoice's refusals (ENG-23).
 const (
-	CodeNotInvoice = "INV-01" // the document is not an invoice
-	CodeNotDraft   = "INV-02" // only a draft changes or is issued
-	CodeNotPosted  = "INV-03" // only an issued invoice is voided or edited
-	CodeBadDraft   = "INV-04" // the saved invoice cannot be read
-	CodeCustomer   = "INV-05" // no customer, or one that is not an active customer
-	CodeGSTCode    = "INV-06" // a GST code that is not a supply code of the sg-gst pack
-	CodeDueDate    = "INV-07" // a due date before the invoice's date
-	CodeTooLong    = "INV-08" // the reference or the notes are too long
-	CodeLine       = "INV-09" // a line's quantity, price or discount that cannot be one
-	CodeSettled    = "INV-13" // an invoice receipts or credits settle is not voided or edited until they are voided
+	CodeNotInvoice = "INVOICE-01" // the document is not an invoice
+	CodeNotDraft   = "INVOICE-02" // only a draft changes or is issued
+	CodeNotPosted  = "INVOICE-03" // only an issued invoice is voided or edited
+	CodeBadDraft   = "INVOICE-04" // the saved invoice cannot be read
+	CodeCustomer   = "INVOICE-05" // no customer, or one that is not an active customer
+	CodeGSTCode    = "INVOICE-06" // a GST code that is not a supply code of the sg-gst pack
+	CodeDueDate    = "INVOICE-07" // a due date before the invoice's date
+	CodeTooLong    = "INVOICE-08" // the reference or the notes are too long
+	CodeLine       = "INVOICE-09" // a line's quantity, price or discount that cannot be one
+	CodeSettled    = "INVOICE-13" // an invoice receipts or credits settle is not voided or edited until they are voided
 )
 
 // MaxReference and MaxNotes are the longest reference (such as the customer's purchase order) and notes an invoice keeps.
