@@ -524,6 +524,11 @@ var codeFacts = map[string]struct {
 	quote.CodeAnswered: {409, "The quote has its answer already"},
 	quote.CodeAnswer:   {422, "The answer has no date, or a text is too long"},
 
+	quote.CodeNotAccepted: {409, "The quote is not accepted"},
+	quote.CodeLeft:        {422, "More than is left of the quote to invoice"},
+	quote.CodeQuoteLine:   {422, "An invoice's line names a quote it cannot invoice"},
+	quote.CodeInvoiced:    {409, "Invoices are made from the quote"},
+
 	storage.CodeQuoteOutcome: {409, "The quote's answer is recorded once, of a sent quote"},
 }
 

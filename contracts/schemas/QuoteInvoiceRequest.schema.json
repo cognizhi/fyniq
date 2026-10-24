@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "lines": {
+      "description": "The lines to invoice and how much of each; left out, everything no invoice takes yet.",
+      "items": {
+        "$ref": "QuoteInvoiceLine.schema.json"
+      },
+      "maxItems": 200,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "title": "QuoteInvoiceRequest",
+  "type": "object"
+}

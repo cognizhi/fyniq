@@ -154,6 +154,9 @@ type Documents interface {
 	// BillsOfOrder lists the bills, drafts and posted, not reversed, whose current version has a line made from the
 	// purchase order (FR-AP-01), by ID.
 	BillsOfOrder(ctx context.Context, orderID uuid.UUID) ([]Document, error)
+	// InvoicesOfQuote lists the invoices, drafts and issued, not voided, whose current version has a line made from the
+	// quote or sales order (FR-AR-02), by ID.
+	InvoicesOfQuote(ctx context.Context, quoteID uuid.UUID) ([]Document, error)
 	// WaitingReversals lists, earliest reversal first, the posted journals whose automatic reversal waits because no
 	// period that is not closed covers its date (FR-GL-02; rev 0.58): at most limit of them, after the cursor's reversal
 	// date and ID when afterID is set.

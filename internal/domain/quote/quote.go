@@ -30,16 +30,22 @@ const (
 	CodeContent  = "QUOTE-06" // a quote that names an invoice it credits or deposits it deducts
 	CodeAnswered = "QUOTE-07" // a quote the customer answered already, or that expired
 	CodeAnswer   = "QUOTE-08" // an answer with no date, or a name or note that is too long
+
+	CodeNotAccepted = "QUOTE-09" // only a quote or order the customer accepted is invoiced
+	CodeLeft        = "QUOTE-10" // more of a line than is left to invoice, a line it does not have, or nothing left
+	CodeQuoteLine   = "QUOTE-11" // an invoice's line names a quote, or a line of it, that the invoice cannot invoice
+	CodeInvoiced    = "QUOTE-12" // a quote that issued invoices invoice is not cancelled
 )
 
 // The statuses a quote or an order shows (FR-AR-01): draft, sent, the customer's answer (accepted, declined), expired,
-// and cancelled. Invoicing follows with its own slice.
+// invoiced (FR-AR-02: issued invoices take every line in full), and cancelled.
 const (
 	StatusDraft     = "draft"
 	StatusSent      = "sent"
 	StatusAccepted  = "accepted"
 	StatusDeclined  = "declined"
 	StatusExpired   = "expired"
+	StatusInvoiced  = "invoiced"
 	StatusCancelled = "cancelled"
 )
 
@@ -66,10 +72,16 @@ type Draft struct {
 }
 
 // Encode is a draft as a document version stores it: an invoice's content (package invoice), with valid_until beside
-// its fields, so its date is where every document's is. A quote credits no invoice and deducts no deposit.
+// its fields, so its date is where every document's is. A quote credits no invoice, deducts no deposit, and its lines
+// name no quote.
 func Encode(d Draft) ([]byte, error) {
 	if d.Content.Credits != uuid.Nil || len(d.Content.Deposits) > 0 {
 		return nil, &Error{CodeContent, "a quote or an order credits no invoice and deducts no deposit", "Leave them out; the invoice made from it deducts deposits"}
+	}
+	for i, l := range d.Content.Lines {
+		if l.Quote != nil {
+			return nil, &Error{CodeContent, fmt.Sprintf("lines[%d] names a quote, which only an invoice's line does", i+1), "Remove the quote from the line"}
+		}
 	}
 	c, err := invoice.Encode(d.Content)
 	if err != nil {
@@ -137,10 +149,10 @@ func Status(doc storage.Document, outcome *storage.QuoteOutcome) string {
 	return outcome.Outcome // accepted, declined or expired
 }
 
-// Open says whether a quote or order is in the pipeline: sent, or accepted, and not past its validity date on day.
-func Open(doc storage.Document, outcome *storage.QuoteOutcome, validUntil, day time.Time) bool {
-	s := Status(doc, outcome)
-	return (s == StatusSent || s == StatusAccepted) && (validUntil.IsZero() || !validUntil.Before(day))
+// Open says whether a quote or order with this status (StatusOf) is in the pipeline on day: accepted and not yet
+// invoiced in full, whatever its validity date, or sent and not past its validity date.
+func Open(status string, validUntil, day time.Time) bool {
+	return status == StatusAccepted || (status == StatusSent && (validUntil.IsZero() || !validUntil.Before(day)))
 }
 
 // Prepared is a quote or order version as an invoice of the same content would be read: its customer, its totals in

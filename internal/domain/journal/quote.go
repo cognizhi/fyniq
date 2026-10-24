@@ -9,7 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -144,12 +146,113 @@ func (s Quotes) Cancel(ctx context.Context, org, id uuid.UUID, reason string) (s
 		if s := quote.Status(doc, o); s == quote.StatusDeclined || s == quote.StatusExpired {
 			return &quote.Error{Code: quote.CodeAnswered, Message: fmt.Sprintf("the %s is %s already", quote.Kind(doc), s), Fix: "Nothing is left to cancel"}
 		}
+		settings, err := loadSettings(ctx, u)
+		if err != nil {
+			return err
+		}
+		d, err := quote.Read(doc, settings.Base)
+		if err != nil {
+			return err
+		}
+		_, invoices, err := quote.Invoicing(ctx, u, id, d, settings.Base, uuid.Nil)
+		if err != nil {
+			return err
+		}
+		for _, inv := range invoices {
+			if inv.Status == storage.DocumentPosted {
+				return &quote.Error{Code: quote.CodeInvoiced, Message: fmt.Sprintf("invoice %s is made from the %s", inv.Number, quote.Kind(doc)),
+					Fix: "Void the invoices made from it first, or leave it: what is not invoiced stays in the pipeline"}
+			}
+		}
 		if err := u.Documents().SetStatus(ctx, id, storage.DocumentReversed); err != nil {
 			return err
 		}
 		doc.Status = storage.DocumentReversed
 		out = doc
 		return nil
+	})
+	return out, err
+}
+
+// Invoice makes a draft invoice from a quote or order the customer accepted (FR-AR-02): of each line, the quantity
+// asked for (quantities, by line from 1), or, when quantities is nil, all that no invoice, issued or draft, takes yet;
+// at most that. Each invoice line is the quote's line at that quantity, naming the line it invoices; the invoice is
+// for the quote's customer, in its currency, with its reference, and takes its own date and the rate for it. Enter the
+// invoice's date and issue it as any invoice; it may then invoice more or less than was quoted.
+func (s Quotes) Invoice(ctx context.Context, org, id uuid.UUID, quantities map[int]money.Quantity) (storage.Document, error) {
+	var out storage.Document
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		doc, err := u.Documents().Lock(ctx, id)
+		if err != nil {
+			return err
+		}
+		if err := isQuote(doc); err != nil {
+			return err
+		}
+		o, err := outcomeOf(ctx, u, id)
+		if err != nil {
+			return err
+		}
+		if st := quote.Status(doc, o); st != quote.StatusAccepted {
+			return &quote.Error{Code: quote.CodeNotAccepted, Message: fmt.Sprintf("the %s is %s, not accepted", quote.Kind(doc), st),
+				Fix: "Record the customer's acceptance first; a declined, expired or cancelled one is not invoiced"}
+		}
+		settings, err := loadSettings(ctx, u)
+		if err != nil {
+			return err
+		}
+		q, err := quote.Read(doc, settings.Base)
+		if err != nil {
+			return err
+		}
+		states, _, err := quote.Invoicing(ctx, u, id, q, settings.Base, uuid.Nil)
+		if err != nil {
+			return err
+		}
+		c := q.Content
+		d := invoice.Draft{CustomerID: c.CustomerID, Reference: c.Reference, Currency: c.Currency, Notes: fmt.Sprintf("From %s %s", quote.Kind(doc), doc.Number)}
+		var probs ledger.Problems
+		for i, l := range c.Lines {
+			n := i + 1
+			left := states[i].Left()
+			want := left
+			if quantities != nil {
+				var ok bool
+				if want, ok = quantities[n]; !ok {
+					continue
+				}
+			}
+			if want.Sign() <= 0 {
+				continue
+			}
+			if want.Cmp(left) > 0 {
+				probs = append(probs, ledger.Problem{Code: quote.CodeLeft, Field: fmt.Sprintf("lines[%d].quantity", n),
+					Message: fmt.Sprintf("line %d has %s left to invoice; %s was asked for", n, left, want),
+					Fix:     "Invoice at most what is left of the line; the draft invoice may then be changed to what was delivered"})
+				continue
+			}
+			l.Quantity, l.Quote = want, &invoice.QuoteRef{QuoteID: id, Line: n}
+			d.Lines = append(d.Lines, l)
+		}
+		for n := range quantities {
+			if n < 1 || n > len(c.Lines) {
+				probs = append(probs, ledger.Problem{Code: quote.CodeLeft, Field: "lines", Message: fmt.Sprintf("the %s has no line %d", quote.Kind(doc), n),
+					Fix: "Ask for its own lines"})
+			}
+		}
+		if len(probs) > 0 {
+			return probs
+		}
+		if len(d.Lines) == 0 {
+			return &quote.Error{Code: quote.CodeLeft, Message: fmt.Sprintf("nothing is left of the %s to invoice: its invoices, issued or draft, take every line", quote.Kind(doc)),
+				Fix: "Issue or change the draft invoices made from it"}
+		}
+		b, err := invoice.Encode(d)
+		if err != nil {
+			return err
+		}
+		out, err = createNumbered(ctx, u, storage.DocumentInvoice, b)
+		return err
 	})
 	return out, err
 }

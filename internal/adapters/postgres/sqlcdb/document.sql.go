@@ -312,6 +312,63 @@ func (q *Queries) InsertOpeningBalance(ctx context.Context, documentID uuid.UUID
 	return err
 }
 
+const invoicesOfQuote = `-- name: InvoicesOfQuote :many
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at,
+       coalesce(v.payload->>'date', '')::text AS date
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+WHERE d.type = 'invoice' AND d.status <> 'reversed'
+  AND v.payload->'lines' @> jsonb_build_array(jsonb_build_object('quote', jsonb_build_object('quote_id', $1::text)))
+ORDER BY d.id
+`
+
+type InvoicesOfQuoteRow struct {
+	ID             uuid.UUID
+	Type           string
+	Status         string
+	CurrentVersion int32
+	Payload        []byte
+	Number         *string
+	CreatedBy      *string
+	PostedBy       *string
+	PostedAt       *time.Time
+	Date           string
+}
+
+// The invoices, drafts and issued, not voided, whose current version has a line made from a quote or sales order
+// (FR-AR-02).
+func (q *Queries) InvoicesOfQuote(ctx context.Context, quoteID string) ([]InvoicesOfQuoteRow, error) {
+	rows, err := q.db.Query(ctx, invoicesOfQuote, quoteID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []InvoicesOfQuoteRow
+	for rows.Next() {
+		var i InvoicesOfQuoteRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Status,
+			&i.CurrentVersion,
+			&i.Payload,
+			&i.Number,
+			&i.CreatedBy,
+			&i.PostedBy,
+			&i.PostedAt,
+			&i.Date,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDocuments = `-- name: ListDocuments :many
 SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at,
        coalesce(v.payload->>'date', '')::text AS date

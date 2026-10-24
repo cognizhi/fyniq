@@ -96,6 +96,14 @@ type Line struct {
 	GSTCode      string
 	SpreadMonths int
 	SpreadFrom   time.Time
+	Quote        *QuoteRef // the quote or sales order line it invoices, nil for a line not made from one (FR-AR-02)
+}
+
+// QuoteRef names the line of a quote or sales order an invoice's line invoices (FR-AR-02): the line's own quantity is
+// what it invoices of it.
+type QuoteRef struct {
+	QuoteID uuid.UUID
+	Line    int // from 1
 }
 
 // Net is the line's amount under RND-LINE, its discount taken in its one rounding.
@@ -140,15 +148,21 @@ type payloadUse struct {
 }
 
 type payloadLine struct {
-	ItemID       *uuid.UUID `json:"item_id,omitempty"`
-	Description  string     `json:"description,omitempty"`
-	Quantity     string     `json:"quantity"`
-	UnitPrice    string     `json:"unit_price"`
-	Discount     string     `json:"discount,omitempty"`
-	AccountID    uuid.UUID  `json:"account_id"`
-	GSTCode      string     `json:"gst_code"`
-	SpreadMonths int        `json:"spread_months,omitempty"`
-	SpreadFrom   string     `json:"spread_from,omitempty"`
+	ItemID       *uuid.UUID    `json:"item_id,omitempty"`
+	Description  string        `json:"description,omitempty"`
+	Quantity     string        `json:"quantity"`
+	UnitPrice    string        `json:"unit_price"`
+	Discount     string        `json:"discount,omitempty"`
+	AccountID    uuid.UUID     `json:"account_id"`
+	GSTCode      string        `json:"gst_code"`
+	SpreadMonths int           `json:"spread_months,omitempty"`
+	SpreadFrom   string        `json:"spread_from,omitempty"`
+	Quote        *payloadQuote `json:"quote,omitempty"`
+}
+
+type payloadQuote struct {
+	QuoteID uuid.UUID `json:"quote_id"`
+	Line    int       `json:"line"`
 }
 
 func day(t time.Time) string {
@@ -187,8 +201,12 @@ func Encode(d Draft) ([]byte, error) {
 			return nil, &Error{CodeLine, fmt.Sprintf("lines[%d].unit_price is in %s; the invoice is in %s", i+1, l.UnitPrice.Currency(), d.Currency),
 				"Enter every price of the invoice in its currency"}
 		}
-		p.Lines = append(p.Lines, payloadLine{ItemID: l.ItemID, Description: l.Description, Quantity: l.Quantity.String(), UnitPrice: l.UnitPrice.String(),
-			Discount: l.Discount, AccountID: l.AccountID, GSTCode: l.GSTCode, SpreadMonths: l.SpreadMonths, SpreadFrom: day(l.SpreadFrom)})
+		pl := payloadLine{ItemID: l.ItemID, Description: l.Description, Quantity: l.Quantity.String(), UnitPrice: l.UnitPrice.String(),
+			Discount: l.Discount, AccountID: l.AccountID, GSTCode: l.GSTCode, SpreadMonths: l.SpreadMonths, SpreadFrom: day(l.SpreadFrom)}
+		if q := l.Quote; q != nil {
+			pl.Quote = &payloadQuote{QuoteID: q.QuoteID, Line: q.Line}
+		}
+		p.Lines = append(p.Lines, pl)
 	}
 	return json.Marshal(p)
 }
@@ -268,6 +286,9 @@ func ReadContent(payloadJSON []byte, base money.Currency) (Draft, error) {
 		}
 		line := Line{ItemID: l.ItemID, Description: l.Description, Quantity: q, UnitPrice: price, Discount: l.Discount, AccountID: l.AccountID, GSTCode: l.GSTCode,
 			SpreadMonths: l.SpreadMonths}
+		if q := l.Quote; q != nil {
+			line.Quote = &QuoteRef{QuoteID: q.QuoteID, Line: q.Line}
+		}
 		if l.SpreadFrom != "" {
 			if line.SpreadFrom, err = time.Parse(time.DateOnly, l.SpreadFrom); err != nil {
 				return Draft{}, bad(fmt.Sprintf("the spread's first month %q", l.SpreadFrom))

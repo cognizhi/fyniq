@@ -54,6 +54,10 @@
       "pattern": "^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?$",
       "type": "string"
     },
+    "quote": {
+      "$ref": "InvoiceLineQuote.schema.json",
+      "description": "An invoice's line only: the line of a quote or sales order it invoices, for a line made from one; invoiceQuote sets it, and the line's quantity is what it invoices of it. The quote must be one the customer accepted, of the invoice's customer and currency (QUOTE-11)."
+    },
     "spread_from": {
       "description": "The spread's first month, as any day of it: when the service starts. Left out, the invoice's month. Months before the invoice's date release on its date.",
       "examples": [

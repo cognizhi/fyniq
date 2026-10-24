@@ -69,6 +69,20 @@
       "format": "uuid",
       "type": "string"
     },
+    "invoices": {
+      "description": "The invoices made from it, draft and issued; voided ones are left out.",
+      "items": {
+        "$ref": "QuoteInvoice.schema.json"
+      },
+      "type": "array"
+    },
+    "invoicing": {
+      "description": "Once sent, each line's invoicing: what was quoted, what issued and draft invoices take, and what is left to invoice.",
+      "items": {
+        "$ref": "QuoteLineInvoicing.schema.json"
+      },
+      "type": "array"
+    },
     "kind": {
       "description": "A quote, or a sales order.",
       "enum": [
@@ -129,13 +143,14 @@
       "description": "Who sent it."
     },
     "status": {
-      "description": "draft (✎); sent; accepted or declined by the customer; expired, past its validity date with no answer; or cancelled (FR-AR-01). Invoicing follows.",
+      "description": "draft (✎); sent; accepted or declined by the customer; expired, past its validity date with no answer; invoiced, when issued invoices take every line in full (FR-AR-02); or cancelled (FR-AR-01).",
       "enum": [
         "draft",
         "sent",
         "accepted",
         "declined",
         "expired",
+        "invoiced",
         "cancelled"
       ],
       "examples": [
@@ -173,7 +188,9 @@
     "lines",
     "gst_charged",
     "gst_subtotals",
-    "checks"
+    "checks",
+    "invoicing",
+    "invoices"
   ],
   "title": "Quote",
   "type": "object"

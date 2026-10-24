@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "drafted": {
+      "description": "What draft invoices take of it.",
+      "examples": [
+        "2"
+      ],
+      "type": "string"
+    },
+    "invoiced": {
+      "description": "What issued invoices take of it.",
+      "examples": [
+        "4"
+      ],
+      "type": "string"
+    },
+    "left": {
+      "description": "What no invoice takes yet: what invoiceQuote invoices when asked for everything; never below zero, as an invoice may invoice more than was quoted.",
+      "examples": [
+        "4"
+      ],
+      "type": "string"
+    },
+    "line": {
+      "description": "The quote's line, from 1.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "quoted": {
+      "description": "The quantity quoted.",
+      "examples": [
+        "10"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "line",
+    "quoted",
+    "invoiced",
+    "drafted",
+    "left"
+  ],
+  "title": "QuoteLineInvoicing",
+  "type": "object"
+}

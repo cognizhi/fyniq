@@ -68,6 +68,14 @@ type InvoiceLineDraft struct {
 	// Spreads (FR-GL-03; rev 0.118).
 	SpreadMonths int    `json:"spread_months,omitempty" minimum:"1" maximum:"120" doc:"Spread the line's revenue over this many months (FR-GL-03): issuing puts its net on 2400 Deferred revenue in the base currency, and one part a month (ALLOC-EVEN) is released to the line's account by the scheduler, up to the organisation's today and never ahead (ENG-05)." example:"12"`
 	SpreadFrom   string `json:"spread_from,omitempty" format:"date" doc:"The spread's first month, as any day of it: when the service starts. Left out, the invoice's month. Months before the invoice's date release on its date." example:"2026-10-01"`
+	// The quote it invoices (FR-AR-02; rev 0.131).
+	Quote *InvoiceLineQuote `json:"quote,omitempty" doc:"An invoice's line only: the line of a quote or sales order it invoices, for a line made from one; invoiceQuote sets it, and the line's quantity is what it invoices of it. The quote must be one the customer accepted, of the invoice's customer and currency (QUOTE-11)."`
+}
+
+// InvoiceLineQuote names the line of a quote or sales order an invoice's line invoices (FR-AR-02).
+type InvoiceLineQuote struct {
+	QuoteID string `json:"quote_id" format:"uuid" doc:"The quote or sales order." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fb0"`
+	Line    int    `json:"line" minimum:"1" doc:"Its line, from 1." example:"1"`
 }
 
 // InvoiceLine is one line of an invoice as the API shows it: as entered, with its net.
@@ -365,6 +373,14 @@ func invoiceDraftOf(in InvoiceDraft, base money.Currency) (invoice.Draft, error)
 			fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("account_id"), Message: "is not an ID", Fix: "Send the account's ID"})
 		}
 		line := invoice.Line{AccountID: id, Description: l.Description, Discount: l.Discount, GSTCode: l.GSTCode, SpreadMonths: l.SpreadMonths}
+		if q := l.Quote; q != nil {
+			qid, err := uuid.Parse(q.QuoteID)
+			if err != nil {
+				fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("quote.quote_id"), Message: "is not an ID", Fix: "Keep the quote as invoiceQuote made it, or remove it"})
+				continue
+			}
+			line.Quote = &invoice.QuoteRef{QuoteID: qid, Line: q.Line}
+		}
 		if l.ItemID != "" {
 			item, err := uuid.Parse(l.ItemID)
 			if err != nil {
@@ -709,6 +725,9 @@ func invoiceLinesOut(d invoice.Draft) []InvoiceLine {
 			Discount: l.Discount, AccountID: l.AccountID.String(), GSTCode: l.GSTCode, SpreadMonths: l.SpreadMonths, SpreadFrom: dayText(l.SpreadFrom)}}
 		if l.ItemID != nil {
 			x.ItemID = l.ItemID.String()
+		}
+		if q := l.Quote; q != nil {
+			x.Quote = &InvoiceLineQuote{QuoteID: q.QuoteID.String(), Line: q.Line}
 		}
 		if net, err := l.Net(); err == nil {
 			n := moneyOut(net)

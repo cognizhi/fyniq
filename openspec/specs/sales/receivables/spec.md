@@ -37,6 +37,11 @@ Source: PRD-001 §8.5 · Priority S · Phase P1
 - **THEN** it shows accepted or declined, or the daily job quotes.expiry shows it expired; a quote has one answer, which never changes (QUOTE-07)
 - **AND** the pipeline counts only the sent and accepted ones still valid
 
+#### Scenario: Invoiced, and the pipeline at what is left (rev 0.131)
+- **WHEN** issued invoices made from a quote take every line in full, or take part of it
+- **THEN** it shows invoiced and leaves the pipeline, or the pipeline counts what no issued invoice takes yet, an accepted one whatever its validity date
+- **AND** a quote that issued invoices are made from is not cancelled until they are voided (QUOTE-12)
+
 
 ### Requirement: FR-AR-02 Convert a quote or order to an invoice
 The system SHALL convert a quote or sales order into an invoice, in full or in part, keeping the links between them.
@@ -54,6 +59,11 @@ Source: PRD-001 §8.5 · Priority S · Phase P1
 #### Scenario: Links are kept
 - **WHEN** an invoice is created from a quote or order
 - **THEN** the invoice and the quote or order stay linked to each other
+
+#### Scenario: Invoicing as built (rev 0.131)
+- **WHEN** a person invoices a quote or order the customer accepted, in full or by quantities of its lines
+- **THEN** a draft invoice of the quote's customer, currency and reference takes at most what is left of each line (QUOTE-10), each invoice line naming the quote line; one not accepted is refused (QUOTE-09)
+- **AND** the quote lists its invoices and each line's quoted, issued, drafted and left; an invoice line naming a quote it cannot invoice is refused at issue (QUOTE-11)
 
 ### Requirement: FR-AR-03 Invoices
 The system SHALL keep invoices with a number, date, customer, lines or a single amount, currency and rate, terms and due date, service period, attachments and notes, and SHALL track each invoice in five separate states: approval, ledger, delivery, settlement and due.

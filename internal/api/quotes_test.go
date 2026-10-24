@@ -3,6 +3,7 @@
 package api
 
 import (
+	"maps"
 	"net/http"
 	"strings"
 	"testing"
@@ -122,5 +123,65 @@ func TestQuotesAreAnsweredThroughTheAPI(t *testing.T) {
 	}
 	if p := e.call(http.MethodGet, "/v1/quotes/pipeline?as_at=2026-11-01", acc, nil); p.Body["quotes"].(map[string]any)["count"] != float64(1) || p.str("quotes", "total", "amount") != "100.00" {
 		t.Errorf("the pipeline: %s", p.Raw)
+	}
+}
+
+// FR-AR-02 through the API (p1-sales task 4.2): a quote of 10 × S$20.00 is not invoiced until accepted (QUOTE-09); then
+// invoiceQuote drafts an invoice of 4 whose line names it, the quote shows 4 drafted and 6 left, and asking for 7 more is
+// refused (QUOTE-10). Issued on 21 Oct, the pipeline counts the 6 still to invoice (S$120.00) and the quote cannot be
+// cancelled (QUOTE-12); invoicing the rest and issuing it shows the quote invoiced and takes it out of the pipeline.
+// req: FR-AR-02
+// req: FR-INT-01
+func TestQuotesAreInvoicedThroughTheAPI(t *testing.T) {
+	e := newEnv(t)
+	acc := e.as(authz.Accountant)
+	c := e.call(http.MethodPost, "/v1/quotes", acc, e.quoteDraft("quote", "10", "20.00"))
+	s := e.call(http.MethodPost, "/v1/quotes/"+c.str("id")+"/send", acc, nil, "If-Match", c.Header.Get("ETag"))
+	id := s.str("id")
+	e.problemIs(e.call(http.MethodPost, "/v1/quotes/"+id+"/invoice", acc, nil, "If-Match", s.Header.Get("ETag")), "invoiceQuote", 409, quote.CodeNotAccepted)
+	a := e.call(http.MethodPost, "/v1/quotes/"+id+"/accept", acc, map[string]any{"date": "2026-10-20"}, "If-Match", s.Header.Get("ETag"))
+	if a.Status != 200 {
+		t.Fatalf("accepting it: %d %s", a.Status, a.Raw)
+	}
+	i := e.call(http.MethodPost, "/v1/quotes/"+id+"/invoice", acc, map[string]any{"lines": []map[string]any{{"line": 1, "quantity": "4"}}}, "If-Match", a.Header.Get("ETag"))
+	line := func(r response) map[string]any { return r.Body["lines"].([]any)[0].(map[string]any) }
+	if i.Status != 201 || i.str("status") != "draft" || i.Header.Get("Location") != "/v1/invoices/"+i.str("id") || i.str("customer", "id") != e.customer() ||
+		line(i)["quantity"] != "4" || line(i)["quote"].(map[string]any)["quote_id"] != id || i.str("notes") != "From quote QT-0001" {
+		t.Fatalf("invoiceQuote: %d %s", i.Status, i.Raw)
+	}
+	g := e.call(http.MethodGet, "/v1/quotes/"+id, acc, nil)
+	inv := g.Body["invoicing"].([]any)[0].(map[string]any)
+	if g.str("status") != "accepted" || inv["drafted"] != "4" || inv["left"] != "6" || len(g.Body["invoices"].([]any)) != 1 {
+		t.Errorf("the quote after the draft: %s", g.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/quotes/"+id+"/invoice", acc, map[string]any{"lines": []map[string]any{{"line": 1, "quantity": "7"}}}, "If-Match", g.Header.Get("ETag")),
+		"invoiceQuote", 422, quote.CodeLeft)
+
+	issue := func(r response) {
+		t.Helper()
+		l := maps.Clone(line(r))
+		delete(l, "net")
+		draft := map[string]any{"customer_id": e.customer(), "date": "2026-10-21", "currency": "SGD", "lines": []any{l}}
+		p := e.call(http.MethodPut, "/v1/invoices/"+r.str("id"), acc, draft, "If-Match", r.Header.Get("ETag"))
+		if is := e.call(http.MethodPost, "/v1/invoices/"+r.str("id")+"/issue", acc, nil, "If-Match", p.Header.Get("ETag")); is.Status != 200 {
+			t.Fatalf("issuing %s: %d %s / %s", r.str("id"), is.Status, p.Raw, is.Raw)
+		}
+	}
+	issue(i)
+	if p := e.call(http.MethodGet, "/v1/quotes/pipeline?as_at=2026-10-31", acc, nil); p.Body["quotes"].(map[string]any)["count"] != float64(1) || p.str("quotes", "total", "amount") != "120.00" {
+		t.Errorf("the pipeline after INV-0001: %s", p.Raw)
+	}
+	g = e.call(http.MethodGet, "/v1/quotes/"+id, acc, nil)
+	e.problemIs(e.call(http.MethodPost, "/v1/quotes/"+id+"/cancel", acc, map[string]any{"reason": "Withdrawn"}, "If-Match", g.Header.Get("ETag")), "cancelQuote", 409, quote.CodeInvoiced)
+	rest := e.call(http.MethodPost, "/v1/quotes/"+id+"/invoice", acc, nil, "If-Match", g.Header.Get("ETag"))
+	if rest.Status != 201 || line(rest)["quantity"] != "6" {
+		t.Fatalf("invoicing the rest: %d %s", rest.Status, rest.Raw)
+	}
+	issue(rest)
+	if g := e.call(http.MethodGet, "/v1/quotes/"+id, acc, nil); g.str("status") != "invoiced" {
+		t.Errorf("the quote invoiced in full: %s", g.Raw)
+	}
+	if p := e.call(http.MethodGet, "/v1/quotes/pipeline?as_at=2026-10-31", acc, nil); p.Body["quotes"].(map[string]any)["count"] != float64(0) {
+		t.Errorf("the pipeline once invoiced: %s", p.Raw)
 	}
 }
