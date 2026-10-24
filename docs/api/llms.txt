@@ -18,6 +18,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/accounts/{account_id}` (getAccount): Get an account
 - `PATCH /v1/accounts/{account_id}` (updateAccount): Change an account
 - `POST /v1/accounts:load-standard-chart` (loadStandardChart): Load the standard chart of accounts
+- `GET /v1/announcements` (listAnnouncements): List the organisation's announcements
+- `POST /v1/announcements` (publishAnnouncement): Publish a banner to the organisation
+- `POST /v1/announcements/{announcement_id}/withdraw` (withdrawAnnouncement): Withdraw an announcement
 - `GET /v1/approval-policies` (listApprovalPolicies): List the approval policies
 - `GET /v1/approval-policies/{object_type}` (getApprovalPolicy): Get an approval policy
 - `PATCH /v1/approval-policies/{object_type}` (changeApprovalPolicy): Ask to change an approval policy
@@ -27,6 +30,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/approvals/{approval_id}/challenge` (challengeApproval): Start signing a request with a passkey
 - `POST /v1/approvals/{approval_id}/reject` (rejectApproval): Reject a request
 - `POST /v1/approvals/{approval_id}/withdraw` (withdrawApproval): Withdraw your request
+- `GET /v1/banners` (listBanners): List the banners you see now
+- `POST /v1/banners/{announcement_id}/dismiss` (dismissBanner): Dismiss a banner
 - `GET /v1/bill-payments` (listBillPayments): List the payments of bills
 - `POST /v1/bill-payments` (recordBillPayment): Record a payment of bills
 - `GET /v1/bill-payments/{payment_id}` (getBillPayment): Get a payment of bills
@@ -85,6 +90,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/fx/rates/{rate_id}` (getFxRate): Get an exchange rate
 - `POST /v1/fx/rates/{rate_id}/withdraw` (withdrawFxRate): Withdraw an exchange rate
 - `POST /v1/fx/rates:bulk` (bulkCreateFxRates): Enter up to 250 exchange rates
+- `GET /v1/installation/announcements` (listInstallationAnnouncements): List the announcements to everyone
+- `POST /v1/installation/announcements` (publishInstallationAnnouncement): Publish a banner to everyone
+- `POST /v1/installation/announcements/{announcement_id}/withdraw` (withdrawInstallationAnnouncement): Withdraw an announcement to everyone
 - `GET /v1/items` (listItems): List the items
 - `POST /v1/items` (createItem): Add an item
 - `GET /v1/items/{item_id}` (getItem): Get an item

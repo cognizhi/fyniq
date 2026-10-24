@@ -78,6 +78,8 @@ type UnitOfWork interface {
 	CaptureAddresses() CaptureAddresses
 	InboundMessages() InboundMessages
 	Notifications() Notifications
+	// Announcements are the banners and their dismissals (FR-NTF-03).
+	Announcements() Announcements
 	Outbox() Outbox
 	Sweeping() Sweeping
 	RecurringJournals() RecurringJournals
@@ -546,6 +548,7 @@ const (
 	CodeBillPlan       = "STORAGE-PLAN-01"       // a bill's payment plan never changes: a later one replaces it
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
+	CodeBanner         = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
 	CodeSetup          = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done

@@ -80,6 +80,31 @@ type FyniqAllocation struct {
 	WrittenAt      time.Time
 }
 
+type FyniqAnnouncement struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Message        string
+	Link           *string
+	Severity       string
+	Roles          []string
+	StartsAt       time.Time
+	EndsAt         time.Time
+	Dismissible    bool
+	PublishedBy    string
+	PublishedAt    time.Time
+	WithdrawnAt    *time.Time
+	WithdrawnBy    *string
+}
+
+type FyniqAnnouncementDismissal struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	AnnouncementID uuid.UUID
+	Installation   bool
+	UserID         uuid.UUID
+	DismissedAt    time.Time
+}
+
 type FyniqAppUser struct {
 	UserID      uuid.UUID
 	DisplayName string
@@ -547,6 +572,21 @@ type FyniqInstallation struct {
 	SetupCodeHash    []byte
 	SetupCompletedAt *time.Time
 	InstallationOrg  *uuid.UUID
+}
+
+type FyniqInstallationAnnouncement struct {
+	ID          uuid.UUID
+	Message     string
+	Link        *string
+	Severity    string
+	Roles       []string
+	StartsAt    time.Time
+	EndsAt      time.Time
+	Dismissible bool
+	PublishedBy uuid.UUID
+	PublishedAt time.Time
+	WithdrawnAt *time.Time
+	WithdrawnBy *uuid.UUID
 }
 
 type FyniqItem struct {

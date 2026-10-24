@@ -90,6 +90,11 @@ The registry of email-in address names (000102, FR-INT-22): `capture_name` (a na
 and its live address there and that address's member, if any), written only by `capture_address`'s trigger and read only through `capture_route`, which
 the receiver of inbound mail calls before any tenant is set; no role holds a grant on it, and a name never passes to
 another organisation (`FY183`).
+The installation's banners (000108, FR-NTF-03): `installation_announcement` (a Super admin's banner to everyone),
+published and withdrawn only through `publish_installation_announcement` and `withdraw_installation_announcement`, which
+refuse anyone but an active Super admin (`FY085`), and read only through `installation_announcements` (the API); a
+banner changes only in being withdrawn, once (`FY190`). People's dismissals of them are tenant rows in
+`announcement_dismissal`, whose trigger reads this table to refuse a banner that cannot be dismissed (`FY192`).
 Add one only with its access model here and in the test's list.
 - **The installation organisation** (`organisation.kind = 'installation'`, one per installation,
   created by first-run setup) holds only the installation's audit trail: setup and Super-admin events.
@@ -212,6 +217,9 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY187 | STORAGE-VERSION-01 | A notification event never changes or goes: only its fan-out is recorded, once |
 | FY188 | STORAGE-VERSION-01 | A notification changes only in being read, unread or archived (for good), and in the email that carried it |
 | FY189 | STORAGE-VERSION-01 | A notification digest or preference never changes or goes: add a new one, and the latest is in force |
+| FY190 | STORAGE-VERSION-01 | A banner changes only in being withdrawn, once: withdraw it and publish another |
+| FY191 | STORAGE-VERSION-01 | A banner's dismissal never changes or goes |
+| FY192 | STORAGE-BANNER-01 | A critical banner, or one published as not dismissible, cannot be dismissed: it stays until it ends |
 | FY060 | STORAGE-AUDIT-01 | The audit trail cannot be changed or deleted |
 | FY061 | STORAGE-AUDIT-01 | A change has no audit event in its transaction |
 | FY070 | STORAGE-OUTBOX-01 | An outbox row cannot change what it is, count backwards or be deleted |

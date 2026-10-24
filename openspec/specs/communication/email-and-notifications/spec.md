@@ -301,6 +301,11 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **WHEN** a banner is published
 - **THEN** the publication is audited
 
+#### Scenario: Banners as built (rev 0.112)
+- **WHEN** an Owner or Administrator publishes a banner, or a Super admin one to everyone, and a member opens any page
+- **THEN** the member sees the live banners meant for everyone or their roles, critical first, its link only a path in Fyniq or an https address
+- **AND** a banner changes only by being withdrawn, and a critical one is never dismissed
+
 ### Requirement: FR-NTF-04 Slack and Zoho Cliq
 The system SHALL offer an optional organisation-level Slack or Zoho Cliq connection per workspace that posts messages carrying deep links into the web app, and approvals SHALL never happen in chat.
 

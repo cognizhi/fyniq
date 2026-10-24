@@ -14,6 +14,11 @@ fyniq_api       SELECT    accounting_policy
 fyniq_api       UPDATE    accounting_policy (approved_at, approved_by)
 fyniq_api       INSERT    allocation (amount, base_amount, base_currency, base_minor_units, currency, document_id, minor_units, on_date, realised_fx, reverses_id, source_id, source_version, written_at, written_by)
 fyniq_api       SELECT    allocation
+fyniq_api       INSERT    announcement (dismissible, ends_at, link, message, published_at, published_by, roles, severity, starts_at)
+fyniq_api       SELECT    announcement
+fyniq_api       UPDATE    announcement (withdrawn_at, withdrawn_by)
+fyniq_api       INSERT    announcement_dismissal (announcement_id, dismissed_at, installation, user_id)
+fyniq_api       SELECT    announcement_dismissal
 fyniq_api       INSERT    approval_policy (created_at, created_by, object_type, request_id, steps, version)
 fyniq_api       SELECT    approval_policy
 fyniq_api       INSERT    approval_request (change, envelope, envelope_hash, expires_at, object_key, object_type, operation, policy_steps, policy_version, requested_at, requested_by, requester_mfa_at, requester_mfa_method, summary)
@@ -102,6 +107,7 @@ fyniq_api       UPDATE    inbound_file (removed_at)
 fyniq_api       INSERT    inbound_message (address_id, provider, provider_id, received_at, sender, subject)
 fyniq_api       SELECT    inbound_message
 fyniq_api       UPDATE    inbound_message (decided_at, decided_by, status)
+fyniq_api       EXECUTE   installation_announcements()
 fyniq_api       EXECUTE   installation_org()
 fyniq_api       EXECUTE   invite_super_admin()
 fyniq_api       INSERT    item (code, description, gst_code, name, revenue_account_id, type, unit)
@@ -151,6 +157,7 @@ fyniq_api       INSERT    period_reopen (after_hash, after_snapshot, approval_id
 fyniq_api       SELECT    period_reopen
 fyniq_api       INSERT    period_variance_explanation (account_id, current_amount, explanation, period_id, previous_amount, written_at, written_by)
 fyniq_api       SELECT    period_variance_explanation
+fyniq_api       EXECUTE   publish_installation_announcement()
 fyniq_api       INSERT    rate_limit_window (client_id, kind, window_start)
 fyniq_api       SELECT    rate_limit_window
 fyniq_api       UPDATE    rate_limit_window (used)
@@ -206,6 +213,7 @@ fyniq_api       EXECUTE   webauthn_challenge_take()
 fyniq_api       EXECUTE   webauthn_credential_register()
 fyniq_api       EXECUTE   webauthn_credential_revoke()
 fyniq_api       EXECUTE   webauthn_credentials()
+fyniq_api       EXECUTE   withdraw_installation_announcement()
 fyniq_api       INSERT    withholding_decision (bill_id, nature, note, outcome, rate_percent, recorded_by, supplier_id, tax_agent)
 fyniq_api       SELECT    withholding_decision
 fyniq_executor  SELECT    account
@@ -274,6 +282,8 @@ fyniq_readonly  SELECT    account
 fyniq_readonly  SELECT    accounting_framework
 fyniq_readonly  SELECT    accounting_policy
 fyniq_readonly  SELECT    allocation
+fyniq_readonly  SELECT    announcement
+fyniq_readonly  SELECT    announcement_dismissal
 fyniq_readonly  SELECT    approval_policy
 fyniq_readonly  SELECT    approval_request
 fyniq_readonly  SELECT    approval_signature

@@ -456,6 +456,34 @@ var matrixCalls = map[string]matrixCall{
 	"setQuietHours": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPut, "/v1/notification-quiet-hours", asMatrixMember(e, tok), map[string]any{"from": "22:00", "to": "07:00"}, "If-Match", "*"), nil
 	},
+	"listBanners": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/banners", tok, nil), nil
+	},
+	"dismissBanner": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/banners/"+matrixBanner(e)+"/dismiss", asMatrixMember(e, tok), nil), nil
+	},
+	"listAnnouncements": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/announcements", tok, nil), nil
+	},
+	"publishAnnouncement": func(e *env, tok string) (response, func() bool) {
+		before := matrixAnnouncements(e)
+		return e.call(http.MethodPost, "/v1/announcements", tok, map[string]any{"message": "Matrix", "severity": "info",
+				"ends_at": e.clock.Now().Add(time.Hour).UTC().Format(time.RFC3339)}),
+			func() bool { return matrixAnnouncements(e) == before }
+	},
+	"withdrawAnnouncement": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/announcements/"+matrixBanner(e)+"/withdraw", tok, nil), nil
+	},
+	"listInstallationAnnouncements": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/installation/announcements", tok, nil), nil
+	},
+	"publishInstallationAnnouncement": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/installation/announcements", tok, map[string]any{"message": "Matrix", "severity": "info",
+			"ends_at": e.clock.Now().Add(time.Hour).UTC().Format(time.RFC3339)}), nil
+	},
+	"withdrawInstallationAnnouncement": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/installation/announcements/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f60/withdraw", tok, nil), nil
+	},
 	"getEmailMessage": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/organisation/email/messages/"+matrixEmail(e), tok, nil), nil
 	},

@@ -296,6 +296,11 @@ var (
 	GetNotificationPreferences    = Policy{Operation: "getNotificationPreferences", Capability: OwnNotifications, Need: View}
 	SetNotificationPreference     = Policy{Operation: "setNotificationPreference", Capability: OwnNotifications, Need: Create}
 	SetQuietHours                 = Policy{Operation: "setQuietHours", Capability: OwnNotifications, Need: Create}
+	ListBanners                   = Policy{Operation: "listBanners", Capability: OwnNotifications, Need: View}
+	DismissBanner                 = Policy{Operation: "dismissBanner", Capability: OwnNotifications, Need: Create}
+	ListAnnouncements             = Policy{Operation: "listAnnouncements", Capability: Announcements, Need: View}
+	PublishAnnouncement           = Policy{Operation: "publishAnnouncement", Capability: Announcements, Need: Create}
+	WithdrawAnnouncement          = Policy{Operation: "withdrawAnnouncement", Capability: Announcements, Need: Create}
 	ListMembers                   = Policy{Operation: "listMembers", Capability: UsersAndRoles, Need: View}
 	ListMemberInvitations         = Policy{Operation: "listMemberInvitations", Capability: UsersAndRoles, Need: View}
 	CreateMemberInvitation        = Policy{Operation: "createMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
@@ -590,6 +595,12 @@ var (
 		Note: superAdminNote}
 	ConfirmSuperAdminRecovery = Policy{Operation: "confirmSuperAdminRecovery", Capability: SuperAdmins, Need: Approve, NoOrganisation: true,
 		Note: superAdminNote + " The other Super admin confirms; nobody confirms their own recovery."}
+	ListInstallationAnnouncements = Policy{Operation: "listInstallationAnnouncements", Capability: SuperAdmins, Need: View, NoOrganisation: true,
+		Note: superAdminNote}
+	PublishInstallationAnnouncement = Policy{Operation: "publishInstallationAnnouncement", Capability: SuperAdmins, Need: Create,
+		NoOrganisation: true, Note: superAdminNote}
+	WithdrawInstallationAnnouncement = Policy{Operation: "withdrawInstallationAnnouncement", Capability: SuperAdmins, Need: Create,
+		NoOrganisation: true, Note: superAdminNote}
 	RecoverSuperAdmin = Policy{Operation: "recoverSuperAdmin", Capability: SuperAdmins, Need: Create, NoOrganisation: true, SingleFactor: true,
 		Note: "Needs two proofs (SEC-35): a recovery code with the other Super admin's confirmation, or the deployment's two-person recovery; " +
 			"and a person signed in to Fyniq, who may have lost their second factor: the two proofs stand in for it. An OAuth client or the AI is refused."}
@@ -629,7 +640,7 @@ var (
 var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
 	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
-	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
+	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,

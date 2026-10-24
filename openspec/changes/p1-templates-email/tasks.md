@@ -124,7 +124,13 @@
   `TestBillPlansThroughTheAPI`. The screens are task 4.1. Rev 0.111: a failed sending domain goes to the Super
   admins in each organisation they belong to (`super_admin_users`, migration 000107), not the memberless installation
   organisation.)
-- [ ] 3.2 Announcement banners for everyone (Super admin) and per organisation (Owner, Administrator), with critical banners non-dismissable and publishing audited. Test `// req: FR-NTF-03`
+- [x] 3.2 Announcement banners for everyone (Super admin) and per organisation (Owner, Administrator), with critical banners non-dismissable and publishing audited. Test `// req: FR-NTF-03`
+  (24 Oct 2026, PRD-001 rev 0.112, the API: migration 000108 (`announcement`, FY190; the global
+  `installation_announcement` behind `publish_installation_announcement`, `withdraw_installation_announcement` and
+  `installation_announcements`, FY085 for anyone but an active Super admin; `announcement_dismissal`, FY191, FY192);
+  listBanners, dismissBanner, listAnnouncements, publishAnnouncement, withdrawAnnouncement and the installation's three
+  (NTF-04 to NTF-06); the threat model `banners.md`. Tests: `TestBannersAndAnnouncements`, `TestAnnouncementsToEveryone`,
+  `TestBannersKeepTheirHistory` and eight matrix rows. The screens are task 4.1.)
 - [ ] 3.3 One event stream feeding every channel, with delivery attempts logged and retried and a test message per channel. Test `// req: FR-NTF-05`
 
 ## 4. Screens

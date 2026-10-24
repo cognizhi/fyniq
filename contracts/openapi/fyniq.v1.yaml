@@ -684,6 +684,175 @@ components:
         - policies
         - checks
       type: object
+    Announcement:
+      additionalProperties: false
+      properties:
+        dismissible:
+          description: Whether a person may dismiss it; never a critical one.
+          examples:
+            - true
+          type: boolean
+        ends_at:
+          description: When it stops showing.
+          examples:
+            - "2026-11-03T16:00:00Z"
+          format: date-time
+          type: string
+        id:
+          description: The announcement's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f60
+          format: uuid
+          type: string
+        link:
+          description: Where it leads; absent for none.
+          examples:
+            - /help/organisation-settings
+          type: string
+        message:
+          description: What it says.
+          examples:
+            - The office is closed on 3 November; bills due that day are paid on 4 November.
+          type: string
+        published_at:
+          description: When it was published.
+          examples:
+            - "2026-10-24T01:00:00Z"
+          format: date-time
+          type: string
+        published_by:
+          description: Who published it, as type:id.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+          type: string
+        roles:
+          description: The roles it shows to; empty for everyone.
+          items:
+            description: A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.
+            examples:
+              - owner
+            type: string
+          type:
+            - array
+            - "null"
+        severity:
+          description: How it shows.
+          enum:
+            - info
+            - warning
+            - critical
+          examples:
+            - info
+          type: string
+        starts_at:
+          description: When it starts showing.
+          examples:
+            - "2026-10-24T01:00:00Z"
+          format: date-time
+          type: string
+        status:
+          description: scheduled before it starts, live while it shows, ended after it ends or is withdrawn.
+          enum:
+            - scheduled
+            - live
+            - ended
+          examples:
+            - live
+          type: string
+        withdrawn_at:
+          description: When it was withdrawn early; absent unless it was.
+          examples:
+            - "2026-10-25T01:00:00Z"
+          format: date-time
+          type: string
+      required:
+        - id
+        - message
+        - severity
+        - roles
+        - starts_at
+        - ends_at
+        - dismissible
+        - status
+        - published_by
+        - published_at
+      type: object
+    AnnouncementList:
+      additionalProperties: false
+      properties:
+        items:
+          description: "The announcements, newest first: scheduled, live and ended."
+          items:
+            $ref: "#/components/schemas/Announcement"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTI4ZjZlIn0
+          type: string
+      required:
+        - items
+      type: object
+    AnnouncementRequest:
+      additionalProperties: false
+      properties:
+        dismissible:
+          description: Whether a person may dismiss it; true unless critical, which never is.
+          examples:
+            - true
+          type: boolean
+        ends_at:
+          description: When it stops showing, after it starts.
+          examples:
+            - "2026-11-03T16:00:00Z"
+          format: date-time
+          type: string
+        link:
+          description: "Where it leads: a path in the web app, such as /help/…, or an https address."
+          examples:
+            - /help/organisation-settings
+          maxLength: 300
+          type: string
+        message:
+          description: What it says, in plain words.
+          examples:
+            - The office is closed on 3 November; bills due that day are paid on 4 November.
+          maxLength: 300
+          minLength: 1
+          type: string
+        roles:
+          description: The roles it shows to; leave it out for everyone.
+          items:
+            description: A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.
+            examples:
+              - owner
+            type: string
+          maxItems: 20
+          type:
+            - array
+            - "null"
+        severity:
+          description: info, warning, or critical for what everyone must see.
+          enum:
+            - info
+            - warning
+            - critical
+          examples:
+            - info
+          type: string
+        starts_at:
+          description: When it starts showing, now or later; leave it out to start now.
+          examples:
+            - "2026-10-24T01:00:00Z"
+          format: date-time
+          type: string
+      required:
+        - message
+        - severity
+        - ends_at
+      type: object
     AppliedDocument:
       additionalProperties: false
       properties:
@@ -1423,6 +1592,79 @@ components:
             - "null"
       required:
         - quorum
+      type: object
+    Banner:
+      additionalProperties: false
+      properties:
+        dismissible:
+          description: "false for a critical banner, or one published as not dismissible: it stays until it ends."
+          examples:
+            - true
+          type: boolean
+        ends_at:
+          description: When it stops showing.
+          examples:
+            - "2026-11-03T16:00:00Z"
+          format: date-time
+          type: string
+        id:
+          description: "The banner's ID: dismiss it with this."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f60
+          format: uuid
+          type: string
+        link:
+          description: "Where it leads: a path in the web app or an https address; absent for none."
+          examples:
+            - /help/organisation-settings
+          type: string
+        message:
+          description: What it says.
+          examples:
+            - The office is closed on 3 November; bills due that day are paid on 4 November.
+          type: string
+        scope:
+          description: "organisation: published by its Owner or Administrator; installation: by a Super admin, to everyone."
+          enum:
+            - organisation
+            - installation
+          examples:
+            - organisation
+          type: string
+        severity:
+          description: info and warning are announced politely (role=status), critical at once (role=alert).
+          enum:
+            - info
+            - warning
+            - critical
+          examples:
+            - info
+          type: string
+      required:
+        - id
+        - scope
+        - message
+        - severity
+        - dismissible
+        - ends_at
+      type: object
+    BannerList:
+      additionalProperties: false
+      properties:
+        items:
+          description: The banners, critical first, then warning, then info; newest first within each.
+          items:
+            $ref: "#/components/schemas/Banner"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTI4ZjZlIn0
+          type: string
+      required:
+        - items
       type: object
     Bill:
       additionalProperties: false
@@ -12630,6 +12872,489 @@ paths:
         capability: Chart of accounts, dimensions
         note: The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1).
         right: C
+  /v1/announcements:
+    get:
+      description: "Every banner the organisation published, newest first, with its status: scheduled, live or ended (FR-NTF-03). Read-only; no side effects."
+      operationId: listAnnouncements
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnnouncementList"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the organisation's announcements
+      tags:
+        - Announcements
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Announcements to the organisation (rev 0.6)
+        right: V
+    post:
+      description: "Publishes a banner under the header for the organisation's members, or those holding the roles named, from its start (now unless later) until its end (FR-NTF-03): a message and a link (a path in Fyniq or an https address), a severity, and whether it may be dismissed (never a critical one). It never changes; withdraw it to end it early. Side effects: the announcement and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and publishes nothing."
+      operationId: publishAnnouncement
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Publish a banner to the organisation
+      tags:
+        - Announcements
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Announcements to the organisation (rev 0.6)
+        right: C
+  /v1/announcements/{announcement_id}/withdraw:
+    post:
+      description: "Ends one of the organisation's banners now, before its end, or cancels a scheduled one (FR-NTF-03); NTF-06 when it ended or was withdrawn already. Side effects: the withdrawal and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and changes nothing."
+      operationId: withdrawAnnouncement
+      parameters:
+        - description: The banner's or announcement's ID.
+          in: path
+          name: announcement_id
+          required: true
+          schema:
+            description: The banner's or announcement's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f60
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `NTF-06` The announcement has ended; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Withdraw an announcement
+      tags:
+        - Announcements
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - NTF-06
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Announcements to the organisation (rev 0.6)
+        right: C
   /v1/approval-policies:
     get:
       description: "The approval policy in force for each kind of change the approval engine covers: who signs a request, as ordered steps with a quorum of people who hold the approval right (A) on the object's Appendix D row, narrowed to roles or named members (FR-APR-01). The built-in policy, one step with a quorum of one, applies until the organisation changes it. Read-only; no side effects."
@@ -14232,6 +14957,305 @@ paths:
         capability: (approvals)
         note: "Each approval's own policy decides: the Appendix D row of the object it changes. Never the AI (§9.6). Only the person who asked for the change withdraws it, signed in to Fyniq (rev 0.40)."
         right: V
+  /v1/banners:
+    get:
+      description: "The banners that show under the header for the caller now (FR-NTF-03): the organisation's, from its Owner or Administrator, and the installation's, from a Super admin, while they are live and meant for everyone or for one of the caller's roles, but those the caller dismissed. Critical first. Read-only; no side effects."
+      operationId: listBanners
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BannerList"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the banners you see now
+      tags:
+        - Announcements
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Own notifications and preferences (rev 0.6)
+        right: V
+  /v1/banners/{announcement_id}/dismiss:
+    post:
+      description: "Hides a banner showing to the caller, for the caller alone, on every device: the dismissal is kept on the server (FR-NTF-03). A critical banner, or one published as not dismissible, stays until it ends (NTF-04); NTF-05 for no banner showing with that ID. Side effects: the dismissal. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: dismissBanner
+      parameters:
+        - description: The banner's or announcement's ID.
+          in: path
+          name: announcement_id
+          required: true
+          schema:
+            description: The banner's or announcement's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f60
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BannerList"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `NTF-05` No such banner showing."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `NTF-04` A banner that stays until it ends; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EML-08` Not a person with an address of their own."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Dismiss a banner
+      tags:
+        - Announcements
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - EML-08
+        - NTF-04
+        - NTF-05
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Own notifications and preferences (rev 0.6)
+        right: C
   /v1/bill-payments:
     get:
       description: The payments of suppliers' bills recorded by hand, newest date first, a page at a time, narrowed by status, dates and text in the number (FR-AP-02). Each has its supplier, money account, total and what it settled of each bill. Read-only; no side effects.
@@ -24795,6 +25819,504 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: Period close / reopen
+        right: C
+  /v1/installation/announcements:
+    get:
+      description: Every banner a Super admin published to everyone in the installation, newest first, with its status (FR-NTF-03, FR-ADM-07). Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). Read-only; no side effects.
+      operationId: listInstallationAnnouncements
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnnouncementList"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: List the announcements to everyone
+      tags:
+        - Installation
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-06
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: (Super admins)
+        note: Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1).
+        right: V
+    post:
+      description: "Publishes a banner to every organisation's members, or those holding the roles named, such as a maintenance window or an incident (FR-NTF-03, FR-ADM-07), with the same fields and rules as an organisation's. Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). Side effects: the announcement and its event in the installation's trail. Idempotent with Idempotency-Key; Prefer: return=preview checks it and publishes nothing."
+      operationId: publishInstallationAnnouncement
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Publish a banner to everyone
+      tags:
+        - Installation
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-06
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: (Super admins)
+        note: Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1).
+        right: C
+  /v1/installation/announcements/{announcement_id}/withdraw:
+    post:
+      description: "Ends one of the installation's banners now, or cancels a scheduled one (FR-NTF-03); NTF-06 when it ended already. Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). Side effects: the withdrawal and its event in the installation's trail. Idempotent with Idempotency-Key; Prefer: return=preview checks it and changes nothing."
+      operationId: withdrawInstallationAnnouncement
+      parameters:
+        - description: The banner's or announcement's ID.
+          in: path
+          name: announcement_id
+          required: true
+          schema:
+            description: The banner's or announcement's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f60
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `NTF-06` The announcement has ended; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Withdraw an announcement to everyone
+      tags:
+        - Installation
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-06
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - NTF-06
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: (Super admins)
+        note: Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1).
         right: C
   /v1/items:
     get:
@@ -46299,5 +47821,7 @@ tags:
     name: Evidence
   - description: Each person's notification centre and preferences, produced from one event stream (FR-NTF-01, FR-NTF-02, FR-NTF-05).
     name: Notifications
+  - description: "Banners under the header: those each person sees now, and the announcements the Owner and Administrator publish to their organisation (FR-NTF-03)."
+    name: Announcements
   - description: "Document and email templates as data: drafts, and numbered versions published under approval that never change (FR-TPL-01…05)."
     name: Templates
