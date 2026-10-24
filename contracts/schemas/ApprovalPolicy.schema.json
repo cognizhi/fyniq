@@ -41,7 +41,8 @@
         "credit_application",
         "supplier_refund",
         "purchase_order",
-        "document_template"
+        "document_template",
+        "invoice"
       ],
       "examples": [
         "organisation_setting"

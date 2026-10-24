@@ -11,7 +11,7 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 - [x] 1.2 The posting rule `invoice@1`: 1100 the total, revenue or 2400 the net under `RND-FX`, 2200 the output
   GST under `RND-GST-EXCL` once GST-registered, a foreign invoice's GST in SGD; a replay golden. Tests
   `// req: ledger/posting-rules Posting an invoice`, `// req: ledger/posting-rules Amounts of a posted invoice`
-- [ ] 1.3 Issue, void and edit through the posting service: FM-2's threshold, FM-1 for a void, SOD-3, FR-GL-12;
+- [x] 1.3 Issue, void and edit through the posting service: FM-2's threshold, FM-1 for a void, SOD-3, FR-GL-12;
   the five states. Tests `// req: FR-AR-03`, `// req: FM-2`, `// req: SOD-3`
   (24 Oct 2026, PRD-001 rev 0.116, tasks 1.1 and 1.2 and this in part: `internal/domain/invoice` (the payload, lines under
   `RND-LINE` with its discount, the customer's terms, GST codes for supplies and the rate only once GST-registered),
@@ -20,8 +20,15 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   `TestInvoicesPostThroughThePostingService`, `TestPostInvoiceInTheBaseCurrency`, `TestPostInvoiceInAnotherCurrency`,
   `TestEveryPostedInvoiceBalances`, `TestLineDiscountedPinnedCases`. **Left:** the approvals (FM-2, FM-1, SOD-3) with
   the API, task 1.4, and the delivery and settlement states with sending and receipts)
-- [ ] 1.4 The API: list, get, create, revise, issue, void, edit and preview invoices, with ETags, idempotency,
+  (24 Oct 2026, PRD-001 rev 0.117, the rest with task 1.4: the approvals on "Invoices, credit notes" (object `invoice`,
+  `INVOICE-10` to `INVOICE-12` and `INVOICE-14`), the five states in the API (delivery `not_sent` until 5.x, settlement
+  from allocations until 2.1 records receipts); the codes renamed `INVOICE-nn`, as `INV-nn` are the invariants' IDs)
+- [x] 1.4 The API: list, get, create, revise, issue, void, edit and preview invoices, with ETags, idempotency,
   attachments and the matrix rows; Spectral clean. Tests `// req: FR-INT-01`
+  (24 Oct 2026, PRD-001 rev 0.117: `internal/api/invoices.go` and `invoice_evidence.go`, fourteen operations under
+  `/v1/invoices`, issuing as `issueInvoice` with `issue-approval`; issuing notifies those who approve invoices. Tests:
+  `TestInvoicesThroughTheAPI`, `TestInvoiceDraftsAndGSTThroughTheAPI`, `TestEvidenceOnAnInvoice`, the matrix rows,
+  `TestEverySequenceIsInTheContract`)
 - [ ] 1.5 Spreads: a spread line to 2400 and its monthly releases by the scheduler (`ALLOC-EVEN`), reversed with a
   void or edit. Tests `// req: ledger/posting-rules Spreading an invoice or bill`
 - [ ] 1.6 The AR sub-ledger equal to 1100 (INV-07), shown at the close; AR ageing by customer and currency with the

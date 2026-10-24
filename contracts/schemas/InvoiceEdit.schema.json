@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The invoice's currency.",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "customer_id": {
+      "description": "The customer: a contact marked as a customer.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "date": {
+      "description": "The invoice's date: its tax point.",
+      "examples": [
+        "2026-10-24"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "due_date": {
+      "description": "When it falls due; left out, the customer's payment terms, else the organisation's (FR-ORG-04).",
+      "examples": [
+        "2026-11-23"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "fx_rate": {
+      "description": "For an invoice in another currency: base currency per one unit. Left out, the invoice takes the cascade's rate for its date (ENG-40).",
+      "examples": [
+        "1.34"
+      ],
+      "type": "string"
+    },
+    "lines": {
+      "description": "The invoice's lines.",
+      "items": {
+        "$ref": "InvoiceLineDraft.schema.json"
+      },
+      "maxItems": 200,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "notes": {
+      "description": "Notes kept with the invoice.",
+      "examples": [
+        "Thank you for your business"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why it is edited: the audit trail and the reversal's memo keep it (FR-GL-12).",
+      "examples": [
+        "The customer's PO number was wrong"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    },
+    "reference": {
+      "description": "The customer's reference for it, such as their purchase order number.",
+      "examples": [
+        "PO-88213"
+      ],
+      "maxLength": 60,
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason",
+    "currency",
+    "lines"
+  ],
+  "title": "InvoiceEdit",
+  "type": "object"
+}

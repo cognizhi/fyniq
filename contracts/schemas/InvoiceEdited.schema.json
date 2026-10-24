@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entry": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry of the new version, on its date."
+    },
+    "invoice": {
+      "$ref": "Invoice.schema.json",
+      "description": "The invoice at its new version, still issued, with whoever posted the edit."
+    },
+    "reversal": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry that reverses the one the invoice had, dated on that entry's date."
+    }
+  },
+  "required": [
+    "invoice",
+    "reversal",
+    "entry"
+  ],
+  "title": "InvoiceEdited",
+  "type": "object"
+}

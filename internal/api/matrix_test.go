@@ -248,8 +248,44 @@ func matrixBillEvidence(e *env) (billID, evidenceID string) {
 	return billID, r.str("id")
 }
 
+// matrixInvoiceEvidence attaches a file to a new draft invoice, as an Accountant, and returns both IDs.
+func matrixInvoiceEvidence(e *env) (invoiceID, evidenceID string) {
+	invoiceID, _ = e.createInvoice("1", "10.00")
+	r := e.upload("/v1/invoices/"+invoiceID+"/evidence", e.as(authz.Accountant), map[string]string{"evidence_type": "contract"},
+		"order.pdf", []byte("%PDF-1.7 matrix order"), "If-Match", "*")
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("addInvoiceEvidence = %d: %s", r.Status, r.Raw)
+	}
+	return invoiceID, r.str("id")
+}
+
 // matrixCalls has one request per operation; an operation without one fails the test.
 var matrixCalls = map[string]matrixCall{
+	"addInvoiceEvidence": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createInvoice("1", "10.00")
+		r := e.upload("/v1/invoices/"+id+"/evidence", tok, map[string]string{"evidence_type": "contract"}, "order.pdf",
+			[]byte("%PDF-1.7 matrix order"), "If-Match", "*")
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/invoices/"+id+"/evidence", e.as(authz.Accountant), nil)
+			items, _ := l.Body["items"].([]any)
+			return l.Status == http.StatusOK && len(items) == 0
+		}
+	},
+	"listInvoiceEvidence": func(e *env, tok string) (response, func() bool) {
+		id, _ := matrixInvoiceEvidence(e)
+		return e.call(http.MethodGet, "/v1/invoices/"+id+"/evidence", tok, nil), nil
+	},
+	"getInvoiceEvidence": func(e *env, tok string) (response, func() bool) {
+		id, ev := matrixInvoiceEvidence(e)
+		return e.call(http.MethodGet, "/v1/invoices/"+id+"/evidence/"+ev, tok, nil), nil
+	},
+	"removeInvoiceEvidence": func(e *env, tok string) (response, func() bool) {
+		id, ev := matrixInvoiceEvidence(e)
+		r := e.call(http.MethodDelete, "/v1/invoices/"+id+"/evidence/"+ev, tok, nil, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/invoices/"+id+"/evidence/"+ev, e.as(authz.Accountant), nil).str("state") == "attached"
+		}
+	},
 	"addJournalEvidence": func(e *env, tok string) (response, func() bool) {
 		id, _ := e.createDraft("10.00")
 		r := e.upload("/v1/journals/"+id+"/evidence", tok, map[string]string{"evidence_type": "receipt"}, "receipt.pdf",
@@ -1420,6 +1456,92 @@ var matrixCalls = map[string]matrixCall{
 			return s.call(http.MethodGet, "/v1/bills/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
 		}
 	},
+	// Invoices (FR-AR-03): read under V, prepared under C, issued, voided and edited under P; asking for approval is issuing.
+	"listInvoices": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/invoices", tok, nil), nil
+	},
+	"getInvoice": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createInvoice("1", "10.00")
+		return e.call(http.MethodGet, "/v1/invoices/"+id, tok, nil), nil
+	},
+	"createInvoice": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/invoices", tok, e.invoiceDraft("1", "10.00")), nil
+	},
+	"replaceInvoice": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createInvoice("1", "10.00")
+		r := e.call(http.MethodPut, "/v1/invoices/"+id, tok, e.invoiceDraft("1", "11.00"), "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/invoices/"+id, e.as(authz.Accountant), nil).Body["version"] == float64(1)
+		}
+	},
+	"issueInvoice": func(e *env, tok string) (response, func() bool) {
+		id, tag := e.createInvoice("1", "10.00")
+		r := e.call(http.MethodPost, "/v1/invoices/"+id+"/issue", tok, nil, "If-Match", tag)
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/invoices/"+id, e.as(authz.Accountant), nil).str("status") == "draft"
+		}
+	},
+	"requestInvoiceIssue": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "invoice")
+		id, tag := e.createInvoice("1", "2500.00")
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/invoices/"+id+"/issue-approval", person, nil, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "invoice") == was }
+	},
+	"requestInvoiceVoid": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "invoice")
+		id, tag := e.issuedInvoice("1", "10.00")
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/invoices/"+id+"/void-approval", person, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "invoice") == was }
+	},
+	"requestInvoiceEdit": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "invoice")
+		id, tag := e.issuedInvoice("1", "10.00")
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/invoices/"+id+"/edit-approval", person, e.invoiceEdit("1", "12.00", "Matrix test"), "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "invoice") == was }
+	},
+	// An edit or a void in Founder mode is asked for, so the rows edit and void in an organisation in Standard mode.
+	"editInvoice": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org {
+			p.Organisation = s.books.Org
+			tok = s.principal(p)
+		}
+		id, tag := s.issuedInvoice("1", "10.00")
+		r := s.call(http.MethodPost, "/v1/invoices/"+id+"/edit", tok, s.invoiceEdit("1", "12.00", "Matrix test"), "If-Match", tag)
+		return r, func() bool {
+			return s.call(http.MethodGet, "/v1/invoices/"+id, s.as(authz.Accountant), nil).Header.Get("ETag") == tag
+		}
+	},
+	"voidInvoice": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org {
+			p.Organisation = s.books.Org
+			tok = s.principal(p)
+		}
+		id, tag := s.issuedInvoice("1", "10.00")
+		r := s.call(http.MethodPost, "/v1/invoices/"+id+"/void", tok, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		return r, func() bool {
+			return s.call(http.MethodGet, "/v1/invoices/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
+		}
+	},
 	// Payments of bills recorded by hand (FR-AP-02): read under V, recorded and voided under P; asking to void is posting.
 	// Supplier credits applied to bills (FR-AP-03): read under V, applied and voided under P; asking to void is posting.
 	"getCreditApplication": func(e *env, tok string) (response, func() bool) {
@@ -1752,8 +1874,9 @@ func TestAuthorisationMatrix(t *testing.T) {
 		case authz.SuperAdmin:
 			p.Organisation = [16]byte{} // outside every organisation (FR-ADM-07)
 		}
-		tok := e.principal(p)
 		for _, op := range slices.Sorted(maps.Keys(policies)) {
+			// A session per operation: one would pass the rate limit of a minute (FR-INT-16) on the frozen clock.
+			tok := e.principal(p)
 			want, _ := expected(t, rows, role, policies[op])
 			r, unchanged := matrixCalls[op](e, tok)
 			beyondPolicy := r.Status == http.StatusForbidden && (r.problemCode() == CodeNotSuperAdmin || r.problemCode() == CodeStepUpRequired ||

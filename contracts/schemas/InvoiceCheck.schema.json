@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The rule's stable code (ENG-23).",
+      "examples": [
+        "INVOICE-05"
+      ],
+      "type": "string"
+    },
+    "field": {
+      "description": "The field it is about.",
+      "examples": [
+        "customer_id"
+      ],
+      "type": "string"
+    },
+    "fix": {
+      "description": "How to fix it.",
+      "examples": [
+        "Choose the customer it is for"
+      ],
+      "type": "string"
+    },
+    "message": {
+      "description": "What is wrong.",
+      "examples": [
+        "the invoice has no customer"
+      ],
+      "type": "string"
+    },
+    "severity": {
+      "description": "error (✖): it cannot be issued until fixed; warning (⚠): it is issued, and reviewed.",
+      "enum": [
+        "error",
+        "warning"
+      ],
+      "examples": [
+        "error"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "severity",
+    "code",
+    "message"
+  ],
+  "title": "InvoiceCheck",
+  "type": "object"
+}

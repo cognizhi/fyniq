@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The revenue account the line earns.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "description": {
+      "description": "What the line is for, as the customer reads it.",
+      "examples": [
+        "Analytics platform, October"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "discount_percent": {
+      "description": "A discount off the line, as a percentage with at most two decimals. The line's net is RND-LINE: quantity × unit price × (100 − discount) ÷ 100, rounded once to the currency's minor units, half away from zero.",
+      "examples": [
+        "10"
+      ],
+      "pattern": "^(100(\\.0{1,2})?|[0-9]{1,2}(\\.[0-9]{1,2})?)$",
+      "type": "string"
+    },
+    "gst_code": {
+      "description": "The line's GST code for supplies, from the sg-gst pack in force at the invoice's date, such as SR (standard-rated), ZR (zero-rated), ES (exempt) or OS (out of scope). No GST is charged before the organisation is GST-registered.",
+      "examples": [
+        "SR"
+      ],
+      "pattern": "^[A-Z]{2,4}$",
+      "type": "string"
+    },
+    "item_id": {
+      "description": "The item it sells, if any; the line keeps its own description, price and account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "quantity": {
+      "description": "How many, an exact decimal with up to 6 decimals; 1 for a single amount.",
+      "examples": [
+        "2"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?$",
+      "type": "string"
+    },
+    "spread_from": {
+      "description": "The spread's first month, as any day of it: when the service starts. Left out, the invoice's month.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "spread_months": {
+      "description": "Spread the line's revenue over this many months (FR-GL-03): issuing puts its net on 2400 Deferred revenue in the base currency, to be released one part a month (ALLOC-EVEN).",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "maximum": 120,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "unit_price": {
+      "description": "The price of one before GST, in the invoice's currency, an exact decimal with up to 6 decimals.",
+      "examples": [
+        "1500.00"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "quantity",
+    "unit_price",
+    "account_id",
+    "gst_code"
+  ],
+  "title": "InvoiceLineDraft",
+  "type": "object"
+}

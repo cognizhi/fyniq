@@ -8,6 +8,7 @@ import (
 	"maps"
 	"net/http"
 	"os"
+	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 var update = flag.Bool("update", false, "rewrite contracts/openapi/fyniq.v1.yaml from the code (make openapi)")
@@ -214,6 +216,25 @@ func TestEveryOperationIsDocumented(t *testing.T) {
 // Every operation has its policy from the one table, and every policy its operation (SEC-02).
 // req: SEC-02
 // asvs: V8.2.1, V8.3.1
+// The contract names every document type that has a number sequence, and no other, so listSequences answers only what
+// it declares and each sequence can be read and changed.
+// req: FR-ORG-04
+func TestEverySequenceIsInTheContract(t *testing.T) {
+	var numbered []string
+	for typ := range storage.DefaultSequences {
+		numbered = append(numbered, string(typ))
+	}
+	slices.Sort(numbered)
+	for _, x := range []any{Sequence{}, SequencePath{}} {
+		f, _ := reflect.TypeOf(x).FieldByName("DocumentType")
+		enum := strings.Split(f.Tag.Get("enum"), ",")
+		slices.Sort(enum)
+		if !slices.Equal(enum, numbered) {
+			t.Errorf("%T's document_type lists %v; the numbered types are %v", x, enum, numbered)
+		}
+	}
+}
+
 func TestEveryOperationHasItsPolicy(t *testing.T) {
 	a := testAPI(t)
 	registered := a.Policies()

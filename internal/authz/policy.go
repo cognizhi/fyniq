@@ -100,8 +100,9 @@ const (
 // control, and members' roles and invitations after the founder bootstrap (rev 0.36); approval policies (rev 0.40);
 // activating statutory pack versions (rev 0.41); reopening a closed period (rev 0.51); posting a journal above the
 // self-approval threshold, and voiding one (rev 0.53); posting a bill above the threshold, and voiding one (p1-purchases);
-// publishing a document template (rev 0.95).
-var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates}
+// publishing a document template (rev 0.95); issuing an invoice above the threshold, and voiding or editing one (p1-sales).
+var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
+	Invoices}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -444,6 +445,20 @@ var (
 	RequestBillPost = Policy{Operation: "requestBillPost", Capability: Bills, Need: Post}
 	RequestBillVoid = Policy{Operation: "requestBillVoid", Capability: Bills, Need: Post}
 	EditBill        = Policy{Operation: "editBill", Capability: Bills, Need: Post}
+	// Invoices (FR-AR-03; p1-sales), as bills: read under V, prepared under C (the Bookkeeper, the AR specialist, the
+	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
+	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
+	// SOD-3).
+	ListInvoices        = Policy{Operation: "listInvoices", Capability: Invoices, Need: View}
+	GetInvoice          = Policy{Operation: "getInvoice", Capability: Invoices, Need: View}
+	CreateInvoice       = Policy{Operation: "createInvoice", Capability: Invoices, Need: Create}
+	ReplaceInvoice      = Policy{Operation: "replaceInvoice", Capability: Invoices, Need: Create}
+	IssueInvoice        = Policy{Operation: "issueInvoice", Capability: Invoices, Need: Post}
+	VoidInvoice         = Policy{Operation: "voidInvoice", Capability: Invoices, Need: Post}
+	EditInvoice         = Policy{Operation: "editInvoice", Capability: Invoices, Need: Post}
+	RequestInvoiceIssue = Policy{Operation: "requestInvoiceIssue", Capability: Invoices, Need: Post}
+	RequestInvoiceVoid  = Policy{Operation: "requestInvoiceVoid", Capability: Invoices, Need: Post}
+	RequestInvoiceEdit  = Policy{Operation: "requestInvoiceEdit", Capability: Invoices, Need: Post}
 	// The tax agent's withholding decisions for a non-resident supplier (FR-AP-19; rev 0.90): read with the bills (V),
 	// recorded by whoever prepares bills (C), naming the tax agent who gave them, with their advice on the bill.
 	// Tracking and paying bills (FR-AP-13; rev 0.93): whoever prepares bills plans their payment dates (C); the bills to
@@ -539,6 +554,17 @@ var (
 		Note: "Needs the right to view bills as well."}
 	RemoveBillEvidence = Policy{Operation: "removeBillEvidence", Capability: Evidence, Need: Create, Parent: Bills,
 		Note: "Needs the right to view bills as well; only while the bill is a draft (FR-DOC-07)."}
+	// An invoice's evidence, such as the customer's purchase order, as a bill's (FR-DOC-05): the evidence right and the
+	// right to view invoices.
+	AddInvoiceEvidence = Policy{Operation: "addInvoiceEvidence", Capability: Evidence, Need: Create, Parent: Invoices,
+		Note: "Needs the right to view invoices as well. AI and MCP clients only propose attaching a document (doc.attach), " +
+			"which a person approves; the evidence rules per activity (FR-DOC-06) arrive later in P1."}
+	ListInvoiceEvidence = Policy{Operation: "listInvoiceEvidence", Capability: Evidence, Need: View, Parent: Invoices,
+		Note: "Needs the right to view invoices as well."}
+	GetInvoiceEvidence = Policy{Operation: "getInvoiceEvidence", Capability: Evidence, Need: View, Parent: Invoices,
+		Note: "Needs the right to view invoices as well."}
+	RemoveInvoiceEvidence = Policy{Operation: "removeInvoiceEvidence", Capability: Evidence, Need: Create, Parent: Invoices,
+		Note: "Needs the right to view invoices as well; only while the invoice is a draft (FR-DOC-07)."}
 )
 
 const approvalNote = "Each approval's own policy decides: the Appendix D row of the object it changes. Never the AI (§9.6)."
@@ -659,6 +685,8 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,
 	GetCreditApplication, ApplyCredit, VoidCreditApplication, RequestCreditApplicationVoid,
 	GetSupplierRefund, RecordSupplierRefund, VoidSupplierRefund, RequestSupplierRefundVoid,
+	ListInvoices, GetInvoice, CreateInvoice, ReplaceInvoice, IssueInvoice, VoidInvoice, EditInvoice, RequestInvoiceIssue, RequestInvoiceVoid,
+	RequestInvoiceEdit, AddInvoiceEvidence, ListInvoiceEvidence, GetInvoiceEvidence, RemoveInvoiceEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,

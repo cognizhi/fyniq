@@ -38,11 +38,22 @@ func (e *env) supplier() string {
 			id = cs[0].ID.String()
 			return nil
 		}
+		have := map[string]bool{} // invoices' books may have some already
+		accounts, err := u.Accounts().List(ctx)
+		if err != nil {
+			return err
+		}
+		for _, a := range accounts {
+			have[string(a.Role)] = true
+		}
 		for _, a := range []storage.NewAccount{
 			{Code: "2010", Name: "Accounts payable", Type: storage.Liability, Role: storage.AccountRole(ledger.RoleAccountsPayable)},
 			{Code: "2200", Name: "GST control", Type: storage.Liability, Role: storage.AccountRole(ledger.RoleGSTControl)},
 			{Code: "7030", Name: "FX & rounding differences", Type: storage.Expense, Role: storage.AccountRole(ledger.RoleFXRounding)},
 		} {
+			if have[string(a.Role)] {
+				continue
+			}
 			if _, err := u.Accounts().Create(ctx, a); err != nil {
 				return err
 			}

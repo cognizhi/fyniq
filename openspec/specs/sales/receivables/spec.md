@@ -91,6 +91,11 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **THEN** it takes its number from `INV-`, posts by `invoice@1` (1100 the total; revenue or 2400 the net; 2200 the output GST once GST-registered) and replays exactly
 - **AND** it is voided or edited only by reversal, and not while receipts or credits settle it
 
+#### Scenario: Invoice API and approvals as built (rev 0.117)
+- **WHEN** an invoice is saved, issued, voided or edited through `/v1/invoices`
+- **THEN** a draft has no number, issuing above the self-approval threshold needs another person's approval (INVOICE-10), and whoever prepared it never approves its issue (INVOICE-12)
+- **AND** in Founder mode a void (INVOICE-11) or an edit (INVOICE-14) needs a second person, and an issue at or below the threshold is logged for the weekly review
+
 #### Scenario: G4-045 Overpayment, credit applied, allocation reversed, bounce and overdue
 - **GIVEN** an invoice of S$1,000.00 paid S$1,050.00, whose S$50.00 credit is later applied to the next invoice
 - **WHEN** one allocation is then reversed, a sent email bounces and the invoice becomes overdue

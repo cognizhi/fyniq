@@ -14,7 +14,12 @@
       "description": "The documents it numbers.",
       "enum": [
         "journal",
-        "bill"
+        "bill",
+        "bill_payment",
+        "vendor_credit",
+        "supplier_refund",
+        "purchase_order",
+        "invoice"
       ],
       "examples": [
         "journal"
