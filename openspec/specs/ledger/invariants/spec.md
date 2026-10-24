@@ -164,6 +164,11 @@ Source: PRD-001 §10.7
 - **THEN** the AP sub-ledger, read from the posted bills dated by the period's end and not voided by then, less their allocations by then, and the payments' unapplied amounts, is compared with 2010's balance by source type, per currency and in carrying amounts
 - **AND** a difference no source explains is ✖ and blocks the close, and amounts on 2010 from opening balances or manual journals are ⚠
 
+#### Scenario: Accounts receivable at the close (rev 0.119)
+- **WHEN** a period's close checks run
+- **THEN** the AR sub-ledger, read from the issued invoices dated by the period's end and not voided by then, less their allocations by then, is compared with 1100's balance by source type, per currency and in carrying amounts
+- **AND** a difference no source explains is ✖ and blocks the close, and amounts on 1100 from opening balances or manual journals are ⚠
+
 #### Scenario: G4-036 GST roll-forward over a quarter
 - **GIVEN** a quarter with output tax, input tax, a payment to IRAS and a refund
 - **WHEN** the quarter's GST control is verified

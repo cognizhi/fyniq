@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_at": {
+      "description": "The day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "customers": {
+      "description": "Each customer with something open, by name.",
+      "items": {
+        "$ref": "ReceivablesCustomer.schema.json"
+      },
+      "type": "array"
+    },
+    "fx_exposure": {
+      "description": "The unrealised FX of each foreign currency's total at the day's rate; empty when every open invoice is in the base currency.",
+      "items": {
+        "$ref": "ReceivablesExposure.schema.json"
+      },
+      "type": "array"
+    },
+    "totals": {
+      "description": "The ageing's totals, a row per currency.",
+      "items": {
+        "$ref": "ReceivablesRow.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "as_at",
+    "customers",
+    "totals",
+    "fx_exposure"
+  ],
+  "title": "Receivables",
+  "type": "object"
+}

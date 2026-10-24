@@ -204,6 +204,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/purchase-orders/{purchase_order_id}/bill` (billPurchaseOrder): Make a bill from a purchase order
 - `POST /v1/purchase-orders/{purchase_order_id}/close` (closePurchaseOrder): Close a purchase order
 - `GET /v1/purchases/gst-codes` (getPurchaseGSTCodes): Get the GST codes for purchases
+- `GET /v1/receivables` (getReceivables): Get AR ageing
 - `GET /v1/recurring-bills` (listRecurringBills): List the recurring bills
 - `POST /v1/recurring-bills` (createRecurringBill): Add a recurring bill
 - `GET /v1/recurring-bills/{recurring_bill_id}` (getRecurringBill): Get a recurring bill

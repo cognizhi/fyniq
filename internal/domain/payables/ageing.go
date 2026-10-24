@@ -8,73 +8,19 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/subledger"
 )
 
 // Buckets are the ageing buckets by days past due on the day (FR-AP-06, as FR-AR-10 for receivables): not yet due
 // (due on the day included), 1–30, 31–60, 61–90 and more than 90 days.
-var Buckets = [5]string{"current", "1-30", "31-60", "61-90", "90+"}
-
-// bucket is the bucket of a bill due on due, as at asAt; a bill with no due date is current.
-func bucket(due, asAt time.Time) int {
-	if due.IsZero() {
-		return 0
-	}
-	days := int(asAt.Sub(due).Hours() / 24)
-	switch {
-	case days <= 0:
-		return 0
-	case days <= 30:
-		return 1
-	case days <= 60:
-		return 2
-	case days <= 90:
-		return 3
-	}
-	return 4
-}
+var Buckets = subledger.Buckets
 
 // Row is what is owed in one currency, by ageing bucket, with the supplier credits apart (negative) and the total, and
 // the carrying amount of it all in the base currency.
-type Row struct {
-	Currency money.Currency
-	Buckets  [5]money.Money
-	Credits  money.Money
-	Total    money.Money
-	Carrying money.Money
-}
-
-func newRow(c, base money.Currency) *Row {
-	r := &Row{Currency: c, Credits: money.Zero(c), Total: money.Zero(c), Carrying: money.Zero(base)}
-	for i := range r.Buckets {
-		r.Buckets[i] = money.Zero(c)
-	}
-	return r
-}
-
-func (r *Row) add(it Item, asAt time.Time) error {
-	var err error
-	if it.Kind == KindCredit {
-		r.Credits, err = r.Credits.Add(it.Open)
-	} else {
-		i := bucket(it.DueDate, asAt)
-		r.Buckets[i], err = r.Buckets[i].Add(it.Open)
-	}
-	if err != nil {
-		return err
-	}
-	if r.Total, err = r.Total.Add(it.Open); err != nil {
-		return err
-	}
-	r.Carrying, err = r.Carrying.Add(it.Carrying)
-	return err
-}
+type Row = subledger.Row
 
 // SupplierAgeing is one supplier's ageing, a row per currency.
-type SupplierAgeing struct {
-	ID   uuid.UUID
-	Name string
-	Rows []Row
-}
+type SupplierAgeing = subledger.GroupAgeing
 
 // Ageing is AP ageing as at a day (FR-AP-06): each supplier's open bills by days past due and credits by currency, and
 // the totals by currency, from the sub-ledger.
@@ -84,53 +30,13 @@ type Ageing struct {
 	Totals    []Row
 }
 
-type rows struct {
-	base  money.Currency
-	order []string
-	by    map[string]*Row
-}
-
-func (rs *rows) of(c money.Currency) *Row {
-	if rs.by == nil {
-		rs.by = map[string]*Row{}
-	}
-	r := rs.by[c.Code]
-	if r == nil {
-		r = newRow(c, rs.base)
-		rs.by[c.Code] = r
-		rs.order = append(rs.order, c.Code)
-	}
-	return r
-}
-
-func (rs *rows) list() []Row {
-	codes := slices.Clone(rs.order)
-	slices.Sort(codes)
-	out := make([]Row, 0, len(codes))
-	for _, c := range codes {
-		out = append(out, *rs.by[c])
-	}
-	return out
-}
-
 // Age is the ageing of a sub-ledger as at its day, in base for the carrying amounts.
 func Age(l Ledger, base money.Currency) (Ageing, error) {
-	out := Ageing{AsAt: l.AsAt}
-	totals := rows{base: base}
-	for _, s := range l.Suppliers {
-		mine := rows{base: base}
-		for _, it := range s.Items {
-			if err := mine.of(it.Open.Currency()).add(it, l.AsAt); err != nil {
-				return Ageing{}, err
-			}
-			if err := totals.of(it.Open.Currency()).add(it, l.AsAt); err != nil {
-				return Ageing{}, err
-			}
-		}
-		out.Suppliers = append(out.Suppliers, SupplierAgeing{ID: s.ID, Name: s.Name, Rows: mine.list()})
+	a, err := subledger.Age(l.AsAt, base, l.groups())
+	if err != nil {
+		return Ageing{}, err
 	}
-	out.Totals = totals.list()
-	return out, nil
+	return Ageing{AsAt: a.AsAt, Suppliers: a.Groups, Totals: a.Totals}, nil
 }
 
 // DueItem is an open bill to pay, with its supplier.

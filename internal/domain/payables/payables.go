@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/subledger"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -27,21 +28,12 @@ import (
 // The kinds of open items.
 const (
 	KindBill   = "bill"
-	KindCredit = "credit" // a supplier credit: a vendor credit (FR-AP-03), or a payment's unapplied amount (FR-AR-18 mirrored)
+	KindCredit = subledger.KindCredit // a supplier credit: a vendor credit (FR-AP-03), or a payment's unapplied amount (FR-AR-18 mirrored)
 )
 
 // Item is one open document of the sub-ledger as at a day: what is owed on it in its currency (a credit negative) and
 // its carrying amount in the base currency.
-type Item struct {
-	Kind       string
-	DocumentID uuid.UUID
-	Number     string
-	Date       time.Time
-	DueDate    time.Time // a bill's: as entered, else from the payment terms (bill.Due); zero for a credit
-	Total      money.Money
-	Open       money.Money
-	Carrying   money.Money
-}
+type Item = subledger.Item
 
 // Supplier is a supplier's open items, earliest first.
 type Supplier struct {
@@ -54,91 +46,6 @@ type Supplier struct {
 type Ledger struct {
 	AsAt      time.Time
 	Suppliers []Supplier
-}
-
-// pages walks every document of a type dated on or before a day, a page at a time.
-func pages(ctx context.Context, u storage.UnitOfWork, t storage.DocumentType, asAt time.Time, each func(storage.Document) error) error {
-	f := storage.DocumentFilter{Type: t, To: asAt.Format(time.DateOnly), Limit: 500}
-	for {
-		docs, err := u.Documents().Page(ctx, f)
-		if err != nil {
-			return err
-		}
-		for _, d := range docs {
-			if err := each(d); err != nil {
-				return err
-			}
-		}
-		if len(docs) < f.Limit {
-			return nil
-		}
-		last := docs[len(docs)-1]
-		f.AfterDate, f.AfterID = last.Date, &last.ID
-	}
-}
-
-// voidedBy says whether the entry with identity was reversed on or before asAt.
-func voidedBy(ctx context.Context, u storage.UnitOfWork, identity string, asAt time.Time) (bool, error) {
-	r, err := u.Ledger().ByIdentity(ctx, ledger.ReversalIdentity(identity))
-	if errors.Is(err, ports.ErrNotFound) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return !r.PostingDate.After(asAt), nil
-}
-
-// apLines sums an entry's lines on the accounts-payable account: in the document's currency and in the base currency.
-func apLines(e storage.Entry, ap uuid.UUID, cur, base money.Currency) (money.Money, money.Money, error) {
-	amount, b := money.Zero(cur), money.Zero(base)
-	for _, l := range e.Lines {
-		if l.AccountID != ap {
-			continue
-		}
-		if l.Currency == cur.Code {
-			x, err := money.ParseStored(string(l.Amount), cur)
-			if err != nil {
-				return amount, b, err
-			}
-			if amount, err = amount.Add(x); err != nil {
-				return amount, b, err
-			}
-		}
-		y, err := money.ParseStored(string(l.BaseAmount), base)
-		if err != nil {
-			return amount, b, err
-		}
-		if b, err = b.Add(y); err != nil {
-			return amount, b, err
-		}
-	}
-	return amount, b, nil
-}
-
-// settled is what allocations settled through asAt, in the document's currency and in the base currency.
-func settled(allocs []storage.Allocation, cur, base money.Currency, asAt time.Time, keep func(storage.Allocation) bool) (money.Money, money.Money, error) {
-	amount, b := money.Zero(cur), money.Zero(base)
-	for _, a := range allocs {
-		if a.On.After(asAt) || (keep != nil && !keep(a)) {
-			continue
-		}
-		x, err := money.ParseStored(string(a.Amount), cur)
-		if err != nil {
-			return amount, b, err
-		}
-		y, err := money.ParseStored(string(a.BaseAmount), base)
-		if err != nil {
-			return amount, b, err
-		}
-		if amount, err = amount.Add(x); err != nil {
-			return amount, b, err
-		}
-		if b, err = b.Add(y); err != nil {
-			return amount, b, err
-		}
-	}
-	return amount, b, nil
 }
 
 // Open is the AP sub-ledger as at a day: each posted bill dated on or before it and not voided by then, less what was
@@ -168,12 +75,12 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		}
 		s.Items = append(s.Items, it)
 	}
-	err := pages(ctx, u, storage.DocumentBill, asAt, func(doc storage.Document) error {
+	err := subledger.Pages(ctx, u, storage.DocumentBill, asAt, func(doc storage.Document) error {
 		if doc.Status == storage.DocumentDraft {
 			return nil
 		}
 		identity := ledger.BillIdentity(doc.ID, doc.Version, ledger.RuleBill)
-		if gone, err := voidedBy(ctx, u, identity, asAt); err != nil || gone {
+		if gone, err := subledger.VoidedBy(ctx, u, identity, asAt); err != nil || gone {
 			return err
 		}
 		d, err := bill.Read(doc, base)
@@ -188,7 +95,7 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		if err != nil {
 			return err
 		}
-		credited, carried, err := apLines(e, ap, d.Currency, base) // its total, less any tax withheld (FR-AP-19)
+		credited, carried, err := subledger.ControlLines(e, ap, d.Currency, base) // its total, less any tax withheld (FR-AP-19)
 		if err != nil {
 			return err
 		}
@@ -196,7 +103,7 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		if err != nil {
 			return err
 		}
-		paid, paidBase, err := settled(allocs, d.Currency, base, asAt, nil)
+		paid, paidBase, err := subledger.Settled(allocs, d.Currency, base, asAt, nil)
 		if err != nil {
 			return err
 		}
@@ -223,12 +130,12 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 	if err != nil {
 		return Ledger{}, err
 	}
-	err = pages(ctx, u, storage.DocumentVendorCredit, asAt, func(doc storage.Document) error {
+	err = subledger.Pages(ctx, u, storage.DocumentVendorCredit, asAt, func(doc storage.Document) error {
 		if doc.Status == storage.DocumentDraft {
 			return nil
 		}
 		identity := ledger.VendorCreditIdentity(doc.ID, doc.Version, ledger.RuleVendorCredit)
-		if gone, err := voidedBy(ctx, u, identity, asAt); err != nil || gone {
+		if gone, err := subledger.VoidedBy(ctx, u, identity, asAt); err != nil || gone {
 			return err
 		}
 		d, err := bill.Read(doc, base)
@@ -243,7 +150,7 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		if err != nil {
 			return err
 		}
-		_, debited, err := apLines(e, ap, d.Currency, base)
+		_, debited, err := subledger.ControlLines(e, ap, d.Currency, base)
 		if err != nil {
 			return err
 		}
@@ -251,7 +158,7 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		if err != nil {
 			return err
 		}
-		applied, appliedBase, err := settled(allocs, d.Currency, base, asAt, nil)
+		applied, appliedBase, err := subledger.Settled(allocs, d.Currency, base, asAt, nil)
 		if err != nil {
 			return err
 		}
@@ -270,12 +177,12 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 	if err != nil {
 		return Ledger{}, err
 	}
-	err = pages(ctx, u, storage.DocumentBillPayment, asAt, func(doc storage.Document) error {
+	err = subledger.Pages(ctx, u, storage.DocumentBillPayment, asAt, func(doc storage.Document) error {
 		if doc.Status == storage.DocumentDraft {
 			return nil
 		}
 		identity := ledger.BillPaymentIdentity(doc.ID, doc.Version, ledger.RuleBillPayment)
-		if gone, err := voidedBy(ctx, u, identity, asAt); err != nil || gone {
+		if gone, err := subledger.VoidedBy(ctx, u, identity, asAt); err != nil || gone {
 			return err
 		}
 		d, err := billpayment.Read(doc, base)
@@ -289,7 +196,7 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		if err != nil {
 			return err
 		}
-		_, debited, err := apLines(e, ap, d.Currency, base)
+		_, debited, err := subledger.ControlLines(e, ap, d.Currency, base)
 		if err != nil {
 			return err
 		}
@@ -297,7 +204,7 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		if err != nil {
 			return err
 		}
-		_, appliedBase, err := settled(allocs, d.Currency, base, d.Date, func(a storage.Allocation) bool { return a.ReversesID == nil && a.SourceVersion == doc.Version })
+		_, appliedBase, err := subledger.Settled(allocs, d.Currency, base, d.Date, func(a storage.Allocation) bool { return a.ReversesID == nil && a.SourceVersion == doc.Version })
 		if err != nil {
 			return err
 		}
@@ -309,7 +216,7 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		if err != nil {
 			return err
 		}
-		used, usedBase, err := settled(later, d.Currency, base, asAt, nil)
+		used, usedBase, err := subledger.Settled(later, d.Currency, base, asAt, nil)
 		if err != nil {
 			return err
 		}
@@ -444,39 +351,29 @@ func (r Reminder) when() time.Time {
 	return r.Item.DueDate
 }
 
-// Explained is what a source other than bills and their payments posted to the accounts-payable account, owed positive.
-type Explained struct {
-	SourceType string
-	Amount     money.Money
-	Base       money.Money
-}
+// Explained, Currency and Reconciliation are INV-07's reconciliation of accounts payable with its sub-ledger (package
+// subledger), what is owed positive.
+type (
+	Explained      = subledger.Explained
+	Currency       = subledger.Currency
+	Reconciliation = subledger.Reconciliation
+)
 
-// Currency is the reconciliation of one currency: what the accounts-payable account says is owed, what the
-// sub-ledger's open documents add up to, what other sources explain, and what is left unexplained, which is a fault.
-type Currency struct {
-	Currency    money.Currency
-	Control     money.Money
-	SubLedger   money.Money
-	Explained   []Explained
-	Unexplained money.Money
-}
-
-// Reconciliation is INV-07 for accounts payable as at a day: each currency's amounts, and the base currency's.
-type Reconciliation struct {
-	AsAt       time.Time
-	Currencies []Currency
-	Base       Currency // in the base currency: the carrying amounts against the account's base balance
-}
-
-// Unexplained says whether any amount, in a currency or in the base currency, is left unexplained.
-func (r Reconciliation) Unexplained() bool {
-	if !r.Base.Unexplained.IsZero() {
-		return true
+// groups are the sub-ledger's suppliers as subledger groups.
+func (l Ledger) groups() []subledger.Group {
+	out := make([]subledger.Group, 0, len(l.Suppliers))
+	for _, s := range l.Suppliers {
+		out = append(out, subledger.Group{ID: s.ID, Name: s.Name, Items: s.Items})
 	}
-	for _, c := range r.Currencies {
-		if !c.Unexplained.IsZero() {
-			return true
-		}
+	return out
+}
+
+// own says whether a source type is one of the documents the AP sub-ledger accounts for: bills and their payments,
+// credits, applications and refunds.
+func own(sourceType string) bool {
+	switch sourceType {
+	case ledger.SourceBill, ledger.SourceBillPayment, ledger.SourceVendorCredit, ledger.SourceCreditApplication, ledger.SourceSupplierRefund:
+		return true
 	}
 	return false
 }
@@ -494,85 +391,6 @@ func Reconcile(ctx context.Context, u storage.UnitOfWork, base money.Currency, a
 	if err != nil {
 		return Reconciliation{}, Ledger{}, err
 	}
-	out := Reconciliation{AsAt: asAt, Base: Currency{Currency: base, Control: money.Zero(base), SubLedger: money.Zero(base), Unexplained: money.Zero(base)}}
-	byCode := map[string]*Currency{}
-	currency := func(c money.Currency) *Currency {
-		if x := byCode[c.Code]; x != nil {
-			return x
-		}
-		x := &Currency{Currency: c, Control: money.Zero(c), SubLedger: money.Zero(c), Unexplained: money.Zero(c)}
-		byCode[c.Code] = x
-		return x
-	}
-	explainedBase := map[string]money.Money{}
-	for _, t := range totals {
-		c := currency(t.Amount.Currency())
-		owed, owedBase := t.Amount.Neg(), t.Base.Neg()
-		if c.Control, err = c.Control.Add(owed); err != nil {
-			return out, l, err
-		}
-		if out.Base.Control, err = out.Base.Control.Add(owedBase); err != nil {
-			return out, l, err
-		}
-		if t.SourceType == ledger.SourceBill || t.SourceType == ledger.SourceBillPayment || t.SourceType == ledger.SourceVendorCredit ||
-			t.SourceType == ledger.SourceCreditApplication || t.SourceType == ledger.SourceSupplierRefund {
-			continue
-		}
-		c.Explained = append(c.Explained, Explained{SourceType: t.SourceType, Amount: owed, Base: owedBase})
-		was, ok := explainedBase[t.SourceType]
-		if !ok {
-			was = money.Zero(base)
-		}
-		if explainedBase[t.SourceType], err = was.Add(owedBase); err != nil {
-			return out, l, err
-		}
-	}
-	for _, s := range l.Suppliers {
-		for _, it := range s.Items {
-			c := currency(it.Open.Currency())
-			if c.SubLedger, err = c.SubLedger.Add(it.Open); err != nil {
-				return out, l, err
-			}
-			if out.Base.SubLedger, err = out.Base.SubLedger.Add(it.Carrying); err != nil {
-				return out, l, err
-			}
-		}
-	}
-	codes := make([]string, 0, len(byCode))
-	for code := range byCode {
-		codes = append(codes, code)
-	}
-	slices.Sort(codes)
-	left := func(c *Currency, explained []Explained, amount func(Explained) money.Money) error {
-		x, err := c.Control.Sub(c.SubLedger)
-		if err != nil {
-			return err
-		}
-		for _, e := range explained {
-			if x, err = x.Sub(amount(e)); err != nil {
-				return err
-			}
-		}
-		c.Unexplained = x
-		return nil
-	}
-	for _, code := range codes {
-		c := byCode[code]
-		if err := left(c, c.Explained, func(e Explained) money.Money { return e.Amount }); err != nil {
-			return out, l, err
-		}
-		out.Currencies = append(out.Currencies, *c)
-	}
-	sources := make([]string, 0, len(explainedBase))
-	for s := range explainedBase {
-		sources = append(sources, s)
-	}
-	slices.Sort(sources)
-	for _, s := range sources {
-		out.Base.Explained = append(out.Base.Explained, Explained{SourceType: s, Amount: explainedBase[s], Base: explainedBase[s]})
-	}
-	if err := left(&out.Base, out.Base.Explained, func(e Explained) money.Money { return e.Base }); err != nil {
-		return out, l, err
-	}
-	return out, l, nil
+	r, err := subledger.Reconcile(base, asAt, totals, l.groups(), true, own)
+	return r, l, err
 }

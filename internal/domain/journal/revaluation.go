@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/payables"
+	"github.com/cognizhi/fyniq/internal/domain/receivables"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -42,7 +44,7 @@ func PostRevaluation(ctx context.Context, u storage.UnitOfWork, periodID uuid.UU
 	if _, err := u.Ledger().Lock(ctx); err != nil { // ENG-47: nothing posts while the balances are read and revalued
 		return fx.Run{}, err
 	}
-	plan, err := fx.Prepare(ctx, u, periodID, payables.SubLedgers())
+	plan, err := fx.Prepare(ctx, u, periodID, SubLedgers())
 	if err != nil {
 		return fx.Run{}, err
 	}
@@ -139,7 +141,7 @@ func RevalueDue(ctx context.Context, store storage.Store, org uuid.UUID, day tim
 			if _, err := u.Ledger().Lock(ctx); err != nil { // ENG-47, as a person's run
 				return err
 			}
-			plan, err := fx.Prepare(ctx, u, id, payables.SubLedgers())
+			plan, err := fx.Prepare(ctx, u, id, SubLedgers())
 			if err != nil || !plan.Due() {
 				return err
 			}
@@ -315,4 +317,12 @@ func ReverseRevaluationsAll(ctx context.Context, store storage.Store, now time.T
 		}
 	}
 	return runs, errors.Join(errs...)
+}
+
+// SubLedgers are the sub-ledgers the month-end revaluation revalues document by document (FR-GL-04): accounts
+// payable's (rev 0.92) and accounts receivable's (rev 0.119).
+func SubLedgers() fx.SubLedgers {
+	subs := payables.SubLedgers()
+	maps.Copy(subs, receivables.SubLedgers())
+	return subs
 }
