@@ -272,6 +272,11 @@ Source: PRD-001 §8.5 · Priority S · Phase P1
 - **THEN** it takes the next DP- number and posts customer_deposit@1: Dr the money account, Cr 2410, and Cr 2200 with a part payment's GST under RND-GST-INCL once registered
 - **AND** a security deposit names no GST code (DEPOSIT-05); a deposit an invoice or a refund uses is voided only once those are (DEPOSIT-08)
 
+#### Scenario: Deducted on the invoice, built (rev 0.127)
+- **WHEN** an invoice names deposits of its customer in its currency and the amount of each, at most what is left of each and at most its total
+- **THEN** issuing it debits 1100 with the balance and 2410 with each deposit's part, takes the GST the deposits bore off its output tax, and records the uses (RND-DEPOSIT)
+- **AND** voiding or editing it reverses the uses, which reopens the deposits; a credit note deducts none (INVOICE-16)
+
 
 ### Requirement: FR-AR-18 Allocations and credits
 The system SHALL apply receipts, credit notes and deposits to documents by allocation records, each with its source, document, amount in the document currency and in base, date, and realised FX per allocation (ENG-41).

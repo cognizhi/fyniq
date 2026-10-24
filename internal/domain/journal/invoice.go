@@ -2,6 +2,7 @@ package journal
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/rounding"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -80,7 +82,11 @@ func checkInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Documen
 	out.Receivable = money.Zero(s.Base)
 	if len(out.Problems) == 0 {
 		out.Entry = entry
-		out.Receivable = entry.Lines[0].Base // invoice@1 debits 1100 first, and credit_note@1 credits it first
+		for _, l := range entry.Lines { // none when deposits cover the invoice whole
+			if s.Accounts[l.AccountID].Role == ledger.RoleAccountsReceivable {
+				out.Receivable, _ = out.Receivable.Add(l.Base)
+			}
+		}
 		if invoice.IsCreditNote(doc) {
 			out.Receivable = out.Receivable.Neg()
 		}
@@ -205,6 +211,9 @@ func (s Invoices) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, e
 			return &invoice.Error{Code: invoice.CodeNotDraft, Message: fmt.Sprintf("the invoice is %s, not a draft", doc.Status),
 				Fix: "Only a draft is issued; edit or void an issued invoice instead"}
 		}
+		if err := lockDeposits(ctx, u, doc); err != nil {
+			return err
+		}
 		// Numbered first, so its entry's memo names it; a refusal rolls the number back with everything else.
 		if doc.Number, err = u.Sequences().Number(ctx, id, doc.Type); err != nil {
 			return err
@@ -221,6 +230,9 @@ func (s Invoices) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, e
 			return c.Problems
 		}
 		if out, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
+			return err
+		}
+		if err := useDeposits(ctx, u, doc, c.Prepared.Invoice, settings); err != nil {
 			return err
 		}
 		if err := u.Documents().SetStatus(ctx, id, storage.DocumentPosted); err != nil {
@@ -276,6 +288,9 @@ func (s Invoices) Void(ctx context.Context, org, id uuid.UUID, date time.Time, r
 		if out, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
+		if err := unuseDeposits(ctx, u, doc.ID, reversal.PostingDate); err != nil { // the deposits it deducted reopen (FR-AR-09)
+			return err
+		}
 		// Its spread's releases go back on the void's date, or on their own when later (FR-GL-03): 2400 and the line's
 		// account are left as if nothing had posted.
 		if err := reverseReleases(ctx, u, doc, settings, func(e ledger.Entry) time.Time { return later(reversal.PostingDate, e.PostingDate) }, reason); err != nil {
@@ -324,6 +339,9 @@ func (s Invoices) Edit(ctx context.Context, org, id uuid.UUID, d invoice.Draft, 
 		}
 		next := doc
 		next.Version, next.Payload = doc.Version+1, b
+		if err := lockDeposits(ctx, u, doc, next); err != nil {
+			return err
+		}
 		c, err := checkInvoice(ctx, u, next, settings)
 		if err != nil {
 			return err
@@ -354,7 +372,13 @@ func (s Invoices) Edit(ctx context.Context, org, id uuid.UUID, d invoice.Draft, 
 		if out.Reversal, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
+		if err := unuseDeposits(ctx, u, doc.ID, reversal.PostingDate); err != nil {
+			return err
+		}
 		if out.Entry, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
+			return err
+		}
+		if err := useDeposits(ctx, u, edited, c.Prepared.Invoice, settings); err != nil {
 			return err
 		}
 		edited.Number = doc.Number
@@ -367,6 +391,103 @@ func (s Invoices) Edit(ctx context.Context, org, id uuid.UUID, d invoice.Draft, 
 		s.releaseNow(ctx, org, id)
 	}
 	return out, err
+}
+
+// lockDeposits locks the deposits the invoice versions deduct, in one order, so no other invoice or refund uses them
+// meanwhile (FR-AR-09).
+func lockDeposits(ctx context.Context, u storage.UnitOfWork, docs ...storage.Document) error {
+	var ids []uuid.UUID
+	for _, doc := range docs {
+		if invoice.IsCreditNote(doc) {
+			continue
+		}
+		var p struct {
+			Deposits []struct {
+				DepositID uuid.UUID `json:"deposit_id"`
+			} `json:"deposits"`
+		}
+		if err := json.Unmarshal(doc.Payload, &p); err != nil {
+			continue // the rules say why it cannot be read
+		}
+		for _, x := range p.Deposits {
+			ids = append(ids, x.DepositID)
+		}
+	}
+	return lockBills(ctx, u, ids)
+}
+
+// useDeposits records how an invoice version deducts its deposits (FR-AR-09): an allocation from the invoice to each
+// deposit with the amount it takes, its part of the deposit's base amount and of its tax (RND-DEPOSIT), and its realised
+// FX: its base part less what it takes at the invoice's rate, the last deposit taking what is left of the entry's, so
+// the allocations add up to the entry's realised FX line.
+func useDeposits(ctx context.Context, u storage.UnitOfWork, doc storage.Document, i ledger.Invoice, s ledger.Settings) error {
+	if len(i.Deposits) == 0 {
+		return nil
+	}
+	rate := money.Identity(s.Base)
+	if i.Rate != nil {
+		rate = *i.Rate
+	}
+	totals, err := ledger.TotalsOf(i)
+	if err != nil {
+		return err
+	}
+	deducted := money.Zero(i.Currency)
+	for _, d := range i.Deposits {
+		deducted, _ = deducted.Add(d.Amount)
+	}
+	receivable, _ := totals.Total.Sub(deducted)
+	full, err := rounding.FX(totals.Total, rate)
+	if err != nil {
+		return err
+	}
+	owed, err := rounding.FX(receivable, rate)
+	if err != nil {
+		return err
+	}
+	atRate, _ := full.Sub(owed) // what the deposits take at the invoice's rate, together
+	for k, d := range i.Deposits {
+		at := atRate
+		if k < len(i.Deposits)-1 {
+			if at, err = rounding.FX(d.Amount, rate); err != nil {
+				return err
+			}
+		}
+		atRate, _ = atRate.Sub(at)
+		gain, _ := d.Base.Sub(at)
+		if _, err := u.Allocations().Add(ctx, storage.NewAllocation{SourceID: doc.ID, SourceVersion: doc.Version, DocumentID: d.DepositID, On: i.Date,
+			Currency: d.Amount.Currency().Code, Amount: storage.Decimal(d.Amount.String()), BaseCurrency: s.Base.Code,
+			BaseAmount: storage.Decimal(d.Base.String()), RealisedFX: storage.Decimal(gain.String()), Tax: storage.Decimal(d.Tax.String())}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// unuseDeposits reverses on date every use of a deposit an invoice still stands by: a void or an edit reopens them.
+func unuseDeposits(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, date time.Time) error {
+	allocs, err := u.Allocations().OfSource(ctx, id)
+	if err != nil {
+		return err
+	}
+	reversed := map[uuid.UUID]bool{}
+	for _, a := range allocs {
+		if a.ReversesID != nil {
+			reversed[*a.ReversesID] = true
+		}
+	}
+	for _, a := range allocs {
+		if a.ReversesID != nil || reversed[a.ID] {
+			continue
+		}
+		reverses := a.ID
+		if _, err := u.Allocations().Add(ctx, storage.NewAllocation{SourceID: a.SourceID, SourceVersion: a.SourceVersion, DocumentID: a.DocumentID, On: date,
+			Currency: a.Currency, Amount: negated(a.Amount), BaseCurrency: a.BaseCurrency, BaseAmount: negated(a.BaseAmount), RealisedFX: negated(a.RealisedFX),
+			Tax: negated(a.Tax), ReversesID: &reverses}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // unsettled refuses to void or edit an invoice that receipts or credits settle (FR-AR-18): they are voided first, which
@@ -408,9 +529,41 @@ func replayInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Docume
 	}
 	i := p.Invoice
 	i.Memo = stored.Memo // it names the customer as they were named then
-	if p.Draft.Rate == nil && i.Currency != s.Base && len(stored.Lines) > 0 {
-		r := stored.Lines[0].Rate // 1100, in the invoice's currency, at the rate the cascade gave it
-		i.Rate = &r
+	// What each deposit's use took when it posted, from the allocations of this version, whatever has become of the
+	// deposits since (FR-AR-09).
+	if len(p.Draft.Deposits) > 0 {
+		allocs, err := u.Allocations().OfSource(ctx, doc.ID)
+		if err != nil {
+			return ledger.Entry{}, err
+		}
+		i.Deposits = nil
+		for _, x := range p.Draft.Deposits {
+			use := ledger.InvoiceDeposit{DepositID: x.DepositID, Amount: x.Amount, Base: money.Zero(s.Base), Tax: money.Zero(s.Base)}
+			if dep, err := u.Documents().Get(ctx, x.DepositID); err == nil {
+				use.Number = dep.Number
+			}
+			for _, a := range allocs {
+				if a.ReversesID != nil || a.SourceVersion != doc.Version || a.DocumentID != x.DepositID {
+					continue
+				}
+				if use.Base, err = money.ParseStored(string(a.BaseAmount), s.Base); err != nil {
+					return ledger.Entry{}, err
+				}
+				if use.Tax, err = money.ParseStored(string(cmpDecimal(a.Tax)), s.Base); err != nil {
+					return ledger.Entry{}, err
+				}
+			}
+			i.Deposits = append(i.Deposits, use)
+		}
+	}
+	if p.Draft.Rate == nil && i.Currency != s.Base {
+		for _, l := range stored.Lines { // a line in the invoice's currency, at the rate the cascade gave it
+			if l.Amount.Currency() == i.Currency {
+				r := l.Rate
+				i.Rate = &r
+				break
+			}
+		}
 	}
 	taxed := false
 	for _, l := range stored.Lines {
@@ -425,4 +578,12 @@ func replayInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Docume
 		return ledger.ReplayCreditNote(e.RuleVersion, i, s)
 	}
 	return ledger.ReplayInvoice(e.RuleVersion, i, s)
+}
+
+// cmpDecimal is a stored decimal, zero when it is empty.
+func cmpDecimal(d storage.Decimal) storage.Decimal {
+	if d == "" {
+		return "0"
+	}
+	return d
 }

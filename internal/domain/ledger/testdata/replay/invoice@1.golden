@@ -36,3 +36,23 @@ memo "Acme Analytics INV-0140"
 line 1 0192f1a0-0000-7000-8000-000000001100 13080.00 SGD × 1 SGD→SGD (base) = 13080.00 SGD "Acme Analytics INV-0140"
 line 2 0192f1a0-0000-7000-8000-000000002400 -12000.00 SGD × 1 SGD→SGD (base) = -12000.00 SGD "Line 4010"
 line 3 0192f1a0-0000-7000-8000-000000002200 -1080.00 SGD × 1 SGD→SGD (base) = -1080.00 SGD "Output tax"
+== rev 0.127: a part payment deducted
+posting_date 2026-10-14
+source invoice 0192f1a0-0000-7000-8000-0000000a1110 v1
+rule_version invoice@1
+posting_identity invoice:0192f1a0-0000-7000-8000-0000000a1110:v1:invoice@1
+memo "Acme Analytics INV-0140"
+line 1 0192f1a0-0000-7000-8000-000000001100 1090.00 SGD × 1 SGD→SGD (base) = 1090.00 SGD "Acme Analytics INV-0140"
+line 2 0192f1a0-0000-7000-8000-000000002410 1000.00 SGD × 1 SGD→SGD (base) = 1000.00 SGD "Deposit DP-0001 deducted"
+line 3 0192f1a0-0000-7000-8000-000000004020 -2000.00 SGD × 1 SGD→SGD (base) = -2000.00 SGD "Line 4020"
+line 4 0192f1a0-0000-7000-8000-000000002200 -90.00 SGD × 1 SGD→SGD (base) = -90.00 SGD "Output tax, less what the deposits bore"
+== rev 0.127: a USD deposit at another rate
+posting_date 2026-10-14
+source invoice 0192f1a0-0000-7000-8000-0000000a1110 v3
+rule_version invoice@1
+posting_identity invoice:0192f1a0-0000-7000-8000-0000000a1110:v3:invoice@1
+memo "Globex INV-0142"
+line 1 0192f1a0-0000-7000-8000-000000001100 900.00 USD × 1.30 USD→SGD (document) = 1170.00 SGD "Globex INV-0142"
+line 2 0192f1a0-0000-7000-8000-000000002410 140.00 SGD × 1 SGD→SGD (base) = 140.00 SGD "Deposit DP-0001 deducted"
+line 3 0192f1a0-0000-7000-8000-000000004020 -1000.00 USD × 1.30 USD→SGD (document) = -1300.00 SGD "Line 4020"
+line 4 0192f1a0-0000-7000-8000-000000007030 -10.00 SGD × 1 SGD→SGD (base) = -10.00 SGD "Realised FX on the deposits"

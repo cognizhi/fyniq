@@ -28,6 +28,7 @@ const (
 const (
 	CodeInvoiceTotal = "LEDGER-31" // an invoice's total is not more than zero: a credit note records what the company owes back
 	CodeGSTRate      = "LEDGER-32" // a line's GST rate that is not a fraction such as 0.09
+	CodeDeposit      = "LEDGER-33" // a deposit an invoice deducts that is not in its currency, or more than its total
 )
 
 // InvoiceLine is one line of an invoice as the rules read it: the account it earns, its net in the invoice's currency
@@ -55,6 +56,19 @@ type Invoice struct {
 	// GSTMethod is how RND-GST-EXCL rounds it: per GST code's subtotal, the default, or per line (the setting
 	// gst.round_per_line, applied consistently).
 	GSTMethod rounding.GSTMethod
+	// Deposits are the customer's deposits the invoice deducts (FR-AR-09; rev 0.127): none for an invoice before then.
+	Deposits []InvoiceDeposit
+}
+
+// InvoiceDeposit is a customer deposit an invoice deducts, as the rule reads it: the amount it takes in the invoice's
+// currency, and the part of the deposit's base amount (Base) and of the output tax it bore (Tax) that amount takes
+// under RND-DEPOSIT, in the base currency.
+type InvoiceDeposit struct {
+	DepositID uuid.UUID
+	Number    string
+	Amount    money.Money
+	Base      money.Money
+	Tax       money.Money
 }
 
 // InvoiceIdentity is the posting identity of an invoice version under a rule version (§11.4).
@@ -117,6 +131,13 @@ func (i Invoice) method() rounding.GSTMethod {
 //     RND-FX (ENG-42: the net in SGD, then the GST on it), per GST code's subtotal or per line;
 //   - and, for an invoice in another currency, what makes the entry balance in the base currency to 7030: the cents
 //     RND-FX and RND-GST-EXCL leave between the total and its parts.
+//
+// An invoice that deducts customer deposits (FR-AR-09; rev 0.127, the owner's decision of 24 Oct 2026) debits 1100
+// with its total less what they take, at its rate (no line when nothing is left), and 2410 with each deposit's base
+// part less its tax part, in the base currency; its output tax line takes what the deposits bore off the GST it
+// charges, so GST is accounted for once (IRAS: GST on the balance); and what the deposits' parts came to at the rates
+// they came in, against what they take at the invoice's rate, goes to 7030 as realised FX (IFRIC 22 would put it in
+// revenue) [verify]. An invoice without deposits posts as it always did.
 //
 // Every rule is checked first and every failure returned together (ENG-22): the invoice is rejected whole.
 func PostInvoice(i Invoice, s Settings) (Entry, error) {
@@ -235,6 +256,38 @@ func PostInvoice(i Invoice, s Settings) (Entry, error) {
 		add(CodeInvoiceTotal, "lines", fmt.Sprintf("the invoice's total is %s %s", totals.Total, i.Currency),
 			"An invoice's total is more than zero; record what the company owes a customer as a credit note")
 	}
+	deducted, depositTax, depositBase := money.Zero(i.Currency), money.Zero(s.Base), money.Zero(s.Base)
+	deposits, hasDeposits := s.byRole(RoleCustomerDeposits)
+	for n, d := range i.Deposits {
+		f := func(name string) string { return fmt.Sprintf("deposits[%d].%s", n+1, name) }
+		switch {
+		case d.Amount.Currency() != i.Currency || d.Amount.Sign() <= 0:
+			add(CodeDeposit, f("amount"), fmt.Sprintf("the deposit deducted is %s %s", d.Amount, d.Amount.Currency()), fmt.Sprintf("Enter a positive amount in %s", i.Currency))
+			continue
+		case d.Base.Currency() != s.Base || d.Tax.Currency() != s.Base || d.Base.Sign() < 0 || d.Tax.Sign() < 0:
+			add(CodeDeposit, f("amount"), fmt.Sprintf("the deposit's parts are %s %s and %s %s of tax", d.Base, d.Base.Currency(), d.Tax, d.Tax.Currency()),
+				fmt.Sprintf("Its parts are amounts in %s, not below zero", s.Base))
+			continue
+		}
+		if c, _ := d.Tax.Cmp(d.Base); c > 0 {
+			add(CodeDeposit, f("amount"), fmt.Sprintf("the deposit's tax part %s is more than its base part %s", d.Tax, d.Base), "Its tax part is a part of its base amount")
+			continue
+		}
+		deducted, _ = deducted.Add(d.Amount)
+		depositTax, _ = depositTax.Add(d.Tax)
+		depositBase, _ = depositBase.Add(d.Base)
+	}
+	if len(i.Deposits) > 0 {
+		if !hasDeposits {
+			add(CodeSystemRole, "deposits", "the chart has no customer deposits account", "Load the standard chart's 2410 Customer deposits & retainers, or give a liability account the role")
+		}
+		if !depositTax.IsZero() && !hasGST {
+			add(CodeSystemRole, "deposits", "the chart has no GST control account for the output tax the deposits bore", "Load the standard chart's 2200 GST control, or give a liability account the role")
+		}
+		if c, err := deducted.Cmp(totals.Total); err == nil && c > 0 {
+			add(CodeDeposit, "deposits", fmt.Sprintf("the deposits deduct %s %s from a total of %s", deducted, i.Currency, totals.Total), "Deduct at most the invoice's total")
+		}
+	}
 	var gstBase money.Money
 	if len(probs) == 0 && len(baseNets) > 0 {
 		subtotals, err := rounding.GSTExcl(baseNets, i.method())
@@ -249,16 +302,56 @@ func PostInvoice(i Invoice, s Settings) (Entry, error) {
 	if len(probs) > 0 {
 		return Entry{}, probs
 	}
-	if !gstBase.IsZero() {
+	if !depositTax.IsZero() { // the deposits' output tax, accounted for when they came in, comes off the invoice's
+		if gstBase.Currency() != s.Base {
+			gstBase = money.Zero(s.Base)
+		}
+		gstBase, _ = gstBase.Sub(depositTax)
+		if !gstBase.IsZero() {
+			lines = append(lines, Line{AccountID: gstControl.ID, Amount: gstBase.Neg(), Rate: money.Identity(s.Base), Base: gstBase.Neg(),
+				Description: "Output tax, less what the deposits bore"})
+			baseTotal, _ = baseTotal.Add(gstBase.Neg())
+		}
+	} else if !gstBase.IsZero() {
 		lines = append(lines, Line{AccountID: gstControl.ID, Amount: gstBase.Neg(), Rate: money.Identity(s.Base), Base: gstBase.Neg(), Description: "Output tax"})
 		baseTotal, _ = baseTotal.Add(gstBase.Neg())
 	}
-	arBase, err := rounding.FX(totals.Total, rate)
+	receivable, _ := totals.Total.Sub(deducted)
+	arBase, err := rounding.FX(receivable, rate)
 	if err != nil {
 		return Entry{}, Problems{{CodeBaseRange, "lines", fmt.Sprintf("at this rate the total does not fit: %v", err), "Check the amounts and the rate"}}
 	}
-	lines = append([]Line{{AccountID: ar.ID, Amount: totals.Total, Rate: rate, Base: arBase, Description: i.Memo}}, lines...)
+	var head []Line
+	if !receivable.IsZero() {
+		head = append(head, Line{AccountID: ar.ID, Amount: receivable, Rate: rate, Base: arBase, Description: i.Memo})
+	}
 	baseTotal, _ = baseTotal.Add(arBase)
+	for _, d := range i.Deposits {
+		held, _ := d.Base.Sub(d.Tax)
+		if held.IsZero() {
+			continue
+		}
+		head = append(head, Line{AccountID: deposits.ID, Amount: held, Rate: money.Identity(s.Base), Base: held, Description: "Deposit " + d.Number + " deducted"})
+		baseTotal, _ = baseTotal.Add(held)
+	}
+	lines = append(head, lines...)
+	if len(i.Deposits) > 0 { // realised FX on the deposits: their base parts against what they take at the invoice's rate
+		fullBase, err := rounding.FX(totals.Total, rate)
+		if err != nil {
+			return Entry{}, Problems{{CodeBaseRange, "lines", fmt.Sprintf("at this rate the total does not fit: %v", err), "Check the amounts and the rate"}}
+		}
+		atRate, _ := fullBase.Sub(arBase)
+		gain, _ := depositBase.Sub(atRate)
+		if !gain.IsZero() {
+			fxAcc, ok := s.byRole(RoleFXRounding)
+			if !ok {
+				return Entry{}, Problems{{CodeSystemRole, "deposits", "the chart has no FX and rounding account for the realised FX on the deposits",
+					"Load the standard chart's 7030 FX & rounding differences, or give an account the role"}}
+			}
+			lines = append(lines, Line{AccountID: fxAcc.ID, Amount: gain.Neg(), Rate: money.Identity(s.Base), Base: gain.Neg(), Description: "Realised FX on the deposits"})
+			baseTotal, _ = baseTotal.Add(gain.Neg())
+		}
+	}
 	if !baseTotal.IsZero() { // only for an invoice in another currency: an SGD invoice's lines are their own base amounts
 		fxAcc, ok := s.byRole(RoleFXRounding)
 		if !ok {

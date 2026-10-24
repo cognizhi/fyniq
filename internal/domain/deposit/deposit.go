@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
+	"github.com/cognizhi/fyniq/internal/domain/rounding"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -261,8 +262,8 @@ func memo(c storage.Contact, doc storage.Document) string {
 }
 
 // Open is a posted deposit as an invoice or a refund finds it: its customer and kind, its gross amount in its currency,
-// what it came to in the base currency (gross, its GST and the rest, which 2410 holds), and what is used of it (deducted
-// by invoices or refunded) and left, in its currency.
+// what it came to in the base currency (gross, its GST and the rest, which 2410 holds), what is used of it (deducted by
+// invoices or refunded) and left in its currency, and what is left of its base amount and of its GST.
 type Open struct {
 	Deposit  storage.Document
 	Number   string
@@ -274,11 +275,24 @@ type Open struct {
 	Net      money.Money
 	Used     money.Money
 	Left     money.Money
+	BaseLeft money.Money
+	GSTLeft  money.Money
 }
 
-// OpenDeposit is what is left of a posted deposit: CodeNotDeposit when the document is not one. s finds the accounts
-// its entry posted to.
-func OpenDeposit(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, s ledger.Settings) (Open, error) {
+// Use is what a use of amount of what is left takes of the deposit's base amount and of its GST (RND-DEPOSIT): a use
+// of all that is left takes all of both.
+func (o Open) Use(amount money.Money) (base, tax money.Money, err error) {
+	if base, err = rounding.DepositPart(o.BaseLeft, amount, o.Left); err != nil {
+		return
+	}
+	tax, err = rounding.DepositPart(o.GSTLeft, amount, o.Left)
+	return
+}
+
+// OpenDeposit is what is left of a posted deposit: CodeNotDeposit when the document is not one. base is the base
+// currency; the accounts its entry posted to are read for their roles. The uses by except (an invoice being edited or
+// shown, whose own uses are its to change) are left out; uuid.Nil leaves none out.
+func OpenDeposit(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, base money.Currency, except uuid.UUID) (Open, error) {
 	doc, err := u.Documents().Get(ctx, id)
 	if errors.Is(err, ports.ErrNotFound) {
 		return Open{}, &Error{CodeNotDeposit, fmt.Sprintf("deposit %s does not exist in this organisation", id), "Choose one of the customer's deposits"}
@@ -289,7 +303,7 @@ func OpenDeposit(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, s ledg
 	if !IsDeposit(doc) || doc.Status != storage.DocumentPosted {
 		return Open{}, &Error{CodeNotDeposit, fmt.Sprintf("%s is not a posted customer deposit", cmp(doc.Number, doc.ID.String())), "Choose one of the customer's deposits"}
 	}
-	d, err := Read(doc, s.Base)
+	d, err := Read(doc, base)
 	if err != nil {
 		return Open{}, err
 	}
@@ -297,32 +311,58 @@ func OpenDeposit(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, s ledg
 	if err != nil {
 		return Open{}, err
 	}
-	out := Open{Deposit: doc, Number: doc.Number, Customer: d.CustomerID, Kind: d.Kind, Total: d.Amount, Base: money.Zero(s.Base), GST: money.Zero(s.Base),
-		Net: money.Zero(s.Base), Used: money.Zero(d.Currency)}
+	out := Open{Deposit: doc, Number: doc.Number, Customer: d.CustomerID, Kind: d.Kind, Total: d.Amount, Base: money.Zero(base), GST: money.Zero(base),
+		Net: money.Zero(base), Used: money.Zero(d.Currency)}
 	for _, l := range e.Lines {
-		base, err := money.ParseStored(string(l.BaseAmount), s.Base)
+		b, err := money.ParseStored(string(l.BaseAmount), base)
 		if err != nil {
 			return Open{}, err
 		}
-		switch {
-		case l.AccountID == d.AccountID:
-			out.Base = base
-		case s.Accounts[l.AccountID].Role == ledger.RoleCustomerDeposits:
-			out.Net = base.Neg()
-		case s.Accounts[l.AccountID].Role == ledger.RoleGSTControl:
-			out.GST = base.Neg()
+		if l.AccountID == d.AccountID {
+			out.Base = b
+			continue
+		}
+		acc, err := u.Accounts().Get(ctx, l.AccountID)
+		if err != nil {
+			return Open{}, err
+		}
+		switch string(acc.Role) {
+		case ledger.RoleCustomerDeposits:
+			out.Net = b.Neg()
+		case ledger.RoleGSTControl:
+			out.GST = b.Neg()
 		}
 	}
+	out.BaseLeft, out.GSTLeft = out.Base, out.GST
 	allocs, err := u.Allocations().OfDocument(ctx, doc.ID)
 	if err != nil {
 		return Open{}, err
 	}
 	for _, a := range allocs {
+		if except != uuid.Nil && a.SourceID == except {
+			continue
+		}
 		x, err := money.ParseStored(string(a.Amount), d.Currency)
 		if err != nil {
 			return Open{}, err
 		}
+		y, err := money.ParseStored(string(a.BaseAmount), base)
+		if err != nil {
+			return Open{}, err
+		}
+		t := money.Zero(base)
+		if a.Tax != "" {
+			if t, err = money.ParseStored(string(a.Tax), base); err != nil {
+				return Open{}, err
+			}
+		}
 		if out.Used, err = out.Used.Add(x); err != nil {
+			return Open{}, err
+		}
+		if out.BaseLeft, err = out.BaseLeft.Sub(y); err != nil {
+			return Open{}, err
+		}
+		if out.GSTLeft, err = out.GSTLeft.Sub(t); err != nil {
 			return Open{}, err
 		}
 	}

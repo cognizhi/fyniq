@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What the invoice deducts of it, in the invoice's currency."
+    },
+    "deposit_id": {
+      "description": "The deposit.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa0"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "deposit_id",
+    "amount"
+  ],
+  "title": "InvoiceDepositUse",
+  "type": "object"
+}

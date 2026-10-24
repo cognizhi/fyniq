@@ -198,3 +198,119 @@ func TestEveryCustomerDepositRuleVersionReplaysItsGoldenEntries(t *testing.T) {
 		t.Errorf("an unknown rule version: %v", err)
 	}
 }
+
+func deducting(t testing.TB, amount, base, tax string, cur money.Currency) InvoiceDeposit {
+	return InvoiceDeposit{DepositID: depositID, Number: "DP-0001", Amount: amt(t, amount, cur), Base: amt(t, base, sgd), Tax: amt(t, tax, sgd)}
+}
+
+// Worked by hand (FR-AR-09, the owner's decision of 24 Oct 2026: the final invoice deducts the deposit; IRAS: GST on
+// the balance). An invoice of S$2,000.00 at 9% (S$2,180.00):
+//   - deducting a part payment of S$1,090.00 that bore S$90.00: Dr 1100 1,090.00, Dr 2410 1,000.00, Cr 4020 2,000.00,
+//     Cr 2200 90.00 (180 less the 90 the deposit bore);
+//   - deducting a security deposit of S$500.00: Dr 1100 1,680.00, Dr 2410 500.00, Cr 4020 2,000.00, Cr 2200 180.00;
+//   - an invoice of S$1,090.00 a part payment of S$1,090.00 covers whole: Dr 2410 1,000.00, Cr 4020 1,000.00, no 1100
+//     and no GST line;
+//   - a USD invoice of USD 1,000.00 out of scope at 1.30 deducting a security deposit of USD 100.00 that came in at 1.40
+//     (S$140.00): Dr 1100 USD 900.00 = S$1,170.00, Dr 2410 140.00, Cr 4020 USD 1,000.00 = S$1,300.00, Cr 7030 S$10.00 of
+//     realised FX: the deposit came to more than it takes at the invoice's rate (1,300 − 1,170 = 130).
+//
+// req: FR-AR-09
+// req: ledger/posting-rules Posting an invoice
+func TestAnInvoiceDeductsDeposits(t *testing.T) {
+	s := depositing()
+	with := func(i Invoice, ds ...InvoiceDeposit) Invoice { i.Deposits = ds; return i }
+	full := sgdInvoice(invoiceLine(t, consulting, "2000.00", sgd, "SR", "0.09"))
+	usdInvoice := Invoice{ID: invoiceID, Version: 1, Date: day, Memo: "Globex INV-0141", Currency: usd, Rate: usdRate(t, "1.30"),
+		Lines: []InvoiceLine{invoiceLine(t, consulting, "1000.00", usd, "OS", "")}}
+	for _, c := range []struct {
+		name string
+		i    Invoice
+		want string
+	}{
+		{"a part payment", with(full, deducting(t, "1090.00", "1090.00", "90.00", sgd)),
+			"1100 1090.00 SGD = 1090.00; 2410 1000.00 SGD = 1000.00; 4020 -2000.00 SGD = -2000.00; 2200 -90.00 SGD = -90.00"},
+		{"a security deposit", with(full, deducting(t, "500.00", "500.00", "0.00", sgd)),
+			"1100 1680.00 SGD = 1680.00; 2410 500.00 SGD = 500.00; 4020 -2000.00 SGD = -2000.00; 2200 -180.00 SGD = -180.00"},
+		{"covered whole", with(sgdInvoice(invoiceLine(t, consulting, "1000.00", sgd, "SR", "0.09")), deducting(t, "1090.00", "1090.00", "90.00", sgd)),
+			"2410 1000.00 SGD = 1000.00; 4020 -1000.00 SGD = -1000.00"},
+		{"in USD, at another rate", with(usdInvoice, deducting(t, "100.00", "140.00", "0.00", usd)),
+			"1100 900.00 USD = 1170.00; 2410 140.00 SGD = 140.00; 4020 -1000.00 USD = -1300.00; 7030 -10.00 SGD = -10.00"},
+	} {
+		e, err := PostInvoice(c.i, s)
+		if err != nil || legs(s, e) != c.want {
+			t.Errorf("%s:\n got %s %v\nwant %s", c.name, legs(s, e), err, c.want)
+		}
+	}
+	for name, c := range map[string]struct {
+		i    Invoice
+		s    Settings
+		want []string
+	}{
+		"more than the total":   {with(full, deducting(t, "2180.01", "2180.01", "0.00", sgd)), s, []string{CodeDeposit}},
+		"in another currency":   {with(full, deducting(t, "10.00", "13.50", "0.00", usd)), s, []string{CodeDeposit}},
+		"tax above its base":    {with(full, deducting(t, "10.00", "10.00", "10.01", sgd)), s, []string{CodeDeposit}},
+		"no deposits account":   {with(full, deducting(t, "10.00", "10.00", "0.00", sgd)), without(s, depositsAcc), []string{CodeSystemRole}},
+		"nothing of a deposit":  {with(full, deducting(t, "0.00", "0.00", "0.00", sgd)), s, []string{CodeDeposit}},
+		"two deposits too many": {with(full, deducting(t, "1500.00", "1500.00", "0.00", sgd), deducting(t, "1000.00", "1000.00", "0.00", sgd)), s, []string{CodeDeposit}},
+	} {
+		if _, err := PostInvoice(c.i, c.s); !slices.Equal(codes(err), c.want) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	if _, err := PostCreditNote(with(full, deducting(t, "10.00", "10.00", "0.00", sgd)), s); !slices.Contains(codes(err), CodeDeposit) {
+		t.Errorf("a credit note deducting a deposit: %v", err)
+	}
+}
+
+// Any invoice the rule accepts with deposits balances in the base currency (INV-01), debits 1100 with exactly its total
+// less what the deposits take in its currency, and accounts for GST once: its output tax line and the deposits' tax
+// parts add up to the GST it charges.
+// req: QA-ENG-03
+// req: INV-01
+// req: FR-AR-09
+func TestAnInvoiceWithDepositsBalances(t *testing.T) {
+	s := depositing()
+	rapid.Check(t, func(t *rapid.T) {
+		cur := rapid.SampledFrom([]money.Currency{sgd, usd}).Draw(t, "currency")
+		i := Invoice{ID: invoiceID, Version: 1, Date: day, Currency: cur, Lines: []InvoiceLine{{AccountID: consulting.ID,
+			Net: money.FromMinor(rapid.Int64Range(100, 9_999_999).Draw(t, "net"), cur), GSTCode: "SR", GSTRate: "0.09"}}}
+		if cur == usd {
+			r, _ := money.ParseRate(rapid.SampledFrom([]string{"1.3472", "1.5", "0.7"}).Draw(t, "rate"), usd, sgd, "test")
+			i.Rate = &r
+		}
+		totals, _ := TotalsOf(i)
+		whole, _ := totals.Total.Minor()
+		used := rapid.Int64Range(1, whole).Draw(t, "deducted")
+		base := money.FromMinor(rapid.Int64Range(0, 2*whole).Draw(t, "base"), sgd)
+		tax := money.FromMinor(rapid.Int64Range(0, 1).Draw(t, "taxed")*rapid.Int64Range(0, func() int64 { b, _ := base.Minor(); return b }()).Draw(t, "tax"), sgd)
+		i.Deposits = []InvoiceDeposit{{DepositID: depositID, Number: "DP-0001", Amount: money.FromMinor(used, cur), Base: base, Tax: tax}}
+		e, err := PostInvoice(i, s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum, onAR, onGST := money.Zero(sgd), money.Zero(cur), money.Zero(sgd)
+		for _, l := range e.Lines {
+			sum, _ = sum.Add(l.Base)
+			switch l.AccountID {
+			case receivables.ID:
+				onAR, _ = onAR.Add(l.Amount)
+			case gstControl.ID:
+				onGST, _ = onGST.Add(l.Base.Neg())
+			}
+		}
+		owed, _ := totals.Total.Sub(i.Deposits[0].Amount)
+		charged, _ := onGST.Add(tax)
+		plain := i
+		plain.Deposits = nil
+		p, _ := PostInvoice(plain, s)
+		gst := money.Zero(sgd)
+		for _, l := range p.Lines {
+			if l.AccountID == gstControl.ID {
+				gst = l.Base.Neg()
+			}
+		}
+		if !sum.IsZero() || !onAR.Equal(owed) || !charged.Equal(gst) {
+			t.Fatalf("%s: off by %s; 1100 %s for %s owed; GST %s and %s of tax against %s", legs(s, e), sum, onAR, owed, onGST, tax, gst)
+		}
+	})
+}

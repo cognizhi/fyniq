@@ -22,19 +22,22 @@ func allocationOf(r sqlcdb.AllocationsOfDocumentRow) storage.Allocation {
 	return storage.Allocation{ID: r.ID, SourceID: r.SourceID, SourceVersion: int(r.SourceVersion), DocumentID: r.DocumentID, On: r.OnDate,
 		Currency: r.Currency, Amount: storage.Decimal(r.Amount), BaseCurrency: r.BaseCurrency,
 		BaseAmount: storage.Decimal(r.BaseAmount), RealisedFX: storage.Decimal(r.RealisedFx), Tolerance: storage.Decimal(r.Tolerance),
-		ReversesID: r.ReversesID, WrittenBy: r.WrittenBy, WrittenAt: r.WrittenAt}
+		Tax: storage.Decimal(r.Tax), ReversesID: r.ReversesID, WrittenBy: r.WrittenBy, WrittenAt: r.WrittenAt}
 }
 
 func (r allocations) Add(ctx context.Context, n storage.NewAllocation) (storage.Allocation, error) {
 	if err := r.u.check(); err != nil {
 		return storage.Allocation{}, err
 	}
-	tolerance := string(n.Tolerance)
+	tolerance, tax := string(n.Tolerance), string(n.Tax)
 	if tolerance == "" {
 		tolerance = "0"
 	}
+	if tax == "" {
+		tax = "0"
+	}
 	row, err := r.u.q.InsertAllocation(ctx, sqlcdb.InsertAllocationParams{SourceID: n.SourceID, SourceVersion: int32(n.SourceVersion), // #nosec G115 -- a document's version
-		DocumentID: n.DocumentID, OnDate: dateOf(n.On), Amount: string(n.Amount), BaseAmount: string(n.BaseAmount), RealisedFx: string(n.RealisedFX), Tolerance: tolerance,
+		DocumentID: n.DocumentID, OnDate: dateOf(n.On), Amount: string(n.Amount), BaseAmount: string(n.BaseAmount), RealisedFx: string(n.RealisedFX), Tolerance: tolerance, Tax: tax,
 		ReversesID: n.ReversesID, WrittenBy: r.u.actor(ctx), WrittenAt: r.u.store.clock.Now(), Currency: n.Currency, BaseCurrency: n.BaseCurrency})
 	if errors.Is(mapError(err), ports.ErrNotFound) {
 		return storage.Allocation{}, &storage.Error{Code: storage.CodeAllocation, Message: fmt.Sprintf("%s or %s is not a currency", n.Currency, n.BaseCurrency)}
@@ -48,6 +51,9 @@ func (r allocations) Add(ctx context.Context, n storage.NewAllocation) (storage.
 		"realised_fx": {nil, string(a.RealisedFX)}}
 	if !isZeroText(string(a.Tolerance)) {
 		changes["tolerance"] = [2]any{nil, string(a.Tolerance)}
+	}
+	if !isZeroText(string(a.Tax)) {
+		changes["tax"] = [2]any{nil, string(a.Tax)}
 	}
 	if a.ReversesID != nil {
 		changes["reverses_id"] = [2]any{nil, a.ReversesID.String()}
