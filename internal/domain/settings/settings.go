@@ -125,6 +125,9 @@ var Catalogue = []Definition{
 	{Key: "sales.payment_terms_days", Group: "Defaults", Label: "Payment terms for invoices", Kind: Days, Recommended: "30",
 		Reason: "An invoice to a customer with no terms of its own falls due 30 days after its date",
 		Guide:  guide + "payment-terms", Requirement: "FR-ORG-04", Min: "0", Max: "365"},
+	{Key: "sales.simplified_tax_invoices", Group: "Defaults", Label: "Simplified tax invoices up to S$1,000", Kind: Switch, Recommended: "false",
+		Reason: "Every invoice is a full tax invoice, with the customer's name and address and the GST breakdown that customers' accounts teams ask for",
+		Guide:  guide + "simplified-tax-invoices", Requirement: "FR-AR-05"},
 }
 
 // Lookup returns the setting with key, if there is one.

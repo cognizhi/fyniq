@@ -114,6 +114,47 @@ func TotalsOf(i Invoice) (InvoiceTotals, error) {
 	return out, err
 }
 
+// BaseTotalsOf are an invoice's totals in the base currency as invoice@1 posts them, for the base amounts a foreign-
+// currency tax invoice shows (FR-AR-05: net, GST and gross in SGD): each line's net under RND-FX at the invoice's rate,
+// RND-GST-EXCL over those base nets (ENG-42), which is the output tax posted before deposits, and their sum. An invoice
+// in the base currency has its own totals.
+func BaseTotalsOf(i Invoice, base money.Currency) (InvoiceTotals, error) {
+	if i.Currency == base {
+		return TotalsOf(i)
+	}
+	if i.Rate == nil || i.Rate.From != i.Currency || i.Rate.To != base {
+		return InvoiceTotals{}, fmt.Errorf("ledger: an invoice in %s needs a rate into %s", i.Currency, base)
+	}
+	out := InvoiceTotals{Net: money.Zero(base), GST: money.Zero(base)}
+	var nets []rounding.GSTNet
+	for _, l := range i.Lines {
+		b, err := rounding.FX(l.Net, *i.Rate)
+		if err != nil {
+			return out, err
+		}
+		if out.Net, err = out.Net.Add(b); err != nil {
+			return out, err
+		}
+		if l.GSTRate != "" {
+			nets = append(nets, rounding.GSTNet{Code: l.GSTCode, Rate: l.GSTRate, Net: b})
+		}
+	}
+	if len(nets) > 0 {
+		var err error
+		if out.Subtotals, err = rounding.GSTExcl(nets, i.method()); err != nil {
+			return out, err
+		}
+		for _, s := range out.Subtotals {
+			if out.GST, err = out.GST.Add(s.GST); err != nil {
+				return out, err
+			}
+		}
+	}
+	var err error
+	out.Total, err = out.Net.Add(out.GST)
+	return out, err
+}
+
 func (i Invoice) method() rounding.GSTMethod {
 	if i.GSTMethod == "" {
 		return rounding.GSTPerSubtotal

@@ -182,6 +182,11 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **WHEN** the invoice total is up to S$1,000
 - **THEN** a simplified tax invoice may be issued
 
+#### Scenario: Tax invoices as built (rev 0.132)
+- **WHEN** an invoice is rendered with its customer's template
+- **THEN** once GST-registered on its date it is a tax invoice with every particular, its totals in SGD in another currency, and the render service names any particular it lacks
+- **AND** with sales.simplified_tax_invoices on (off by default), one up to S$1,000.00 with GST is simplified; a draft dated over 30 days before today shows ⚠ INVOICE-LATE
+
 ### Requirement: FR-AR-06 Branded PDF templates, email and online view
 The system SHALL produce invoices as branded PDFs from templates made in the template editor (§8.25), several per organisation, send them by email from the platform with tracking, and give each a secure online view link.
 

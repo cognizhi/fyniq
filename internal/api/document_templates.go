@@ -503,7 +503,17 @@ func (a *API) renderDocument(ctx context.Context, documentType string, c doctemp
 		return render.Response{}, problem(doctemplate.CodeRenderer, "No render service is configured, so the document cannot be rendered.",
 			"Ask the operator to configure the render service; templates without IRAS particulars and emails publish without it")
 	}
-	res, err := a.deps.Renderer.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: sampleCreated(d), Check: check, Pages: pages})
+	return a.render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: sampleCreated(d), Check: check, Pages: pages})
+}
+
+// renderDocumentAt renders c with d as a document issued at created, finding its particulars.
+func (a *API) renderDocumentAt(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time) (render.Response, error) {
+	return a.render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: created, Check: true})
+}
+
+// render sends r to the render service, turning its refusals into problems.
+func (a *API) render(ctx context.Context, r render.Request) (render.Response, error) {
+	res, err := a.deps.Renderer.Render(ctx, r)
 	var rp *render.Problem
 	switch {
 	case err == nil:

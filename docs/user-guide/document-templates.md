@@ -3,7 +3,7 @@ key: settings.templates
 title: Design your documents with templates
 mode: basic
 roles: [owner, controller, accountant, ar_specialist, ap_specialist, auditor]
-requirements: [FR-TPL-01, FR-TPL-02, FR-TPL-03, FR-TPL-04, FR-TPL-05, FR-TPL-07]
+requirements: [FR-TPL-01, FR-TPL-02, FR-TPL-03, FR-TPL-04, FR-TPL-05, FR-TPL-07, FR-AR-05]
 ---
 
 # Design your documents with templates
@@ -68,6 +68,25 @@ In **Settings → Templates**, an Owner or a Controller selects **Change default
 and chooses one of its published templates, or the Classic starter. Each published template was approved
 when it was published, so choosing among them needs no second approval. A customer's or supplier's own
 template, chosen with **Templates** next to the contact in **Contacts**, comes before the default.
+
+## What an invoice shows
+
+An invoice renders with the template that applies to its customer, filled from the invoice itself:
+
+- **Before the company is GST-registered** on the invoice's date, the title is "Invoice" and no GST is
+  shown.
+- **Once registered**, it is a **tax invoice**: the words "Tax Invoice", your company's name, address and
+  GST registration number, the invoice's number and date, the customer's name and address, each line's
+  description and GST rate, the total before GST, the GST and the total with GST.
+- **In another currency**, it also shows the total before GST, the GST and the total with GST in SGD, at
+  the invoice's rate. The GST in SGD is the output tax the invoice accounts for.
+- **A simplified tax invoice**, when **Simplified tax invoices up to S$1,000** is on in
+  **Settings → Organisation** and the total with GST is S$1,000.00 or less, shows the total with GST and
+  says "Price payable includes GST." instead of the customer's details and the GST breakdown.
+- **Paid** shows what deposits, receipts and credits have settled, and **Amount due** what is left.
+
+A draft invoice whose date is more than 30 days before today shows ⚠: IRAS expects a tax invoice within
+30 days of the time of supply. It can still be issued.
 
 ## Move templates with a bundle
 

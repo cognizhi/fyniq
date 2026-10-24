@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13]
+requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AR-05]
 status: draft
 ---
 
@@ -90,6 +90,17 @@ see the list. See [Bills](bills.md).
 - IRAS accepts either, as long as the company uses the same one on every document.
 - On a bill, the input tax is the GST the supplier states. Fyniq works it out again by the method
   chosen here, and shows ⚠ when the two differ, even by a cent, for the approver to check.
+
+## Simplified tax invoices
+
+- **Simplified tax invoices up to S$1,000** is off: every invoice from a GST-registered company is a
+  full tax invoice, with the customer's name and address, the amount before GST, the GST rate and the
+  GST.
+- Turned on, an invoice whose total with GST is S$1,000.00 or less (in SGD, at the invoice's rate) is
+  issued as a simplified tax invoice: it leaves out the customer's details and the GST breakdown, and
+  says "Price payable includes GST." Larger invoices and credit notes stay full.
+- IRAS allows a simplified tax invoice up to S$1,000; a full tax invoice is always valid. See
+  [Design your documents with templates](document-templates.md#what-an-invoice-shows).
 
 ## Settlement tolerances
 

@@ -186,7 +186,7 @@ type Invoice struct {
 	Open          *Money           `json:"open,omitempty" doc:"An issued invoice: what is still to be received of it, in its currency: its total less what receipts and credits settle (FR-AR-18). An issued credit note: what is left of it to apply or refund."`
 	States        InvoiceStates    `json:"states" doc:"Its approval, ledger, delivery, settlement and due states."`
 	Releases      []InvoiceRelease `json:"releases" nullable:"false" doc:"getInvoice only: the monthly releases of its spread lines (FR-GL-03), by line and month, each with its state; the months still to come are projections, not in the ledger (ENG-05)."`
-	Checks        []InvoiceCheck   `json:"checks" nullable:"false" doc:"getInvoice only: what stops a draft being issued (✖)."`
+	Checks        []InvoiceCheck   `json:"checks" nullable:"false" doc:"getInvoice only: what stops a draft being issued (✖), and the warnings it is issued with (⚠), such as INVOICE-LATE: a tax invoice dated more than 30 days before today (FR-AR-05)."`
 	LedgerImpact  []EntryLine      `json:"ledger_impact" nullable:"false" doc:"getInvoice only: the lines issuing it writes (a draft), or wrote (issued): debits positive."`
 	PreparedBy    *Person          `json:"prepared_by,omitempty" doc:"Who saved the current version."`
 	PostedBy      *Person          `json:"posted_by,omitempty" doc:"Who issued it."`
@@ -586,6 +586,11 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 		if withChecks {
 			for _, x := range c.Problems {
 				out.Checks = append(out.Checks, InvoiceCheck{Severity: "error", Code: x.Code, Field: journalField(x.Field), Message: x.Message, Fix: x.Fix})
+			}
+			if !invoice.IsCreditNote(doc) && invoice.Late(p, v.today) { // FR-AR-05
+				out.Checks = append(out.Checks, InvoiceCheck{Severity: "warning", Code: invoice.WarnLate, Field: "date",
+					Message: fmt.Sprintf("the invoice is dated %s, more than %d days before today: IRAS expects a tax invoice within %d days of the time of supply",
+						dayText(d.Date), invoice.LateDays, invoice.LateDays), Fix: "Issue it now, or date it the day it is issued if that is its time of supply"})
 			}
 		}
 		if len(c.Problems) == 0 {

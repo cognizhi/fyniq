@@ -40,6 +40,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
 	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/receipt"
+	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/domain/writeoff"
@@ -529,6 +530,9 @@ var codeFacts = map[string]struct {
 	quote.CodeQuoteLine:   {422, "An invoice's line names a quote it cannot invoice"},
 	quote.CodeInvoiced:    {409, "Invoices are made from the quote"},
 
+	salesdoc.CodeNotInvoice: {409, "Not laid out as an invoice"},
+	salesdoc.CodeUnready:    {422, "The invoice's checks stop it being laid out"},
+
 	storage.CodeQuoteOutcome: {409, "The quote's answer is recorded once, of a sent quote"},
 }
 
@@ -669,6 +673,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		cce *customercredit.Error
 		dpe *deposit.Error
 		qe  *quote.Error
+		sde *salesdoc.Error
 		pe  *period.Error
 		ae  *accounting.Error
 		ce  *closing.Error
@@ -708,6 +713,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(dpe.Code, sentence(dpe.Message), sentence(dpe.Fix))
 	case errors.As(err, &qe):
 		return problem(qe.Code, sentence(qe.Message), sentence(qe.Fix))
+	case errors.As(err, &sde):
+		return problem(sde.Code, sentence(sde.Message), sentence(sde.Fix))
 	case errors.As(err, &pe):
 		return problem(pe.Code, sentence(pe.Message), sentence(pe.Fix))
 	case errors.As(err, &ae):

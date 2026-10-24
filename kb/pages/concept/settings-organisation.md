@@ -2,9 +2,9 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings and recommended values: features, terms, tolerances, thresholds, close variances, email-in, notification email, region, retention
+summary: Company-wide settings and recommended values: features, terms, GST, simplified tax invoices, tolerances, thresholds, variances, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:f03dc987e7f8ceb582c79c4fdc06a8a5e5effbe595aaf16279de0c1c128b8292
+  - docs/user-guide/organisation-settings.md sha256:5ad06e57442ecad6c710f9054216c2d08fac0d0beca57a22e867f65dde1cf5b2
 data_class: general
 taint: trusted
 status: draft
@@ -25,6 +25,7 @@ aliases:
   - quarantine
   - email-in
   - notification email
+  - simplified tax invoice
 ---
 
 # Organisation settings and their recommended values
@@ -67,6 +68,14 @@ aliases:
 - On a bill, the input tax is the GST the supplier states; Fyniq works it out again by the chosen method and shows ⚠ when the two differ, even by a cent, for the approver to check.
 
 (src: docs/user-guide/organisation-settings.md#gst-rounding)
+
+## Simplified tax invoices
+
+- **Simplified tax invoices up to S$1,000** is off: every invoice from a GST-registered company is a full tax invoice, with the customer's name and address, the amount before GST, the GST rate and the GST.
+- Turned on, an invoice whose total with GST is S$1,000.00 or less (in SGD, at the invoice's rate) is issued as a simplified tax invoice: no customer details or GST breakdown, and the words "Price payable includes GST." Larger invoices and credit notes stay full.
+- IRAS allows a simplified tax invoice up to S$1,000; a full tax invoice is always valid. What an invoice shows: [[settings.templates]].
+
+(src: docs/user-guide/organisation-settings.md#simplified-tax-invoices)
 
 ## Settlement tolerances
 

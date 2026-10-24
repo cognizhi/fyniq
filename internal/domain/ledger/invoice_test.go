@@ -121,6 +121,41 @@ func TestPostInvoiceInAnotherCurrency(t *testing.T) {
 	}
 }
 
+// The SGD amounts a foreign-currency tax invoice shows (FR-AR-05), worked by hand: USD 1,000.00 at 1.3456 with 9% GST is
+// SGD 1,345.60 net, SGD 121.10 GST (RND-GST-EXCL on the SGD net, the output tax posted) and SGD 1,466.70; at 1.33335 the
+// two USD 0.05 lines are SGD 0.07 each, SGD 0.14 in all, a cent above the receivable's SGD 0.13. An SGD invoice has its
+// own totals; a foreign one with no rate has none.
+// req: FR-AR-05
+// req: ENG-42
+func TestBaseTotalsOfAForeignInvoice(t *testing.T) {
+	usdInvoice := func(rate string, lines ...InvoiceLine) Invoice {
+		return Invoice{ID: invoiceID, Version: 1, Date: day, Currency: usd, Rate: usdRate(t, rate), Lines: lines}
+	}
+	for _, c := range []struct {
+		name string
+		i    Invoice
+		want string
+	}{
+		{"at 1.3456", usdInvoice("1.3456", invoiceLine(t, consulting, "1000.00", usd, "SR", "0.09")), "1345.60 + 121.10 = 1466.70 SGD"},
+		{"two cents of rounding", usdInvoice("1.33335", invoiceLine(t, consulting, "0.05", usd, "OS", ""), invoiceLine(t, consulting, "0.05", usd, "OS", "")),
+			"0.14 + 0.00 = 0.14 SGD"},
+		{"in SGD", sgdInvoice(invoiceLine(t, subscribe, "100.00", sgd, "SR", "0.09")), "100.00 + 9.00 = 109.00 SGD"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			b, err := BaseTotalsOf(c.i, sgd)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := fmt.Sprintf("%s + %s = %s %s", b.Net, b.GST, b.Total, b.Total.Currency()); got != c.want {
+				t.Errorf("got %s, want %s", got, c.want)
+			}
+		})
+	}
+	if _, err := BaseTotalsOf(Invoice{Currency: usd, Lines: []InvoiceLine{invoiceLine(t, consulting, "1.00", usd, "OS", "")}}, sgd); err == nil {
+		t.Error("a foreign invoice with no rate has base totals")
+	}
+}
+
 // A spread line credits 2400 Deferred revenue with its base amount, at rate 1, for its releases to move month by month
 // (FR-GL-03, Appendix B.2): G4-022's invoice half.
 // req: ledger/posting-rules Spreading an invoice or bill
