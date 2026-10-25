@@ -40,8 +40,22 @@ fyniq_api       UPDATE    bank_gap (resolution, resolved_at, resolved_by)
 fyniq_api       INSERT    bank_line (amount, booking_date, counterparty, currency, description, duplicate_of, fingerprint, minor_units, money_account_id, position, reference, running_balance, statement_id, status, status_at, status_by, value_date)
 fyniq_api       SELECT    bank_line
 fyniq_api       UPDATE    bank_line (status, status_at, status_by, version)
+fyniq_api       INSERT    bank_match (basis, document_id, entry_id, kind, line_id, made_at, made_by, rule_id, transfer_id)
+fyniq_api       SELECT    bank_match
+fyniq_api       UPDATE    bank_match (undo_reason, undone_at, undone_by)
+fyniq_api       INSERT    bank_reconciliation (book_balance, currency, difference, ledger_revision, minor_units, money_account_id, period_id, prepared_at, prepared_by, statement_balance, unreconciled_count, unreconciled_total)
+fyniq_api       SELECT    bank_reconciliation
+fyniq_api       UPDATE    bank_reconciliation (book_balance, difference, ledger_revision, prepared_at, prepared_by, signed_at, signed_by, signer_mfa_at, statement_balance, unreconciled_count, unreconciled_total, version)
+fyniq_api       INSERT    bank_rule (action, active, changed_at, changed_by, conditions, created_at, created_by, from_ai_proposal, name, position)
+fyniq_api       SELECT    bank_rule
+fyniq_api       UPDATE    bank_rule (action, active, auto_apply, auto_apply_approval_id, changed_at, changed_by, conditions, name, position, version)
+fyniq_api       SELECT    bank_signal
+fyniq_api       UPDATE    bank_signal (closed_at, closed_line_id, invoice_id, status)
 fyniq_api       INSERT    bank_statement (closing_balance, connector_id, currency, file_ref, format, imported_at, imported_by, line_count, minor_units, money_account_id, opening_balance, parser_version, period_from, period_to, source)
 fyniq_api       SELECT    bank_statement
+fyniq_api       INSERT    bank_transfer (entry_id, fee, from_account_id, from_amount, from_currency, from_line_id, from_minor_units, made_at, made_by, on_date, to_account_id, to_amount, to_currency, to_line_id, to_minor_units)
+fyniq_api       SELECT    bank_transfer
+fyniq_api       UPDATE    bank_transfer (entry_id, from_line_id, to_line_id, version)
 fyniq_api       EXECUTE   beat()
 fyniq_api       INSERT    bill_payment_plan (bill_id, planned_on, recorded_by)
 fyniq_api       SELECT    bill_payment_plan
@@ -351,7 +365,12 @@ fyniq_readonly  SELECT    balance
 fyniq_readonly  EXECUTE   balance_differences()
 fyniq_readonly  SELECT    bank_gap
 fyniq_readonly  SELECT    bank_line
+fyniq_readonly  SELECT    bank_match
+fyniq_readonly  SELECT    bank_reconciliation
+fyniq_readonly  SELECT    bank_rule
+fyniq_readonly  SELECT    bank_signal
 fyniq_readonly  SELECT    bank_statement
+fyniq_readonly  SELECT    bank_transfer
 fyniq_readonly  SELECT    bill_payment_plan
 fyniq_readonly  SELECT    capture_address
 fyniq_readonly  SELECT    capture_sender
@@ -443,8 +462,18 @@ fyniq_worker    SELECT    bank_gap
 fyniq_worker    INSERT    bank_line (amount, booking_date, counterparty, currency, description, duplicate_of, fingerprint, minor_units, money_account_id, position, reference, running_balance, statement_id, status, status_at, status_by, value_date)
 fyniq_worker    SELECT    bank_line
 fyniq_worker    UPDATE    bank_line (status, status_at, status_by, version)
+fyniq_worker    INSERT    bank_match (basis, document_id, entry_id, kind, line_id, made_at, made_by, rule_id, transfer_id)
+fyniq_worker    SELECT    bank_match
+fyniq_worker    SELECT    bank_reconciliation
+fyniq_worker    SELECT    bank_rule
+fyniq_worker    INSERT    bank_signal (amount, currency, inbound_message_id, invoice_id, minor_units, money_account_id, payer, received_at, reference)
+fyniq_worker    SELECT    bank_signal
+fyniq_worker    UPDATE    bank_signal (closed_at, closed_line_id, invoice_id, status)
 fyniq_worker    INSERT    bank_statement (closing_balance, connector_id, currency, file_ref, format, imported_at, imported_by, line_count, minor_units, money_account_id, opening_balance, parser_version, period_from, period_to, source)
 fyniq_worker    SELECT    bank_statement
+fyniq_worker    INSERT    bank_transfer (entry_id, fee, from_account_id, from_amount, from_currency, from_line_id, from_minor_units, made_at, made_by, on_date, to_account_id, to_amount, to_currency, to_line_id, to_minor_units)
+fyniq_worker    SELECT    bank_transfer
+fyniq_worker    UPDATE    bank_transfer (entry_id, from_line_id, to_line_id, version)
 fyniq_worker    EXECUTE   beat()
 fyniq_worker    SELECT    bill_payment_plan
 fyniq_worker    SELECT    capture_address

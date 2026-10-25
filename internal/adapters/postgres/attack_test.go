@@ -445,6 +445,16 @@ VALUES ('%s', '%s', '%s', %s, 'Reviewed.', 0, '%s', %s)`, period, check, by, at,
 // nanAttacks try NaN and an out-of-range value in each numeric column; TestEveryNumericColumn…
 // fails when a numeric column has no entry here.
 var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) error{
+	"bank_transfer.from_amount":             func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "from", v) },
+	"bank_transfer.to_amount":               func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "to", v) },
+	"bank_transfer.fee":                     func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "fee", v) },
+	"bank_signal.amount":                    func(t *testing.T, b porttest.Books, v string) error { return rawSignal(t, b, v) },
+	"bank_reconciliation.statement_balance": func(t *testing.T, b porttest.Books, v string) error { return rawReconciliation(t, b, "statement", v) },
+	"bank_reconciliation.book_balance":      func(t *testing.T, b porttest.Books, v string) error { return rawReconciliation(t, b, "book", v) },
+	"bank_reconciliation.unreconciled_total": func(t *testing.T, b porttest.Books, v string) error {
+		return rawReconciliation(t, b, "unreconciled", v)
+	},
+	"bank_reconciliation.difference": func(t *testing.T, b porttest.Books, v string) error { return rawReconciliation(t, b, "difference", v) },
 	"bank_statement.opening_balance": func(t *testing.T, b porttest.Books, v string) error { return rawBank(t, b, "opening", v) },
 	"bank_statement.closing_balance": func(t *testing.T, b porttest.Books, v string) error { return rawBank(t, b, "closing", v) },
 	"bank_line.amount":               func(t *testing.T, b porttest.Books, v string) error { return rawBank(t, b, "amount", v) },
@@ -1144,6 +1154,54 @@ VALUES ($1, $2, 1, '2026-10-02', $3::numeric, 'SGD', 2, $4::numeric, repeat('a',
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.bank_gap (money_account_id, statement_id, before_date, currency, minor_units,
 expected_opening, found_opening, found_at) VALUES ($1, $2, '2026-10-01', 'SGD', 2, $3::numeric, $4::numeric, now())`,
 			money, stmt, pick("expected", "0.00"), pick("found", "1.00"))
+		return err
+	})
+}
+
+// rawTransfer, rawSignal and rawReconciliation insert one row with value in the named column; the row's checks run
+// before its foreign keys, so the references need not exist.
+func rawTransfer(t *testing.T, b porttest.Books, target, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	pick := func(name, valid string) string {
+		if name == target {
+			return value
+		}
+		return valid
+	}
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.bank_transfer (from_account_id, to_account_id, from_line_id, on_date, from_currency,
+from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, made_by, made_at)
+VALUES ($1, $2, $3, '2026-10-04', 'SGD', 2, $4::numeric, 'USD', 2, $5::numeric, $6::numeric, 'user:x', now())`,
+			uuid.New(), uuid.New(), uuid.New(), pick("from", "1350.00"), pick("to", "1000.00"), pick("fee", "5.00"))
+		return err
+	})
+}
+
+func rawSignal(t *testing.T, b porttest.Books, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	return asOrg(ctx, conn(t, "fyniq_worker"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.bank_signal (money_account_id, amount, currency, minor_units, received_at)
+VALUES ($1, $2::numeric, 'SGD', 2, now())`, uuid.New(), value)
+		return err
+	})
+}
+
+func rawReconciliation(t *testing.T, b porttest.Books, target, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	pick := func(name, valid string) string {
+		if name == target {
+			return value
+		}
+		return valid
+	}
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.bank_reconciliation (money_account_id, period_id, currency, minor_units, statement_balance,
+book_balance, unreconciled_total, unreconciled_count, difference, ledger_revision, prepared_by, prepared_at)
+VALUES ($1, $2, 'SGD', 2, $3::numeric, $4::numeric, $5::numeric, 0, $6::numeric, 0, 'user:x', now())`,
+			uuid.New(), b.Oct.ID, pick("statement", "0.00"), pick("book", "0.00"), pick("unreconciled", "0.00"), pick("difference", "0.00"))
 		return err
 	})
 }

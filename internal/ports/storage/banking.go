@@ -280,3 +280,233 @@ type Banking interface {
 	// ResolveGap resolves an open gap with its reason: CodeBanking when it is resolved already.
 	ResolveGap(ctx context.Context, id uuid.UUID, resolution string, at time.Time) (BankGap, error)
 }
+
+// BankRule codes lines in its order (FR-BNK-05); it auto-applies only under an approved request (FR-BNK-14).
+type BankRule struct {
+	ID                  uuid.UUID
+	Name                string
+	Position            int
+	Conditions          []byte // JSON, as internal/domain/banking reads it
+	Action              []byte // JSON: the coding it sets
+	Active              bool
+	FromAIProposal      bool
+	AutoApply           bool
+	AutoApplyApprovalID *uuid.UUID
+	CreatedBy           string
+	CreatedAt           time.Time
+	ChangedAt           time.Time
+	Version             int
+}
+
+// NewBankRule creates a rule; a change to one carries its version.
+type NewBankRule struct {
+	Name           string
+	Position       int
+	Conditions     []byte
+	Action         []byte
+	Active         bool
+	FromAIProposal bool
+	At             time.Time
+}
+
+// The bases of a match (FR-BNK-14): a person made it, or the system principal did, for the one open document that
+// matches exactly, for both sides of a transfer, or under an auto-apply rule.
+const (
+	BasisPerson   = "person"
+	BasisExact    = "exact"
+	BasisTransfer = "transfer"
+	BasisRule     = "rule"
+)
+
+// The kinds of match: a category posted from the line, a receipt or bill payment made from it, one recorded by hand
+// that it matches, a transfer, or suspense (2999) until it is classified.
+const (
+	MatchCategorised = "categorised"
+	MatchReceipt     = "receipt"
+	MatchBillPayment = "bill_payment"
+	MatchRecorded    = "recorded"
+	MatchTransfer    = "transfer"
+	MatchSuspense    = "suspense"
+)
+
+// BankMatch is what a line settled or became; a line has one live match.
+type BankMatch struct {
+	ID         uuid.UUID
+	LineID     uuid.UUID
+	Kind       string
+	DocumentID *uuid.UUID
+	EntryID    *uuid.UUID
+	TransferID *uuid.UUID
+	Basis      string
+	RuleID     *uuid.UUID
+	MadeBy     string
+	MadeAt     time.Time
+	UndoneBy   string // "" while live
+	UndoneAt   *time.Time
+	UndoReason string
+}
+
+// NewBankMatch is a match made.
+type NewBankMatch struct {
+	LineID     uuid.UUID
+	Kind       string
+	DocumentID *uuid.UUID
+	EntryID    *uuid.UUID
+	TransferID *uuid.UUID
+	Basis      string
+	RuleID     *uuid.UUID
+	At         time.Time
+}
+
+// BankMatchFilter narrows the matches listed: a line's, or those the system made since a time; live ones only unless All.
+type BankMatchFilter struct {
+	LineID     *uuid.UUID
+	SystemOnly bool
+	Since      *time.Time
+	All        bool
+}
+
+// BankTransfer is one transfer between money accounts, in transit until both lines are known (FR-BNK-09).
+type BankTransfer struct {
+	ID            uuid.UUID
+	FromAccountID uuid.UUID
+	ToAccountID   uuid.UUID
+	FromLineID    *uuid.UUID
+	ToLineID      *uuid.UUID
+	OnDate        time.Time
+	FromCurrency  string
+	FromAmount    Decimal // positive: what left the paying account
+	ToCurrency    string
+	ToAmount      Decimal // positive: what arrived
+	Fee           *Decimal
+	EntryID       *uuid.UUID
+	MadeBy        string
+	MadeAt        time.Time
+	Version       int
+}
+
+// NewBankTransfer records a transfer.
+type NewBankTransfer struct {
+	FromAccountID uuid.UUID
+	ToAccountID   uuid.UUID
+	FromLineID    *uuid.UUID
+	ToLineID      *uuid.UUID
+	OnDate        time.Time
+	FromCurrency  string
+	FromAmount    Decimal
+	ToCurrency    string
+	ToAmount      Decimal
+	Fee           *Decimal
+	EntryID       *uuid.UUID
+	At            time.Time
+}
+
+// The statuses of a pending signal (UC-BNK-02).
+const (
+	SignalPending = "pending"
+	SignalClosed  = "closed"
+	SignalExpired = "expired"
+)
+
+// BankSignal is an incoming-funds alert: it points to the likely invoice and posts nothing (FR-BNK-16).
+type BankSignal struct {
+	ID               uuid.UUID
+	MoneyAccountID   uuid.UUID
+	Amount           Decimal
+	Currency         string
+	Payer            string
+	Reference        string
+	ReceivedAt       time.Time
+	InboundMessageID *uuid.UUID
+	InvoiceID        *uuid.UUID
+	Status           string
+	ClosedLineID     *uuid.UUID
+	ClosedAt         *time.Time
+}
+
+// NewBankSignal records an alert.
+type NewBankSignal struct {
+	MoneyAccountID   uuid.UUID
+	Amount           Decimal
+	Currency         string
+	Payer            string
+	Reference        string
+	ReceivedAt       time.Time
+	InboundMessageID *uuid.UUID
+	InvoiceID        *uuid.UUID
+}
+
+// BankReconciliation is one money account's reconciliation for a period (FR-BNK-10).
+type BankReconciliation struct {
+	ID                uuid.UUID
+	MoneyAccountID    uuid.UUID
+	PeriodID          uuid.UUID
+	Currency          string
+	StatementBalance  Decimal
+	BookBalance       Decimal
+	UnreconciledTotal Decimal
+	UnreconciledCount int
+	Difference        Decimal // what the unreconciled items do not explain
+	LedgerRevision    int64
+	PreparedBy        string
+	PreparedAt        time.Time
+	SignedBy          string // "" while unsigned
+	SignedAt          *time.Time
+	Version           int
+}
+
+// NewBankReconciliation is a reconciliation as prepared; preparing again while unsigned replaces it.
+type NewBankReconciliation struct {
+	MoneyAccountID    uuid.UUID
+	PeriodID          uuid.UUID
+	Currency          string
+	StatementBalance  Decimal
+	BookBalance       Decimal
+	UnreconciledTotal Decimal
+	UnreconciledCount int
+	Difference        Decimal
+	LedgerRevision    int64
+	At                time.Time
+}
+
+// BankMatching is the rest of the banking store: rules, matches, transfers, signals and reconciliations. Every change
+// is audited in its transaction (AUD-01); the database refuses what the design does not allow: a rule auto-applying
+// without its approved request, a changed or deleted match, a second live match of a line, an undo in a closed period,
+// a transfer's legs on the wrong accounts or amounts, a signal reopened, a reconciliation signed by its preparer or
+// changed once signed or once its period is closed (CodeBanking).
+type BankMatching interface {
+	CreateRule(ctx context.Context, n NewBankRule) (BankRule, error)
+	// ChangeRule changes a rule at version (not its auto-apply): CodeVersion when it changed since.
+	ChangeRule(ctx context.Context, id uuid.UUID, version int, n NewBankRule) (BankRule, error)
+	// SetRuleAutoApply marks a rule auto-apply under approval, an approved request for it, at version.
+	SetRuleAutoApply(ctx context.Context, id uuid.UUID, version int, approval uuid.UUID, at time.Time) (BankRule, error)
+	// Rules are the organisation's rules in their order; Rule is one, ports.ErrNotFound for none.
+	Rules(ctx context.Context) ([]BankRule, error)
+	Rule(ctx context.Context, id uuid.UUID) (BankRule, error)
+
+	// MakeMatch records a match; the line's status moves with it through Banking.SetLineStatus.
+	MakeMatch(ctx context.Context, n NewBankMatch) (BankMatch, error)
+	// UndoMatch undoes a live match with its reason: CodeBanking when it is undone already or its period is closed.
+	UndoMatch(ctx context.Context, id uuid.UUID, reason string, at time.Time) (BankMatch, error)
+	Matches(ctx context.Context, f BankMatchFilter) ([]BankMatch, error)
+
+	RecordTransfer(ctx context.Context, n NewBankTransfer) (BankTransfer, error)
+	// CompleteTransfer adds a missing side's line, or the entry, at version: CodeVersion when it changed since.
+	CompleteTransfer(ctx context.Context, id uuid.UUID, version int, fromLine, toLine, entry *uuid.UUID) (BankTransfer, error)
+	Transfer(ctx context.Context, id uuid.UUID) (BankTransfer, error)
+	// InTransit are the transfers with one side not yet known.
+	InTransit(ctx context.Context) ([]BankTransfer, error)
+
+	RecordSignal(ctx context.Context, n NewBankSignal) (BankSignal, error)
+	// CloseSignal closes a pending signal (by the line that reconciled it) or expires it.
+	CloseSignal(ctx context.Context, id uuid.UUID, status string, line *uuid.UUID, at time.Time) (BankSignal, error)
+	PendingSignals(ctx context.Context) ([]BankSignal, error)
+
+	// PrepareReconciliation prepares, or prepares again while unsigned, an account's reconciliation for a period.
+	PrepareReconciliation(ctx context.Context, n NewBankReconciliation) (BankReconciliation, error)
+	// SignReconciliation signs a prepared reconciliation at version, by another person who passed step-up at mfaAt.
+	SignReconciliation(ctx context.Context, id uuid.UUID, version int, mfaAt, at time.Time) (BankReconciliation, error)
+	// Reconciliations are a period's reconciliations; Reconciliation is one account's, ports.ErrNotFound for none.
+	Reconciliations(ctx context.Context, periodID uuid.UUID) ([]BankReconciliation, error)
+	Reconciliation(ctx context.Context, moneyAccountID, periodID uuid.UUID) (BankReconciliation, error)
+}

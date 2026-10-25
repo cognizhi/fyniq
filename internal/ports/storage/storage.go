@@ -102,6 +102,9 @@ type UnitOfWork interface {
 	Connectors() Connectors
 	// Banking is money accounts, their statements and lines (FR-BNK-01, FR-BNK-02, FR-BNK-16).
 	Banking() Banking
+	// BankMatching is bank rules, matches, transfers, signals and reconciliations (FR-BNK-05, FR-BNK-07, FR-BNK-09,
+	// FR-BNK-10, FR-BNK-14).
+	BankMatching() BankMatching
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))
