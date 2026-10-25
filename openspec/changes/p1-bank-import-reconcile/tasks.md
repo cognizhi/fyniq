@@ -304,10 +304,16 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 
 ## 11. Finish
 
-- [ ] 11.1 The banking threat model's abuse cases each have their test, and the security checklist is updated;
+- [x] 11.1 The banking threat model's abuse cases each have their test, and the security checklist is updated;
   `make check`, `make test`, `make scan`, `make infra-check` and `make images` pass; a conventional commit with
   upgrade notes (the secrets project before the first organisation connector).
   - Not verified here: a live sync with Wise, Airwallex and DBS in staging, which needs their sandboxes and accounts.
+  - As built (26 Oct 2026): the 18 abuse cases of `docs/security/threat-models/banking.md` each name their tests;
+    `TestTheAIWritesNothingInBanking` proves T17 at the API while the MCP and AI services expose no tool; the security
+    README lists V1.5.1 and V4.1.5 (the webhooks, `[verify]` the wording). `make check`, `make test`, `make scan`,
+    `make infra-check` and `make images` passed at the top of the stack; `make test` first caught the bank webhook
+    route missing from the named infrastructure of `cmd/api` (QA-API-03), fixed in slice 8.2's commit. Tasks 4.6 (the
+    oracle, in a session of its own) and 4.7 (dimensions, after FR-DIM) remain.
 
 ## Workflow follow-up
 

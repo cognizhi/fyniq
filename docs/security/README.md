@@ -26,7 +26,9 @@ most specific requirement the test proves. The ones in use so far:
 |---|---|---|
 | V2.2.1, V2.2.3 | Input validation | amounts off scale or NaN; accounts that cannot take postings |
 | V2.3.1–V2.3.3 | Business logic security | document statuses that cannot rewind; closed periods; entries that commit whole or not at all |
-| V2.3.5 | Business logic security: multi-user approval | a connector's step needs a second person: the other Super admin's change, signed over its envelope, or an Owner's approval |
+| V2.3.5 | Business logic security: multi-user approval | a connector's step needs a second person: the other Super admin's change, signed over its envelope, or an Owner's approval; a bank rule applies by itself, and a bank reconciliation is signed off, only by another person |
+| V1.5.1 | Safe deserialization | statement files: camt.053's XML read strictly, with no DTD or external entity, its size bounded before it is read (nesting by Go's decoder); every reader fuzzed |
+| V4.1.5 | Generic web service security: per-message signatures | bank providers' webhooks verified over their raw body before anything is read (Wise: RSA with its published key; Airwallex: HMAC over the timestamp and body, within five minutes), and only queue a pull [verify the requirement's wording against ASVS 5.0.0's text] |
 | V1.3.6 | Sanitization: server-side request forgery | the egress guard refuses metadata, loopback, private and internal addresses, re-checks the address it dials, and follows no redirect |
 | V5.2.1–V5.2.3, V5.3.2, V5.4.3 | File handling | evidence uploads: size, type from content, archive limits and macros, file names as data, the malware scan |
 | V6.3.3 | General authentication security | every session passed a second factor, or only reads itself and steps up |
