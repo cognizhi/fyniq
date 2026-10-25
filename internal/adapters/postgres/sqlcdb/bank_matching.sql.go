@@ -15,14 +15,16 @@ import (
 const bankMatches = `-- name: BankMatches :many
 SELECT organisation_id, id, line_id, kind, document_id, entry_id, transfer_id, basis, rule_id, made_by, made_at, undone_by, undone_at, undo_reason FROM fyniq.bank_match
  WHERE ($1::uuid IS NULL OR line_id = $1::uuid)
-   AND (NOT $2::boolean OR basis <> 'person')
-   AND ($3::timestamptz IS NULL OR made_at >= $3::timestamptz)
-   AND ($4::boolean OR undone_at IS NULL)
+   AND ($2::uuid IS NULL OR document_id = $2::uuid)
+   AND (NOT $3::boolean OR basis <> 'person')
+   AND ($4::timestamptz IS NULL OR made_at >= $4::timestamptz)
+   AND ($5::boolean OR undone_at IS NULL)
  ORDER BY made_at DESC, id DESC
 `
 
 type BankMatchesParams struct {
 	LineID     *uuid.UUID
+	DocumentID *uuid.UUID
 	SystemOnly bool
 	Since      *time.Time
 	AllMatches bool
@@ -31,6 +33,7 @@ type BankMatchesParams struct {
 func (q *Queries) BankMatches(ctx context.Context, arg BankMatchesParams) ([]FyniqBankMatch, error) {
 	rows, err := q.db.Query(ctx, bankMatches,
 		arg.LineID,
+		arg.DocumentID,
 		arg.SystemOnly,
 		arg.Since,
 		arg.AllMatches,

@@ -118,12 +118,24 @@ func (s BillPayments) Check(ctx context.Context, org uuid.UUID, d billpayment.Dr
 // allocation for each bill it settles, and the document's change to posted. The bills are locked first. A payment the
 // rules refuse writes nothing and answers every problem.
 func (s BillPayments) Record(ctx context.Context, org uuid.UUID, d billpayment.Draft) (Recorded, error) {
+	var out Recorded
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		out, err = s.RecordIn(ctx, u, d)
+		return err
+	})
+	return out, err
+}
+
+// RecordIn records a payment and posts it in u, the caller's unit of work: what Record does, for a command that writes more with it,
+// as matching a bank line does (ENG-02).
+func (s BillPayments) RecordIn(ctx context.Context, u storage.UnitOfWork, d billpayment.Draft) (Recorded, error) {
 	b, err := billpayment.Encode(d)
 	if err != nil {
 		return Recorded{}, err
 	}
 	var out Recorded
-	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+	err = func() error {
 		if err := lockBills(ctx, u, partIDs(d)); err != nil {
 			return err
 		}
@@ -164,7 +176,7 @@ func (s BillPayments) Record(ctx context.Context, org uuid.UUID, d billpayment.D
 		doc.Status = storage.DocumentPosted
 		out.Payment = doc
 		return s.after(ctx, u, doc, out.Entry)
-	})
+	}()
 	return out, err
 }
 
@@ -177,6 +189,18 @@ func (s BillPayments) Void(ctx context.Context, org, id uuid.UUID, date time.Tim
 	}
 	var out Recorded
 	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		out, err = s.VoidIn(ctx, u, id, date, reason)
+		return err
+	})
+	return out, err
+}
+
+// VoidIn voids a posted payment in u, the caller's unit of work: what Void does, for undoing the match of the bank line it was
+// made from in the same transaction.
+func (s BillPayments) VoidIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, date time.Time, reason string) (Recorded, error) {
+	var out Recorded
+	err := func() error {
 		doc, err := u.Documents().Lock(ctx, id)
 		if err != nil {
 			return err
@@ -256,7 +280,7 @@ func (s BillPayments) Void(ctx context.Context, org, id uuid.UUID, date time.Tim
 		doc.Status = storage.DocumentReversed
 		out.Payment = doc
 		return s.after(ctx, u, doc, out.Entry)
-	})
+	}()
 	return out, err
 }
 

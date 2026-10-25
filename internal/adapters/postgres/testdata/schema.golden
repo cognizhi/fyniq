@@ -3393,7 +3393,7 @@ CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON fyniq.audit_event FOR 
 CREATE TRIGGER bank_gap_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_gap FOR EACH ROW EXECUTE FUNCTION bank_gap_guard()
 CREATE TRIGGER bank_line_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_line FOR EACH ROW EXECUTE FUNCTION bank_line_guard()
 CREATE TRIGGER bank_match_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_match FOR EACH ROW EXECUTE FUNCTION bank_match_guard()
-CREATE TRIGGER bank_match_posting BEFORE INSERT ON fyniq.bank_match FOR EACH ROW WHEN ((new.kind = ANY (ARRAY['categorised'::text, 'suspense'::text]))) EXECUTE FUNCTION bank_match_posting()
+CREATE TRIGGER bank_match_posting BEFORE INSERT ON fyniq.bank_match FOR EACH ROW WHEN ((new.kind <> 'transfer'::text)) EXECUTE FUNCTION bank_match_posting()
 CREATE TRIGGER bank_reconciliation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_reconciliation FOR EACH ROW EXECUTE FUNCTION bank_reconciliation_guard()
 CREATE TRIGGER bank_rule_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_rule FOR EACH ROW EXECUTE FUNCTION bank_rule_guard()
 CREATE TRIGGER bank_signal_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_signal FOR EACH ROW EXECUTE FUNCTION bank_signal_guard()
@@ -3416,6 +3416,7 @@ CREATE TRIGGER document_link_no_truncate BEFORE TRUNCATE ON fyniq.document_link 
 CREATE TRIGGER document_link_token_guard BEFORE DELETE OR UPDATE ON fyniq.document_link_token FOR EACH ROW EXECUTE FUNCTION document_link_token_guard()
 CREATE TRIGGER document_link_token_no_truncate BEFORE TRUNCATE ON fyniq.document_link_token FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_no_truncate BEFORE TRUNCATE ON fyniq.document FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER document_reversed_unmatched BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN (((new.status = 'reversed'::text) AND (old.status IS DISTINCT FROM 'reversed'::text))) EXECUTE FUNCTION document_reversed_unmatched()
 CREATE TRIGGER document_send_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.document_send FOR EACH ROW EXECUTE FUNCTION document_send_guard()
 CREATE TRIGGER document_send_no_truncate BEFORE TRUNCATE ON fyniq.document_send FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_sequence_guard BEFORE UPDATE ON fyniq.document_sequence FOR EACH ROW EXECUTE FUNCTION document_sequence_guard()
@@ -3656,7 +3657,7 @@ balance_differences() → TABLE(account_id uuid, period_id uuid, currency text, 
 bank_gap_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aa70c7f4e8b3f508860e4983c5813b44
 bank_line_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d8b48d4418d8aca35f08e24805b98378
 bank_match_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 77572e05359c76183975bc337e3affc6
-bank_match_posting() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9a36bce16fbec5a5579f7207a4b18ee
+bank_match_posting() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d106940b5b64cf80a61ccd7e5fa22088
 bank_reconciliation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 63ce44b2f6c15c713dd4f3b689a8bf87
 bank_rule_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7dc2dbe6bc4742a3e7aa1ca50e74c82d
 bank_signal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 168c07c54a5e00ffbbefbe7532c5e2b6
@@ -3691,6 +3692,7 @@ document_link_guard() → trigger | security definer | v | search_path=pg_catalo
 document_link_route(p_hash text) → TABLE(organisation_id uuid, link_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 97397fe0fb679efd098ac3a2a47a0ab0
 document_link_token_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b39187a31e2fab3a93259dce0e8ed0aa
 document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 56ad4fb277adc4b38925f1feaad66b74
+document_reversed_unmatched() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 571459b9e3412b69dae28471ae2ae096
 document_send_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 001124514ccefea52a5f5516acd28e9c
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
 document_template_choice_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fa7935baf02928c3f94dd5979982c7e6

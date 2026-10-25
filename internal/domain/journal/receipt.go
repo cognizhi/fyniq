@@ -100,12 +100,24 @@ func (s CustomerReceipts) Check(ctx context.Context, org uuid.UUID, d receipt.Dr
 // allocation for each invoice it settles, and the document's change to posted. The invoices are locked first. A receipt
 // the rules refuse writes nothing and answers every problem.
 func (s CustomerReceipts) Record(ctx context.Context, org uuid.UUID, d receipt.Draft) (RecordedReceipt, error) {
+	var out RecordedReceipt
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		out, err = s.RecordIn(ctx, u, d)
+		return err
+	})
+	return out, err
+}
+
+// RecordIn records a receipt and posts it in u, the caller's unit of work: what Record does, for a command that writes more with it,
+// as matching a bank line does (ENG-02).
+func (s CustomerReceipts) RecordIn(ctx context.Context, u storage.UnitOfWork, d receipt.Draft) (RecordedReceipt, error) {
 	b, err := receipt.Encode(d)
 	if err != nil {
 		return RecordedReceipt{}, err
 	}
 	var out RecordedReceipt
-	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+	err = func() error {
 		if err := lockBills(ctx, u, invoiceIDs(d)); err != nil {
 			return err
 		}
@@ -146,7 +158,7 @@ func (s CustomerReceipts) Record(ctx context.Context, org uuid.UUID, d receipt.D
 		doc.Status = storage.DocumentPosted
 		out.Receipt = doc
 		return s.after(ctx, u, doc, out.Entry)
-	})
+	}()
 	return out, err
 }
 
@@ -159,6 +171,18 @@ func (s CustomerReceipts) Void(ctx context.Context, org, id uuid.UUID, date time
 	}
 	var out RecordedReceipt
 	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		out, err = s.VoidIn(ctx, u, id, date, reason)
+		return err
+	})
+	return out, err
+}
+
+// VoidIn voids a posted receipt in u, the caller's unit of work: what Void does, for undoing the match of the bank line it was
+// made from in the same transaction.
+func (s CustomerReceipts) VoidIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, date time.Time, reason string) (RecordedReceipt, error) {
+	var out RecordedReceipt
+	err := func() error {
 		doc, err := u.Documents().Lock(ctx, id)
 		if err != nil {
 			return err
@@ -238,7 +262,7 @@ func (s CustomerReceipts) Void(ctx context.Context, org, id uuid.UUID, date time
 		doc.Status = storage.DocumentReversed
 		out.Receipt = doc
 		return s.after(ctx, u, doc, out.Entry)
-	})
+	}()
 	return out, err
 }
 

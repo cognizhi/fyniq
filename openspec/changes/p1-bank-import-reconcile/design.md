@@ -124,6 +124,16 @@ date window, not yet matched), the line matches it and posts nothing new.
   except under D8.
 - *Alternative:* the line posts its own settlement journal (Dr Bank, Cr 1100), as the workbook did. Rejected: two
   paths to settle one invoice would split the sub-ledger's rules and the tolerance checks.
+- As built (task 4.3): `MatchInvoices` and `MatchBills` record the receipt or bill payment through the commands'
+  `RecordIn`, dated on the line's booking date into its money account with the bank's reference, in the unit of work
+  that makes the match and moves the line's status; for documents in another currency than a base-currency account,
+  the line's amount is what the account received or paid. Money recorded by hand already (a receipt, payment, deposit
+  or refund within 7 days, moving the line's amount through its account, not yet matched) is refused as a new
+  document and matched with `MatchRecorded`, posting nothing. `Unmatch` undoes the match and voids what was made from
+  the line on its own date. Suggestions rank a document recorded by hand first, then a number (or a bill's supplier
+  number) named exactly, then once normalised, then the amount open from the contact the counterparty names, then
+  the first rule; a number is named only on word boundaries (INV-1 is not INV-10). The database checks every match
+  posts the line's amount through its account (FY228) and that a matched document is never reversed first (FY229).
 
 ### D6. Transfers are one record with two legs
 

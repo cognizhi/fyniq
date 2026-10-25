@@ -40,6 +40,7 @@ RETURNING *;
 -- name: BankMatches :many
 SELECT * FROM fyniq.bank_match
  WHERE (sqlc.narg(line_id)::uuid IS NULL OR line_id = sqlc.narg(line_id)::uuid)
+   AND (sqlc.narg(document_id)::uuid IS NULL OR document_id = sqlc.narg(document_id)::uuid)
    AND (NOT sqlc.arg(system_only)::boolean OR basis <> 'person')
    AND (sqlc.narg(since)::timestamptz IS NULL OR made_at >= sqlc.narg(since)::timestamptz)
    AND (sqlc.arg(all_matches)::boolean OR undone_at IS NULL)
