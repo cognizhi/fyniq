@@ -59,7 +59,8 @@
         "customer_refund",
         "customer_deposit",
         "recurring_invoice",
-        "connector"
+        "connector",
+        "bank_rule"
       ],
       "examples": [
         "organisation_setting"

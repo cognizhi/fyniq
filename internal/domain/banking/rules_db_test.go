@@ -5,6 +5,7 @@ package banking_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/banking"
+	"github.com/cognizhi/fyniq/internal/domain/banktransaction"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -153,5 +155,66 @@ func TestRulesAreCheckedSavedAndBackTested(t *testing.T) {
 		return err
 	}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// FR-BNK-14 (task 5.2): a pattern coded the same way five times (the default) is offered as a rule to promote, by
+// its counterparty or the description's leading words, with its account, GST code and direction; four times is not
+// enough unless asked for; a pattern a rule covers already is not offered; nothing is applied or written.
+// req: FR-BNK-14
+func TestRepeatedCodingIsOfferedAsARule(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "bookkeeper"}})
+	w := start(t)
+	var rent storage.Account
+	var lines []storage.BankLine
+	if err := w.store.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if _, err = u.Periods().Create(ctx, storage.NewPeriod{StartsOn: day(10, 1), EndsOn: day(10, 31)}); err != nil {
+			return err
+		}
+		if rent, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "6200", Name: "Travel", Type: storage.Expense}); err != nil {
+			return err
+		}
+		var news []storage.NewBankLine
+		for i := range 9 {
+			l := storage.NewBankLine{Position: i + 1, BookingDate: day(10, i+1), Amount: "-10.00", Description: fmt.Sprintf("GRAB*TRIP %d SG", 1000+i),
+				Fingerprint: fmt.Sprintf("%064d", i+1)}
+			if i >= 5 {
+				l.Description, l.Counterparty = fmt.Sprintf("ZOOM.US %d", 800+i), "Zoom Video"
+			}
+			news = append(news, l)
+		}
+		_, lines, err = u.Banking().Import(ctx, storage.NewBankStatement{MoneyAccountID: w.sgd.ID, Source: storage.MoneySourceFile, Format: storage.FormatCSV,
+			ParserVersion: "csv@1", PeriodFrom: day(10, 1), PeriodTo: day(10, 9), Currency: "SGD", At: now, Lines: news})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	txns := journal.BankTransactions{Store: w.store}
+	for _, l := range lines {
+		if _, err := txns.Categorise(ctx, w.org, journal.Categorisation{Draft: banktransaction.Draft{LineID: l.ID,
+			Parts: []banktransaction.Part{{AccountID: rent.ID, GSTCode: "OP"}}}, At: now}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	offers := func(rules []banking.Rule, times int) []banking.Offer {
+		var out []banking.Offer
+		if err := w.store.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			out, err = banking.Repeated(ctx, u, rules, times)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	got := offers(nil, 0)
+	if len(got) != 1 || got[0].When != (banking.Conditions{DescriptionContains: "grab*trip", Direction: banking.DirectionOut}) ||
+		got[0].Then != (banking.Action{AccountID: rent.ID, GSTCode: "OP"}) || len(got[0].Lines) != 5 {
+		t.Fatalf("the default of five: %+v", got)
+	}
+	if got := offers(nil, 4); len(got) != 2 || got[1].When.CounterpartyContains != "zoom video" || len(got[1].Lines) != 4 {
+		t.Fatalf("four times, when asked: %+v", got)
+	}
+	if got := offers([]banking.Rule{rule(t, "Grab", 1, true, banking.Conditions{DescriptionContains: "grab"})}, 0); len(got) != 0 {
+		t.Errorf("a pattern a rule covers: %+v", got)
 	}
 }

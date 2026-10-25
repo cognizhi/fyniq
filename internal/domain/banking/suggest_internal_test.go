@@ -7,7 +7,7 @@ import "testing"
 // req: FR-BNK-07
 func TestAReferenceIsNamedOnWordBoundaries(t *testing.T) {
 	for _, c := range []struct {
-		text, number string
+		text, number  string
 		exact, folded bool
 	}{
 		{"GIRO INV-0001 ACME", "INV-0001", true, true},

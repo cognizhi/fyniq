@@ -17,6 +17,8 @@ const (
 	CodeFile     = "BANK-04" // the file cannot be read: the reader's refusal, with its line and field
 	CodeRequest  = "BANK-05" // the request is incomplete, such as a CSV without its account
 	CodeRule     = "BANK-06" // a bank rule's name, conditions or action do not fit, or no longer read
+	CodeAutoOn   = "BANK-07" // the rule auto-applies already
+	CodeRuleOff  = "BANK-08" // an inactive rule matches nothing, so it is not made to apply by itself
 )
 
 // Error is a refusal with a stable code, what is wrong and how to fix it.

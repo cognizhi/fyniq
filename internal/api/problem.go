@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
@@ -572,6 +573,11 @@ var codeFacts = map[string]struct {
 	connector.CodeChange:        {409, "The change cannot be decided or applied now"},
 	storage.CodeConnector:       {409, "A connector moves only along its lifecycle"},
 	storage.CodeConnectorChange: {409, "The other Super admin's approval is needed"},
+
+	// Banking (FR-BNK-05, FR-BNK-14).
+	banking.CodeRule:    {422, "The bank rule does not fit"},
+	banking.CodeAutoOn:  {409, "The rule applies by itself already"},
+	banking.CodeRuleOff: {409, "The rule is switched off"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -725,6 +731,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		sre *salesreminder.Error
 		sme *statement.Error
 		cne *connector.Error
+		bke *banking.Error
 		pe  *period.Error
 		ae  *accounting.Error
 		ce  *closing.Error
@@ -776,6 +783,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(ae.Code, sentence(ae.Message), sentence(ae.Fix))
 	case errors.As(err, &ce):
 		return problem(ce.Code, sentence(ce.Message), sentence(ce.Fix))
+	case errors.As(err, &bke):
+		return problem(bke.Code, sentence(bke.Message), sentence(bke.Fix))
 	case errors.As(err, &cne):
 		return problem(cne.Code, sentence(cne.Message), sentence(connectorFixes[cne.Code]))
 	case errors.As(err, &fe):

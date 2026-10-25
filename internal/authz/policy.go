@@ -101,9 +101,10 @@ const (
 // activating statutory pack versions (rev 0.41); reopening a closed period (rev 0.51); posting a journal above the
 // self-approval threshold, and voiding one (rev 0.53); posting a bill above the threshold, and voiding one (p1-purchases);
 // publishing a document template (rev 0.95); issuing an invoice above the threshold, and voiding or editing one (p1-sales);
-// a step of an organisation connector's lifecycle (p1-connector-framework, FR-INT-26).
+// a step of an organisation connector's lifecycle (p1-connector-framework, FR-INT-26); a bank rule's auto-apply
+// (p1-bank-import-reconcile, FR-BNK-14).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
-	Invoices, Integrations}
+	Invoices, Integrations, BankTransactions}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -494,6 +495,9 @@ var (
 	RecordCustomerDeposit      = Policy{Operation: "recordCustomerDeposit", Capability: Invoices, Need: Post}
 	VoidCustomerDeposit        = Policy{Operation: "voidCustomerDeposit", Capability: Invoices, Need: Post}
 	RequestCustomerDepositVoid = Policy{Operation: "requestCustomerDepositVoid", Capability: Invoices, Need: Post}
+	// RequestBankRuleAutoApply asks that a bank rule apply by itself (FR-BNK-14): those who categorise ask, and the approval
+	// engine has a person holding A approve it.
+	RequestBankRuleAutoApply = Policy{Operation: "requestBankRuleAutoApply", Capability: BankTransactions, Need: Create}
 	// Rendering an invoice as its document (FR-AR-05) reads it.
 	GetInvoiceDocument = Policy{Operation: "getInvoiceDocument", Capability: Invoices, Need: View}
 	// Emailing an issued invoice or a sent quote to the customer (FR-AR-06) speaks for the company to the outside, as
@@ -830,7 +834,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListWriteOffs, GetWriteOff, CreateWriteOff, ReplaceWriteOff, RequestWriteOffPost, VoidWriteOff, RequestWriteOffVoid,
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
 	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
-	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid,
+	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid, RequestBankRuleAutoApply,
 	ListQuotes, GetQuote, GetSalesPipeline, CreateQuote, ReplaceQuote, SendQuote, CancelQuote, AcceptQuote, DeclineQuote, InvoiceQuote,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,

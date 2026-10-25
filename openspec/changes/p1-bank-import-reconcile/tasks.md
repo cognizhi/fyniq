@@ -124,7 +124,7 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   did it; undo while the period is open; a sample in the weekly review.
   - Tests: each kind of match; an ambiguous line left in the queue; a cap reached; undo, and undo refused once the
     period is closed. `// req: FR-BNK-14`, `// req: FR-AUT-02`
-- [ ] 5.2 Auto-apply as an approval (design D8): the approval object `bank_rule` with operation
+- [x] 5.2 Auto-apply as an approval (design D8): the approval object `bank_rule` with operation
   `bank_rule.auto_apply`, showing the back-test and the rule's hits since it was created; nothing auto-reconciled
   by a rule before approval; repeated coding (five times by default) offered as a rule, never applied by itself; the
   rule's AI-proposal flag kept for G4-059.

@@ -1762,6 +1762,16 @@ var matrixCalls = map[string]matrixCall{
 			return len(e.call(http.MethodGet, "/v1/customer-deposits?page_size=100", e.as(authz.Accountant), nil).Body["items"].([]any)) == was
 		}
 	},
+	"requestBankRuleAutoApply": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "bank_rule")
+		rule := e.bankRule("Matrix")
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/bank-rules/"+rule.ID.String()+"/auto-apply-approval", person, nil, "If-Match", ruleETag(rule))
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "bank_rule") == was }
+	},
 	"requestCustomerDepositVoid": func(e *env, tok string) (response, func() bool) {
 		was := requestsOf(e, "customer_deposit")
 		id, tag := e.recordedDeposit()
