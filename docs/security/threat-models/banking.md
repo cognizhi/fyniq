@@ -48,6 +48,7 @@ egress guard); API and worker ↔ database (RLS on every banking table); API ↔
 | T15 | Logs, audit, browser | Information disclosure: full account numbers, keys or counterparties' details in logs or traces | Data leaked to whoever reads logs | Medium |
 | T16 | Ledger | Tampering: a line's facts or a posting changed after import to hide something | Lost evidence | Low |
 | T17 | AI and MCP | Elevation: the AI or an MCP client categorises, matches or auto-applies by itself | The never-list bypassed (golden rule 5) | Low: no route today |
+| T18 | Rules | Denial of service: a rule's regular expression runs away over a long description, in the queue or a back-test | Categorising and back-tests stall | Low |
 
 SOD: categorising and preparing are separate from signing off and from approving auto-apply (FM-1, FM-5). No
 money leaves through anything here: bank connectors are read-only and payments go out as approved files
@@ -75,6 +76,7 @@ MCP have no route to any operation here; AI suggestions arrive later as proposal
 | T15 | Account numbers are masked in logs and the audit trail (SEC-15); keys never leave the secret store; counterparties' details stay in the database, not in logs or traces | The logging masking tests and the connector key tests (`// req: SEC-15`, `// asvs: V16.2.5`) |
 | T16 | A line's facts never change and its status moves only forward (a guard trigger); corrections are reversals; every change is audited in its transaction; a categorised or suspense match names its own line's bank transaction and an entry that posts the line's amount on its date (FY228), and an undo reverses it | The guard attack tests of task 2.1 (`// req: AUD-01`, `// asvs: V16.3.3`); `TestBankMatchingKeepsWhatItRecorded` and `TestCategorisingABankLinePostsIt` (task 4.1) |
 | T17 | No AI or MCP route reaches a banking operation; AI suggestions arrive later as proposals | The never-list test, with the AI tool surface; until then no route exists (`// req: AI-P4`) |
+| T18 | Rules match with RE2, in time linear in the text, so no pattern runs away; a pattern is at most 200 characters and a description at most 500 (the readers' limit); a pattern RE2 cannot run is refused when the rule is saved | `TestARuleRegexCannotRunAway` (task 4.2, `// req: FR-BNK-05`) |
 
 ## 4. What remains
 
