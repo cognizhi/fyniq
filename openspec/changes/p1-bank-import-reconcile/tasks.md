@@ -33,12 +33,16 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   (25 Oct 2026: migration 000144, `FY216`–`FY221`; `storage.Banking` and its adapter; no `NOT VALID` constraint, so no
   validating migration. A statement's import event stands for its lines, which arrive only in its transaction; each
   later status change is audited. Proved by `TestBankingStoreKeepsWhatTheBankSaid` and the NaN attacks)
-- [ ] 2.2 Rules, matches, transfers, signals, auto-reconciliations and reconciliations (design D5 to D10):
+- [x] 2.2 Rules, matches, transfers, signals, auto-reconciliations and reconciliations (design D5 to D10):
   - migrations for `bank_rule`, `bank_match`, `bank_transfer`, `bank_signal`, `auto_reconciliation` and
     `bank_reconciliation`, with the same tenancy, guards, grants and audit; a signed-off reconciliation is
     immutable and locked with its period.
   - Tests: attack tests for each table (re-sign a reconciliation, undo an auto-reconciliation in a closed period,
     match one line twice). `// req: FR-BNK-10`, `// req: FR-BNK-14`, `// req: QA-ENG-05`
+  (25 Oct 2026: migration 000145, `FY222`–`FY226`; `storage.BankMatching` and its adapter. An auto-reconciliation is a
+  `bank_match` whose basis is the system's (exact, transfer or rule) rather than a table of its own, so a line's one
+  live match covers both and the Auto-reconciled list reads the matches. The `bank_rule` approval object joins the
+  engine with task 5.2. Proved by `TestBankMatchingKeepsWhatItRecorded` and the NaN attacks)
 
 ## 3. Importing statements
 

@@ -241,6 +241,79 @@ type FyniqBankLine struct {
 	Version        int32
 }
 
+type FyniqBankMatch struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	LineID         uuid.UUID
+	Kind           string
+	DocumentID     *uuid.UUID
+	EntryID        *uuid.UUID
+	TransferID     *uuid.UUID
+	Basis          string
+	RuleID         *uuid.UUID
+	MadeBy         string
+	MadeAt         time.Time
+	UndoneBy       *string
+	UndoneAt       *time.Time
+	UndoReason     *string
+}
+
+type FyniqBankReconciliation struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	MoneyAccountID    uuid.UUID
+	PeriodID          uuid.UUID
+	Currency          string
+	MinorUnits        int16
+	StatementBalance  string
+	BookBalance       string
+	UnreconciledTotal string
+	UnreconciledCount int32
+	Difference        string
+	LedgerRevision    int64
+	PreparedBy        string
+	PreparedAt        time.Time
+	SignedBy          *string
+	SignedAt          *time.Time
+	SignerMfaAt       *time.Time
+	Version           int32
+}
+
+type FyniqBankRule struct {
+	OrganisationID      uuid.UUID
+	ID                  uuid.UUID
+	Name                string
+	Position            int32
+	Conditions          []byte
+	Action              []byte
+	Active              bool
+	FromAiProposal      bool
+	AutoApply           bool
+	AutoApplyApprovalID *uuid.UUID
+	CreatedBy           string
+	CreatedAt           time.Time
+	ChangedBy           string
+	ChangedAt           time.Time
+	Version             int32
+}
+
+type FyniqBankSignal struct {
+	OrganisationID   uuid.UUID
+	ID               uuid.UUID
+	MoneyAccountID   uuid.UUID
+	Amount           string
+	Currency         string
+	MinorUnits       int16
+	Payer            *string
+	Reference        *string
+	ReceivedAt       time.Time
+	InboundMessageID *uuid.UUID
+	InvoiceID        *uuid.UUID
+	Status           string
+	ClosedLineID     *uuid.UUID
+	ClosedAt         *time.Time
+}
+
 type FyniqBankStatement struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -260,6 +333,27 @@ type FyniqBankStatement struct {
 	ImportedBy     string
 	ImportedAt     time.Time
 	CreatedXact    int64
+}
+
+type FyniqBankTransfer struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	FromAccountID  uuid.UUID
+	ToAccountID    uuid.UUID
+	FromLineID     *uuid.UUID
+	ToLineID       *uuid.UUID
+	OnDate         time.Time
+	FromCurrency   string
+	FromMinorUnits int16
+	FromAmount     string
+	ToCurrency     string
+	ToMinorUnits   int16
+	ToAmount       string
+	Fee            *string
+	EntryID        *uuid.UUID
+	MadeBy         string
+	MadeAt         time.Time
+	Version        int32
 }
 
 type FyniqBillPaymentPlan struct {
