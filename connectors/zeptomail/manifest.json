@@ -1,0 +1,125 @@
+{
+  "id": "zeptomail",
+  "name": "Zoho ZeptoMail",
+  "publisher": "Fyniq",
+  "version": "1.0.0",
+  "min_platform": "0.1.0",
+  "summary": "Sends the platform's email through Zoho ZeptoMail (Zoho CPaaS), and records its bounces and complaints.",
+  "scope": "installation",
+  "capabilities": [
+    {
+      "kind": "outbound-email",
+      "trigger": "system-rule",
+      "trigger_rule": "A message the outbox holds for sending: one a person or a rule of the platform asked for.",
+      "on_pause": "hold",
+      "on_disable": "hold",
+      "in_flight": "reconcile"
+    }
+  ],
+  "configuration": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "url": {
+        "type": "string",
+        "title": "Email endpoint",
+        "description": "The account's email endpoint, as Zoho's API page names it.",
+        "default": "https://cpaas.zoho.com/v1.1/email",
+        "pattern": "^https://"
+      },
+      "dns_records": {
+        "type": "object",
+        "title": "DNS records",
+        "description": "The records each sending domain needs for this provider, as its dashboard lists them; the nightly domain check looks for each one.",
+        "propertyNames": {
+          "pattern": "^[a-z0-9.-]+$"
+        },
+        "additionalProperties": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "name",
+              "value"
+            ],
+            "properties": {
+              "type": {
+                "enum": [
+                  "TXT",
+                  "CNAME"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 253
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2048
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "secrets": [
+    {
+      "name": "send_token",
+      "title": "Send token",
+      "description": "The Mail Agent's send token, sent as Zoho-enczapikey.",
+      "used_by": [
+        "worker"
+      ],
+      "rotation_overlap_hours": 1
+    },
+    {
+      "name": "webhook_key",
+      "title": "Webhook authentication key",
+      "description": "The Mail Agent's webhook authentication key, which signs ZeptoMail's events.",
+      "used_by": [
+        "api"
+      ],
+      "rotation_overlap_hours": 24
+    }
+  ],
+  "provider_scopes": [],
+  "fyniq_scopes": [],
+  "data_classes": [
+    "personal-data",
+    "business-figures"
+  ],
+  "regions": [
+    "US"
+  ],
+  "destinations": [
+    {
+      "host": "cpaas.zoho.com",
+      "port": 443
+    }
+  ],
+  "webhooks": [
+    {
+      "path": "/api/webhooks/email/zeptomail",
+      "events": [
+        "hardbounce",
+        "softbounce",
+        "fbl_complaint"
+      ],
+      "registered_by": "operator",
+      "secret": "webhook_key"
+    }
+  ],
+  "health_check": "Counts ZeptoMail's refusals and failed connections in recent sends; ZeptoMail cannot be asked what became of a message.",
+  "test_action": "Sends one test message to the signed-in person's own verified address and reports whether ZeptoMail accepted it.",
+  "local_substitute": "A fake ZeptoMail server in tests; the local stack sends through Mailpit instead.",
+  "limits": {
+    "requests_per_minute": 600,
+    "breaker_failures": 5,
+    "breaker_cooldown_seconds": 60
+  }
+}

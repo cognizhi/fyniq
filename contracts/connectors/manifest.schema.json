@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fyniq.app/schemas/connector-manifest.v1.schema.json",
+  "title": "Connector manifest",
+  "description": "What a connector is and does (PRD-001 FR-INT-25, FR-INT-26, FR-INT-27): the services it implements, what it needs, what it sends out and where, and what pause and disable do to its work. Every first-party connector in connectors/<id>/manifest.json validates against it; third-party connectors (FR-INT-28, P3) will use the same format.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "publisher", "version", "min_platform", "summary", "scope", "capabilities", "configuration",
+    "secrets", "provider_scopes", "fyniq_scopes", "data_classes", "regions", "destinations", "webhooks", "health_check",
+    "test_action", "local_substitute", "limits"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,39}$", "description": "Stable identifier; the directory under connectors/."},
+    "name": {"type": "string", "minLength": 1, "maxLength": 80, "description": "The provider's own name, as people know it."},
+    "publisher": {"type": "string", "minLength": 1, "maxLength": 80},
+    "version": {"$ref": "#/$defs/semver", "description": "The connector's version; a change to what it declares changes it."},
+    "min_platform": {"$ref": "#/$defs/semver", "description": "The oldest platform version it runs on."},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 300, "description": "One plain sentence for the catalogue."},
+    "scope": {"enum": ["installation", "organisation"], "description": "Installed installation-wide by the Super admin, or per organisation by its Owner or Administrator."},
+    "capabilities": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"$ref": "#/$defs/capability"}
+    },
+    "configuration": {
+      "type": "object",
+      "description": "A JSON Schema (2020-12) of the connector's non-secret configuration: an object whose properties are what a person sets. Secrets are never in it; they are listed under secrets.",
+      "required": ["type", "properties"],
+      "properties": {"type": {"const": "object"}, "additionalProperties": {"const": false}}
+    },
+    "secrets": {
+      "type": "array", "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "title", "description", "used_by", "rotation_overlap_hours"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,39}$"},
+          "title": {"type": "string", "minLength": 1, "maxLength": 80},
+          "description": {"type": "string", "minLength": 1, "maxLength": 300},
+          "used_by": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["api", "worker", "jobs"]}, "description": "The services that read it, and only they may."},
+          "rotation_overlap_hours": {"type": "integer", "minimum": 0, "maximum": 168, "description": "How long the replaced version stays valid after a rotation, so work in flight and webhooks signed with it still pass (FR-INT-26: rotation without downtime)."}
+        }
+      }
+    },
+    "provider_scopes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}, "description": "The scopes it asks of the provider."},
+    "fyniq_scopes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^fyniq\\.[a-z.]+$"}, "description": "The Fyniq scopes it receives."},
+    "data_classes": {
+      "type": "array", "uniqueItems": true,
+      "items": {"enum": ["know-how", "business-figures", "personal-data", "payroll", "restricted"]},
+      "description": "The data classes it sends out of Fyniq (PRD-001 AI-75's classes)."
+    },
+    "regions": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^([A-Z]{2}|EU|configured)$"},
+      "description": "Where the provider processes what it is sent: ISO 3166 country codes, EU, or configured where the person's own server decides."
+    },
+    "destinations": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "oneOf": [{"required": ["host"]}, {"required": ["configured"]}],
+        "properties": {
+          "host": {"type": "string", "pattern": "^(\\*\\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$", "description": "A host it may reach; *. allows its subdomains."},
+          "configured": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,39}$", "description": "The configuration property that names the host, for a server the person chooses (SMTP); reached only through the egress guard (SEC-36)."},
+          "port": {"type": "integer", "minimum": 1, "maximum": 65535}
+        }
+      },
+      "description": "Every place it connects to (SEC-36); nothing else is reachable."
+    },
+    "webhooks": {
+      "type": "array", "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["path", "events", "registered_by", "secret"],
+        "properties": {
+          "path": {"type": "string", "pattern": "^/api/webhooks/[a-z0-9/-]+$"},
+          "events": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "registered_by": {"enum": ["connector", "operator"], "description": "connector: it registers and removes them itself; operator: a person sets them in the provider's dashboard, and uninstall lists them to remove."},
+          "secret": {"type": "string", "description": "The secret that signs them, one of secrets."}
+        }
+      }
+    },
+    "health_check": {"type": "string", "minLength": 1, "maxLength": 300, "description": "What the health check does, in plain words."},
+    "test_action": {"type": "string", "minLength": 1, "maxLength": 300, "description": "What the connection test does; it answers pass or fail with a reason, never the provider's body."},
+    "local_substitute": {"type": "string", "minLength": 1, "maxLength": 300, "description": "What stands in for the provider in local mode and in tests (ADR-T4)."},
+    "limits": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requests_per_minute", "breaker_failures", "breaker_cooldown_seconds"],
+      "properties": {
+        "requests_per_minute": {"type": "integer", "minimum": 1, "maximum": 100000, "description": "Per instance (FR-INT-27)."},
+        "breaker_failures": {"type": "integer", "minimum": 1, "maximum": 100, "description": "Consecutive transport failures that open the circuit breaker."},
+        "breaker_cooldown_seconds": {"type": "integer", "minimum": 1, "maximum": 3600, "description": "How long the breaker stays open before one trial."}
+      }
+    }
+  },
+  "$defs": {
+    "semver": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
+    "capability": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "trigger", "trigger_rule", "on_pause", "on_disable", "in_flight"],
+      "properties": {
+        "kind": {"enum": ["sign-in", "outbound-email", "inbound-email", "messaging", "ticketing", "payment-provider", "bank-data", "e-invoicing", "document-ai"]},
+        "trigger": {"enum": ["human-authority", "system-rule", "none"], "description": "Who may make it act (FR-INT-27): a completed human authority, a system rule, or nobody."},
+        "trigger_rule": {"type": "string", "minLength": 1, "maxLength": 300, "description": "The authority or rule, in plain words."},
+        "on_pause": {"const": "hold", "description": "Pause holds queued work (FR-INT-26)."},
+        "on_disable": {"enum": ["hold", "cancel"], "description": "What disable does to queued work: cancel what is safe to cancel, hold what a person asked for."},
+        "in_flight": {"enum": ["finish", "reconcile"], "description": "Work already handed to the provider finishes, or is reconciled with it; never dropped."},
+        "parser_version": {"type": "string", "pattern": "^[a-z0-9.-]+@[0-9]+$", "description": "For a capability that reads what it imports: the parser that read each item, recorded on the item."}
+      }
+    }
+  }
+}
