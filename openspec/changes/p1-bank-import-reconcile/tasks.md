@@ -289,9 +289,18 @@ before any code that parses bank files or touches connector secrets (SEC-20).
     imported statement, a typed e-statement balance only in Standard mode (FM-5); the balances, the lines the books do
     not hold yet and the difference; signed off by the Controller after step-up at its version, never by its preparer,
     then locked with the month; suspense lines counted apart.
-- [ ] 10.6 The user-guide pages for banking (keys for every screen's help), compiled into `kb/pages/`, with
+- [x] 10.6 The user-guide pages for banking (keys for every screen's help), compiled into `kb/pages/`, with
   `make kb-index` and `make kb-lint` clean, and the screens checked in the dev stack against the real API.
   `// req: QA-UI-05`
+  - As built: `docs/user-guide/banking.md` (key `banking.accounts`), its sections written with each screen and
+    compiled into seven pages (`banking.accounts`, `banking.add-account`, `banking.import`, `banking.categorise`,
+    `banking.rules`, `banking.auto-reconciled`, `banking.reconcile`); every route and action has its help key
+    (`registry.test.ts`). Checked in the dev stack on 26 Oct 2026 against the real API, as a local test founder:
+    an account added on 1010, a column mapping saved, a synthetic CSV previewed and imported, a line categorised,
+    a rule made and back-tested (2 of 3 lines) and its suggestion accepted from the grid, the register's chain and
+    statuses, and October's reconciliation prepared. The check found receivables and payables offered as a
+    category, which the API refuses; they are left out now. Not checked there: emailed reports, connectors and
+    sign-off, which need an Administrator, a second person and the providers.
 
 ## 11. Finish
 

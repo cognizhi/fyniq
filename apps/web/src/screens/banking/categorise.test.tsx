@@ -123,7 +123,17 @@ describe("the categorise queue", () => {
   it("changes a line's category in a short form, and shows what the API refused", async () => {
     const sent = answer({
       ...queue([line({ amount: sgd("-25.00") })], { l1: line({ amount: sgd("-25.00") }) }),
-      "GET /v1/accounts": { status: 200, body: { items: [{ id: "a6100", code: "6100", name: "Software", type: "expense", group: false, active: true, money_account: false, control: false, payroll_cost: false, revalue: false, parent_id: null, version: 1 }] } },
+      "GET /v1/accounts": {
+        status: 200,
+        body: {
+          items: [
+            { id: "a6100", code: "6100", name: "Software", type: "expense", group: false, active: true, money_account: false, control: false, payroll_cost: false, revalue: false, parent_id: null, version: 1 },
+            // Receivables and payables take a line by another path (a receipt, a bill payment): never offered as a category.
+            { id: "a1100", code: "1100", name: "Accounts receivable", type: "asset", role: "accounts-receivable", group: false, active: true, money_account: false, control: false, payroll_cost: false, revalue: false, parent_id: null, version: 1 },
+            { id: "a2010", code: "2010", name: "Accounts payable", type: "liability", role: "accounts-payable", group: false, active: true, money_account: false, control: false, payroll_cost: false, revalue: false, parent_id: null, version: 1 },
+          ],
+        },
+      },
       "GET /v1/contacts": { status: 200, body: { items: [] } },
       "GET /v1/purchases/gst-codes": { status: 200, body: { version: "sg-gst@2026.1", codes: [{ code: "TX", description: "Standard-rated purchase", claimable: true }] } },
       "POST /v1/bank-lines/l1/categorise": problem(409, "LEDGER-09", "October 2026 is locked.", "Ask the Controller to reopen it, or post it in an open month."),
@@ -135,7 +145,7 @@ describe("the categorise queue", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Post it" }));
     expect(within(dialog).getByText("Choose the account it posts to.")).toBeTruthy();
     const category = within(dialog).getByLabelText("Category");
-    await waitFor(() => expect(within(category).getAllByRole("option")).toHaveLength(2));
+    await waitFor(() => expect(within(category).getAllByRole("option").map((o) => o.textContent)).toEqual(["Choose an account", "6100 Software"]));
     fireEvent.change(category, { target: { value: "a6100" } });
     const gst = within(dialog).getByLabelText("GST code");
     await waitFor(() => expect(within(gst).getAllByRole("option")).toHaveLength(2));

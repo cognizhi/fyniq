@@ -15,6 +15,9 @@ import { checkCategorisation, send, settles, type Line, type PartForm, type Requ
 
 type Contact = components["schemas"]["Contact"];
 
+// controlRoles are the roles of the accounts a line posts to by another path (ledger/bank.go): receivables and payables.
+const controlRoles = ["accounts-receivable", "accounts-payable"];
+
 // usePostingAccounts are the accounts a line's part can post to: active posting accounts, not a group, a money account
 // or a control account (receivables, payables), which the API refuses.
 export function usePostingAccounts() {
@@ -23,7 +26,7 @@ export function usePostingAccounts() {
     queryFn: async () => {
       const { data, error } = await api.GET("/v1/accounts", {});
       if (error) throw error;
-      return (data.items ?? []).filter((a) => a.active && !a.group && !a.money_account && !a.control);
+      return (data.items ?? []).filter((a) => a.active && !a.group && !a.money_account && !a.control && !controlRoles.includes(a.role ?? ""));
     },
   });
 }
