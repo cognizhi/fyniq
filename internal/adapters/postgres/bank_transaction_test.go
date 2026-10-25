@@ -5,6 +5,7 @@ package postgres_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -366,5 +367,60 @@ func TestTheSchedulerReleasesASpreadBankTransaction(t *testing.T) {
 		return nil
 	}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// FR-BNK-11 (task 4.5): a line that cannot be classified yet posts whole to 2999 and stays in the queue as suspense
+// (⚠); classifying it reverses that posting and posts its category, leaving 2999 at nothing and the history intact:
+// the suspense entry, its reversal and the category's entry. A chart without a suspense account refuses it.
+// req: FR-BNK-11
+// req: FR-GL-12
+func TestALineInSuspenseIsClassified(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "bookkeeper"}})
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	b := newCategoryBooks(t, "Suspense Pte Ltd", now)
+	s := store(t, "fyniq_api")
+	txns := journal.BankTransactions{Store: s}
+
+	held, err := txns.Suspend(ctx, b.Org, b.lines[2].ID, now)
+	if err != nil || held.Line.Status != storage.LineSuspense || held.Match.Kind != storage.MatchSuspense ||
+		legsOf(t, s, b.Org, held.Entry) != "1010 -20 SGD = -20; 2999 20 SGD = 20" {
+		t.Fatalf("suspended: %s %+v %v", legsOf(t, s, b.Org, held.Entry), held, err)
+	}
+	if got := balances(t, s, b.Org); got["2999"] != "20.00" {
+		t.Fatalf("2999 while the line waits: %v", got)
+	}
+	classified, err := txns.Categorise(ctx, b.Org, journal.Categorisation{Draft: banktransaction.Draft{LineID: b.lines[2].ID,
+		Parts: []banktransaction.Part{{AccountID: b.Rent.ID, GSTCode: "NA"}}}, At: now})
+	if err != nil || classified.Line.Status != storage.LineCategorised {
+		t.Fatalf("classified: %+v %v", classified, err)
+	}
+	if got := balances(t, s, b.Org); got["2999"] != "0.00" || got["6100"] != "20.00" || got["1010"] != "-20.00" {
+		t.Fatalf("after classifying: %v", got)
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, id := range []string{held.Entry.PostingIdentity, ledger.ReversalIdentity(held.Entry.PostingIdentity), classified.Entry.PostingIdentity} {
+			if _, err := u.Ledger().ByIdentity(ctx, id); err != nil {
+				return fmt.Errorf("%s: %w", id, err)
+			}
+		}
+		matches, err := u.BankMatching().Matches(ctx, storage.BankMatchFilter{LineID: &b.lines[2].ID, All: true})
+		live := map[string]bool{}
+		for _, m := range matches {
+			live[m.Kind] = m.UndoneAt == nil
+		}
+		if err == nil && (len(matches) != 2 || live[storage.MatchSuspense] || !live[storage.MatchCategorised]) {
+			t.Errorf("the line's matches: %+v", matches)
+		}
+		return err
+	}); err != nil {
+		t.Fatalf("the history: %v", err)
+	}
+
+	plain := newBankedBooks(t, "No Suspense Pte Ltd", now)
+	_, err = journal.BankTransactions{Store: s}.Suspend(ctx, plain.Org, plain.lines[2].ID, now)
+	var probs ledger.Problems
+	if !errors.As(err, &probs) || !probs.Has(ledger.CodeSystemRole) {
+		t.Errorf("a chart without 2999: %v", err)
 	}
 }

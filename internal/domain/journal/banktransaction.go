@@ -188,6 +188,33 @@ func (s BankTransactions) categorise(ctx context.Context, u storage.UnitOfWork, 
 	return out, s.after(ctx, u, doc, out.Entry)
 }
 
+// Suspend posts a whole line to the suspense account (2999, the role suspense) when it cannot be classified yet
+// (FR-BNK-11): the line stays in the queue as suspense, shown ⚠, until it is categorised, which reverses this posting.
+// The close warns while the account is not at nothing (C.1 #30).
+func (s BankTransactions) Suspend(ctx context.Context, org, lineID uuid.UUID, at time.Time) (Categorised, error) {
+	var out Categorised
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		accounts, err := u.Accounts().List(ctx)
+		if err != nil {
+			return err
+		}
+		var suspense *uuid.UUID
+		for _, a := range accounts {
+			if string(a.Role) == ledger.RoleSuspense && a.Active && !a.Group {
+				suspense = &a.ID
+			}
+		}
+		if suspense == nil {
+			return ledger.Problems{{Code: ledger.CodeSystemRole, Field: "parts", Message: "the chart has no suspense account",
+				Fix: "Load the standard chart's 2999 Suspense - ask accountant, or give a liability account the role"}}
+		}
+		out, err = s.categorise(ctx, u, Categorisation{Draft: banktransaction.Draft{LineID: lineID,
+			Parts: []banktransaction.Part{{AccountID: *suspense, GSTCode: "NA", Description: "Suspense: to classify"}}}, At: at})
+		return err
+	})
+	return out, err
+}
+
 // Undo undoes the categorisation of a line with a reason: its entry and the releases it posted are reversed on their
 // own dates, the bank transaction is marked reversed, the match is undone and the line goes back to the queue
 // unreconciled. The line's period must be open (FY220, FY224, INV-03). A line in suspense is classified instead.

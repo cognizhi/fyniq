@@ -101,8 +101,10 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   refused (FX-01).
   - Tests: same-currency transfer recorded once; in transit; a Wise SGD-to-USD conversion with a fee, hand-worked.
     `// req: FR-BNK-09`, `// req: ledger/posting-rules Transfer between money accounts`
-- [ ] 4.5 Suspense (design D7): an unmatched line posts to 2999 with ⚠; classifying it reverses and reposts.
+- [x] 4.5 Suspense (design D7): an unmatched line posts to 2999 with ⚠; classifying it reverses and reposts.
   - Tests: post to suspense, classify, the 2999 balance back to zero, history intact. `// req: FR-BNK-11`
+  - As built: `BankTransactions.Suspend` posts the whole line to the account with the role suspense; the close's ⚠
+    while 2999 is not at nothing is task 6.2.
 - [ ] 4.6 The independent oracle: the bank line, spread and transfer rules (with D6's cross-currency rule once the
   accountant confirms it) from Appendix B.1, with scenario shapes and golden cases, in a session of its own (never
   from a build session).
