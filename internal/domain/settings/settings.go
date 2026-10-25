@@ -31,6 +31,8 @@ const (
 	AmountSGD Kind = "amount_sgd" // Singapore dollars, with cents, such as "50.00"
 	Percent   Kind = "percent"    // a percentage with at most two decimals, such as "3" or "2.5"
 	Text      Kind = "text"       // a fixed text, such as the data region
+	// AccountCode is a chart account's code, such as "6460": the account a posting takes, by its code.
+	AccountCode Kind = "account_code"
 )
 
 // Definition is one setting: what it holds, its recommended value and why, and the rules a change to it meets.
@@ -64,6 +66,9 @@ var Catalogue = []Definition{
 	{Key: "assets.capitalisation_threshold", Group: "Defaults", Label: "Capitalisation threshold", Kind: AmountSGD, Recommended: "1000.00",
 		Reason: "Purchases of S$1,000 or more each are offered as fixed assets; smaller ones are expensed. The accountant confirms it",
 		Guide:  guide + "capitalisation-threshold", Requirement: "FR-ORG-04", DualControl: true, Min: "0.00", Max: "1000000.00"},
+	{Key: "bank.charges_account", Group: "Banking", Label: "Bank charges account", Kind: AccountCode, Recommended: "6460",
+		Reason: "A fee a bank or provider reports on a transfer between your accounts is a bank charge, 6460 in the standard chart; the rest of a conversion's difference goes to FX and rounding (7030)",
+		Guide:  guide + "bank-charges", Requirement: "FR-BNK-09", DualControl: true},
 	{Key: "bank.tolerance_base", Group: "Settlement tolerances", Label: "Tolerance in the base currency", Kind: AmountSGD, Recommended: "1.00",
 		Reason: "A payment within S$1.00 of its document clears the difference to FX and rounding (7030), as the workbook did",
 		Guide:  guide + "settlement-tolerances", Requirement: "FR-BNK-08", DualControl: true, Min: "0.00", Max: "100.00"},
@@ -156,6 +161,8 @@ type Problem struct {
 var (
 	whole   = regexp.MustCompile(`^(0|[1-9][0-9]{0,5})$`)
 	percent = regexp.MustCompile(`^(0|[1-9][0-9]{0,2})(\.[0-9]{1,2})?$`)
+	// accountCode is the chart's code format (FR-COA-01): the account must also exist when a posting reads it.
+	accountCode = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$`)
 	sgd     = money.MustLookup("SGD")
 )
 
@@ -188,6 +195,11 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 			return bad(fmt.Sprintf("Send an amount in Singapore dollars with at most two decimals, from %s to %s, such as 50.00", d.Min, d.Max))
 		}
 		return m.String(), nil
+	case AccountCode:
+		if !accountCode.MatchString(raw) {
+			return bad("Send the code of an account in your chart, such as 6460")
+		}
+		return raw, nil
 	case Percent:
 		var v apd.Decimal
 		if !percent.MatchString(raw) {

@@ -73,7 +73,7 @@ func TestTheCatalogueShipsEverySettingAtAValidRecommendedValue(t *testing.T) {
 		if v, p := Normalise(d, d.Recommended); p != nil || v != d.Recommended {
 			t.Errorf("%s: the recommended value %q is not valid: %q %v", d.Key, d.Recommended, v, p)
 		}
-		if d.Kind != Switch {
+		if d.Kind != Switch && d.Kind != AccountCode {
 			if _, p := Normalise(d, d.Min); p != nil {
 				t.Errorf("%s: its minimum is out of range: %v", d.Key, p)
 			}
@@ -102,6 +102,7 @@ func TestValuesAreReadByKindAndRange(t *testing.T) {
 	pct, _ := Lookup("bank.tolerance_foreign_percent")
 	sw, _ := Lookup("features.projects")
 	region, _ := Lookup("data.region")
+	charges, _ := Lookup("bank.charges_account")
 	for _, c := range []struct {
 		d       Definition
 		in, out string
@@ -110,6 +111,7 @@ func TestValuesAreReadByKindAndRange(t *testing.T) {
 		{capDoc, "0", "0.00"}, {capDoc, "50", "50.00"}, {capDoc, "10000.00", "10000.00"}, {capDoc, "12.5", "12.50"},
 		{pct, "0", "0"}, {pct, "10", "10"}, {pct, "2.5", "2.5"}, {pct, "2.75", "2.75"},
 		{sw, "true", "true"}, {sw, "false", "false"},
+		{charges, "6460", "6460"}, {charges, "6460.10", "6460.10"},
 	} {
 		if v, p := Normalise(c.d, c.in); p != nil || v != c.out {
 			t.Errorf("%s = %q: %q %v; want %q", c.d.Key, c.in, v, p, c.out)
@@ -124,6 +126,7 @@ func TestValuesAreReadByKindAndRange(t *testing.T) {
 		{pct, "10.01"}, {pct, "2.555"}, {pct, "-1"}, {pct, "1e1"},
 		{sw, "yes"}, {sw, "TRUE"},
 		{region, "europe-west1"},
+		{charges, ""}, {charges, "64 60"}, {charges, "-6460"}, {charges, "6460-bank-charges-and-more-than-twenty"},
 	} {
 		if v, p := Normalise(c.d, c.in); code(p) != CodeValue || v != "" {
 			t.Errorf("%s = %q: want %s, got %q %v", c.d.Key, c.in, CodeValue, v, p)

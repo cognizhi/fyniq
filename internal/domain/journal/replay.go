@@ -102,6 +102,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 		want.Memo = stored.Memo // a reversal's memo carries its reason, which nothing else keeps
 		return strings.Join(ledger.Differences(want, stored), "; "), nil
 	}
+	if e.Source.Type == ledger.SourceBankTransfer { // a transfer between money accounts, with the rates its entry kept (FR-BNK-09)
+		want, err := replayBankTransfer(ctx, u, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
 	id, err := uuid.Parse(e.Source.ID)
 	if err != nil {
 		return fmt.Sprintf("its source %s %q is not a document", e.Source.Type, e.Source.ID), nil

@@ -15093,11 +15093,11 @@ export interface components {
              */
             key: string;
             /**
-             * @description What it holds: switch is "true" or "false"; days and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text.
+             * @description What it holds: switch is "true" or "false"; days and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460.
              * @example days
              * @enum {string}
              */
-            kind: "switch" | "days" | "years" | "amount_sgd" | "percent" | "text";
+            kind: "switch" | "days" | "years" | "amount_sgd" | "percent" | "text" | "account_code";
             /**
              * @description Its name.
              * @example Payment terms for invoices
