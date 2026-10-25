@@ -191,3 +191,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-25] compile | docs/user-guide/invoices.md → sales.invoices (what the customer sees through the link)
 
 ## [2026-10-25] compile | docs/user-guide/integrations.md → settings.integrations (new guide page for the connector screens, p1-connector-framework 9.3); settings.notifications links to it
+
+## [2026-10-25] compile | docs/user-guide/notifications.md → settings.notifications (a connector paused is a security notice)

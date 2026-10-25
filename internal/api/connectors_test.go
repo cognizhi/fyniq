@@ -220,6 +220,26 @@ func TestConnectorsThroughTheAPI(t *testing.T) {
 	if changes.Status != 200 || len(changes.Body["items"].([]any)) != 2 {
 		t.Fatalf("changes: %d %s", changes.Status, changes.Raw)
 	}
+
+	// The others hear at once of a pause, which waits for nobody, the one who asked hears how each change was decided, and
+	// a lone Super admin hears of each change that applied at once: in the organisations they belong to (the founder's; the
+	// cofounder belongs to none here).
+	if r := e.call(http.MethodPost, path+"/steps", cofounder, map[string]any{"step": "pause"}, "If-Match", "*"); r.Status != 200 {
+		t.Fatalf("pause by the other: %d %s", r.Status, r.Raw)
+	}
+	fanOutAllIn(t, e, fresh.URL("fyniq_worker"))
+	me, _ := uuid.Parse(setup.str("user_id"))
+	told := e.call(http.MethodGet, "/v1/notifications?unread=true", e.principal(authn.Principal{Subject: "founder", Client: "web",
+		Class: authn.ClassUser, Organisation: org, UserID: me, Roles: []authz.Role{authz.Owner}}), nil)
+	for _, want := range []string{`"type":"security.connector"`, "was paused by another Super admin", "approved by another Super admin",
+		"rejected by another Super admin: Not this key.", "changed at once, since there is one Super admin: enabled"} {
+		if !strings.Contains(told.Raw, want) {
+			t.Errorf("the founder was not told %q: %s", want, told.Raw)
+		}
+	}
+	if strings.Contains(told.Raw, "waits for another Super admin") {
+		t.Errorf("the founder was told of their own requests: %s", told.Raw)
+	}
 	if strings.Contains(e.log.String(), key) {
 		t.Fatal("a key reached the log")
 	}
@@ -287,6 +307,13 @@ func TestOrganisationConnectorsThroughTheAPI(t *testing.T) {
 	r = e.call(http.MethodPost, path+"/steps", ahkow, map[string]any{"step": "pause"}, "If-Match", "*")
 	if r.Status != 200 || r.str("state") != "paused" || !strings.Contains(r.Raw, `"name":"key","set":true`) {
 		t.Fatalf("pause at once: %d %s", r.Status, r.Raw)
+	}
+	fanOutAll(t, e) // the others hear of the pause at once; the one who paused does not
+	if n := e.call(http.MethodGet, "/v1/notifications?unread=true", weiling, nil); !strings.Contains(n.Raw, `"type":"security.connector"`) {
+		t.Fatalf("the Owner was not told of the pause: %s", n.Raw)
+	}
+	if n := e.call(http.MethodGet, "/v1/notifications?unread=true", ahkow, nil); strings.Contains(n.Raw, `"type":"security.connector"`) {
+		t.Fatalf("the one who paused was told: %s", n.Raw)
 	}
 	if got := e.call(http.MethodGet, path, e.as(authz.Auditor), nil); got.Status != 200 || strings.Contains(got.Raw, key) {
 		t.Fatalf("read: %d %s", got.Status, got.Raw)

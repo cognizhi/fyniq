@@ -139,7 +139,11 @@ secrets or connector traffic (SEC-20).
   The organisation half, with task 7.1: the approval engine's object `connector` and operation `connector.change`
   (dependencies: the installed connector's version and state, or whether it is installed; Appendix D's "Organisation
   integrations" row; the founders' FM-1 policy), executed through `connector.Organisations` on the final approval.
-  Proved by `TestOrganisationConnectorsThroughTheAPI` and `TestOrganisationConnectorsGoThroughTheLifecycle`)
+  Proved by `TestOrganisationConnectorsThroughTheAPI` and `TestOrganisationConnectorsGoThroughTheLifecycle`.
+  The notice of a pause landed with 10.1, when the threat model's tests were checked: a `security.connector`
+  notification to the organisation's Owners and Administrators, and for the installation a `notify.relay` the worker
+  delivers to the other Super admins in their organisations, with the change waiting, its decision, and every change a
+  lone Super admin makes)
 - [x] 4.4 Secret rotation:
   - a replaced secret is a new version referenced by the pending change, and switched on approval;
   - the old version stays enabled for the manifest's overlap (both verify webhooks), then is disabled and
@@ -333,11 +337,18 @@ secrets or connector traffic (SEC-20).
 
 ## 10. Finish
 
-- [ ] 10.1 The threat model's abuse cases each have their test, and the security checklist is updated.
+- [x] 10.1 The threat model's abuse cases each have their test, and the security checklist is updated.
   `make check`, `make test`, `make scan` and `make infra-check` pass; a conventional commit with upgrade
   notes.
   - Not verified here: a live send through each production provider after the bootstrap, which is a staging
     check.
+  (25 Oct 2026: the threat model named tests written before the code; its test column now names the tests that prove
+  each threat, all of which exist, and the never-list test (T14) is listed under what remains, as it arrives with the
+  AI tool surface. Checking them found the pause notification missing: added, as in 4.3, with `notify.relay` for the
+  installation's Super admins, tested in `TestConnectorsThroughTheAPI` and `TestOrganisationConnectorsThroughTheAPI`.
+  The ASVS rows in `docs/security/README.md` gained V1.3.6, V2.3.5, V13.2.4, V13.3.1, V13.3.4 and V15.3.2. Semgrep's
+  Go parser refused a `~string` constraint in the API slice; that commit was amended before it was pushed. `make check`,
+  `make test`, `make scan` and `make infra-check` pass.)
 
 ## Workflow follow-up
 

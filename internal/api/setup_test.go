@@ -44,9 +44,9 @@ func freshInstallation(t *testing.T) (*env, *pgtest.DB) {
 	}
 	t.Cleanup(st.Close)
 	e := &env{t: t, store: st, clock: clock.NewFrozen(time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC)),
-		tokens: &tokens{m: map[string]authn.Principal{}}, log: &bytes.Buffer{}}
+		tokens: &tokens{m: map[string]authn.Principal{}}, log: &bytes.Buffer{}, queue: local.NewMemory()}
 	mux := http.NewServeMux()
-	e.api = New(mux, Deps{Store: st, Installation: st, Outbox: &outbox.Dispatcher{Store: st, Queue: local.NewMemory(), Clock: e.clock},
+	e.api = New(mux, Deps{Store: st, Installation: st, Outbox: &outbox.Dispatcher{Store: st, Queue: e.queue, Clock: e.clock},
 		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test", Connectors: testConnectors(t, e.clock),
 		Mail: MailInfo{From: "Fyniq <no-reply@mail.example.com>"}})
 	e.srv = httptest.NewServer(mux)

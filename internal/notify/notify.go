@@ -55,6 +55,7 @@ var Catalogue = []Type{
 		Note: "Every sign-in is emailed at once by the sign-in alert, so it is not emailed again here"},
 	{Key: "security.second_factor", Label: "A passkey was added or removed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: "security.roles", Label: "Your roles changed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
+	{Key: ConnectorType, Label: "A connector was paused", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: "approval.requested", Label: "An approval waits for you", Category: Approvals, Severity: "info", Actionable: true, Email: storage.EmailImmediate},
 	{Key: "approval.decided", Label: "Your request was decided", Category: Approvals, Severity: "info", Email: storage.EmailImmediate},
 	{Key: "email.quarantined", Label: "Mail waits in quarantine", Category: Email, Severity: "info", Actionable: true, Email: storage.EmailDaily},

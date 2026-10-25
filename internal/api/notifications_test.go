@@ -23,14 +23,21 @@ import (
 // work.
 func fanOutAll(t *testing.T, e *env) {
 	t.Helper()
+	fanOutAllIn(t, e, db.URL("fyniq_worker"))
+}
+
+// fanOutAllIn is fanOutAll as the worker of the database at workerURL, such as a fresh installation's.
+func fanOutAllIn(t *testing.T, e *env, workerURL string) {
+	t.Helper()
 	ctx := context.Background()
-	worker, err := postgres.Open(ctx, db.URL("fyniq_worker"))
+	worker, err := postgres.Open(ctx, workerURL)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer worker.Close()
 	f := notify.Fanout{Store: worker, Dispatcher: outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: e.clock}, Clock: e.clock,
 		Origin: "https://fyniq.test"}
+	relays := notify.Relays{Store: worker, Operators: worker, Dispatcher: outbox.Dispatcher{Store: worker, Queue: e.queue, Clock: e.clock}} // their fan-outs come round again
 	for {
 		task, err := e.queue.Next(ctx, "worker")
 		if err != nil {
@@ -47,8 +54,13 @@ func fanOutAll(t *testing.T, e *env) {
 		}); err != nil {
 			t.Fatal(err)
 		}
-		if row.Kind == notify.FanoutKind {
+		switch row.Kind {
+		case notify.FanoutKind:
 			if err := f.Work()(ctx, m.OrganisationID, row); err != nil {
+				t.Fatal(err)
+			}
+		case notify.RelayKind:
+			if err := relays.Work()(ctx, m.OrganisationID, row); err != nil {
 				t.Fatal(err)
 			}
 		}

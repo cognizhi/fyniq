@@ -4,14 +4,14 @@ type: task
 title: Your notifications, how they reach you by email, quiet hours, a test, and banners
 summary: The bell and your notifications, choosing email for each kind, quiet hours, sending yourself a test, and dismissing banners
 sources:
-  - docs/user-guide/notifications.md sha256:db2c7e751d142e0cdda30a2fd899faa43677dff79833fbea3dce316fb2631ac6
+  - docs/user-guide/notifications.md sha256:da49496d75ef90b23c13bc9a98999dfda607027e1d8c44db1334d44a3e34eb5c
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-24
+compiled_at: 2026-10-25
 aliases:
   - bell
   - notification centre
@@ -43,7 +43,7 @@ aliases:
 
 - **Settings → Notifications**: every notification shows in the app; for each kind choose **Immediately**, **Daily digest**, **Weekly digest** or **Not by email**.
 - Recommended: approvals and security notices at once, the rest in the daily digest at 08:00 Singapore time; the weekly digest goes on Mondays at 08:00. A changed kind offers **Reset to recommended**.
-- Security notices are **Always on**: a passkey added or removed and a role change are emailed at once; a sign-in is not emailed again, since the sign-in alert emails every sign-in.
+- Security notices are **Always on**: a passkey added or removed, a role change and a connector paused ([[settings.integrations]]) are emailed at once; a sign-in is not emailed again, since the sign-in alert emails every sign-in.
 - Email goes to the address the sign-in provider verified; without one, notifications show in the app only. Whether an email carries details is the organisation's setting ([[settings.organisation]]).
 
 (src: docs/user-guide/notifications.md#choose-how-they-reach-you)
