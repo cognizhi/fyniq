@@ -248,11 +248,16 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 
 ## 10. The screens
 
-- [ ] 10.1 `bank-accounts` (`/banking`) and `add-bank-account` (`/banking/accounts/new`), with the Banking navigation
+- [x] 10.1 `bank-accounts` (`/banking`) and `add-bank-account` (`/banking/accounts/new`), with the Banking navigation
   item: freshness and what needs categorising; the wizard's kinds of source (file, emailed reports, Wise or Airwallex
   through the connector).
   - Component tests with axe; help keys and registry entries. `// req: FR-BNK-01`, `// req: FR-BNK-13`,
     `// req: FR-BNK-15`
+  - As built: `apps/web/src/screens/banking/` with the guide page `docs/user-guide/banking.md` (key
+    `banking.accounts`) compiled into `kb/pages/`. Freshness shows complete to, the last statement and gaps (⚠ in
+    both modes); "stale" and "sync failed" wait for check C.2 #43, which no API reports yet. The email source names the
+    bank-ingest address when it has none. Setting a source is the Administrator's (C on "Bank data… connections"); a
+    Bookkeeper's or Accountant's account takes statement files. Links to the pages of 10.2 to 10.5 come with them.
 - [ ] 10.2 `bank-account` (`/banking/accounts/$id`) and `statement-import` (`/banking/import`): lines with status,
   gaps and duplicates; the import's preview for several accounts.
   - Component tests with axe. `// req: FR-BNK-02`, `// req: FR-BNK-04`, `// req: FR-BNK-16`

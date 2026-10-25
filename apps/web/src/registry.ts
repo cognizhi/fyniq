@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, Contact, House, Inbox, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, Contact, House, Inbox, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -84,6 +84,9 @@ export const routes = [
   { kind: "route", id: "recurring-bills", path: "/purchases/bills/recurring", mode: "basic", signedIn: true, help: "purchases.recurring-bills", guide: "purchases.bills#recurring-bills" },
   { kind: "route", id: "recurring-bill-new", path: "/purchases/bills/recurring/new", mode: "basic", signedIn: true, help: "recurring-bill.new", guide: "purchases.bills#recurring-bills" },
   { kind: "route", id: "recurring-bill", path: "/purchases/bills/recurring/$recurringBillId", mode: "basic", signedIn: true, help: "purchases.recurring-bill", guide: "purchases.bills#recurring-bills" },
+  // Banking (FR-BNK-01, FR-BNK-13, FR-BNK-15…18; p1-bank-import-reconcile task 10.1): Basic; safety (gaps, freshness) shows in both modes.
+  { kind: "route", id: "banking", path: "/banking", mode: "basic", signedIn: true, help: "banking.accounts", guide: "banking.accounts" },
+  { kind: "route", id: "bank-account-new", path: "/banking/accounts/new", mode: "basic", signedIn: true, help: "bank-account.new", guide: "banking.accounts#add-a-money-account" },
   { kind: "route", id: "accounting", path: "/accounting", mode: "expert", signedIn: true, help: "nav.accounting", guide: "accounting.journals" },
   { kind: "route", id: "journals", path: "/accounting/journals", mode: "expert", signedIn: true, help: "accounting.journals", guide: "accounting.journals" },
   { kind: "route", id: "journal-new", path: "/accounting/journals/new", mode: "expert", signedIn: true, help: "journal.new", guide: "accounting.journals#prepare-a-journal" },
@@ -317,6 +320,8 @@ export const nav = [
   { kind: "nav", id: "nav.sales", route: "/sales/invoices", icon: Receipt, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "basic", help: "nav.sales", guide: "sales.invoices" },
   // Accounting is Expert (experience/modes "Basic and Expert navigation"); its first page is the chart.
   { kind: "nav", id: "nav.purchases", route: "/purchases/bills", icon: ReceiptText, group: "main", roles: ["approver", "bookkeeper", "ap_specialist", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "basic", help: "nav.purchases", guide: "purchases.bills" },
+  // Banking shows to the roles that may view bank transactions (Appendix D, V or more); the API decides the rest.
+  { kind: "nav", id: "nav.banking", route: "/banking", icon: Landmark, group: "main", roles: ["bookkeeper", "accountant", "controller", "owner", "ar_specialist", "ap_specialist", "payment_releaser", "auditor", "tax_agent"], mode: "basic", help: "banking.accounts", guide: "banking.accounts" },
   { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },
   { kind: "nav", id: "nav.settings", route: "/settings", icon: Settings, group: "footer", roles: "all", mode: "basic", help: "settings.overview", guide: "home.overview#settings" },
 ] as const satisfies readonly NavFeature[];
