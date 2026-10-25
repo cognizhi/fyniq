@@ -266,10 +266,15 @@ before any code that parses bank files or touches connector secrets (SEC-20).
     incoming-funds alerts apart (dismissed with a reason) and its transfers in transit. The import takes several
     files, each with its format, account and mapping, previews each, imports each once with its own key, and saves a
     column mapping. PDF statements stay P2.
-- [ ] 10.3 `categorise-basic` and `categorise-expert` (`/banking/categorise`): one line at a time in Basic, the grid
+- [x] 10.3 `categorise-basic` and `categorise-expert` (`/banking/categorise`): one line at a time in Basic, the grid
   in Expert; accept, edit, split, transfer, match and bulk accept.
   - Component tests with axe, and the same request for the same action in both modes (QA-UI-04).
     `// req: FR-BNK-06`, `// req: FR-BNK-07`, `// req: FR-UX-24`
+  - As built: one card at a time with its suggestions (accept, change the category, skip) in both modes, Reconcile
+    now, and in Expert the grid view (bulk accept of the selection, each line in its own request), split, transfer
+    (both sides or in transit), match to chosen invoices or bills, and suspense. The grid is a table: range
+    selection, paste and fill-down (FR-UX-05, FR-UX-07) come with the app shell's grid (`p1-app-shell`); AI
+    suggestions and their tier-1 proposal arrive with the AI assistant; the rules side-peek comes with 10.4.
 - [ ] 10.4 `bank-rules` (`/banking/rules`) and `auto-reconciled` (`/banking/auto-reconciled`): rules with the
   back-test and the auto-apply request; what was reconciled, why, and undo.
   - Component tests with axe. `// req: FR-BNK-05`, `// req: FR-BNK-14`

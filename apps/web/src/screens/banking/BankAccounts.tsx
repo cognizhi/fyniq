@@ -75,6 +75,20 @@ export function FreshnessChip({ account }: { account: MoneyAccount }) {
   );
 }
 
+// BankTabs are Banking's pages; each later page joins as it is built.
+export function BankTabs() {
+  return (
+    <nav className="fy-tabs" aria-label="Banking">
+      <Link to="/banking" activeOptions={{ exact: true }}>
+        Accounts
+      </Link>
+      <Link to="/banking/categorise" activeOptions={{ exact: true, includeSearch: false }}>
+        Categorise
+      </Link>
+    </nav>
+  );
+}
+
 // BankAccounts is Banking › Accounts (docs/design/screens BankAccounts; FR-BNK-01, FR-BNK-13, FR-BNK-16;
 // p1-bank-import-reconcile task 10.1): the cash position, then each money account with its balance, how up to date
 // its data is and how many of its lines wait. Figures come only from the server (FR-UX-22): nothing is added up here.
@@ -126,6 +140,7 @@ export function BankAccounts() {
         )}
       </div>
       <ReviewBanner screen="bank-accounts" />
+      <BankTabs />
       {cash.data && <CashCard position={cash.data} />}
       {cash.isError && <Refusal problem={problemOf(cash.error)} title="The cash position could not be read" />}
       {accounts.isError && <Refusal problem={problemOf(accounts.error)} title="The money accounts could not be listed" />}
