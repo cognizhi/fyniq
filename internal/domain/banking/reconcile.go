@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/rounding"
@@ -46,59 +47,9 @@ type ReconciledPeriod struct {
 }
 
 // BookBalance is a chart account's balance in a currency through a day, and its value in the base currency, from the
-// balance service (ENG-04): the materialised balances of every period that ends by then, and the lines of the period
-// the day falls in, up to it.
+// balance service (ENG-04, balance.Through).
 func BookBalance(ctx context.Context, u storage.UnitOfWork, account uuid.UUID, cur, base money.Currency, through time.Time) (money.Money, money.Money, error) {
-	amount, value := money.Zero(cur), money.Zero(base)
-	periods, err := u.Periods().List(ctx)
-	if err != nil {
-		return amount, value, err
-	}
-	for _, p := range periods {
-		switch {
-		case !p.EndsOn.After(through):
-			rows, err := u.Balances().ForPeriod(ctx, p.ID)
-			if err != nil {
-				return amount, value, err
-			}
-			for _, r := range rows {
-				if r.AccountID != account || r.Currency != cur.Code {
-					continue
-				}
-				a, err := money.ParseStored(string(r.Amount), cur)
-				if err != nil {
-					return amount, value, err
-				}
-				b, err := money.ParseStored(string(r.BaseAmount), base)
-				if err != nil {
-					return amount, value, err
-				}
-				amount, _ = amount.Add(a)
-				value, _ = value.Add(b)
-			}
-		case !p.StartsOn.After(through):
-			lines, err := u.Ledger().AccountLines(ctx, account, p.StartsOn, through, 1_000_000)
-			if err != nil {
-				return amount, value, err
-			}
-			for _, l := range lines {
-				if l.Currency != cur.Code {
-					continue
-				}
-				a, err := money.ParseStored(string(l.Amount), cur)
-				if err != nil {
-					return amount, value, err
-				}
-				b, err := money.ParseStored(string(l.BaseAmount), base)
-				if err != nil {
-					return amount, value, err
-				}
-				amount, _ = amount.Add(a)
-				value, _ = value.Add(b)
-			}
-		}
-	}
-	return amount, value, nil
+	return balance.Through(ctx, u, account, cur, base, through)
 }
 
 // statementBalance is the closing balance of the latest statement of an account ending on or before a day, and its day.
