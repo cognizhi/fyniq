@@ -85,7 +85,7 @@ secrets or connector traffic (SEC-20).
 
 ## 4. The installed connector, its lifecycle and dual control
 
-- [ ] 4.1 Migrations and storage:
+- [x] 4.1 Migrations and storage:
   - migrations: `installation_connector` (global, in `globalTables`), `organisation_connector` (tenant, FORCE
     RLS) and `installation_change` (global);
   - the state machine trigger and append-only history, with new FY codes in `db/README.md`;
@@ -94,6 +94,15 @@ secrets or connector traffic (SEC-20).
   - Tests: attack tests for every illegal transition, a row of another organisation, an update of an
     uninstalled row, and a secret value in a configuration column (refused by a check on the schema's
     `writeOnly` keys). `// req: FR-INT-26`, `// req: INV-06`
+  (25 Oct 2026: migrations 000141 and 000142: the global `installation_connector`, `installation_connector_secret` and
+  `installation_change`, written only through SECURITY DEFINER functions that check an active Super admin and, with
+  two, an approved change for every step but pause (`apply_installation_change`, FY213), the bootstrap only into an
+  empty catalogue (FY214); the tenant `organisation_connector` and `organisation_connector_secret`; `connector_guard`
+  (FY205 to FY207), the secret guards (FY208), the change guard and decision (FY209 to FY212); a configuration refused
+  when it holds one of the manifest's secret names, which each row keeps; the approval object `connector`. The
+  `storage.Connectors` port and its adapter, auditing every step in the same transaction. Tests:
+  `TestInstallationConnectorsKeepTheirLifecycle`, `TestOrganisationConnectorsKeepTheirLifecycle`, the schema, grants and
+  tenant goldens)
 - [ ] 4.2 The lifecycle in `internal/connector`:
   - install, configure (validated against the manifest's schema), replace a secret, test, enable, pause,
     resume, disable, uninstall, order, consent;

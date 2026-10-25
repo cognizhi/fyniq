@@ -98,6 +98,8 @@ type UnitOfWork interface {
 	DocumentTemplates() DocumentTemplates
 	AccountingBasis() AccountingBasis
 	FXRates() FXRates
+	// Connectors are the installed connectors, the installation's and the organisation's (FR-INT-20, FR-INT-26).
+	Connectors() Connectors
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))
@@ -589,6 +591,14 @@ const (
 	CodeScheduled      = "STORAGE-SCHEDULED-01"  // the scheduler issues and sends only the invoices of an approved recurring invoice set to issue and send
 	CodeReminder       = "STORAGE-REMINDER-01"   // a reminder is of an issued invoice or a sent quote, decided once per step, never changed
 	CodeStatement      = "STORAGE-STATEMENT-01"  // a statement posts nothing and is never reversed
+	// CodeConnector: a connector moves only along its lifecycle, is never deleted, and its secret versions are only
+	// replaced and destroyed (FR-INT-26).
+	CodeConnector = "STORAGE-CONNECTOR-01"
+	// CodeConnectorChange: a step on an installation connector needs the other Super admin's approved change, decided
+	// once, by another person, before it expires (FR-ADM-07).
+	CodeConnectorChange = "STORAGE-CONNECTOR-02"
+	// CodeBootstrap: the first-start bootstrap runs once, into an empty catalogue.
+	CodeBootstrap      = "STORAGE-CONNECTOR-03"
 	CodeBillPlan       = "STORAGE-PLAN-01"       // a bill's payment plan never changes: a later one replaces it
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
