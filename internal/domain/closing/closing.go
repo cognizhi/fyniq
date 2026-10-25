@@ -18,9 +18,9 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/domain/deposit"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
-	"github.com/cognizhi/fyniq/internal/domain/deposit"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/payables"
@@ -110,7 +110,7 @@ func base(ctx context.Context, u storage.UnitOfWork) (money.Currency, storage.Or
 // #57); (rev 0.68) ✖ a task of the month's close checklist neither done nor skipped with a reason (FR-GL-07, C.2 #58);
 // (rev 0.78) ✖ the AP sub-ledger differs from 2010 by anything no source explains, ⚠ amounts on 2010 from opening
 // balances or manual journals (INV-07, C.2 #2); (rev 0.85) the same two checks of the recurring bills as of the
-// recurring journals (C.1 #28, #29). Reconciliations join with p1-bank-import-reconcile.
+// recurring journals (C.1 #28, #29); (p1-bank-import-reconcile task 6.2) the bank checks of bankChecks.
 func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time.Time) ([]Check, error) {
 	cur, org, err := base(ctx, u)
 	if err != nil {
@@ -218,6 +218,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		return nil, err
 	}
 	out = append(out, deposits...)
+	bank, err := bankChecks(ctx, u, cur, p, today)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, bank...)
 	tolerances, err := toleranceCheck(ctx, u, cur, p)
 	if err != nil {
 		return nil, err
