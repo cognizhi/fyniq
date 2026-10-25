@@ -1,0 +1,106 @@
+openapi: 3.1.0
+info:
+  title: Airwallex API (the operations Fyniq calls)
+  version: "2026-10-26"
+  description: >
+    Written from Airwallex's API reference pages, because Airwallex publishes no OpenAPI document: Obtain Access Token
+    (https://www.airwallex.com/docs/api/authentication/api_access_token/login.md), List all Current Balances
+    (https://www.airwallex.com/docs/api/core_resources/balances/current.md) and Retrieve the Balance History
+    (https://www.airwallex.com/docs/api/core_resources/balances/history.md), retrieved 26 Oct 2026, with their examples.
+    Only the fields the airwallex connector reads are described. The local partners profile mocks it with Prism.
+servers:
+  - url: https://api.airwallex.com
+    description: Production
+  - url: https://api.sandbox.airwallex.com
+    description: Sandbox
+paths:
+  /api/v1/authentication/login:
+    post:
+      operationId: login
+      summary: Obtain an access token, valid for 30 minutes
+      parameters:
+        - { name: x-client-id, in: header, required: true, schema: { type: string } }
+        - { name: x-api-key, in: header, required: true, schema: { type: string } }
+      responses:
+        "201":
+          description: The token and its expiry.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  expires_at: { type: string, description: ISO 8601, such as 2021-06-18T16:30:00+0000 }
+              example:
+                token: eyJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE2MjQwMDAwMDAsImV4cCI6MTYyNDAwMTgwMH0.example
+                expires_at: "2021-06-18T16:30:00+0000"
+        "401": { description: "credentials_invalid or credentials_expired" }
+  /api/v1/balances/current:
+    get:
+      operationId: listCurrentBalances
+      summary: The available and pending balances of every currency
+      security: [{ bearer: [] }]
+      parameters:
+        - { name: account_type, in: query, schema: { type: string, enum: [cash, yield, credit] } }
+      responses:
+        "200":
+          description: One balance per currency and account type.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    account_type: { type: string }
+                    currency: { type: string }
+                    available_amount: { type: number }
+                    pending_amount: { type: number }
+                    total_amount: { type: number }
+              example:
+                - { account_type: cash, available_amount: 100000, currency: AUD, pending_amount: 50000, prepayment_amount: 0, reserved_amount: 0, total_amount: 150000 }
+  /api/v1/balances/history:
+    get:
+      operationId: getBalanceHistory
+      summary: Each change to a currency's balance, a page at a time
+      security: [{ bearer: [] }]
+      parameters:
+        - { name: currency, in: query, schema: { type: string } }
+        - { name: account_type, in: query, schema: { type: string, enum: [cash, yield, credit] } }
+        - { name: from_post_at, in: query, schema: { type: string }, description: The range's start (inclusive), ISO 8601 }
+        - { name: to_post_at, in: query, schema: { type: string }, description: The range's end (exclusive), ISO 8601; within 7 days of the start }
+        - { name: page, in: query, schema: { type: string }, description: "page_after or page_before of the previous answer" }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 10, maximum: 2000 } }
+      responses:
+        "200":
+          description: The balance changes.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  has_more: { type: boolean }
+                  page_after: { type: [string, "null"] }
+                  page_before: { type: [string, "null"] }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        amount: { type: number }
+                        balance: { type: number }
+                        currency: { type: string }
+                        description: { type: string }
+                        posted_at: { type: string }
+                        reference: { type: string }
+                        source_type: { type: string }
+              example:
+                has_more: false
+                items:
+                  - { account_type: cash, amount: 50, balance: 1050, currency: AUD, description: Pay AUD 50.00., fee: 25, id: 0197f322-6667-7d76-b848-bfccedb2a97e, posted_at: "2017-04-01T03:52:34+0000", source: a08c0f2f-3f26-4443-b5df-fad15582eb94, source_type: CONVERSION, transaction_type: CONVERSION_BUY }
+                page_after: null
+                page_before: null
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer }
