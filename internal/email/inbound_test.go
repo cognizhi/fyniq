@@ -56,8 +56,43 @@ func TestTheStandingOfASender(t *testing.T) {
 		{"a contact at Mei's", "ar@supplier.example", &mei, true, storage.InboundQuarantined},
 		{"Mei's accepted sender at hers", "friend@example.net", &mei, true, storage.InboundAccepted},
 		{"Mei's accepted sender at the organisation's", "friend@example.net", nil, true, storage.InboundQuarantined},
+		{"a sender accepted at the bank-ingest address only", "reports@bank.example", nil, true, storage.InboundQuarantined},
+		{"a sender rejected at the bank-ingest address only", "noise@bank.example", nil, true, storage.InboundQuarantined},
 	} {
-		if got := email.Standing(c.sender, c.user, c.auth, decisions, members, contacts); got != c.want {
+		with := append(decisions, storage.CaptureSender{Address: "reports@bank.example", Kind: storage.CaptureBank, Decision: storage.SenderAccepted},
+			storage.CaptureSender{Address: "noise@bank.example", Kind: storage.CaptureBank, Decision: storage.SenderRejected})
+		if got := email.Standing(c.sender, c.user, c.auth, with, members, contacts); got != c.want {
+			t.Errorf("%s: %s; want %s", c.name, got, c.want)
+		}
+	}
+}
+
+// The bank-ingest address knows only the senders the money accounts register, with DMARC passing (FR-BNK-17,
+// p1-bank-import-reconcile task 7.1, design D10): a sender accepted there by a person, or at the organisation's
+// documents address, is still quarantined; a sender rejected there is rejected.
+// req: FR-INT-22
+// req: FR-BNK-17
+func TestTheStandingOfASenderAtTheBankIngestAddress(t *testing.T) {
+	registered := []string{"IDEAL.Reports@dbs.example"}
+	decisions := []storage.CaptureSender{
+		{Address: "accepted@bank.example", Kind: storage.CaptureBank, Decision: storage.SenderAccepted},
+		{Address: "ar@supplier.example", Kind: storage.CaptureDocuments, Decision: storage.SenderAccepted},
+		{Address: "noise@bank.example", Kind: storage.CaptureBank, Decision: storage.SenderRejected},
+		{Address: "ideal.reports@dbs.example", Kind: storage.CaptureDocuments, Decision: storage.SenderRejected},
+	}
+	for _, c := range []struct {
+		name, sender, dmarc, want string
+	}{
+		{"the registered sender", "ideal.reports@dbs.example", "pass", storage.InboundAccepted},
+		{"the registered sender, any case", "IDEAL.REPORTS@DBS.EXAMPLE", "PASS", storage.InboundAccepted},
+		{"the registered sender failing DMARC", "ideal.reports@dbs.example", "fail", storage.InboundQuarantined},
+		{"the registered sender with no DMARC policy", "ideal.reports@dbs.example", "none", storage.InboundQuarantined},
+		{"another sender", "someone@else.example", "pass", storage.InboundQuarantined},
+		{"a sender a person accepted there", "accepted@bank.example", "pass", storage.InboundQuarantined},
+		{"a sender accepted at the documents address", "ar@supplier.example", "pass", storage.InboundQuarantined},
+		{"a sender rejected there", "noise@bank.example", "pass", storage.InboundRejected},
+	} {
+		if got := email.BankStanding(c.sender, c.dmarc, decisions, registered); got != c.want {
 			t.Errorf("%s: %s; want %s", c.name, got, c.want)
 		}
 	}

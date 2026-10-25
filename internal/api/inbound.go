@@ -36,6 +36,7 @@ type InboundMessage struct {
 	ID         string        `json:"id" format:"uuid" doc:"The message's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
 	Address    string        `json:"address" doc:"The email-in address it came to." example:"bills@in.example.com"`
 	For        string        `json:"for" enum:"organisation,member" doc:"Whose address: the organisation's, or a member's own." example:"organisation"`
+	Kind       string        `json:"kind" enum:"documents,bank" doc:"The address's kind: documents captured, or the banks' reports at the bank-ingest address." example:"documents"`
 	Sender     string        `json:"sender" doc:"Who sent it, as the receiving server saw it, in lower case." example:"accounts@supplier.example"`
 	Subject    string        `json:"subject,omitempty" doc:"Its subject, as sent: untrusted." example:"Invoice INV-0042"`
 	ReceivedAt time.Time     `json:"received_at" doc:"When it arrived." example:"2026-10-23T09:00:00Z"`
@@ -122,7 +123,7 @@ func (a *API) inboundPage(ctx context.Context, u storage.UnitOfWork, in *inbound
 		}
 		v := InboundMessage{ID: m.ID.String(), Address: addr.LocalPart + "@" + a.deps.Mail.CaptureDomain, For: "organisation", Sender: m.Sender,
 			Subject: m.Subject, ReceivedAt: m.ReceivedAt.UTC(), Status: m.Status, SPF: m.SPF, DKIM: m.DKIM, DMARC: m.DMARC, Note: m.LastError,
-			Files: []InboundFile{}}
+			Files: []InboundFile{}, Kind: addr.Kind}
 		if addr.UserID != nil {
 			v.For = "member"
 		}
@@ -138,9 +139,9 @@ func (a *API) inboundPage(ctx context.Context, u storage.UnitOfWork, in *inbound
 	return out, nil
 }
 
-// decideSender records a decision about a sender at the address of user (nil: the organisation's) and settles the
-// sender's quarantined mail there; a rejection's files are deleted once the decision commits.
-func (a *API) decideSender(ctx context.Context, in *senderDecisionInput, user *uuid.UUID) (*senderDecisionOutput, error) {
+// decideSender records a decision about a sender at the address of kind of user (nil: the organisation's) and settles
+// the sender's quarantined mail there; a rejection's files are deleted once the decision commits.
+func (a *API) decideSender(ctx context.Context, in *senderDecisionInput, user *uuid.UUID, kind string) (*senderDecisionOutput, error) {
 	parsed, err := netmail.ParseAddress(strings.TrimSpace(in.Body.Sender))
 	if err != nil || parsed.Name != "" || !strings.Contains(parsed.Address, "@") {
 		return nil, problem(CodeSenderNotAddress, fmt.Sprintf("%q is not one email address.", in.Body.Sender), "Give the sender's address alone, such as accounts@supplier.example",
@@ -150,7 +151,7 @@ func (a *API) decideSender(ctx context.Context, in *senderDecisionInput, user *u
 	var deleted []string
 	w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (SenderDecisionResult, error) {
 		deleted = nil
-		if _, err := u.CaptureAddresses().Decide(ctx, sender, user, in.Body.Decision); err != nil {
+		if _, err := u.CaptureAddresses().Decide(ctx, sender, user, kind, in.Body.Decision); err != nil {
 			return SenderDecisionResult{}, err
 		}
 		out := SenderDecisionResult{Sender: sender, Decision: in.Body.Decision}
@@ -158,7 +159,7 @@ func (a *API) decideSender(ctx context.Context, in *senderDecisionInput, user *u
 		if err != nil {
 			return out, err
 		}
-		addr := liveOf(live, user)
+		addr := liveOf(live, user, kind)
 		if addr == nil {
 			return out, nil
 		}
@@ -226,7 +227,7 @@ func registerInbound(a *API) {
 				return err
 			}
 			user := p.UserID
-			mine := liveOf(live, &user)
+			mine := liveOf(live, &user, storage.CaptureDocuments)
 			if mine == nil {
 				return nil
 			}
@@ -245,7 +246,19 @@ func registerInbound(a *API) {
 			"rejected message's files deleted. Side effects: the decision, each settled message and their audit events. Idempotent with " +
 			"Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, decides, func(ctx context.Context, in *senderDecisionInput) (*senderDecisionOutput, error) {
-		return a.decideSender(ctx, in, nil)
+		return a.decideSender(ctx, in, nil, storage.CaptureDocuments)
+	})
+
+	register(a, authz.DecideBankSender, huma.Operation{
+		OperationID: "decideBankSender", Method: http.MethodPost, Path: "/v1/organisation/email/capture-senders/bank", Tags: []string{"Organisation"},
+		Summary: "Accept or reject a sender's quarantined mail at the bank-ingest address",
+		Description: "Accepts or rejects a sender's quarantined mail at the bank-ingest address (FR-BNK-17, FR-INT-22), as decideCaptureSender " +
+			"does at the organisation's address. Accepting settles the mail waiting now; it does not make the sender known: only the senders " +
+			"a money account registers for its emailed reports are, with DMARC passing. Rejecting refuses their mail there from now on. " +
+			"Side effects: the decision, each settled message and their audit events. Idempotent with Idempotency-Key; Prefer: " +
+			"return=preview checks it and saves nothing.",
+	}, decides, func(ctx context.Context, in *senderDecisionInput) (*senderDecisionOutput, error) {
+		return a.decideSender(ctx, in, nil, storage.CaptureBank)
 	})
 
 	register(a, authz.DecideMyCaptureSender, huma.Operation{
@@ -262,6 +275,6 @@ func registerInbound(a *API) {
 				"Sign in as yourself, or decide at the organisation's address")
 		}
 		user := p.UserID
-		return a.decideSender(ctx, in, &user)
+		return a.decideSender(ctx, in, &user, storage.CaptureDocuments)
 	})
 }

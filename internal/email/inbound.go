@@ -63,14 +63,18 @@ func Authenticated(spf, dkim, dmarc string) bool {
 	return false
 }
 
-// Standing is what becomes of a message from sender at an address of member user (nil: the organisation's), on the
-// owner's decisions of 23 Oct 2026: a sender rejected at that address is rejected; an authenticated sender accepted
-// there before, or known, is accepted: at a member's address the member's verified sign-in email, at the
-// organisation's its members' and its contacts' billing and remittance emails; anyone else is quarantined.
+// Standing is what becomes of a message from sender at a documents address of member user (nil: the organisation's),
+// on the owner's decisions of 23 Oct 2026: a sender rejected at that address is rejected; an authenticated sender
+// accepted there before, or known, is accepted: at a member's address the member's verified sign-in email, at the
+// organisation's its members' and its contacts' billing and remittance emails; anyone else is quarantined. Decisions
+// made at the bank-ingest address do not count here.
 func Standing(sender string, user *uuid.UUID, authenticated bool, decisions []storage.CaptureSender, members map[uuid.UUID]string,
 	contacts []string) string {
 	sender = strings.ToLower(sender)
 	for _, d := range decisions {
+		if d.Kind == storage.CaptureBank {
+			continue
+		}
 		if d.Address == sender && ((d.UserID == nil && user == nil) || (d.UserID != nil && user != nil && *d.UserID == *user)) {
 			if d.Decision == storage.SenderRejected {
 				return storage.InboundRejected
@@ -100,6 +104,61 @@ func Standing(sender string, user *uuid.UUID, authenticated bool, decisions []st
 		}
 	}
 	return storage.InboundQuarantined
+}
+
+// BankStanding is what becomes of a message from sender at the bank-ingest address (FR-BNK-17; p1-bank-import-reconcile
+// design D10): a sender rejected there is rejected; one of the senders the money accounts register for their emailed
+// reports is accepted when DMARC passes, strictly; anyone else, or a registered sender whose DMARC does not pass, is
+// quarantined. A person's acceptance there settles the mail waiting then and never makes a sender known.
+func BankStanding(sender, dmarc string, decisions []storage.CaptureSender, registered []string) string {
+	sender = strings.ToLower(sender)
+	for _, d := range decisions {
+		if d.Kind == storage.CaptureBank && d.UserID == nil && d.Address == sender && d.Decision == storage.SenderRejected {
+			return storage.InboundRejected
+		}
+	}
+	if !strings.EqualFold(dmarc, "pass") {
+		return storage.InboundQuarantined
+	}
+	for _, r := range registered {
+		if strings.ToLower(r) == sender {
+			return storage.InboundAccepted
+		}
+	}
+	return storage.InboundQuarantined
+}
+
+// BankSenders are the addresses the money accounts register for their emailed reports on day: each open account's
+// email source in force then, and any it has set for a later day, so a bank's first report is expected.
+func BankSenders(ctx context.Context, u storage.UnitOfWork, day time.Time) ([]string, error) {
+	accounts, err := u.Banking().MoneyAccounts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, a := range accounts {
+		if a.ClosedOn != nil && a.ClosedOn.Before(day) {
+			continue
+		}
+		sources, err := u.Banking().Sources(ctx, a.ID) // earliest first
+		if err != nil {
+			return nil, err
+		}
+		from := 0
+		for i, s := range sources {
+			if !s.FromDate.After(day) {
+				from = i
+			}
+		}
+		for _, s := range sources[min(from, len(sources)):] {
+			if s.Kind == storage.MoneySourceEmail {
+				for _, x := range s.Senders {
+					out = append(out, strings.ToLower(x))
+				}
+			}
+		}
+	}
+	return out, nil
 }
 
 // BlobKey is where a message's file is kept in the staging store: outside the evidence sweeper's prefix, so the
@@ -139,7 +198,7 @@ func (f Fetcher) Work() outbox.Work {
 		var addr storage.CaptureAddress
 		var decisions []storage.CaptureSender
 		var members map[uuid.UUID]string
-		var contacts []string
+		var contacts, registered []string
 		var days int
 		if err := f.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 			var err error
@@ -157,6 +216,11 @@ func (f Fetcher) Work() outbox.Work {
 			}
 			if contacts, err = u.InboundMessages().ContactEmails(ctx); err != nil {
 				return err
+			}
+			if addr.Kind == storage.CaptureBank {
+				if registered, err = BankSenders(ctx, u, f.Clock.Now()); err != nil {
+					return err
+				}
 			}
 			days, err = quarantineDays(ctx, u, f.Clock.Now())
 			return err
@@ -203,6 +267,9 @@ func (f Fetcher) Work() outbox.Work {
 		}
 		fx := storage.InboundFetch{SPF: mail.SPF, DKIM: mail.DKIM, DMARC: mail.DMARC}
 		fx.Status = Standing(m.Sender, addr.UserID, Authenticated(mail.SPF, mail.DKIM, mail.DMARC), decisions, members, contacts)
+		if addr.Kind == storage.CaptureBank {
+			fx.Status = BankStanding(m.Sender, mail.DMARC, decisions, registered)
+		}
 		if fx.Status == storage.InboundRejected {
 			return fetched(fx, nil)
 		}

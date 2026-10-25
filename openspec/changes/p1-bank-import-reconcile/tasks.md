@@ -149,7 +149,7 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 
 ## 7. DBS by email
 
-- [ ] 7.1 The bank-ingest address (design D10): a third capture address kind, one per organisation, named by an
+- [x] 7.1 The bank-ingest address (design D10): a third capture address kind, one per organisation, named by an
   Administrator; its known senders only the bank addresses each money account registers, with DMARC passing; any
   other sender quarantined.
   - Tests: a report from the registered sender accepted; one from another sender quarantined; a forged sender

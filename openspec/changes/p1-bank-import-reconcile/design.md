@@ -220,6 +220,12 @@ account's format and mapping, then runs D2's checks and D8.
   exports; which formats a Singapore IDEAL schedule emails is to confirm with a redacted sample of Cognizhi's report
   before the parser is pinned. Excel and CSV go through the mapping (D3), MT940 through its parser; a PDF-only report
   would leave Phase 1 on uploaded exports until P2's document AI.
+- As built (task 7.1): `capture_address.kind` (`documents` or `bank`; migrations 000153/000154), one live address of
+  each kind for the organisation, a bank one never a member's; sender decisions are kept per kind, so a sender accepted
+  at the documents address is unknown at the bank's and the other way round. `email.BankStanding` accepts only the
+  senders of each open account's email source in force or set for a later day, with DMARC `pass` (no SPF or DKIM
+  fallback); a person's acceptance there settles the mail waiting and never makes a sender known; a rejection holds.
+  The address is named and its quarantine decided under C on "Bank data… connections".
 - **Incoming-funds alerts** become `bank_signal` rows (amount, currency, payer name, received at), matched to an open
   invoice by amount and customer: the invoice and Home show "likely paid" (UC-BNK-02). A signal posts nothing and
   closes when a statement line reconciles the invoice, or expires after a setting's days.

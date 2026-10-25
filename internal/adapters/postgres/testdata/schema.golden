@@ -300,6 +300,7 @@ capture_address | created_by | text | not null |
 capture_address | created_at | timestamp with time zone | not null | 
 capture_address | retired_at | timestamp with time zone | null | 
 capture_address | retired_by | text | null | 
+capture_address | kind | text | not null | 'documents'::text
 capture_name | local_part | text | not null | 
 capture_name | owner | uuid | not null | 
 capture_name | address_id | uuid | null | 
@@ -311,6 +312,7 @@ capture_sender | user_id | uuid | null |
 capture_sender | decision | text | not null | 
 capture_sender | decided_by | text | not null | 
 capture_sender | decided_at | timestamp with time zone | not null | 
+capture_sender | kind | text | not null | 'documents'::text
 close_checklist_entry | organisation_id | uuid | not null | current_org()
 close_checklist_entry | id | uuid | not null | uuidv7()
 close_checklist_entry | period_id | uuid | not null | 
@@ -1661,10 +1663,13 @@ bill_payment_plan | bill_payment_plan_recorded_at_not_null | NOT NULL recorded_a
 bill_payment_plan | bill_payment_plan_recorded_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 bill_payment_plan | bill_payment_plan_recorded_by_not_null | NOT NULL recorded_by
 bill_payment_plan | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+capture_address | capture_address_bank_organisation | CHECK (((kind <> 'bank'::text) OR (user_id IS NULL)))
 capture_address | capture_address_by_format | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (retired_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
 capture_address | capture_address_created_at_not_null | NOT NULL created_at
 capture_address | capture_address_created_by_not_null | NOT NULL created_by
 capture_address | capture_address_id_not_null | NOT NULL id
+capture_address | capture_address_kind_known | CHECK ((kind = ANY (ARRAY['documents'::text, 'bank'::text])))
+capture_address | capture_address_kind_not_null | NOT NULL kind
 capture_address | capture_address_local_part_format | CHECK (((local_part ~ '^[a-z][a-z0-9.-]{1,38}[a-z0-9]$'::text) AND (local_part !~ '\.\.'::text)))
 capture_address | capture_address_local_part_not_null | NOT NULL local_part
 capture_address | capture_address_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
@@ -1678,12 +1683,15 @@ capture_name | capture_name_owner_not_null | NOT NULL owner
 capture_name | capture_name_pkey | PRIMARY KEY (local_part)
 capture_sender | capture_sender_address_lower | CHECK (((address = lower(address)) AND ((length(address) >= 3) AND (length(address) <= 254))))
 capture_sender | capture_sender_address_not_null | NOT NULL address
+capture_sender | capture_sender_bank_organisation | CHECK (((kind <> 'bank'::text) OR (user_id IS NULL)))
 capture_sender | capture_sender_by_format | CHECK ((decided_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 capture_sender | capture_sender_decided_at_not_null | NOT NULL decided_at
 capture_sender | capture_sender_decided_by_not_null | NOT NULL decided_by
 capture_sender | capture_sender_decision_known | CHECK ((decision = ANY (ARRAY['accepted'::text, 'rejected'::text])))
 capture_sender | capture_sender_decision_not_null | NOT NULL decision
 capture_sender | capture_sender_id_not_null | NOT NULL id
+capture_sender | capture_sender_kind_known | CHECK ((kind = ANY (ARRAY['documents'::text, 'bank'::text])))
+capture_sender | capture_sender_kind_not_null | NOT NULL kind
 capture_sender | capture_sender_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
 capture_sender | capture_sender_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 capture_sender | capture_sender_organisation_id_not_null | NOT NULL organisation_id
@@ -3149,7 +3157,7 @@ CREATE UNIQUE INDEX bank_transfer_from_line ON fyniq.bank_transfer USING btree (
 CREATE UNIQUE INDEX bank_transfer_pkey ON fyniq.bank_transfer USING btree (organisation_id, id)
 CREATE UNIQUE INDEX bank_transfer_to_line ON fyniq.bank_transfer USING btree (organisation_id, to_line_id) WHERE ((to_line_id IS NOT NULL) AND (undone_at IS NULL))
 CREATE UNIQUE INDEX bill_payment_plan_pkey ON fyniq.bill_payment_plan USING btree (organisation_id, id)
-CREATE UNIQUE INDEX capture_address_live_owner ON fyniq.capture_address USING btree (organisation_id, COALESCE(user_id, '00000000-0000-0000-0000-000000000000'::uuid)) WHERE (retired_at IS NULL)
+CREATE UNIQUE INDEX capture_address_live_owner ON fyniq.capture_address USING btree (organisation_id, kind, COALESCE(user_id, '00000000-0000-0000-0000-000000000000'::uuid)) WHERE (retired_at IS NULL)
 CREATE UNIQUE INDEX capture_address_pkey ON fyniq.capture_address USING btree (organisation_id, id)
 CREATE UNIQUE INDEX capture_name_pkey ON fyniq.capture_name USING btree (local_part)
 CREATE UNIQUE INDEX capture_sender_pkey ON fyniq.capture_sender USING btree (organisation_id, id)
@@ -3672,7 +3680,7 @@ bank_transfer_guard() → trigger | security invoker | v | search_path=pg_catalo
 beat(p_name text, p_at timestamp with time zone, p_detail text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 464af91fa7b0d569c10c9b291c9d6460
 bill_payment_plan_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d53bcb2c3cc4abaeb7eb39ce991bc40
 bootstrap_installation_connectors(p_rows jsonb, p_at timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | aaf122d42b55f7004f7bf7ec42326134
-capture_address_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 74c297c8ec1f2a43a920e66f732fd515
+capture_address_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 542a3470e64d74a54703cab8f90e82c9
 capture_route(p_local text) → TABLE(organisation_id uuid, address_id uuid, user_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 172d93473f532f3e8728708678490889
 capture_sender_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d3ca1a62ec41cff9d93981758a2f74c
 change_installation_connector(p_by uuid, p_change uuid, p_step text, p_id uuid, p_version integer, p_state text, p_configuration jsonb, p_position integer, p_test_passed boolean, p_test_reason text, p_tested_at timestamp with time zone, p_manifest_version text, p_manifest_hash text, p_secret_names text[], p_consent jsonb, p_at timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 9b989ec9c61abe049b0de80a90368cbf

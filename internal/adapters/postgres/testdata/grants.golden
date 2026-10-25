@@ -60,11 +60,11 @@ fyniq_api       EXECUTE   beat()
 fyniq_api       INSERT    bill_payment_plan (bill_id, planned_on, recorded_by)
 fyniq_api       SELECT    bill_payment_plan
 fyniq_api       EXECUTE   bootstrap_installation_connectors()
-fyniq_api       INSERT    capture_address (created_at, created_by, local_part, user_id)
+fyniq_api       INSERT    capture_address (created_at, created_by, kind, local_part, user_id)
 fyniq_api       SELECT    capture_address
 fyniq_api       UPDATE    capture_address (retired_at, retired_by)
 fyniq_api       EXECUTE   capture_route()
-fyniq_api       INSERT    capture_sender (address, decided_at, decided_by, decision, user_id)
+fyniq_api       INSERT    capture_sender (address, decided_at, decided_by, decision, kind, user_id)
 fyniq_api       SELECT    capture_sender
 fyniq_api       EXECUTE   change_installation_connector()
 fyniq_api       EXECUTE   claim_job_slot()

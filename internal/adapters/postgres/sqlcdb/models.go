@@ -377,6 +377,7 @@ type FyniqCaptureAddress struct {
 	CreatedAt      time.Time
 	RetiredAt      *time.Time
 	RetiredBy      *string
+	Kind           string
 }
 
 type FyniqCaptureName struct {
@@ -394,6 +395,7 @@ type FyniqCaptureSender struct {
 	Decision       string
 	DecidedBy      string
 	DecidedAt      time.Time
+	Kind           string
 }
 
 type FyniqCloseChecklistEntry struct {

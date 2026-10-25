@@ -7,13 +7,22 @@ import (
 	"github.com/google/uuid"
 )
 
+// The kinds of email-in address: documents are captured at the organisation's and each member's; the banks' reports
+// arrive at the organisation's bank-ingest address (FR-BNK-17, p1-bank-import-reconcile design D10).
+const (
+	CaptureDocuments = "documents"
+	CaptureBank      = "bank"
+)
+
 // CaptureAddress is an email-in address documents are captured from (FR-DOC-12, FR-INT-22; PRD-001 rev 0.105): the
-// organisation's, or a member's own, a readable name on the deployment's capture domain. It is only ever retired
-// (FY182), and its name never passes to another organisation (FY183, CodeCaptureName).
+// organisation's, or a member's own, a readable name on the deployment's capture domain; or the organisation's
+// bank-ingest address. It is only ever retired (FY182), and its name never passes to another organisation (FY183,
+// CodeCaptureName).
 type CaptureAddress struct {
 	ID        uuid.UUID
 	LocalPart string
 	UserID    *uuid.UUID // a member's own; nil: the organisation's
+	Kind      string     // CaptureDocuments or CaptureBank
 	CreatedBy string
 	CreatedAt time.Time
 	RetiredAt *time.Time
@@ -32,12 +41,13 @@ const (
 	SenderRejected = "rejected"
 )
 
-// CaptureSender is a decision about a sender at the organisation's address (UserID nil) or a member's: the latest is in
-// force, and none is changed (FY184).
+// CaptureSender is a decision about a sender at the organisation's address of a kind (UserID nil) or a member's: the
+// latest is in force, and none is changed (FY184).
 type CaptureSender struct {
 	ID        uuid.UUID
 	Address   string // in lower case
 	UserID    *uuid.UUID
+	Kind      string // the address's kind
 	Decision  string
 	DecidedBy string
 	DecidedAt time.Time
@@ -45,18 +55,18 @@ type CaptureSender struct {
 
 // CaptureAddresses are the organisation's email-in addresses and its decisions about senders. Each change is audited.
 type CaptureAddresses interface {
-	// Create makes the live address named localPart of user, or of the organisation when user is nil, retiring the one
-	// it replaces; CodeCaptureName when another organisation has the name.
-	Create(ctx context.Context, localPart string, user *uuid.UUID) (CaptureAddress, error)
+	// Create makes the live address of kind named localPart of user, or of the organisation when user is nil, retiring the
+	// one it replaces; CodeCaptureName when another organisation has the name. A bank address is the organisation's.
+	Create(ctx context.Context, localPart string, user *uuid.UUID, kind string) (CaptureAddress, error)
 	// Live are the organisation's live addresses.
 	Live(ctx context.Context) ([]CaptureAddress, error)
 	// Get is an address, live or retired.
 	Get(ctx context.Context, id uuid.UUID) (CaptureAddress, error)
 	// Retire retires a live address; CodeVersion when it was retired already.
 	Retire(ctx context.Context, id uuid.UUID) (CaptureAddress, error)
-	// Decide records a decision about sender at the organisation's address (user nil) or user's.
-	Decide(ctx context.Context, sender string, user *uuid.UUID, decision string) (CaptureSender, error)
-	// Decisions are the decisions in force: the latest for each sender and address.
+	// Decide records a decision about sender at the organisation's address of kind (user nil) or user's.
+	Decide(ctx context.Context, sender string, user *uuid.UUID, kind, decision string) (CaptureSender, error)
+	// Decisions are the decisions in force: the latest for each sender, member and kind.
 	Decisions(ctx context.Context) ([]CaptureSender, error)
 }
 

@@ -2,6 +2,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "bank": {
+      "$ref": "CaptureAddress.schema.json",
+      "description": "The bank-ingest address the banks' scheduled reports are sent to (FR-BNK-17); absent until an Administrator makes one."
+    },
+    "bank_etag": {
+      "description": "Send it in If-Match to change the bank-ingest address.",
+      "examples": [
+        "\"none\""
+      ],
+      "type": "string"
+    },
     "domain": {
       "description": "The deployment's capture domain; absent when email-in is not set up.",
       "examples": [
@@ -34,7 +45,8 @@
   },
   "required": [
     "organisation_etag",
-    "mine_etag"
+    "mine_etag",
+    "bank_etag"
   ],
   "title": "CaptureAddresses",
   "type": "object"

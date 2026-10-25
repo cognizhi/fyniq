@@ -235,9 +235,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/organisation/connectors/{connector_id}/test` (testOrganisationConnector): Test one of the organisation's connectors
 - `GET /v1/organisation/email` (getEmailSettings): Get the email settings
 - `GET /v1/organisation/email/capture-addresses` (getCaptureAddresses): Get the email-in addresses
+- `PUT /v1/organisation/email/capture-addresses/bank` (setBankCaptureAddress): Name the bank-ingest address
 - `PUT /v1/organisation/email/capture-addresses/mine` (setMyCaptureAddress): Name your own email-in address
 - `PUT /v1/organisation/email/capture-addresses/organisation` (setOrganisationCaptureAddress): Name the organisation's email-in address
 - `POST /v1/organisation/email/capture-senders` (decideCaptureSender): Accept or reject a sender at the organisation's email-in address
+- `POST /v1/organisation/email/capture-senders/bank` (decideBankSender): Accept or reject a sender's quarantined mail at the bank-ingest address
 - `POST /v1/organisation/email/capture-senders/mine` (decideMyCaptureSender): Accept or reject a sender at your email-in address
 - `GET /v1/organisation/email/inbound-messages` (listInboundMessages): List mail received at the email-in addresses
 - `GET /v1/organisation/email/inbound-messages/mine` (listMyInboundMessages): List mail received at your email-in address

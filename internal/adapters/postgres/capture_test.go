@@ -36,10 +36,10 @@ func TestAnEmailInAddressNameBelongsToOneOrganisation(t *testing.T) {
 	var org, mine storage.CaptureAddress
 	if err := capture(t, a.Org, func(ctx context.Context, c storage.CaptureAddresses) error {
 		var err error
-		if org, err = c.Create(ctx, name, nil); err != nil {
+		if org, err = c.Create(ctx, name, nil, storage.CaptureDocuments); err != nil {
 			return err
 		}
-		mine, err = c.Create(ctx, "Mei."+name, &member)
+		mine, err = c.Create(ctx, "Mei."+name, &member, storage.CaptureDocuments)
 		return err
 	}); err != nil {
 		t.Fatal(err)
@@ -51,7 +51,7 @@ func TestAnEmailInAddressNameBelongsToOneOrganisation(t *testing.T) {
 		t.Fatalf("the member's route: %+v, %v (%s)", r, err, mine.LocalPart)
 	}
 	err := capture(t, b.Org, func(ctx context.Context, c storage.CaptureAddresses) error {
-		_, err := c.Create(ctx, name, nil)
+		_, err := c.Create(ctx, name, nil, storage.CaptureDocuments)
 		return err
 	})
 	if storage.CodeOf(err) != storage.CodeCaptureName {
@@ -59,7 +59,7 @@ func TestAnEmailInAddressNameBelongsToOneOrganisation(t *testing.T) {
 	}
 	// A new name retires the old one, whose mail no longer routes; then the organisation takes its old name back.
 	if err := capture(t, a.Org, func(ctx context.Context, c storage.CaptureAddresses) error {
-		_, err := c.Create(ctx, "invoices-"+name, nil)
+		_, err := c.Create(ctx, "invoices-"+name, nil, storage.CaptureDocuments)
 		return err
 	}); err != nil {
 		t.Fatal(err)
@@ -68,14 +68,14 @@ func TestAnEmailInAddressNameBelongsToOneOrganisation(t *testing.T) {
 		t.Fatalf("a retired name still routes: %v", err)
 	}
 	err = capture(t, b.Org, func(ctx context.Context, c storage.CaptureAddresses) error {
-		_, err := c.Create(ctx, name, nil)
+		_, err := c.Create(ctx, name, nil, storage.CaptureDocuments)
 		return err
 	})
 	if storage.CodeOf(err) != storage.CodeCaptureName {
 		t.Fatalf("another organisation took a retired name: %v", err)
 	}
 	if err := capture(t, a.Org, func(ctx context.Context, c storage.CaptureAddresses) error {
-		live, err := c.Create(ctx, name, nil)
+		live, err := c.Create(ctx, name, nil, storage.CaptureDocuments)
 		if err != nil {
 			return err
 		}
@@ -102,13 +102,13 @@ func TestEmailInAddressesAndSenderDecisionsKeepTheirHistory(t *testing.T) {
 	var first storage.CaptureSender
 	if err := capture(t, b.Org, func(ctx context.Context, c storage.CaptureAddresses) error {
 		var err error
-		if addr, err = c.Create(ctx, "record-"+uuid.NewString()[:8], nil); err != nil {
+		if addr, err = c.Create(ctx, "record-"+uuid.NewString()[:8], nil, storage.CaptureDocuments); err != nil {
 			return err
 		}
-		if first, err = c.Decide(ctx, "Supplier@Example.com", nil, storage.SenderRejected); err != nil {
+		if first, err = c.Decide(ctx, "Supplier@Example.com", nil, storage.CaptureDocuments, storage.SenderRejected); err != nil {
 			return err
 		}
-		if _, err = c.Decide(ctx, "supplier@example.com", nil, storage.SenderAccepted); err != nil {
+		if _, err = c.Decide(ctx, "supplier@example.com", nil, storage.CaptureDocuments, storage.SenderAccepted); err != nil {
 			return err
 		}
 		ds, err := c.Decisions(ctx)
