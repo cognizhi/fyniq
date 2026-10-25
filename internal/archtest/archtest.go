@@ -174,7 +174,7 @@ func TransactionCalls(filename string, src []byte) ([]string, error) {
 // them (ENG-10).
 var MoneyPackages = []string{
 	"internal/domain/money", "internal/domain/rounding", "internal/domain/ledger",
-	"internal/domain/journal", "internal/domain/balance",
+	"internal/domain/journal", "internal/domain/balance", "internal/bankfile",
 }
 
 // floatFuncs are the standard-library calls that produce or read binary floating point.

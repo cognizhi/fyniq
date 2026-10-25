@@ -46,12 +46,18 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 
 ## 3. Importing statements
 
-- [ ] 3.1 `internal/bankfile` (design D3): CSV and XLSX through a saved mapping (signed amount, or in and out
+- [x] 3.1 `internal/bankfile` (design D3): CSV and XLSX through a saved mapping (signed amount, or in and out
   columns), OFX/QFX, camt.053 and MT940 (SWIFT and SAP), into the one bank data model, with exact decimals, a
   parser version per format and limits on size, lines and fields; the XLSX reader on `archive/zip` and
   `encoding/xml` with the evidence upload's zip limits.
   - Tests: golden fixtures per format (synthetic statements), a Go fuzz test per parser, refusals naming the line
     and field. `// req: FR-BNK-02`, `// req: FR-BNK-15`
+  (25 Oct 2026: one model of statements and lines; `BANKFILE-01`–`06`; the package joins the architecture test's money
+  packages, so no binary floating point: an XLSX number is its stored decimal text, read exactly, and an inexact one is
+  refused with a fix. Fuzzing found two panics in the OFX tokeniser (an empty tag; `strings.ToUpper` changing the
+  length of invalid UTF-8), fixed and kept as regression seeds. DBS's MT940 SAP layout stays `[verify]` against a
+  sample. Proved by `TestEachFormatReadsIntoOneModel`, `TestRefusalsNameTheLineAndField`, `TestMappingsReadFromTheirJSON`
+  and `FuzzMT940`, `FuzzCAMT053`, `FuzzOFX`, `FuzzCSV`, `FuzzXLSX`)
 - [ ] 3.2 The import (design D2): statements for several accounts at once, each file an untrusted upload checked and
   scanned and kept with its statement; a preview of what will be added, flagged as possible duplicate and dropped on
   proof; the continuity check with gaps recorded; the account's last sync and complete-to date.
