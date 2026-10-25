@@ -247,27 +247,48 @@ func PostInvoiceRelease(r Release, s Settings) (Entry, error) {
 // ReleaseRule turns one month's release into its entry under one rule version.
 type ReleaseRule func(r Release, s Settings) (Entry, error)
 
-// BillReleaseRules and InvoiceReleaseRules are every release rule version the engine has posted with, by name: like
-// Rules, a version is never removed or changed while an entry names it.
+// BillReleaseRules, InvoiceReleaseRules, BankOutReleaseRules and BankInReleaseRules are every release rule version the
+// engine has posted with, by name: like Rules, a version is never removed or changed while an entry names it.
 var (
 	BillReleaseRules    = map[string]ReleaseRule{RuleBillRelease: PostBillRelease}
 	InvoiceReleaseRules = map[string]ReleaseRule{RuleInvoiceRelease: PostInvoiceRelease}
+	BankOutReleaseRules = map[string]ReleaseRule{RuleBankOutRelease: PostBankOutRelease}
+	BankInReleaseRules  = map[string]ReleaseRule{RuleBankInRelease: PostBankInRelease}
 )
 
 // ReleaseRules are the rule versions of a release source.
 func ReleaseRules(source string) map[string]ReleaseRule {
-	if source == SourceInvoiceRelease {
+	switch source {
+	case SourceInvoiceRelease:
 		return InvoiceReleaseRules
+	case SourceBankOutRelease:
+		return BankOutReleaseRules
+	case SourceBankInRelease:
+		return BankInReleaseRules
 	}
 	return BillReleaseRules
 }
 
 // CurrentRelease is the rule version a new release of source posts under.
 func CurrentRelease(source string) string {
-	if source == SourceInvoiceRelease {
+	switch source {
+	case SourceInvoiceRelease:
 		return RuleInvoiceRelease
+	case SourceBankOutRelease:
+		return RuleBankOutRelease
+	case SourceBankInRelease:
+		return RuleBankInRelease
 	}
 	return RuleBillRelease
+}
+
+// IsRelease says whether a source type is a month's release of a spread.
+func IsRelease(source string) bool {
+	switch source {
+	case SourceBillRelease, SourceInvoiceRelease, SourceBankOutRelease, SourceBankInRelease:
+		return true
+	}
+	return false
 }
 
 // ReplayRelease re-runs the rule version that posted a release's entry over the same release (ENG-06).

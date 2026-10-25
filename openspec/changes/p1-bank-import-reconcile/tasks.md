@@ -75,9 +75,10 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 
 ## 4. Posting, rules, matching, transfers and suspense
 
-- [ ] 4.1 The bank posting rule set (design D4): money in and out with the GST extracted by `RND-GST-INCL` when
+- [x] 4.1 The bank posting rule set (design D4): money in and out with the GST extracted by `RND-GST-INCL` when
   registered at the line's date and the code carries GST; a spread to 1210 or 2400 released by `ALLOC-EVEN` from the
-  posting month; posted through the engine in the unit of work of the line's status (ENG-02), with replay.
+  posting month; posted through the engine in the unit of work of the line's status (ENG-02), with replay. As built:
+  the source is a `bank_transaction` document (D4, rev 0.141), its spread released by the job `bank.releases`.
   - Tests: the legs of Appendix B.1 for money in, money out and a spread, hand-worked; replay byte for byte.
     `// req: ledger/posting-rules Posting a bank transaction, money in`, `… money out`, `… Spreading a bank
     transaction over N months`, `… Amounts of a bank, card or cash transaction`

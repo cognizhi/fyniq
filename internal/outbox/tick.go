@@ -76,6 +76,9 @@ var PlatformSchedules = []Schedule{
 	{Job: "bills.releases", Every: time.Hour, Offset: 40 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Hourly, the releases of invoices' spread revenue due by each organisation's own today (FR-GL-03, ENG-05; rev 0.118).
 	{Job: "invoices.releases", Every: time.Hour, Offset: 45 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Hourly, the releases of categorised bank lines' spreads due by each organisation's own today (FR-GL-03, ENG-05,
+	// Appendix B.1; rev 0.141).
+	{Job: "bank.releases", Every: time.Hour, Offset: 55 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Daily at 03:20 in Singapore, the quotes past their validity date with no answer expire (FR-AR-01; rev 0.130).
 	{Job: "quotes.expiry", Every: 24 * time.Hour, Offset: 19*time.Hour + 20*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Hourly, the draft invoices of the recurring invoices due by each organisation's own today (FR-AR-07, FR-AUT-01;

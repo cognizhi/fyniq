@@ -113,7 +113,7 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 	if err != nil {
 		return "", err
 	}
-	if e.Source.Type == ledger.SourceBillRelease || e.Source.Type == ledger.SourceInvoiceRelease { // a month of a spread, from its document version and entry (FR-GL-03)
+	if ledger.IsRelease(e.Source.Type) { // a month of a spread, from its document version and entry (FR-GL-03)
 		want, err := replayRelease(ctx, u, doc, s, e)
 		if err != nil {
 			return err.Error(), nil
@@ -168,6 +168,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 	}
 	if doc.Type == storage.DocumentCustomerDeposit { // money a customer paid ahead, with the rate and the GST its entry kept (FR-AR-09)
 		want, err := replayCustomerDeposit(ctx, u, doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
+	if doc.Type == storage.DocumentBankTransaction { // a categorised bank line, with the rates its version kept (FR-BNK-06)
+		want, err := replayBankTransaction(doc, s, e)
 		if err != nil {
 			return err.Error(), nil
 		}

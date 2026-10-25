@@ -132,6 +132,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := journal.ReleaseInvoicesDueAll(ctx, k.Store, clock.Now())
 			return err
 		},
+		"bank.releases": func(ctx context.Context) error {
+			_, err := journal.ReleaseBankTransactionsDueAll(ctx, k.Store, clock.Now())
+			return err
+		},
 		"quotes.expiry": func(ctx context.Context) error {
 			_, err := journal.ExpireQuotesDueAll(ctx, k.Store, clock.Now())
 			return err

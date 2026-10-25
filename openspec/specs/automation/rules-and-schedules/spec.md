@@ -55,6 +55,10 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **WHEN** the tick runs `invoices.releases`, hourly at quarter to
 - **THEN** it posts the releases of invoices' spread revenue due by each organisation's own today (FR-GL-03, ENG-05), as `scheduler:invoices.releases`
 
+#### Scenario: Releases of bank lines' spreads run hourly (rev 0.141)
+- **WHEN** the tick runs `bank.releases`, hourly at five to
+- **THEN** it posts the releases of categorised bank lines' spreads due by each organisation's own today (FR-GL-03, ENG-05, Appendix B.1), as `scheduler:bank.releases`
+
 ### Requirement: FR-AUT-02 Automated postings under a system principal
 Every automated posting SHALL run under a named system principal with its own audit identity, and SHALL respect period locks and approval policies.
 

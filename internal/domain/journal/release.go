@@ -15,12 +15,14 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// Releaser and InvoiceReleaser are the scheduler's principals for the releases of spreads (FR-AUT-02, FR-GL-03), each
-// its own audit identity, recorded on every release whether the hourly job posts it or the posting of its document:
-// "scheduler:bills.releases" for bills' spread costs, "scheduler:invoices.releases" for invoices' spread revenue.
+// Releaser, InvoiceReleaser and BankReleaser are the scheduler's principals for the releases of spreads (FR-AUT-02,
+// FR-GL-03), each its own audit identity, recorded on every release whether the hourly job posts it or the posting of
+// its document: "scheduler:bills.releases" for bills' spread costs, "scheduler:invoices.releases" for invoices' spread
+// revenue, "scheduler:bank.releases" for categorised bank lines' spreads (Appendix B.1).
 var (
 	Releaser        = storage.Actor{Type: "scheduler", ID: "bills.releases"}
 	InvoiceReleaser = storage.Actor{Type: "scheduler", ID: "invoices.releases"}
+	BankReleaser    = storage.Actor{Type: "scheduler", ID: "bank.releases"}
 )
 
 // ActionReleaseWaiting and ActionInvoiceReleaseWaiting are the audit events of a release that a run could not post: no
@@ -28,12 +30,14 @@ var (
 const (
 	ActionReleaseWaiting        = "bill.release_waiting"
 	ActionInvoiceReleaseWaiting = "invoice.release_waiting"
+	ActionBankReleaseWaiting    = "bank_transaction.release_waiting"
 )
 
-// ReleaseReason and InvoiceReleaseReason are the reasons the releases carry.
+// ReleaseReason, InvoiceReleaseReason and BankReleaseReason are the reasons the releases carry.
 const (
 	ReleaseReason        = "Release of a spread cost"
 	InvoiceReleaseReason = "Release of spread revenue"
+	BankReleaseReason    = "Release of a spread bank line"
 )
 
 // spreading is what releasing a document type's spreads needs: the principal and reason it posts with, and the audit
@@ -44,10 +48,12 @@ type spreading struct {
 	waiting string
 }
 
-// spreads are the document types whose lines spread (FR-GL-03): bills' costs and invoices' revenue.
+// spreads are the document types whose lines spread (FR-GL-03): bills' costs, invoices' revenue and categorised bank
+// lines' parts.
 var spreads = map[storage.DocumentType]spreading{
-	storage.DocumentBill:    {Releaser, ReleaseReason, ActionReleaseWaiting},
-	storage.DocumentInvoice: {InvoiceReleaser, InvoiceReleaseReason, ActionInvoiceReleaseWaiting},
+	storage.DocumentBill:            {Releaser, ReleaseReason, ActionReleaseWaiting},
+	storage.DocumentInvoice:         {InvoiceReleaser, InvoiceReleaseReason, ActionInvoiceReleaseWaiting},
+	storage.DocumentBankTransaction: {BankReleaser, BankReleaseReason, ActionBankReleaseWaiting},
 }
 
 // ReleaseRun is what a run of the releases did in one organisation.
@@ -126,13 +132,16 @@ func invoiceSchedule(ctx context.Context, u storage.UnitOfWork, doc storage.Docu
 	return ledger.InvoiceReleases(i, e, s)
 }
 
-// scheduleOf is the release schedule of a posted document version: a bill's or an invoice's; nothing for another type.
+// scheduleOf is the release schedule of a posted document version: a bill's, an invoice's or a bank transaction's;
+// nothing for another type.
 func scheduleOf(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings) ([]ledger.Release, error) {
 	switch doc.Type {
 	case storage.DocumentBill:
 		return billSchedule(ctx, u, doc, s)
 	case storage.DocumentInvoice:
 		return invoiceSchedule(ctx, u, doc, s)
+	case storage.DocumentBankTransaction:
+		return bankSchedule(ctx, u, doc, s)
 	}
 	return nil, nil
 }
@@ -194,6 +203,12 @@ func (s Releases) ReleaseBill(ctx context.Context, org, id uuid.UUID, day time.T
 // principal for invoices: what a run does for the invoice, and what issuing or editing it does at once.
 func (s Releases) ReleaseInvoice(ctx context.Context, org, id uuid.UUID, day time.Time) (ReleaseRun, error) {
 	return s.release(withSpreading(ctx, storage.DocumentInvoice), org, id, day, storage.DocumentInvoice)
+}
+
+// ReleaseBankTransaction posts the releases of one categorised bank line dated on or before day (ENG-05), under the
+// scheduler's principal for bank lines: what a run does for it, and what categorising the line does at once.
+func (s Releases) ReleaseBankTransaction(ctx context.Context, org, id uuid.UUID, day time.Time) (ReleaseRun, error) {
+	return s.release(withSpreading(ctx, storage.DocumentBankTransaction), org, id, day, storage.DocumentBankTransaction)
 }
 
 // withSpreading is ctx acting as the scheduler's principal for releasing a document type's spreads.
@@ -336,6 +351,12 @@ func (s Releases) releaseDue(ctx context.Context, org uuid.UUID, day time.Time, 
 	}
 }
 
+// ReleaseBankTransactionsDue posts every release dated on or before day of the organisation's categorised bank lines
+// (FR-GL-03, ENG-05; Appendix B.1): the hourly job bank.releases, as ReleaseDue is for bills.
+func (s Releases) ReleaseBankTransactionsDue(ctx context.Context, org uuid.UUID, day time.Time) (ReleaseRun, error) {
+	return s.releaseDue(ctx, org, day, storage.DocumentBankTransaction)
+}
+
 // ReleaseDueAll runs the bills' releases of every organisation up to its own today, in its time zone, at now. An
 // organisation that fails does not stop the others; their errors come back together.
 func ReleaseDueAll(ctx context.Context, store storage.Store, now time.Time) ([]ReleaseRun, error) {
@@ -346,6 +367,12 @@ func ReleaseDueAll(ctx context.Context, store storage.Store, now time.Time) ([]R
 // the bills'.
 func ReleaseInvoicesDueAll(ctx context.Context, store storage.Store, now time.Time) ([]ReleaseRun, error) {
 	return releaseDueAll(ctx, store, now, Releases.ReleaseInvoicesDue)
+}
+
+// ReleaseBankTransactionsDueAll runs the categorised bank lines' releases of every organisation up to its own today, as
+// ReleaseDueAll does the bills'.
+func ReleaseBankTransactionsDueAll(ctx context.Context, store storage.Store, now time.Time) ([]ReleaseRun, error) {
+	return releaseDueAll(ctx, store, now, Releases.ReleaseBankTransactionsDue)
 }
 
 func releaseDueAll(ctx context.Context, store storage.Store, now time.Time,
@@ -424,7 +451,7 @@ func ReleasesOf(ctx context.Context, u storage.UnitOfWork, doc storage.Document,
 		if rs, err = ledger.BillReleases(c.Prepared.Bill, c.Entry, settings); err != nil {
 			return nil, err
 		}
-	case doc.Status == storage.DocumentDraft:
+	case doc.Status == storage.DocumentDraft && doc.Type == storage.DocumentInvoice:
 		c, err := checkInvoice(ctx, u, doc, settings)
 		if err != nil || len(c.Problems) > 0 {
 			return nil, err
@@ -432,6 +459,7 @@ func ReleasesOf(ctx context.Context, u storage.UnitOfWork, doc storage.Document,
 		if rs, err = ledger.InvoiceReleases(c.Prepared.Invoice, c.Entry, settings); err != nil {
 			return nil, err
 		}
+	case doc.Status == storage.DocumentDraft: // a bank transaction is posted as it is made
 	default:
 		if rs, err = scheduleOf(ctx, u, doc, settings); err != nil {
 			return nil, err
