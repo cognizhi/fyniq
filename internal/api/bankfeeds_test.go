@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
@@ -46,17 +47,21 @@ func (f *fakeBank) Accounts(context.Context) ([]ports.BankDataAccount, error) {
 	return out, f.err
 }
 
-func (f *fakeBank) Transactions(_ context.Context, account, cursor string) (ports.BankDataPage, error) {
+func (f *fakeBank) Transactions(_ context.Context, account, cursor string, day time.Time) (ports.BankDataPage, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.err != nil {
 		return ports.BankDataPage{}, f.err
 	}
+	all := f.txns[account]
 	from := 0
 	if cursor != "" {
 		from, _ = strconv.Atoi(cursor)
+	} else {
+		for from < len(all) && all[from].BookingDate.Before(day) { // with no cursor, from the source's first day
+			from++
+		}
 	}
-	all := f.txns[account]
 	to := min(from+2, len(all))
 	return ports.BankDataPage{Transactions: append([]ports.BankDataTransaction(nil), all[from:to]...), Cursor: strconv.Itoa(to), More: to < len(all)}, nil
 }
@@ -118,7 +123,7 @@ func (e *env) enabledBankConnector() storage.InstalledConnector {
 	return c
 }
 
-// fedAccount is an SGD money account that is provider account id, fed by connector c from today.
+// fedAccount is an SGD money account that is provider account id, fed by connector c from 1 October.
 func (e *env) fedAccount(id string, c storage.InstalledConnector) storage.MoneyAccount {
 	e.t.Helper()
 	acc := e.chartMoneyAccount()
@@ -129,7 +134,7 @@ func (e *env) fedAccount(id string, c storage.InstalledConnector) storage.MoneyA
 			return err
 		}
 		_, err = u.Banking().AddSource(ctx, storage.NewMoneyAccountSource{MoneyAccountID: m.ID, Kind: storage.MoneySourceConnector, ConnectorID: &c.ID,
-			FromDate: e.clock.Now(), At: e.clock.Now()})
+			FromDate: porttest.Day(10, 1), At: e.clock.Now()})
 		return err
 	})
 	return m
@@ -292,5 +297,83 @@ func TestABankDataConnectorNeedsTheBankDataRow(t *testing.T) {
 	}
 	if err := bankDataRow(context.Background(), fakeConnector(t, "example-x", connector.ScopeOrganisation, "")); err != nil {
 		t.Errorf("an email connector: %v", err)
+	}
+}
+
+// The source switch (FR-BNK-17; p1-bank-import-reconcile task 8.5, design D13): a money account fed by emailed reports
+// up to 20 October moves to an API connector from 21 October; the connector's first pull starts on the switch day, so
+// what the reports brought is not pulled again and the chain carries on without a gap; the bank's agreement for the
+// switch is a file on the account, append-only, listed with it.
+// req: FR-BNK-17
+// req: FR-DOC-05
+// req: banking/bank-transactions Moving DBS to RAPID
+func TestASourceSwitchKeepsTheChain(t *testing.T) {
+	e := newEnv(t)
+	e.clock.Set(time.Date(2026, 10, 25, 9, 0, 0, 0, time.UTC))
+	c := e.enabledBankConnector()
+	acc := e.chartMoneyAccount()
+	provider := "dbs-" + uuid.NewString()[:8]
+	var m storage.MoneyAccount
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if m, err = u.Banking().CreateMoneyAccount(ctx, storage.NewMoneyAccount{AccountID: acc.ID, Kind: storage.MoneyBank, Name: "DBS current",
+			Identifier: provider, Currency: "SGD", At: e.clock.Now()}); err != nil {
+			return err
+		}
+		if _, err = u.Banking().AddSource(ctx, storage.NewMoneyAccountSource{MoneyAccountID: m.ID, Kind: storage.MoneySourceEmail,
+			Senders: []string{"ideal.reports@dbs.example"}, ReportFormat: "mt940", FromDate: porttest.Day(10, 1), At: e.clock.Now()}); err != nil {
+			return err
+		}
+		opening, closing := storage.Decimal("1000.00"), storage.Decimal("1100.00")
+		balance := storage.Decimal("1100.00")
+		if _, _, err = u.Banking().Import(ctx, storage.NewBankStatement{MoneyAccountID: m.ID, Source: storage.MoneySourceEmail, Format: storage.FormatCSV,
+			ParserVersion: "csv@1", PeriodFrom: porttest.Day(10, 20), PeriodTo: porttest.Day(10, 20), Currency: "SGD", Opening: &opening, Closing: &closing,
+			At: e.clock.Now(), Lines: []storage.NewBankLine{{Position: 1, BookingDate: porttest.Day(10, 20), Amount: "100.00", Description: "GIRO ACME",
+				RunningBalance: &balance, Fingerprint: strings.ReplaceAll(uuid.NewString()+uuid.NewString(), "-", "")}}}); err != nil {
+			return err
+		}
+		_, err = u.Banking().AddSource(ctx, storage.NewMoneyAccountSource{MoneyAccountID: m.ID, Kind: storage.MoneySourceConnector, ConnectorID: &c.ID,
+			FromDate: porttest.Day(10, 21), At: e.clock.Now()})
+		return err
+	})
+	bank.add(provider, "100.00", "1100.00", 20) // the day the reports brought, which the switch does not pull again
+	bank.add(provider, "-30.00", "1070.00", 21)
+	bank.add(provider, "5.00", "1075.00", 22)
+	worker, err := postgres.Open(context.Background(), db.URL("fyniq_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(worker.Close)
+	got, err := bankfeed.Syncer{Store: worker, Runtime: e.api.deps.Connectors.Runtime, Clock: e.clock}.Sync(context.Background(), e.books.Org, c.ID)
+	if err != nil || got.Added != 2 || len(got.Errors) != 0 {
+		t.Fatalf("the first pull after the switch: %+v, %v", got, err)
+	}
+	if lines := e.linesOf(m); len(lines) != 3 || lines[1].BookingDate != porttest.Day(10, 21) {
+		t.Fatalf("the lines: %+v", lines)
+	}
+	a := e.call(http.MethodGet, "/v1/money-accounts/"+m.ID.String(), e.as(authz.Bookkeeper), nil)
+	if gaps, _ := a.Body["gaps"].([]any); len(gaps) != 0 || a.str("source", "kind") != "connector" {
+		t.Fatalf("the account after the switch: %s", a.Raw)
+	}
+
+	// The agreement for the switch, on the account.
+	staging, err := local.NewDir(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.api.deps.Staging = staging
+	pdf := []byte("%PDF-1.7\n% the RAPID agreement\n")
+	path := "/v1/money-accounts/" + m.ID.String() + "/evidence"
+	e.problemIs(e.upload(path, e.as(authz.Bookkeeper), map[string]string{"evidence_type": "agreement"}, "rapid.pdf", pdf, "If-Match", a.Header.Get("ETag")),
+		"addMoneyAccountEvidence", 403, CodeForbidden)
+	up := e.upload(path, e.as(authz.Administrator), map[string]string{"evidence_type": "agreement"}, "rapid.pdf", pdf, "If-Match", a.Header.Get("ETag"))
+	if up.Status != 201 || up.str("file_name") != "rapid.pdf" {
+		t.Fatalf("attaching the agreement: %d %s", up.Status, up.Raw)
+	}
+	second := e.upload(path, e.as(authz.Administrator), map[string]string{"evidence_type": "agreement"}, "rapid-annex.pdf", pdf, "If-Match", a.Header.Get("ETag"))
+	if second.Status != 201 {
+		t.Fatalf("a second file: %d %s", second.Status, second.Raw)
+	}
+	if l := e.call(http.MethodGet, path, e.as(authz.Auditor), nil); len(l.Body["items"].([]any)) != 2 {
+		t.Fatalf("the account's files: %s", l.Raw)
 	}
 }

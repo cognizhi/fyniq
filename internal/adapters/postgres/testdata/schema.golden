@@ -1833,7 +1833,7 @@ document | document_posted_together | CHECK (((posted_by IS NULL) = (posted_at I
 document | document_reversed_posted | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | document_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'posted'::text, 'reversed'::text])))
 document | document_status_not_null | NOT NULL status
-document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text, 'bank_transaction'::text])))
+document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text, 'bank_transaction'::text, 'bank_agreement'::text])))
 document | document_type_not_null | NOT NULL type
 document | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document_link | document_link_created_at_not_null | NOT NULL created_at
@@ -3444,6 +3444,7 @@ CREATE TRIGGER audit_chain_no_truncate BEFORE TRUNCATE ON fyniq.audit_chain FOR 
 CREATE TRIGGER audit_event_append BEFORE INSERT ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_event_append()
 CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON fyniq.audit_event FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER bank_agreement_guard BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN ((new.type = 'bank_agreement'::text)) EXECUTE FUNCTION bank_agreement_guard()
 CREATE TRIGGER bank_feed_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_feed FOR EACH ROW EXECUTE FUNCTION bank_feed_guard()
 CREATE TRIGGER bank_feed_no_truncate BEFORE TRUNCATE ON fyniq.bank_feed FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER bank_gap_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_gap FOR EACH ROW EXECUTE FUNCTION bank_gap_guard()
@@ -3519,6 +3520,7 @@ CREATE TRIGGER journal_entry_bill_release BEFORE INSERT ON fyniq.journal_entry F
 CREATE TRIGGER journal_entry_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER journal_entry_invoice_release BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = 'invoice_release'::text) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_invoice_release()
 CREATE TRIGGER journal_entry_no_truncate BEFORE TRUNCATE ON fyniq.journal_entry FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
+CREATE TRIGGER journal_entry_not_bank_agreement BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_not_bank_agreement()
 CREATE TRIGGER journal_entry_not_purchase_order BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_not_purchase_order()
 CREATE TRIGGER journal_entry_not_statement BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_not_statement()
 CREATE TRIGGER journal_line_balances AFTER INSERT ON fyniq.journal_line REFERENCING NEW TABLE AS new_lines FOR EACH STATEMENT EXECUTE FUNCTION journal_line_balances()
@@ -3712,6 +3714,7 @@ audit_chain_guard() → trigger | security invoker | v | search_path=pg_catalog,
 audit_event_append() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b28a8a36f47d380d03f4120d6fab3ae
 audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d06777cbb7f0bd4dfb455fd25fe4970
 balance_differences() → TABLE(account_id uuid, period_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 3fb15f23f1568ac9a4288b7dced1e16e
+bank_agreement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 045b2a2e3ab50c531641fa49d5157cc4
 bank_feed_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 44b4e05c97a31d2e77d3cb543863849c
 bank_gap_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aa70c7f4e8b3f508860e4983c5813b44
 bank_line_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d8b48d4418d8aca35f08e24805b98378
@@ -3789,6 +3792,7 @@ journal_entry_assign() → trigger | security definer | v | search_path=pg_catal
 journal_entry_bank_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 34be50f43608217c20b3ec61982adec8
 journal_entry_bill_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4640943f24f77ab7bdb4001855543147
 journal_entry_invoice_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84b7928f521c3099dc4527133a970979
+journal_entry_not_bank_agreement() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 982a9d10d570c6cc2b7bcfedbb720ef3
 journal_entry_not_purchase_order() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6d56ef74a45b5b6e0b8b17fbd51ccca8
 journal_entry_not_statement() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2f9768ffb0fa7da50d93cfce2c84c492
 journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff

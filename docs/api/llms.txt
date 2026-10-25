@@ -203,6 +203,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/money-accounts` (createMoneyAccount): Set up a money account
 - `GET /v1/money-accounts/{money_account_id}` (getMoneyAccount): Get a money account
 - `PUT /v1/money-accounts/{money_account_id}` (replaceMoneyAccount): Change a money account
+- `GET /v1/money-accounts/{money_account_id}/evidence` (listMoneyAccountEvidence): List a money account's bank agreements
+- `POST /v1/money-accounts/{money_account_id}/evidence` (addMoneyAccountEvidence): Attach a bank agreement to a money account
 - `POST /v1/money-accounts/{money_account_id}/gaps/{gap_id}/resolve` (resolveBankGap): Resolve a gap in a money account's statements
 - `GET /v1/money-accounts/{money_account_id}/reconciliations/{period_id}` (getBankReconciliation): Get a money account's reconciliation for a period
 - `POST /v1/money-accounts/{money_account_id}/reconciliations/{period_id}/sign` (signBankReconciliation): Sign off a money account's reconciliation

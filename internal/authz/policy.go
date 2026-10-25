@@ -549,6 +549,9 @@ var (
 	ListBankReconciliations   = Policy{Operation: "listBankReconciliations", Capability: BankReconciliation, Need: View}
 	PrepareBankReconciliation = Policy{Operation: "prepareBankReconciliation", Capability: BankReconciliation, Need: Create}
 	SignBankReconciliation    = Policy{Operation: "signBankReconciliation", Capability: BankReconciliation, Need: Approve}
+	// A money account's bank agreements (FR-DOC-05, design D13): attached by whoever may change its source.
+	AddMoneyAccountEvidence  = Policy{Operation: "addMoneyAccountEvidence", Capability: BankConnections, Need: Create}
+	ListMoneyAccountEvidence = Policy{Operation: "listMoneyAccountEvidence", Capability: BankTransactions, Need: View}
 	// Rendering an invoice as its document (FR-AR-05) reads it.
 	GetInvoiceDocument = Policy{Operation: "getInvoiceDocument", Capability: Invoices, Need: View}
 	// Emailing an issued invoice or a sent quote to the customer (FR-AR-06) speaks for the company to the outside, as
@@ -892,6 +895,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	UnreconcileBankLine, AutoReconcileBankLines, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,
 	ListBankRules, CreateBankRule, GetBankRule, ReplaceBankRule, BackTestBankRule, ListBankRuleOffers, ListAutoReconciliations, GetCashPosition,
 	GetBankReconciliation, ListBankReconciliations, PrepareBankReconciliation, SignBankReconciliation,
+	AddMoneyAccountEvidence, ListMoneyAccountEvidence,
 	ListQuotes, GetQuote, GetSalesPipeline, CreateQuote, ReplaceQuote, SendQuote, CancelQuote, AcceptQuote, DeclineQuote, InvoiceQuote,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,

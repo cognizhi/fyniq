@@ -185,6 +185,19 @@ var matrixBanking = map[string]func(e *env, tok string) (response, func() bool){
 	"listBankLines": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/bank-lines?status=waiting", tok, nil), nil
 	},
+	"addMoneyAccountEvidence": func(e *env, tok string) (response, func() bool) {
+		m, _, _ := e.bankAccount()
+		path := "/v1/money-accounts/" + m.ID.String() + "/evidence"
+		r := e.upload(path, tok, map[string]string{"evidence_type": "agreement"}, "agreement.pdf", []byte("%PDF-1.7\n% an agreement\n"), "If-Match", etag(m.Version))
+		return r, func() bool {
+			items, _ := e.call(http.MethodGet, path, e.as(authz.Auditor), nil).Body["items"].([]any)
+			return len(items) == 0
+		}
+	},
+	"listMoneyAccountEvidence": func(e *env, tok string) (response, func() bool) {
+		m, _, _ := e.bankAccount()
+		return e.call(http.MethodGet, "/v1/money-accounts/"+m.ID.String()+"/evidence", tok, nil), nil
+	},
 	"getBankLine": func(e *env, tok string) (response, func() bool) {
 		_, l, _ := e.bankAccount()
 		return e.call(http.MethodGet, "/v1/bank-lines/"+l.ID.String(), tok, nil), nil

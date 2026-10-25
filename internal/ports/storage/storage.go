@@ -452,6 +452,9 @@ const (
 	// it was for, its parts' accounts, GST and spreads, posted at once by bank_transaction@1 and reversed when undone. It
 	// is unnumbered: the line names it.
 	DocumentBankTransaction DocumentType = "bank_transaction"
+	// DocumentBankAgreement holds a money account's bank agreements as evidence: posted when made, it posts nothing and is
+	// never reversed (FR-DOC-05, p1-bank-import-reconcile design D13).
+	DocumentBankAgreement DocumentType = "bank_agreement"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
