@@ -17,6 +17,9 @@ export OPENSPEC_TELEMETRY := 0
 MISE := $(shell command -v mise >/dev/null 2>&1 && echo "mise exec --")
 GO_IMAGES := api ai mcp worker executor render migrate jobs
 # Mutation testing scope (QA-ENG-04): money, the rounding policies and the posting engine
+# Each Go test binary's limit: the API's authorisation matrix (20 roles × every operation) takes eight minutes and more
+# on a CI runner, beside the other database suites, past go test's default of ten.
+GO_TEST_TIMEOUT := 30m
 MUTATION_PKGS := internal/domain/money internal/domain/rounding internal/domain/ledger
 FLAVOURS ?= release local
 # The platform `make images` builds: empty for the Docker engine's own (linux/arm64 on Apple silicon), or
@@ -87,8 +90,8 @@ test: ## Run every merge gate offline (Docker needed for the database suites): m
 	@$(MAKE) --no-print-directory db-lint
 	@$(MISE) go vet ./...
 	@$(MISE) go vet -tags local ./...
-	@$(MISE) go test ./...
-	@$(MISE) go test -tags local ./...
+	@$(MISE) go test -timeout $(GO_TEST_TIMEOUT) ./...
+	@$(MISE) go test -tags local -timeout $(GO_TEST_TIMEOUT) ./...
 	@$(MISE) pnpm -r typecheck
 	@$(MISE) pnpm -r --if-present test
 	@$(MAKE) --no-print-directory api-check
