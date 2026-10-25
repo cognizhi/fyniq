@@ -65,6 +65,9 @@ const (
 	// ObjectConnector is an organisation's connector, a step of whose lifecycle a second person approves (FR-INT-26,
 	// FM-1); its key is the installed connector's id, or for an install the connector's id in the catalogue.
 	ObjectConnector = "connector"
+	// ObjectBankRule is a bank rule that auto-applies once approved (FR-BNK-14, FR-APR-01): a person holding A on "Bank
+	// transactions, categorise" approves it after its back-test; its key is the rule's id.
+	ObjectBankRule = "bank_rule"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -109,6 +112,8 @@ const (
 	OpRecurringApprove = "recurring_invoice.approve"
 	// OpConnectorChange takes a step of an organisation's connector's lifecycle (FR-INT-26).
 	OpConnectorChange = "connector.change"
+	// OpRuleAutoApply marks a bank rule auto-apply (FR-BNK-14).
+	OpRuleAutoApply = "bank_rule.auto_apply"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -122,7 +127,7 @@ var Operations = map[string]string{
 	OpInvoicePost: ObjectInvoice, OpInvoiceVoid: ObjectInvoice, OpInvoiceEdit: ObjectInvoice, OpReceiptVoid: ObjectReceipt,
 	OpWriteOffPost: ObjectWriteOff, OpWriteOffVoid: ObjectWriteOff, OpCustomerApplicationVoid: ObjectCustomerApplication,
 	OpCustomerRefundVoid: ObjectCustomerRefund, OpDepositVoid: ObjectDeposit, OpRecurringApprove: ObjectRecurringInvoice,
-	OpConnectorChange: ObjectConnector,
+	OpConnectorChange: ObjectConnector, OpRuleAutoApply: ObjectBankRule,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -175,6 +180,8 @@ var Dependencies = map[string][]string{
 	ObjectRecurringInvoice: {"content_version", "mode"},
 	// the installed connector's version and state, or for an install whether the connector is installed already
 	ObjectConnector: {"connector_version", "state"},
+	// the rule's version, and the SHA-256 of its conditions and action: what the back-test was run on
+	ObjectBankRule: {"rule_version", "rule"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -204,6 +211,7 @@ var Rows = map[string]string{
 	ObjectDeposit:             "Invoices, credit notes",
 	ObjectRecurringInvoice:    "Invoices, credit notes",
 	ObjectConnector:           "Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)",
+	ObjectBankRule:            "Bank transactions, categorise",
 }
 
 // The limits of a policy.
@@ -262,6 +270,7 @@ var Policies = map[string]Policy{
 	ObjectDeposit:             {ObjectType: ObjectDeposit, Version: "founder/customer_deposit@2026-10-24.1", Steps: []Step{{Quorum: 1}}},
 	ObjectRecurringInvoice:    {ObjectType: ObjectRecurringInvoice, Version: "founder/recurring_invoice@2026-10-24.1", Steps: []Step{{Quorum: 1}}},
 	ObjectConnector:           {ObjectType: ObjectConnector, Version: "founder/connector@2026-10-25.1", Steps: []Step{{Quorum: 1}}},
+	ObjectBankRule:            {ObjectType: ObjectBankRule, Version: "founder/bank_rule@2026-10-25.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

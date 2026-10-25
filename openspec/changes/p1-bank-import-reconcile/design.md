@@ -173,6 +173,11 @@ while the period is open. A sample joins the weekly review (FM-3, the review log
   back-test and the rule's hits since it was created; no line is auto-reconciled by a rule before it is approved.
   A rule records whether it came from an AI proposal, so the G4-059 refusal applies once the AI changes land.
 - Repeated coding (five times by default) is offered as a rule to promote, never applied by itself.
+- As built (task 5.2): the approval object `bank_rule` with `bank_rule.auto_apply` (migration 000149), approved by a
+  person holding A on "Bank transactions, categorise"; its envelope holds the rule's version and the SHA-256 of its
+  conditions and action, and the request shows the back-test and the hits since the rule was made. The endpoint
+  `requestBankRuleAutoApply` asks for it; the rest of the rules API comes with task 9.1. `banking.Repeated` offers the
+  patterns coded the same way five times (by counterparty, or the description's leading words) that no rule covers.
 
 ### D9. Reconciliation is prepared, then signed off by another person
 

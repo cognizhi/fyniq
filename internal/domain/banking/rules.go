@@ -341,6 +341,20 @@ type BackTest struct {
 	Matched  int
 	ByStatus map[string]int
 	Sample   []storage.BankLine
+	booked   []time.Time // every matched line's booking date
+}
+
+// Since is how many of the matched lines were booked on or after t's day: the rule's hits since it was made.
+func (b BackTest) Since(t time.Time) int {
+	y, m, d := t.UTC().Date()
+	day := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	n := 0
+	for _, on := range b.booked {
+		if !on.Before(day) {
+			n++
+		}
+	}
+	return n
 }
 
 // MaxSample is how many matched lines a back-test shows.
@@ -365,6 +379,7 @@ func RunBackTest(ctx context.Context, u storage.UnitOfWork, c Conditions) (BackT
 		}
 		out.Matched++
 		out.ByStatus[l.Status]++
+		out.booked = append(out.booked, l.BookingDate)
 		if len(out.Sample) < MaxSample {
 			out.Sample = append(out.Sample, l)
 		}

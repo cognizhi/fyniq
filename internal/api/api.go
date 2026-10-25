@@ -148,6 +148,7 @@ func Config(version string) huma.Config {
 		{Name: "Journals", Description: "Manual journals: drafted, posted and reversed; posted history never changes (FR-GL-12)."},
 		{Name: "Purchases", Description: "Bills from suppliers: drafted, approved, posted and voided; posted history never changes (FR-AP-02, FR-GL-12)."},
 		{Name: "Sales", Description: "Invoices to customers: drafted, approved, issued and voided; posted history never changes (FR-AR-03, FR-GL-12)."},
+		{Name: "Banking", Description: "Money accounts, their statements and lines, and the rules that code them; a rule applies by itself only once a second person approves it (FR-BNK-01…18)."},
 		{Name: "Periods", Description: "Accounting periods and financial years: a posting's period is the month of its date (FR-ORG-02, FR-GL-08)."},
 		{Name: "Exchange rates", Description: "Rates into the base currency: the daily feed, the organisation's own rates for a day and its monthly table, and the cascade a posting takes its rate from (FR-GL-05, ENG-40)."},
 		{Name: "Reports", Description: "Reports read from the ledger at one revision: the general ledger (FR-GL-11), and the statements as they arrive."},
@@ -283,6 +284,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerSetup(a)
 	registerSuperAdmins(a)
 	registerConnectors(a)
+	registerBankRules(a)
 	registerSession(a)
 	return a
 }

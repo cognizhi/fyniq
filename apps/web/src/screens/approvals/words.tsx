@@ -39,6 +39,7 @@ const operations: Record<Approval["operation"], string> = {
   "customer_deposit.void": "Void a customer deposit",
   "recurring_invoice.approve": "Approve a recurring invoice to issue and send",
   "connector.change": "Change a connector",
+  "bank_rule.auto_apply": "Let a bank rule apply by itself",
 };
 
 export function operationLabel(op: string): string {
@@ -69,6 +70,7 @@ const objects: Record<string, string> = {
   customer_deposit: "Customer deposit",
   recurring_invoice: "Recurring invoice",
   connector: "Connector",
+  bank_rule: "Bank rule",
 };
 
 export function objectLabel(t: string): string {

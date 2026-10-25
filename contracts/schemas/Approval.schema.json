@@ -97,7 +97,8 @@
         "customer_refund",
         "customer_deposit",
         "recurring_invoice",
-        "connector"
+        "connector",
+        "bank_rule"
       ],
       "examples": [
         "organisation_setting"
@@ -137,7 +138,8 @@
         "customer_refund.void",
         "customer_deposit.void",
         "recurring_invoice.approve",
-        "connector.change"
+        "connector.change",
+        "bank_rule.auto_apply"
       ],
       "examples": [
         "organisation_setting.change"
