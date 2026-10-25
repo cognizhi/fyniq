@@ -33,6 +33,8 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "previewDocumentTemplate Idempotency-Key", "previewDocumentTemplate Prefer")
 	// A back-test saves nothing either (FR-BNK-05).
 	want = append(want, "backTestBankRule Idempotency-Key", "backTestBankRule Prefer")
+	// Reconcile now posts each line in its own transaction; a repeat finds them no longer waiting (FR-BNK-14, rev 0.143).
+	want = append(want, "autoReconcileBankLines Idempotency-Key")
 	slices.Sort(want)
 	var got []string
 	for _, op := range operations(testAPI(t)) {

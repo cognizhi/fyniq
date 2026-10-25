@@ -182,6 +182,11 @@ while the period is open. A sample joins the weekly review (FM-3, the review log
   categorisation, voids a receipt or bill payment made from the line, or undoes a transfer (marked undone, so its
   lines may be recorded again). Each Monday `bank.review-sample` logs the previous week's 5 largest and 5 others at
   random, once each.
+- Decided (the owner, 26 Oct 2026, rev 0.143; task 5.3): the worker imports emailed reports and syncs with no
+  posting right, so in P1 those lines wait for a person's **Reconcile now** (`POST /v1/bank-lines:auto-reconcile`),
+  which runs `AutoReconcile` over the waiting lines as `service:bank.auto-reconcile`, recording the person as the one it
+  acted for; `banking.Plan` is its preview. Feeds reconcile by themselves in P2 under a database role of their own
+  (§17.5), not the worker's. Declined: a reconciler role now, widening the worker's role, posting functions in SQL.
 - As built (task 5.2): the approval object `bank_rule` with `bank_rule.auto_apply` (migration 000149), approved by a
   person holding A on "Bank transactions, categorise"; its envelope holds the rule's version and the SHA-256 of its
   conditions and action, and the request shows the back-test and the hits since the rule was made. The endpoint

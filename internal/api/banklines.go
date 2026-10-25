@@ -177,6 +177,19 @@ type lineDoneOutput struct {
 	Body     BankLineDone
 }
 
+type reconcileNowInput struct {
+	PreferHeader
+	Body struct {
+		MoneyAccountID string `json:"money_account_id,omitempty" format:"uuid" doc:"One money account's waiting lines; left out, every account's." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"`
+	}
+}
+
+type reconcileNowOutput struct {
+	Status  int
+	Applied string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was posted (FR-INT-14)."`
+	Body    AutoReconciled
+}
+
 type recordTransferInput struct {
 	KeyHeader
 	PreferHeader
@@ -534,6 +547,67 @@ func registerBankLines(a *API) {
 				_, err := banking.Unreconcile(ctx, a.bank, org, l.ID, in.Body.Reason, a.deps.Clock.Now(), false)
 				return BankLineDone{}, err
 			})
+		})
+
+	// Each line reconciles in its own unit of work, so the run is not one write to replay: a repeat finds the lines it
+	// reconciled no longer waiting.
+	register(a, authz.AutoReconcileBankLines, exempt(huma.Operation{
+		OperationID: "autoReconcileBankLines", Method: http.MethodPost, Path: "/v1/bank-lines:auto-reconcile", Tags: []string{"Banking"},
+		Summary: "Reconcile now",
+		Description: "Runs auto-reconcile over the waiting lines, one money account's or every account's, as the system principal and within the " +
+			"same limits as after an upload (FR-BNK-14; the owner's decision of 26 Oct 2026, rev 0.143): a transfer's missing side, the one open " +
+			"document a line names exactly, and approved auto-apply rules. Lines that arrive by feed in P1 wait for it. Each line posts in its own " +
+			"transaction, so one refusal never stops the others; what is left stays in the queue, counted by why. The person who asked is " +
+			"recorded as the one it acted for. Prefer: return=preview says what it would do and posts nothing.",
+	}, "Idempotency-Key", "Each line reconciles in its own transaction and a repeat finds those lines no longer waiting, so nothing posts twice (FR-BNK-14)."),
+		[]string{CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeNotFound, storage.CodeRetry, storage.CodeLockTimeout},
+		func(ctx context.Context, in *reconcileNowInput) (*reconcileNowOutput, error) {
+			f := storage.BankLineFilter{Statuses: []string{storage.LineUnreconciled}}
+			if in.Body.MoneyAccountID != "" {
+				id, err := parseID("body.money_account_id", in.Body.MoneyAccountID)
+				if err != nil {
+					return nil, err
+				}
+				f.MoneyAccountID = &id
+			}
+			p, _ := authn.From(ctx)
+			now := a.deps.Clock.Now()
+			var ids []uuid.UUID
+			var planned banking.AutoRun
+			err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+				if f.MoneyAccountID != nil {
+					if _, err := u.Banking().MoneyAccount(ctx, *f.MoneyAccountID); err != nil {
+						return err
+					}
+				}
+				lines, err := u.Banking().Lines(ctx, f)
+				if err != nil {
+					return err
+				}
+				ids = make([]uuid.UUID, 0, len(lines))
+				for _, l := range lines {
+					ids = append(ids, l.ID)
+				}
+				if wantsPreview(in.Prefer) {
+					planned, err = banking.Plan(ctx, u, ids, now)
+				}
+				return err
+			})
+			if err != nil {
+				return nil, err
+			}
+			out := &reconcileNowOutput{Status: http.StatusOK}
+			run := planned
+			if wantsPreview(in.Prefer) {
+				out.Applied = previewApplied
+			} else if run, err = banking.AutoReconcile(ctx, a.deps.Store, p.Organisation, ids, now); err != nil {
+				return nil, err
+			}
+			out.Body = AutoReconciled{Reconciled: len(run.Reconciled), Left: map[string]int{}}
+			for _, l := range run.Left {
+				out.Body.Left[l.Why]++
+			}
+			return out, nil
 		})
 
 	transferring := append([]string{journal.CodeTransferLine, ledger.CodeTransfer, ledger.CodeNotMoneyAccount}, posting...)
