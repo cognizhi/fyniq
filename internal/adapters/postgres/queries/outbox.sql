@@ -53,3 +53,6 @@ RETURNING id, state, attempts;
 UPDATE fyniq.outbox SET state = 'unknown_outcome', lease_holder = NULL, lease_expires_at = NULL,
        last_error = 'set by the after-restore step: reconcile before any retry'
 WHERE state IN ('pending', 'dispatched', 'running', 'failed');
+
+-- name: HoldOutbox :exec
+SELECT fyniq.hold_outbox(sqlc.arg(id), sqlc.arg(holder), sqlc.arg(until), sqlc.arg(why));

@@ -94,6 +94,18 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	}
 	hooks.Register(s)
 	api.New(s, d)
+	// The email connectors from the deployment's settings, once (rev 0.139); before first-run setup, the tick does it later.
+	bootstrap := func(ctx context.Context) {
+		if n, err := wiring.BootstrapConnectors(ctx, kit, os.Getenv, deps.Clock); err != nil {
+			d.Log.Warn("the email connectors were not installed from the deployment's settings; email is sent as configured", "error", err)
+		} else if n > 0 {
+			d.Log.Info("installed the email connectors from the deployment's settings", "connectors", n)
+		}
+	}
+	bootstrap(context.Background())
+	if drift, err := wiring.EmailDrift(context.Background(), kit, os.Getenv); err == nil && drift != "" {
+		d.Log.Warn(drift)
+	}
 	s.AddReadiness("database", kit.Store.Ping)
 	t := outbox.Ticker{Store: kit.Store, Platform: kit.Store, Jobs: kit.Jobs, Clock: deps.Clock, Holder: app.Holder("api"),
 		Schedules: outbox.PlatformSchedules, Dispatcher: *d.Outbox, Dead: notify.JobDead(*d.Outbox)}
@@ -102,6 +114,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 			http.Error(w, "only the Scheduler may call the tick", http.StatusForbidden)
 			return
 		}
+		bootstrap(r.Context())
 		report, err := t.Tick(r.Context())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

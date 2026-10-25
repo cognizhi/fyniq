@@ -3194,6 +3194,7 @@ expire_installation_changes(p_at timestamp with time zone) → SETOF uuid | secu
 finish_job_slot(p_job text, p_slot timestamp with time zone, p_ok boolean, p_detail text, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ad4500fb0fd68beae2aba5eb5653db8b
 fx_feed_rate_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 849c4b9702a2ace8fe0e241dba3da8ef
 fx_rate_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df1d5890f30041246e4b0ce50b864488
+hold_outbox(p_id uuid, p_holder text, p_until timestamp with time zone, p_why text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 590d733ae64933f87f3efe15a90efd08
 inbound_file_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9b3c6d083223c4f8e6521e1cd4cad263
 inbound_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3bd01c80a7acafbbc22e6ab62d336849
 install_installation_connector(p_by uuid, p_change uuid, p_connector text, p_version text, p_hash text, p_secret_names text[], p_consent jsonb, p_configuration jsonb, p_position integer, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 28e9f78bda8c33873df9d1ac445a1f0d

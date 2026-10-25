@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -309,5 +310,37 @@ func TestFailuresRetryThenDieAndUnknownOutcomesWait(t *testing.T) {
 	token, _ := h.tokens.Token("worker")
 	if code := h.deliver(t, "worker", token, b.Org, wait.ID); code != http.StatusOK || unknown.Load() != 1 {
 		t.Fatalf("a redelivery of an unknown outcome ran it again (%d runs)", unknown.Load())
+	}
+}
+
+// Work held because its connectors are paused waits and spends no attempt: the row goes back to dispatched with a later
+// deadline and one more attempt in its budget, as many times as it is held, and runs when the work can start.
+// req: FR-INT-26
+// req: FR-INT-20
+func TestHeldWorkSpendsNoAttempt(t *testing.T) {
+	b := books(t, "Held work Pte Ltd")
+	var runs atomic.Int32
+	h := newHarness(t, map[string]outbox.Work{
+		"test.held": func(context.Context, uuid.UUID, storage.OutboxRow) error {
+			if runs.Add(1) <= 3 {
+				return fmt.Errorf("%w: the email connectors are paused", outbox.ErrHeld)
+			}
+			return nil
+		},
+	})
+	row := h.enqueue(t, b.Org, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: "test.held", MaxAttempts: 2})
+	got := outboxRow(t, b.Org, row.ID)
+	if got.State != storage.OutboxDispatched || got.Attempts != 1 || got.MaxAttempts != 3 || got.Deadline == nil ||
+		!got.Deadline.Equal(h.clock.Now().Add(outbox.HoldFor)) {
+		t.Fatalf("held once: %+v", got)
+	}
+	token, _ := h.tokens.Token("worker")
+	for range 3 {
+		if code := h.deliver(t, "worker", token, b.Org, row.ID); code != http.StatusOK {
+			t.Fatalf("a delivery: %d", code)
+		}
+	}
+	if got := outboxRow(t, b.Org, row.ID); got.State != storage.OutboxDone || got.Attempts != 4 || got.MaxAttempts != 5 || runs.Load() != 4 {
+		t.Fatalf("held three times, then run: %+v after %d runs", got, runs.Load())
 	}
 }

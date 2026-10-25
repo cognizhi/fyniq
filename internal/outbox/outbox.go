@@ -80,6 +80,13 @@ func (d Dispatcher) Dispatch(ctx context.Context, org uuid.UUID, row storage.Out
 // time-out after sending). The row waits for reconciliation and is never retried blind (§12.11).
 var ErrUnknownOutcome = errors.New("the outcome of the outside call is unknown")
 
+// ErrHeld is what work returns when it cannot start now because every connector it needs is paused or disabled
+// (FR-INT-26): the row waits HoldFor and is delivered again, and the attempt is given back. Wrap it with the reason.
+var ErrHeld = errors.New("held: every connector this work needs is paused or disabled")
+
+// HoldFor is how long a held row waits before it is delivered again.
+const HoldFor = 10 * time.Minute
+
 // Work does one row's work, in its own unit of work. It must be idempotent on the row: a posting
 // uses a posting identity derived from the row, so a second run cannot post twice.
 type Work func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error
@@ -162,6 +169,13 @@ func (h *Handler) run(ctx context.Context, m Message) (int, string) {
 	case errors.Is(err, ErrUnknownOutcome):
 		h.finish(ctx, m.OrganisationID, row, storage.OutboxUnknownOutcome, err.Error())
 		return http.StatusOK, "unknown outcome: reconcile before any retry"
+	case errors.Is(err, ErrHeld):
+		if herr := h.Store.Do(ctx, m.OrganisationID, func(ctx context.Context, u storage.UnitOfWork) error {
+			return u.Outbox().Hold(ctx, row.ID, h.Holder, h.Clock.Now().Add(HoldFor), err.Error())
+		}); herr != nil {
+			return http.StatusInternalServerError, herr.Error()
+		}
+		return http.StatusOK, "held: delivered again in " + HoldFor.String()
 	case row.Attempts >= row.MaxAttempts:
 		h.finish(ctx, m.OrganisationID, row, storage.OutboxDead, err.Error())
 		return http.StatusOK, "dead after " + fmt.Sprint(row.Attempts) + " attempts"

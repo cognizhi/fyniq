@@ -75,6 +75,9 @@ type Outbox interface {
 	Lease(ctx context.Context, id uuid.UUID, holder string, now, until time.Time) (row OutboxRow, ok bool, err error)
 	// Finish ends holder's lease with an outcome: done, failed, unknown_outcome or dead.
 	Finish(ctx context.Context, id uuid.UUID, holder string, state OutboxState, lastError string) error
+	// Hold ends holder's lease without an outcome: the row waits until until, dispatched again then, and the attempt
+	// its lease counted is given back (FR-INT-26: work held while its connectors are paused spends no attempt).
+	Hold(ctx context.Context, id uuid.UUID, holder string, until time.Time, why string) error
 }
 
 // Sweeping is what the tick needs from an organisation's outbox (§12.11).

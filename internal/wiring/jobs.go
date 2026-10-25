@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cognizhi/fyniq/compliance"
+	"github.com/cognizhi/fyniq/internal/connector"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
@@ -53,6 +54,7 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := journal.ReplayAll(ctx, k.Store)
 			return err
 		},
+		connector.CleanupJob: k.CleanupJob(clock),
 		"superadmins.verify": func(ctx context.Context) error {
 			_, err := superadmin.Verify(ctx, k.Store, k.Store)
 			return err

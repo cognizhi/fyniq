@@ -125,6 +125,16 @@ func (r outbox) Finish(ctx context.Context, id uuid.UUID, holder string, state s
 	return mapError(err)
 }
 
+func (r outbox) Hold(ctx context.Context, id uuid.UUID, holder string, until time.Time, why string) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	if len(why) > 2000 {
+		why = why[:2000]
+	}
+	return mapError(r.u.q.HoldOutbox(ctx, sqlcdb.HoldOutboxParams{ID: id, Holder: holder, Until: until, Why: why}))
+}
+
 type sweeping struct{ u *unitOfWork }
 
 func (u *unitOfWork) Sweeping() storage.Sweeping { return sweeping{u} }

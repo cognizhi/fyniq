@@ -158,6 +158,27 @@ func (q *Queries) GetOutbox(ctx context.Context, id uuid.UUID) (GetOutboxRow, er
 	return i, err
 }
 
+const holdOutbox = `-- name: HoldOutbox :exec
+SELECT fyniq.hold_outbox($1, $2, $3, $4)
+`
+
+type HoldOutboxParams struct {
+	ID     uuid.UUID
+	Holder string
+	Until  time.Time
+	Why    string
+}
+
+func (q *Queries) HoldOutbox(ctx context.Context, arg HoldOutboxParams) error {
+	_, err := q.db.Exec(ctx, holdOutbox,
+		arg.ID,
+		arg.Holder,
+		arg.Until,
+		arg.Why,
+	)
+	return err
+}
+
 const insertOutbox = `-- name: InsertOutbox :one
 INSERT INTO fyniq.outbox (worker_class, kind, payload, business_key, max_attempts)
 VALUES ($1, $2, $3, $4, $5)

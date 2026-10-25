@@ -40,13 +40,13 @@ func main() {
 				return err
 			}
 		}
-		if len(kit.Mail.Providers) > 0 {
-			var files email.Files // FR-AR-06: the evidence files a message carries, such as an invoice's PDF
-			if kit.Staging != nil && kit.Evidence != nil {
-				files = evidence.Files{Store: kit.Store, Staging: kit.Staging, Locked: kit.Evidence}.Read
-			}
-			kinds[email.Kind] = email.WorkWith(kit.Mail.Providers, kit.Store, kit.Mail.From, deps.Clock, files) // FR-INT-21: send queued mail once
+		var files email.Files // FR-AR-06: the evidence files a message carries, such as an invoice's PDF
+		if kit.Staging != nil && kit.Evidence != nil {
+			files = evidence.Files{Store: kit.Store, Staging: kit.Staging, Locked: kit.Evidence}.Read
 		}
+		// FR-INT-21: send queued mail once, through the email connectors enabled when each send starts, or the deployment's
+		// providers until the first-start bootstrap has installed them (rev 0.139); none enabled: the message waits.
+		kinds[email.Kind] = email.WorkFrom(kit.EmailProviders(kit.Runtime(deps.Clock)), kit.Store, kit.Mail.From, deps.Clock, files)
 		if kit.Mail.Inbound != nil && kit.Staging != nil && kit.Scanner != nil { // FR-INT-22: fetch, decide and keep received mail
 			kinds[email.FetchKind] = kit.Fetcher(deps.Clock).Work()
 		}

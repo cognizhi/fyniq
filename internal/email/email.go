@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	netmail "net/mail"
-	"slices"
 	"strings"
 	"time"
 
@@ -123,17 +122,69 @@ func Work(providers []ports.Email, store storage.Store, from string, clock ports
 	return WorkWith(providers, store, from, clock, nil)
 }
 
+// ProviderSet is the outbound email of one message's work: the providers it may send through now, in order, and every
+// provider it may reconcile an earlier attempt with, by name.
+type ProviderSet struct {
+	Enabled []ports.Email
+	ByName  map[string]ports.Email
+}
+
+// Providers gives the providers for one piece of work, read when it starts (FR-INT-20: never from a cached flag): the
+// connectors' (connector.Runtime), or a fixed list.
+type Providers func(ctx context.Context, org uuid.UUID) (ProviderSet, error)
+
+// Static is a fixed list of providers, every one enabled.
+func Static(providers []ports.Email) Providers {
+	set := ProviderSet{Enabled: providers, ByName: map[string]ports.Email{}}
+	for _, p := range providers {
+		set.ByName[p.Name()] = p
+	}
+	return func(context.Context, uuid.UUID) (ProviderSet, error) { return set, nil }
+}
+
 // WorkWith is Work with the reader of the files messages carry. The files are read before any attempt is marked, so a
 // file that cannot be read yet leaves the message to the outbox's retry, and fails it on the last attempt; nil files
 // fails a message that carries any.
 func WorkWith(providers []ports.Email, store storage.Store, from string, clock ports.Clock, files Files) outbox.Work {
+	if len(providers) == 0 {
+		return func(context.Context, uuid.UUID, storage.OutboxRow) error { return errors.New("email: no provider is configured") }
+	}
+	return WorkFrom(Static(providers), store, from, clock, files)
+}
+
+// WorkFrom is WorkWith with the providers read for each message (the connectors'). When none is enabled the message
+// waits, held without spending an attempt (outbox.ErrHeld), unless an earlier attempt must be reconciled first: that
+// happens with the provider it went to, enabled, paused or disabled (FR-INT-26: in-flight work is reconciled).
+func WorkFrom(source Providers, store storage.Store, from string, clock ports.Clock, files Files) outbox.Work {
 	return func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {
 		var p payload
 		if err := json.Unmarshal(row.Payload, &p); err != nil || p.MessageID == uuid.Nil {
 			return fmt.Errorf("email: outbox row %s is not a send", row.ID)
 		}
-		if len(providers) == 0 {
-			return errors.New("email: no provider is configured")
+		set, err := source(ctx, org)
+		if err != nil {
+			return err
+		}
+		providers := set.Enabled
+		mark := ""
+		if len(providers) > 0 {
+			mark = providers[0].Name()
+		} else {
+			var m storage.EmailMessage
+			if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+				var err error
+				m, err = u.EmailMessages().Get(ctx, p.MessageID)
+				return err
+			}); err != nil {
+				return err
+			}
+			if m.Status != storage.EmailQueued {
+				return nil
+			}
+			if m.AttemptStartedAt == nil {
+				return fmt.Errorf("%w: no email connector is enabled", outbox.ErrHeld)
+			}
+			mark = m.Provider // an earlier attempt to reconcile; nothing new is marked
 		}
 		finish := func(o storage.EmailOutcome) error {
 			return store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
@@ -175,7 +226,7 @@ func WorkWith(providers []ports.Email, store storage.Store, from string, clock p
 		var suppressed *storage.EmailSuppression
 		if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 			var err error
-			if before, err = u.EmailMessages().Start(ctx, p.MessageID, clock.Now(), providers[0].Name()); err != nil {
+			if before, err = u.EmailMessages().Start(ctx, p.MessageID, clock.Now(), mark); err != nil {
 				return err
 			}
 			if senders, err = u.EmailSenders().InForce(ctx); err != nil {
@@ -202,22 +253,31 @@ func WorkWith(providers []ports.Email, store storage.Store, from string, clock p
 		m := ports.OutboundEmail{Key: p.MessageID.String(), Reference: Reference(org, p.MessageID), From: fromOf(senders, before.Purpose, from),
 			To: []string{p.To}, Subject: p.Subject, Text: p.Text, Date: clock.Now(), Attachments: attached}
 		if before.AttemptStartedAt != nil {
-			i := slices.IndexFunc(providers, func(e ports.Email) bool { return e.Name() == before.Provider })
-			if i < 0 {
+			went, ok := set.ByName[before.Provider]
+			if !ok {
 				return finish(storage.EmailOutcome{Status: storage.EmailUnknown, Provider: before.Provider,
 					LastError: "an earlier attempt through " + before.Provider + ", no longer configured, may have handed the message over: it is not sent again"})
 			}
-			r, err := providers[i].Status(ctx, m, *before.AttemptStartedAt)
+			r, err := went.Status(ctx, m, *before.AttemptStartedAt)
 			switch {
 			case err == nil:
-				return accepted(providers[i], r)
+				return accepted(went, r)
 			case errors.Is(err, ports.ErrEmailUnknown):
-				return finish(storage.EmailOutcome{Status: storage.EmailUnknown, Provider: providers[i].Name(),
+				return finish(storage.EmailOutcome{Status: storage.EmailUnknown, Provider: went.Name(),
 					LastError: "an earlier attempt may have handed the message over, and the provider cannot say: it is not sent again"})
 			case !errors.Is(err, ports.ErrEmailRefused):
 				return err // ask again on the next run
 			}
-			// The provider never took it: sending is safe.
+			// The provider never took it: sending is safe, through the first enabled provider, or later when none is.
+			if len(providers) == 0 {
+				if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+					_, err := u.EmailMessages().Release(ctx, p.MessageID, "")
+					return err
+				}); err != nil {
+					return err
+				}
+				return fmt.Errorf("%w: no email connector is enabled", outbox.ErrHeld)
+			}
 			if err := retake(providers[0], ""); err != nil {
 				return err
 			}
