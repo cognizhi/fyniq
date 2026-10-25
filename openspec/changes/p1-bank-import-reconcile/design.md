@@ -173,6 +173,15 @@ while the period is open. A sample joins the weekly review (FM-3, the review log
   back-test and the rule's hits since it was created; no line is auto-reconciled by a rule before it is approved.
   A rule records whether it came from an AI proposal, so the G4-059 refusal applies once the AI changes land.
 - Repeated coding (five times by default) is offered as a rule to promote, never applied by itself.
+- As built (task 5.1; the owner's decisions of 25 Oct 2026, rev 0.142): `banking.AutoReconcile` as the principal
+  `service:bank.auto-reconcile`, in the API's unit of work after an import (the worker's role gains no posting
+  right), tries in order a transfer's one missing side, the one open document whose amount, number and contact the
+  line names, and an approved auto-apply rule; a line above `bank.auto_cap_line` (S$500) or a rule past
+  `bank.auto_cap_rule_day` (S$2,000 a day) waits for a person, as does a line with money recorded by hand. The
+  "auto_reconciliation record" is the match itself, whose basis and principal say what did it. `UndoAuto` reverses a
+  categorisation, voids a receipt or bill payment made from the line, or undoes a transfer (marked undone, so its
+  lines may be recorded again). Each Monday `bank.review-sample` logs the previous week's 5 largest and 5 others at
+  random, once each.
 - As built (task 5.2): the approval object `bank_rule` with `bank_rule.auto_apply` (migration 000149), approved by a
   person holding A on "Bank transactions, categorise"; its envelope holds the rule's version and the SHA-256 of its
   conditions and action, and the request shows the back-test and the hits since the rule was made. The endpoint

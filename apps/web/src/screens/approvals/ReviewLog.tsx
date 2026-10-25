@@ -23,6 +23,8 @@ const kinds: Record<ReviewEntry["kind"], string> = {
   approved_change: "Approved change",
   founder_bootstrap: "Set up by the Owner alone, before a second member joined",
   self_approved: "Posted alone, at or below the self-approval threshold",
+  scheduled_issue: "Issued and sent by the scheduler from an approved recurring invoice",
+  auto_reconciled: "Bank line reconciled by Fyniq itself, in the week's sample",
 };
 
 function MarkReviewed({ ids, open, onClose, onDone }: { ids: string[]; open: boolean; onClose: () => void; onDone: (n: number) => void }) {

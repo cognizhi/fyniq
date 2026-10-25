@@ -611,11 +611,11 @@ const (
 	// once, by another person, before it expires (FR-ADM-07).
 	CodeConnectorChange = "STORAGE-CONNECTOR-02"
 	// CodeBootstrap: the first-start bootstrap runs once, into an empty catalogue.
-	CodeBootstrap      = "STORAGE-CONNECTOR-03"
+	CodeBootstrap = "STORAGE-CONNECTOR-03"
 	// CodeBanking: a money account sits on a money chart account in its currency and is never deleted; a source or a
 	// statement never changes; a line keeps what the bank said and moves only along the queue, back only while its
 	// period is open; a gap is resolved once (FR-BNK-01, FR-BNK-04, FR-BNK-16).
-	CodeBanking = "STORAGE-BANKING-01"
+	CodeBanking        = "STORAGE-BANKING-01"
 	CodeBillPlan       = "STORAGE-PLAN-01"       // a bill's payment plan never changes: a later one replaces it
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation

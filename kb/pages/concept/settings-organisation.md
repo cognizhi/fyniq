@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings and recommended values: features, terms, GST, tax invoices, tolerances, bank charges, thresholds, variances, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:cdb4dad416d182f14ba56e2652cdaba28eeab5873b0303f7073dc90c684f529c
+  - docs/user-guide/organisation-settings.md sha256:38bdd8a59c54b3b9d5e796cfde412a0ab0beafbb6059ef70c9bb2ab7d682398d
 data_class: general
 taint: trusted
 status: draft
@@ -28,6 +28,8 @@ aliases:
   - simplified tax invoice
   - bank charges account
   - transfer fee
+  - auto-reconcile
+  - reconciled without a click
 ---
 
 # Organisation settings and their recommended values
@@ -89,6 +91,16 @@ aliases:
 - An overpayment above S$1.00 stays with the customer as a credit; anything above tolerance needs a reason-coded adjustment.
 
 (src: docs/user-guide/organisation-settings.md#settlement-tolerances)
+
+## Auto-reconcile
+
+- Some bank lines are reconciled by Fyniq itself: a line that matches exactly one open invoice or bill (its amount, its number and its customer or supplier), the other side of a transfer already recorded, or a line a bank rule meets once a second person has let that rule apply by itself.
+- **Auto-reconcile, the largest line**: S$500; a larger line waits in the queue for a person.
+- **Auto-reconcile, per rule a day**: S$2,000; once a rule has reconciled that much in a day, its other lines wait until the next day.
+- Every line reconciled this way shows what did it and can be undone while its month is open; each week the 5 largest and 5 others picked at random join the weekly review.
+- A change to either needs a second approver.
+
+(src: docs/user-guide/organisation-settings.md#auto-reconcile)
 
 ## Bank charges
 

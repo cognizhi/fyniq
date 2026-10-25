@@ -195,3 +195,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-25] compile | docs/user-guide/notifications.md → settings.notifications (a connector paused is a security notice)
 
 ## [2026-10-25] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the bank charges account setting, p1-bank-import-reconcile task 4.4)
+
+## [2026-10-25] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (auto-reconcile's limits, p1-bank-import-reconcile task 5.1)

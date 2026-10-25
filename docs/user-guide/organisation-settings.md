@@ -49,8 +49,9 @@ the month the year starts in and the end of the first year no longer change.
 
 ## Settings that need a second approver
 
-- Thresholds, retention, the accounting sign-off, the bank charges account, the AI assistant and details in
-  notification email need a second approver before they change: they show **Needs a second approver**.
+- Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, the AI
+  assistant and details in notification email need a second approver before they change: they show **Needs a
+  second approver**.
 - For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
   approves settings, such as an Owner, approves it (see [Approve a change](approvals.md)).
@@ -116,6 +117,19 @@ rounding** (7030) instead of leaving the document part-paid.
 - An overpayment above S$1.00 stays with the customer as a credit.
 - Anything above the tolerance needs an adjustment with a reason, such as a discount or bank
   charges.
+
+## Auto-reconcile
+
+Some bank lines are reconciled without a click, by Fyniq itself: a line that matches exactly one open
+invoice or bill (its amount, its number and its customer or supplier), the other side of a transfer
+already recorded, or a line a bank rule meets once a second person has let that rule apply by itself.
+
+- **Auto-reconcile, the largest line**: S$500. A larger line waits in the queue for a person.
+- **Auto-reconcile, per rule a day**: S$2,000. Once a rule has reconciled that much in a day, its other
+  lines wait for a person until the next day.
+- Every line reconciled this way shows what did it and can be undone while its month is open.
+- Each week the 5 largest and 5 others picked at random join the weekly review.
+- A change to either needs a second approver.
 
 ## Bank charges
 

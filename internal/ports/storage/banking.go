@@ -384,6 +384,9 @@ type BankTransfer struct {
 	EntryID       *uuid.UUID
 	MadeBy        string
 	MadeAt        time.Time
+	UndoneBy      string // "" while it stands
+	UndoneAt      *time.Time
+	UndoReason    string
 	Version       int
 }
 
@@ -495,8 +498,11 @@ type BankMatching interface {
 	RecordTransfer(ctx context.Context, n NewBankTransfer) (BankTransfer, error)
 	// CompleteTransfer adds a missing side's line, or the entry, at version: CodeVersion when it changed since.
 	CompleteTransfer(ctx context.Context, id uuid.UUID, version int, fromLine, toLine, entry *uuid.UUID) (BankTransfer, error)
+	// UndoTransfer marks a transfer undone with its reason at version, once its entry is reversed in the same unit of work
+	// (FY223): CodeVersion when it changed since.
+	UndoTransfer(ctx context.Context, id uuid.UUID, version int, reason string, at time.Time) (BankTransfer, error)
 	Transfer(ctx context.Context, id uuid.UUID) (BankTransfer, error)
-	// InTransit are the transfers with one side not yet known.
+	// InTransit are the transfers with one side not yet known, and not undone.
 	InTransit(ctx context.Context) ([]BankTransfer, error)
 
 	RecordSignal(ctx context.Context, n NewBankSignal) (BankSignal, error)

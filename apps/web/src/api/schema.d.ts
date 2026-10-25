@@ -14655,11 +14655,11 @@ export interface components {
              */
             id: string;
             /**
-             * @description approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2).
+             * @description approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14).
              * @example approved_change
              * @enum {string}
              */
-            kind: "approved_change" | "founder_bootstrap" | "self_approved";
+            kind: "approved_change" | "founder_bootstrap" | "self_approved" | "scheduled_issue" | "auto_reconciled";
             /**
              * Format: date-time
              * @description When it executed.

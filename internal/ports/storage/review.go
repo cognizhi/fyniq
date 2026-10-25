@@ -13,6 +13,7 @@ const (
 	ReviewFounderBootstrap = "founder_bootstrap" // the Owner changed roles or invited someone alone, before a second member (FR-ADM-01)
 	ReviewSelfApproved     = "self_approved"     // a founder posted alone at or below the self-approval threshold (FM-2)
 	ReviewScheduledIssue   = "scheduled_issue"   // the scheduler issued an approved recurring invoice's invoice (FR-AR-07, FM-3)
+	ReviewAutoReconciled   = "auto_reconciled"   // a bank line the system reconciled, in the week's sample (FR-BNK-14, FM-3)
 )
 
 // ReviewLogEntry is a high-risk action that executed, with its review once it has one.

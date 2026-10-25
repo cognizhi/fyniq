@@ -79,6 +79,9 @@ var PlatformSchedules = []Schedule{
 	// Hourly, the releases of categorised bank lines' spreads due by each organisation's own today (FR-GL-03, ENG-05,
 	// Appendix B.1; rev 0.141).
 	{Job: "bank.releases", Every: time.Hour, Offset: 55 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Weekly on Monday at 02:00 in Singapore (Sunday 18:00 UTC; the epoch was a Thursday), the previous week's sample of
+	// auto-reconciliations into each organisation's weekly review (FR-BNK-14, FM-3; rev 0.142).
+	{Job: "bank.review-sample", Every: 7 * 24 * time.Hour, Offset: 90 * time.Hour, Lease: 30 * time.Minute, Stale: 7*24*time.Hour + 3*time.Hour},
 	// Daily at 03:20 in Singapore, the quotes past their validity date with no answer expire (FR-AR-01; rev 0.130).
 	{Job: "quotes.expiry", Every: 24 * time.Hour, Offset: 19*time.Hour + 20*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Hourly, the draft invoices of the recurring invoices due by each organisation's own today (FR-AR-07, FR-AUT-01;

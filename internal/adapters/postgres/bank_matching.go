@@ -34,7 +34,7 @@ func toTransfer(r sqlcdb.FyniqBankTransfer) storage.BankTransfer {
 	return storage.BankTransfer{ID: r.ID, FromAccountID: r.FromAccountID, ToAccountID: r.ToAccountID, FromLineID: r.FromLineID,
 		ToLineID: r.ToLineID, OnDate: r.OnDate, FromCurrency: r.FromCurrency, FromAmount: storage.Decimal(r.FromAmount),
 		ToCurrency: r.ToCurrency, ToAmount: storage.Decimal(r.ToAmount), Fee: toDecPtr(r.Fee), EntryID: r.EntryID, MadeBy: r.MadeBy,
-		MadeAt: r.MadeAt, Version: int(r.Version)}
+		MadeAt: r.MadeAt, UndoneBy: str(r.UndoneBy), UndoneAt: r.UndoneAt, UndoReason: str(r.UndoReason), Version: int(r.Version)}
 }
 
 func toSignal(r sqlcdb.FyniqBankSignal) storage.BankSignal {
@@ -248,6 +248,23 @@ func (r bankMatching) CompleteTransfer(ctx context.Context, id uuid.UUID, versio
 		changes["entry_id"] = [2]any{nil, idText(after.EntryID)}
 	}
 	return after, r.u.event(ctx, "bank_transfer.completed", "bank_transfer", id, &after.Version, changes)
+}
+
+func (r bankMatching) UndoTransfer(ctx context.Context, id uuid.UUID, version int, reason string, at time.Time) (storage.BankTransfer, error) {
+	if err := r.u.check(); err != nil {
+		return storage.BankTransfer{}, err
+	}
+	by := r.u.actor(ctx)
+	row, err := r.u.q.UndoBankTransfer(ctx, sqlcdb.UndoBankTransferParams{UndoneBy: &by, UndoneAt: &at, UndoReason: &reason, ID: id, Version: small(version)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.BankTransfer{}, &storage.Error{Code: storage.CodeVersion, Message: "the transfer changed since it was read"}
+	}
+	if err != nil {
+		return storage.BankTransfer{}, mapError(err)
+	}
+	after := toTransfer(row)
+	return after, r.u.event(ctx, "bank_transfer.undone", "bank_transfer", id, &after.Version,
+		map[string][2]any{"undone_at": {nil, at.UTC().Format(time.RFC3339Nano)}, "undo_reason": {nil, reason}})
 }
 
 func (r bankMatching) Transfer(ctx context.Context, id uuid.UUID) (storage.BankTransfer, error) {

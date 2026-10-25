@@ -118,7 +118,7 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 
 ## 5. Auto-reconcile
 
-- [ ] 5.1 The auto-reconcile job (design D8): after each import or sync, as the system principal, a line matching
+- [x] 5.1 The auto-reconcile job (design D8): after each import or sync, as the system principal, a line matching
   exactly one open document, a transfer matched on both accounts, a line hit by an approved auto-apply rule; within
   the per-line and per-rule-per-day caps (organisation settings with recommended defaults); each recorded with what
   did it; undo while the period is open; a sample in the weekly review.

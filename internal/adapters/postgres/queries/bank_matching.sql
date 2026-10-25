@@ -62,11 +62,18 @@ UPDATE fyniq.bank_transfer
  WHERE id = sqlc.arg(id) AND version = sqlc.arg(version)
 RETURNING *;
 
+-- name: UndoBankTransfer :one
+UPDATE fyniq.bank_transfer
+   SET undone_by = sqlc.arg(undone_by), undone_at = sqlc.arg(undone_at), undo_reason = sqlc.arg(undo_reason), version = version + 1
+ WHERE id = sqlc.arg(id) AND version = sqlc.arg(version)
+RETURNING *;
+
 -- name: BankTransfer :one
 SELECT * FROM fyniq.bank_transfer WHERE id = sqlc.arg(id);
 
 -- name: BankTransfersInTransit :many
-SELECT * FROM fyniq.bank_transfer WHERE from_line_id IS NULL OR to_line_id IS NULL ORDER BY on_date, id;
+-- Transfers with a side not yet matched, leaving out those undone.
+SELECT * FROM fyniq.bank_transfer WHERE (from_line_id IS NULL OR to_line_id IS NULL) AND undone_at IS NULL ORDER BY on_date, id;
 
 -- name: InsertBankSignal :one
 INSERT INTO fyniq.bank_signal (money_account_id, amount, currency, minor_units, payer, reference, received_at, inbound_message_id, invoice_id)

@@ -23,9 +23,11 @@ import (
 // currency's rate for the day, a fee the provider reports goes to the bank charges account (the setting
 // bank.charges_account, 6460 by default) and the rest of the difference to 7030 (the owner's decision of 25 Oct 2026).
 
-// CodeTransferLine is a line that cannot be a transfer's side: of the wrong direction or account, or of another
-// transfer.
-const CodeTransferLine = "BANKTXN-14"
+// The stable codes of transfers (ENG-23).
+const (
+	CodeTransferLine   = "BANKTXN-14" // a line that cannot be a transfer's side: of the wrong direction or account, or of another transfer
+	CodeTransferUndone = "BANKTXN-15" // the transfer was undone: its entry is reversed
+)
 
 // TransferRequest is a transfer as recorded: the lines known, one or both (the paying line's money out, the receiving
 // line's money in); the money accounts and amounts of a side whose line has not arrived (a line gives its own); the fee
@@ -156,6 +158,9 @@ func (s BankTransactions) CompleteTransfer(ctx context.Context, org, transferID,
 		if err != nil {
 			return err
 		}
+		if tr.UndoneAt != nil {
+			return &banktransaction.Error{Code: CodeTransferUndone, Message: "the transfer was undone", Fix: "Record the transfer again"}
+		}
 		line, err := u.Banking().Line(ctx, lineID)
 		if err != nil {
 			return err
@@ -191,6 +196,81 @@ func (s BankTransactions) CompleteTransfer(ctx context.Context, org, transferID,
 				return err
 			}
 			out.Entry = &e
+		}
+		return nil
+	})
+	return out, err
+}
+
+
+// UndoTransfer undoes a transfer with a reason, while its period is open (FY220, FY224): its entry is reversed on its
+// own date, the record is marked undone, the matches of its lines are undone and the lines go back to the queue
+// unreconciled, free to join another transfer. The record stays as history, and is in transit no more.
+func (s BankTransactions) UndoTransfer(ctx context.Context, org, transferID uuid.UUID, reason string, at time.Time) (Transferred, error) {
+	if reason != "" {
+		ctx = storage.WithReason(ctx, reason)
+	}
+	var out Transferred
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		tr, err := u.BankMatching().Transfer(ctx, transferID)
+		if err != nil {
+			return err
+		}
+		out.Transfer = tr
+		if tr.UndoneAt != nil || tr.EntryID == nil {
+			return &banktransaction.Error{Code: CodeTransferUndone, Message: "the transfer was undone already", Fix: "Nothing to undo"}
+		}
+		settings, err := loadSettings(ctx, u)
+		if err != nil {
+			return err
+		}
+		stored, err := u.Ledger().Entry(ctx, *tr.EntryID)
+		if err != nil {
+			return err
+		}
+		original, err := fromStorage(stored, settings.Base)
+		if err != nil {
+			return err
+		}
+		reversal, err := ledger.Reverse(original, original.PostingDate, reason)
+		if err != nil {
+			return err
+		}
+		e, err := u.Ledger().Append(ctx, toStorage(reversal, &stored.ID))
+		if err != nil {
+			return err
+		}
+		out.Entry = &e
+		if out.Transfer, err = u.BankMatching().UndoTransfer(ctx, tr.ID, tr.Version, reason, at); err != nil {
+			return err
+		}
+		for _, id := range []*uuid.UUID{tr.FromLineID, tr.ToLineID} {
+			if id == nil {
+				continue
+			}
+			matches, err := u.BankMatching().Matches(ctx, storage.BankMatchFilter{LineID: id})
+			if err != nil {
+				return err
+			}
+			for _, m := range matches {
+				if m.TransferID == nil || *m.TransferID != tr.ID {
+					continue
+				}
+				undone, err := u.BankMatching().UndoMatch(ctx, m.ID, reason, at)
+				if err != nil {
+					return err
+				}
+				out.Matches = append(out.Matches, undone)
+			}
+			line, err := u.Banking().Line(ctx, *id)
+			if err != nil {
+				return err
+			}
+			if line.Status == storage.LineTransferred {
+				if _, err := u.Banking().SetLineStatus(ctx, line.ID, line.Version, storage.LineUnreconciled, at); err != nil {
+					return err
+				}
+			}
 		}
 		return nil
 	})
