@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "createMoneyAccount only: the chart account, marked a money account; its currency is the account's.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "closed_on": {
+      "description": "replaceMoneyAccount only: the day it closed.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "identifier": {
+      "description": "What statements name it by: the account number, an IBAN or a provider's balance ID. Written only; read back by its last four characters.",
+      "examples": [
+        "072-123456-7"
+      ],
+      "maxLength": 64,
+      "type": "string"
+    },
+    "institution": {
+      "description": "The bank or provider.",
+      "examples": [
+        "DBS"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "kind": {
+      "description": "What kind of money account it is.",
+      "enum": [
+        "bank",
+        "card",
+        "wallet",
+        "payment_gateway",
+        "cash"
+      ],
+      "examples": [
+        "bank"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "DBS current"
+      ],
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "opened_on": {
+      "description": "The day it opened.",
+      "examples": [
+        "2026-01-05"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "name"
+  ],
+  "title": "MoneyAccountDraft",
+  "type": "object"
+}

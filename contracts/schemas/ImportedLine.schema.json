@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "Signed: money in positive."
+    },
+    "booking_date": {
+      "description": "Its booking date.",
+      "examples": [
+        "2026-10-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "counterparty": {
+      "description": "Who paid or was paid.",
+      "examples": [
+        "ACME ROBOTICS"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "The bank's description.",
+      "examples": [
+        "GIRO ACME ROBOTICS"
+      ],
+      "type": "string"
+    },
+    "duplicate_of": {
+      "description": "The held line it duplicates or may duplicate.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b71"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "line_id": {
+      "description": "The line saved, once imported.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "outcome": {
+      "description": "add: a new line; possible_duplicate: kept for a person; duplicate: dropped, held already.",
+      "enum": [
+        "add",
+        "possible_duplicate",
+        "duplicate"
+      ],
+      "examples": [
+        "add"
+      ],
+      "type": "string"
+    },
+    "position": {
+      "description": "Its place in the statement.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "reference": {
+      "description": "The bank's reference.",
+      "examples": [
+        "INV-0138"
+      ],
+      "type": "string"
+    },
+    "transfer": {
+      "description": "A transfer in transit it may be the other side of.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b82"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "position",
+    "booking_date",
+    "amount",
+    "outcome"
+  ],
+  "title": "ImportedLine",
+  "type": "object"
+}

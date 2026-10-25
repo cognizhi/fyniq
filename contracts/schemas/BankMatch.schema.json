@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "basis": {
+      "description": "Who made it: a person, or the system for an exact match, a transfer's other side or an auto-apply rule (FR-BNK-14).",
+      "enum": [
+        "person",
+        "exact",
+        "transfer",
+        "rule"
+      ],
+      "examples": [
+        "person"
+      ],
+      "type": "string"
+    },
+    "document_id": {
+      "description": "The document it posted or matched.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b80"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "entry_id": {
+      "description": "The entry made from the line, if one was.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b81"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "What it is.",
+      "enum": [
+        "categorised",
+        "receipt",
+        "bill_payment",
+        "recorded",
+        "transfer",
+        "suspense"
+      ],
+      "examples": [
+        "receipt"
+      ],
+      "type": "string"
+    },
+    "made_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "made_by": {
+      "description": "Who made it.",
+      "examples": [
+        "service:bank.auto-reconcile"
+      ],
+      "type": "string"
+    },
+    "rule_id": {
+      "description": "The auto-apply rule that made it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b83"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "transfer_id": {
+      "description": "The transfer it is a side of.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b82"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "basis",
+    "made_by",
+    "made_at"
+  ],
+  "title": "BankMatch",
+  "type": "object"
+}

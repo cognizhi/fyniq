@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "closing": {
+      "$ref": "Money.schema.json",
+      "description": "Its closing balance, when the format gives it."
+    },
+    "format": {
+      "description": "Its format.",
+      "enum": [
+        "csv",
+        "xlsx",
+        "ofx",
+        "camt053",
+        "mt940",
+        "mt940_sap",
+        "api"
+      ],
+      "examples": [
+        "camt053"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "Its first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "has_original": {
+      "description": "Whether the file it came in is kept with it.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "id": {
+      "description": "The statement's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "imported_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-31T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "imported_by": {
+      "description": "Who or what imported it.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01"
+      ],
+      "type": "string"
+    },
+    "lines": {
+      "description": "How many lines it added.",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "opening": {
+      "$ref": "Money.schema.json",
+      "description": "Its opening balance, when the format gives it."
+    },
+    "parser": {
+      "description": "The reader's version that read it.",
+      "examples": [
+        "camt053@1"
+      ],
+      "type": "string"
+    },
+    "source": {
+      "description": "How it arrived.",
+      "enum": [
+        "file",
+        "email",
+        "connector"
+      ],
+      "examples": [
+        "file"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "Its last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "source",
+    "format",
+    "parser",
+    "from",
+    "to",
+    "lines",
+    "imported_by",
+    "imported_at",
+    "has_original"
+  ],
+  "title": "BankStatementIn",
+  "type": "object"
+}

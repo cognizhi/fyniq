@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "after_date": {
+      "description": "The previous statement's last day.",
+      "examples": [
+        "2026-10-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "before_date": {
+      "description": "The next statement's first day.",
+      "examples": [
+        "2026-10-18"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "expected_opening": {
+      "$ref": "Money.schema.json",
+      "description": "The previous statement's closing balance."
+    },
+    "found_opening": {
+      "$ref": "Money.schema.json",
+      "description": "The next statement's opening balance."
+    },
+    "id": {
+      "description": "The gap's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "resolution": {
+      "description": "How it was resolved, once it is.",
+      "examples": [
+        "The bank's statement for 16–17 Oct imported"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "before_date"
+  ],
+  "title": "BankGap",
+  "type": "object"
+}

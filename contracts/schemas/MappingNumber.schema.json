@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "brackets": {
+      "description": "Whether (1,234.56) is money out.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "decimal": {
+      "description": "The decimal mark: . by default, or ,.",
+      "examples": [
+        "."
+      ],
+      "pattern": "^[.,]$",
+      "type": "string"
+    },
+    "thousands": {
+      "description": "The thousands separator, if any: a comma, a dot, a space or an apostrophe.",
+      "examples": [
+        ","
+      ],
+      "pattern": "^[,. ']$",
+      "type": "string"
+    }
+  },
+  "title": "MappingNumber",
+  "type": "object"
+}

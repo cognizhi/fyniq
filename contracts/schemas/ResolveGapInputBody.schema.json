@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "resolution": {
+      "description": "How it was resolved: the statement imported, or why there is none.",
+      "examples": [
+        "The bank's statement for 16–17 Oct imported"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "resolution"
+  ],
+  "title": "ResolveGapInputBody",
+  "type": "object"
+}

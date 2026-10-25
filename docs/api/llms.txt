@@ -30,6 +30,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/approvals/{approval_id}/challenge` (challengeApproval): Start signing a request with a passkey
 - `POST /v1/approvals/{approval_id}/reject` (rejectApproval): Reject a request
 - `POST /v1/approvals/{approval_id}/withdraw` (withdrawApproval): Withdraw your request
+- `POST /v1/bank-imports` (importBankStatements): Import bank statements
+- `GET /v1/bank-lines` (listBankLines): List bank lines
+- `GET /v1/bank-lines/{line_id}` (getBankLine): Get a bank line
 - `POST /v1/bank-rules/{rule_id}/auto-apply-approval` (requestBankRuleAutoApply): Ask for approval to let a bank rule apply by itself
 - `GET /v1/banners` (listBanners): List the banners you see now
 - `POST /v1/banners/{announcement_id}/dismiss` (dismissBanner): Dismiss a banner
@@ -172,6 +175,13 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/members/invitations/{invitation_id}` (withdrawMemberInvitation): Withdraw an invitation
 - `POST /v1/members/{member_id}/roles` (assignRole): Give a member a role
 - `DELETE /v1/members/{member_id}/roles/{role}` (revokeRole): End a member's role
+- `GET /v1/money-accounts` (listMoneyAccounts): List the money accounts
+- `POST /v1/money-accounts` (createMoneyAccount): Set up a money account
+- `GET /v1/money-accounts/{money_account_id}` (getMoneyAccount): Get a money account
+- `PUT /v1/money-accounts/{money_account_id}` (replaceMoneyAccount): Change a money account
+- `POST /v1/money-accounts/{money_account_id}/gaps/{gap_id}/resolve` (resolveBankGap): Resolve a gap in a money account's statements
+- `POST /v1/money-accounts/{money_account_id}/sources` (addMoneyAccountSource): Change where a money account's data comes from
+- `GET /v1/money-accounts/{money_account_id}/statements` (listBankStatements): List a money account's statements
 - `GET /v1/notification-preferences` (getNotificationPreferences): Get your notification preferences
 - `PUT /v1/notification-preferences/{type}` (setNotificationPreference): Choose how a notification type is emailed
 - `PUT /v1/notification-quiet-hours` (setQuietHours): Set your quiet hours
@@ -304,6 +314,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/setup` (getSetupStatus): Get the setup status
 - `POST /v1/setup` (completeSetup): Complete first-run setup
 - `GET /v1/sign-in-providers` (listSignInProviders): List the sign-in providers
+- `GET /v1/statement-mappings` (listStatementMappings): List the saved column mappings
+- `POST /v1/statement-mappings` (createStatementMapping): Save a column mapping
+- `PUT /v1/statement-mappings/{mapping_id}` (replaceStatementMapping): Change a column mapping
 - `GET /v1/statements` (listStatements): List the statements made
 - `POST /v1/statements` (createStatement): Make a statement to send
 - `GET /v1/statements/{statement_id}` (getStatement): Get a statement made

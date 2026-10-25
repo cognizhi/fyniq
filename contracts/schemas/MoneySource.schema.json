@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "connector_id": {
+      "description": "connector: the organisation connector that syncs it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "from_date": {
+      "description": "The first day it is the source.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "kind": {
+      "description": "file: statements a person uploads; email: reports the bank emails to the bank-ingest address; connector: an organisation connector's sync (FR-BNK-15).",
+      "enum": [
+        "file",
+        "email",
+        "connector"
+      ],
+      "examples": [
+        "email"
+      ],
+      "type": "string"
+    },
+    "mapping_id": {
+      "description": "A CSV or XLSX format's saved column mapping.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "report_format": {
+      "description": "file and email: the format its statements come in.",
+      "enum": [
+        "csv",
+        "xlsx",
+        "ofx",
+        "camt053",
+        "mt940",
+        "mt940_sap"
+      ],
+      "examples": [
+        "csv"
+      ],
+      "type": "string"
+    },
+    "senders": {
+      "description": "email: the bank's registered addresses, the only senders accepted for it.",
+      "items": {
+        "description": "An email address.",
+        "examples": [
+          "ideal@dbs.example"
+        ],
+        "format": "email",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "set_by": {
+      "description": "Who set it.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "from_date",
+    "senders"
+  ],
+  "title": "MoneySource",
+  "type": "object"
+}

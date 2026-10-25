@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "The chart account's code.",
+      "examples": [
+        "1010"
+      ],
+      "type": "string"
+    },
+    "account_id": {
+      "description": "The chart account it posts to: one marked a money account, in its currency.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "changed_at": {
+      "description": "When it last changed.",
+      "examples": [
+        "2026-10-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "closed_on": {
+      "description": "The day it closed: a closed account takes no import.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "currency": {
+      "description": "Its currency, the chart account's.",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "freshness": {
+      "$ref": "MoneyFreshness.schema.json",
+      "description": "How up to date its data is (FR-BNK-16)."
+    },
+    "gaps": {
+      "description": "getMoneyAccount only: the breaks in its balance chain not yet resolved.",
+      "items": {
+        "$ref": "BankGap.schema.json"
+      },
+      "type": "array"
+    },
+    "id": {
+      "description": "The money account's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "identifier": {
+      "description": "The last four characters of what statements name it by (an account number, an IBAN or a provider's balance ID); the rest is never shown (SEC-15).",
+      "examples": [
+        "…4567"
+      ],
+      "type": "string"
+    },
+    "institution": {
+      "description": "The bank or provider.",
+      "examples": [
+        "DBS"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "What kind of money account it is.",
+      "enum": [
+        "bank",
+        "card",
+        "wallet",
+        "payment_gateway",
+        "cash"
+      ],
+      "examples": [
+        "bank"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "DBS current"
+      ],
+      "type": "string"
+    },
+    "opened_on": {
+      "description": "The day it opened.",
+      "examples": [
+        "2026-01-05"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "MoneySource.schema.json",
+      "description": "Where its data comes from now; absent while its statements are uploaded as files."
+    },
+    "sources": {
+      "description": "getMoneyAccount only: every source it has had, earliest first (UC-BNK-03).",
+      "items": {
+        "$ref": "MoneySource.schema.json"
+      },
+      "type": "array"
+    },
+    "version": {
+      "description": "Its version, for If-Match.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "waiting": {
+      "description": "Its lines waiting in the queue: unreconciled, possible duplicates and in suspense.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "account_id",
+    "account_code",
+    "kind",
+    "name",
+    "currency",
+    "freshness",
+    "waiting",
+    "gaps",
+    "sources",
+    "version"
+  ],
+  "title": "MoneyAccount",
+  "type": "object"
+}

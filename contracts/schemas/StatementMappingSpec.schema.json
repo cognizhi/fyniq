@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "A signed amount column; or in and out.",
+      "examples": [
+        "Amount"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "balance": {
+      "description": "The running balance's column.",
+      "examples": [
+        "Balance"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "counterparty": {
+      "description": "The counterparty's column.",
+      "examples": [
+        "Payee"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "date": {
+      "description": "The booking date's column.",
+      "examples": [
+        "Transaction Date"
+      ],
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "date_formats": {
+      "description": "Go layouts for its dates, the first that reads winning, such as 02/01/2006 for day/month/year.",
+      "items": {
+        "description": "A Go date layout, such as 02/01/2006 for day/month/year.",
+        "examples": [
+          "02/01/2006"
+        ],
+        "maxLength": 40,
+        "type": "string"
+      },
+      "maxItems": 5,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "delimiter": {
+      "description": "CSV only: the delimiter, a comma by default; or ;, | or a tab.",
+      "examples": [
+        ","
+      ],
+      "pattern": "^[,;|\\t]$",
+      "type": "string"
+    },
+    "description": {
+      "description": "Columns joined, in order, as the description.",
+      "items": {
+        "description": "A column's header, as the file writes it.",
+        "examples": [
+          "Description"
+        ],
+        "maxLength": 100,
+        "type": "string"
+      },
+      "maxItems": 5,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "in": {
+      "description": "The money-in column.",
+      "examples": [
+        "Credit"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "number": {
+      "$ref": "MappingNumber.schema.json",
+      "description": "How its amounts are written."
+    },
+    "out": {
+      "description": "The money-out column.",
+      "examples": [
+        "Debit"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "reference": {
+      "description": "The bank's reference column.",
+      "examples": [
+        "Reference"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "skip": {
+      "description": "Rows before the header row.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "maximum": 100,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "value_date": {
+      "description": "The value date's column.",
+      "examples": [
+        "Value Date"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    }
+  },
+  "required": [
+    "date_formats",
+    "number",
+    "date"
+  ],
+  "title": "StatementMappingSpec",
+  "type": "object"
+}

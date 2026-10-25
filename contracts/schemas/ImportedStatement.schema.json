@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "added": {
+      "description": "New lines.",
+      "examples": [
+        40
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "closing": {
+      "$ref": "Money.schema.json",
+      "description": "Its closing balance, as given or derived."
+    },
+    "dropped": {
+      "description": "Lines held already, dropped on proof (FR-BNK-04).",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "flagged": {
+      "description": "Lines kept as possible duplicates, for a person (C.2 #51).",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "from": {
+      "description": "Its first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "gap": {
+      "$ref": "BankGap.schema.json",
+      "description": "A break in the balance chain this statement shows (FR-BNK-16)."
+    },
+    "lines": {
+      "description": "Each incoming line and what becomes of it.",
+      "items": {
+        "$ref": "ImportedLine.schema.json"
+      },
+      "type": "array"
+    },
+    "money_account_id": {
+      "description": "Its money account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "opening": {
+      "$ref": "Money.schema.json",
+      "description": "Its opening balance, as given or derived."
+    },
+    "statement_id": {
+      "description": "The statement saved; absent on a preview, or when every line was held already.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "to": {
+      "description": "Its last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "money_account_id",
+    "from",
+    "to",
+    "added",
+    "flagged",
+    "dropped",
+    "lines"
+  ],
+  "title": "ImportedStatement",
+  "type": "object"
+}

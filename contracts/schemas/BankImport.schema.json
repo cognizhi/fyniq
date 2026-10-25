@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "auto_reconciled": {
+      "$ref": "AutoReconciled.schema.json",
+      "description": "Once imported, not on a preview: what the system reconciled by itself (FR-BNK-14)."
+    },
+    "statements": {
+      "description": "Each statement the file held, for its money account.",
+      "items": {
+        "$ref": "ImportedStatement.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "statements"
+  ],
+  "title": "BankImport",
+  "type": "object"
+}

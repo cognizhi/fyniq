@@ -280,6 +280,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bank-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import bank statements
+         * @description Imports a statement file, as multipart/form-data (FR-BNK-02): CSV or XLSX through a saved mapping into the account chosen; OFX or QFX, camt.053 or MT940 into the money accounts their statements name, several at once. The file is an untrusted upload: its type is decided from its content and it is scanned for malware, as evidence is (FR-DOC-08), then read by a bounded reader that refuses what it cannot read with the line and field (BANKFILE-nn). Each line is new, kept as a possible duplicate for a person, or dropped only on proof (FR-BNK-04); a break in the balance chain is recorded as a gap (FR-BNK-16). Prefer: return=preview shows all of that and saves nothing. Once imported, the file is kept as its statements' file and the system reconciles what it may of the new lines by itself, within the organisation's limits (FR-BNK-14). Idempotent with Idempotency-Key.
+         */
+        post: operations["importBankStatements"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bank-lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List bank lines
+         * @description Bank lines by booking date then position, a page at a time: one account's or every account's, of a status or the queue (waiting: unreconciled, possible duplicates and suspense), between two days (FR-BNK-06). Read-only.
+         */
+        get: operations["listBankLines"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bank-lines/{line_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a bank line
+         * @description Returns a line with its ETag: what it is matched to now, and while it waits, what it may match, best first: money recorded by hand, documents whose number it names exactly or once normalised, documents of its amount from the contact it names, and the first rule it meets (FR-BNK-06, FR-BNK-07). Suggestions are never applied by themselves. Read-only.
+         */
+        get: operations["getBankLine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/bank-rules/{rule_id}/auto-apply-approval": {
         parameters: {
             query?: never;
@@ -2640,6 +2700,114 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/money-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the money accounts
+         * @description Every money account Banking keeps (FR-BNK-01), by name: its chart account, kind, currency, current source, how up to date its data is (FR-BNK-16) and how many of its lines wait in the queue. An identifier shows its last four characters only. Read-only.
+         */
+        get: operations["listMoneyAccounts"];
+        put?: never;
+        /**
+         * Set up a money account
+         * @description Sets up a chart account marked a money account in Banking (FR-BNK-01): its kind, name, bank and what statements name it by, in the chart account's currency. One per chart account; an identifier is unique per currency. Its statements are uploaded as files until a source says otherwise. Side effects: the money account and its audit event, which keeps the identifier's last four characters only (SEC-15). Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["createMoneyAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/money-accounts/{money_account_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a money account
+         * @description Returns a money account with its ETag: its current source and every earlier one (UC-BNK-03), its freshness, its open gaps and how many lines wait. Read-only.
+         */
+        get: operations["getMoneyAccount"];
+        /**
+         * Change a money account
+         * @description Changes a money account's kind, name, bank, identifier and the days it opened and closed: never its chart account or currency. A closed account takes no more imports. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        put: operations["replaceMoneyAccount"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/money-accounts/{money_account_id}/gaps/{gap_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a gap in a money account's statements
+         * @description Records how a break in a money account's balance chain was resolved (FR-BNK-16): the missing statement imported, or why there is none. Once only. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["resolveBankGap"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/money-accounts/{money_account_id}/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change where a money account's data comes from
+         * @description Sets a money account's source from a day after its current one's (FR-BNK-15, UC-BNK-03): statements uploaded as files, reports the bank emails to the bank-ingest address from its registered senders, or an organisation connector's sync. Earlier sources are kept with their days, so the balance chain runs on without a gap. Needs a right on "Bank data… connections". Needs If-Match with the account's ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["addMoneyAccountSource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/money-accounts/{money_account_id}/statements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a money account's statements
+         * @description A money account's imported statements, latest first: how each arrived, its reader's version, its days, its balances when the format gives them, and how many lines it added. Read-only.
+         */
+        get: operations["listBankStatements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/notification-preferences": {
         parameters: {
             query?: never;
@@ -4944,6 +5112,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/statement-mappings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the saved column mappings
+         * @description The saved column mappings of CSV and XLSX statements, one per bank's layout (FR-BNK-02). Read-only.
+         */
+        get: operations["listStatementMappings"];
+        put?: never;
+        /**
+         * Save a column mapping
+         * @description Saves how a bank's CSV or XLSX statements read (FR-BNK-02): its date, amount (signed, or in and out), reference, counterparty, description and balance columns, its date layouts and how its amounts are written. A mapping that names no date or amount is refused (BANKFILE-06). Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["createStatementMapping"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/statement-mappings/{mapping_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change a column mapping
+         * @description Changes a saved mapping. Statements imported before keep what it read then. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        put: operations["replaceStatementMapping"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/statements": {
         parameters: {
             query?: never;
@@ -6447,6 +6659,293 @@ export interface components {
             roles?: string[] | null;
             /** @description Only these members sign it: active members whose roles hold A on the object's row. Never with roles. */
             users?: string[] | null;
+        };
+        AutoReconciled: {
+            /**
+             * @description Lines left for a person, by why: no_match, ambiguous, line_cap, rule_cap, no_rate, refused.
+             * @example {
+             *       "line_cap": 2,
+             *       "no_match": 20
+             *     }
+             */
+            left: {
+                [key: string]: number;
+            };
+            /**
+             * Format: int64
+             * @description Lines reconciled by the system.
+             * @example 12
+             */
+            reconciled: number;
+        };
+        BankGap: {
+            /**
+             * Format: date
+             * @description The previous statement's last day.
+             * @example 2026-10-15
+             */
+            after_date?: string;
+            /**
+             * Format: date
+             * @description The next statement's first day.
+             * @example 2026-10-18
+             */
+            before_date: string;
+            /** @description The previous statement's closing balance. */
+            expected_opening?: components["schemas"]["Money"];
+            /** @description The next statement's opening balance. */
+            found_opening?: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The gap's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b50
+             */
+            id: string;
+            /**
+             * @description How it was resolved, once it is.
+             * @example The bank's statement for 16–17 Oct imported
+             */
+            resolution?: string;
+        };
+        BankImport: {
+            /** @description Once imported, not on a preview: what the system reconciled by itself (FR-BNK-14). */
+            auto_reconciled?: components["schemas"]["AutoReconciled"];
+            /** @description Each statement the file held, for its money account. */
+            statements: components["schemas"]["ImportedStatement"][];
+        };
+        BankLine: {
+            /** @description Signed: money in positive, money out negative. */
+            amount: components["schemas"]["Money"];
+            /** @description The running balance after it, when the statement gives it. */
+            balance?: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description The day the bank booked it.
+             * @example 2026-10-20
+             */
+            booking_date: string;
+            /**
+             * @description Who paid or was paid.
+             * @example ACME ROBOTICS
+             */
+            counterparty?: string;
+            /**
+             * @description The bank's description.
+             * @example GIRO ACME ROBOTICS INV-0138
+             */
+            description?: string;
+            /**
+             * Format: uuid
+             * @description A possible duplicate: the line it may duplicate.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b71
+             */
+            duplicate_of?: string;
+            /**
+             * Format: uuid
+             * @description The line's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70
+             */
+            id: string;
+            /** @description getBankLine only: what it is matched to now. */
+            match?: components["schemas"]["BankMatch"];
+            /**
+             * Format: uuid
+             * @description Its money account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+             */
+            money_account_id: string;
+            /**
+             * @description The bank's own reference.
+             * @example INV-0138
+             */
+            reference?: string;
+            /**
+             * Format: uuid
+             * @description The statement that brought it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b60
+             */
+            statement_id: string;
+            /**
+             * @description Where it stands in the queue (FR-BNK-06).
+             * @example unreconciled
+             * @enum {string}
+             */
+            status: "unreconciled" | "possible_duplicate" | "categorised" | "matched" | "transferred" | "suspense" | "excluded";
+            /** @description getBankLine only, while it waits: what it may match, best first (FR-BNK-06, FR-BNK-07); never applied by itself. */
+            suggestions: components["schemas"]["BankSuggested"][];
+            /**
+             * Format: date
+             * @description Its value date, when it differs.
+             * @example 2026-10-21
+             */
+            value_date?: string;
+            /**
+             * Format: int64
+             * @description Its version, for If-Match.
+             * @example 1
+             */
+            version: number;
+        };
+        BankMatch: {
+            /**
+             * @description Who made it: a person, or the system for an exact match, a transfer's other side or an auto-apply rule (FR-BNK-14).
+             * @example person
+             * @enum {string}
+             */
+            basis: "person" | "exact" | "transfer" | "rule";
+            /**
+             * Format: uuid
+             * @description The document it posted or matched.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b80
+             */
+            document_id?: string;
+            /**
+             * Format: uuid
+             * @description The entry made from the line, if one was.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b81
+             */
+            entry_id?: string;
+            /**
+             * @description What it is.
+             * @example receipt
+             * @enum {string}
+             */
+            kind: "categorised" | "receipt" | "bill_payment" | "recorded" | "transfer" | "suspense";
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-10-20T09:30:00Z
+             */
+            made_at: string;
+            /**
+             * @description Who made it.
+             * @example service:bank.auto-reconcile
+             */
+            made_by: string;
+            /**
+             * Format: uuid
+             * @description The auto-apply rule that made it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b83
+             */
+            rule_id?: string;
+            /**
+             * Format: uuid
+             * @description The transfer it is a side of.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b82
+             */
+            transfer_id?: string;
+        };
+        BankStatementIn: {
+            /** @description Its closing balance, when the format gives it. */
+            closing?: components["schemas"]["Money"];
+            /**
+             * @description Its format.
+             * @example camt053
+             * @enum {string}
+             */
+            format: "csv" | "xlsx" | "ofx" | "camt053" | "mt940" | "mt940_sap" | "api";
+            /**
+             * Format: date
+             * @description Its first day.
+             * @example 2026-10-01
+             */
+            from: string;
+            /**
+             * @description Whether the file it came in is kept with it.
+             * @example true
+             */
+            has_original: boolean;
+            /**
+             * Format: uuid
+             * @description The statement's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b60
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-10-31T10:00:00Z
+             */
+            imported_at: string;
+            /**
+             * @description Who or what imported it.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01
+             */
+            imported_by: string;
+            /**
+             * Format: int64
+             * @description How many lines it added.
+             * @example 42
+             */
+            lines: number;
+            /** @description Its opening balance, when the format gives it. */
+            opening?: components["schemas"]["Money"];
+            /**
+             * @description The reader's version that read it.
+             * @example camt053@1
+             */
+            parser: string;
+            /**
+             * @description How it arrived.
+             * @example file
+             * @enum {string}
+             */
+            source: "file" | "email" | "connector";
+            /**
+             * Format: date
+             * @description Its last day.
+             * @example 2026-10-31
+             */
+            to: string;
+        };
+        BankSuggested: {
+            /**
+             * @description Its customer or supplier's name.
+             * @example Acme Robotics Pte Ltd
+             */
+            contact?: string;
+            /**
+             * Format: uuid
+             * @description Its customer or supplier.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20
+             */
+            contact_id?: string;
+            /**
+             * Format: uuid
+             * @description The document.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b80
+             */
+            document_id?: string;
+            /**
+             * @description How it was found: money recorded by hand, the document's number exactly, once normalised, its amount from the contact the counterparty names, or the first rule the line meets.
+             * @example reference
+             * @enum {string}
+             */
+            found: "recorded" | "reference" | "normalised" | "amount" | "rule";
+            /**
+             * @description What accepting it makes.
+             * @example receipt
+             * @enum {string}
+             */
+            kind: "recorded" | "receipt" | "bill_payment" | "categorised";
+            /**
+             * @description Its number.
+             * @example INV-0138
+             */
+            number?: string;
+            /** @description What is open of it. */
+            open?: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The rule.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b83
+             */
+            rule_id?: string;
+            /**
+             * @description The rule's name.
+             * @example AWS
+             */
+            rule_name?: string;
         };
         Banner: {
             /**
@@ -10489,6 +10988,113 @@ export interface components {
              */
             to: string;
         };
+        ImportedLine: {
+            /** @description Signed: money in positive. */
+            amount: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description Its booking date.
+             * @example 2026-10-20
+             */
+            booking_date: string;
+            /**
+             * @description Who paid or was paid.
+             * @example ACME ROBOTICS
+             */
+            counterparty?: string;
+            /**
+             * @description The bank's description.
+             * @example GIRO ACME ROBOTICS
+             */
+            description?: string;
+            /**
+             * Format: uuid
+             * @description The held line it duplicates or may duplicate.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b71
+             */
+            duplicate_of?: string;
+            /**
+             * Format: uuid
+             * @description The line saved, once imported.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70
+             */
+            line_id?: string;
+            /**
+             * @description add: a new line; possible_duplicate: kept for a person; duplicate: dropped, held already.
+             * @example add
+             * @enum {string}
+             */
+            outcome: "add" | "possible_duplicate" | "duplicate";
+            /**
+             * Format: int64
+             * @description Its place in the statement.
+             * @example 1
+             */
+            position: number;
+            /**
+             * @description The bank's reference.
+             * @example INV-0138
+             */
+            reference?: string;
+            /**
+             * Format: uuid
+             * @description A transfer in transit it may be the other side of.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b82
+             */
+            transfer?: string;
+        };
+        ImportedStatement: {
+            /**
+             * Format: int64
+             * @description New lines.
+             * @example 40
+             */
+            added: number;
+            /** @description Its closing balance, as given or derived. */
+            closing?: components["schemas"]["Money"];
+            /**
+             * Format: int64
+             * @description Lines held already, dropped on proof (FR-BNK-04).
+             * @example 1
+             */
+            dropped: number;
+            /**
+             * Format: int64
+             * @description Lines kept as possible duplicates, for a person (C.2 #51).
+             * @example 1
+             */
+            flagged: number;
+            /**
+             * Format: date
+             * @description Its first day.
+             * @example 2026-10-01
+             */
+            from: string;
+            /** @description A break in the balance chain this statement shows (FR-BNK-16). */
+            gap?: components["schemas"]["BankGap"];
+            /** @description Each incoming line and what becomes of it. */
+            lines: components["schemas"]["ImportedLine"][];
+            /**
+             * Format: uuid
+             * @description Its money account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+             */
+            money_account_id: string;
+            /** @description Its opening balance, as given or derived. */
+            opening?: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The statement saved; absent on a preview, or when every line was held already.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b60
+             */
+            statement_id?: string;
+            /**
+             * Format: date
+             * @description Its last day.
+             * @example 2026-10-31
+             */
+            to: string;
+        };
         InboundFile: {
             /**
              * @description Its name, as sent: data, never a path.
@@ -11934,6 +12540,41 @@ export interface components {
              */
             source_version: number;
         };
+        LinesOutputBody: {
+            /** @description The lines, by booking date then position. */
+            items: components["schemas"]["BankLine"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjAxOTIifQ
+             */
+            next_cursor?: string;
+        };
+        MappingNumber: {
+            /**
+             * @description Whether (1,234.56) is money out.
+             * @example false
+             */
+            brackets?: boolean;
+            /**
+             * @description The decimal mark: . by default, or ,.
+             * @example .
+             */
+            decimal?: string;
+            /**
+             * @description The thousands separator, if any: a comma, a dot, a space or an apostrophe.
+             * @example ,
+             */
+            thousands?: string;
+        };
+        MappingsOutputBody: {
+            /** @description The saved mappings, by name. */
+            items: components["schemas"]["StatementMapping"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjAxOTIifQ
+             */
+            next_cursor?: string;
+        };
         MarkedAll: {
             /**
              * Format: int64
@@ -12089,6 +12730,232 @@ export interface components {
              */
             currency: string;
         } & (unknown & unknown & unknown & unknown);
+        MoneyAccount: {
+            /**
+             * @description The chart account's code.
+             * @example 1010
+             */
+            account_code: string;
+            /**
+             * Format: uuid
+             * @description The chart account it posts to: one marked a money account, in its currency.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+             */
+            account_id: string;
+            /**
+             * Format: date-time
+             * @description When it last changed.
+             * @example 2026-10-20T09:30:00Z
+             */
+            changed_at?: string;
+            /**
+             * Format: date
+             * @description The day it closed: a closed account takes no import.
+             * @example 2027-03-31
+             */
+            closed_on?: string;
+            /**
+             * @description Its currency, the chart account's.
+             * @example SGD
+             */
+            currency: string;
+            /** @description How up to date its data is (FR-BNK-16). */
+            freshness: components["schemas"]["MoneyFreshness"];
+            /** @description getMoneyAccount only: the breaks in its balance chain not yet resolved. */
+            gaps: components["schemas"]["BankGap"][];
+            /**
+             * Format: uuid
+             * @description The money account's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+             */
+            id: string;
+            /**
+             * @description The last four characters of what statements name it by (an account number, an IBAN or a provider's balance ID); the rest is never shown (SEC-15).
+             * @example …4567
+             */
+            identifier?: string;
+            /**
+             * @description The bank or provider.
+             * @example DBS
+             */
+            institution?: string;
+            /**
+             * @description What kind of money account it is.
+             * @example bank
+             * @enum {string}
+             */
+            kind: "bank" | "card" | "wallet" | "payment_gateway" | "cash";
+            /**
+             * @description Its name.
+             * @example DBS current
+             */
+            name: string;
+            /**
+             * Format: date
+             * @description The day it opened.
+             * @example 2026-01-05
+             */
+            opened_on?: string;
+            /** @description Where its data comes from now; absent while its statements are uploaded as files. */
+            source?: components["schemas"]["MoneySource"];
+            /** @description getMoneyAccount only: every source it has had, earliest first (UC-BNK-03). */
+            sources: components["schemas"]["MoneySource"][];
+            /**
+             * Format: int64
+             * @description Its version, for If-Match.
+             * @example 1
+             */
+            version: number;
+            /**
+             * Format: int64
+             * @description Its lines waiting in the queue: unreconciled, possible duplicates and in suspense.
+             * @example 12
+             */
+            waiting: number;
+        };
+        MoneyAccountDraft: {
+            /**
+             * Format: uuid
+             * @description createMoneyAccount only: the chart account, marked a money account; its currency is the account's.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+             */
+            account_id?: string;
+            /**
+             * Format: date
+             * @description replaceMoneyAccount only: the day it closed.
+             * @example 2027-03-31
+             */
+            closed_on?: string;
+            /**
+             * @description What statements name it by: the account number, an IBAN or a provider's balance ID. Written only; read back by its last four characters.
+             * @example 072-123456-7
+             */
+            identifier?: string;
+            /**
+             * @description The bank or provider.
+             * @example DBS
+             */
+            institution?: string;
+            /**
+             * @description What kind of money account it is.
+             * @example bank
+             * @enum {string}
+             */
+            kind: "bank" | "card" | "wallet" | "payment_gateway" | "cash";
+            /**
+             * @description Its name.
+             * @example DBS current
+             */
+            name: string;
+            /**
+             * Format: date
+             * @description The day it opened.
+             * @example 2026-01-05
+             */
+            opened_on?: string;
+        };
+        MoneyAccountsOutputBody: {
+            /** @description The organisation's money accounts, by name. */
+            items: components["schemas"]["MoneyAccount"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjAxOTIifQ
+             */
+            next_cursor?: string;
+        };
+        MoneyFreshness: {
+            /**
+             * Format: date
+             * @description The last day its statements cover with no gap before it.
+             * @example 2026-10-19
+             */
+            complete_to?: string;
+            /**
+             * Format: date-time
+             * @description When its last statement arrived.
+             * @example 2026-10-20T09:30:00Z
+             */
+            last_import?: string;
+            /**
+             * Format: int64
+             * @description Breaks in its balance chain not yet resolved.
+             * @example 0
+             */
+            open_gaps: number;
+        };
+        MoneySource: {
+            /**
+             * Format: uuid
+             * @description connector: the organisation connector that syncs it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40
+             */
+            connector_id?: string;
+            /**
+             * Format: date
+             * @description The first day it is the source.
+             * @example 2026-11-01
+             */
+            from_date: string;
+            /**
+             * @description file: statements a person uploads; email: reports the bank emails to the bank-ingest address; connector: an organisation connector's sync (FR-BNK-15).
+             * @example email
+             * @enum {string}
+             */
+            kind: "file" | "email" | "connector";
+            /**
+             * Format: uuid
+             * @description A CSV or XLSX format's saved column mapping.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b30
+             */
+            mapping_id?: string;
+            /**
+             * @description file and email: the format its statements come in.
+             * @example csv
+             * @enum {string}
+             */
+            report_format?: "csv" | "xlsx" | "ofx" | "camt053" | "mt940" | "mt940_sap";
+            /** @description email: the bank's registered addresses, the only senders accepted for it. */
+            senders: string[];
+            /**
+             * @description Who set it.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01
+             */
+            set_by?: string;
+        };
+        MoneySourceDraft: {
+            /**
+             * Format: uuid
+             * @description connector: the organisation connector that syncs it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40
+             */
+            connector_id?: string;
+            /**
+             * Format: date
+             * @description The first day it is the source: after the current one's, so no day has two.
+             * @example 2026-11-01
+             */
+            from_date: string;
+            /**
+             * @description file, email or connector.
+             * @example email
+             * @enum {string}
+             */
+            kind: "file" | "email" | "connector";
+            /**
+             * Format: uuid
+             * @description CSV and XLSX: the saved column mapping.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b30
+             */
+            mapping_id?: string;
+            /**
+             * @description file and email: the statements' format.
+             * @example csv
+             * @enum {string}
+             */
+            report_format?: "csv" | "xlsx" | "ofx" | "camt053" | "mt940" | "mt940_sap";
+            /** @description email: the bank's registered addresses (DMARC must pass for each, FR-INT-22). */
+            senders?: string[] | null;
+        };
         NewMemberInvitation: {
             /**
              * @description The name of the person you invite.
@@ -14481,6 +15348,13 @@ export interface components {
              */
             reason: string;
         };
+        ResolveGapInputBody: {
+            /**
+             * @description How it was resolved: the statement imported, or why there is none.
+             * @example The bank's statement for 16–17 Oct imported
+             */
+            resolution: string;
+        };
         RetainedEarnings: {
             /**
              * Format: uuid
@@ -15491,6 +16365,117 @@ export interface components {
              */
             number?: string;
         };
+        StatementMapping: {
+            /**
+             * @description The format it reads.
+             * @example csv
+             * @enum {string}
+             */
+            format: "csv" | "xlsx";
+            /**
+             * Format: uuid
+             * @description The mapping's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b30
+             */
+            id: string;
+            /**
+             * @description The bank it is for.
+             * @example DBS
+             */
+            institution?: string;
+            /**
+             * @description Its name.
+             * @example DBS IDEAL CSV
+             */
+            name: string;
+            /** @description How the columns read. */
+            spec: components["schemas"]["StatementMappingSpec"];
+            /**
+             * Format: int64
+             * @description Its version, for If-Match.
+             * @example 1
+             */
+            version: number;
+        };
+        StatementMappingDraft: {
+            /**
+             * @description The format it reads.
+             * @example csv
+             * @enum {string}
+             */
+            format: "csv" | "xlsx";
+            /**
+             * @description The bank it is for.
+             * @example DBS
+             */
+            institution?: string;
+            /**
+             * @description Its name.
+             * @example DBS IDEAL CSV
+             */
+            name: string;
+            /** @description How the columns read. */
+            spec: components["schemas"]["StatementMappingSpec"];
+        };
+        StatementMappingSpec: {
+            /**
+             * @description A signed amount column; or in and out.
+             * @example Amount
+             */
+            amount?: string;
+            /**
+             * @description The running balance's column.
+             * @example Balance
+             */
+            balance?: string;
+            /**
+             * @description The counterparty's column.
+             * @example Payee
+             */
+            counterparty?: string;
+            /**
+             * @description The booking date's column.
+             * @example Transaction Date
+             */
+            date: string;
+            /** @description Go layouts for its dates, the first that reads winning, such as 02/01/2006 for day/month/year. */
+            date_formats: string[] | null;
+            /**
+             * @description CSV only: the delimiter, a comma by default; or ;, | or a tab.
+             * @example ,
+             */
+            delimiter?: string;
+            /** @description Columns joined, in order, as the description. */
+            description?: string[] | null;
+            /**
+             * @description The money-in column.
+             * @example Credit
+             */
+            in?: string;
+            /** @description How its amounts are written. */
+            number: components["schemas"]["MappingNumber"];
+            /**
+             * @description The money-out column.
+             * @example Debit
+             */
+            out?: string;
+            /**
+             * @description The bank's reference column.
+             * @example Reference
+             */
+            reference?: string;
+            /**
+             * Format: int64
+             * @description Rows before the header row.
+             * @example 0
+             */
+            skip?: number;
+            /**
+             * @description The value date's column.
+             * @example Value Date
+             */
+            value_date?: string;
+        };
         StatementPage: {
             /** @description The statements made. */
             items: components["schemas"]["Statement"][];
@@ -15524,6 +16509,15 @@ export interface components {
              * @example 2026-10-31
              */
             to: string;
+        };
+        StatementsOutputBody: {
+            /** @description Its statements, latest first. */
+            items: components["schemas"]["BankStatementIn"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjAxOTIifQ
+             */
+            next_cursor?: string;
         };
         StatutoryPack: {
             /** @description The organisation's activation; absent until it is activated (ENG-32). */
@@ -18831,6 +19825,352 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    importBankStatements: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description The statement: CSV, XLSX, OFX or QFX, camt.053 or MT940, up to 10 MB. It is checked and scanned for malware as evidence is, and kept as the statement's file.
+                     * @example <?xml version="1.0"?><Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">…
+                     */
+                    file: string;
+                    /**
+                     * @description The file's format.
+                     * @example camt053
+                     * @enum {string}
+                     */
+                    format: "csv" | "xlsx" | "ofx" | "camt053" | "mt940" | "mt940_sap";
+                    /**
+                     * Format: uuid
+                     * @description CSV and XLSX: the saved column mapping.
+                     * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b30
+                     */
+                    mapping_id?: string;
+                    /**
+                     * Format: uuid
+                     * @description The money account: required for CSV and XLSX; for the others, the file's own account must be it.
+                     * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+                     */
+                    money_account_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankImport"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankImport"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BANK-03` The money account is closed; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BANK-01` The statement is not for that money account; `BANK-02` The statement is in another currency than its account; `BANK-04` The statement file cannot be read; `BANK-05` The import is incomplete; `BANKFILE-01` The statement file is too large; `BANKFILE-02` The file is not of that format; `BANKFILE-03` An amount in the file is not exact; `BANKFILE-04` A date in the file does not read; `BANKFILE-05` A currency in the file is unknown; `BANKFILE-06` The column mapping does not fit the file; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listBankLines: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only this money account's lines. */
+                money_account_id?: string;
+                /** @description Only lines with this status; waiting is the queue: unreconciled, possible duplicates and suspense. */
+                status?: "unreconciled" | "possible_duplicate" | "categorised" | "matched" | "transferred" | "suspense" | "excluded" | "waiting";
+                /** @description Only lines booked on or after this day. */
+                from?: string;
+                /** @description Only lines booked on or before this day. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinesOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getBankLine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The line's ID. */
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankLine"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `BANK-06` The bank rule does not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -37949,6 +39289,907 @@ export interface operations {
             };
         };
     };
+    listMoneyAccounts: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoneyAccountsOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createMoneyAccount: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoneyAccountDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoneyAccount"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoneyAccount"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMoneyAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The money account's ID. */
+                money_account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoneyAccount"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replaceMoneyAccount: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The money account's ID. */
+                money_account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoneyAccountDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoneyAccount"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    resolveBankGap: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The money account's ID. */
+                money_account_id: string;
+                /** @description The gap's ID. */
+                gap_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveGapInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankGap"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    addMoneyAccountSource: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The money account's ID. */
+                money_account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoneySourceDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoneyAccount"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoneyAccount"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listBankStatements: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The money account's ID. */
+                money_account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementsOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getNotificationPreferences: {
         parameters: {
             query?: never;
@@ -53498,6 +55739,397 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listStatementMappings: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MappingsOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createStatementMapping: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementMappingDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementMapping"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementMapping"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BANKFILE-06` The column mapping does not fit the file. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replaceStatementMapping: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The mapping's ID. */
+                mapping_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementMappingDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementMapping"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BANKFILE-06` The column mapping does not fit the file. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

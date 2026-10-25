@@ -13,6 +13,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/cognizhi/fyniq/internal/bankfile"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
@@ -574,10 +575,24 @@ var codeFacts = map[string]struct {
 	storage.CodeConnector:       {409, "A connector moves only along its lifecycle"},
 	storage.CodeConnectorChange: {409, "The other Super admin's approval is needed"},
 
-	// Banking (FR-BNK-05, FR-BNK-14).
-	banking.CodeRule:    {422, "The bank rule does not fit"},
-	banking.CodeAutoOn:  {409, "The rule applies by itself already"},
-	banking.CodeRuleOff: {409, "The rule is switched off"},
+	// Banking (FR-BNK-01…18).
+	storage.CodeBanking:     {409, "The banking record does not allow that"},
+	banking.CodeAccount:     {422, "The statement is not for that money account"},
+	banking.CodeCurrency:    {422, "The statement is in another currency than its account"},
+	banking.CodeClosed:      {409, "The money account is closed"},
+	banking.CodeFile:        {422, "The statement file cannot be read"},
+	banking.CodeRequest:     {422, "The import is incomplete"},
+	banking.CodeNoStatement: {409, "No statement balance for the period"},
+	banking.CodeNotAuto:     {409, "The line was not reconciled by the system"},
+	bankfile.CodeTooLarge:   {422, "The statement file is too large"},
+	bankfile.CodeFormat:     {422, "The file is not of that format"},
+	bankfile.CodeAmount:     {422, "An amount in the file is not exact"},
+	bankfile.CodeDate:       {422, "A date in the file does not read"},
+	bankfile.CodeCurrency:   {422, "A currency in the file is unknown"},
+	bankfile.CodeMapping:    {422, "The column mapping does not fit the file"},
+	banking.CodeRule:        {422, "The bank rule does not fit"},
+	banking.CodeAutoOn:      {409, "The rule applies by itself already"},
+	banking.CodeRuleOff:     {409, "The rule is switched off"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -604,6 +619,8 @@ var storageFixes = map[string]string{
 	storage.CodeScheduled: "Issue and send it as a person, or approve the recurring invoice it came from",
 	storage.CodeReminder:  "Read the reminders again: this one was sent or skipped already",
 	storage.CodeStatement: "Make and send a new statement instead",
+
+	storage.CodeBanking: "Read the money account or the line again: a source only starts after the current one, a statement and its lines never change, a gap is resolved once, and a line is undone rather than changed",
 
 	storage.CodeConnector:       "Take the steps in order: install, configure, test, enable; pause and resume; disable; uninstall",
 	storage.CodeConnectorChange: "Ask for the change; the other Super admin approves it, once, before it expires",
@@ -732,6 +749,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		sme *statement.Error
 		cne *connector.Error
 		bke *banking.Error
+		bfe *bankfile.Error
 		pe  *period.Error
 		ae  *accounting.Error
 		ce  *closing.Error
@@ -783,6 +801,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(ae.Code, sentence(ae.Message), sentence(ae.Fix))
 	case errors.As(err, &ce):
 		return problem(ce.Code, sentence(ce.Message), sentence(ce.Fix))
+	case errors.As(err, &bfe): // a reader's refusal, with the line and field it names (ENG-23)
+		return problem(bfe.Code, sentence(bfe.Error()[len(bfe.Code)+2:]), sentence(bfe.Fix))
 	case errors.As(err, &bke):
 		return problem(bke.Code, sentence(bke.Message), sentence(bke.Fix))
 	case errors.As(err, &cne):
