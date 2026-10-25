@@ -1,11 +1,11 @@
 package banking
 
 import (
+	"bytes"
 	"context"
-	"encoding/binary"
+	"crypto/sha256"
 	"errors"
 	"fmt"
-	"math/rand/v2"
 	"slices"
 	"strings"
 	"time"
@@ -406,8 +406,8 @@ const (
 
 // Sample puts a week's sample of auto-reconciliations in the organisation's review log, once each: of those the system
 // made in the week from weekStart that still stand, the SampleLargest largest in the base currency and SampleRandom
-// others chosen at random, seeded by the organisation and the week, so a second run chooses the same. It returns how
-// many it logged.
+// others chosen as at random, by a hash of the organisation, the week and the match that no one can steer, so a second
+// run chooses the same. It returns how many it logged.
 func Sample(ctx context.Context, store storage.Store, org uuid.UUID, weekStart, at time.Time) (int, error) {
 	ctx = storage.WithAudit(ctx, storage.AuditContext{Actor: &Sampler, Reason: "The weekly sample of auto-reconciliations (FR-BNK-14, FM-3)"})
 	logged := 0
@@ -467,9 +467,13 @@ func Sample(ctx context.Context, store storage.Store, org uuid.UUID, weekStart, 
 		})
 		chosen := items[:min(SampleLargest, len(items))]
 		rest := slices.Clone(items[len(chosen):])
-		seed := binary.BigEndian.Uint64(org[:8]) ^ uint64(weekStart.Unix())
-		r := rand.New(rand.NewPCG(seed, binary.BigEndian.Uint64(org[8:])))
-		r.Shuffle(len(rest), func(i, j int) { rest[i], rest[j] = rest[j], rest[i] })
+		// The others in an order no one can steer and anyone can work out again: by the SHA-256 of the organisation, the
+		// week and the match, so a second run chooses the same.
+		rank := func(x item) []byte {
+			h := sha256.Sum256([]byte(org.String() + "|" + weekStart.UTC().Format(time.DateOnly) + "|" + x.m.ID.String()))
+			return h[:]
+		}
+		slices.SortStableFunc(rest, func(a, b item) int { return bytes.Compare(rank(a), rank(b)) })
 		chosen = append(chosen, rest[:min(SampleRandom, len(rest))]...)
 		for _, x := range chosen {
 			if done[x.line.ID.String()] {
