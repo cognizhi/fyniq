@@ -4,6 +4,7 @@
 # req: CTL-IAM-03
 # req: CTL-CHG-05
 # req: NFR-PORT-05
+# req: SEC-04
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -39,8 +40,9 @@ run "spec" {
 }
 
 variables {
-  project       = "fyniq-staging"
-  public_origin = "https://staging.fyniq.example"
+  project         = "fyniq-staging"
+  secrets_project = "fyniq-staging-secrets"
+  public_origin   = "https://staging.fyniq.example"
   anchors = {
     bucket      = "fyniq-staging-audit-anchors"
     key_version = "projects/fyniq-staging/locations/asia-southeast1/keyRings/audit-staging/cryptoKeys/anchor/cryptoKeyVersions/1"
@@ -274,4 +276,47 @@ run "connector_secrets_follow_their_manifests" {
     condition     = jsondecode(local.env["worker"]["FYNIQ_CONNECTOR_SECRETS"])["zeptomail.send_token"] == "zeptomail-key" && jsondecode(local.env["api"]["FYNIQ_CONNECTOR_SECRETS"])["resend.webhook_secret"] == "connector-resend-webhook_secret" && !contains(keys(local.env["mcp"]), "FYNIQ_CONNECTOR_SECRETS")
     error_message = "the api, worker and jobs learn which secret holds each connector secret (names only); the MCP server does not"
   }
+}
+
+# The organisations' connector secrets (design D12, the owner's decision of 25 Oct 2026): the api's account manages
+# secrets in their own project and holds no create right on the environment's; the worker reads there; the project's
+# Secret Manager encrypts under the environment's secrets key; the api and the worker are told where.
+run "organisation_secrets_are_in_their_own_project" {
+  command = plan
+  variables {
+    spec = run.spec.spec
+  }
+  assert {
+    condition     = google_project_iam_member.org_secrets_admin.project == "fyniq-staging-secrets" && google_project_iam_member.org_secrets_admin.role == "roles/secretmanager.admin" && google_project_iam_member.org_secrets_admin.member == "serviceAccount:run-api@fyniq-staging.iam.gserviceaccount.com"
+    error_message = "the api's account manages the organisations' secrets in their project"
+  }
+  assert {
+    condition     = toset([for m in google_project_iam_member.org_secrets_reader : m.member]) == toset(["serviceAccount:run-worker@fyniq-staging.iam.gserviceaccount.com"]) && alltrue([for m in google_project_iam_member.org_secrets_reader : m.project == "fyniq-staging-secrets" && m.role == "roles/secretmanager.secretAccessor"])
+    error_message = "only the worker reads there besides the api"
+  }
+  assert {
+    condition     = !anytrue([for m in google_secret_manager_secret_iam_member.connector_versions : m.role == "roles/secretmanager.admin"]) && !anytrue([for m in google_secret_manager_secret_iam_member.access : m.role == "roles/secretmanager.admin"])
+    error_message = "no account holds a create right on the environment's secrets"
+  }
+  assert {
+    condition     = google_project_service.org_secrets.project == "fyniq-staging-secrets" && google_kms_crypto_key_iam_member.org_secrets_agent.role == "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+    error_message = "the secrets project's Secret Manager encrypts under the environment's secrets key"
+  }
+  assert {
+    condition     = alltrue([for name in ["api", "worker"] : [for e in google_cloud_run_v2_service.services[name].template[0].containers[0].env : e.value if e.name == "FYNIQ_ORG_SECRETS_PROJECT"] == ["fyniq-staging-secrets"]])
+    error_message = "the api and the worker are told where the organisations' secrets are"
+  }
+  assert {
+    condition     = length([for e in google_cloud_run_v2_service.services["mcp"].template[0].containers[0].env : e if e.name == "FYNIQ_ORG_SECRETS_PROJECT"]) == 0
+    error_message = "no other service is told"
+  }
+}
+
+run "a_secrets_project_is_a_project_id" {
+  command = plan
+  variables {
+    spec            = run.spec.spec
+    secrets_project = "Not a project"
+  }
+  expect_failures = [var.secrets_project]
 }

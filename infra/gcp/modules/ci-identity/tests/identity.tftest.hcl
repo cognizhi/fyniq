@@ -12,8 +12,9 @@ mock_provider "google" {
 }
 
 variables {
-  project      = "fyniq-ci"
-  environments = { staging = "fyniq-staging", production = "fyniq-prod" }
+  project          = "fyniq-ci"
+  environments     = { staging = "fyniq-staging", production = "fyniq-prod" }
+  secrets_projects = { staging = "fyniq-staging-secrets", production = "fyniq-prod-secrets" }
 }
 
 # Workload Identity Federation trusts this repository's main branch and tags only, by repository and
@@ -44,6 +45,10 @@ run "ci_gets_credentials_only_from_main_and_tags" {
   assert {
     condition     = google_project_iam_member.tofu["production"].project == "fyniq-prod" && google_project_iam_member.tofu["staging"].project == "fyniq-staging"
     error_message = "each OpenTofu identity must own its own environment only"
+  }
+  assert {
+    condition     = google_project_iam_member.tofu_secrets["production"].project == "fyniq-prod-secrets" && google_project_iam_member.tofu_secrets["staging"].project == "fyniq-staging-secrets" && google_project_iam_member.tofu_secrets["staging"].member == google_project_iam_member.tofu["staging"].member
+    error_message = "each OpenTofu identity owns its own environment's secrets project, and no other"
   }
   assert {
     condition     = google_artifact_registry_repository.images.docker_config[0].immutable_tags

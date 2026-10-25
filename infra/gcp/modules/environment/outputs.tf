@@ -22,3 +22,8 @@ output "members" {
   description = "Each account as an IAM member, once it exists (for grants made in another module, such as the anchors)."
   value       = { for k, sa in google_service_account.all : k => sa.member }
 }
+
+output "org_secrets_project" {
+  description = "The project of the organisations' connector secrets (org_secrets.tf)."
+  value       = var.secrets_project
+}

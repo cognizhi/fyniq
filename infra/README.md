@@ -14,7 +14,7 @@ Infrastructure workflow does nothing.
 | `modules/platform-spec/` | The platform as cloud-neutral data: services, jobs, worker classes, sizes, the tick, budget and anchor retention. It names no cloud resource, so AWS and Azure modules can share it later (ADR-T8) |
 | `gcp/modules/org-policy/` | The organisation policies of §12.4: Singapore only, no service-account keys, uniform bucket access, no public database IP, and CMEK required in staging and production |
 | `gcp/modules/ci-identity/` | `fyniq-ci`: Workload Identity Federation for this repository's `main` branch and tags only, Artifact Registry (immutable tags), and one service account per CI job. No keys |
-| `gcp/modules/environment/` | One environment: APIs, CMEK keys, a private network with Cloud NAT, Cloud SQL for PostgreSQL 18, secrets, one service account per service and job, Cloud Run services and jobs, Cloud Tasks queues, the Scheduler tick, and break-glass through Privileged Access Manager |
+| `gcp/modules/environment/` | One environment: APIs, CMEK keys, a private network with Cloud NAT, Cloud SQL for PostgreSQL 18, secrets, one service account per service and job, Cloud Run services and jobs, Cloud Tasks queues, the Scheduler tick, and break-glass through Privileged Access Manager; and, in the environment's secrets project, the organisations' connector secrets, which only the api's account manages (`org_secrets.tf`, design D12 of `p1-bank-import-reconcile`) |
 | `gcp/modules/anchors/` | The audit anchors: a retention-locked bucket and the EC P-256 key that signs them (§11.5 L3) |
 | `gcp/modules/budget/` | The monthly budget: alerts at 50%, 80% and 100% by email, never a cap |
 | `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors and budget |
@@ -39,14 +39,17 @@ The tests check the controls on the planned configuration:
 | CTL-DP-01 | The database and secrets use rotated CMEK. Backups are pinned to Singapore with point-in-time recovery. The database has a private IP only |
 | CTL-DP-07 | No region outside Singapore, in the spec and anywhere in the code |
 | CTL-IAM-03 | No grant to a person or group. Break-glass needs another person's approval |
+| SEC-12 | The api's account holds `roles/secretmanager.admin` on the secrets project only (a rule of `make infra-check`), the worker reads there, and its Secret Manager encrypts under the environment's secrets key |
 | CTL-AUD-02 | Production's anchors are retention-locked. Staging's are not |
 | NFR-COST-01 | Budgets are variables, with alerts at 50%, 80% and 100% and no Pub/Sub cap |
 
 ## First apply (the founder)
 
 1. Create the organisation, the billing account and the projects of §12.4: `fyniq-ci`,
-   `fyniq-dev`, `fyniq-staging`, `fyniq-prod` and `fyniq-audit`. If an ID is taken, pass the new
-   one as a variable.
+   `fyniq-dev`, `fyniq-staging`, `fyniq-prod` and `fyniq-audit`, and each environment's secrets
+   project for the organisations' connector secrets, `fyniq-staging-secrets` and `fyniq-prod-secrets`
+   (the owner's decision of 25 Oct 2026). If an ID is taken, pass the new one as a variable
+   (`project`, `secrets_project`).
 2. `gcp/bootstrap`: `tofu init && tofu apply -var bucket=<state bucket name>`.
 3. `gcp/shared`: `tofu init -backend-config=bucket=<state bucket>`, then
    `tofu apply -var organization_id=<id>`. Do this through just-in-time elevation: this root gives

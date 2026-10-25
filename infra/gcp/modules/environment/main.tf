@@ -25,6 +25,15 @@ variable "project" {
   type        = string
 }
 
+variable "secrets_project" {
+  description = "The project of the organisations' connector secrets (fyniq-staging-secrets, fyniq-prod-secrets), which the founder creates (org_secrets.tf)."
+  type        = string
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]{4,28}[a-z0-9]$", var.secrets_project))
+    error_message = "secrets_project must be a project ID."
+  }
+}
+
 variable "anchors" {
   description = "The audit anchors' bucket and signing key version (infra/gcp/modules/anchors)."
   type = object({
@@ -208,6 +217,7 @@ locals {
   } } if m.scope == "installation"]...)
   connector_secret_names = { for k, v in local.connector_secrets : k => v.name }
   connector_readers      = toset(["api", "worker", "jobs"])
+  org_secret_readers     = toset(["api", "worker"])
 
   secrets = toset(concat(flatten([for name, m in local.secret_env : values(m)]), values(local.connector_secret_names)))
   secret_access = merge(

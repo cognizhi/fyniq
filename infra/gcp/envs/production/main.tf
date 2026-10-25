@@ -19,6 +19,12 @@ variable "project" {
   default     = "fyniq-prod"
 }
 
+variable "secrets_project" {
+  description = "The project of the organisations' connector secrets (design D12). [verify the project ID once the founder creates it]"
+  type        = string
+  default     = "fyniq-prod-secrets"
+}
+
 variable "audit_project" {
   description = "fyniq-audit: the audit anchors, administered apart from the platform (§12.4)."
   type        = string
@@ -99,6 +105,7 @@ module "stack" {
   source            = "../../modules/stack"
   environment       = "production"
   project           = var.project
+  secrets_project   = var.secrets_project
   audit_project     = var.audit_project
   anchors           = { retention_days = var.anchor_retention_days, lock = true }
   database          = { tier = "db-custom-1-3840", availability = "REGIONAL", disk_gb = 10 }

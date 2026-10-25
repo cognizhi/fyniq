@@ -11,6 +11,8 @@ locals {
     lookup(local.default_env, name, {}),
     # Which secret holds each installation connector secret (the names, never the values; rev 0.139).
     contains(local.connector_readers, name) ? { FYNIQ_CONNECTOR_SECRETS = jsonencode(local.connector_secret_names) } : {},
+    # Where the organisations' connector secrets are, and the key the api creates them under (org_secrets.tf).
+    contains(local.org_secret_readers, name) ? { FYNIQ_ORG_SECRETS_PROJECT = var.secrets_project, FYNIQ_ORG_SECRETS_KEY = google_kms_crypto_key.cmek["secrets"].id } : {},
     lookup(var.service_env, name, {}),
   ) }
   health = { for name in keys(local.spec.services) : name => contains(["oauth", "oauth-admin"], name) ? "/health/ready" : "/healthz" }

@@ -39,13 +39,14 @@ variables {
 run "production" {
   command = plan
   variables {
-    environment   = "production"
-    project       = "fyniq-prod"
-    audit_project = "fyniq-audit"
-    anchors       = { retention_days = 2557, lock = true }
-    database      = { tier = "db-custom-1-3840", availability = "REGIONAL", disk_gb = 10 }
-    budget        = { amount_usd = 400, emails = ["founder-one@example.com", "founder-two@example.com"] }
-    break_glass   = { requesters = ["group:platform-admins@example.com"], approvers = ["group:founders@example.com"], role = "roles/editor", duration = "3600s" }
+    environment     = "production"
+    project         = "fyniq-prod"
+    secrets_project = "fyniq-prod-secrets"
+    audit_project   = "fyniq-audit"
+    anchors         = { retention_days = 2557, lock = true }
+    database        = { tier = "db-custom-1-3840", availability = "REGIONAL", disk_gb = 10 }
+    budget          = { amount_usd = 400, emails = ["founder-one@example.com", "founder-two@example.com"] }
+    break_glass     = { requesters = ["group:platform-admins@example.com"], approvers = ["group:founders@example.com"], role = "roles/editor", duration = "3600s" }
   }
   assert {
     condition     = module.anchors.bucket == "fyniq-production-audit-anchors"
@@ -59,17 +60,22 @@ run "production" {
     condition     = startswith(jsondecode(output.gcp_config).tasks.worker.queue, "projects/fyniq-prod/")
     error_message = "production's queues are in production's own project (CTL-CHG-05)"
   }
+  assert {
+    condition     = module.environment.org_secrets_project == "fyniq-prod-secrets"
+    error_message = "production's organisation secrets are in their own project (design D12)"
+  }
 }
 
 run "staging" {
   command = plan
   variables {
-    environment   = "staging"
-    project       = "fyniq-staging"
-    audit_project = "fyniq-staging"
-    anchors       = { retention_days = 30, lock = false }
-    database      = { tier = "db-custom-1-3840", availability = "ZONAL", disk_gb = 10 }
-    budget        = { amount_usd = 120, emails = ["founder-one@example.com"] }
+    environment     = "staging"
+    project         = "fyniq-staging"
+    secrets_project = "fyniq-staging-secrets"
+    audit_project   = "fyniq-staging"
+    anchors         = { retention_days = 30, lock = false }
+    database        = { tier = "db-custom-1-3840", availability = "ZONAL", disk_gb = 10 }
+    budget          = { amount_usd = 120, emails = ["founder-one@example.com"] }
   }
   assert {
     condition     = startswith(jsondecode(output.gcp_config).tasks.executor.queue, "projects/fyniq-staging/") && module.anchors.bucket == "fyniq-staging-audit-anchors"

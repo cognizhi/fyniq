@@ -277,6 +277,14 @@ Secret Manager role elsewhere beyond the installation secrets it already has; th
 secret files. The connector threat model's T12 and its open item are rewritten; `make infra-check` proves no other
 project grants the account a create right.
 
+- As built (task 8.1): projects are the founder's to create, as every other project is (`infra/README.md`), so the
+  environment module configures the secrets project rather than creating it: Secret Manager on, its service agent on
+  the environment's secrets key, `roles/secretmanager.admin` for the api's account and `secretAccessor` for the
+  worker's, and `FYNIQ_ORG_SECRETS_PROJECT` / `FYNIQ_ORG_SECRETS_KEY` for both. Organisation secrets are named per
+  organisation, so OpenTofu cannot make them: the adapter makes one on its first version (`SecretManager.Create`) and
+  `gcp.SplitSecrets` routes every `org-` name and reference to that project. A new `make infra-check` rule refuses
+  `roles/secretmanager.admin` on any other project; each `tofu-<env>` account owns its own secrets project.
+
 ### D13. The source switch (UC-BNK-03, the owner's decision)
 
 Changing a money account's source adds a `money_account_source` row from a date; the next statement from the new

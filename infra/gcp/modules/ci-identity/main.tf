@@ -35,6 +35,12 @@ variable "environments" {
   type        = map(string)
 }
 
+variable "secrets_projects" {
+  description = "Each environment's project of the organisations' connector secrets (p1-bank-import-reconcile design D12): its OpenTofu service account owns it too."
+  type        = map(string)
+  default     = {}
+}
+
 # The APIs CI calls through this project: token exchange, images, and the budgets of every environment.
 resource "google_project_service" "apis" {
   for_each           = toset(["iam", "iamcredentials", "sts", "artifactregistry", "billingbudgets", "cloudresourcemanager", "serviceusage", "orgpolicy"])
@@ -113,6 +119,13 @@ resource "google_project_iam_member" "tofu" {
   for_each = var.environments
   project  = each.value
   role     = "roles/owner" # a machine identity used only from main and tags; no human holds it (CTL-IAM-03)
+  member   = google_service_account.tofu[each.key].member
+}
+
+resource "google_project_iam_member" "tofu_secrets" {
+  for_each = { for env, project in var.secrets_projects : env => project if contains(keys(var.environments), env) }
+  project  = each.value
+  role     = "roles/owner" # its environment's secrets project, configured with it (org_secrets.tf)
   member   = google_service_account.tofu[each.key].member
 }
 

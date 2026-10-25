@@ -181,11 +181,15 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 
 ## 8. Bank connectors
 
-- [ ] 8.1 The secrets project (design D12; the owner's decision): OpenTofu creates a secrets project per platform
+- [x] 8.1 The secrets project (design D12; the owner's decision): OpenTofu creates a secrets project per platform
   environment; the API's account manages secrets there only, the API and worker read there; `connector.Organisations`
   uses it (`FYNIQ_ORG_SECRETS_PROJECT`); local mode unchanged.
   - Tests: the environment module's `tofu test` and the infra rules (no create right on any other project);
     `make infra-check`. `// req: SEC-12`, `// req: SEC-04`
+  - As built: the founder creates the secrets projects with the others (projects are not OpenTofu's, `infra/README.md`);
+    OpenTofu configures them (`org_secrets.tf`) and gives each `tofu-<env>` account its own. The API makes an
+    organisation's secret the first time it is typed, in Singapore under the environment's secrets key
+    (`FYNIQ_ORG_SECRETS_KEY`); `gcp.SplitSecrets` sends every `org-` name there. Not applied: no cloud account yet.
 - [ ] 8.2 The bank-data port and sync (design D11): accounts, balances and transactions since a cursor; the sync job
   per enabled connector on the tick through the egress guard, writing statements and lines and its cursor in one unit
   of work, the lines waiting for Reconcile now (rev 0.143, task 5.3); the webhook route that only prompts an early sync (404 for an unknown, disabled or uninstalled connector);

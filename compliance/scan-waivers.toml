@@ -99,7 +99,7 @@ expires = 2027-04-15
 tool = "checkov"
 rule = "CKV_GCP_117"
 path = "infra/gcp/modules/ci-identity/main.tf"
-reason = "Each environment's OpenTofu identity is Owner of that one project. It manages IAM there, so any narrower set of roles could grant itself more; it is reached only through Workload Identity Federation from main and tags of this repository (no key, no person), and every change it applies is reviewed code. No human holds Owner or Editor (CTL-IAM-03)."
+reason = "Each environment's OpenTofu identity is Owner of that one project and of its secrets project (p1-bank-import-reconcile design D12). It manages IAM there, so any narrower set of roles could grant itself more; it is reached only through Workload Identity Federation from main and tags of this repository (no key, no person), and every change it applies is reviewed code. No human holds Owner or Editor (CTL-IAM-03)."
 expires = 2027-04-15
 
 [[waiver]]

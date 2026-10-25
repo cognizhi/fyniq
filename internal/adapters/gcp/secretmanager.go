@@ -30,7 +30,17 @@ type SecretManager struct {
 	Project  string   // the project id the secrets are in
 	Names    []string // the secret ids it may touch: the values of FYNIQ_CONNECTOR_SECRETS
 	Prefixes []string // and those starting with one of these
-	r        rest
+	// Create, when set, makes a secret the first time a version is put, as the organisations' connector secrets are:
+	// named per organisation, so OpenTofu cannot make them beforehand (p1-bank-import-reconcile design D12). Nil: a
+	// secret must exist.
+	Create *SecretCreation
+	r      rest
+}
+
+// SecretCreation is how a secret is made: replicated in one region, under a customer-managed key (CTL-DP-01).
+type SecretCreation struct {
+	Location string // asia-southeast1
+	KMSKey   string // projects/…/locations/…/keyRings/…/cryptoKeys/secrets
 }
 
 var _ ports.SecretStore = (*SecretManager)(nil)
@@ -91,7 +101,18 @@ func (s *SecretManager) Put(ctx context.Context, name, value string) (ports.Secr
 		return "", err
 	}
 	var out secretVersion
-	err = s.r.do(ctx, http.MethodPost, fmt.Sprintf("%s/v1/projects/%s/secrets/%s:addVersion", s.Endpoint, url.PathEscape(s.Project), name), "application/json", body, &out)
+	add := func() error {
+		return s.r.do(ctx, http.MethodPost, fmt.Sprintf("%s/v1/projects/%s/secrets/%s:addVersion", s.Endpoint, url.PathEscape(s.Project), name), "application/json",
+			body, &out)
+	}
+	err = add()
+	if errors.Is(err, errNotFound) && s.Create != nil {
+		if err = s.create(ctx, name); err == nil {
+			if body, err = jsonBody(map[string]any{"payload": payload{Data: base64.StdEncoding.EncodeToString([]byte(value)), DataCrc32c: crc([]byte(value))}}); err == nil {
+				err = add()
+			}
+		}
+	}
 	if errors.Is(err, errNotFound) {
 		return "", fmt.Errorf("secret %s does not exist: OpenTofu creates each connector secret (infra/gcp/modules/environment)", name)
 	}
@@ -102,6 +123,27 @@ func (s *SecretManager) Put(ctx context.Context, name, value string) (ports.Secr
 		return "", fmt.Errorf("secret manager add version: the answer names %q", out.Name)
 	}
 	return ports.SecretRef(out.Name), nil
+}
+
+// create makes secret name in the project as s.Create says; one made meanwhile by another request is used as it is.
+func (s *SecretManager) create(ctx context.Context, name string) error {
+	body, err := jsonBody(map[string]any{
+		"replication": map[string]any{"userManaged": map[string]any{"replicas": []map[string]any{{"location": s.Create.Location,
+			"customerManagedEncryption": map[string]any{"kmsKeyName": s.Create.KMSKey}}}}},
+		"labels": map[string]string{"managed-by": "fyniq"},
+	})
+	if err != nil {
+		return err
+	}
+	err = s.r.do(ctx, http.MethodPost, fmt.Sprintf("%s/v1/projects/%s/secrets?secretId=%s", s.Endpoint, url.PathEscape(s.Project), url.QueryEscape(name)),
+		"application/json", body, nil)
+	if errors.Is(err, errConflict) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("secret manager create %s: %w", name, err)
+	}
+	return nil
 }
 
 // state reads a version's state.
@@ -220,3 +262,48 @@ func (s *SecretManager) Disable(ctx context.Context, ref ports.SecretRef) error 
 func (s *SecretManager) Destroy(ctx context.Context, ref ports.SecretRef) error {
 	return s.act(ctx, ref, "destroy", "DESTROYED")
 }
+
+// OrgSecretPrefix starts the name of every organisation's connector secret (connector.Organisations.SecretName).
+const OrgSecretPrefix = "org-"
+
+// SplitSecrets keeps the organisations' connector secrets in their own project and the installation's where OpenTofu
+// made them (p1-bank-import-reconcile design D12, the owner's decision of 25 Oct 2026): a name or a reference goes to
+// the store its secret's name belongs to.
+type SplitSecrets struct {
+	Installation, Organisations ports.SecretStore
+}
+
+var _ ports.SecretStore = SplitSecrets{}
+
+func (s SplitSecrets) named(name string) ports.SecretStore {
+	if strings.HasPrefix(name, OrgSecretPrefix) {
+		return s.Organisations
+	}
+	return s.Installation
+}
+
+func (s SplitSecrets) of(ref ports.SecretRef) ports.SecretStore {
+	if m := versionName.FindStringSubmatch(string(ref)); m != nil {
+		return s.named(m[1])
+	}
+	return s.Installation // which refuses it
+}
+
+// Put implements ports.SecretStore.
+func (s SplitSecrets) Put(ctx context.Context, name, value string) (ports.SecretRef, error) {
+	return s.named(name).Put(ctx, name, value)
+}
+
+// Get implements ports.SecretStore.
+func (s SplitSecrets) Get(ctx context.Context, ref ports.SecretRef) (string, error) { return s.of(ref).Get(ctx, ref) }
+
+// Latest implements ports.SecretStore.
+func (s SplitSecrets) Latest(ctx context.Context, name string) (ports.SecretRef, error) {
+	return s.named(name).Latest(ctx, name)
+}
+
+// Disable implements ports.SecretStore.
+func (s SplitSecrets) Disable(ctx context.Context, ref ports.SecretRef) error { return s.of(ref).Disable(ctx, ref) }
+
+// Destroy implements ports.SecretStore.
+func (s SplitSecrets) Destroy(ctx context.Context, ref ports.SecretRef) error { return s.of(ref).Destroy(ctx, ref) }

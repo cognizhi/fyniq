@@ -20,6 +20,11 @@ variable "project" {
   type        = string
 }
 
+variable "secrets_project" {
+  description = "The project of the organisations' connector secrets, which the founder creates (design D12)."
+  type        = string
+}
+
 variable "audit_project" {
   description = "Where the audit anchors live: fyniq-audit for production (§12.4), the environment's own project for staging."
   type        = string
@@ -114,6 +119,7 @@ module "environment" {
   source            = "../environment"
   spec              = module.spec.spec
   project           = var.project
+  secrets_project   = var.secrets_project
   anchors           = { bucket = module.anchors.bucket, key_version = module.anchors.key_version }
   public_origin     = var.public_origin
   signin_providers  = var.signin_providers
