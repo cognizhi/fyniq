@@ -145,7 +145,7 @@ func TestTheWisePartnerDocumentHasWhatTheAdapterReads(t *testing.T) {
 // a changed body, another key or no signature is refused.
 // req: FR-BNK-18
 // req: FR-INT-27
-// asvs: V10.5.1
+// asvs: V4.1.5
 func TestAWiseWebhookVerifiesOnlyWithWisesSignature(t *testing.T) {
 	body := []byte(`{"data":{"resource":{"id":49983981,"profile_id":16055450,"account_id":14124090,"type":"transfer"},"current_state":"incoming_payment_waiting","previous_state":null,"occurred_at":"2021-08-23T10:12:50Z"},"subscription_id":"90aa8e14-4ef1-4a56-861c-f3c9cde097ea","event_type":"transfers#state-change","schema_version":"2.0.0","sent_at":"2021-08-23T10:12:50Z"}`)
 	h := http.Header{}

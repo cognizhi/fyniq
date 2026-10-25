@@ -166,7 +166,7 @@ func sign(secret, ts string, body []byte) string {
 // signature, another secret, a changed body and a stale timestamp are refused.
 // req: FR-BNK-18
 // req: FR-INT-27
-// asvs: V10.5.1
+// asvs: V4.1.5
 func TestAnAirwallexWebhookVerifiesWithinFiveMinutes(t *testing.T) {
 	now := time.Date(2026, 10, 26, 9, 0, 0, 0, time.UTC)
 	body := []byte(`{"id":"evt_1","name":"balance.updated","data":{"amount":"999999"}}`)
