@@ -258,9 +258,14 @@ before any code that parses bank files or touches connector secrets (SEC-20).
     both modes); "stale" and "sync failed" wait for check C.2 #43, which no API reports yet. The email source names the
     bank-ingest address when it has none. Setting a source is the Administrator's (C on "Bank data… connections"); a
     Bookkeeper's or Accountant's account takes statement files. Links to the pages of 10.2 to 10.5 come with them.
-- [ ] 10.2 `bank-account` (`/banking/accounts/$id`) and `statement-import` (`/banking/import`): lines with status,
+- [x] 10.2 `bank-account` (`/banking/accounts/$id`) and `statement-import` (`/banking/import`): lines with status,
   gaps and duplicates; the import's preview for several accounts.
   - Component tests with axe. `// req: FR-BNK-02`, `// req: FR-BNK-04`, `// req: FR-BNK-16`
+  - As built: the register shows each statement's continuity, the gaps (resolved with a reason), the lines with their
+    status, a possible duplicate compared side by side and kept or excluded with a reason, the account's pending
+    incoming-funds alerts apart (dismissed with a reason) and its transfers in transit. The import takes several
+    files, each with its format, account and mapping, previews each, imports each once with its own key, and saves a
+    column mapping. PDF statements stay P2.
 - [ ] 10.3 `categorise-basic` and `categorise-expert` (`/banking/categorise`): one line at a time in Basic, the grid
   in Expert; accept, edit, split, transfer, match and bulk accept.
   - Component tests with axe, and the same request for the same action in both modes (QA-UI-04).

@@ -4,7 +4,7 @@ type: task
 title: Add a money account and choose where its data comes from
 summary: Add a bank, card, wallet, gateway or cash account in three steps, and set its statements to arrive as files, by email or through a connector
 sources:
-  - docs/user-guide/banking.md sha256:51107fd0558f6c5fbaafe3945ca677eeaa22881e9238242d230a20d36f9d4f60
+  - docs/user-guide/banking.md sha256:565c6a46ef771bfa843f7ddb1a5e1fdb0c044640a14eddaa8d8774627dc75e2d
 data_class: general
 taint: trusted
 status: draft

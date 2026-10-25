@@ -201,3 +201,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-26] compile | docs/user-guide/organisation-settings.md, docs/user-guide/invoices.md → settings.organisation, settings.change, sales.invoices (incoming-funds alerts: likely paid, the expiry setting and dismissal; p1-bank-import-reconcile task 7.3, rev 0.145)
 
 ## [2026-10-26] compile | docs/user-guide/banking.md → banking.accounts, banking.add-account (new: the Banking accounts screen and the add-account wizard; p1-bank-import-reconcile task 10.1)
+
+## [2026-10-26] compile | docs/user-guide/banking.md → banking.accounts, banking.add-account, banking.import (an account's statements and lines, and importing statements; p1-bank-import-reconcile task 10.2)

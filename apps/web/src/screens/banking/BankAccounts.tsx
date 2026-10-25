@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CircleCheck, CreditCard, FileQuestion, FileSpreadsheet, Info, Landmark, Mail, Plug, Plus, TriangleAlert, Wallet, Coins, type LucideIcon } from "lucide-react";
+import { CircleCheck, Coins, CreditCard, FileQuestion, FileSpreadsheet, Info, Landmark, Mail, Plug, Plus, TriangleAlert, Upload, Wallet, type LucideIcon } from "lucide-react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
@@ -114,9 +114,13 @@ export function BankAccounts() {
         </div>
         {may && (
           <div className="fy-pagehead__actions">
-            <Link className="fy-btn fy-btn--primary" to="/banking/accounts/new" title={add.tooltip}>
+            <Link className="fy-btn fy-btn--ghost" to="/banking/accounts/new" title={add.tooltip}>
               <Icon of={Plus} />
               {add.label}
+            </Link>
+            <Link className="fy-btn fy-btn--primary" to="/banking/import" title={helpText("banking.import").tooltip}>
+              <Icon of={Upload} />
+              Import statement
             </Link>
           </div>
         )}
@@ -153,7 +157,7 @@ export function BankAccounts() {
           </div>
           <div className="fy-grid fy-grid--2 fy-stagger">
             {items.map((a) => (
-              <AccountCard key={a.id} account={a} balance={balances.get(a.id)} />
+              <AccountCard key={a.id} account={a} balance={balances.get(a.id)} may={may} />
             ))}
           </div>
         </section>
@@ -227,7 +231,7 @@ function CashCard({ position }: { position: CashPosition }) {
   );
 }
 
-function AccountCard({ account: a, balance }: { account: MoneyAccount; balance?: components["schemas"]["CashAccount"] }) {
+function AccountCard({ account: a, balance, may }: { account: MoneyAccount; balance?: components["schemas"]["CashAccount"]; may: boolean }) {
   const k = kinds[a.kind];
   const title = `account-${a.id}`;
   const complete = helpText("bank-account.complete-to");
@@ -239,7 +243,9 @@ function AccountCard({ account: a, balance }: { account: MoneyAccount; balance?:
         </span>
         <div className="fy-grow fy-stack gap-0">
           <h3 className="fy-h3" id={title}>
-            {a.name}
+            <Link to="/banking/accounts/$accountId" params={{ accountId: a.id }}>
+              {a.name}
+            </Link>
           </h3>
           <span className="fy-small fy-muted">
             {k.words}
@@ -291,6 +297,17 @@ function AccountCard({ account: a, balance }: { account: MoneyAccount; balance?:
           </p>
         )}
       </div>
+      {may && !a.closed_on && (
+        <div className="fy-card__foot">
+          <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/banking/import" search={{ account: a.id }}>
+            <Icon of={Upload} />
+            Import
+          </Link>
+          <Link className="fy-btn fy-btn--ghost fy-btn--sm" to="/banking/accounts/$accountId" params={{ accountId: a.id }}>
+            Open
+          </Link>
+        </div>
+      )}
     </article>
   );
 }

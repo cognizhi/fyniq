@@ -292,6 +292,18 @@
       "label": "Complete to",
       "tooltip": "The last day the account's statements cover with no break in the balance chain before it."
     },
+    "banking.account": {
+      "label": "Money account",
+      "tooltip": "One account's statements and their continuity, its lines and their status, gaps, possible duplicates and pending alerts."
+    },
+    "banking.import": {
+      "label": "Import statements",
+      "tooltip": "Bring in statement files for one account or several, see what each adds before anything is saved, then import."
+    },
+    "bank-signal.dismiss": {
+      "label": "Dismiss the alert",
+      "tooltip": "The alert stops showing its invoice as likely paid. Nothing is posted, and the reason is kept in the audit trail."
+    },
     "purchases.bills": {
       "label": "Bills",
       "tooltip": "Every bill from a supplier: its total, when it falls due, and whether it is posted, waiting for approval or voided."
