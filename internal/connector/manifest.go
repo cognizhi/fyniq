@@ -20,6 +20,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // Kind is a capability: the kind of service a connector implements (FR-INT-25).
@@ -383,6 +384,19 @@ func (m Manifest) Secret(name string) (Secret, bool) {
 		}
 	}
 	return Secret{}, false
+}
+
+// Consent is what installing m, or consenting to it, agrees to send out and reach (FR-INT-26).
+func (m Manifest) Consent() storage.ConnectorConsent {
+	c := storage.ConnectorConsent{DataClasses: slices.Clone(m.DataClasses), ProviderScopes: slices.Clone(m.ProviderScopes),
+		FyniqScopes: slices.Clone(m.FyniqScopes)}
+	for _, d := range m.Destinations {
+		c.Destinations = append(c.Destinations, storage.ConsentDestination{Host: d.Host, Configured: d.Configured, Port: d.Port})
+	}
+	for _, w := range m.Webhooks {
+		c.Webhooks = append(c.Webhooks, w.Path)
+	}
+	return c
 }
 
 // ErrConfiguration is a configuration the manifest's schema refuses.

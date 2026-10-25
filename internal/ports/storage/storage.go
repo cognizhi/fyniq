@@ -103,6 +103,10 @@ type UnitOfWork interface {
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))
+	// AfterRollback runs fn after the unit of work rolls back, outside its transaction: after an error, a preview, or
+	// an attempt retried; never after a commit. A secret version put in the secret store before the transaction that
+	// records it is destroyed this way (FR-INT-26).
+	AfterRollback(fn func(ctx context.Context))
 }
 
 // Accounts is the chart of accounts (minimal in P0; FR-COA-02 adds the attributes in P1).

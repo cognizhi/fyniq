@@ -18,6 +18,11 @@ type outbox struct{ u *unitOfWork }
 
 func (u *unitOfWork) Outbox() storage.Outbox { return outbox{u} }
 
+// AfterRollback implements storage.UnitOfWork.
+func (u *unitOfWork) AfterRollback(fn func(ctx context.Context)) {
+	u.afterRollback = append(u.afterRollback, fn)
+}
+
 // AfterCommit implements storage.UnitOfWork.
 func (u *unitOfWork) AfterCommit(fn func(ctx context.Context)) {
 	u.afterCommit = append(u.afterCommit, fn)
