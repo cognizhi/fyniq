@@ -277,3 +277,62 @@ func TaskTokens(t *testing.T, tokens ports.TaskTokens) {
 		}
 	}
 }
+
+// SecretStore checks a SecretStore adapter (FR-INT-20): versions are added, never changed; a reference reads its own
+// version; disabling and destroying act on one version only; names that could escape a store are refused.
+func SecretStore(t *testing.T, s ports.SecretStore) {
+	t.Helper()
+	ctx := context.Background()
+	const name = "connector-example-key"
+	first, err := s.Put(ctx, name, "first-value")
+	if err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+	second, err := s.Put(ctx, name, "second-value")
+	if err != nil || second == first {
+		t.Fatalf("Put again: %q, %v; want a new reference", second, err)
+	}
+	for ref, want := range map[ports.SecretRef]string{first: "first-value", second: "second-value"} {
+		if got, err := s.Get(ctx, ref); err != nil || got != want {
+			t.Fatalf("Get(%s) = %q, %v; want %q", ref, got, err, want)
+		}
+	}
+	if latest, err := s.Latest(ctx, name); err != nil || latest != second {
+		t.Fatalf("Latest = %q, %v; want %q", latest, err, second)
+	}
+	if err := s.Disable(ctx, second); err != nil {
+		t.Fatalf("Disable: %v", err)
+	}
+	if err := s.Disable(ctx, second); err != nil {
+		t.Fatalf("Disable again: %v", err)
+	}
+	if _, err := s.Get(ctx, second); !errors.Is(err, ports.ErrSecretDisabled) {
+		t.Fatalf("Get of a disabled version: %v; want ErrSecretDisabled", err)
+	}
+	if latest, err := s.Latest(ctx, name); err != nil || latest != first {
+		t.Fatalf("Latest after disabling the newest = %q, %v; want %q", latest, err, first)
+	}
+	if got, err := s.Get(ctx, first); err != nil || got != "first-value" {
+		t.Fatalf("the other version after a disable: %q, %v", got, err)
+	}
+	if err := s.Destroy(ctx, first); err != nil {
+		t.Fatalf("Destroy: %v", err)
+	}
+	if err := s.Destroy(ctx, first); err != nil {
+		t.Fatalf("Destroy again: %v", err)
+	}
+	if _, err := s.Get(ctx, first); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("Get of a destroyed version: %v; want ErrNotFound", err)
+	}
+	if _, err := s.Latest(ctx, name); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("Latest with no enabled version: %v; want ErrNotFound", err)
+	}
+	if _, err := s.Get(ctx, ports.SecretRef("nothing-here")); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("Get of an unknown reference: %v; want ErrNotFound", err)
+	}
+	for _, bad := range []string{"../escape", "Upper", "a/b", ""} {
+		if _, err := s.Put(ctx, bad, "x"); err == nil {
+			t.Fatalf("Put(%q) was accepted", bad)
+		}
+	}
+}

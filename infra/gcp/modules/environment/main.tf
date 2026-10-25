@@ -76,6 +76,12 @@ variable "service_secrets" {
   default     = {}
 }
 
+variable "connector_secret_sources" {
+  description = "Installation connector secrets kept in an existing secret rather than their own (PRD-001 rev 0.139): <connector>.<secret> → secret name, such as { \"zeptomail.send_token\" = \"zeptomail-key\" } for the email providers' keys from before the connector framework, so they are referenced, never copied. The rest get connector-<connector>-<secret>."
+  type        = map(string)
+  default     = {}
+}
+
 variable "service_args" {
   description = "Container arguments per service or job, e.g. Hydra's [\"serve\", \"public\"]."
   type        = map(list(string))
@@ -191,9 +197,25 @@ locals {
     name == "api" ? { FYNIQ_IDP_API_KEY = "idp-api-key" } : {},
     lookup(var.service_secrets, name, {}),
   ) }
-  secrets = toset(flatten([for name, m in local.secret_env : values(m)]))
-  secret_access = { for pair in flatten([for name, m in local.secret_env : [for secret in values(m) : { name = name, secret = secret }]]) :
-  "${pair.secret}/${pair.name}" => pair }
+  # The installation connectors' secrets (FR-INT-20, rev 0.139), from their manifests in connectors/: each a secret of its
+  # own, or the existing one connector_secret_sources names, read only by the services the manifest lists. The values
+  # are typed in Settings › Integrations (the api adds versions) or were added out of band before.
+  manifests = { for f in fileset("${path.module}/../../../../connectors", "*/manifest.json") :
+  dirname(f) => jsondecode(file("${path.module}/../../../../connectors/${f}")) }
+  connector_secrets = merge({}, [for id, m in local.manifests : { for s in m.secrets : "${id}.${s.name}" => {
+    name    = lookup(var.connector_secret_sources, "${id}.${s.name}", "connector-${id}-${s.name}")
+    used_by = s.used_by
+  } } if m.scope == "installation"]...)
+  connector_secret_names = { for k, v in local.connector_secrets : k => v.name }
+  connector_readers      = toset(["api", "worker", "jobs"])
+
+  secrets = toset(concat(flatten([for name, m in local.secret_env : values(m)]), values(local.connector_secret_names)))
+  secret_access = merge(
+    { for pair in flatten([for name, m in local.secret_env : [for secret in values(m) : { name = name, secret = secret }]]) :
+    "${pair.secret}/${pair.name}" => pair },
+    { for pair in flatten([for k, c in local.connector_secrets : [for service in c.used_by : { name = service, secret = c.name }]]) :
+    "${pair.secret}/${pair.name}" => pair },
+  )
 }
 
 resource "google_project_service" "apis" {

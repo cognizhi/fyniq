@@ -244,3 +244,34 @@ run "no_standing_human_access" {
     error_message = "break-glass needs another person's approval and ends by itself (CTL-IAM-03)"
   }
 }
+
+# The installation connectors' secrets come from their manifests (FR-INT-20, PRD-001 rev 0.139): each its own secret,
+# read only by the services its manifest lists; the api may add, disable and destroy their versions and no other
+# secret's; and a key from before the connector framework is referenced where it is, never copied.
+run "connector_secrets_follow_their_manifests" {
+  command = plan
+  variables {
+    spec                     = run.spec.spec
+    connector_secret_sources = { "zeptomail.send_token" = "zeptomail-key" }
+  }
+  assert {
+    condition     = contains(keys(google_secret_manager_secret.all), "connector-zeptomail-webhook_key") && contains(keys(google_secret_manager_secret.all), "connector-resend-api_key") && contains(keys(google_secret_manager_secret.all), "zeptomail-key") && !contains(keys(google_secret_manager_secret.all), "connector-zeptomail-send_token")
+    error_message = "each installation connector secret is a secret of its own, or the existing one named for it"
+  }
+  assert {
+    condition     = contains(keys(google_secret_manager_secret_iam_member.access), "zeptomail-key/worker") && !contains(keys(google_secret_manager_secret_iam_member.access), "zeptomail-key/api") && contains(keys(google_secret_manager_secret_iam_member.access), "connector-zeptomail-webhook_key/api") && !contains(keys(google_secret_manager_secret_iam_member.access), "connector-zeptomail-webhook_key/worker")
+    error_message = "a connector secret is read only by the services its manifest lists (the send token by the worker, the webhook key by the api)"
+  }
+  assert {
+    condition     = toset(keys(google_secret_manager_secret_iam_member.connector_versions)) == toset(values(local.connector_secret_names)) && alltrue([for g in google_secret_manager_secret_iam_member.connector_versions : g.member == "serviceAccount:run-api@fyniq-staging.iam.gserviceaccount.com" && g.role == "roles/secretmanager.secretVersionManager"])
+    error_message = "only the api manages versions, of the connectors' secrets only, and the role cannot read a value"
+  }
+  assert {
+    condition     = !contains(keys(google_secret_manager_secret_iam_member.connector_versions), "api-database-url") && !contains(keys(google_secret_manager_secret_iam_member.connector_versions), "idp-api-key")
+    error_message = "the api must not add versions to any other secret"
+  }
+  assert {
+    condition     = jsondecode(local.env["worker"]["FYNIQ_CONNECTOR_SECRETS"])["zeptomail.send_token"] == "zeptomail-key" && jsondecode(local.env["api"]["FYNIQ_CONNECTOR_SECRETS"])["resend.webhook_secret"] == "connector-resend-webhook_secret" && !contains(keys(local.env["mcp"]), "FYNIQ_CONNECTOR_SECRETS")
+    error_message = "the api, worker and jobs learn which secret holds each connector secret (names only); the MCP server does not"
+  }
+}

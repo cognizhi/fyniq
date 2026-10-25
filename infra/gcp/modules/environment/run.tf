@@ -9,6 +9,8 @@ locals {
     contains(local.wired, name) ? { FYNIQ_GCP = local.gcp_config } : {},
     contains(local.oauth_admin, name) ? { FYNIQ_OAUTH_ADMIN_URL = local.url["oauth-admin"] } : {},
     lookup(local.default_env, name, {}),
+    # Which secret holds each installation connector secret (the names, never the values; rev 0.139).
+    contains(local.connector_readers, name) ? { FYNIQ_CONNECTOR_SECRETS = jsonencode(local.connector_secret_names) } : {},
     lookup(var.service_env, name, {}),
   ) }
   health = { for name in keys(local.spec.services) : name => contains(["oauth", "oauth-admin"], name) ? "/health/ready" : "/healthz" }
