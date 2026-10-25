@@ -552,6 +552,10 @@ var (
 	// A money account's bank agreements (FR-DOC-05, design D13): attached by whoever may change its source.
 	AddMoneyAccountEvidence  = Policy{Operation: "addMoneyAccountEvidence", Capability: BankConnections, Need: Create}
 	ListMoneyAccountEvidence = Policy{Operation: "listMoneyAccountEvidence", Capability: BankTransactions, Need: View}
+	// Incoming-funds signals (FR-BNK-16, UC-BNK-02): read with the bank lines; dismissing one posts nothing, so C, as
+	// keeping or excluding a line.
+	ListBankSignals   = Policy{Operation: "listBankSignals", Capability: BankTransactions, Need: View}
+	DismissBankSignal = Policy{Operation: "dismissBankSignal", Capability: BankTransactions, Need: Create}
 	// Rendering an invoice as its document (FR-AR-05) reads it.
 	GetInvoiceDocument = Policy{Operation: "getInvoiceDocument", Capability: Invoices, Need: View}
 	// Emailing an issued invoice or a sent quote to the customer (FR-AR-06) speaks for the company to the outside, as
@@ -895,7 +899,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	UnreconcileBankLine, AutoReconcileBankLines, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,
 	ListBankRules, CreateBankRule, GetBankRule, ReplaceBankRule, BackTestBankRule, ListBankRuleOffers, ListAutoReconciliations, GetCashPosition,
 	GetBankReconciliation, ListBankReconciliations, PrepareBankReconciliation, SignBankReconciliation,
-	AddMoneyAccountEvidence, ListMoneyAccountEvidence,
+	AddMoneyAccountEvidence, ListMoneyAccountEvidence, ListBankSignals, DismissBankSignal,
 	ListQuotes, GetQuote, GetSalesPipeline, CreateQuote, ReplaceQuote, SendQuote, CancelQuote, AcceptQuote, DeclineQuote, InvoiceQuote,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,

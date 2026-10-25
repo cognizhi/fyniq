@@ -151,7 +151,8 @@
     "Cash chart: 13 months, one series, forecast segment dashed and labelled 'Projection'; summary sentence ('Cash fell 8% in September to S$412,300') and table view",
     "Runway shown without unconfirmed funding, saying so when the forecast includes money not yet received",
     "Upcoming deadlines with ⏰ chips: CPF by the 14th, GST F5 one month after the period end, ECI, AIS 1 March",
-    "AI suggestions card in violet with the AI label (e.g. 'INV-0138 likely paid: S$10,900 alert from ACME ROBOTICS')",
+    "AI suggestions card in violet with the AI label (e.g. 'Rent for October is not yet categorised: code it to 6100?')",
+    "Likely paid (FR-BNK-16, UC-BNK-02): the pending incoming-funds signals, each 'INV-0138 likely paid: S$10,900 alert from ACME ROBOTICS' with a Lucide banknote icon and a neutral chip, never violet or the AI label (a bank's alert is not AI content), linking to the invoice; nothing is posted until the statement line is reconciled",
     "Basic: pulse card, needs attention, four tiles (cash, burn, owed to us, we owe), deadlines. Expert: adds gross margin and GST tiles, cash chart drill to ledger lines, unrealised FX",
     "Role variants: accountant sees close status and checks; employee sees My claims totals ('the company owes you S$27.30') and payslips; approver sees approvals waiting; board viewer sees KPIs only"
    ],

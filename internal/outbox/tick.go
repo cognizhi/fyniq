@@ -85,6 +85,9 @@ var PlatformSchedules = []Schedule{
 	// Hourly, each organisation's enabled bank-data connectors pull their accounts' transactions since their feeds'
 	// cursors, as the connector (FR-BNK-15, FR-BNK-16; rev 0.144).
 	{Job: "bank.sync", Every: time.Hour, Offset: 5 * time.Minute, Lease: 45 * time.Minute, Stale: 3 * time.Hour},
+	// Daily at 03:25 in Singapore, the incoming-funds signals that no statement line closed within the organisation's
+	// bank.signal_expiry_days expire (FR-BNK-16, UC-BNK-02; rev 0.145).
+	{Job: "bank.signals-expiry", Every: 24 * time.Hour, Offset: 19*time.Hour + 25*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Daily at 03:20 in Singapore, the quotes past their validity date with no answer expire (FR-AR-01; rev 0.130).
 	{Job: "quotes.expiry", Every: 24 * time.Hour, Offset: 19*time.Hour + 20*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Hourly, the draft invoices of the recurring invoices due by each organisation's own today (FR-AR-07, FR-AUT-01;

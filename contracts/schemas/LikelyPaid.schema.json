@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What the alert says arrived."
+    },
+    "payer": {
+      "description": "Who the alert says paid.",
+      "examples": [
+        "ACME ROBOTICS"
+      ],
+      "type": "string"
+    },
+    "received_at": {
+      "description": "When the alert arrived.",
+      "examples": [
+        "2026-10-26T09:12:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "signal_id": {
+      "description": "The signal.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "signal_id",
+    "amount",
+    "received_at"
+  ],
+  "title": "LikelyPaid",
+  "type": "object"
+}

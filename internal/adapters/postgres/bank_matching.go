@@ -345,6 +345,32 @@ func (r bankMatching) PendingSignals(ctx context.Context) ([]storage.BankSignal,
 	return out, nil
 }
 
+func (r bankMatching) Signals(ctx context.Context) ([]storage.BankSignal, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.BankSignals(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.BankSignal, 0, len(rows))
+	for _, x := range rows {
+		out = append(out, toSignal(x))
+	}
+	return out, nil
+}
+
+func (r bankMatching) Signal(ctx context.Context, id uuid.UUID) (storage.BankSignal, error) {
+	if err := r.u.check(); err != nil {
+		return storage.BankSignal{}, err
+	}
+	row, err := r.u.q.BankSignal(ctx, id)
+	if err != nil {
+		return storage.BankSignal{}, mapError(err)
+	}
+	return toSignal(row), nil
+}
+
 func reconciliationChanges(rec storage.BankReconciliation) map[string][2]any {
 	return map[string][2]any{"statement_balance": {nil, string(rec.StatementBalance)}, "book_balance": {nil, string(rec.BookBalance)},
 		"unreconciled_total": {nil, string(rec.UnreconciledTotal)}, "unreconciled_count": {nil, rec.UnreconciledCount},

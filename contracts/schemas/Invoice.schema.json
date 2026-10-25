@@ -110,6 +110,10 @@
       },
       "type": "array"
     },
+    "likely_paid": {
+      "$ref": "LikelyPaid.schema.json",
+      "description": "An issued invoice not yet paid: the bank's incoming-funds alert that it is likely paid, while the alert waits for its statement line. A hint only: its settlement and the ledger stay as they are until the line is reconciled to it."
+    },
     "lines": {
       "description": "The lines as entered, each with its net.",
       "items": {

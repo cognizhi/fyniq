@@ -451,9 +451,10 @@ type NewBankTransfer struct {
 
 // The statuses of a pending signal (UC-BNK-02).
 const (
-	SignalPending = "pending"
-	SignalClosed  = "closed"
-	SignalExpired = "expired"
+	SignalPending   = "pending"
+	SignalClosed    = "closed"
+	SignalExpired   = "expired"
+	SignalDismissed = "dismissed" // by a person, with a reason (rev 0.145)
 )
 
 // BankSignal is an incoming-funds alert: it points to the likely invoice and posts nothing (FR-BNK-16).
@@ -549,9 +550,13 @@ type BankMatching interface {
 	InTransit(ctx context.Context) ([]BankTransfer, error)
 
 	RecordSignal(ctx context.Context, n NewBankSignal) (BankSignal, error)
-	// CloseSignal closes a pending signal (by the line that reconciled it) or expires it.
+	// CloseSignal closes a pending signal (by the line that reconciled it), expires it or dismisses it: CodeBanking when it
+	// is not pending.
 	CloseSignal(ctx context.Context, id uuid.UUID, status string, line *uuid.UUID, at time.Time) (BankSignal, error)
 	PendingSignals(ctx context.Context) ([]BankSignal, error)
+	// Signals are every signal, latest received first; Signal is one, ports.ErrNotFound for none.
+	Signals(ctx context.Context) ([]BankSignal, error)
+	Signal(ctx context.Context, id uuid.UUID) (BankSignal, error)
 
 	// PrepareReconciliation prepares, or prepares again while unsigned, an account's reconciliation for a period.
 	PrepareReconciliation(ctx context.Context, n NewBankReconciliation) (BankReconciliation, error)

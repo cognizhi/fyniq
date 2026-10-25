@@ -2,16 +2,16 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings and recommended values: features, terms, GST, tax invoices, tolerances, bank charges, thresholds, variances, email-in, retention
+summary: Company-wide settings and recommended values: features, terms, GST, tax invoices, tolerances, banking, thresholds, variances, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:38bdd8a59c54b3b9d5e796cfde412a0ab0beafbb6059ef70c9bb2ab7d682398d
+  - docs/user-guide/organisation-settings.md sha256:d4ec445f62076415f72ed3720fd198765b17c982efe59182596070e906b29688
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-25
+compiled_at: 2026-10-26
 aliases:
   - feature switches
   - default settings
@@ -30,6 +30,9 @@ aliases:
   - transfer fee
   - auto-reconcile
   - reconciled without a click
+  - incoming-funds alert
+  - likely paid
+  - alert expiry
 ---
 
 # Organisation settings and their recommended values
@@ -110,6 +113,16 @@ aliases:
 - A change needs a second approver, as the other accounting settings do.
 
 (src: docs/user-guide/organisation-settings.md#bank-charges)
+
+## Incoming-funds alerts
+
+- A bank's email that money arrived, sent to the bank-ingest address a day before the statement line, shows the invoice it most likely pays as **likely paid**, on the invoice and on Home ([[sales.invoices]]).
+- Nothing is posted: the invoice stays open until the statement line is reconciled to it.
+- **Incoming-funds alerts expire after**: 7 days; an alert whose invoice no statement line has reconciled by then stops showing it as likely paid.
+- Anyone who reconciles bank lines can dismiss an alert sooner, with a reason, such as one that points to the wrong invoice.
+- A change needs a second approver, as the other bank settings do.
+
+(src: docs/user-guide/organisation-settings.md#incoming-funds-alerts)
 
 ## Capitalisation threshold
 

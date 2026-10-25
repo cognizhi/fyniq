@@ -59,7 +59,7 @@ MCP have no route to any operation here; AI suggestions arrive later as proposal
 
 | Threat | Control | Test that proves it (`// req:` and `// asvs:`) |
 |---|---|---|
-| T1 | The bank-ingest address accepts only the bank addresses its money accounts register, with DMARC passing; anything else is quarantined for a person; an alert is a pending signal that posts nothing | The bank-ingest tests of task 7.1 (a registered sender accepted, another sender and a forged one quarantined) and 7.3 (an alert posts nothing) (`// req: FR-INT-22`, `// req: FR-BNK-17`) |
+| T1 | The bank-ingest address accepts only the bank addresses its money accounts register, with DMARC passing; anything else is quarantined for a person; an alert is a pending signal that posts nothing and never changes the invoice's status; it points to an invoice only when exactly one open invoice of its amount and currency has a customer the payer names, closes only by the statement line matched to that invoice, expires after `bank.signal_expiry_days` (7 by default, under dual control) and can be dismissed with a reason; text that does not read as an alert records nothing but an audit event (rev 0.145) | The bank-ingest tests of task 7.1 (a registered sender accepted, another sender and a forged one quarantined) and `TestAnIncomingFundsAlertSpeedsUpMatching` (task 7.3: the ledger revision and the invoice's ETag unchanged by the alert; another customer's invoice of the same amount not pointed to; expiry, dismissal) (`// req: FR-INT-22`, `// req: FR-BNK-17`, `// req: FR-BNK-16`) |
 | T2 | The duplicate rules of T5 apply to emailed reports too; a re-sent report adds nothing | The import tests of task 3.2 (a re-import adds nothing) |
 | T3 | Parsers are bounded (file size, lines, field length, XML depth and entity expansion off, the zip limits of the evidence upload) and fuzzed; a refusal names the line and field | The parser fuzz tests and refusal tests of task 3.1 (`// req: FR-BNK-02`, `// asvs: V5.2.1`, `V5.2.3`, `V1.5.1`) |
 | T4 | Exact decimals only (no float, ENG-10, the architecture test); golden fixtures per format; the preview before anything is added; the continuity check and the e-statement tie-out | The golden-fixture tests of task 3.1; the continuity tests of task 3.2 |
@@ -81,7 +81,10 @@ MCP have no route to any operation here; AI suggestions arrive later as proposal
 ## 4. What remains
 
 - DBS's emailed report format is `[verify]` until a redacted sample of Cognizhi's report; until then DBS lines come
-  from uploaded MT940 or CSV exports.
+  from uploaded MT940 or CSV exports. The DBS IDEAL alert's wording is `[verify]` too: the parser reads the plain
+  phrases banks use, and an alert it cannot read is recorded in the audit trail and left for a person.
+- A forged alert that passes DMARC from a registered bank sender (the bank's own mail system compromised) can show an
+  invoice as likely paid for up to a week and delay a chase; it posts nothing, and the statement line decides.
 - Wise's read-only tokens for Singapore business profiles, Airwallex's scoped keys, and both providers' hosts are
   `[verify]` against their pages before the manifests are pinned (tasks 8.3, 8.4).
 - A bank connector key with more than read access, if a provider offers no read-only key, would be a residual

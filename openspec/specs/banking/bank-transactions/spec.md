@@ -357,6 +357,17 @@ Source: PRD-001 §8.4 · Priority M · Phase P1
 - **THEN** they show "likely paid" (UC-BNK-02)
 - **AND** the invoice's status and the ledger do not change
 
+#### Scenario: An alert no line closes expires, or a person dismisses it (rev 0.145)
+- **GIVEN** a pending signal whose invoice no statement line has been matched to
+- **WHEN** `bank.signal_expiry_days` (7 by default, under dual control; the owner's decision of 26 Oct 2026) have passed, or a person who reconciles bank lines dismisses it with a reason
+- **THEN** the signal expires, or is dismissed with the reason in the audit trail, and the invoice stops showing "likely paid"
+- **AND** nothing is posted
+
+#### Scenario: The likely invoice is the only one the alert can pay (rev 0.145)
+- **WHEN** an alert at the bank-ingest address says money of an amount and currency arrived from a payer
+- **THEN** its likely invoice is the one open invoice of that amount and currency whose customer the payer names, not already pointed to by another pending signal
+- **AND** with none, or several, the signal waits without an invoice
+
 ### Requirement: FR-BNK-17 DBS, in two phases
 The system SHALL connect DBS in two phases: Phase 1 (P1, no extra bank fee) from DBS IDEAL's emailed reports and alerts and file exports; Phase 2 (P2) through DBS RAPID or IDEAL Connect over SFTP.
 

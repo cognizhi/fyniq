@@ -67,6 +67,10 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **WHEN** the tick runs `bank.sync`, hourly at five past
 - **THEN** each organisation's enabled bank-data connectors pull their accounts since their feeds' cursors (FR-BNK-15, FR-BNK-16), as the connector's own principal, and the worker posts nothing
 
+#### Scenario: Incoming-funds signals expire (rev 0.145)
+- **WHEN** the tick runs `bank.signals-expiry`, daily at 03:25 in Singapore
+- **THEN** it expires the incoming-funds signals that no statement line closed within each organisation's `bank.signal_expiry_days` (FR-BNK-16), as `scheduler:bank.signals-expiry`, posting nothing
+
 ### Requirement: FR-AUT-02 Automated postings under a system principal
 Every automated posting SHALL run under a named system principal with its own audit identity, and SHALL respect period locks and approval policies.
 

@@ -90,6 +90,12 @@ RETURNING *;
 -- name: PendingBankSignals :many
 SELECT * FROM fyniq.bank_signal WHERE status = 'pending' ORDER BY received_at, id;
 
+-- name: BankSignals :many
+SELECT * FROM fyniq.bank_signal ORDER BY received_at DESC, id DESC;
+
+-- name: BankSignal :one
+SELECT * FROM fyniq.bank_signal WHERE id = sqlc.arg(id);
+
 -- name: InsertBankReconciliation :one
 INSERT INTO fyniq.bank_reconciliation (money_account_id, period_id, currency, minor_units, statement_balance, book_balance,
   unreconciled_total, unreconciled_count, difference, ledger_revision, prepared_by, prepared_at)

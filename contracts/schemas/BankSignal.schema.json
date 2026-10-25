@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What the alert says arrived, in its currency."
+    },
+    "closed_at": {
+      "description": "When it closed, expired or was dismissed.",
+      "examples": [
+        "2026-10-27T01:05:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "closed_line_id": {
+      "description": "A closed signal: the statement line that closed it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The signal's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "invoice": {
+      "$ref": "InvoiceRef.schema.json",
+      "description": "The open invoice it most likely pays: of its amount and currency, its customer named by the payer; absent when there is none, or more than one."
+    },
+    "money_account_id": {
+      "description": "The money account the money arrived in.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "payer": {
+      "description": "Who the alert says paid, as the bank names them.",
+      "examples": [
+        "ACME ROBOTICS"
+      ],
+      "type": "string"
+    },
+    "received_at": {
+      "description": "When the alert arrived.",
+      "examples": [
+        "2026-10-26T09:12:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "reference": {
+      "description": "The bank's reference for it.",
+      "examples": [
+        "2610-0001"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "pending while it waits for its statement line; closed by the line reconciled to its invoice; expired after the organisation's bank.signal_expiry_days (7 by default); dismissed by a person.",
+      "enum": [
+        "pending",
+        "closed",
+        "expired",
+        "dismissed"
+      ],
+      "examples": [
+        "pending"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "money_account_id",
+    "amount",
+    "received_at",
+    "status"
+  ],
+  "title": "BankSignal",
+  "type": "object"
+}
