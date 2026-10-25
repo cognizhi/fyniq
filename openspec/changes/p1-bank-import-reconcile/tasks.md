@@ -58,13 +58,20 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   length of invalid UTF-8), fixed and kept as regression seeds. DBS's MT940 SAP layout stays `[verify]` against a
   sample. Proved by `TestEachFormatReadsIntoOneModel`, `TestRefusalsNameTheLineAndField`, `TestMappingsReadFromTheirJSON`
   and `FuzzMT940`, `FuzzCAMT053`, `FuzzOFX`, `FuzzCSV`, `FuzzXLSX`)
-- [ ] 3.2 The import (design D2): statements for several accounts at once, each file an untrusted upload checked and
+- [x] 3.2 The import (design D2): statements for several accounts at once, each file an untrusted upload checked and
   scanned and kept with its statement; a preview of what will be added, flagged as possible duplicate and dropped on
   proof; the continuity check with gaps recorded; the account's last sync and complete-to date.
   - Tests: several accounts in one import; a gap flagged, never filled; G4-042 (two S$500.00 receipts kept, a
     re-import and an overlapping source add nothing, a look-alike without proof marked possible duplicate); a
     transfer already recorded from the other account recognised. `// req: FR-BNK-02`, `// req: FR-BNK-04`,
     `// req: FR-BNK-16`
+  (25 Oct 2026: `banking.Import` in the caller's unit of work, so the API's preview rolls it back; statements matched
+  to their money accounts by identifier and currency (`BANK-01`–`05`); running balances derived from the opening or
+  closing balance where a format gives none; a line dropped only when the bank's reference or the running balance
+  proves it held, otherwise flagged; a transfer's other side named for auto-reconcile (task 5.1) to complete;
+  `FreshnessOf` for the last import and the complete-to date. The upload itself, checked and scanned and kept as the
+  statement's file, comes with its API operation (task 9.1). Proved by `TestStatementsForSeveralAccountsGoToTheirOwn`,
+  `TestABreakInTheBalanceChainIsAGap`, `TestDuplicatesAreDroppedOnlyOnProof`, `TestATransfersOtherSideIsRecognised`)
 
 ## 4. Posting, rules, matching, transfers and suspense
 
@@ -180,7 +187,8 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 ## 9. The API
 
 - [ ] 9.1 The Banking operations (design D14), contract first: money accounts and their sources, imports with
-  preview, lines and the queue, rules with the back-test, matches, transfers, signals, auto-reconciliations and undo,
+  preview (the statement file an untrusted upload, checked and scanned as evidence uploads are, and kept as the
+  statement's file), lines and the queue, rules with the back-test, matches, transfers, signals, auto-reconciliations and undo,
   reconciliations and sign-off, the cash position; `Idempotency-Key`, `If-Match`, `Prefer: return=preview`, RFC 9457
   `BANK-nn` codes; matrix rows for the three Appendix D rows; `make openapi` and the web client regenerated.
   - Tests: the API tests per operation and the authorisation matrix (QA-SEC-03). `// req: FR-INT-01`,
