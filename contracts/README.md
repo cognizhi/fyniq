@@ -10,4 +10,4 @@ Machine-readable contracts, the source of truth for every interface (golden rule
 | `asyncapi/` | Events (`fyniq.<object>.<event>.v<N>`) | P1 |
 | `ai-tools/` | AI and MCP tool schemas | P1 |
 | `connectors/` | The connector manifest format (`manifest.schema.json`, FR-INT-25); each first-party connector's manifest is in `connectors/<id>/manifest.json` and validates against it in `make test` | p1-connector-framework (today) |
-| `partners/` | Partner API mocks (Peppol access point, banks) for local mode | P1 |
+| `partners/` | Partners' OpenAPI documents (banks, payment providers, the Peppol access point), each mocked by Prism in the local `partners` profile | p1-connector-framework (today) |

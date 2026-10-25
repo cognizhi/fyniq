@@ -216,3 +216,51 @@ func TestImagesBuildForBothPlatforms(t *testing.T) {
 		t.Errorf("CI must run `make images` on an amd64 and an arm64 runner; it runs on %v", built)
 	}
 }
+
+// Every partner document in contracts/partners/ has its mock in the local stack's partners profile (§12.8,
+// p1-connector-framework task 8.1): a service that runs Prism at an exact version on that document, from an image pinned by
+// digest, so local mode starts it without the partner and make up starts without it.
+// req: platform/local-mode Local edge, email, messaging and partner substitutes
+func TestEveryPartnerDocumentIsMocked(t *testing.T) {
+	root := repoRoot(t)
+	docs, err := filepath.Glob(filepath.Join(root, "contracts", "partners", "*.yaml"))
+	if err != nil || len(docs) == 0 {
+		t.Fatalf("no partner documents: %v", err)
+	}
+	raw, err := os.ReadFile(filepath.Join(root, "deploy", "local", "compose.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var compose struct {
+		Services map[string]struct {
+			Image    string   `yaml:"image"`
+			Profiles []string `yaml:"profiles"`
+			Command  []string `yaml:"command"`
+		} `yaml:"services"`
+	}
+	if err := yaml.Unmarshal(raw, &compose); err != nil {
+		t.Fatal(err)
+	}
+	prism := regexp.MustCompile(`^@stoplight/prism-cli@\d+\.\d+\.\d+$`)
+	for _, doc := range docs {
+		want := "/partners/" + filepath.Base(doc)
+		found := false
+		for name, s := range compose.Services {
+			if !slices.Contains(s.Command, want) {
+				continue
+			}
+			found = true
+			switch {
+			case !slices.Equal(s.Profiles, []string{"partners"}):
+				t.Errorf("%s mocks %s outside the partners profile: %v", name, want, s.Profiles)
+			case !strings.Contains(s.Image, "@sha256:"):
+				t.Errorf("%s's image is not pinned by digest: %s", name, s.Image)
+			case !slices.ContainsFunc(s.Command, prism.MatchString):
+				t.Errorf("%s does not run Prism at an exact version: %v", name, s.Command)
+			}
+		}
+		if !found {
+			t.Errorf("contracts/partners/%s has no mock in deploy/local/compose.yaml's partners profile", filepath.Base(doc))
+		}
+	}
+}

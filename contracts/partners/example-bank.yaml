@@ -1,0 +1,44 @@
+openapi: 3.1.0
+info:
+  title: Example bank
+  version: 1.0.0
+  description: >
+    A made-up partner API, the template for the partners' documents in this directory: the local `partners` profile mocks it
+    with Prism (deploy/local/compose.yaml), so a connector is built and tested against its contract before its sandbox.
+    Replace it with a real partner's published OpenAPI document when the first bank connector arrives.
+servers:
+  - url: http://localhost:4010
+paths:
+  /accounts:
+    get:
+      operationId: listAccounts
+      summary: The accounts the connection may read
+      responses:
+        "200":
+          description: The accounts.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accounts]
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Account"
+              example:
+                accounts:
+                  - id: acc_0001
+                    name: Operating account
+                    currency: SGD
+                    balance: "12500.00"
+components:
+  schemas:
+    Account:
+      type: object
+      required: [id, name, currency, balance]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        currency: { type: string, pattern: "^[A-Z]{3}$" }
+        balance: { type: string, pattern: "^-?[0-9]+\\.[0-9]{2}$", description: "A decimal string, never a number (ENG-12)." }
