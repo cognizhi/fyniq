@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "line": {
+      "$ref": "BankLine.schema.json",
+      "description": "The line, with its match: its basis says how (exact, transfer or rule)."
+    },
+    "rule_name": {
+      "description": "The rule, when a rule did it.",
+      "examples": [
+        "AWS to hosting"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "line"
+  ],
+  "title": "AutoReconciliation",
+  "type": "object"
+}

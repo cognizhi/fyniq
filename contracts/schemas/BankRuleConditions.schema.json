@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount_max": {
+      "description": "The greatest size of the line's amount.",
+      "examples": [
+        "500.00"
+      ],
+      "pattern": "^[0-9]{1,16}(\\.[0-9]{1,4})?$",
+      "type": "string"
+    },
+    "amount_min": {
+      "description": "The least size of the line's amount, in its currency.",
+      "examples": [
+        "10.00"
+      ],
+      "pattern": "^[0-9]{1,16}(\\.[0-9]{1,4})?$",
+      "type": "string"
+    },
+    "counterparty_contains": {
+      "description": "Text the counterparty contains.",
+      "examples": [
+        "amazon web services"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "currency": {
+      "description": "The line's currency.",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "description_contains": {
+      "description": "Text the description contains.",
+      "examples": [
+        "aws"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "description_regex": {
+      "description": "A regular expression the description matches (RE2).",
+      "examples": [
+        "^GRAB\\*"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "direction": {
+      "description": "Money in or money out; left out, either.",
+      "enum": [
+        "in",
+        "out"
+      ],
+      "examples": [
+        "out"
+      ],
+      "type": "string"
+    },
+    "money_account_id": {
+      "description": "The money account the line is on.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "title": "BankRuleConditions",
+  "type": "object"
+}

@@ -30,6 +30,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/approvals/{approval_id}/challenge` (challengeApproval): Start signing a request with a passkey
 - `POST /v1/approvals/{approval_id}/reject` (rejectApproval): Reject a request
 - `POST /v1/approvals/{approval_id}/withdraw` (withdrawApproval): Withdraw your request
+- `GET /v1/auto-reconciliations` (listAutoReconciliations): List what the system reconciled
 - `POST /v1/bank-imports` (importBankStatements): Import bank statements
 - `GET /v1/bank-lines` (listBankLines): List bank lines
 - `GET /v1/bank-lines/{line_id}` (getBankLine): Get a bank line
@@ -41,7 +42,15 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bank-lines/{line_id}/match-recorded` (matchBankLineRecorded): Match a bank line to money recorded by hand
 - `POST /v1/bank-lines/{line_id}/suspend` (suspendBankLine): Put a bank line in suspense
 - `POST /v1/bank-lines/{line_id}/unreconcile` (unreconcileBankLine): Put a bank line back in the queue
+- `GET /v1/bank-reconciliations` (listBankReconciliations): List a period's reconciliations
+- `POST /v1/bank-reconciliations` (prepareBankReconciliation): Prepare a money account's reconciliation
+- `GET /v1/bank-rule-offers` (listBankRuleOffers): List the rules offered from repeated codings
+- `GET /v1/bank-rules` (listBankRules): List the bank rules
+- `POST /v1/bank-rules` (createBankRule): Create a bank rule
+- `GET /v1/bank-rules/{rule_id}` (getBankRule): Get a bank rule
+- `PUT /v1/bank-rules/{rule_id}` (replaceBankRule): Change a bank rule
 - `POST /v1/bank-rules/{rule_id}/auto-apply-approval` (requestBankRuleAutoApply): Ask for approval to let a bank rule apply by itself
+- `POST /v1/bank-rules:back-test` (backTestBankRule): Back-test bank rule conditions
 - `GET /v1/bank-transfers` (listBankTransfers): List the transfers in transit
 - `POST /v1/bank-transfers` (recordBankTransfer): Record a transfer between money accounts
 - `GET /v1/bank-transfers/{transfer_id}` (getBankTransfer): Get a transfer
@@ -70,6 +79,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bills/{bill_id}/post-approval` (requestBillPost): Ask for approval to post a bill
 - `POST /v1/bills/{bill_id}/void` (voidBill): Void a posted bill
 - `POST /v1/bills/{bill_id}/void-approval` (requestBillVoid): Ask for approval to void a bill
+- `GET /v1/cash-position` (getCashPosition): Get the cash position
 - `GET /v1/close-checklist-template` (getCloseChecklistTemplate): Get the close checklist template
 - `PUT /v1/close-checklist-template` (replaceCloseChecklistTemplate): Change the close checklist template
 - `GET /v1/connector-catalogue` (listConnectorCatalogue): List the connectors of this release
@@ -193,6 +203,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/money-accounts/{money_account_id}` (getMoneyAccount): Get a money account
 - `PUT /v1/money-accounts/{money_account_id}` (replaceMoneyAccount): Change a money account
 - `POST /v1/money-accounts/{money_account_id}/gaps/{gap_id}/resolve` (resolveBankGap): Resolve a gap in a money account's statements
+- `GET /v1/money-accounts/{money_account_id}/reconciliations/{period_id}` (getBankReconciliation): Get a money account's reconciliation for a period
+- `POST /v1/money-accounts/{money_account_id}/reconciliations/{period_id}/sign` (signBankReconciliation): Sign off a money account's reconciliation
 - `POST /v1/money-accounts/{money_account_id}/sources` (addMoneyAccountSource): Change where a money account's data comes from
 - `GET /v1/money-accounts/{money_account_id}/statements` (listBankStatements): List a money account's statements
 - `GET /v1/notification-preferences` (getNotificationPreferences): Get your notification preferences

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "lines": {
+      "description": "How many lines were coded so.",
+      "examples": [
+        5
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "then": {
+      "$ref": "BankRuleAction.schema.json",
+      "description": "How they were coded."
+    },
+    "when": {
+      "$ref": "BankRuleConditions.schema.json",
+      "description": "The conditions the lines share."
+    }
+  },
+  "required": [
+    "when",
+    "then",
+    "lines"
+  ],
+  "title": "BankRuleOffer",
+  "type": "object"
+}

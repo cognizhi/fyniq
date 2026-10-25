@@ -28,6 +28,9 @@ import (
 // was entered.
 const CodeNoStatement = "BANK-10"
 
+// CodeTyped is a statement balance typed in Founder mode, where it comes only from an imported statement or feed (FM-5).
+const CodeTyped = "BANK-12"
+
 // ReconcileRequest is a reconciliation to prepare: the money account, the period, and the statement's balance at the
 // period's end when it is entered from an e-statement (nil: the latest imported statement closing on or before the
 // period's end).
@@ -35,6 +38,7 @@ type ReconcileRequest struct {
 	MoneyAccountID   uuid.UUID
 	PeriodID         uuid.UUID
 	StatementBalance *money.Money
+	Founder          bool // the organisation is in Founder mode, so a typed statement balance is refused (FM-5)
 	At               time.Time
 }
 
@@ -98,6 +102,10 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, r ReconcileRequest) (Rec
 	base, err := money.Lookup(o.BaseCurrency)
 	if err != nil {
 		return ReconciledPeriod{}, err
+	}
+	if r.StatementBalance != nil && r.Founder {
+		return ReconciledPeriod{}, refuse(CodeTyped, "Import the bank's statement for the month: in Founder mode the balance comes from it, never typed (FM-5).",
+			"the statement balance of %s was typed", acct.Name)
 	}
 	out := ReconciledPeriod{StatementDate: p.EndsOn}
 	stmt := r.StatementBalance

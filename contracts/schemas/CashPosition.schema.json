@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accounts": {
+      "description": "Each open money account, by currency then name.",
+      "items": {
+        "$ref": "CashAccount.schema.json"
+      },
+      "type": "array"
+    },
+    "date": {
+      "description": "The day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "no_rate": {
+      "description": "The accounts in another currency with no rate for the day, left out of the total.",
+      "items": {
+        "description": "A money account's name.",
+        "examples": [
+          "Wise USD"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "The total in the base currency of those with a value."
+    }
+  },
+  "required": [
+    "date",
+    "accounts",
+    "total",
+    "no_rate"
+  ],
+  "title": "CashPosition",
+  "type": "object"
+}

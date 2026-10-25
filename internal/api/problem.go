@@ -595,6 +595,7 @@ var codeFacts = map[string]struct {
 	banking.CodeAutoOn:      {409, "The rule applies by itself already"},
 	banking.CodeRuleOff:     {409, "The rule is switched off"},
 	banking.CodeLineState:   {409, "The line is not where that needs it"},
+	banking.CodeTyped:       {422, "A typed statement balance in Founder mode"},
 
 	// Bank transactions, matches and transfers (FR-BNK-05…09).
 	banktransaction.CodeNotTransaction: {404, "Not a bank transaction"},

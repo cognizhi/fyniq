@@ -529,6 +529,20 @@ var (
 	GetBankTransfer       = Policy{Operation: "getBankTransfer", Capability: BankTransactions, Need: View}
 	CompleteBankTransfer  = Policy{Operation: "completeBankTransfer", Capability: BankTransactions, Need: Post}
 	UndoBankTransfer      = Policy{Operation: "undoBankTransfer", Capability: BankTransactions, Need: Post}
+	// Rules are written under C (FR-BNK-05); a reconciliation is prepared under C on "Bank reconciliation sign-off" and
+	// signed under A, by another person (FR-BNK-10, FM-5).
+	ListBankRules             = Policy{Operation: "listBankRules", Capability: BankTransactions, Need: View}
+	CreateBankRule            = Policy{Operation: "createBankRule", Capability: BankTransactions, Need: Create}
+	GetBankRule               = Policy{Operation: "getBankRule", Capability: BankTransactions, Need: View}
+	ReplaceBankRule           = Policy{Operation: "replaceBankRule", Capability: BankTransactions, Need: Create}
+	BackTestBankRule          = Policy{Operation: "backTestBankRule", Capability: BankTransactions, Need: View}
+	ListBankRuleOffers        = Policy{Operation: "listBankRuleOffers", Capability: BankTransactions, Need: View}
+	ListAutoReconciliations   = Policy{Operation: "listAutoReconciliations", Capability: BankTransactions, Need: View}
+	GetCashPosition           = Policy{Operation: "getCashPosition", Capability: BankTransactions, Need: View}
+	GetBankReconciliation     = Policy{Operation: "getBankReconciliation", Capability: BankReconciliation, Need: View}
+	ListBankReconciliations   = Policy{Operation: "listBankReconciliations", Capability: BankReconciliation, Need: View}
+	PrepareBankReconciliation = Policy{Operation: "prepareBankReconciliation", Capability: BankReconciliation, Need: Create}
+	SignBankReconciliation    = Policy{Operation: "signBankReconciliation", Capability: BankReconciliation, Need: Approve}
 	// Rendering an invoice as its document (FR-AR-05) reads it.
 	GetInvoiceDocument = Policy{Operation: "getInvoiceDocument", Capability: Invoices, Need: View}
 	// Emailing an issued invoice or a sent quote to the customer (FR-AR-06) speaks for the company to the outside, as
@@ -870,6 +884,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	CreateStatementMapping, ReplaceStatementMapping, ImportBankStatements, ListBankStatements, ListBankLines, GetBankLine,
 	CategoriseBankLine, SuspendBankLine, MatchBankLineInvoices, MatchBankLineBills, MatchBankLineRecorded, KeepBankLine, ExcludeBankLine,
 	UnreconcileBankLine, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,
+	ListBankRules, CreateBankRule, GetBankRule, ReplaceBankRule, BackTestBankRule, ListBankRuleOffers, ListAutoReconciliations, GetCashPosition,
+	GetBankReconciliation, ListBankReconciliations, PrepareBankReconciliation, SignBankReconciliation,
 	ListQuotes, GetQuote, GetSalesPipeline, CreateQuote, ReplaceQuote, SendQuote, CancelQuote, AcceptQuote, DeclineQuote, InvoiceQuote,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,

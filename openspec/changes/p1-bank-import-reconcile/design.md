@@ -275,6 +275,14 @@ connector without a gap; the RAPID connector itself is P2.
   transferred, suspended, excluded, duplicate resolved), `bank_rule.*`, `auto_reconciliation.*` (made, undone),
   `bank_transfer.*`, `bank_signal.*`, `bank_reconciliation.*` (prepared, signed off), each in the transaction of
   its change.
+- As built (task 9.1): `/v1/money-accounts` (with sources, gaps, statements and reconciliations under it),
+  `/v1/statement-mappings`, `/v1/bank-imports` (multipart, scanned, kept under `statements/` in the staging store,
+  then auto-reconciled after the commit), `/v1/bank-lines` with `categorise`, `suspend`, `match-invoices`,
+  `match-bills`, `match-recorded`, `keep`, `exclude` and `unreconcile` (each at the line's ETag), `/v1/bank-transfers`,
+  `/v1/bank-rules` with `:back-test` (exempt from Idempotency-Key and Prefer, as it saves nothing), `/v1/bank-rule-offers`,
+  `/v1/auto-reconciliations`, `/v1/bank-reconciliations` (prepare; FM-5 refuses a typed balance in Founder mode, BANK-12)
+  with sign-off under A on "Bank reconciliation sign-off", stepped up, and `/v1/cash-position`. Posting actions need P on
+  "Bank transactions, categorise" and pass the team mode's conflict check; sources need C on "Bank data… connections".
 
 ## Risks / Trade-offs
 

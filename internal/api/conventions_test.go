@@ -31,6 +31,8 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "revokePasskey Prefer", "signOutDevice Prefer", "signOutOtherDevices Idempotency-Key", "signOutOtherDevices Prefer")
 	// A preview saves nothing, so a repeat is harmless and return=preview would answer the same (rev 0.97).
 	want = append(want, "previewDocumentTemplate Idempotency-Key", "previewDocumentTemplate Prefer")
+	// A back-test saves nothing either (FR-BNK-05).
+	want = append(want, "backTestBankRule Idempotency-Key", "backTestBankRule Prefer")
 	slices.Sort(want)
 	var got []string
 	for _, op := range operations(testAPI(t)) {

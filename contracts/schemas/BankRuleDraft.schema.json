@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "active": {
+      "description": "Whether it suggests at all.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "name": {
+      "description": "The rule's name.",
+      "examples": [
+        "AWS to hosting"
+      ],
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "position": {
+      "description": "Its place in the order: the first rule a line meets codes it.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "maximum": 10000,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "then": {
+      "$ref": "BankRuleAction.schema.json",
+      "description": "How it codes the line."
+    },
+    "when": {
+      "$ref": "BankRuleConditions.schema.json",
+      "description": "What a line must meet."
+    }
+  },
+  "required": [
+    "name",
+    "position",
+    "active",
+    "when",
+    "then"
+  ],
+  "title": "BankRuleDraft",
+  "type": "object"
+}

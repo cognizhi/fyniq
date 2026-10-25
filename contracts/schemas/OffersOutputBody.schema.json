@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The rules offered, most lines first.",
+      "items": {
+        "$ref": "BankRuleOffer.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "The next page's cursor; absent on the last page.",
+      "examples": [
+        "MDE5MjhmNmU"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "OffersOutputBody",
+  "type": "object"
+}

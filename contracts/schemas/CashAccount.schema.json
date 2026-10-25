@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "balance": {
+      "$ref": "Money.schema.json",
+      "description": "Its balance in its currency on the day."
+    },
+    "kind": {
+      "description": "Its kind.",
+      "enum": [
+        "bank",
+        "card",
+        "wallet",
+        "payment_gateway",
+        "cash"
+      ],
+      "examples": [
+        "bank"
+      ],
+      "type": "string"
+    },
+    "money_account_id": {
+      "description": "The money account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "DBS current"
+      ],
+      "type": "string"
+    },
+    "rate": {
+      "description": "The rate used, base currency per unit.",
+      "examples": [
+        "1.3472"
+      ],
+      "type": "string"
+    },
+    "rate_date": {
+      "description": "The day the rate is of.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "value": {
+      "$ref": "Money.schema.json",
+      "description": "Its value in the base currency at the day's rate; absent in the base currency, or with no rate."
+    }
+  },
+  "required": [
+    "money_account_id",
+    "name",
+    "kind",
+    "balance"
+  ],
+  "title": "CashAccount",
+  "type": "object"
+}

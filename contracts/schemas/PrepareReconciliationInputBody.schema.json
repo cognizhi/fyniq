@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "money_account_id": {
+      "description": "The money account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "period_id": {
+      "description": "The period.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "statement_balance": {
+      "$ref": "Money.schema.json",
+      "description": "The balance an e-statement shows at the period's end, entered: refused in Founder mode, where it comes only from an imported statement or feed (FM-5). Left out, the closing balance of the latest statement imported up to the period's end."
+    }
+  },
+  "required": [
+    "money_account_id",
+    "period_id"
+  ],
+  "title": "PrepareReconciliationInputBody",
+  "type": "object"
+}
