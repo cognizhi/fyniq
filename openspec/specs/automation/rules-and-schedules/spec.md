@@ -59,6 +59,10 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **WHEN** the tick runs `bank.releases`, hourly at five to
 - **THEN** it posts the releases of categorised bank lines' spreads due by each organisation's own today (FR-GL-03, ENG-05, Appendix B.1), as `scheduler:bank.releases`
 
+#### Scenario: The weekly sample of auto-reconciliations (rev 0.142)
+- **WHEN** the tick runs `bank.review-sample`, weekly on Monday at 02:00 in Singapore
+- **THEN** it puts the previous week's 5 largest auto-reconciliations and 5 others at random in each organisation's weekly review (FR-BNK-14, FM-3), as `scheduler:bank.review-sample`
+
 ### Requirement: FR-AUT-02 Automated postings under a system principal
 Every automated posting SHALL run under a named system principal with its own audit identity, and SHALL respect period locks and approval policies.
 

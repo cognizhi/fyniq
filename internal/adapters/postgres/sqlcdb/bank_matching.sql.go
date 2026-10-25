@@ -217,7 +217,7 @@ func (q *Queries) BankRules(ctx context.Context) ([]FyniqBankRule, error) {
 }
 
 const bankTransfer = `-- name: BankTransfer :one
-SELECT organisation_id, id, from_account_id, to_account_id, from_line_id, to_line_id, on_date, from_currency, from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, entry_id, made_by, made_at, version FROM fyniq.bank_transfer WHERE id = $1
+SELECT organisation_id, id, from_account_id, to_account_id, from_line_id, to_line_id, on_date, from_currency, from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, entry_id, made_by, made_at, version, undone_by, undone_at, undo_reason FROM fyniq.bank_transfer WHERE id = $1
 `
 
 func (q *Queries) BankTransfer(ctx context.Context, id uuid.UUID) (FyniqBankTransfer, error) {
@@ -242,14 +242,18 @@ func (q *Queries) BankTransfer(ctx context.Context, id uuid.UUID) (FyniqBankTran
 		&i.MadeBy,
 		&i.MadeAt,
 		&i.Version,
+		&i.UndoneBy,
+		&i.UndoneAt,
+		&i.UndoReason,
 	)
 	return i, err
 }
 
 const bankTransfersInTransit = `-- name: BankTransfersInTransit :many
-SELECT organisation_id, id, from_account_id, to_account_id, from_line_id, to_line_id, on_date, from_currency, from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, entry_id, made_by, made_at, version FROM fyniq.bank_transfer WHERE from_line_id IS NULL OR to_line_id IS NULL ORDER BY on_date, id
+SELECT organisation_id, id, from_account_id, to_account_id, from_line_id, to_line_id, on_date, from_currency, from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, entry_id, made_by, made_at, version, undone_by, undone_at, undo_reason FROM fyniq.bank_transfer WHERE (from_line_id IS NULL OR to_line_id IS NULL) AND undone_at IS NULL ORDER BY on_date, id
 `
 
+// Transfers with a side not yet matched, leaving out those undone.
 func (q *Queries) BankTransfersInTransit(ctx context.Context) ([]FyniqBankTransfer, error) {
 	rows, err := q.db.Query(ctx, bankTransfersInTransit)
 	if err != nil {
@@ -278,6 +282,9 @@ func (q *Queries) BankTransfersInTransit(ctx context.Context) ([]FyniqBankTransf
 			&i.MadeBy,
 			&i.MadeAt,
 			&i.Version,
+			&i.UndoneBy,
+			&i.UndoneAt,
+			&i.UndoReason,
 		); err != nil {
 			return nil, err
 		}
@@ -334,7 +341,7 @@ UPDATE fyniq.bank_transfer
    SET from_line_id = coalesce(from_line_id, $1), to_line_id = coalesce(to_line_id, $2),
        entry_id = coalesce(entry_id, $3), version = version + 1
  WHERE id = $4 AND version = $5
-RETURNING organisation_id, id, from_account_id, to_account_id, from_line_id, to_line_id, on_date, from_currency, from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, entry_id, made_by, made_at, version
+RETURNING organisation_id, id, from_account_id, to_account_id, from_line_id, to_line_id, on_date, from_currency, from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, entry_id, made_by, made_at, version, undone_by, undone_at, undo_reason
 `
 
 type CompleteBankTransferParams struct {
@@ -373,6 +380,9 @@ func (q *Queries) CompleteBankTransfer(ctx context.Context, arg CompleteBankTran
 		&i.MadeBy,
 		&i.MadeAt,
 		&i.Version,
+		&i.UndoneBy,
+		&i.UndoneAt,
+		&i.UndoReason,
 	)
 	return i, err
 }
@@ -599,7 +609,7 @@ SELECT $1, $2, $3, $4, $5,
   f.code, f.minor_units, $6::numeric, t.code, t.minor_units, $7::numeric, $8::numeric,
   $9, $10, $11
   FROM fyniq.currencies f, fyniq.currencies t WHERE f.code = $12 AND t.code = $13
-RETURNING organisation_id, id, from_account_id, to_account_id, from_line_id, to_line_id, on_date, from_currency, from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, entry_id, made_by, made_at, version
+RETURNING organisation_id, id, from_account_id, to_account_id, from_line_id, to_line_id, on_date, from_currency, from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, entry_id, made_by, made_at, version, undone_by, undone_at, undo_reason
 `
 
 type InsertBankTransferParams struct {
@@ -654,6 +664,9 @@ func (q *Queries) InsertBankTransfer(ctx context.Context, arg InsertBankTransfer
 		&i.MadeBy,
 		&i.MadeAt,
 		&i.Version,
+		&i.UndoneBy,
+		&i.UndoneAt,
+		&i.UndoReason,
 	)
 	return i, err
 }
@@ -880,6 +893,56 @@ func (q *Queries) UndoBankMatch(ctx context.Context, arg UndoBankMatchParams) (F
 		&i.RuleID,
 		&i.MadeBy,
 		&i.MadeAt,
+		&i.UndoneBy,
+		&i.UndoneAt,
+		&i.UndoReason,
+	)
+	return i, err
+}
+
+const undoBankTransfer = `-- name: UndoBankTransfer :one
+UPDATE fyniq.bank_transfer
+   SET undone_by = $1, undone_at = $2, undo_reason = $3, version = version + 1
+ WHERE id = $4 AND version = $5
+RETURNING organisation_id, id, from_account_id, to_account_id, from_line_id, to_line_id, on_date, from_currency, from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, entry_id, made_by, made_at, version, undone_by, undone_at, undo_reason
+`
+
+type UndoBankTransferParams struct {
+	UndoneBy   *string
+	UndoneAt   *time.Time
+	UndoReason *string
+	ID         uuid.UUID
+	Version    int32
+}
+
+func (q *Queries) UndoBankTransfer(ctx context.Context, arg UndoBankTransferParams) (FyniqBankTransfer, error) {
+	row := q.db.QueryRow(ctx, undoBankTransfer,
+		arg.UndoneBy,
+		arg.UndoneAt,
+		arg.UndoReason,
+		arg.ID,
+		arg.Version,
+	)
+	var i FyniqBankTransfer
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.FromAccountID,
+		&i.ToAccountID,
+		&i.FromLineID,
+		&i.ToLineID,
+		&i.OnDate,
+		&i.FromCurrency,
+		&i.FromMinorUnits,
+		&i.FromAmount,
+		&i.ToCurrency,
+		&i.ToMinorUnits,
+		&i.ToAmount,
+		&i.Fee,
+		&i.EntryID,
+		&i.MadeBy,
+		&i.MadeAt,
+		&i.Version,
 		&i.UndoneBy,
 		&i.UndoneAt,
 		&i.UndoReason,

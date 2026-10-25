@@ -23,7 +23,7 @@ import (
 // ReviewLogItem is a high-risk action that executed, with its review once it has one.
 type ReviewLogItem struct {
 	ID             string     `json:"id" format:"uuid" doc:"The entry's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f50"`
-	Kind           string     `json:"kind" enum:"approved_change,founder_bootstrap,self_approved" doc:"approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2)." example:"approved_change"`
+	Kind           string     `json:"kind" enum:"approved_change,founder_bootstrap,self_approved,scheduled_issue,auto_reconciled" doc:"approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14)." example:"approved_change"`
 	ObjectType     string     `json:"object_type" doc:"What it changed." example:"organisation_setting"`
 	ObjectKey      string     `json:"object_key" doc:"Which one." example:"bank.tolerance_base"`
 	Summary        string     `json:"summary" doc:"What it did, in a sentence." example:"Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20"`

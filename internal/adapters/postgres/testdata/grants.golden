@@ -55,7 +55,7 @@ fyniq_api       INSERT    bank_statement (closing_balance, connector_id, currenc
 fyniq_api       SELECT    bank_statement
 fyniq_api       INSERT    bank_transfer (entry_id, fee, from_account_id, from_amount, from_currency, from_line_id, from_minor_units, made_at, made_by, on_date, to_account_id, to_amount, to_currency, to_line_id, to_minor_units)
 fyniq_api       SELECT    bank_transfer
-fyniq_api       UPDATE    bank_transfer (entry_id, from_line_id, to_line_id, version)
+fyniq_api       UPDATE    bank_transfer (entry_id, from_line_id, to_line_id, undo_reason, undone_at, undone_by, version)
 fyniq_api       EXECUTE   beat()
 fyniq_api       INSERT    bill_payment_plan (bill_id, planned_on, recorded_by)
 fyniq_api       SELECT    bill_payment_plan
@@ -473,7 +473,7 @@ fyniq_worker    INSERT    bank_statement (closing_balance, connector_id, currenc
 fyniq_worker    SELECT    bank_statement
 fyniq_worker    INSERT    bank_transfer (entry_id, fee, from_account_id, from_amount, from_currency, from_line_id, from_minor_units, made_at, made_by, on_date, to_account_id, to_amount, to_currency, to_line_id, to_minor_units)
 fyniq_worker    SELECT    bank_transfer
-fyniq_worker    UPDATE    bank_transfer (entry_id, from_line_id, to_line_id, version)
+fyniq_worker    UPDATE    bank_transfer (entry_id, from_line_id, to_line_id, undo_reason, undone_at, undone_by, version)
 fyniq_worker    EXECUTE   beat()
 fyniq_worker    SELECT    bill_payment_plan
 fyniq_worker    SELECT    capture_address

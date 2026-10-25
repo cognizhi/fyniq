@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/cognizhi/fyniq/compliance"
-	"github.com/cognizhi/fyniq/internal/connector"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
@@ -135,6 +136,9 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		"bank.releases": func(ctx context.Context) error {
 			_, err := journal.ReleaseBankTransactionsDueAll(ctx, k.Store, clock.Now())
 			return err
+		},
+		"bank.review-sample": func(ctx context.Context) error { // FR-BNK-14, FM-3: the week's sample into the review
+			return banking.SampleAll(ctx, k.Store, clock.Now())
 		},
 		"quotes.expiry": func(ctx context.Context) error {
 			_, err := journal.ExpireQuotesDueAll(ctx, k.Store, clock.Now())

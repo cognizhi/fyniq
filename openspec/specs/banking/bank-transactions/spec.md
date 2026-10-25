@@ -277,6 +277,14 @@ Source: PRD-001 §8.4 · Priority M · Phase P1 (imports) / P2 (feeds)
 - **AND** it can be undone while the period is open
 - **AND** a sample enters the weekly review (FM-3)
 
+#### Scenario: The recommended limits (rev 0.142)
+- **WHEN** an organisation has not changed them
+- **THEN** a line above S$500 is not auto-reconciled, and one rule auto-reconciles at most S$2,000 of lines a day (the owner's decision of 25 Oct 2026)
+
+#### Scenario: The weekly sample (rev 0.142)
+- **WHEN** a week ends
+- **THEN** its 5 largest auto-reconciliations and 5 others at random enter the weekly review, once each
+
 #### Scenario: Ambiguous lines and AI suggestions stay in the queue
 - **WHEN** a line is ambiguous or has only an AI suggestion
 - **THEN** it stays in the queue

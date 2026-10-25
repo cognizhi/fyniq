@@ -354,6 +354,9 @@ type FyniqBankTransfer struct {
 	MadeBy         string
 	MadeAt         time.Time
 	Version        int32
+	UndoneBy       *string
+	UndoneAt       *time.Time
+	UndoReason     *string
 }
 
 type FyniqBillPaymentPlan struct {

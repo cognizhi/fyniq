@@ -4,7 +4,7 @@ type: task
 title: Change or reset an organisation setting, or edit the profile
 summary: Change a company-wide setting from a date, reset it to recommended, why some need a second approver, and edit the profile
 sources:
-  - docs/user-guide/organisation-settings.md sha256:cdb4dad416d182f14ba56e2652cdaba28eeab5873b0303f7073dc90c684f529c
+  - docs/user-guide/organisation-settings.md sha256:38bdd8a59c54b3b9d5e796cfde412a0ab0beafbb6059ef70c9bb2ab7d682398d
 data_class: general
 taint: trusted
 status: draft
@@ -33,7 +33,7 @@ aliases:
 
 ## Settings that need a second approver
 
-- Thresholds, retention, the accounting sign-off, the bank charges account, the AI assistant and details in notification email need a second approver.
+- Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, the AI assistant and details in notification email need a second approver.
 - They show **Needs a second approver**, and the button says **Ask for approval** instead of **Save**. Saving a change to one asks for approval: the setting keeps its value until another member who approves settings, such as an Owner, approves it ([[approvals.decide]]).
 
 (src: docs/user-guide/organisation-settings.md#settings-that-need-a-second-approver)

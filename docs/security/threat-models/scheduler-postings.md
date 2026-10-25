@@ -5,7 +5,7 @@
 | Feature and requirement IDs | Automatic reversals and recurring journals: FR-GL-02, FR-AUT-01, FR-AUT-02, SOD-3, FM-1, FM-2 (PRD-001 rev 0.55, the founders' decisions of rev 0.58, rev 0.59 and rev 0.60); the month-end revaluation: FR-GL-04 (rev 0.75, the founder's decision of 22 Oct 2026); the releases of bills' spread costs: FR-GL-03, ENG-05 (rev 0.83), of invoices' spread revenue (rev 0.118) and of categorised bank lines' spreads: Appendix B.1 (rev 0.141); recurring bills: FR-AP-09 (rev 0.84, the owner's decision of 22 Oct 2026) |
 | Author, reviewer, date | Claude Code for the founders, 21 Oct 2026, revaluation 22 Oct 2026, releases and recurring bills 23 Oct 2026, invoices' releases 24 Oct 2026, bank lines' releases 25 Oct 2026; second review at sign-off (waived before production, AGENTS.md) |
 | Data and its class | Journal, bill, invoice and bank line amounts, accounts, suppliers, customers and memos (confidential); no personal data, bank numbers or secrets |
-| Who acts | The platform jobs `journals.auto-reverse`, `journals.recurring`, `fx.revalue`, `bills.releases`, `bills.recurring`, `invoices.releases` and `bank.releases`, as the principals `scheduler:journals.auto-reverse`, `scheduler:journals.recurring`, `scheduler:fx.revalue`, `scheduler:bills.releases`, `scheduler:bills.recurring`, `scheduler:invoices.releases` and `scheduler:bank.releases`, with the worker's database role `fyniq_worker`; the people who keep recurring journals and recurring bills and post their drafts |
+| Who acts | The platform jobs `journals.auto-reverse`, `journals.recurring`, `fx.revalue`, `bills.releases`, `bills.recurring`, `invoices.releases`, `bank.releases` and `bank.review-sample`, as the principals `scheduler:journals.auto-reverse`, `scheduler:journals.recurring`, `scheduler:fx.revalue`, `scheduler:bills.releases`, `scheduler:bills.recurring`, `scheduler:invoices.releases`, `scheduler:bank.releases` and `scheduler:bank.review-sample`, with the worker's database role `fyniq_worker`; the people who keep recurring journals and recurring bills and post their drafts |
 
 ## 1. What we are building
 
@@ -19,7 +19,8 @@ whose date has come (rev 0.83): Dr the line's account, Cr 1210, from the bill's 
 `invoices.releases` each month's part of an invoice's spread revenue (rev 0.118): Dr 2400, Cr the line's account, from
 the invoice's own posted entry, and `bank.releases` each month's part of a categorised bank line's spread (rev
 0.141): from 1210 to the part's account for money out, from 2400 for money in, from the bank transaction's own posted
-entry; and
+entry; weekly, `bank.review-sample` lists the previous week's sample of auto-reconciliations for the weekly review
+(rev 0.142), posting nothing; and
 `bills.recurring` makes the draft bill of each recurring bill's occurrence that has come (rev 0.84), which a person
 completes with the supplier's number and posts. All of them run in the worker with `fyniq_worker`, which also sends
 email and finalises evidence.
