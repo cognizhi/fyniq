@@ -87,9 +87,29 @@ signed amount or in and out columns, the columns of each field), offered from th
 A categorised line posts through the engine with a new rule set (Appendix B.1): money account ± signed gross; 2200
 takes − `RND-GST-INCL`(signed gross) when the organisation is registered at the line's date and the code carries GST;
 the category takes the rest; a spread puts the category leg on 1210 or 2400 and releases it monthly by
-`ALLOC-EVEN` from the posting month (recognition schedules as journals do). The posting's source is the line, in the
-same unit of work as its status change (ENG-02). The independent oracle gets the same rules from Appendix B.1 in a
-session of its own (golden rule 3); the differential runs then cover bank lines.
+`ALLOC-EVEN` from the posting month (recognition schedules as journals do). The independent oracle gets the same rules
+from Appendix B.1 in a session of its own (golden rule 3); the differential runs then cover bank lines.
+
+As built (task 4.1, rev 0.141): the posting's source is a document of its own, `bank_transaction` (unnumbered),
+written with its entry, the match and the line's status in one unit of work (ENG-02). A document gives the
+categorisation what every other posting source has: a version that keeps its parts, the GST rate of each and the
+exchange rate it posted with (so the replay never re-derives them), evidence, a reversal when undone, and the spread
+scheduler, whose query reads `date` and `lines[].spread_months` from any document's payload.
+
+- `bank_transaction@1`: the line's signed gross on the money account (RND-FX at the cascade's rate for the booking
+  date); per part RND-FX of its share, GST under RND-GST-INCL of that, the rest to its account or to 1210 / 2400;
+  for a split line in another currency the cent RND-FX leaves between the parts and the line goes to 7030, as a bill's
+  does. Every part has the line's direction; a money account (a transfer, D6) or receivables and payables (a match,
+  D5) are refused as categories; 2200 is a category only with no GST (a payment to or from IRAS).
+- Releases: `bank_out_release@1` (Dr the part's account, Cr 1210) and `bank_in_release@1` (Dr 2400, Cr the part's
+  account), posted at once up to today and then by the hourly job `bank.releases` as `scheduler:bank.releases`.
+- A part on 2999 makes the match `suspense` and keeps the line in the queue; classifying it reverses the suspense
+  posting in the same unit of work (D7). An undo reverses the transaction and its releases on their own dates and
+  puts the line back; a new categorisation is a new document.
+- The database refuses a categorised or suspense match whose transaction is not its line's, or whose entry does not
+  post the line's amount on its booking date (FY228), and a release of a transaction no longer posted (FY227).
+- *Alternative:* the line itself as the source, versioned by its match. Rejected: the parts, GST rates and spreads
+  would need a store of their own, and the spread scheduler and evidence would need a second path.
 
 ### D5. Matching creates the receipt or payment, or matches one recorded by hand
 

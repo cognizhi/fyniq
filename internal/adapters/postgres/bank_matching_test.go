@@ -4,7 +4,9 @@ package postgres_test
 
 import (
 	"context"
+	"fmt"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -61,6 +63,30 @@ func newBankedBooks(t *testing.T, name string, now time.Time) bankedBooks {
 	return out
 }
 
+// postedLine posts a line to an account as a categorisation does: its bank transaction, whose version names the line,
+// and an entry with the line's amount on the money account on its booking date (FY228).
+func postedLine(ctx context.Context, u storage.UnitOfWork, m storage.MoneyAccount, line storage.BankLine, to uuid.UUID) (storage.Document, storage.Entry, error) {
+	doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentBankTransaction,
+		Payload: []byte(fmt.Sprintf(`{"bank_line_id":%q,"date":%q,"lines":[]}`, line.ID, line.BookingDate.Format(time.DateOnly)))})
+	if err != nil {
+		return doc, storage.Entry{}, err
+	}
+	amount := string(line.Amount)
+	neg := "-" + amount
+	if strings.HasPrefix(amount, "-") {
+		neg = amount[1:]
+	}
+	e, err := u.Ledger().Append(ctx, storage.NewEntry{PostingDate: line.BookingDate, PostingIdentity: "bank_transaction:" + doc.ID.String() + ":v1:test@1",
+		RuleVersion: "test@1", Source: storage.Source{Type: "bank_transaction", ID: doc.ID.String(), Version: 1}, Lines: []storage.NewLine{
+			{AccountID: m.AccountID, Currency: line.Currency, Amount: storage.Decimal(amount), FXRate: "1", FXRateSource: "base", BaseAmount: storage.Decimal(amount)},
+			{AccountID: to, Currency: "SGD", Amount: storage.Decimal(neg), FXRate: "1", FXRateSource: "base", BaseAmount: storage.Decimal(neg)},
+		}})
+	if err != nil {
+		return doc, e, err
+	}
+	return doc, e, u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted)
+}
+
 // Rules, matches, transfers, signals and reconciliations keep what they recorded (migration 000145): a rule auto-applies
 // only under its approved request; a line has one live match, undone once and only while its period is open; a
 // transfer's legs are its money out and money in; a signal closes once; a reconciliation is signed once, by another
@@ -99,16 +125,17 @@ func TestBankMatchingKeepsWhatItRecorded(t *testing.T) {
 		t.Fatalf("change a rule: %+v, %v", rule, err)
 	}
 
-	// A categorised line: its match names the entry posted.
+	// A categorised line: its match names the bank transaction and the entry posted.
 	var entry storage.Entry
+	var txn storage.Document
 	line := a.lines[2]
 	var match storage.BankMatch
 	if err := do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
-		if entry, err = u.Ledger().Append(ctx, porttest.Sale("bank-line-3", porttest.Day(10, 5), a.Books, "20.00")); err != nil {
+		if txn, entry, err = postedLine(ctx, u, a.sgd, line, a.Rent.ID); err != nil {
 			return err
 		}
-		if match, err = u.BankMatching().MakeMatch(ctx, storage.NewBankMatch{LineID: line.ID, Kind: storage.MatchCategorised, EntryID: &entry.ID,
-			Basis: storage.BasisPerson, At: now}); err != nil {
+		if match, err = u.BankMatching().MakeMatch(ctx, storage.NewBankMatch{LineID: line.ID, Kind: storage.MatchCategorised, DocumentID: &txn.ID,
+			EntryID: &entry.ID, Basis: storage.BasisPerson, At: now}); err != nil {
 			return err
 		}
 		line, err = u.Banking().SetLineStatus(ctx, line.ID, line.Version, storage.LineCategorised, now)
@@ -117,15 +144,29 @@ func TestBankMatchingKeepsWhatItRecorded(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := do(func(ctx context.Context, u storage.UnitOfWork) error {
-		_, err := u.BankMatching().MakeMatch(ctx, storage.NewBankMatch{LineID: line.ID, Kind: storage.MatchSuspense, EntryID: &entry.ID,
+		_, err := u.BankMatching().MakeMatch(ctx, storage.NewBankMatch{LineID: line.ID, Kind: storage.MatchSuspense, DocumentID: &txn.ID, EntryID: &entry.ID,
 			Basis: storage.BasisPerson, At: now})
 		return err
-	}); storage.CodeOf(err) != storage.CodeDuplicate && storage.CodeOf(err) != storage.CodeBanking {
+	}); !strings.Contains(fmt.Sprint(err), "one live match") {
 		t.Fatalf("a second live match of a line: %v", err)
 	}
+	for name, n := range map[string]storage.NewBankMatch{
+		"another line's transaction":   {LineID: a.lines[0].ID, Kind: storage.MatchCategorised, DocumentID: &txn.ID, EntryID: &entry.ID},
+		"no transaction":               {LineID: a.lines[0].ID, Kind: storage.MatchCategorised, EntryID: &entry.ID},
+		"another entry than its own":   {LineID: line.ID, Kind: storage.MatchSuspense, DocumentID: &txn.ID, EntryID: &a.lines[0].ID},
+		"a categorisation, no entry":   {LineID: a.lines[0].ID, Kind: storage.MatchCategorised, DocumentID: &txn.ID},
+	} {
+		n.Basis, n.At = storage.BasisPerson, now
+		if err := do(func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.BankMatching().MakeMatch(ctx, n)
+			return err
+		}); storage.CodeOf(err) != storage.CodeBanking && storage.CodeOf(err) != storage.CodeInvalid {
+			t.Errorf("a match of %s: %v", name, err)
+		}
+	}
 	if err := do(func(ctx context.Context, u storage.UnitOfWork) error {
-		_, err := u.BankMatching().MakeMatch(ctx, storage.NewBankMatch{LineID: a.lines[0].ID, Kind: storage.MatchCategorised, EntryID: &entry.ID,
-			Basis: storage.BasisRule, RuleID: &rule.ID, At: now})
+		_, err := u.BankMatching().MakeMatch(ctx, storage.NewBankMatch{LineID: a.lines[0].ID, Kind: storage.MatchCategorised, DocumentID: &txn.ID,
+			EntryID: &entry.ID, Basis: storage.BasisRule, RuleID: &rule.ID, At: now})
 		return err
 	}); storage.CodeOf(err) != storage.CodeBanking {
 		t.Fatalf("a match by a rule that does not auto-apply: %v", err)
@@ -227,8 +268,8 @@ func TestBankMatchingKeepsWhatItRecorded(t *testing.T) {
 		t.Fatalf("an undo twice: %v", err)
 	}
 	if err := do(func(ctx context.Context, u storage.UnitOfWork) error {
-		again, err := u.BankMatching().MakeMatch(ctx, storage.NewBankMatch{LineID: a.lines[2].ID, Kind: storage.MatchCategorised, EntryID: &entry.ID,
-			Basis: storage.BasisPerson, At: now})
+		again, err := u.BankMatching().MakeMatch(ctx, storage.NewBankMatch{LineID: a.lines[2].ID, Kind: storage.MatchCategorised, DocumentID: &txn.ID,
+			EntryID: &entry.ID, Basis: storage.BasisPerson, At: now})
 		match = again
 		return err
 	}); err != nil {

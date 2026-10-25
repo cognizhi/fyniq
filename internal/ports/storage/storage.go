@@ -448,6 +448,10 @@ const (
 	// DocumentStatement is a statement of account sent to a customer (FR-AR-08; p1-sales task 7.2): what it said, kept
 	// as it was sent. It posts nothing and is never reversed; posted is sent.
 	DocumentStatement DocumentType = "statement"
+	// DocumentBankTransaction is a bank line categorised (FR-BNK-06, FR-BNK-11; p1-bank-import-reconcile task 4.1): what
+	// it was for, its parts' accounts, GST and spreads, posted at once by bank_transaction@1 and reversed when undone. It
+	// is unnumbered: the line names it.
+	DocumentBankTransaction DocumentType = "bank_transaction"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -591,7 +595,7 @@ const (
 	CodeFXRate         = "STORAGE-FX-01"         // a rate of the base currency, a monthly rate not on a month's first day, a rate changed, or a feed rate changed
 	CodeFXRevaluation  = "STORAGE-FX-02"         // the scheduler saves a revaluation only of an open period, as that period's
 	CodeAllocation     = "STORAGE-ALLOCATION-01" // an allocation settles a bill from a bill payment, never changes, and is reversed exactly
-	CodeBillRelease    = "STORAGE-RELEASE-01"    // a release releases the spread of a posted bill's or invoice's current version
+	CodeBillRelease    = "STORAGE-RELEASE-01"    // a release releases the spread of a posted bill's, invoice's or bank transaction's current version
 	CodePurchaseOrder  = "STORAGE-PO-01"         // a purchase order posts nothing: no entry names one
 	CodeWithholding    = "STORAGE-WHT-01"        // a withholding decision never changes: a later one replaces it
 	CodeQuoteOutcome   = "STORAGE-QUOTE-01"      // a quote's outcome is of a sent quote or order, recorded once, never changed
