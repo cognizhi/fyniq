@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account the line goes to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "contact_id": {
+      "description": "The contact it names.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "gst_code": {
+      "description": "Its GST code; left out, the account's default.",
+      "examples": [
+        "TX"
+      ],
+      "maxLength": 16,
+      "type": "string"
+    },
+    "reference": {
+      "description": "A reference kept with it.",
+      "examples": [
+        "AWS"
+      ],
+      "maxLength": 140,
+      "type": "string"
+    }
+  },
+  "required": [
+    "account_id"
+  ],
+  "title": "BankRuleAction",
+  "type": "object"
+}

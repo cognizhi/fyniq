@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "by_status": {
+      "additionalProperties": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "description": "The matched lines by their status now.",
+      "examples": [
+        {
+          "categorised": 11,
+          "unreconciled": 1
+        }
+      ],
+      "type": "object"
+    },
+    "examined": {
+      "description": "The lines looked at.",
+      "examples": [
+        420
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "matched": {
+      "description": "Those the conditions meet.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "sample": {
+      "description": "The first few matched lines, latest first.",
+      "items": {
+        "$ref": "BankLine.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "examined",
+    "matched",
+    "by_status",
+    "sample"
+  ],
+  "title": "BankRuleBackTest",
+  "type": "object"
+}

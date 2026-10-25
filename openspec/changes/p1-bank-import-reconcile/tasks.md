@@ -162,7 +162,8 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   - Tests: a synthetic report through Mailpit end to end on the local stack; a missing day shown as a gap.
     `// req: FR-BNK-17`, `// req: banking/bank-transactions Daily DBS sync without a bank API`
 - [ ] 7.3 Incoming-funds alerts (design D10): a pending signal matched to an open invoice by amount and customer;
-  "likely paid" on the invoice and on Home; nothing posted; the signal closed by the statement line or expired.
+  "likely paid" on the invoice and on Home; nothing posted; the signal closed by the statement line or expired. The
+  signals' API operations (listed, and dismissed by a person) come with them, as task 9.1 left them.
   - Tests: UC-BNK-02's S$10,900 from "ACME ROBOTICS" to INV-0138, then the statement line reconciling it; the
     invoice's status and the ledger unchanged by the alert. `// req: FR-BNK-16`,
     `// req: banking/bank-transactions Incoming-funds alert speeds up matching`
@@ -197,13 +198,16 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 
 ## 9. The API
 
-- [ ] 9.1 The Banking operations (design D14), contract first: money accounts and their sources, imports with
+- [x] 9.1 The Banking operations (design D14), contract first: money accounts and their sources, imports with
   preview (the statement file an untrusted upload, checked and scanned as evidence uploads are, and kept as the
   statement's file), lines and the queue, rules with the back-test, matches, transfers, signals, auto-reconciliations and undo,
   reconciliations and sign-off, the cash position; `Idempotency-Key`, `If-Match`, `Prefer: return=preview`, RFC 9457
   `BANK-nn` codes; matrix rows for the three Appendix D rows; `make openapi` and the web client regenerated.
   - Tests: the API tests per operation and the authorisation matrix (QA-SEC-03). `// req: FR-INT-01`,
     `// req: QA-SEC-03`
+  - As built: 38 operations in three slices (money accounts, mappings, imports and the queue; line actions and
+    transfers; rules, the Auto-reconciled list, reconciliations and cash). The signals' operations moved to task 7.3,
+    where signals are built. One undo (`unreconcileBankLine`) serves every match, the Auto-reconciled list included.
 
 ## 10. The screens
 

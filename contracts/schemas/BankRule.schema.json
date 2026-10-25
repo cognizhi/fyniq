@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "active": {
+      "description": "Whether it suggests at all.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "auto_apply": {
+      "description": "Whether it reconciles lines by itself, under an approved request (FR-BNK-14).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "auto_apply_approval_id": {
+      "description": "The approval that let it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fc1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "created_by": {
+      "description": "Who made it.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01"
+      ],
+      "type": "string"
+    },
+    "from_ai_proposal": {
+      "description": "Whether an AI proposal made it.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "id": {
+      "description": "The rule's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fb1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "AWS to hosting"
+      ],
+      "type": "string"
+    },
+    "position": {
+      "description": "Its place in the order.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "problem": {
+      "description": "Why it no longer reads, when it does not: it matches nothing until it is changed.",
+      "examples": [
+        "the account is not active"
+      ],
+      "type": "string"
+    },
+    "then": {
+      "$ref": "BankRuleAction.schema.json",
+      "description": "How it codes the line."
+    },
+    "version": {
+      "description": "Its version.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "when": {
+      "$ref": "BankRuleConditions.schema.json",
+      "description": "What a line must meet."
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "position",
+    "active",
+    "when",
+    "then",
+    "auto_apply",
+    "from_ai_proposal",
+    "created_by",
+    "version"
+  ],
+  "title": "BankRule",
+  "type": "object"
+}
