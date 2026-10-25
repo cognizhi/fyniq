@@ -329,6 +329,14 @@ source must continue the chain (D2), and the monthly e-statement tie-out (D9) is
 are evidence on the money account (FR-DOC-05). Proved by switching an account from emailed reports to a fake API
 connector without a gap; the RAPID connector itself is P2.
 
+- As built (task 8.5): switching is adding a source from a later day (`addMoneyAccountSource`); the sync pulls only the
+  accounts whose source in force is the connector, and a connector's first pull starts on that source's first day, so
+  what the emailed reports brought is not pulled again and the next statement continues the chain; the reports'
+  senders stop being known once the email source is no longer in force or set ahead. The bank's agreements are files on
+  a `bank_agreement` document, one per money account, made and posted with its first file (it posts nothing and is never
+  reversed, FY231), so each file is committed to the retention-locked store at once and is append-only
+  (`addMoneyAccountEvidence`, `listMoneyAccountEvidence`). The RAPID connector itself is P2.
+
 ### D14. API, ports and audit events
 
 - **API (API-first):** money accounts, statement imports (preview first: what will be added, flagged and dropped),

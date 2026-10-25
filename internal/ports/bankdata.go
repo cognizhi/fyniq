@@ -11,9 +11,11 @@ import (
 type BankData interface {
 	// Accounts are the provider's accounts (a Wise balance, an Airwallex wallet currency) the credentials read.
 	Accounts(ctx context.Context) ([]BankDataAccount, error)
-	// Transactions are an account's settled transactions after cursor ("" for the provider's first), oldest first, at
-	// most a page of them, with the cursor to continue from.
-	Transactions(ctx context.Context, account, cursor string) (BankDataPage, error)
+	// Transactions are an account's settled transactions after cursor, oldest first, at most a page of them, with the
+	// cursor to continue from. With no cursor they start at from: the day the account's source became the connector, so
+	// a switch from another source continues its chain (p1-bank-import-reconcile design D13); a zero from leaves the
+	// connector's own history.
+	Transactions(ctx context.Context, account, cursor string, from time.Time) (BankDataPage, error)
 }
 
 // BankDataAccount is one account as the provider names it.

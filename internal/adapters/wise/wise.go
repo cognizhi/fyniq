@@ -186,16 +186,19 @@ func (c *Client) currency(ctx context.Context, balance string) (string, error) {
 	return cur, nil
 }
 
-// Transactions implements ports.BankData: the balance's statement from cursor (a time; "" for History before now) to
-// now, at most MaxInterval at once, oldest first. The cursor is the statement's end, so the next starts there; a
+// Transactions implements ports.BankData: the balance's statement from cursor (a time; with none, from, or History
+// before now when from is zero) to now, at most MaxInterval at once, oldest first. The cursor is the statement's end, so the next starts there; a
 // transaction at the boundary comes again, and its reference drops it on import (FR-BNK-04).
-func (c *Client) Transactions(ctx context.Context, balance, cursor string) (ports.BankDataPage, error) {
+func (c *Client) Transactions(ctx context.Context, balance, cursor string, from time.Time) (ports.BankDataPage, error) {
 	cur, err := c.currency(ctx, balance)
 	if err != nil {
 		return ports.BankDataPage{}, err
 	}
 	now := c.Now().UTC()
 	start := now.Add(-c.History)
+	if !from.IsZero() {
+		start = from.UTC()
+	}
 	if cursor != "" {
 		if start, err = time.Parse(time.RFC3339Nano, cursor); err != nil {
 			return ports.BankDataPage{}, fmt.Errorf("wise: the cursor %q is not a time", cursor)

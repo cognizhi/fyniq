@@ -290,6 +290,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerBankLines(a)
 	registerBankRuleBook(a)
 	registerBankReconciliation(a)
+	registerBankAgreements(a)
 	registerBankRules(a)
 	registerSession(a)
 	return a

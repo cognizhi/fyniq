@@ -51,11 +51,12 @@ type Synced struct {
 	Errors   []string
 }
 
-// fed is a money account a connector feeds, and the provider's account it is.
+// fed is a money account a connector feeds, the provider's account it is, and the day the connector became its source.
 type fed struct {
 	account  storage.MoneyAccount
 	provider string
 	cur      money.Currency
+	from     time.Time
 }
 
 // feeds are the money accounts whose source in force on day is connector id.
@@ -86,7 +87,7 @@ func feeds(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, day time.Tim
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, fed{account: a, provider: a.Identifier, cur: cur})
+		out = append(out, fed{account: a, provider: a.Identifier, cur: cur, from: now.FromDate})
 	}
 	return out, nil
 }
@@ -180,7 +181,7 @@ func (s Syncer) pull(ctx context.Context, org, id uuid.UUID, bd ports.BankData, 
 		if feed.ProviderAccount != "" && feed.ProviderAccount != f.provider {
 			cursor = "" // the money account now names another of the provider's accounts: from its start
 		}
-		page, err := bd.Transactions(ctx, f.provider, cursor)
+		page, err := bd.Transactions(ctx, f.provider, cursor, f.from)
 		if err != nil {
 			return added, s.stopped(ctx, org, id, f, feed, err)
 		}

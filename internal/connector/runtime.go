@@ -533,11 +533,11 @@ func (b guardedBankData) Accounts(ctx context.Context) ([]ports.BankDataAccount,
 	return out, err
 }
 
-func (b guardedBankData) Transactions(ctx context.Context, account, cursor string) (ports.BankDataPage, error) {
+func (b guardedBankData) Transactions(ctx context.Context, account, cursor string, from time.Time) (ports.BankDataPage, error) {
 	if err := b.g.begin(b.clock.Now()); err != nil {
 		return ports.BankDataPage{}, err
 	}
-	out, err := b.BankData.Transactions(ctx, account, cursor)
+	out, err := b.BankData.Transactions(ctx, account, cursor, from)
 	b.g.end(err != nil, b.clock.Now())
 	return out, err
 }

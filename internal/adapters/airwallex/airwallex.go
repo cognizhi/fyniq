@@ -192,12 +192,16 @@ type cursor struct {
 	Page string `json:"page,omitempty"`
 }
 
-// Transactions implements ports.BankData: the currency's cash balance history from the cursor, a window of at most
+// Transactions implements ports.BankData: the currency's cash balance history from the cursor (with none, from start,
+// or History before now when start is zero), a window of at most
 // seven days at a time, a page at a time, oldest first. The cursor is opaque: the window's start and Airwallex's
 // bookmark within it; once a window is read, the next starts at its end.
-func (c *Client) Transactions(ctx context.Context, currency, raw string) (ports.BankDataPage, error) {
+func (c *Client) Transactions(ctx context.Context, currency, raw string, start time.Time) (ports.BankDataPage, error) {
 	now := c.Now().UTC()
 	at := cursor{From: now.Add(-c.History).Format(time.RFC3339)}
+	if !start.IsZero() {
+		at.From = start.UTC().Format(time.RFC3339)
+	}
 	if raw != "" {
 		b, err := base64.RawURLEncoding.DecodeString(raw)
 		if err != nil || json.Unmarshal(b, &at) != nil {

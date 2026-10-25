@@ -69,7 +69,7 @@ func TestTheWiseAdapterReadsBalancesAndStatements(t *testing.T) {
 	if err != nil || len(accounts) != 2 || accounts[0].ID != "200001" || accounts[0].Name != "SGD balance" || accounts[1].Name != "Payroll USD" {
 		t.Fatalf("the balances: %+v, %v", accounts, err)
 	}
-	page, err := c.Transactions(ctx, "200001", "")
+	page, err := c.Transactions(ctx, "200001", "", time.Time{})
 	if err != nil || len(page.Transactions) != 2 || page.More || page.Cursor != now.Format(time.RFC3339Nano) {
 		t.Fatalf("the statement: %+v, %v", page, err)
 	}
@@ -82,12 +82,16 @@ func TestTheWiseAdapterReadsBalancesAndStatements(t *testing.T) {
 	if last.Get("intervalStart") != now.Add(-90*24*time.Hour).Format(time.RFC3339Nano) {
 		t.Errorf("the first sync starts at %s", last.Get("intervalStart"))
 	}
+	switched := time.Date(2026, 10, 21, 0, 0, 0, 0, time.UTC) // a source switched to Wise that day starts there
+	if _, err := c.Transactions(ctx, "200001", "", switched); err != nil || seen[len(seen)-1].URL.Query().Get("intervalStart") != switched.Format(time.RFC3339Nano) {
+		t.Fatalf("from the switch: %v, %v", err, seen[len(seen)-1].URL.Query())
+	}
 	old := now.Add(-600 * 24 * time.Hour)
-	page, err = c.Transactions(ctx, "200001", old.Format(time.RFC3339Nano))
+	page, err = c.Transactions(ctx, "200001", old.Format(time.RFC3339Nano), time.Time{})
 	if err != nil || !page.More || page.Cursor != old.Add(MaxInterval).Format(time.RFC3339Nano) {
 		t.Fatalf("a statement over 469 days: %+v, %v", page, err)
 	}
-	if _, err := c.Transactions(ctx, "999", ""); err == nil {
+	if _, err := c.Transactions(ctx, "999", "", time.Time{}); err == nil {
 		t.Error("a balance the profile does not have was read")
 	}
 	if _, err := (&Client{Base: srv.URL + "/2026Q4", Token: "wrong", Profile: "4242", HTTP: srv.Client(), Now: c.Now}).Accounts(ctx); err == nil ||

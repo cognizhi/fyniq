@@ -216,10 +216,13 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   - As built: `connectors/airwallex` and `internal/adapters/airwallex`; facts in design D11's note. Still `[verify]`:
     where Airwallex processes what it is sent (the manifest says SG). `contracts/partners/airwallex.yaml` is written
     from the reference pages (no published OpenAPI document); Prism serving it was not run here.
-- [ ] 8.5 The source switch (design D13; the owner's decision): a money account moves from emailed reports to an API
+- [x] 8.5 The source switch (design D13; the owner's decision): a money account moves from emailed reports to an API
   connector from a date without a gap; the e-statement tie-out stays; the bank agreements are evidence on the account.
   - Tests: a switch to a fake API connector with the chain unbroken. `// req: FR-BNK-17`,
     `// req: banking/bank-transactions Moving DBS to RAPID`, `// req: FR-DOC-05`
+  - As built: a connector's first pull starts on its source's first day (`ports.BankData.Transactions` takes it), so
+    the switch carries the chain on; agreements are files on the account's `bank_agreement` document (migrations
+    000156/000157), attached under C on "Bank data… connections" and committed to the locked store at once.
 
 ## 9. The API
 

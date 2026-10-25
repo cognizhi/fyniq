@@ -82,12 +82,12 @@ func TestTheAirwallexAdapterReadsBalancesAndHistory(t *testing.T) {
 	if err != nil || len(accounts) != 2 || accounts[0].ID != "SGD" || accounts[1].Currency != "USD" {
 		t.Fatalf("the balances: %+v, %v", accounts, err)
 	}
-	page, err := c.Transactions(ctx, "SGD", "")
+	page, err := c.Transactions(ctx, "SGD", "", time.Time{})
 	if err != nil || !page.More || len(page.Transactions) != 2 || page.Transactions[0].ID != "h-1" || page.Transactions[0].Amount != "1000000.01" ||
 		page.Transactions[0].Description != "Deposit INV-0138" || page.Transactions[1].Amount != "-12.34" || page.Transactions[1].RunningBalance != "987.66" {
 		t.Fatalf("the first page: %+v, %v", page, err)
 	}
-	second, err := c.Transactions(ctx, "SGD", page.Cursor)
+	second, err := c.Transactions(ctx, "SGD", page.Cursor, time.Time{})
 	if err != nil || second.More || len(second.Transactions) != 1 || second.Transactions[0].Amount != "0.5" {
 		t.Fatalf("the second page: %+v, %v", second, err)
 	}
@@ -97,9 +97,13 @@ func TestTheAirwallexAdapterReadsBalancesAndHistory(t *testing.T) {
 	if logins != 1 {
 		t.Errorf("the key was exchanged %d times", logins)
 	}
+	switched := time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC) // a source switched to Airwallex that day starts there
+	if _, err := c.Transactions(ctx, "SGD", "", switched); err != nil || seen[len(seen)-1].URL.Query().Get("from_post_at") != switched.Format(time.RFC3339) {
+		t.Fatalf("from the switch: %v, %v", err, seen[len(seen)-1].URL.Query())
+	}
 	// A cursor older than a week reads a week, and says more waits.
 	c.History = 30 * 24 * time.Hour
-	if p, err := c.Transactions(ctx, "SGD", ""); err != nil || !p.More {
+	if p, err := c.Transactions(ctx, "SGD", "", time.Time{}); err != nil || !p.More {
 		t.Fatalf("a month's history: %+v, %v", p, err)
 	}
 	if last := seen[len(seen)-1].URL.Query(); last.Get("to_post_at") != now.Add(-23*24*time.Hour).Format(time.RFC3339) {
