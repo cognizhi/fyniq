@@ -514,6 +514,21 @@ var (
 	ListBankStatements      = Policy{Operation: "listBankStatements", Capability: BankTransactions, Need: View}
 	ListBankLines           = Policy{Operation: "listBankLines", Capability: BankTransactions, Need: View}
 	GetBankLine             = Policy{Operation: "getBankLine", Capability: BankTransactions, Need: View}
+	// A line's actions and transfers post, or undo what posted (FR-BNK-05…09): "Bank transactions, categorise" with P; keeping or
+	// excluding a line posts nothing, so C.
+	CategoriseBankLine    = Policy{Operation: "categoriseBankLine", Capability: BankTransactions, Need: Post}
+	SuspendBankLine       = Policy{Operation: "suspendBankLine", Capability: BankTransactions, Need: Post}
+	MatchBankLineInvoices = Policy{Operation: "matchBankLineInvoices", Capability: BankTransactions, Need: Post}
+	MatchBankLineBills    = Policy{Operation: "matchBankLineBills", Capability: BankTransactions, Need: Post}
+	MatchBankLineRecorded = Policy{Operation: "matchBankLineRecorded", Capability: BankTransactions, Need: Post}
+	KeepBankLine          = Policy{Operation: "keepBankLine", Capability: BankTransactions, Need: Create}
+	ExcludeBankLine       = Policy{Operation: "excludeBankLine", Capability: BankTransactions, Need: Create}
+	UnreconcileBankLine   = Policy{Operation: "unreconcileBankLine", Capability: BankTransactions, Need: Post}
+	RecordBankTransfer    = Policy{Operation: "recordBankTransfer", Capability: BankTransactions, Need: Post}
+	ListBankTransfers     = Policy{Operation: "listBankTransfers", Capability: BankTransactions, Need: View}
+	GetBankTransfer       = Policy{Operation: "getBankTransfer", Capability: BankTransactions, Need: View}
+	CompleteBankTransfer  = Policy{Operation: "completeBankTransfer", Capability: BankTransactions, Need: Post}
+	UndoBankTransfer      = Policy{Operation: "undoBankTransfer", Capability: BankTransactions, Need: Post}
 	// Rendering an invoice as its document (FR-AR-05) reads it.
 	GetInvoiceDocument = Policy{Operation: "getInvoiceDocument", Capability: Invoices, Need: View}
 	// Emailing an issued invoice or a sent quote to the customer (FR-AR-06) speaks for the company to the outside, as
@@ -853,6 +868,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid, RequestBankRuleAutoApply,
 	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ResolveBankGap, ListStatementMappings,
 	CreateStatementMapping, ReplaceStatementMapping, ImportBankStatements, ListBankStatements, ListBankLines, GetBankLine,
+	CategoriseBankLine, SuspendBankLine, MatchBankLineInvoices, MatchBankLineBills, MatchBankLineRecorded, KeepBankLine, ExcludeBankLine,
+	UnreconcileBankLine, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,
 	ListQuotes, GetQuote, GetSalesPipeline, CreateQuote, ReplaceQuote, SendQuote, CancelQuote, AcceptQuote, DeclineQuote, InvoiceQuote,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,

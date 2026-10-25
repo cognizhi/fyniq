@@ -369,32 +369,7 @@ func refused(err error) bool {
 // a rule is reversed, a receipt or bill payment made from the line voided, and a transfer undone; the line goes back to
 // the queue. A line a person matched is undone where they made it (CodeNotAuto).
 func UndoAuto(ctx context.Context, store storage.Store, org, lineID uuid.UUID, reason string, at time.Time) error {
-	var m *storage.BankMatch
-	if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		matches, err := u.BankMatching().Matches(ctx, storage.BankMatchFilter{LineID: &lineID})
-		if err != nil {
-			return err
-		}
-		if len(matches) > 0 {
-			m = &matches[0]
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
-	if m == nil || m.Basis == storage.BasisPerson {
-		return refuse(CodeNotAuto, "Undo it where it was made: the categorisation, the match or the transfer.", "the line was not reconciled by the system")
-	}
-	txns := journal.BankTransactions{Store: store}
-	var err error
-	switch m.Kind {
-	case storage.MatchCategorised, storage.MatchSuspense:
-		_, err = txns.Undo(ctx, org, lineID, reason, at)
-	case storage.MatchReceipt, storage.MatchBillPayment, storage.MatchRecorded:
-		_, err = txns.Unmatch(ctx, org, lineID, reason, at)
-	case storage.MatchTransfer:
-		_, err = txns.UndoTransfer(ctx, org, *m.TransferID, reason, at)
-	}
+	_, err := Unreconcile(ctx, journal.BankTransactions{Store: store}, org, lineID, reason, at, true)
 	return err
 }
 

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "description": "The bank transaction, receipt or bill payment made from the line, or the document recorded by hand it is matched to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b80"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "entry": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry it posted; absent when it posted nothing."
+    },
+    "line": {
+      "$ref": "BankLine.schema.json",
+      "description": "The line as it is now, with its live match."
+    },
+    "transfer_id": {
+      "description": "The transfer the line is a side of.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b90"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "line"
+  ],
+  "title": "BankLineDone",
+  "type": "object"
+}

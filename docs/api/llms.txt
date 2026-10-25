@@ -33,7 +33,20 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bank-imports` (importBankStatements): Import bank statements
 - `GET /v1/bank-lines` (listBankLines): List bank lines
 - `GET /v1/bank-lines/{line_id}` (getBankLine): Get a bank line
+- `POST /v1/bank-lines/{line_id}/categorise` (categoriseBankLine): Categorise a bank line
+- `POST /v1/bank-lines/{line_id}/exclude` (excludeBankLine): Exclude a bank line
+- `POST /v1/bank-lines/{line_id}/keep` (keepBankLine): Keep a possible duplicate
+- `POST /v1/bank-lines/{line_id}/match-bills` (matchBankLineBills): Match money out to bills
+- `POST /v1/bank-lines/{line_id}/match-invoices` (matchBankLineInvoices): Match money in to invoices
+- `POST /v1/bank-lines/{line_id}/match-recorded` (matchBankLineRecorded): Match a bank line to money recorded by hand
+- `POST /v1/bank-lines/{line_id}/suspend` (suspendBankLine): Put a bank line in suspense
+- `POST /v1/bank-lines/{line_id}/unreconcile` (unreconcileBankLine): Put a bank line back in the queue
 - `POST /v1/bank-rules/{rule_id}/auto-apply-approval` (requestBankRuleAutoApply): Ask for approval to let a bank rule apply by itself
+- `GET /v1/bank-transfers` (listBankTransfers): List the transfers in transit
+- `POST /v1/bank-transfers` (recordBankTransfer): Record a transfer between money accounts
+- `GET /v1/bank-transfers/{transfer_id}` (getBankTransfer): Get a transfer
+- `POST /v1/bank-transfers/{transfer_id}/complete` (completeBankTransfer): Complete a transfer in transit
+- `POST /v1/bank-transfers/{transfer_id}/undo` (undoBankTransfer): Undo a transfer
 - `GET /v1/banners` (listBanners): List the banners you see now
 - `POST /v1/banners/{announcement_id}/dismiss` (dismissBanner): Dismiss a banner
 - `GET /v1/bill-payments` (listBillPayments): List the payments of bills

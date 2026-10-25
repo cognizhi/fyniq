@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "Without a line: the day it left. A line gives its own date.",
+      "examples": [
+        "2026-10-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "fee": {
+      "$ref": "Money.schema.json",
+      "description": "The fee the provider reports, in the paying currency, part of what was paid: it posts to the bank charges account (bank.charges_account)."
+    },
+    "from_line_id": {
+      "description": "The paying account's line: money out.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "from_money_account_id": {
+      "description": "Without the paying line: the account it left.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "paid": {
+      "$ref": "Money.schema.json",
+      "description": "Without the paying line: what left, as the provider reports it."
+    },
+    "received": {
+      "$ref": "Money.schema.json",
+      "description": "Without the receiving line: what arrives, as the provider reports it."
+    },
+    "to_line_id": {
+      "description": "The receiving account's line: money in.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b71"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "to_money_account_id": {
+      "description": "Without the receiving line: the account it reaches.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "title": "BankTransferDraft",
+  "type": "object"
+}
