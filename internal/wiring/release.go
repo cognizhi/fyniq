@@ -99,11 +99,28 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	if kit.ConnectorNames, err = ReadConnectorNames(os.Getenv); err != nil {
 		return nil, err
 	}
-	kit.ConnectorSecrets = gcp.NewSecretManager(gcp.SecretManagerAPI, projectOf(c.Job), slices.Collect(maps.Values(kit.ConnectorNames)),
-		[]string{"org-"}, tokens, nil)
+	installation := slices.Collect(maps.Values(kit.ConnectorNames))
+	kit.ConnectorSecrets = gcp.NewSecretManager(gcp.SecretManagerAPI, projectOf(c.Job), installation, []string{gcp.OrgSecretPrefix}, tokens, nil)
+	// The organisations' connector secrets in their own project (design D12), each made under the secrets key the first
+	// time it is typed (FYNIQ_ORG_SECRETS_PROJECT, FYNIQ_ORG_SECRETS_KEY; infra/gcp/modules/environment/org_secrets.tf).
+	if project := os.Getenv("FYNIQ_ORG_SECRETS_PROJECT"); project != "" {
+		key := os.Getenv("FYNIQ_ORG_SECRETS_KEY")
+		if key == "" {
+			return nil, errors.New("FYNIQ_ORG_SECRETS_PROJECT is set without FYNIQ_ORG_SECRETS_KEY, the key its secrets are made under")
+		}
+		orgs := gcp.NewSecretManager(gcp.SecretManagerAPI, project, nil, []string{gcp.OrgSecretPrefix}, tokens, nil)
+		orgs.Create = &gcp.SecretCreation{Location: secretsRegion, KMSKey: key}
+		kit.ConnectorSecrets = gcp.SplitSecrets{
+			Installation:  gcp.NewSecretManager(gcp.SecretManagerAPI, projectOf(c.Job), installation, nil, tokens, nil),
+			Organisations: orgs,
+		}
+	}
 	kit.Egress = &egress.Guard{Internal: c.internalHosts()}
 	return kit, nil
 }
+
+// secretsRegion is where the organisations' connector secrets are replicated: Singapore only (CTL-DP-07).
+const secretsRegion = "asia-southeast1"
 
 // projectOf is the project of a resource name such as projects/<project>/locations/…/jobs/….
 func projectOf(name string) string {

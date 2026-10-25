@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -26,6 +27,7 @@ type fakeSecretManager struct {
 	secrets  map[string][]fakeVersion // by secret id; only the ones OpenTofu created exist
 	requests []string
 	auth     string
+	created  map[string]string // the secrets made through the API, and the body each was made with
 }
 
 type fakeVersion struct {
@@ -43,7 +45,23 @@ func (f *fakeSecretManager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if i := strings.LastIndex(path, ":"); i > 0 {
 		path, action = path[:i], path[i+1:]
 	}
-	parts := strings.Split(path, "/") // projects/{p}/secrets/{s}[/versions/{n}]
+	parts := strings.Split(path, "/") // projects/{p}/secrets[/{s}[/versions/{n}]]
+	if len(parts) == 3 && parts[0] == "projects" && parts[2] == "secrets" && r.Method == http.MethodPost {
+		id := r.URL.Query().Get("secretId")
+		if _, ok := f.secrets[id]; ok {
+			http.Error(w, `{"error":{"status":"ALREADY_EXISTS"}}`, http.StatusConflict)
+			return
+		}
+		var body strings.Builder
+		_, _ = io.Copy(&body, r.Body)
+		f.secrets[id] = nil
+		if f.created == nil {
+			f.created = map[string]string{}
+		}
+		f.created[id] = body.String()
+		_ = json.NewEncoder(w).Encode(map[string]any{"name": "projects/123456/secrets/" + id})
+		return
+	}
 	if len(parts) < 4 || parts[0] != "projects" || parts[2] != "secrets" {
 		http.Error(w, "bad path", http.StatusBadRequest)
 		return
@@ -171,5 +189,55 @@ func TestSecretManagerChecksTheCRC(t *testing.T) {
 	s := NewSecretManager(srv.URL, "p", nil, []string{"connector-"}, nil, srv.Client())
 	if _, err := s.Get(context.Background(), ports.SecretRef("projects/1/secrets/connector-x-key/versions/1")); err == nil || !strings.Contains(err.Error(), "corrupted") {
 		t.Fatalf("%v", err)
+	}
+}
+
+// The organisations' connector secrets (design D12, the owner's decision of 25 Oct 2026): in their own project, each
+// made the first time a version is put, in Singapore under the secrets key, and only one named org-; a secret made
+// meanwhile by another request is used as it is. SplitSecrets sends each name and reference to its own store.
+// req: FR-INT-20
+// req: SEC-12
+// req: CTL-DP-01
+// asvs: V13.3.1, V13.3.2
+func TestOrganisationsSecretsAreMadeInTheirOwnProject(t *testing.T) {
+	inst := &fakeSecretManager{secrets: map[string][]fakeVersion{"connector-example-key": nil}}
+	orgs := &fakeSecretManager{secrets: map[string][]fakeVersion{"org-raced-connector-wise-token": nil}}
+	key := "projects/fyniq-staging/locations/asia-southeast1/keyRings/platform-staging/cryptoKeys/secrets"
+	o := secretManager(t, orgs)
+	o.Project, o.Names, o.Prefixes, o.Create = "fyniq-staging-secrets", nil, []string{OrgSecretPrefix}, &SecretCreation{Location: "asia-southeast1", KMSKey: key}
+	s := SplitSecrets{Installation: secretManager(t, inst), Organisations: o}
+	ctx := context.Background()
+
+	ref, err := s.Put(ctx, "org-0192-connector-wise-token", "wise-read-only")
+	if err != nil || ref != "projects/123456/secrets/org-0192-connector-wise-token/versions/1" {
+		t.Fatalf("an organisation's first secret: %q, %v", ref, err)
+	}
+	body := orgs.created["org-0192-connector-wise-token"]
+	if !strings.Contains(body, `"location":"asia-southeast1"`) || !strings.Contains(body, `"kmsKeyName":"`+key+`"`) {
+		t.Fatalf("made with %s", body)
+	}
+	if v, err := s.Get(ctx, ref); err != nil || v != "wise-read-only" {
+		t.Fatalf("reading it back: %q, %v", v, err)
+	}
+	if again, err := s.Put(ctx, "org-0192-connector-wise-token", "rotated"); err != nil || again != "projects/123456/secrets/org-0192-connector-wise-token/versions/2" ||
+		len(orgs.created) != 1 {
+		t.Fatalf("a second version: %q, %v, made %d", again, err, len(orgs.created))
+	}
+	if _, err := s.Put(ctx, "org-raced-connector-wise-token", "x"); err != nil {
+		t.Fatalf("a secret made meanwhile: %v", err)
+	}
+	if _, err := s.Put(ctx, "connector-example-key", "installation"); err != nil || len(inst.secrets["connector-example-key"]) != 1 {
+		t.Fatalf("an installation secret goes where OpenTofu made it: %v", err)
+	}
+	if err := s.Destroy(ctx, ref); err != nil || orgs.secrets["org-0192-connector-wise-token"][0].state != "DESTROYED" {
+		t.Fatalf("destroying an organisation's version: %v", err)
+	}
+	if _, err := s.Put(ctx, "database-password", "x"); err == nil || len(inst.created) != 0 {
+		t.Fatal("a name outside the connectors' secrets was made or written")
+	}
+	for _, r := range inst.requests {
+		if strings.Contains(r, "/secrets/org-") {
+			t.Fatalf("an organisation's secret reached the installation's project: %s", r)
+		}
 	}
 }

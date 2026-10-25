@@ -40,10 +40,17 @@ module "org_policy" {
   cmek_parents = [for env in ["staging", "production"] : "projects/${var.environments[env]}"]
 }
 
+variable "secrets_projects" {
+  description = "Each environment's project of the organisations' connector secrets (design D12). [verify the project IDs once the founder creates them]"
+  type        = map(string)
+  default     = { staging = "fyniq-staging-secrets", production = "fyniq-prod-secrets" }
+}
+
 module "ci_identity" {
-  source       = "../modules/ci-identity"
-  project      = var.ci_project
-  environments = var.environments
+  source           = "../modules/ci-identity"
+  project          = var.ci_project
+  environments     = var.environments
+  secrets_projects = var.secrets_projects
 }
 
 output "workload_identity_provider" {

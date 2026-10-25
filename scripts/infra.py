@@ -41,6 +41,25 @@ INFRA = ROOT / "infra"
 FORBIDDEN_RESOURCES = re.compile(r'resource\s+"(google_service_account_key|google_storage_hmac_key|google_\w+_iam_(?:policy|binding))"')
 HUMAN_GRANT = re.compile(r'(?:member|members|principals)\s*=\s*\[?\s*"(?:user|group):')
 REGION = re.compile(r'"(?:[a-z]+-)?(us|europe|asia|australia|northamerica|southamerica|me|africa)-[a-z]+[0-9]"')
+# The one create right on secrets: the api's account manages the organisations' connector secrets in their own project
+# and nowhere else (SEC-12; p1-bank-import-reconcile design D12, the owner's decision of 25 Oct 2026).
+SECRETS_ADMIN = re.compile(r'"roles/secretmanager\.admin"')
+SECRETS_PROJECT = re.compile(r'^\s*project\s*=\s*var\.secrets_project\s*$', re.M)
+RESOURCE = re.compile(r'^resource\s+"[^"]+"\s+"[^"]+"\s*\{', re.M)
+
+
+def blocks(text: str) -> list[tuple[int, str]]:
+    """Each resource block of a file, with the line it starts on, by counting braces."""
+    out = []
+    for m in RESOURCE.finditer(text):
+        depth, i = 0, m.end() - 1
+        while i < len(text):
+            depth += {"{": 1, "}": -1}.get(text[i], 0)
+            if depth == 0:
+                break
+            i += 1
+        out.append((text.count("\n", 0, m.start()) + 1, text[m.start():i + 1]))
+    return out
 
 
 def tofu(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -69,6 +88,11 @@ def rules(name: str, text: str) -> list[str]:
         for m in REGION.finditer(code):
             if m[0] != '"asia-southeast1"':
                 problems.append(f"{name}:{line_no}: {m[0]} is outside Singapore (CTL-DP-07)")
+    for line_no, block in blocks(text):
+        code = "\n".join(line.split("#", 1)[0] for line in block.splitlines())
+        if SECRETS_ADMIN.search(code) and not SECRETS_PROJECT.search(code):
+            problems.append(f"{name}:{line_no}: roles/secretmanager.admin outside the organisations' secrets project: secrets are created "
+                            "only there (SEC-12, design D12)")
     return problems
 
 
@@ -99,7 +123,8 @@ def check() -> int:
         print("✖ infra:\n  " + "\n  ".join(problems))
         return 1
     print(f"✔ infra: {len(directories())} roots and modules formatted, initialised from their lock files and valid; "
-          f"{tested} tested against mock providers; no keys, no authoritative IAM, no standing human grant, nothing outside Singapore")
+          f"{tested} tested against mock providers; no keys, no authoritative IAM, no standing human grant, nothing outside Singapore, "
+          "no secrets create right outside the secrets project")
     return 0
 
 
@@ -109,16 +134,25 @@ resource "google_service_account_key" "k" {}
 resource "google_project_iam_binding" "b" {}
 resource "google_project_iam_member" "m" { member = "user:someone@example.com" }
 resource "google_storage_bucket" "b" { location = "us-central1" }
+resource "google_project_iam_member" "s" {
+  project = var.project
+  role    = "roles/secretmanager.admin"
+}
 '''
-    if len(rules("planted.tf", planted)) != 4:
-        raise SystemExit(f"✖ infra self-test: want 4 problems, got {rules('planted.tf', planted)}")
+    if len(rules("planted.tf", planted)) != 5:
+        raise SystemExit(f"✖ infra self-test: want 5 problems, got {rules('planted.tf', planted)}")
     clean = '''
 resource "google_project_iam_member" "m" { member = "serviceAccount:x@p.iam.gserviceaccount.com" }  # not user: in code
 resource "google_storage_bucket" "b" { location = "asia-southeast1" }
+resource "google_project_iam_member" "s" {
+  project = var.secrets_project
+  role    = "roles/secretmanager.admin"
+}
 '''
     if rules("clean.tf", clean):
         raise SystemExit(f"✖ infra self-test: a clean file was refused: {rules('clean.tf', clean)}")
-    print("✔ infra rules: a key, authoritative IAM, a person's grant and a region outside Singapore are each refused")
+    print("✔ infra rules: a key, authoritative IAM, a person's grant, a region outside Singapore and a secrets create right outside "
+          "the secrets project are each refused")
 
 
 # req: CTL-CHG-02

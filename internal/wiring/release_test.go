@@ -72,3 +72,41 @@ func TestTheReleaseBuildWiresGoogleCloud(t *testing.T) {
 		t.Error("no database URL was accepted")
 	}
 }
+
+// The organisations' connector secrets are in their own project once the deployment names it, made under its secrets
+// key; a project without the key is refused (design D12, the owner's decision of 25 Oct 2026).
+// req: SEC-12
+// req: FR-INT-20
+// asvs: V13.3.1
+func TestTheReleaseBuildKeepsOrganisationsSecretsInTheirOwnProject(t *testing.T) {
+	c := clock.NewFrozen(time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC))
+	t.Setenv("FYNIQ_DATABASE_URL", "postgres://fyniq_worker@127.0.0.1:1/fyniq?sslmode=disable")
+	b, _ := json.Marshal(config())
+	t.Setenv("FYNIQ_GCP", string(b))
+	kit, err := Build(context.Background(), "worker", c)
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	kit.Store.Close()
+	if _, ok := kit.ConnectorSecrets.(*gcp.SecretManager); !ok {
+		t.Errorf("without a secrets project, the secrets are %T", kit.ConnectorSecrets)
+	}
+	t.Setenv("FYNIQ_ORG_SECRETS_PROJECT", "fyniq-staging-secrets")
+	if _, err := Build(context.Background(), "worker", c); err == nil || !strings.Contains(err.Error(), "FYNIQ_ORG_SECRETS_KEY") {
+		t.Errorf("a secrets project without its key: %v", err)
+	}
+	t.Setenv("FYNIQ_ORG_SECRETS_KEY", "projects/fyniq-staging/locations/asia-southeast1/keyRings/platform-staging/cryptoKeys/secrets")
+	if kit, err = Build(context.Background(), "worker", c); err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	defer kit.Store.Close()
+	split, ok := kit.ConnectorSecrets.(gcp.SplitSecrets)
+	if !ok {
+		t.Fatalf("the secrets are %T", kit.ConnectorSecrets)
+	}
+	orgs, inst := split.Organisations.(*gcp.SecretManager), split.Installation.(*gcp.SecretManager)
+	if orgs.Project != "fyniq-staging-secrets" || orgs.Create == nil || orgs.Create.Location != "asia-southeast1" || !strings.HasSuffix(orgs.Create.KMSKey, "/cryptoKeys/secrets") ||
+		len(inst.Prefixes) != 0 || inst.Create != nil {
+		t.Errorf("the organisations' store %+v, the installation's %+v", orgs, inst)
+	}
+}

@@ -18,6 +18,12 @@ variable "project" {
   default     = "fyniq-staging"
 }
 
+variable "secrets_project" {
+  description = "The project of the organisations' connector secrets (design D12). [verify the project ID once the founder creates it]"
+  type        = string
+  default     = "fyniq-staging-secrets"
+}
+
 variable "billing_account" {
   description = "The billing account (from the founder)."
   type        = string
@@ -77,6 +83,7 @@ module "stack" {
   source            = "../../modules/stack"
   environment       = "staging"
   project           = var.project
+  secrets_project   = var.secrets_project
   audit_project     = var.project
   anchors           = { retention_days = 30, lock = false } # staging's anchors are test data: kept 30 days, never locked
   database          = { tier = "db-custom-1-3840", availability = "ZONAL", disk_gb = 10 }
