@@ -27,8 +27,8 @@ status: draft
 - For each kind choose **Immediately**, **Daily digest**, **Weekly digest** or **Not by email**.
 - Recommended: approvals and security notices at once, everything else in the daily digest at 08:00 Singapore
   time. A kind you changed shows **Changed from recommended**, with **Reset to recommended**.
-- Security notices are **Always on**: a passkey added or removed and a change to your roles are emailed at once,
-  whatever you choose. A sign-in shows here and is not emailed again, because the sign-in alert already emails
+- Security notices are **Always on**: a passkey added or removed, a change to your roles and a connector paused
+  (see [Integrations and connectors](integrations.md)) are emailed at once, whatever you choose. A sign-in shows here and is not emailed again, because the sign-in alert already emails
   every sign-in.
 - The weekly digest goes on Mondays at 08:00.
 - Email goes to the address your sign-in provider verified. Without one, notifications show in the app only.

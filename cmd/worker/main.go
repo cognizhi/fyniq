@@ -53,6 +53,7 @@ func main() {
 			kinds[email.FetchKind] = fetcher.Work()
 		}
 		kinds[notify.FanoutKind] = kit.Fanout(deps.Clock).Work() // FR-NTF-05: one event, every person it concerns
+		kinds[notify.RelayKind] = kit.Relays(deps.Clock).Work()  // FR-ADM-07: the installation's notices, in each Super admin's organisation
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassWorker, Store: kit.Store, Tokens: kit.Tokens,
 			Clock: deps.Clock, Holder: app.Holder("worker"), Kinds: kinds, Dead: kit.JobDead(deps.Clock)})
 		s.Handle("POST /jobs", &outbox.JobsHandler{Tokens: kit.Tokens, Platform: kit.Store, Clock: deps.Clock,

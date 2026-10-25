@@ -26,6 +26,8 @@ most specific requirement the test proves. The ones in use so far:
 |---|---|---|
 | V2.2.1, V2.2.3 | Input validation | amounts off scale or NaN; accounts that cannot take postings |
 | V2.3.1–V2.3.3 | Business logic security | document statuses that cannot rewind; closed periods; entries that commit whole or not at all |
+| V2.3.5 | Business logic security: multi-user approval | a connector's step needs a second person: the other Super admin's change, signed over its envelope, or an Owner's approval |
+| V1.3.6 | Sanitization: server-side request forgery | the egress guard refuses metadata, loopback, private and internal addresses, re-checks the address it dials, and follows no redirect |
 | V5.2.1–V5.2.3, V5.3.2, V5.4.3 | File handling | evidence uploads: size, type from content, archive limits and macros, file names as data, the malware scan |
 | V6.3.3 | General authentication security | every session passed a second factor, or only reads itself and steps up |
 | V6.5.1, V6.7.2 | Multi-factor and cryptographic authentication | passkey challenges: random, bound to the session, used once; answers checked and counters kept |
@@ -36,9 +38,11 @@ most specific requirement the test proves. The ones in use so far:
 | V8.2.1, V8.2.3, V8.3.1 | Authorisation design and operation level | the policy and the matrix; masked fields |
 | V8.4.1 | Multi-tenant | every cross-tenant attack, RLS on every table |
 | V13.2.2, V13.3.2 | Least privilege for backend accounts and secrets | the database roles' grants; workflow tokens |
+| V13.2.4 | Backend communication allow list | a connector reaches only the destinations its consented manifest names |
+| V13.3.1, V13.3.4 | Secret management and rotation | connector keys only in Secret Manager by reference, never answered, logged or audited; a replaced key valid for its overlap, then destroyed |
 | V13.4.2, V15.2.3 | No debug or extra functionality in production | a release build refuses local adapters; hardened images |
 | V15.2.1, V15.2.4 | Dependencies | the CI scans; actions pinned by SHA |
-| V15.3.1 | Returning only the required fields | masked responses |
+| V15.3.1, V15.3.2 | Returning only the required fields; no redirects followed | masked responses; a connector test returns Fyniq's reason, never the body; outbound requests follow no redirect |
 | V15.4.1, V15.4.2 | Concurrency | the race suites |
 | V16.2.5, V16.3.2, V16.3.3, V16.4.2 | Security logging | masking in logs and the audit trail; refusals logged; every change audited; the hash chain |
 

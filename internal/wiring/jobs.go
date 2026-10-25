@@ -158,6 +158,12 @@ func (k *Kit) Fanout(clock ports.Clock) notify.Fanout {
 	return notify.Fanout{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Origin: k.Origin}
 }
 
+// Relays emits the installation's notices, such as a connector paused or a change waiting, in the organisations of the
+// Super admins they name (FR-ADM-07, FR-INT-26).
+func (k *Kit) Relays(clock ports.Clock) notify.Relays {
+	return notify.Relays{Store: k.Store, Operators: k.Store, Dispatcher: k.dispatcher(clock)}
+}
+
 // JobDead tells those who look after an organisation of its background work that died (FR-NTF-01).
 func (k *Kit) JobDead(clock ports.Clock) outbox.Dead {
 	return notify.JobDead(k.dispatcher(clock))

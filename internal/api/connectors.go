@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -664,6 +665,11 @@ func registerConnectors(a *API) {
 			if err != nil {
 				return nil, err
 			}
+			if what != testingConnector { // a test changes nothing anyone must hear of
+				if err := a.tellOfInstallationStep(ctx, u, by, c, r); err != nil {
+					return nil, err
+				}
+			}
 			return a.installationResult(ctx, u, r)
 		})
 		if err != nil {
@@ -766,7 +772,7 @@ func registerConnectors(a *API) {
 			if err != nil {
 				return nil, err
 			}
-			return testOutput(installationWrite(ctx, in, in.IdempotencyKey, in.Prefer, in.IfMatch, id, "Testing a connector", http.StatusOK,
+			return testOutput(installationWrite(ctx, in, in.IdempotencyKey, in.Prefer, in.IfMatch, id, testingConnector, http.StatusOK,
 				func(ctx context.Context, by uuid.UUID, _ time.Time, u storage.UnitOfWork, c storage.InstalledConnector) (connector.Result, error) {
 					if storage.IsPreview(ctx) { // a preview checks the request and sends nothing
 						return connector.Result{Connector: c}, nil
@@ -833,11 +839,23 @@ func registerConnectors(a *API) {
 		w, err := inInstallationWrite(ctx, a, by, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (any, error) {
 			if !approve {
 				c, err := a.installations().Reject(ctx, u, by, p.StepUpAt, id, hash, in.Body.Reason)
-				return installationChangeOf(c), err
+				if err != nil {
+					return nil, err
+				}
+				return installationChangeOf(c), a.tellOfDecision(ctx, u, c)
 			}
 			r, err := a.installations().Approve(ctx, u, by, p.StepUpAt, id, hash)
 			if err != nil {
 				return nil, err
+			}
+			changes, err := u.Connectors().InstallationChanges(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if i := slices.IndexFunc(changes, func(c storage.InstallationChange) bool { return c.ID == id }); i >= 0 {
+				if err := a.tellOfDecision(ctx, u, changes[i]); err != nil {
+					return nil, err
+				}
 			}
 			out, err := a.installationResult(ctx, u, r)
 			if c, ok := out.(Connector); ok {
@@ -1084,12 +1102,19 @@ func registerOrganisationConnectors(a *API, writes, versioned, locks []string) {
 				return nil, err
 			}
 			if in.Body.Step == storage.StepPause {
-				if _, err := a.steppedUpPerson(ctx, "Pausing a connector"); err != nil {
+				p, err := a.steppedUpPerson(ctx, "Pausing a connector")
+				if err != nil {
 					return nil, err
 				}
 				r, err := a.organisations().Apply(ctx, u, c.ID, c.Version, storage.StepPause, connector.Input{})
 				if err != nil {
 					return nil, err
+				}
+				if a.deps.Outbox != nil { // the others hear of it at once (the owner's decision of 25 Oct 2026)
+					link := "/settings/integrations/" + c.ID.String() + "?scope=organisation"
+					if err := notify.ConnectorPaused(ctx, *a.deps.Outbox, u, p.Organisation, p.UserID, c.ID, b.Manifest.Name, link, a.deps.Clock.Now()); err != nil {
+						return nil, err
+					}
 				}
 				return a.connectorOf(r.Connector, secrets), nil
 			}
@@ -1183,4 +1208,75 @@ func connectorDependencies(ctx context.Context, u storage.UnitOfWork, key string
 		}
 	}
 	return 0, deps, nil
+}
+
+// testingConnector names the test of an installation connector, which no one is told of.
+const testingConnector = "Testing a connector"
+
+// tellOfInstallationStep tells the Super admins of a step of an installation connector (FR-ADM-07, FR-INT-26; the owner's
+// decision of 25 Oct 2026), through the relay, since the installation organisation has no members: the others, of a
+// change that waits for one of them, or of a pause, which takes effect without them; and a lone Super admin, of every
+// step that applied at once, as a security notice, so a stolen session's change does not go unseen.
+func (a *API) tellOfInstallationStep(ctx context.Context, u storage.UnitOfWork, by uuid.UUID, before storage.InstalledConnector, r connector.Result) error {
+	if r.Pending != nil {
+		return a.relay(ctx, u, notify.Event{Type: "approval.requested", RecordType: "installation_change", RecordID: &r.Pending.ID,
+			Link: "/settings/integrations", Title: r.Pending.Summary + ": a change to an installation connector waits for another Super admin's approval",
+			Audience: notify.SuperAdmins(by)})
+	}
+	n, err := a.deps.Installation.CountSuperAdmins(ctx)
+	if err != nil {
+		return err
+	}
+	b, _ := a.deps.Connectors.Catalogue.Get(r.Connector.Connector)
+	e := notify.Event{Type: notify.ConnectorType, RecordType: "installation_connector", RecordID: &r.Connector.ID,
+		Link: "/settings/integrations/" + r.Connector.ID.String() + "?scope=installation"}
+	switch {
+	case n <= 1:
+		e.Title = b.Manifest.Name + " changed at once, since there is one Super admin: " + stepDone(before, r.Connector) +
+			". If it was not you, sign out your other devices and replace the connector's keys."
+		e.Audience = notify.SuperAdmins()
+	case before.State == storage.ConnectorEnabled && r.Connector.State == storage.ConnectorPaused:
+		e.Title = b.Manifest.Name + " was paused by another Super admin: its work is held until it is resumed, which needs a second Super admin"
+		e.Audience = notify.SuperAdmins(by)
+	default:
+		return nil
+	}
+	return a.relay(ctx, u, e)
+}
+
+// stepDone says in a few words what a step did to a connector.
+func stepDone(before, after storage.InstalledConnector) string {
+	switch {
+	case before.ID == uuid.Nil:
+		return "installed"
+	case before.State != after.State:
+		return after.State
+	case before.Position != after.Position:
+		return "moved in its order"
+	default:
+		return "its configuration or a key replaced"
+	}
+}
+
+// tellOfDecision tells the Super admin who asked for an installation change how it was decided.
+func (a *API) tellOfDecision(ctx context.Context, u storage.UnitOfWork, c storage.InstallationChange) error {
+	title := c.Summary + ": approved by another Super admin, and done"
+	if c.Status == "rejected" {
+		title = c.Summary + ": rejected by another Super admin: " + c.Reason
+	}
+	return a.relay(ctx, u, notify.Event{Type: "approval.decided", RecordType: "installation_change", RecordID: &c.ID, Link: "/settings/integrations",
+		Title: title, Audience: notify.Audience{Users: []uuid.UUID{c.RequestedBy}}})
+}
+
+// relay queues e in u for the people it names, from the caller's organisation (the installation's, in an installation
+// write); nothing without an outbox.
+func (a *API) relay(ctx context.Context, u storage.UnitOfWork, e notify.Event) error {
+	if a.deps.Outbox == nil {
+		return nil
+	}
+	if e.At.IsZero() {
+		e.At = a.deps.Clock.Now()
+	}
+	p, _ := authn.From(ctx)
+	return notify.Relay(ctx, *a.deps.Outbox, u, p.Organisation, e)
 }
