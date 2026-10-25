@@ -445,6 +445,11 @@ Source: PRD-001 §J.3
 - **THEN** sync switches from emailed reports to API pulls and pushes
 - **AND** the e-statement tie-out stays
 
+#### Scenario: P1 builds the switch, not RAPID (rev 0.140)
+- **WHEN** `p1-bank-import-reconcile` is built
+- **THEN** a money account can move its data source from emailed reports to an API connector without a gap, keeping the e-statement tie-out and the bank agreements as evidence
+- **AND** the RAPID connector itself is P2 (the owner's decision of 25 Oct 2026)
+
 ### Requirement: Wise or Airwallex account syncs itself
 A Wise or Airwallex account SHALL sync its balances and transactions through a connector installed with a read-only API key (UC-BNK-04).
 
