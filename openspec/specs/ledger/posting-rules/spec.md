@@ -78,6 +78,13 @@ Source: PRD-001 §10.2
 - **THEN** the transfer is recorded once
 - **AND** it is matched on both feeds
 
+#### Scenario: Transfer across currencies (rev 0.140)
+- **GIVEN** a transfer between money accounts in different currencies
+- **WHEN** it is posted
+- **THEN** each leg is booked at its own currency's rate for the day (ENG-40)
+- **AND** a fee the provider reports goes to the bank charges account, an organisation setting that is 6460 by default
+- **AND** the rest of the difference goes to 7030 (the owner's decision of 25 Oct 2026; the accountant confirms before the oracle session)
+
 ### Requirement: Posting an invoice
 A posted invoice SHALL debit AR 1100 with the total and credit revenue, or deferred revenue 2400 when spread, with the net and the GST control with the GST.
 
