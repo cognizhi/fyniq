@@ -6,12 +6,13 @@ package connectors
 import (
 	"github.com/cognizhi/fyniq/connectors/resend"
 	"github.com/cognizhi/fyniq/connectors/smtp"
+	"github.com/cognizhi/fyniq/connectors/wise"
 	"github.com/cognizhi/fyniq/connectors/zeptomail"
 	"github.com/cognizhi/fyniq/internal/connector"
 )
 
 // bindings are the connectors compiled in.
-var bindings = []func() (connector.Binding, error){smtp.Binding, zeptomail.Binding, resend.Binding}
+var bindings = []func() (connector.Binding, error){smtp.Binding, zeptomail.Binding, resend.Binding, wise.Binding}
 
 // Catalogue is the release's catalogue; an error means a manifest or binding is malformed, and the service must not
 // start.
