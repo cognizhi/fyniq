@@ -160,6 +160,8 @@ type Cache struct {
 	Resolver Resolver
 	Domains  []string
 	Records  map[string][]Record
+	// RecordsFrom, when set, gives the records at each check in place of Records: the email connectors' (rev 0.139).
+	RecordsFrom func(ctx context.Context) map[string][]Record
 	TTL      time.Duration
 	Now      func() time.Time
 
@@ -176,7 +178,11 @@ func (c *Cache) Results(ctx context.Context) ([]Result, time.Time) {
 	if now := c.Now(); c.last == nil || now.Sub(c.at) >= c.TTL {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
-		c.last, c.at = All(ctx, c.Resolver, c.Domains, c.Records), now
+		records := c.Records
+		if c.RecordsFrom != nil {
+			records = c.RecordsFrom(ctx)
+		}
+		c.last, c.at = All(ctx, c.Resolver, c.Domains, records), now
 	}
 	return c.last, c.at
 }

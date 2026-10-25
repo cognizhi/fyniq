@@ -37,6 +37,10 @@ type Receiver struct {
 	Clock        ports.Clock
 	ResendSecret string // the endpoint's signing secret, whsec_…
 	ZeptoMailKey string // the Mail Agent's webhook authentication key
+	// Keys, when set, gives each provider's webhook keys for each request, newest first, in place of the two above: its
+	// connector's current key and one still in its rotation overlap (FR-INT-26); ErrOff when the connector is disabled
+	// or uninstalled, which refuses the request (rev 0.139).
+	Keys func(ctx context.Context, provider string) ([]string, error)
 	Log          *slog.Logger
 	// Inbound receives mail for the email-in addresses (FR-INT-22, rev 0.106); nil: email-in is not set up.
 	Inbound *Inbound
@@ -61,19 +65,56 @@ type Mux interface {
 	HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request))
 }
 
-// Register mounts POST /webhooks/email/resend and POST /webhooks/email/zeptomail, each only with its secret.
+// ErrOff is a provider whose connector is disabled or uninstalled: its webhooks are refused.
+var ErrOff = errors.New("the provider's connector is disabled or uninstalled")
+
+// keys are provider's webhook keys for this request, newest first.
+func (r *Receiver) keys(ctx context.Context, provider, static string) ([]string, error) {
+	if r.Keys == nil {
+		if static == "" {
+			return nil, ErrOff
+		}
+		return []string{static}, nil
+	}
+	return r.Keys(ctx, provider)
+}
+
+// verified tries each of provider's keys in turn with verify, so a key still in its rotation overlap verifies as the new
+// one does.
+func (r *Receiver) verified(ctx context.Context, provider, static string, verify func(key string) error) error {
+	keys, err := r.keys(ctx, provider, static)
+	if err != nil {
+		return err
+	}
+	last := ErrSignature
+	for _, k := range keys {
+		err := verify(k)
+		if err == nil {
+			return nil
+		}
+		last = err
+	}
+	return last
+}
+
+// Register mounts POST /webhooks/email/resend and POST /webhooks/email/zeptomail, each only with its secret, or with
+// Keys, which decides for each request.
 func (r *Receiver) Register(mux Mux) {
-	if r.ResendSecret != "" {
-		mux.HandleFunc("POST /webhooks/email/resend", r.handle("resend", func(h http.Header, body []byte, now time.Time) ([]Event, error) {
-			id, err := VerifyResend(r.ResendSecret, h, body, now)
-			if err != nil {
+	if r.ResendSecret != "" || r.Keys != nil {
+		mux.HandleFunc("POST /webhooks/email/resend", r.handle("resend", func(ctx context.Context, h http.Header, body []byte, now time.Time) ([]Event, error) {
+			var id string
+			if err := r.verified(ctx, "resend", r.ResendSecret, func(key string) error {
+				var err error
+				id, err = VerifyResend(key, h, body, now)
+				return err
+			}); err != nil {
 				return nil, err
 			}
 			return ParseResend(id, body, now)
 		}))
 	}
 	if r.MailpitSecret != "" {
-		mux.HandleFunc("POST /webhooks/email/mailpit", r.handle("mailpit", func(h http.Header, body []byte, now time.Time) ([]Event, error) {
+		mux.HandleFunc("POST /webhooks/email/mailpit", r.handle("mailpit", func(_ context.Context, h http.Header, body []byte, now time.Time) ([]Event, error) {
 			user, password, ok := (&http.Request{Header: h}).BasicAuth()
 			if !ok || subtle.ConstantTimeCompare([]byte(user+":"+password), []byte(r.MailpitSecret)) != 1 {
 				return nil, ErrSignature
@@ -81,10 +122,14 @@ func (r *Receiver) Register(mux Mux) {
 			return ParseMailpit(body, now)
 		}))
 	}
-	if r.ZeptoMailKey != "" {
-		mux.HandleFunc("POST /webhooks/email/zeptomail", r.handle("zeptomail", func(h http.Header, body []byte, now time.Time) ([]Event, error) {
-			payload, err := VerifyZeptoMail(r.ZeptoMailKey, h, body, now)
-			if err != nil {
+	if r.ZeptoMailKey != "" || r.Keys != nil {
+		mux.HandleFunc("POST /webhooks/email/zeptomail", r.handle("zeptomail", func(ctx context.Context, h http.Header, body []byte, now time.Time) ([]Event, error) {
+			var payload []byte
+			if err := r.verified(ctx, "zeptomail", r.ZeptoMailKey, func(key string) error {
+				var err error
+				payload, err = VerifyZeptoMail(key, h, body, now)
+				return err
+			}); err != nil {
 				return nil, err
 			}
 			return ParseZeptoMail(payload, now)
@@ -116,15 +161,18 @@ type Received struct {
 // errMalformed means a signed request could not be read.
 var errMalformed = errors.New("the request is signed but cannot be read")
 
-func (r *Receiver) handle(provider string, read func(http.Header, []byte, time.Time) ([]Event, error)) func(http.ResponseWriter, *http.Request) {
+func (r *Receiver) handle(provider string, read func(context.Context, http.Header, []byte, time.Time) ([]Event, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		body, err := io.ReadAll(io.LimitReader(req.Body, MaxBody+1))
 		if err != nil || len(body) > MaxBody {
 			http.Error(w, "the request is too large or unreadable", http.StatusRequestEntityTooLarge)
 			return
 		}
-		events, err := read(req.Header, body, r.Clock.Now())
+		events, err := read(req.Context(), req.Header, body, r.Clock.Now())
 		switch {
+		case errors.Is(err, ErrOff):
+			http.Error(w, "this provider's connector is disabled or uninstalled", http.StatusNotFound)
+			return
 		case errors.Is(err, ErrSignature):
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return

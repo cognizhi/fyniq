@@ -194,8 +194,10 @@
     and a fresh installation would have no email until someone ran it.
 - **The capture domain, the platform sender and the sending domains:**
   - the capture domain stays a deployment setting (it is DNS that infra owns);
-  - the platform sender and the sending domains become the outbound-email capability's installation
-    settings, shared by every email connector so failover sends from the same domains;
+  - the platform sender and the sending domains stay the deployment's settings, shared by every email
+    connector so failover sends from the same domains. *Changed while building (task 6.3):* they were to become
+    installation settings the Super admin edits; they are bound to the deployment's DNS like the capture domain,
+    and the owner's decision named the providers, their keys and their order, so they stay where they are;
   - each provider's DNS records are in its own configuration, and the nightly `email.domains` job reads them
     from there.
 - **API (FR-INT-01, §8.18.1):**

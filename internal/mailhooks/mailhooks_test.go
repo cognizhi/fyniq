@@ -1,6 +1,7 @@
 package mailhooks_test
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -199,3 +200,44 @@ func TestMailpitsWebhookStandsInForTheProvidersInLocalMode(t *testing.T) {
 type fixed struct{}
 
 func (fixed) Now() time.Time { return now }
+
+// With Keys, each request reads the provider's keys: a request signed with the key a rotation replaced still verifies
+// while that key is in its overlap, and not after; a provider whose connector is disabled or uninstalled is refused
+// before its signature is read (FR-INT-26, rev 0.139).
+// req: FR-INT-21
+// req: FR-INT-26
+// asvs: V13.3.4
+func TestWebhookKeysAreReadForEachRequest(t *testing.T) {
+	newer := "whsec_" + base64.StdEncoding.EncodeToString([]byte("another key of thirty-two bytes!"))
+	keys := []string{newer, resendSecret}
+	var off bool
+	mux := http.NewServeMux()
+	(&mailhooks.Receiver{Clock: fixed{}, Keys: func(_ context.Context, provider string) ([]string, error) {
+		if provider != "resend" {
+			t.Errorf("keys asked for %s", provider)
+		}
+		if off {
+			return nil, mailhooks.ErrOff
+		}
+		return keys, nil
+	}}).Register(mux)
+	body := `{"type":"email.opened","created_at":"2026-10-23T08:59:00Z","data":{"to":["a@example.com"],"tags":[]}}`
+	post := func() int {
+		req := httptest.NewRequest(http.MethodPost, "/webhooks/email/resend", strings.NewReader(body))
+		req.Header = resendHeaders("msg_1", now, body)
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	if code := post(); code != http.StatusNoContent {
+		t.Fatalf("signed with the replaced key, in its overlap: %d", code)
+	}
+	keys = []string{newer}
+	if code := post(); code != http.StatusUnauthorized {
+		t.Fatalf("signed with the replaced key, after its overlap: %d", code)
+	}
+	off = true
+	if code := post(); code != http.StatusNotFound {
+		t.Fatalf("a disabled connector's webhook: %d", code)
+	}
+}

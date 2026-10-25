@@ -110,7 +110,10 @@ func BlobKey(org, message, file uuid.UUID) string {
 
 // Fetcher fetches each received message, decides its standing and keeps its files.
 type Fetcher struct {
-	Mail    ports.InboundMail
+	Mail ports.InboundMail
+	// MailFrom, when set, gives the provider for each fetch in place of Mail: the enabled connector that receives email,
+	// read when the fetch starts (FR-INT-20); ports.ErrNotFound when none is enabled, and the fetch waits, held (rev 0.139).
+	MailFrom func(ctx context.Context, org uuid.UUID) (ports.InboundMail, error)
 	Store   storage.Store
 	Files   ports.BlobStore // the staging store
 	Scanner ports.Scanner
@@ -180,7 +183,18 @@ func (f Fetcher) Work() outbox.Work {
 				return nil
 			})
 		}
-		mail, err := f.Mail.Fetch(ctx, m.ProviderID)
+		provider := f.Mail
+		if f.MailFrom != nil {
+			var err error
+			provider, err = f.MailFrom(ctx, org)
+			if errors.Is(err, ports.ErrNotFound) {
+				return fmt.Errorf("%w: no connector that receives email is enabled", outbox.ErrHeld)
+			}
+			if err != nil {
+				return err
+			}
+		}
+		mail, err := provider.Fetch(ctx, m.ProviderID)
 		if err != nil {
 			if row.MaxAttempts > 0 && row.Attempts >= row.MaxAttempts {
 				return fetched(storage.InboundFetch{Status: storage.InboundFailed, LastError: err.Error()}, nil)
@@ -196,7 +210,7 @@ func (f Fetcher) Work() outbox.Work {
 			end := m.ReceivedAt.Add(time.Duration(days) * 24 * time.Hour)
 			fx.ExpiresAt = &end
 		}
-		files, left, err := f.keep(ctx, org, m, mail)
+		files, left, err := f.keep(ctx, org, provider, m, mail)
 		if err != nil {
 			return err
 		}
@@ -209,7 +223,7 @@ func (f Fetcher) Work() outbox.Work {
 
 // keep checks, scans and stores a message's text body and attachments, returning their records and why any was left
 // out. Each file's ID comes from the message and the provider's ID of it, so a retry overwrites the same blob.
-func (f Fetcher) keep(ctx context.Context, org uuid.UUID, m storage.InboundMessage, mail ports.InboundEmail) ([]storage.InboundFile, []string, error) {
+func (f Fetcher) keep(ctx context.Context, org uuid.UUID, provider ports.InboundMail, m storage.InboundMessage, mail ports.InboundEmail) ([]storage.InboundFile, []string, error) {
 	type part struct {
 		kind, name, ref string
 		data            []byte
@@ -228,7 +242,7 @@ func (f Fetcher) keep(ctx context.Context, org uuid.UUID, m storage.InboundMessa
 	for _, pt := range parts {
 		data := pt.data
 		if pt.a != nil {
-			b, err := f.Mail.Attachment(ctx, m.ProviderID, *pt.a, MaxFile)
+			b, err := provider.Attachment(ctx, m.ProviderID, *pt.a, MaxFile)
 			if errors.Is(err, ports.ErrTooLarge) {
 				left = append(left, pt.name+": larger than 25 MB")
 				continue

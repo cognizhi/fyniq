@@ -33,6 +33,9 @@ const (
 // choose its senders on. The providers' keys never reach the API.
 type MailInfo struct {
 	Providers []string
+	// ProvidersFrom, when set, gives the providers for each request in place of Providers: the enabled email
+	// connectors, in order (rev 0.139).
+	ProvidersFrom func(ctx context.Context) []string
 	From      string
 	Domains   []string
 	// Check is the sending domains' DNS, as last checked and when (rev 0.104); nil: none is checked.
@@ -326,14 +329,18 @@ func registerEmail(a *API) {
 	register(a, authz.GetEmailSettings, huma.Operation{
 		OperationID: "getEmailSettings", Method: http.MethodGet, Path: "/v1/organisation/email", Tags: []string{"Organisation"},
 		Summary: "Get the email settings",
-		Description: "The organisation's outbound email (FR-INT-21; the owner's decision of 23 Oct 2026): the deployment's providers in order, " +
+		Description: "The organisation's outbound email (FR-INT-21; the owner's decisions of 23 and 25 Oct 2026): the enabled email connectors in order, " +
 			"the first primary and the next its failover, the platform's sender and the domains a sender may be chosen on, which the " +
 			"deployment's operators set, with each domain's DNS records and DMARC policy as checked within the hour; and the " +
 			"organisation's sender of each purpose, or the platform's. No provider key is ever shown. Read-only; no side effects.",
 	}, locks, func(ctx context.Context, _ *struct{}) (*emailSettingsOutput, error) {
 		p, _ := authn.From(ctx)
 		out := EmailSettings{PlatformSender: a.deps.Mail.From, Providers: []EmailProvider{}, Domains: []SendingDomain{}}
-		for i, n := range a.deps.Mail.Providers {
+		providers := a.deps.Mail.Providers
+		if a.deps.Mail.ProvidersFrom != nil {
+			providers = a.deps.Mail.ProvidersFrom(ctx)
+		}
+		for i, n := range providers {
 			role := "failover"
 			if i == 0 {
 				role = "primary"
