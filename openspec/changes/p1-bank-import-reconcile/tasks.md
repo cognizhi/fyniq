@@ -7,7 +7,7 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 
 ## 1. Before code
 
-- [ ] 1.1 The threat model `docs/security/threat-models/banking.md`:
+- [x] 1.1 The threat model `docs/security/threat-models/banking.md`:
   - assets: statements and bank lines, the postings they make, bank connector keys, the bank-ingest mail;
   - abuse cases: a forged or replayed bank report, a malformed or oversized file (zip bomb, deep XML, a huge
     CSV), a forged or replayed webhook, a real line dropped as a duplicate, auto-reconcile driven to the wrong
@@ -16,6 +16,8 @@ before any code that parses bank files or touches connector secrets (SEC-20).
     rewritten for the secrets project (design D12).
   - Verified by review in the pull request, before the first code slice merges. Refs `// req: SEC-20`, FR-BNK-15,
     FR-INT-22, SEC-36.
+  (25 Oct 2026: T1 to T17, each mapped to its control and the task whose tests prove it; the connector threat
+  model's T12 and open item now name the secrets project)
 
 ## 2. The store
 
