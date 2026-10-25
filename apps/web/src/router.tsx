@@ -56,6 +56,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "bank-account-new": lazyRouteComponent(() => import("./screens/banking/AddBankAccount"), "AddBankAccount"),
   "bank-account": lazyRouteComponent(() => import("./screens/banking/BankAccountRegister"), "BankAccountRegister"),
   "statement-import": lazyRouteComponent(() => import("./screens/banking/StatementImport"), "StatementImport"),
+  categorise: lazyRouteComponent(() => import("./screens/banking/Categorise"), "Categorise"),
   accounting: lazyRouteComponent(() => import("./screens/accounting/Accounting"), "Accounting"),
   journals: lazyRouteComponent(() => import("./screens/accounting/Journals"), "Journals"),
   "journal-new": lazyRouteComponent(() => import("./screens/accounting/JournalPage"), "JournalPage"),

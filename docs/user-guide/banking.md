@@ -3,7 +3,7 @@ key: banking.accounts
 title: Bank accounts
 mode: basic
 roles: [bookkeeper, accountant, controller, owner, administrator, ar_specialist, ap_specialist, payment_releaser, auditor, tax_agent]
-requirements: [FR-BNK-01, FR-BNK-02, FR-BNK-04, FR-BNK-09, FR-BNK-11, FR-BNK-13, FR-BNK-15, FR-BNK-16, FR-BNK-17, FR-BNK-18, FR-DOC-08, FR-INT-22]
+requirements: [FR-BNK-01, FR-BNK-02, FR-BNK-04, FR-BNK-05, FR-BNK-06, FR-BNK-07, FR-BNK-08, FR-BNK-09, FR-BNK-11, FR-BNK-13, FR-BNK-14, FR-BNK-15, FR-BNK-16, FR-BNK-17, FR-BNK-18, FR-DOC-08, FR-INT-22]
 status: draft            # written with the banking screens (P1, p1-bank-import-reconcile task 10.1); reviewed with the accountant
 ---
 
@@ -84,6 +84,38 @@ Select **Import statement**, then choose the bank's files: several at once, for 
   signed column, or money in and money out), and optionally the reference, counterparty, description and
   running balance. With a running balance, an overlap with a statement held already is proved, and its
   lines are dropped.
+
+## Categorise the waiting lines
+
+**Categorise** lists the lines waiting for a person: new lines, possible duplicates and lines in
+suspense. Fyniq never applies a suggestion by itself.
+
+- Each line shows whether money came in or went out, its amount, and its description as the bank sent it.
+- **What is this?** lists the suggestions, best first: money already recorded by hand, an open invoice or
+  bill whose number the line names, one of the amount the line's counterparty owes, then the first bank
+  rule the line meets.
+- **Accept** posts the line as the chosen suggestion says: a payment of the invoice or bill, a match to
+  the money recorded by hand, or the rule's category. **Change the category** posts the whole line to
+  the account you choose, with its GST code and, if you like, its contact. **Skip** moves on and comes
+  back to it later.
+- **Reconcile now** lets Fyniq reconcile the exact matches among the waiting lines by itself, within the
+  organisation's auto-reconcile limits, and says how many it left for you and why. Lines that arrive by
+  email or from a connector wait for it.
+- A possible duplicate ⚠ says so: compare it on the account first. A line in suspense ⚠ is posted to
+  suspense (2999) until you categorise or match it.
+
+In Expert mode:
+
+- **Grid view** lists every waiting line with its best suggestion: select several and accept their
+  suggestions at once. Each line posts on its own, so one refused never stops the others.
+- **Split the line** posts it to several accounts, each part with its amount; one part may take the
+  rest of the line.
+- **Mark as a transfer** matches money moved between two of your accounts to the other side's line, or
+  leaves it in transit until that line arrives.
+- **Match to documents** settles one customer's invoices or one supplier's bills with the line, several
+  at once. What it pays beyond them stays as a credit with them; a small shortfall settled in full clears
+  within the organisation's settlement tolerance.
+- **Suspense** posts the line to suspense until its purpose is known.
 
 ## Freshness and gaps
 

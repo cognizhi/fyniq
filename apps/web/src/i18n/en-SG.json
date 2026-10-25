@@ -304,6 +304,42 @@
       "label": "Dismiss the alert",
       "tooltip": "The alert stops showing its invoice as likely paid. Nothing is posted, and the reason is kept in the audit trail."
     },
+    "banking.categorise": {
+      "label": "Categorise",
+      "tooltip": "The lines waiting for a person: accept a suggestion, change it, or skip; nothing is applied by itself."
+    },
+    "banking.categorise-grid": {
+      "label": "Grid view",
+      "tooltip": "Every waiting line with its best suggestion, to accept several at once or split, transfer and match them."
+    },
+    "banking.reconcile-now": {
+      "label": "Reconcile now",
+      "tooltip": "Fyniq reconciles the exact matches among the waiting lines by itself, within the organisation's limits; the rest stays for you."
+    },
+    "bank-line.accept": {
+      "label": "Accept",
+      "tooltip": "Post the line as the chosen suggestion says: a payment of the document, or the rule's category."
+    },
+    "bank-line.change": {
+      "label": "Change the category",
+      "tooltip": "Choose the account the whole line posts to, its GST code and, if you like, its contact."
+    },
+    "bank-line.split": {
+      "label": "Split the line",
+      "tooltip": "Post the line to several accounts, each part with its amount; one part may take the rest."
+    },
+    "bank-line.transfer": {
+      "label": "Mark as a transfer",
+      "tooltip": "Money moved between two of your accounts: match it to the other side's line, or leave it in transit until that line arrives."
+    },
+    "bank-line.match": {
+      "label": "Match to documents",
+      "tooltip": "Settle a customer's invoices or a supplier's bills with the line, several at once if it paid several."
+    },
+    "bank-line.suspense": {
+      "label": "Suspense",
+      "tooltip": "Post the line to suspense (2999) until its purpose is known; categorising or matching it later reverses that."
+    },
     "purchases.bills": {
       "label": "Bills",
       "tooltip": "Every bill from a supplier: its total, when it falls due, and whether it is posted, waiting for approval or voided."
