@@ -50,17 +50,17 @@ secrets or connector traffic (SEC-20).
 
 ## 3. Secrets
 
-- [ ] 3.1 `ports.SecretStore` (Put returns a reference pinned to a version; Get, Disable, Destroy):
+- [x] 3.1 `ports.SecretStore` (Put returns a reference pinned to a version; Get, Disable, Destroy):
   - a shared contract suite in `internal/ports/porttest`;
   - the local file adapter under `.data/secrets/` (0600; local flavour only, DEV-07);
   - an in-memory cache keyed by the pinned reference.
   - Tests: the porttest suite on the local adapter, `TestReleaseBuildHasNoLocalSecretStore` (archtest).
     `// req: FR-INT-20` (credentials kept in Secret Manager, write-only), `// req: DEV-07`
-- [ ] 3.2 The Secret Manager adapter over REST in `internal/adapters/gcp` (addVersion, access, disable,
+- [x] 3.2 The Secret Manager adapter over REST in `internal/adapters/gcp` (addVersion, access, disable,
   destroy) with the service's own token.
   - Tests: the porttest suite against a fake Secret Manager server; no client library imported (archtest).
     `// req: FR-INT-20`, `// req: NFR-PORT-03`
-- [ ] 3.3 Infra:
+- [x] 3.3 Infra:
   - one secret per installation connector secret (`connector-<id>-<secret>`);
   - the API's account may add, disable and destroy versions of those only, and the API and worker may read
     them;
@@ -70,6 +70,18 @@ secrets or connector traffic (SEC-20).
     role) in `make infra-check`. `// req: SEC-12`
   - The organisation-secret IAM condition stays `[verify]` until `p1-bank-import-reconcile`'s first
     organisation connector (`design.md`).
+  (25 Oct 2026, tasks 3.1 to 3.3: `ports.SecretStore` and `ports.SecretRef`, with `porttest.SecretStore`;
+  `local.SecretFiles` (0600 files under `.data/secrets`, a tombstone so a version number is never reused; local flavour
+  only, which `scripts/images.py` proves for every release image rather than a new archtest); `gcp.SecretManager` over
+  REST (addVersion and access with CRC32C, the enabled versions listed for `Latest`, disable and destroy idempotent, a
+  disabled or destroyed version told apart by its state), touching only the secrets `FYNIQ_CONNECTOR_SECRETS` names
+  (and later organisation prefixes); `connector.SecretCache` by pinned reference for `SecretTTL`. Infra: the
+  environment module reads `connectors/*/manifest.json`, makes each installation connector secret its own secret or the
+  existing one `connector_secret_sources` names (so today's email keys are referenced, never copied), grants
+  `secretAccessor` to the services each manifest lists and `secretVersionManager` to the api on those secrets only, and
+  gives the api, worker and jobs `FYNIQ_CONNECTOR_SECRETS`. Tests: `TestSecretFilesConformance`,
+  `TestSecretManagerConformance`, `TestSecretManagerChecksTheCRC`, `TestSecretCacheReadsEachVersionOncePerTTL`, the
+  module's `connector_secrets_follow_their_manifests`, `make infra-check`)
 
 ## 4. The installed connector, its lifecycle and dual control
 

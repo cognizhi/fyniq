@@ -86,7 +86,19 @@ The tests check the controls on the planned configuration:
    and the `api` the webhooks' secrets, `FYNIQ_ZEPTOMAIL_WEBHOOK_KEY = "zeptomail-webhook-key"` and
    `FYNIQ_RESEND_WEBHOOK_SECRET = "resend-webhook-secret"`; point each provider's webhook at
    `https://<origin>/api/webhooks/email/zeptomail` or `…/resend`. Add those secrets' versions out of
-   band like the others; no key ever passes through the API's answers. The module gives the `worker`
+   band like the others; no key ever passes through the API's answers.
+
+   Connector secrets (FR-INT-20, PRD-001 rev 0.139) come from the manifests in `connectors/`: each
+   installation connector's secret is a secret of its own, `connector-<connector>-<secret>`, read only
+   by the services its manifest lists, and the `api` may add, disable and destroy their versions
+   (`roles/secretmanager.secretVersionManager`, which cannot read a value) and no other secret's, when
+   a Super admin replaces a key in Settings › Integrations. The `api`, `worker` and `jobs` get
+   `FYNIQ_CONNECTOR_SECRETS`, which secret holds each one (names, never values). To keep the email
+   providers' keys where they are, the root's `connector_secret_sources` names them, such as
+   `{ "zeptomail.send_token" = "zeptomail-key", "zeptomail.webhook_key" = "zeptomail-webhook-key",
+   "resend.api_key" = "resend-key", "resend.webhook_secret" = "resend-webhook-secret" }`, so they
+   are referenced, never copied. The first-start bootstrap that installs the email connectors with
+   those references arrives with `p1-connector-framework` task 6.1; until then email is sent as above. The module gives the `worker`
    and `jobs` `FYNIQ_PUBLIC_ORIGIN` from `public_origin`, for the links in notifications' emails
    (rev 0.108).
 7. Run the Infrastructure workflow by hand for `staging` with **apply**. After that, pushes to

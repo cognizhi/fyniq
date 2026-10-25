@@ -41,6 +41,31 @@ func TestSecretsConformance(t *testing.T) {
 }
 
 // req: NFR-PORT-04
+// The local secret store passes the SecretStore suite, and keeps each value readable by its owner only.
+// req: FR-INT-20
+// req: SEC-12
+// asvs: V13.3.1
+func TestSecretFilesConformance(t *testing.T) {
+	root := t.TempDir()
+	s, err := NewSecretFiles(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	porttest.SecretStore(t, s)
+	ref, err := s.Put(context.Background(), "connector-example-mode", "v")
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(filepath.Join(root, "connector-example-mode", strings.TrimPrefix(string(ref), "local:connector-example-mode/")))
+	if err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("the value's file: %v, %v", info, err)
+	}
+	again, err := s.Put(context.Background(), "connector-example-key", "third")
+	if err != nil || again != "local:connector-example-key/3" {
+		t.Fatalf("a destroyed version's number is never reused: %q, %v", again, err)
+	}
+}
+
 func TestBlobStoreConformance(t *testing.T) {
 	porttest.BlobStore(t, func(t *testing.T) ports.BlobStore {
 		d, err := NewDir(t.TempDir())
