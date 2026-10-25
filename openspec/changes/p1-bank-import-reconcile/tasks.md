@@ -89,7 +89,7 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   - As built: the regex runs on RE2 (linear in the text) with a 200-character pattern; the amount range is of the
     line's size with an optional direction and currency. Dimensions in the action wait for FR-DIM (task 4.7), as on
     bill and invoice lines.
-- [ ] 4.3 Matching (design D5): suggestions by reference (exact, then normalised) and by amount and contact;
+- [x] 4.3 Matching (design D5): suggestions by reference (exact, then normalised) and by amount and contact;
   accepting creates the receipt or bill payment through their commands with the line as source; a receipt or payment
   recorded by hand is matched, never duplicated; one to many, many to one, partial and over payments; realised FX and
   the settlement tolerances as built.

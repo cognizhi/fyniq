@@ -285,13 +285,13 @@ func (s BankTransactions) reverse(ctx context.Context, u storage.UnitOfWork, lin
 	if err != nil {
 		return err
 	}
+	if _, err := u.BankMatching().UndoMatch(ctx, m.ID, reason, at); err != nil { // before the reversal of its document (FY229)
+		return err
+	}
 	if err := u.Documents().SetStatus(ctx, doc.ID, storage.DocumentReversed); err != nil {
 		return err
 	}
 	doc.Status = storage.DocumentReversed
-	if _, err := u.BankMatching().UndoMatch(ctx, m.ID, reason, at); err != nil {
-		return err
-	}
 	return s.after(ctx, u, doc, e)
 }
 

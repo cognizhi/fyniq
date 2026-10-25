@@ -358,9 +358,11 @@ type NewBankMatch struct {
 	At         time.Time
 }
 
-// BankMatchFilter narrows the matches listed: a line's, or those the system made since a time; live ones only unless All.
+// BankMatchFilter narrows the matches listed: a line's, a document's, or those the system made since a time; live ones
+// only unless All.
 type BankMatchFilter struct {
 	LineID     *uuid.UUID
+	DocumentID *uuid.UUID
 	SystemOnly bool
 	Since      *time.Time
 	All        bool

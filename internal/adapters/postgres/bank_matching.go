@@ -188,7 +188,8 @@ func (r bankMatching) Matches(ctx context.Context, f storage.BankMatchFilter) ([
 	if err := r.u.check(); err != nil {
 		return nil, err
 	}
-	rows, err := r.u.q.BankMatches(ctx, sqlcdb.BankMatchesParams{LineID: f.LineID, SystemOnly: f.SystemOnly, Since: f.Since, AllMatches: f.All})
+	rows, err := r.u.q.BankMatches(ctx, sqlcdb.BankMatchesParams{LineID: f.LineID, DocumentID: f.DocumentID, SystemOnly: f.SystemOnly, Since: f.Since,
+		AllMatches: f.All})
 	if err != nil {
 		return nil, mapError(err)
 	}
