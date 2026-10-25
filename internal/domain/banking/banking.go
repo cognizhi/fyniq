@@ -1,7 +1,7 @@
 // Package banking is bank import, matching and reconciliation (PRD-001 §8.4; p1-bank-import-reconcile): the import of
-// statements into money accounts with their duplicate and continuity checks (FR-BNK-02, FR-BNK-04, FR-BNK-16), and,
-// as later tasks land, rules, matching, transfers, auto-reconcile and reconciliation. Its commands run in the caller's
-// unit of work, so a preview rolls back what an import would add.
+// statements into money accounts with their duplicate and continuity checks (FR-BNK-02, FR-BNK-04, FR-BNK-16), bank
+// rules with their back-test (FR-BNK-05), and, as later tasks land, matching, transfers, auto-reconcile and
+// reconciliation. Its commands run in the caller's unit of work, so a preview rolls back what an import would add.
 package banking
 
 import (
@@ -16,6 +16,7 @@ const (
 	CodeClosed   = "BANK-03" // the money account is closed
 	CodeFile     = "BANK-04" // the file cannot be read: the reader's refusal, with its line and field
 	CodeRequest  = "BANK-05" // the request is incomplete, such as a CSV without its account
+	CodeRule     = "BANK-06" // a bank rule's name, conditions or action do not fit, or no longer read
 )
 
 // Error is a refusal with a stable code, what is wrong and how to fix it.

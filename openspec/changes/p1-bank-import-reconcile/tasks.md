@@ -82,10 +82,13 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   - Tests: the legs of Appendix B.1 for money in, money out and a spread, hand-worked; replay byte for byte.
     `// req: ledger/posting-rules Posting a bank transaction, money in`, `… money out`, `… Spreading a bank
     transaction over N months`, `… Amounts of a bank, card or cash transaction`
-- [ ] 4.2 Bank rules (FR-BNK-05): conditions (description contains or regex with a time limit, amount range,
+- [x] 4.2 Bank rules (FR-BNK-05): conditions (description contains or regex with a time limit, amount range,
   account, counterparty) set the category, contact, GST code, dimensions and reference, in their order; a back-test
   against history reports how many lines a rule would have matched.
   - Tests: ordering, each condition, the back-test count, a regex that cannot run away. `// req: FR-BNK-05`
+  - As built: the regex runs on RE2 (linear in the text) with a 200-character pattern; the amount range is of the
+    line's size with an optional direction and currency. Dimensions in the action wait for FR-DIM (task 4.7), as on
+    bill and invoice lines.
 - [ ] 4.3 Matching (design D5): suggestions by reference (exact, then normalised) and by amount and contact;
   accepting creates the receipt or bill payment through their commands with the line as source; a receipt or payment
   recorded by hand is matched, never duplicated; one to many, many to one, partial and over payments; realised FX and
@@ -105,6 +108,11 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   from a build session).
   - Verified by `make oracle-test` and `make differential` agreeing to the cent. `// req: QA-ENG-01`,
     `// req: QA-ENG-02`
+
+- [ ] 4.7 Dimensions on a bank transaction's parts and in a rule's action, once FR-DIM is built
+  (`p1-organisation-chart` task 3.3), as on bill and invoice lines.
+  - Tests: a rule's dimensions carried to the posting; a value required by its account refused when missing.
+    `// req: FR-BNK-05`, `// req: FR-DIM-02`
 
 ## 5. Auto-reconcile
 
