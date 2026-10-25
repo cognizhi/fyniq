@@ -13,6 +13,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
@@ -560,6 +561,17 @@ var codeFacts = map[string]struct {
 	statement.CodeCurrency:     {422, "The customer has nothing in that currency"},
 	statement.CodeNotStatement: {404, "Not a statement"},
 	storage.CodeStatement:      {409, "A statement is sent as it was made"},
+
+	connector.CodeUnknown:       {404, "No such connector in this release"},
+	connector.CodeScope:         {422, "The connector is installed at the other scope"},
+	connector.CodeConfiguration: {422, "The configuration does not match the connector"},
+	connector.CodeSecretMissing: {409, "A secret the connector needs is not set"},
+	connector.CodeSecretUnknown: {422, "Not one of the connector's secrets"},
+	connector.CodeState:         {409, "The connector cannot take that step now"},
+	connector.CodeNotInstalled:  {404, "No such installed connector"},
+	connector.CodeChange:        {409, "The change cannot be decided or applied now"},
+	storage.CodeConnector:       {409, "A connector moves only along its lifecycle"},
+	storage.CodeConnectorChange: {409, "The other Super admin's approval is needed"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -586,6 +598,9 @@ var storageFixes = map[string]string{
 	storage.CodeScheduled: "Issue and send it as a person, or approve the recurring invoice it came from",
 	storage.CodeReminder:  "Read the reminders again: this one was sent or skipped already",
 	storage.CodeStatement: "Make and send a new statement instead",
+
+	storage.CodeConnector:       "Take the steps in order: install, configure, test, enable; pause and resume; disable; uninstall",
+	storage.CodeConnectorChange: "Ask for the change; the other Super admin approves it, once, before it expires",
 }
 
 // problem builds a Problem for one of the catalogue's codes.
@@ -709,6 +724,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		sde *salesdoc.Error
 		sre *salesreminder.Error
 		sme *statement.Error
+		cne *connector.Error
 		pe  *period.Error
 		ae  *accounting.Error
 		ce  *closing.Error
@@ -760,6 +776,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(ae.Code, sentence(ae.Message), sentence(ae.Fix))
 	case errors.As(err, &ce):
 		return problem(ce.Code, sentence(ce.Message), sentence(ce.Fix))
+	case errors.As(err, &cne):
+		return problem(cne.Code, sentence(cne.Message), sentence(connectorFixes[cne.Code]))
 	case errors.As(err, &fe):
 		if fe.Field != "" {
 			return problem(fe.Code, sentence(fe.Message), sentence(fe.Fix), FieldProblem{Code: fe.Code, Field: fe.Field, Message: fe.Message, Fix: fe.Fix})

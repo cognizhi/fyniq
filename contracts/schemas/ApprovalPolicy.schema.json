@@ -48,7 +48,8 @@
         "customer_credit_application",
         "customer_refund",
         "customer_deposit",
-        "recurring_invoice"
+        "recurring_invoice",
+        "connector"
       ],
       "examples": [
         "organisation_setting"

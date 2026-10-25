@@ -100,9 +100,10 @@ const (
 // control, and members' roles and invitations after the founder bootstrap (rev 0.36); approval policies (rev 0.40);
 // activating statutory pack versions (rev 0.41); reopening a closed period (rev 0.51); posting a journal above the
 // self-approval threshold, and voiding one (rev 0.53); posting a bill above the threshold, and voiding one (p1-purchases);
-// publishing a document template (rev 0.95); issuing an invoice above the threshold, and voiding or editing one (p1-sales).
+// publishing a document template (rev 0.95); issuing an invoice above the threshold, and voiding or editing one (p1-sales);
+// a step of an organisation connector's lifecycle (p1-connector-framework, FR-INT-26).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
-	Invoices}
+	Invoices, Integrations}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -764,8 +765,42 @@ var (
 		Note: passkeyNote + " Open to a session that passed no second factor yet: this is how it passes one."}
 )
 
+// The connectors (FR-INT-20, FR-INT-25…27; PRD-001 rev 0.139): the catalogue, read by whoever may read the
+// organisation's integrations; the installation's connectors, a Super admin's, every step but pause and test approved
+// by the other once there are two (FR-ADM-07); the organisation's, Appendix D's "Organisation integrations" row, every
+// step but pause and test approved under FM-1.
+const connectorSuperAdminNote = superAdminNote + " With two Super admins every step but pause and test waits for the other's approval."
+
+var (
+	ListConnectorCatalogue         = Policy{Operation: "listConnectorCatalogue", Capability: Integrations, Need: View}
+	ListInstallationConnectors     = Policy{Operation: "listInstallationConnectors", Capability: SuperAdmins, Need: View, NoOrganisation: true, Note: superAdminNote}
+	GetInstallationConnector       = Policy{Operation: "getInstallationConnector", Capability: SuperAdmins, Need: View, NoOrganisation: true, Note: superAdminNote}
+	InstallInstallationConnector   = Policy{Operation: "installInstallationConnector", Capability: SuperAdmins, Need: Create, NoOrganisation: true, Note: connectorSuperAdminNote}
+	ConfigureInstallationConnector = Policy{Operation: "configureInstallationConnector", Capability: SuperAdmins, Need: Create, NoOrganisation: true, Note: connectorSuperAdminNote}
+	SetInstallationConnectorSecret = Policy{Operation: "setInstallationConnectorSecret", Capability: SuperAdmins, Need: Create, NoOrganisation: true, Note: connectorSuperAdminNote}
+	StepInstallationConnector      = Policy{Operation: "stepInstallationConnector", Capability: SuperAdmins, Need: Create, NoOrganisation: true, Note: connectorSuperAdminNote}
+	TestInstallationConnector      = Policy{Operation: "testInstallationConnector", Capability: SuperAdmins, Need: Create, NoOrganisation: true, Note: superAdminNote}
+	ListInstallationChanges        = Policy{Operation: "listInstallationChanges", Capability: SuperAdmins, Need: View, NoOrganisation: true, Note: superAdminNote}
+	ApproveInstallationChange      = Policy{Operation: "approveInstallationChange", Capability: SuperAdmins, Need: Approve, NoOrganisation: true,
+		Note: superAdminNote + " The other Super admin approves; nobody approves their own change."}
+	RejectInstallationChange = Policy{Operation: "rejectInstallationChange", Capability: SuperAdmins, Need: Approve, NoOrganisation: true,
+		Note: superAdminNote + " The other Super admin rejects; nobody decides their own change."}
+	ListOrganisationConnectors     = Policy{Operation: "listOrganisationConnectors", Capability: Integrations, Need: View}
+	GetOrganisationConnector       = Policy{Operation: "getOrganisationConnector", Capability: Integrations, Need: View}
+	InstallOrganisationConnector   = Policy{Operation: "installOrganisationConnector", Capability: Integrations, Need: Create}
+	ConfigureOrganisationConnector = Policy{Operation: "configureOrganisationConnector", Capability: Integrations, Need: Create}
+	SetOrganisationConnectorSecret = Policy{Operation: "setOrganisationConnectorSecret", Capability: Integrations, Need: Create}
+	StepOrganisationConnector      = Policy{Operation: "stepOrganisationConnector", Capability: Integrations, Need: Create}
+	TestOrganisationConnector      = Policy{Operation: "testOrganisationConnector", Capability: Integrations, Need: Create}
+)
+
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
+var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
+	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
+	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,
+	TestOrganisationConnector,
+	GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,

@@ -706,7 +706,11 @@ func (c Cleanup) Run(ctx context.Context) (int, error) {
 			}
 			for _, p := range changes {
 				var ch change
-				if (p.Status == "rejected" || p.Status == "expired") && json.Unmarshal(p.Change, &ch) == nil && ch.Ref != "" {
+				ended := p.ExpiresAt
+				if p.DecidedAt != nil {
+					ended = *p.DecidedAt
+				}
+				if (p.Status == "rejected" || p.Status == "expired") && now.Sub(ended) < refusedFor && json.Unmarshal(p.Change, &ch) == nil && ch.Ref != "" {
 					if err := c.Secrets.Destroy(ctx, ch.Ref); err != nil {
 						return err
 					}
@@ -733,17 +737,27 @@ func (c Cleanup) Run(ctx context.Context) (int, error) {
 		return n, err
 	}
 	for _, o := range orgs {
-		var due []ports.SecretRef
+		var due, refused []ports.SecretRef
 		if err := c.Store.Do(ctx, o, func(ctx context.Context, u storage.UnitOfWork) error {
 			all, err := u.Connectors().Organisation(ctx)
 			if err != nil {
 				return err
 			}
 			secrets, err := u.Connectors().OrganisationSecrets(ctx)
+			if err != nil {
+				return err
+			}
 			due = overdue(all, secrets, now)
+			requests, err := u.Approvals().List(ctx, "")
+			refused = refusedRefs(requests, now)
 			return err
 		}); err != nil {
 			return n, err
+		}
+		for _, ref := range refused { // a new key a refused or withdrawn request carried, never recorded
+			if err := c.Secrets.Destroy(ctx, ref); err != nil {
+				return n, err
+			}
 		}
 		for _, ref := range due {
 			if err := c.Secrets.Destroy(ctx, ref); err != nil {
@@ -758,6 +772,38 @@ func (c Cleanup) Run(ctx context.Context) (int, error) {
 		}
 	}
 	return n, nil
+}
+
+// refusedFor is how long after a change was refused, withdrawn or expired the clean-up destroys the new key it carried:
+// long enough for a failed run to be retried, short enough not to call Secret Manager about it every hour for good.
+const refusedFor = 8 * 24 * time.Hour
+
+// refusedRefs are the new keys of an organisation's connector approval requests that ended without applying: rejected,
+// withdrawn (void) or expired, recently.
+func refusedRefs(requests []storage.ApprovalRequest, now time.Time) []ports.SecretRef {
+	var out []ports.SecretRef
+	for _, r := range requests {
+		if r.ObjectType != "connector" {
+			continue
+		}
+		ended := r.ExpiresAt
+		if r.DecidedAt != nil {
+			ended = *r.DecidedAt
+		}
+		over := r.Status == "rejected" || r.Status == "void" || r.Status == "expired" || (r.Status == "pending" && !r.ExpiresAt.After(now))
+		if !over || now.Sub(ended) >= refusedFor {
+			continue
+		}
+		var stored struct {
+			Execute struct {
+				Ref ports.SecretRef `json:"ref"`
+			} `json:"execute"`
+		}
+		if json.Unmarshal(r.Change, &stored) == nil && stored.Execute.Ref != "" {
+			out = append(out, stored.Execute.Ref)
+		}
+	}
+	return out
 }
 
 // overdue are the secret versions to destroy at now: replaced and past their overlap, or of an uninstalled connector.

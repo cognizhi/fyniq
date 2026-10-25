@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "connector": {
+      "examples": [
+        "zeptomail"
+      ],
+      "type": "string"
+    },
+    "connector_id": {
+      "description": "The installed connector; absent for an install.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"
+      ],
+      "type": "string"
+    },
+    "decided_at": {
+      "examples": [
+        "2026-10-25T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "decided_by": {
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e43"
+      ],
+      "type": "string"
+    },
+    "envelope": {
+      "description": "The RFC 8785 envelope the other Super admin signs.",
+      "examples": [
+        "{\"change\":{\"step\":\"resume\"}}"
+      ],
+      "type": "string"
+    },
+    "envelope_hash": {
+      "description": "Its SHA-256, hex: send it to approve or reject.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "expires_at": {
+      "examples": [
+        "2026-11-01T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e42"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "examples": [
+        "Not this key."
+      ],
+      "type": "string"
+    },
+    "requested_at": {
+      "examples": [
+        "2026-10-25T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "requested_by": {
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e41"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "expired"
+      ],
+      "examples": [
+        "pending"
+      ],
+      "type": "string"
+    },
+    "step": {
+      "enum": [
+        "install",
+        "configure",
+        "secret",
+        "enable",
+        "resume",
+        "disable",
+        "uninstall",
+        "order",
+        "consent"
+      ],
+      "examples": [
+        "resume"
+      ],
+      "type": "string"
+    },
+    "summary": {
+      "examples": [
+        "Resume Zoho ZeptoMail"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "connector",
+    "step",
+    "summary",
+    "status",
+    "envelope",
+    "envelope_hash",
+    "requested_by",
+    "requested_at",
+    "expires_at"
+  ],
+  "title": "InstallationChange",
+  "type": "object"
+}

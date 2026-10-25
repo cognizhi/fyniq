@@ -86,6 +86,9 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	d.Mail = api.MailInfo{From: kit.Mail.From, Domains: kit.Mail.Domains, Check: dns.Results, CaptureDomain: kit.Mail.CaptureDomain,
 		ProvidersFrom: kit.MailProviders}
 	d.Outbox = &outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}
+	// The connectors (FR-INT-20, rev 0.139): the release's catalogue, the store their keys go to, and the runtime the
+	// connection test goes through.
+	d.Connectors = api.ConnectorDeps{Catalogue: kit.Connectors, Secrets: kit.ConnectorSecrets, Names: kit.ConnectorNames, Runtime: kit.Runtime(deps.Clock)}
 	// The email providers' webhooks (FR-INT-21), each only with its secret: delivery events and the suppression list.
 	// Each request reads its connector's keys: the current one and one still in its rotation overlap; a disabled
 	// connector's webhooks are refused (FR-INT-26, rev 0.139).

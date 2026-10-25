@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "in_flight": {
+      "description": "What happens to work already handed to the provider: it finishes, or is reconciled; never dropped.",
+      "enum": [
+        "finish",
+        "reconcile"
+      ],
+      "examples": [
+        "reconcile"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "The kind of service.",
+      "enum": [
+        "sign-in",
+        "outbound-email",
+        "inbound-email",
+        "messaging",
+        "ticketing",
+        "payment-provider",
+        "bank-data",
+        "e-invoicing",
+        "document-ai"
+      ],
+      "examples": [
+        "outbound-email"
+      ],
+      "type": "string"
+    },
+    "on_disable": {
+      "description": "What disabling does to its queued work; pausing always holds it (FR-INT-26).",
+      "enum": [
+        "hold",
+        "cancel"
+      ],
+      "examples": [
+        "hold"
+      ],
+      "type": "string"
+    },
+    "trigger": {
+      "description": "Who may make it act: a completed human authority, a rule of the platform, or nobody (FR-INT-27).",
+      "enum": [
+        "human-authority",
+        "system-rule",
+        "none"
+      ],
+      "examples": [
+        "system-rule"
+      ],
+      "type": "string"
+    },
+    "trigger_rule": {
+      "description": "The authority or rule, in plain words.",
+      "examples": [
+        "A message the outbox holds for sending."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "trigger",
+    "trigger_rule",
+    "on_disable",
+    "in_flight"
+  ],
+  "title": "ConnectorCapability",
+  "type": "object"
+}

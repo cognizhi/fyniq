@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "Connector.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "next_cursor": {
+      "description": "The cursor of the next page; absent on the last.",
+      "examples": [
+        "eyJhZnRlciI6InNtdHAifQ"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "ConnectorPage",
+  "type": "object"
+}

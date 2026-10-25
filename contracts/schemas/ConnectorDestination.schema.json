@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "configured": {
+      "description": "The configuration field that names a host the person chooses.",
+      "examples": [
+        "address"
+      ],
+      "type": "string"
+    },
+    "host": {
+      "description": "A host it may reach; *. allows its subdomains.",
+      "examples": [
+        "cpaas.zoho.com"
+      ],
+      "type": "string"
+    },
+    "port": {
+      "description": "Its port; 0 or absent for any.",
+      "examples": [
+        443
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "title": "ConnectorDestination",
+  "type": "object"
+}

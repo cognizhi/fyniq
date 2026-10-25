@@ -36,8 +36,8 @@ type MailInfo struct {
 	// ProvidersFrom, when set, gives the providers for each request in place of Providers: the enabled email
 	// connectors, in order (rev 0.139).
 	ProvidersFrom func(ctx context.Context) []string
-	From      string
-	Domains   []string
+	From          string
+	Domains       []string
 	// Check is the sending domains' DNS, as last checked and when (rev 0.104); nil: none is checked.
 	Check func(ctx context.Context) ([]maildns.Result, time.Time)
 	// CaptureDomain is the domain of the email-in addresses (rev 0.105); empty: email-in is not set up.

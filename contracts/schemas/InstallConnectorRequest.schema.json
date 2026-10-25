@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "connector": {
+      "description": "Its id in the catalogue.",
+      "examples": [
+        "zeptomail"
+      ],
+      "pattern": "^[a-z][a-z0-9-]{1,39}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "connector"
+  ],
+  "title": "InstallConnectorRequest",
+  "type": "object"
+}
