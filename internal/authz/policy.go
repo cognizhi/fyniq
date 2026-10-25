@@ -528,11 +528,13 @@ var (
 	KeepBankLine          = Policy{Operation: "keepBankLine", Capability: BankTransactions, Need: Create}
 	ExcludeBankLine       = Policy{Operation: "excludeBankLine", Capability: BankTransactions, Need: Create}
 	UnreconcileBankLine   = Policy{Operation: "unreconcileBankLine", Capability: BankTransactions, Need: Post}
-	RecordBankTransfer    = Policy{Operation: "recordBankTransfer", Capability: BankTransactions, Need: Post}
-	ListBankTransfers     = Policy{Operation: "listBankTransfers", Capability: BankTransactions, Need: View}
-	GetBankTransfer       = Policy{Operation: "getBankTransfer", Capability: BankTransactions, Need: View}
-	CompleteBankTransfer  = Policy{Operation: "completeBankTransfer", Capability: BankTransactions, Need: Post}
-	UndoBankTransfer      = Policy{Operation: "undoBankTransfer", Capability: BankTransactions, Need: Post}
+	// Reconcile now runs auto-reconcile as the system principal over the waiting lines (FR-BNK-14, rev 0.143).
+	AutoReconcileBankLines = Policy{Operation: "autoReconcileBankLines", Capability: BankTransactions, Need: Post}
+	RecordBankTransfer     = Policy{Operation: "recordBankTransfer", Capability: BankTransactions, Need: Post}
+	ListBankTransfers      = Policy{Operation: "listBankTransfers", Capability: BankTransactions, Need: View}
+	GetBankTransfer        = Policy{Operation: "getBankTransfer", Capability: BankTransactions, Need: View}
+	CompleteBankTransfer   = Policy{Operation: "completeBankTransfer", Capability: BankTransactions, Need: Post}
+	UndoBankTransfer       = Policy{Operation: "undoBankTransfer", Capability: BankTransactions, Need: Post}
 	// Rules are written under C (FR-BNK-05); a reconciliation is prepared under C on "Bank reconciliation sign-off" and
 	// signed under A, by another person (FR-BNK-10, FM-5).
 	ListBankRules             = Policy{Operation: "listBankRules", Capability: BankTransactions, Need: View}
@@ -887,7 +889,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ResolveBankGap, ListStatementMappings,
 	CreateStatementMapping, ReplaceStatementMapping, ImportBankStatements, ListBankStatements, ListBankLines, GetBankLine,
 	CategoriseBankLine, SuspendBankLine, MatchBankLineInvoices, MatchBankLineBills, MatchBankLineRecorded, KeepBankLine, ExcludeBankLine,
-	UnreconcileBankLine, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,
+	UnreconcileBankLine, AutoReconcileBankLines, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,
 	ListBankRules, CreateBankRule, GetBankRule, ReplaceBankRule, BackTestBankRule, ListBankRuleOffers, ListAutoReconciliations, GetCashPosition,
 	GetBankReconciliation, ListBankReconciliations, PrepareBankReconciliation, SignBankReconciliation,
 	ListQuotes, GetQuote, GetSalesPipeline, CreateQuote, ReplaceQuote, SendQuote, CancelQuote, AcceptQuote, DeclineQuote, InvoiceQuote,

@@ -265,8 +265,11 @@ func ruleUsed(ctx context.Context, u storage.UnitOfWork, base money.Currency, ru
 
 // AutoReconcile reconciles what it may of the lines named (nil: every line in the queue), each in its own unit of
 // work as AutoActor, so one refusal never stops the others. What it does not reconcile stays in the queue, with why.
+// The person whose import or Reconcile now started it is recorded as the one it acted for, with their request.
 func AutoReconcile(ctx context.Context, store storage.Store, org uuid.UUID, lineIDs []uuid.UUID, at time.Time) (AutoRun, error) {
-	ctx = storage.WithAudit(ctx, storage.AuditContext{Actor: &AutoActor, Reason: "Auto-reconciled (FR-BNK-14)"})
+	caller := storage.AuditFrom(ctx)
+	ctx = storage.WithAudit(ctx, storage.AuditContext{Actor: &AutoActor, OnBehalfOf: caller.Actor, Reason: "Auto-reconciled (FR-BNK-14)",
+		Request: caller.Request})
 	var run AutoRun
 	if lineIDs == nil {
 		if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
@@ -284,29 +287,8 @@ func AutoReconcile(ctx context.Context, store storage.Store, org uuid.UUID, line
 		var p plan
 		var why string
 		var line storage.BankLine
-		if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-			var err error
-			if line, err = u.Banking().Line(ctx, id); err != nil {
-				return err
-			}
-			o, err := u.Organisation(ctx)
-			if err != nil {
-				return err
-			}
-			base, err := money.Lookup(o.BaseCurrency)
-			if err != nil {
-				return err
-			}
-			since := dayStart(o, at)
-			lim, err := loadLimits(ctx, u, base, since)
-			if err != nil {
-				return err
-			}
-			rules, _, err := Rules(ctx, u)
-			if err != nil {
-				return err
-			}
-			p, why, err = decide(ctx, u, line, rules, lim, base, since)
+		if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			line, p, why, err = decideLine(ctx, u, id, at)
 			return err
 		}); err != nil {
 			return run, err
@@ -346,6 +328,52 @@ func AutoReconcile(ctx context.Context, store storage.Store, org uuid.UUID, line
 			return run, err
 		}
 		run.Reconciled = append(run.Reconciled, Reconciled{Line: line, Basis: p.basis, Rule: p.rule, Match: m})
+	}
+	return run, nil
+}
+
+// decideLine is what auto-reconcile would do with a line at at, in u: the plan, or why it is left.
+func decideLine(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, at time.Time) (storage.BankLine, plan, string, error) {
+	line, err := u.Banking().Line(ctx, id)
+	if err != nil {
+		return line, plan{}, "", err
+	}
+	o, err := u.Organisation(ctx)
+	if err != nil {
+		return line, plan{}, "", err
+	}
+	base, err := money.Lookup(o.BaseCurrency)
+	if err != nil {
+		return line, plan{}, "", err
+	}
+	since := dayStart(o, at)
+	lim, err := loadLimits(ctx, u, base, since)
+	if err != nil {
+		return line, plan{}, "", err
+	}
+	rules, _, err := Rules(ctx, u)
+	if err != nil {
+		return line, plan{}, "", err
+	}
+	p, why, err := decide(ctx, u, line, rules, lim, base, since)
+	return line, p, why, err
+}
+
+// Plan is what AutoReconcile would do with the lines named, in u, writing nothing: the preview of a person's Reconcile
+// now (FR-BNK-14, rev 0.143). Each line is judged on its own, so lines one rule would reconcile together may pass its
+// daily cap here and be left when they post, and a planned line may still be refused by its posting rules.
+func Plan(ctx context.Context, u storage.UnitOfWork, lineIDs []uuid.UUID, at time.Time) (AutoRun, error) {
+	var run AutoRun
+	for _, id := range lineIDs {
+		line, p, why, err := decideLine(ctx, u, id, at)
+		if err != nil {
+			return run, err
+		}
+		if why != "" {
+			run.Left = append(run.Left, Left{Line: line, Why: why})
+			continue
+		}
+		run.Reconciled = append(run.Reconciled, Reconciled{Line: line, Basis: p.basis, Rule: p.rule})
 	}
 	return run, nil
 }

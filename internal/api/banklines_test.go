@@ -198,6 +198,12 @@ var matrixBankLines = map[string]func(e *env, tok string) (response, func() bool
 			"If-Match", etag(l.Version))
 		return r, e.lineIs(l.ID, storage.LineCategorised)
 	},
+	"autoReconcileBankLines": func(e *env, tok string) (response, func() bool) {
+		t, to := e.inTransit()
+		in := e.lineOn(to, "10.00", nil)
+		r := e.call(http.MethodPost, "/v1/bank-lines:auto-reconcile", tok, map[string]any{"money_account_id": to.ID.String()})
+		return r, func() bool { return e.transferNow(t.ID).ToLineID == nil && e.lineIs(in.ID, storage.LineUnreconciled)() }
+	},
 	"recordBankTransfer": func(e *env, tok string) (response, func() bool) {
 		_, out := e.bankLine("-10.00")
 		_, in := e.bankLine("10.00")
@@ -350,4 +356,33 @@ func TestBankLinesThroughTheAPI(t *testing.T) {
 	if done.Status != 200 || done.str("transfer", "status") != "complete" || e.bankLineNow(line.ID).Status != storage.LineTransferred {
 		t.Fatalf("completing it: %d %s", done.Status, done.Raw)
 	}
+}
+
+// Reconcile now (FR-BNK-14; the owner's decision of 26 Oct 2026, rev 0.143): lines that arrive by feed wait in the
+// queue until a person asks; a preview says what it would do and posts nothing; the run reconciles a transfer's
+// arriving side as the system principal, for the person who asked; a second run finds nothing waiting to reconcile.
+// req: FR-BNK-14
+// req: banking/bank-transactions Lines that arrive by feed wait for Reconcile now
+func TestReconcileNowThroughTheAPI(t *testing.T) {
+	e := newEnv(t)
+	bk := e.as(authz.Bookkeeper)
+	tr, to := e.inTransit()
+	line := e.lineOn(to, "10.00", nil)
+	body := map[string]any{"money_account_id": to.ID.String()}
+	pv := e.call(http.MethodPost, "/v1/bank-lines:auto-reconcile", bk, body, "Prefer", "return=preview")
+	if pv.Status != 200 || pv.Header.Get("Preference-Applied") != "return=preview" || pv.Body["reconciled"] != 1.0 || e.bankLineNow(line.ID).Status != storage.LineUnreconciled {
+		t.Fatalf("the preview: %d %s", pv.Status, pv.Raw)
+	}
+	r := e.call(http.MethodPost, "/v1/bank-lines:auto-reconcile", bk, body)
+	if r.Status != 200 || r.Body["reconciled"] != 1.0 || e.bankLineNow(line.ID).Status != storage.LineTransferred || e.transferNow(tr.ID).ToLineID == nil {
+		t.Fatalf("reconciling now: %d %s", r.Status, r.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/bank-lines/"+line.ID.String(), bk, nil); g.str("match", "basis") != storage.BasisTransfer ||
+		g.str("match", "made_by") != "service:bank.auto-reconcile" {
+		t.Errorf("the match: %s", g.Raw)
+	}
+	if again := e.call(http.MethodPost, "/v1/bank-lines:auto-reconcile", bk, body); again.Status != 200 || again.Body["reconciled"] != 0.0 {
+		t.Errorf("a second run: %d %s", again.Status, again.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/bank-lines:auto-reconcile", e.as(authz.Auditor), body), "autoReconcileBankLines", 403, CodeForbidden)
 }

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "money_account_id": {
+      "description": "One money account's waiting lines; left out, every account's.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "title": "ReconcileNowInputBody",
+  "type": "object"
+}

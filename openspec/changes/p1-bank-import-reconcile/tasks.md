@@ -130,6 +130,13 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   rule's AI-proposal flag kept for G4-059.
   - Tests: approval through the engine (FM-1); a rule's lines wait until approval; the repeated-coding offer.
     `// req: FR-BNK-14`, `// req: FR-APR-01`
+- [x] 5.3 Reconcile now (the owner's decision of 26 Oct 2026, rev 0.143): in P1, lines that arrive by feed wait in
+  the queue, because the worker that imports them has no posting right; a person's Reconcile now runs auto-reconcile
+  over the waiting lines (one account's or all) as the system principal, for the person who asked, within the same
+  caps; a preview says what it would do. Feeds reconcile by themselves in P2, under a role of their own (§17.5).
+  - Tests: a preview that posts nothing; a transfer's arriving side reconciled; a second run finds nothing; the
+    permission row. `// req: FR-BNK-14`, `// req: banking/bank-transactions Lines that arrive by feed wait for
+    Reconcile now`
 
 ## 6. Reconciliation, the close and cash
 
@@ -156,7 +163,8 @@ before any code that parses bank files or touches connector secrets (SEC-20).
     without DMARC quarantined. `// req: FR-INT-22`, `// req: banking/bank-transactions Daily DBS sync without a
     bank API`
 - [ ] 7.2 The daily report and the tie-out (design D10): an accepted report imported through its account's format
-  and mapping, with the continuity and duplicate checks and auto-reconcile; the monthly MT940 export or e-statement
+  and mapping, with the continuity and duplicate checks, its lines waiting for Reconcile now (rev 0.143, task 5.3);
+  the monthly MT940 export or e-statement
   ties out the closing balance. Before the parser is pinned, confirm the format with a redacted sample of Cognizhi's
   DBS IDEAL report (`[verify]` until then).
   - Tests: a synthetic report through Mailpit end to end on the local stack; a missing day shown as a gap.
@@ -177,7 +185,7 @@ before any code that parses bank files or touches connector secrets (SEC-20).
     `make infra-check`. `// req: SEC-12`, `// req: SEC-04`
 - [ ] 8.2 The bank-data port and sync (design D11): accounts, balances and transactions since a cursor; the sync job
   per enabled connector on the tick through the egress guard, writing statements and lines and its cursor in one unit
-  of work; the webhook route that only prompts an early sync (404 for an unknown, disabled or uninstalled connector);
+  of work, the lines waiting for Reconcile now (rev 0.143, task 5.3); the webhook route that only prompts an early sync (404 for an unknown, disabled or uninstalled connector);
   bank-data connector steps checked against Appendix D's "Bank data… connections" row and its approval policy.
   - Tests: a sync from a fake; a webhook prompting one; a webhook body never trusted for data; the permission row.
     `// req: FR-BNK-15`, `// req: FR-BNK-16`, `// req: FR-INT-27`

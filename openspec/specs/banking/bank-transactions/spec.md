@@ -285,6 +285,12 @@ Source: PRD-001 §8.4 · Priority M · Phase P1 (imports) / P2 (feeds)
 - **WHEN** a week ends
 - **THEN** its 5 largest auto-reconciliations and 5 others at random enter the weekly review, once each
 
+#### Scenario: Lines that arrive by feed wait for Reconcile now (rev 0.143)
+- **GIVEN** lines imported from an emailed bank report or a connector sync in P1
+- **WHEN** they are imported
+- **THEN** they wait in the queue, and nothing posts by itself
+- **AND** a person's Reconcile now auto-reconciles the waiting lines as the system principal, within the same limits (the owner's decision of 26 Oct 2026)
+
 #### Scenario: Ambiguous lines and AI suggestions stay in the queue
 - **WHEN** a line is ambiguous or has only an AI suggestion
 - **THEN** it stays in the queue
