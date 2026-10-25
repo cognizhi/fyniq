@@ -11,6 +11,7 @@
 !compliance/control.schema.json
 !compliance/controls/
 !packs/
+!connectors/
 !package.json
 !pnpm-lock.yaml
 !pnpm-workspace.yaml

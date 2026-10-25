@@ -24,6 +24,7 @@ COPY internal ./internal
 COPY db ./db
 COPY compliance ./compliance
 COPY packs ./packs
+COPY connectors ./connectors
 
 ARG SERVICE
 ARG FLAVOUR=release

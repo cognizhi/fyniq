@@ -111,6 +111,7 @@ fyniq_api       INSERT    gst_registration (accounting_basis, deregistered_from,
 fyniq_api       SELECT    gst_registration
 fyniq_api       UPDATE    gst_registration (accounting_basis, deregistered_from, gst_number, quarter_start_month, recorded_at, registered_from, return_frequency, version)
 fyniq_api       SELECT    heartbeats
+fyniq_api       EXECUTE   hold_outbox()
 fyniq_api       INSERT    idempotency_key (client_id, created_at, expires_at, key, request_hash)
 fyniq_api       SELECT    idempotency_key
 fyniq_api       UPDATE    idempotency_key (response_body, response_status)
@@ -283,6 +284,7 @@ fyniq_executor  SELECT    evidence
 fyniq_executor  SELECT    fx_feed_rates
 fyniq_executor  SELECT    fx_rate
 fyniq_executor  SELECT    gst_registration
+fyniq_executor  EXECUTE   hold_outbox()
 fyniq_executor  SELECT    item
 fyniq_executor  SELECT    item_price
 fyniq_executor  INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
@@ -462,6 +464,7 @@ fyniq_worker    SELECT    fx_feed_rates
 fyniq_worker    SELECT    fx_rate
 fyniq_worker    SELECT    gst_registration
 fyniq_worker    SELECT    heartbeats
+fyniq_worker    EXECUTE   hold_outbox()
 fyniq_worker    DELETE    idempotency_key
 fyniq_worker    SELECT    idempotency_key (expires_at, id, organisation_id)
 fyniq_worker    INSERT    inbound_file (blob_key, file_name, kind, media_type, message_id, original_sha256, sha256, size_bytes, stored_at)

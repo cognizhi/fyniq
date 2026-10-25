@@ -7,14 +7,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
+	"net/url"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 
+	"github.com/cognizhi/fyniq/connectors"
 	"github.com/cognizhi/fyniq/internal/adapters/clamav"
 	"github.com/cognizhi/fyniq/internal/adapters/gcp"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/render"
 )
@@ -85,7 +90,48 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	if addr := os.Getenv("FYNIQ_CLAMD_ADDR"); addr != "" { // clamd beside the service (SEC-24)
 		kit.Scanner = clamav.Scanner{Addr: addr}
 	}
+	// The connectors (FR-INT-20, rev 0.139): their keys in Secret Manager, only the secrets FYNIQ_CONNECTOR_SECRETS names
+	// and the organisations' connector secrets; their traffic through the egress guard, never to the platform's own
+	// services.
+	if kit.Connectors, err = connectors.Catalogue(); err != nil {
+		return nil, err
+	}
+	if kit.ConnectorNames, err = ReadConnectorNames(os.Getenv); err != nil {
+		return nil, err
+	}
+	kit.ConnectorSecrets = gcp.NewSecretManager(gcp.SecretManagerAPI, projectOf(c.Job), slices.Collect(maps.Values(kit.ConnectorNames)),
+		[]string{"org-"}, tokens, nil)
+	kit.Egress = &egress.Guard{Internal: c.internalHosts()}
 	return kit, nil
+}
+
+// projectOf is the project of a resource name such as projects/<project>/locations/…/jobs/….
+func projectOf(name string) string {
+	parts := strings.Split(name, "/")
+	if len(parts) > 1 && parts[0] == "projects" {
+		return parts[1]
+	}
+	return ""
+}
+
+// internalHosts are the platform's own services, which no connector may reach: the worker classes' handlers, the
+// audiences they check and the render service.
+func (c Config) internalHosts() []string {
+	var out []string
+	add := func(raw string) {
+		if u, err := url.Parse(raw); err == nil && u.Hostname() != "" && !slices.Contains(out, u.Hostname()) {
+			out = append(out, u.Hostname())
+		}
+	}
+	for _, t := range c.Tasks {
+		add(t.URL)
+		add(t.Audience)
+	}
+	for _, i := range c.Invokers {
+		add(i.Audience)
+	}
+	add(c.Render.URL)
+	return out
 }
 
 // classes are the worker classes the outbox sends to (§12.11), and the callers the handlers check.
@@ -119,3 +165,6 @@ func (c Config) check() error {
 	}
 	return nil
 }
+
+// mailEnv is the deployment's email settings the bootstrap reads, as they are (rev 0.139).
+func mailEnv(env func(string) string) func(string) string { return env }

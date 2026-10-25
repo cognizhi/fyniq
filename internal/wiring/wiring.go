@@ -6,6 +6,8 @@ package wiring
 
 import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/connector"
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/render"
 )
@@ -34,4 +36,11 @@ type Kit struct {
 	// Render is the private render service (PRD-001 §12.3, rev 0.96), which compiles template versions to PDF; nil when
 	// none is configured: then no preview renders and no template with IRAS particulars publishes.
 	Render render.Renderer
+	// Connectors is this release's connector catalogue (FR-INT-25); ConnectorSecrets the store their keys are in (Secret
+	// Manager, or files locally); ConnectorNames which secret holds each installation connector secret
+	// (FYNIQ_CONNECTOR_SECRETS, rev 0.139); Egress the guard their traffic goes through (SEC-36).
+	Connectors       *connector.Catalogue
+	ConnectorSecrets ports.SecretStore
+	ConnectorNames   map[string]string
+	Egress           *egress.Guard
 }

@@ -138,7 +138,7 @@ secrets or connector traffic (SEC-20).
   `TestInstallationConnectorsGoThroughTheLifecycle` and the database's `TestInstallationConnectorsKeepTheirLifecycle`.
   **Left:** the organisation half, the approval engine's object `connector` in `internal/domain/approval` and its
   execution in the API, with task 7.1)
-- [ ] 4.4 Secret rotation:
+- [x] 4.4 Secret rotation:
   - a replaced secret is a new version referenced by the pending change, and switched on approval;
   - the old version stays enabled for the manifest's overlap (both verify webhooks), then is disabled and
     destroyed by a job;
@@ -147,12 +147,13 @@ secrets or connector traffic (SEC-20).
     `// req: FR-INT-26` (secrets rotated without downtime)
   (25 Oct 2026: the overlap from each manifest secret's `rotation_overlap_hours`, `connector.Cleanup` destroying replaced
   versions past their overlap, every version of an uninstalled connector and a rejected or expired change's version,
-  Secret Manager first, then the database. Proved by `TestInstallationConnectorsGoThroughTheLifecycle`. **Left:**
-  scheduling `connectors.cleanup` as a platform job, with the wiring of task 6.1; the overlap's webhook check with 6.2)
+  Secret Manager first, then the database. Proved by `TestInstallationConnectorsGoThroughTheLifecycle`. Scheduled hourly
+  at :50 as the platform job `connectors.cleanup` with the wiring of task 6.1. The overlap's webhook check comes with
+  task 6.2's webhooks)
 
 ## 5. The runtime
 
-- [ ] 5.1 `connector.Runtime.For(ctx, capability)`:
+- [x] 5.1 `connector.Runtime.For(ctx, capability)`:
   - reads the enabled installations in order, at the start of each piece of work, never cached;
   - paused and disabled connectors are skipped, so failover moves on;
   - with none enabled, a job is re-queued, and the wait uses none of its attempts;
@@ -164,8 +165,10 @@ secrets or connector traffic (SEC-20).
   work, never cached; `Mail` gives the enabled adapters in order and every installed one (enabled, paused or disabled) by
   name to reconcile an earlier attempt; a connector whose secret cannot be read is skipped with the reason. Proved by
   `TestTheMailOfAPieceOfWorkIsTheEnabledConnectorsInOrder` and `TestTheRuntimeReadsTheConnectorsAtEachPieceOfWork`.
-  **Left:** the email job holding a message without using an attempt when none is enabled, and the G4-096 test through
-  the worker, with task 6.2)
+  The hold: migration 000143's `hold_outbox` and `outbox.ErrHeld`, which give back the attempt
+  (`TestHeldWorkSpendsNoAttempt`); the email job holds a message when no email connector is enabled and reconciles an
+  in-flight attempt with the connector it went to, disabled since: G4-096 in
+  `TestEmailGoesThroughTheConnectorsEnabledAtEachSend`)
 - [x] 5.2 The egress guard `internal/egress`:
   - an HTTP client and an SMTP dialer that refuse loopback, private, link-local, unique-local and metadata
     addresses and internal names;
@@ -208,7 +211,7 @@ secrets or connector traffic (SEC-20).
 
 ## 6. The email providers move in
 
-- [ ] 6.1 The bootstrap (the owner's decision of 25 Oct 2026):
+- [x] 6.1 The bootstrap (the owner's decision of 25 Oct 2026):
   - under an advisory lock, when no outbound-email connector was ever installed, the API installs the
     providers `FYNIQ_EMAIL_PROVIDERS` names, enabled, in order;
   - their configuration comes from today's variables, and their secrets as references from
@@ -218,12 +221,22 @@ secrets or connector traffic (SEC-20).
   - until the bootstrap succeeds, the worker keeps the deployment's variables.
   - Tests `TestBootstrapFromTheDeployment`, `TestBootstrapRunsOnce`, `TestFailedBootstrapKeepsSending`.
     `// req: FR-INT-21`, `// req: FR-INT-20`
+  (25 Oct 2026: `wiring.BootstrapConnectors`, run at the API's start and on each tick until done (before first-run setup
+  there is no trail to audit in), stopping before Secret Manager once anything is installed; an install that loses a
+  race counts as done; `wiring.EmailDrift` warns once at start. The Kit gains the catalogue, the secret store (Secret
+  Manager in the project of `FYNIQ_GCP`'s job, or `.data/secrets`), the names and the egress guard. Tests:
+  `TestBootstrapFromTheDeployment`, which also covers running once, a failed bootstrap leaving nothing installed, the
+  wait before setup and the drift warning; the fallback to the deployment's providers in
+  `TestEmailGoesThroughTheConnectorsEnabledAtEachSend`)
 - [ ] 6.2 The worker sends through `Runtime.For("outbound-email")` per attempt instead of providers built at
   start.
   - The API's webhooks read their connector's secret per request; they are accepted while it is enabled or
     paused, and refused once it is disabled or uninstalled.
   - Tests: the existing email and webhook suites pass through connectors; `TestWebhookOfADisabledConnectorIsRefused`.
     `// req: FR-INT-21`, `// req: FR-INT-20`
+  (25 Oct 2026, the sending half: `email.WorkFrom` reads its providers for each message from `Kit.EmailProviders`, the
+  enabled connectors through `connector.Runtime`, or the deployment's until the bootstrap. **Left:** the webhooks and
+  inbound mail, with task 6.3)
 - [ ] 6.3 The platform sender and sending domains become the outbound-email capability's installation
   settings, and each provider's DNS records live in its configuration.
   - `email.domains` and `getEmailSettings` read them from there; the capture domain stays the deployment's.

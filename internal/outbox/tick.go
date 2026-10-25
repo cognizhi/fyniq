@@ -43,6 +43,9 @@ var PlatformSchedules = []Schedule{
 	{Job: "compliance.evidence", Every: 24 * time.Hour, Offset: 20 * time.Hour, Lease: time.Hour, Stale: 26 * time.Hour},
 	// Nightly at 04:30, the sending domains' DNS records and DMARC policy (FR-INT-21, rev 0.104).
 	{Job: "email.domains", Every: 24 * time.Hour, Offset: 20*time.Hour + 30*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
+	// Hourly at :50, the connectors' clean-up: replaced keys past their overlap, an uninstalled connector's keys, a refused
+	// change's key, and the installation changes nobody decided in time (FR-INT-26, rev 0.139).
+	{Job: "connectors.cleanup", Every: time.Hour, Offset: 50 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Nightly at 04:45, quarantined mail whose days have passed ends and its files go (FR-INT-22, rev 0.106).
 	{Job: "inbound.expire", Every: 24 * time.Hour, Offset: 20*time.Hour + 45*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Daily at 07:30 Singapore time, before the daily digest, each organisation's bills to pay (FR-NTF-01, FR-AP-13; rev 0.110).
