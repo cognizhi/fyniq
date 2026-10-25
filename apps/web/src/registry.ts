@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, Contact, House, Inbox, LayoutTemplate, Megaphone, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, Contact, House, Inbox, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -108,6 +108,8 @@ export const routes = [
   { kind: "route", id: "settings-templates", path: "/settings/templates", mode: "basic", signedIn: true, help: "settings.templates", guide: "settings.templates" },
   { kind: "route", id: "settings-notifications", path: "/settings/notifications", mode: "basic", signedIn: true, help: "settings.notifications", guide: "settings.notifications" },
   { kind: "route", id: "settings-announcements", path: "/settings/announcements", mode: "expert", signedIn: true, help: "settings.announcements", guide: "settings.announcements" },
+  { kind: "route", id: "settings-integrations", path: "/settings/integrations", mode: "expert", signedIn: true, help: "settings.integrations", guide: "settings.integrations" },
+  { kind: "route", id: "settings-integration", path: "/settings/integrations/$connector", mode: "expert", signedIn: true, help: "settings.integration", guide: "settings.integrations#a-connectors-page" },
   { kind: "route", id: "settings-template", path: "/settings/templates/$templateId", mode: "basic", signedIn: true, help: "settings.template", guide: "settings.templates#edit-a-template" },
 ] as const satisfies readonly RouteFeature[];
 
@@ -148,6 +150,23 @@ export const actions = [
   { kind: "action", id: "banner.dismiss", mode: "basic", help: "banner.dismiss", guide: "settings.notifications#banners" },
   { kind: "action", id: "announcement.publish", mode: "expert", help: "announcement.publish", guide: "settings.announcements#publish-an-announcement" },
   { kind: "action", id: "announcement.withdraw", mode: "expert", help: "announcement.withdraw", guide: "settings.announcements#end-an-announcement" },
+  { kind: "action", id: "connector.install", mode: "expert", help: "connector.install", guide: "settings.integrations#install-a-connector" },
+  { kind: "action", id: "connector.health", mode: "expert", help: "connector.health", guide: "settings.integrations#health" },
+  { kind: "action", id: "connector.data-classes", mode: "expert", help: "connector.data-classes", guide: "settings.integrations#what-a-connector-sends-out" },
+  { kind: "action", id: "connector.configure", mode: "expert", help: "connector.configure", guide: "settings.integrations#configure-it-and-set-its-secrets" },
+  { kind: "action", id: "connector.secret", mode: "expert", help: "connector.secret", guide: "settings.integrations#configure-it-and-set-its-secrets" },
+  { kind: "action", id: "connector.test", mode: "expert", help: "connector.test", guide: "settings.integrations#test-it" },
+  { kind: "action", id: "connector.enable", mode: "expert", help: "connector.enable", guide: "settings.integrations#turn-it-on-or-off" },
+  { kind: "action", id: "connector.pause", mode: "expert", help: "connector.pause", guide: "settings.integrations#turn-it-on-or-off" },
+  { kind: "action", id: "connector.resume", mode: "expert", help: "connector.resume", guide: "settings.integrations#turn-it-on-or-off" },
+  { kind: "action", id: "connector.disable", mode: "expert", help: "connector.disable", guide: "settings.integrations#turn-it-on-or-off" },
+  { kind: "action", id: "connector.uninstall", mode: "expert", help: "connector.uninstall", guide: "settings.integrations#uninstall-it" },
+  { kind: "action", id: "connector.consent", mode: "expert", help: "connector.consent", guide: "settings.integrations#upgrade-and-consent" },
+  { kind: "action", id: "connector.order", mode: "expert", help: "connector.order", guide: "settings.integrations#email-senders-domains-and-suppressions" },
+  { kind: "action", id: "connector.approve", mode: "expert", help: "connector.approve", guide: "settings.integrations#approve-or-reject-a-change" },
+  { kind: "action", id: "connector.reject", mode: "expert", help: "connector.reject", guide: "settings.integrations#approve-or-reject-a-change" },
+  { kind: "action", id: "email.sender", mode: "expert", help: "email.sender", guide: "settings.integrations#email-senders-domains-and-suppressions" },
+  { kind: "action", id: "email.release", mode: "expert", help: "email.release", guide: "settings.integrations#email-senders-domains-and-suppressions" },
   { kind: "action", id: "pack.activate", mode: "expert", help: "pack.activate", guide: "settings.statutory-packs#activate-a-version" },
   { kind: "action", id: "template.new", mode: "basic", help: "template.new", guide: "settings.templates#start-a-template" },
   { kind: "action", id: "template.save", mode: "basic", help: "template.save", guide: "settings.templates#edit-a-template" },
@@ -315,6 +334,7 @@ export const settingsNav = [
   { kind: "nav", id: "settings.approval-policies", route: "/settings/approval-policies", icon: Stamp, group: "organisation", roles: ["owner", "administrator", "controller", "accountant", "auditor", "dpo"], mode: "expert", help: "settings.approval-policies", guide: "approvals.policies" },
   { kind: "nav", id: "settings.statutory-packs", route: "/settings/statutory-packs", icon: Scale, group: "organisation", roles: ["owner", "controller", "accountant", "tax_agent", "payroll_administrator", "auditor"], mode: "expert", help: "settings.statutory-packs", guide: "settings.statutory-packs" },
   { kind: "nav", id: "settings.templates", route: "/settings/templates", icon: LayoutTemplate, group: "organisation", roles: ["owner", "controller", "accountant", "ar_specialist", "ap_specialist", "auditor"], mode: "basic", help: "settings.templates", guide: "settings.templates" },
+  { kind: "nav", id: "settings.integrations", route: "/settings/integrations", icon: Plug, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.integrations", guide: "settings.integrations" },
   { kind: "nav", id: "settings.announcements", route: "/settings/announcements", icon: Megaphone, group: "organisation", roles: ["owner", "administrator", "auditor"], mode: "expert", help: "settings.announcements", guide: "settings.announcements" },
 ] as const satisfies readonly NavFeature[];
 

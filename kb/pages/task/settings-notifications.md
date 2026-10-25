@@ -57,7 +57,7 @@ aliases:
 
 ## Send yourself a test
 
-- **Send me a test notification** reaches you in the app and by email at once unless you chose otherwise; its email shows in the organisation's email delivery log.
+- **Send me a test notification** reaches you in the app and by email at once unless you chose otherwise; its email shows in the organisation's email delivery log ([[settings.integrations]] covers the email providers).
 
 (src: docs/user-guide/notifications.md#send-yourself-a-test)
 

@@ -76,6 +76,8 @@ const screens: Record<RouteId, RouteComponent> = {
   "settings-templates": lazyRouteComponent(() => import("./screens/settings/Templates"), "Templates"),
   "settings-notifications": lazyRouteComponent(() => import("./screens/settings/Notifications"), "Notifications"),
   "settings-announcements": lazyRouteComponent(() => import("./screens/settings/Announcements"), "Announcements"),
+  "settings-integrations": lazyRouteComponent(() => import("./screens/settings/Integrations"), "Integrations"),
+  "settings-integration": lazyRouteComponent(() => import("./screens/settings/IntegrationDetail"), "IntegrationDetail"),
   "settings-template": lazyRouteComponent(() => import("./screens/settings/TemplateEditor"), "TemplateEditor"),
 };
 

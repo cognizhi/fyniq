@@ -297,14 +297,19 @@ secrets or connector traffic (SEC-20).
 
 ## 9. The screens
 
-- [ ] 9.1 `connector-catalogue` at `/settings/integrations` (fragment `docs/design/screens/src/ConnectorCatalogue.html`):
+- [x] 9.1 `connector-catalogue` at `/settings/integrations` (fragment `docs/design/screens/src/ConnectorCatalogue.html`):
   - grouped by capability, with installed status, health, credential expiry and "upgrade available";
   - the manifest summary (publisher, version, data classes, regions);
   - an installation section for Super admins and an organisation section for Owners and Administrators;
   - Expert mode.
   - Registry route and help keys (`settings.integrations`, `connector.health`, `connector.data-classes`).
   - Tests: component tests with axe (`noViolations`). `// req: FR-INT-25`, `// req: FR-INT-26`
-- [ ] 9.2 `connector-detail` at `/settings/integrations/$connector` (fragment `ConnectorDetail.html`):
+  (25 Oct 2026: `apps/web/src/screens/settings/Integrations.tsx`, with the words in `connectorWords.ts`: the tiles, the
+  failing-test banner, the installed table with scope filter, the catalogue by kind with search, the install dialog
+  showing the manifest, and the installation changes waiting with approve and reject over the envelope's hash. No
+  shipped connector's credential carries an expiry date, so the Secrets column and tile show which are not set and when
+  each was set. Seen in the dev stack against the real API, with the bootstrapped SMTP connector.)
+- [x] 9.2 `connector-detail` at `/settings/integrations/$connector` (fragment `ConnectorDetail.html`):
   - the lifecycle stepper;
   - the configuration form from the manifest schema, with write-only secrets (set, and when replaced);
   - the test result (pass or fail and the reason);
@@ -316,8 +321,15 @@ secrets or connector traffic (SEC-20).
   - Help keys for every field and action.
   - Tests: component tests with axe, and that the same action sends the same request in both modes (QA-UI-04).
     `// req: FR-INT-20`, `// req: FR-INT-26`, `// req: FR-INT-27`
-- [ ] 9.3 The user-guide page `docs/user-guide/integrations.md` (front-matter key `settings.integrations`),
+  (25 Oct 2026: `IntegrationDetail.tsx`, at `/settings/integrations/$connector?scope=installation|organisation`; tabs for
+  the overview, configuration and secrets, senders and domain, upgrade, activity and audit. Activity is the email
+  provider's messages from `listEmailMessages`; Audit is the connector's installation changes or approval requests, its
+  test and its install. The full before-and-after trail stays in the audit trail screen, and the API exposes no breaker
+  or rate-limit state, so the page shows neither. Tests in `Integrations.test.tsx`, including QA-UI-04 on the pause.)
+- [x] 9.3 The user-guide page `docs/user-guide/integrations.md` (front-matter key `settings.integrations`),
   compiled into `kb/pages/task/`, with `make kb-index` and `make kb-lint` clean. `// req: QA-UI-05`
+  (25 Oct 2026: compiled to `kb/pages/task/settings-integrations.md`, linked from `settings.notifications`; every
+  registry help key and guide anchor of the two screens points into it.)
 
 ## 10. Finish
 
