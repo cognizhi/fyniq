@@ -133,17 +133,17 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 
 ## 6. Reconciliation, the close and cash
 
-- [ ] 6.1 Reconciliation (design D9): per account and period, the statement balance, the reconciled book balance
+- [x] 6.1 Reconciliation (design D9): per account and period, the statement balance, the reconciled book balance
   from the balance service, the unreconciled items, the difference and the ledger revision seen; prepared by one
   person, signed off by another with step-up; locked with the period.
   - Tests: sign-off by the preparer refused (FM-5); a difference shown; locked after the close.
     `// req: FR-BNK-10`, `// req: FR-GL-07`
-- [ ] 6.2 The close's bank checks (design D9): ✖ a money account with activity and no signed-off reconciliation at
+- [x] 6.2 The close's bank checks (design D9): ✖ a money account with activity and no signed-off reconciliation at
   the revision seen; ⚠ suspense not zero, a money account below zero at month end, a reconciliation not matching,
   stale data, unreconciled lines older than 30 days, unresolved possible duplicates.
   - Tests: one fixture per message. `// req: FR-GL-07`, `// req: FR-BNK-11`, `// req: FR-BNK-16`, Appendix C.1 #30
     to #32 and C.2 #8, #9, #43, #51
-- [ ] 6.3 The daily cash position (FR-BNK-13): every money account and currency at the latest rates, from the balance
+- [x] 6.3 The daily cash position (FR-BNK-13): every money account and currency at the latest rates, from the balance
   service, with its date and the rate source of each currency.
   - Tests: a multi-currency position against hand-worked totals. `// req: FR-BNK-13`
 

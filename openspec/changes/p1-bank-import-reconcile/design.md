@@ -199,6 +199,15 @@ with the sign-off right signs it, with step-up (FM-5, SOD-5); the period's lock 
   revision the checks saw" (FR-GL-07), and ⚠ for suspense, a negative balance at month end, a reconciliation that
   does not match, data older than its schedule allows, unreconciled lines older than 30 days and unresolved possible
   duplicates (C.1 #30 to #32; C.2 #8, #9, #43, #51).
+- As built (tasks 6.1 to 6.3): `banking.Prepare` takes the statement balance as entered, or the closing balance of
+  the latest statement ending on or before the period's end (BANK-10 when there is none); the book balance in the
+  account's own currency through the period's end from the balance service; and as unreconciled the lines booked by
+  then that are unreconciled or possible duplicates. Difference = statement − book − unreconciled. `SignOff` is the
+  second person's (FY226). The close's checks (`closing/bank.go`) cover the money accounts set up in Banking: the ✖
+  compares the signed reconciliation's ledger revision with the latest posting to the account dated in the period;
+  C.2 #8 applies to accounts fed by email or a connector; C.2 #43, a failed sync, comes with the connectors (task 8.2).
+  `banking.Cash` is the daily cash position: each open money account's balance in its currency on the day and its
+  value at the cascade's rate for that day, with the rate's day, and the accounts with no rate named.
 
 ### D10. DBS through the bank-ingest address
 
