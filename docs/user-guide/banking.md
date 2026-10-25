@@ -3,7 +3,7 @@ key: banking.accounts
 title: Bank accounts
 mode: basic
 roles: [bookkeeper, accountant, controller, owner, administrator, ar_specialist, ap_specialist, payment_releaser, auditor, tax_agent]
-requirements: [FR-BNK-01, FR-BNK-02, FR-BNK-04, FR-BNK-05, FR-BNK-06, FR-BNK-07, FR-BNK-08, FR-BNK-09, FR-BNK-11, FR-BNK-13, FR-BNK-14, FR-BNK-15, FR-BNK-16, FR-BNK-17, FR-BNK-18, FR-DOC-08, FR-INT-22]
+requirements: [FR-BNK-01, FR-BNK-02, FR-BNK-04, FR-BNK-05, FR-BNK-06, FR-BNK-07, FR-BNK-08, FR-BNK-09, FR-BNK-10, FR-BNK-11, FR-BNK-13, FR-BNK-14, FR-BNK-15, FR-BNK-16, FR-BNK-17, FR-BNK-18, FR-DOC-08, FR-INT-22]
 status: draft            # written with the banking screens (P1, p1-bank-import-reconcile task 10.1); reviewed with the accountant
 ---
 
@@ -147,6 +147,21 @@ lines an approved rule met.
   is reversed or voided on its own date.
 - The page shows the limits Fyniq works within. Each week the 5 largest and 5 others picked at random
   join the weekly review.
+
+## Reconcile an account for a month
+
+**Reconcile** (Expert mode) proves the books agree with the bank for a month: one person prepares it,
+another signs it off.
+
+- **Prepare it** takes the closing balance of the latest statement imported up to the month's end, and
+  the books' balance on that day. In Standard mode you may type the e-statement's balance instead; in
+  Founder mode it comes only from an imported statement or feed.
+- It shows the statement's balance, the books' balance, the lines the books do not hold yet, and the
+  **difference** they leave. **Ready to sign off** means the difference is nil; otherwise categorise the
+  waiting lines and prepare it again.
+- The Controller **signs it off** after confirming it's them, but never one they prepared. Once signed
+  off it is locked with the month.
+- Lines left in suspense are counted apart: categorise them before the month closes.
 
 ## Freshness and gaps
 

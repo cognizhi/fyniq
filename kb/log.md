@@ -207,3 +207,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-26] compile | docs/user-guide/banking.md → banking.accounts, banking.add-account, banking.import, banking.categorise (the categorise queue; p1-bank-import-reconcile task 10.3)
 
 ## [2026-10-26] compile | docs/user-guide/banking.md → banking.rules, banking.auto-reconciled (new) and the banking pages rehashed (bank rules and the Auto-reconciled list; p1-bank-import-reconcile task 10.4)
+
+## [2026-10-26] compile | docs/user-guide/banking.md → banking.reconcile (new) and the banking pages rehashed (reconciling an account for a month; p1-bank-import-reconcile task 10.5)

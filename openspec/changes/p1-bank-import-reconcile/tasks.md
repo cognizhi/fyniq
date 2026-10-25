@@ -282,9 +282,13 @@ before any code that parses bank files or touches connector secrets (SEC-20).
     rule labelled), made and changed in a dialog with Test it, the auto-apply request after step-up on the rule's
     version, and the rules to consider; the Auto-reconciled list with why, by whom and when, the limits shown, and
     undo with a reason. Which lines are in the week's review sample is in the review log (Inbox), not marked here.
-- [ ] 10.5 `bank-reconciliation` (`/banking/reconciliations/$account/$period`): balances, items, difference,
+- [x] 10.5 `bank-reconciliation` (`/banking/reconciliations/$account/$period`): balances, items, difference,
   prepare and sign-off.
   - Component tests with axe. `// req: FR-BNK-10`
+  - As built: the month chosen from the periods (the account page links the latest ended one); prepared from the
+    imported statement, a typed e-statement balance only in Standard mode (FM-5); the balances, the lines the books do
+    not hold yet and the difference; signed off by the Controller after step-up at its version, never by its preparer,
+    then locked with the month; suspense lines counted apart.
 - [ ] 10.6 The user-guide pages for banking (keys for every screen's help), compiled into `kb/pages/`, with
   `make kb-index` and `make kb-lint` clean, and the screens checked in the dev stack against the real API.
   `// req: QA-UI-05`

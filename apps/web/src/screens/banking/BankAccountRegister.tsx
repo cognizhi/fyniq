@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { ArrowLeftRight, BellRing, ChevronRight, CircleCheck, CircleSlash, Copy, Hourglass, PauseCircle, TriangleAlert, Upload } from "lucide-react";
+import { ArrowLeftRight, BellRing, ChevronRight, CircleCheck, CircleSlash, Copy, Hourglass, PauseCircle, Scale, TriangleAlert, Upload } from "lucide-react";
 import { useId, useState } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -9,11 +9,12 @@ import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { formatAmount } from "../../format/amount";
-import { date, dateTime } from "../../format/date";
+import { date, dateTime, timeZone } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { FreshnessChip, kinds, makers, SourceLine } from "./BankAccounts";
+import { lastEnded, usePeriods } from "./BankReconciliation";
 
 export type BankLine = components["schemas"]["BankLine"];
 type Statement = components["schemas"]["BankStatementIn"];
@@ -120,6 +121,8 @@ export function BankAccountRegister() {
       return data.items ?? [];
     },
   });
+  const periods = usePeriods();
+  const month = lastEnded(periods.data ?? [], new Date().toLocaleDateString("en-CA", { timeZone }));
   const refresh = () => {
     for (const key of [["money-account", accountId], ["bank-lines", accountId], ["bank-signals"], ["money-accounts"]]) void queries.invalidateQueries({ queryKey: key });
   };
@@ -152,14 +155,20 @@ export function BankAccountRegister() {
             </span>
           </p>
         </div>
-        {may && (
-          <div className="fy-pagehead__actions">
+        <div className="fy-pagehead__actions">
+          {month && (
+            <Link className="fy-btn fy-btn--ghost fy-expert-only" to="/banking/reconciliations/$accountId/$periodId" params={{ accountId: a.id, periodId: month.id }}>
+              <Icon of={Scale} />
+              Reconcile
+            </Link>
+          )}
+          {may && (
             <Link className="fy-btn fy-btn--primary" to="/banking/import" search={{ account: a.id }}>
               <Icon of={Upload} />
               Import statement
             </Link>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       <ReviewBanner screen="bank-account" />
       <div className="fy-row fy-row--wrap gap-3">

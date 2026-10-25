@@ -249,6 +249,7 @@ const register = (extra: Record<string, unknown> = {}) => ({
     body: { items: [{ id: "sig1", money_account_id: "m1", amount: sgd("10900.00"), payer: "ACME ROBOTICS", received_at: "2026-10-26T01:12:00Z", invoice: { id: "inv1", number: "INV-0138" }, status: "pending" }] },
   },
   "GET /v1/bank-transfers": { status: 200, body: { items: [{ id: "t1", from_money_account_id: "m1", to_money_account_id: "m2", date: "2026-10-21", paid: sgd("500.00"), received: sgd("500.00"), status: "in_transit", made_by: "user:u1", version: 1 }] } },
+  "GET /v1/periods": { status: 200, body: { items: [{ id: "p9", starts_on: "2026-09-01", ends_on: "2026-09-30", status: "open", version: 1 }] } },
   ...extra,
 });
 
