@@ -134,7 +134,7 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 
 #### Scenario: The deployment sets providers, the organisation its senders (rev 0.102)
 - **WHEN** outbound email is configured
-- **THEN** the deployment sets the providers in order, their keys as secrets never shown through the API, the platform's sender and the sending domains
+- **THEN** the deployment sets the providers in order, their keys as secrets never shown through the API, the platform's sender and the sending domains (superseded in part by rev 0.139: the providers become connectors the Super admin manages)
 - **AND** an Administrator chooses each purpose's sender on one of those domains (EML-03), or keeps the platform's, each choice audited and never changed (FY179)
 
 #### Scenario: Failover and reconciliation as built (rev 0.102)
@@ -156,6 +156,12 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **WHEN** a message carries a stored PDF, such as an invoice sent
 - **THEN** the worker reads it from the evidence store and checks its SHA-256 before marking an attempt, and each adapter sends it as an attachment, up to 5 PDFs and 10 MB
 - **AND** a file not yet readable is retried and failed on the last attempt; a file whose bytes changed is never sent
+
+#### Scenario: The providers are installation-wide connectors (rev 0.139)
+- **GIVEN** an installation whose deployment names its email providers
+- **WHEN** it first starts with the connector framework
+- **THEN** ZeptoMail, Resend and SMTP are installed as installation-wide connectors from the deployment's settings, each secret a reference to its Secret Manager secret and never copied into the database
+- **AND** the Super admin then tests, enables, pauses or disables them, replaces a key write-only and sets the failover order in Settings › Integrations with step-up, dual control and audit, and each send and webhook reads them; the capture domain stays the deployment's
 
 ### Requirement: FR-INT-22 Inbound email
 The system SHALL receive email for the capture addresses (FR-DOC-12) through an inbound adapter and store everything received as untrusted documents (AI-18).
