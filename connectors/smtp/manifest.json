@@ -1,0 +1,102 @@
+{
+  "id": "smtp",
+  "name": "SMTP",
+  "publisher": "Fyniq",
+  "version": "1.0.0",
+  "min_platform": "0.1.0",
+  "summary": "Sends the platform's email through an SMTP server the deployment chooses, over STARTTLS.",
+  "scope": "installation",
+  "capabilities": [
+    {
+      "kind": "outbound-email",
+      "trigger": "system-rule",
+      "trigger_rule": "A message the outbox holds for sending: one a person or a rule of the platform asked for.",
+      "on_pause": "hold",
+      "on_disable": "hold",
+      "in_flight": "reconcile"
+    }
+  ],
+  "configuration": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "address"
+    ],
+    "properties": {
+      "address": {
+        "type": "string",
+        "title": "Server",
+        "description": "The SMTP server's host and port, such as smtp.example.com:587; it must offer STARTTLS.",
+        "pattern": "^[A-Za-z0-9.-]+:[0-9]{1,5}$"
+      },
+      "domain": {
+        "type": "string",
+        "title": "Message-ID domain",
+        "description": "The domain in each message's Message-ID; the platform sender's when empty.",
+        "pattern": "^[a-z0-9.-]+$"
+      },
+      "dns_records": {
+        "type": "object",
+        "title": "DNS records",
+        "description": "The records each sending domain needs for this provider, as its dashboard lists them; the nightly domain check looks for each one.",
+        "propertyNames": {
+          "pattern": "^[a-z0-9.-]+$"
+        },
+        "additionalProperties": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "name",
+              "value"
+            ],
+            "properties": {
+              "type": {
+                "enum": [
+                  "TXT",
+                  "CNAME"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 253
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2048
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "secrets": [],
+  "provider_scopes": [],
+  "fyniq_scopes": [],
+  "data_classes": [
+    "personal-data",
+    "business-figures"
+  ],
+  "regions": [
+    "configured"
+  ],
+  "destinations": [
+    {
+      "configured": "address"
+    }
+  ],
+  "webhooks": [],
+  "health_check": "Counts the server's refusals and broken connections in recent sends; the server cannot be asked what became of a message.",
+  "test_action": "Sends one test message to the signed-in person's own verified address and reports whether the server took it.",
+  "local_substitute": "Mailpit in the local stack (localhost:1025, without TLS), and an SMTP fake in tests.",
+  "limits": {
+    "requests_per_minute": 600,
+    "breaker_failures": 5,
+    "breaker_cooldown_seconds": 60
+  }
+}

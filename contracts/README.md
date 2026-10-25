@@ -9,4 +9,5 @@ Machine-readable contracts, the source of truth for every interface (golden rule
 | `audit/` | The audit event format (AUD-01) and how to verify a chain and its anchors outside Fyniq (§11.5) | p0-audit-chain (today) |
 | `asyncapi/` | Events (`fyniq.<object>.<event>.v<N>`) | P1 |
 | `ai-tools/` | AI and MCP tool schemas | P1 |
+| `connectors/` | The connector manifest format (`manifest.schema.json`, FR-INT-25); each first-party connector's manifest is in `connectors/<id>/manifest.json` and validates against it in `make test` | p1-connector-framework (today) |
 | `partners/` | Partner API mocks (Peppol access point, banks) for local mode | P1 |
