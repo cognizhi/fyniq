@@ -1,0 +1,282 @@
+package storage
+
+import (
+	"context"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+// The banking store (PRD-001 FR-BNK-01, FR-BNK-02, FR-BNK-04, FR-BNK-15, FR-BNK-16; p1-bank-import-reconcile design D1,
+// D2): money accounts and where their data comes from, saved column mappings, and the statements, lines and gaps that
+// files, emailed reports and API connectors all produce alike.
+
+// The kinds of money account (FR-BNK-01).
+const (
+	MoneyBank           = "bank"
+	MoneyCard           = "card"
+	MoneyWallet         = "wallet"
+	MoneyPaymentGateway = "payment_gateway"
+	MoneyCash           = "cash"
+)
+
+// The kinds of source a money account's data comes from (FR-BNK-15).
+const (
+	MoneySourceFile      = "file"
+	MoneySourceEmail     = "email"
+	MoneySourceConnector = "connector"
+)
+
+// The statement formats (FR-BNK-02): files and reports, or an API connector's pull.
+const (
+	FormatCSV      = "csv"
+	FormatXLSX     = "xlsx"
+	FormatOFX      = "ofx"
+	FormatCAMT053  = "camt053"
+	FormatMT940    = "mt940"
+	FormatMT940SAP = "mt940_sap"
+	FormatAPI      = "api"
+)
+
+// The statuses of a bank line, as the Categorise queue moves it (FR-BNK-06): unreconciled and possible duplicate wait
+// for a person; categorised, matched and transferred are done; suspense posted to 2999 and waits to be classified;
+// excluded is out of the books (a duplicate, or not the company's).
+const (
+	LineUnreconciled      = "unreconciled"
+	LinePossibleDuplicate = "possible_duplicate"
+	LineCategorised       = "categorised"
+	LineMatched           = "matched"
+	LineTransferred       = "transferred"
+	LineSuspense          = "suspense"
+	LineExcluded          = "excluded"
+)
+
+// MoneyAccount is the register of a chart account marked a money account.
+type MoneyAccount struct {
+	ID          uuid.UUID
+	AccountID   uuid.UUID // the chart account it posts to
+	Kind        string
+	Name        string
+	Institution string // "" for none
+	Identifier  string // what statements name it by: the account number, an IBAN or a provider's balance ID; "" for none
+	Currency    string
+	OpenedOn    *time.Time
+	ClosedOn    *time.Time
+	CreatedBy   string
+	CreatedAt   time.Time
+	ChangedAt   time.Time
+	Version     int
+}
+
+// NewMoneyAccount opens a money account on a chart account.
+type NewMoneyAccount struct {
+	AccountID   uuid.UUID
+	Kind        string
+	Name        string
+	Institution string
+	Identifier  string
+	Currency    string
+	OpenedOn    *time.Time
+	At          time.Time
+}
+
+// MoneyAccountChange is what may change on a money account: everything but its chart account and currency.
+type MoneyAccountChange struct {
+	Kind        string
+	Name        string
+	Institution string
+	Identifier  string
+	OpenedOn    *time.Time
+	ClosedOn    *time.Time
+	At          time.Time
+}
+
+// MoneyAccountSource is where a money account's data comes from, from a date (UC-BNK-03 keeps the history).
+type MoneyAccountSource struct {
+	ID             uuid.UUID
+	MoneyAccountID uuid.UUID
+	Kind           string
+	ConnectorID    *uuid.UUID // an installed organisation connector, for MoneySourceConnector
+	Senders        []string   // the bank's registered addresses, for MoneySourceEmail
+	ReportFormat   string     // the format its files or reports come in; "" for a connector
+	MappingID      *uuid.UUID // the saved mapping of a CSV or XLSX format
+	FromDate       time.Time
+	SetBy          string
+	SetAt          time.Time
+}
+
+// NewMoneyAccountSource sets a money account's source from a date after its current one.
+type NewMoneyAccountSource struct {
+	MoneyAccountID uuid.UUID
+	Kind           string
+	ConnectorID    *uuid.UUID
+	Senders        []string
+	ReportFormat   string
+	MappingID      *uuid.UUID
+	FromDate       time.Time
+	At             time.Time
+}
+
+// StatementMapping is a saved column mapping for an institution's CSV or XLSX statements (FR-BNK-02).
+type StatementMapping struct {
+	ID          uuid.UUID
+	Name        string
+	Institution string
+	Format      string
+	Spec        []byte // the mapping as JSON (internal/bankfile reads it)
+	CreatedBy   string
+	CreatedAt   time.Time
+	ChangedAt   time.Time
+	Version     int
+}
+
+// NewStatementMapping saves a mapping; a change to one carries its version.
+type NewStatementMapping struct {
+	Name        string
+	Institution string
+	Format      string
+	Spec        []byte
+	At          time.Time
+}
+
+// BankStatement is one imported statement: a file, a report or a connector's pull.
+type BankStatement struct {
+	ID             uuid.UUID
+	MoneyAccountID uuid.UUID
+	Source         string
+	Format         string
+	ParserVersion  string
+	PeriodFrom     time.Time
+	PeriodTo       time.Time
+	Currency       string
+	Opening        *Decimal // when the format gives it
+	Closing        *Decimal
+	LineCount      int
+	FileRef        string // the kept upload or report, "" for a connector's pull
+	ConnectorID    *uuid.UUID
+	ImportedBy     string
+	ImportedAt     time.Time
+}
+
+// NewBankLine is a line as its statement gives it.
+type NewBankLine struct {
+	Position       int
+	BookingDate    time.Time
+	ValueDate      *time.Time
+	Amount         Decimal // signed: money in positive, money out negative
+	Reference      string  // the bank's own reference, "" for none
+	Counterparty   string
+	Description    string
+	RunningBalance *Decimal
+	Fingerprint    string     // hex SHA-256 of the fingerprint fields (FR-BNK-04)
+	DuplicateOf    *uuid.UUID // a line already held that this one may duplicate: the line is kept as a possible duplicate
+}
+
+// NewBankGap is a break in the balance chain a statement shows (FR-BNK-16).
+type NewBankGap struct {
+	AfterDate       *time.Time // the previous statement's end, nil for the first
+	BeforeDate      time.Time  // this statement's start
+	ExpectedOpening *Decimal
+	FoundOpening    *Decimal
+}
+
+// NewBankStatement is an import: the statement, its lines and the gap it reveals, written in one transaction.
+type NewBankStatement struct {
+	MoneyAccountID uuid.UUID
+	Source         string
+	Format         string
+	ParserVersion  string
+	PeriodFrom     time.Time
+	PeriodTo       time.Time
+	Currency       string
+	Opening        *Decimal
+	Closing        *Decimal
+	FileRef        string
+	ConnectorID    *uuid.UUID
+	Lines          []NewBankLine
+	Gap            *NewBankGap
+	At             time.Time
+}
+
+// BankLine is one line of a statement and where it stands.
+type BankLine struct {
+	ID             uuid.UUID
+	StatementID    uuid.UUID
+	MoneyAccountID uuid.UUID
+	Position       int
+	BookingDate    time.Time
+	ValueDate      *time.Time
+	Amount         Decimal
+	Currency       string
+	Reference      string
+	Counterparty   string
+	Description    string
+	RunningBalance *Decimal
+	Fingerprint    string
+	Status         string
+	DuplicateOf    *uuid.UUID
+	StatusBy       string
+	StatusAt       time.Time
+	Version        int
+}
+
+// BankGap is a break in an account's balance chain, and how it was resolved.
+type BankGap struct {
+	ID              uuid.UUID
+	MoneyAccountID  uuid.UUID
+	StatementID     uuid.UUID
+	AfterDate       *time.Time
+	BeforeDate      time.Time
+	Currency        string
+	ExpectedOpening *Decimal
+	FoundOpening    *Decimal
+	FoundAt         time.Time
+	ResolvedBy      string // "" while open
+	ResolvedAt      *time.Time
+	Resolution      string
+}
+
+// BankLineFilter narrows the lines listed: an account, statuses, booking dates (inclusive); zero values select all.
+type BankLineFilter struct {
+	MoneyAccountID *uuid.UUID
+	Statuses       []string
+	From, To       *time.Time
+}
+
+// Banking is the banking store. Every change is audited in its transaction (AUD-01); the database refuses what the
+// design does not allow: a money account off a money chart account or in another currency, a changed source or
+// statement, a line's facts changed, a status moved off the queue, an undo in a closed period (CodeBanking).
+type Banking interface {
+	CreateMoneyAccount(ctx context.Context, n NewMoneyAccount) (MoneyAccount, error)
+	// ChangeMoneyAccount changes a money account at version: CodeVersion when it changed since.
+	ChangeMoneyAccount(ctx context.Context, id uuid.UUID, version int, c MoneyAccountChange) (MoneyAccount, error)
+	// MoneyAccount is one money account; ports.ErrNotFound for none.
+	MoneyAccount(ctx context.Context, id uuid.UUID) (MoneyAccount, error)
+	MoneyAccounts(ctx context.Context) ([]MoneyAccount, error)
+	// AddSource sets a money account's source from a date after its current one.
+	AddSource(ctx context.Context, n NewMoneyAccountSource) (MoneyAccountSource, error)
+	// Sources are a money account's sources, earliest first.
+	Sources(ctx context.Context, moneyAccountID uuid.UUID) ([]MoneyAccountSource, error)
+
+	SaveMapping(ctx context.Context, n NewStatementMapping) (StatementMapping, error)
+	// ChangeMapping changes a saved mapping at version: CodeVersion when it changed since.
+	ChangeMapping(ctx context.Context, id uuid.UUID, version int, n NewStatementMapping) (StatementMapping, error)
+	Mappings(ctx context.Context) ([]StatementMapping, error)
+
+	// Import writes a statement with its lines and its gap, audited as one import, and returns them.
+	Import(ctx context.Context, n NewBankStatement) (BankStatement, []BankLine, error)
+	// Statements are a money account's statements, latest first.
+	Statements(ctx context.Context, moneyAccountID uuid.UUID) ([]BankStatement, error)
+	// LinesByFingerprint are the lines held with any of these fingerprints, for duplicate detection (FR-BNK-04).
+	LinesByFingerprint(ctx context.Context, fingerprints []string) ([]BankLine, error)
+	// Lines are the lines the filter selects, by booking date then position.
+	Lines(ctx context.Context, f BankLineFilter) ([]BankLine, error)
+	// Line is one line; ports.ErrNotFound for none.
+	Line(ctx context.Context, id uuid.UUID) (BankLine, error)
+	// SetLineStatus moves a line along the queue at version: CodeVersion when it changed since.
+	SetLineStatus(ctx context.Context, id uuid.UUID, version int, status string, at time.Time) (BankLine, error)
+	// Gaps are a money account's gaps, open ones only when open is true.
+	Gaps(ctx context.Context, moneyAccountID uuid.UUID, open bool) ([]BankGap, error)
+	// ResolveGap resolves an open gap with its reason: CodeBanking when it is resolved already.
+	ResolveGap(ctx context.Context, id uuid.UUID, resolution string, at time.Time) (BankGap, error)
+}

@@ -445,6 +445,12 @@ VALUES ('%s', '%s', '%s', %s, 'Reviewed.', 0, '%s', %s)`, period, check, by, at,
 // nanAttacks try NaN and an out-of-range value in each numeric column; TestEveryNumericColumn…
 // fails when a numeric column has no entry here.
 var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) error{
+	"bank_statement.opening_balance": func(t *testing.T, b porttest.Books, v string) error { return rawBank(t, b, "opening", v) },
+	"bank_statement.closing_balance": func(t *testing.T, b porttest.Books, v string) error { return rawBank(t, b, "closing", v) },
+	"bank_line.amount":               func(t *testing.T, b porttest.Books, v string) error { return rawBank(t, b, "amount", v) },
+	"bank_line.running_balance":      func(t *testing.T, b porttest.Books, v string) error { return rawBank(t, b, "running", v) },
+	"bank_gap.expected_opening":      func(t *testing.T, b porttest.Books, v string) error { return rawBank(t, b, "expected", v) },
+	"bank_gap.found_opening":         func(t *testing.T, b porttest.Books, v string) error { return rawBank(t, b, "found", v) },
 	"journal_line.amount": func(t *testing.T, b porttest.Books, v string) error {
 		return rawLine(t, b, "SGD", v, "1", "1.00")
 	},
@@ -1100,4 +1106,44 @@ func TestAttackMembersNamesInvitationsAndTheLastOwner(t *testing.T) {
 		return err
 	})
 	wantState(t, "revoke the last Owner", err, "FY093")
+}
+
+// rawBank writes a money account, a statement, a line and a gap as the API in one transaction, with value in the
+// column target names and valid values elsewhere, and returns the first refusal.
+func rawBank(t *testing.T, b porttest.Books, target, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	pick := func(name, valid string) string {
+		if name == target {
+			return value
+		}
+		return valid
+	}
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		var account, money, stmt uuid.UUID
+		if err := tx.QueryRow(ctx, `INSERT INTO fyniq.account (code, name, type, is_money_account, currency)
+VALUES ('1019', 'Attack bank', 'asset', true, 'SGD') RETURNING id`).Scan(&account); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, `INSERT INTO fyniq.money_account (account_id, kind, name, currency, created_by, created_at, changed_by, changed_at)
+VALUES ($1, 'bank', 'Attack', 'SGD', 'user:x', now(), 'user:x', now()) RETURNING id`, account).Scan(&money); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, `INSERT INTO fyniq.bank_statement (money_account_id, source, format, parser_version, period_from, period_to,
+currency, minor_units, opening_balance, closing_balance, line_count, imported_by, imported_at)
+VALUES ($1, 'file', 'csv', 'csv@1', '2026-10-01', '2026-10-31', 'SGD', 2, $2::numeric, $3::numeric, 1, 'user:x', now()) RETURNING id`,
+			money, pick("opening", "1.00"), pick("closing", "2.00")).Scan(&stmt); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO fyniq.bank_line (statement_id, money_account_id, position, booking_date, amount, currency,
+minor_units, running_balance, fingerprint, status, status_by, status_at)
+VALUES ($1, $2, 1, '2026-10-02', $3::numeric, 'SGD', 2, $4::numeric, repeat('a', 64), 'unreconciled', 'user:x', now())`,
+			stmt, money, pick("amount", "1.00"), pick("running", "2.00")); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.bank_gap (money_account_id, statement_id, before_date, currency, minor_units,
+expected_opening, found_opening, found_at) VALUES ($1, $2, '2026-10-01', 'SGD', 2, $3::numeric, $4::numeric, now())`,
+			money, stmt, pick("expected", "0.00"), pick("found", "1.00"))
+		return err
+	})
 }
