@@ -272,6 +272,26 @@
       "label": "Purchases",
       "tooltip": "What the company buys: suppliers' bills, what is owed to them, and paying them."
     },
+    "banking.accounts": {
+      "label": "Banking",
+      "tooltip": "Every money account, its balance, how up to date its data is, and the lines still to categorise."
+    },
+    "bank-account.new": {
+      "label": "Add account",
+      "tooltip": "Add a bank, card, wallet, gateway or cash account, and choose where its data comes from."
+    },
+    "bank-account.source": {
+      "label": "Where its data comes from",
+      "tooltip": "Statement files you import, the bank's reports by email, or a read-only connector such as Wise or Airwallex."
+    },
+    "banking.cash-position": {
+      "label": "Cash position",
+      "tooltip": "The cash in every open money account, other currencies at the day's rate; an account with no rate is left out and listed."
+    },
+    "bank-account.complete-to": {
+      "label": "Complete to",
+      "tooltip": "The last day the account's statements cover with no break in the balance chain before it."
+    },
     "purchases.bills": {
       "label": "Bills",
       "tooltip": "Every bill from a supplier: its total, when it falls due, and whether it is posted, waiting for approval or voided."
