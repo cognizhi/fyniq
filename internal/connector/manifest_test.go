@@ -228,3 +228,5 @@ func TestManifestHashIsCanonical(t *testing.T) {
 		t.Fatalf("hashes %s %s %s", a.Hash(), b.Hash(), c.Hash())
 	}
 }
+
+func jsonUnmarshal(b []byte, v any) error { return json.Unmarshal(b, v) }

@@ -139,11 +139,13 @@ func (s *Store) Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Conte
 		return fn(ctx, open) // joins it: commits or rolls back with it
 	}
 	var u *unitOfWork
+	var attempts []*unitOfWork // a retried attempt rolled back: its AfterRollback runs too
 	err := s.inTx(ctx, func(tx pgx.Tx, q *sqlcdb.Queries) error {
 		if err := s.setTenant(ctx, q, org); err != nil {
 			return err
 		}
 		u = &unitOfWork{q: q, store: s, org: org}
+		attempts = append(attempts, u)
 		defer func() { u.done = true }()
 		if err := fn(context.WithValue(ctx, openUnit{}, u), u); err != nil {
 			return err
@@ -161,8 +163,14 @@ func (s *Store) Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Conte
 		}
 		return nil
 	})
-	if err == nil && u != nil {
-		for _, f := range u.afterCommit {
+	for _, a := range attempts {
+		if err == nil && a == u {
+			for _, f := range a.afterCommit {
+				f(ctx)
+			}
+			continue
+		}
+		for _, f := range a.afterRollback {
 			f(ctx)
 		}
 	}

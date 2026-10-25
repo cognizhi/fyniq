@@ -5,6 +5,7 @@ package postgres_test
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"slices"
 	"testing"
 	"time"
@@ -407,5 +408,31 @@ func TestOrganisationConnectorsKeepTheirLifecycle(t *testing.T) {
 	}
 	if n := count(t, b.Org, "organisation_connector"); n != 0 {
 		t.Fatalf("organisation B counts %d connectors", n)
+	}
+}
+
+// AfterRollback runs when a unit of work does not commit (an error or a preview), never after a commit; AfterCommit the
+// other way round. A secret version put before the transaction that records it is destroyed this way.
+// req: FR-INT-26
+func TestAfterRollbackRunsOnlyWhenNothingCommits(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "After rollback Pte Ltd")
+	st := store(t, "fyniq_api")
+	run := func(ctx context.Context, fail error) (committed, rolledBack bool, err error) {
+		err = st.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			u.AfterCommit(func(context.Context) { committed = true })
+			u.AfterRollback(func(context.Context) { rolledBack = true })
+			return fail
+		})
+		return committed, rolledBack, err
+	}
+	if c, r, err := run(ctx, nil); err != nil || !c || r {
+		t.Fatalf("a commit: committed %v, rolled back %v, %v", c, r, err)
+	}
+	if c, r, _ := run(ctx, ports.ErrNotFound); c || !r {
+		t.Fatalf("an error: committed %v, rolled back %v", c, r)
+	}
+	if c, r, err := run(storage.WithPreview(ctx), nil); !errors.Is(err, storage.ErrPreviewed) || c || !r {
+		t.Fatalf("a preview: committed %v, rolled back %v, %v", c, r, err)
 	}
 }

@@ -103,7 +103,7 @@ secrets or connector traffic (SEC-20).
   `storage.Connectors` port and its adapter, auditing every step in the same transaction. Tests:
   `TestInstallationConnectorsKeepTheirLifecycle`, `TestOrganisationConnectorsKeepTheirLifecycle`, the schema, grants and
   tenant goldens)
-- [ ] 4.2 The lifecycle in `internal/connector`:
+- [x] 4.2 The lifecycle in `internal/connector`:
   - install, configure (validated against the manifest's schema), replace a secret, test, enable, pause,
     resume, disable, uninstall, order, consent;
   - disable cancels what the manifest marks cancellable, and holds the rest;
@@ -113,6 +113,14 @@ secrets or connector traffic (SEC-20).
   - Tests `TestConnectorLifecycle`, `TestDisableCancelsOnlyWhatTheManifestAllows`,
     `TestUninstallDestroysSecretsAndKeepsHistory`, `TestEveryStepIsAudited`. `// req: FR-INT-26`,
     `// req: AUD-01`
+  (25 Oct 2026: `connector.Plan`, the pure planner of every step with its plain-word refusals `CONNECTOR-01` to `-08`;
+  `connector.Installations` (install, step, pause, test, approve, reject) and `connector.Organisations` (install, apply,
+  put a secret); disable runs the `Canceller` of each capability whose manifest cancels its queued work; uninstall lists
+  the webhooks a person removes by hand, and its secret versions are destroyed by `connector.Cleanup` (scheduled with
+  task 4.4); a version put for a unit of work that rolls back is destroyed with it (`UnitOfWork.AfterRollback`, new).
+  Tests: `TestPlanFollowsTheLifecycle`, `TestInstallationConnectorsGoThroughTheLifecycle`,
+  `TestOrganisationConnectorsGoThroughTheLifecycle` (the canceller), `TestAfterRollbackRunsOnlyWhenNothingCommits`, and the
+  adapter's audit checks in `TestInstallationConnectorsKeepTheirLifecycle`)
 - [ ] 4.3 Dual control:
   - organisation connectors through the approval engine: object `connector`, operation `connector.change`,
     the FM-1 policy of Appendix D's "Organisation integrations" row;
@@ -124,6 +132,12 @@ secrets or connector traffic (SEC-20).
   - Tests `TestOrganisationConnectorChangesNeedASecondApprover`, `TestInstallationChangesNeedTheOtherSuperAdmin`,
     `TestOneSuperAdminAppliesAtOnce`, `TestPauseAppliesAtOnceAndResumeWaits`, `TestPendingChangeCannotBeReplayed`.
     `// req: FR-INT-20` (changes audited and dual-controlled), `// req: FR-INT-26`, `// req: FR-ADM-07`
+  (25 Oct 2026, the installation half: `connector.Installations` requests a change once there are two Super admins, for
+  every step but pause and test, with an RFC 8785 envelope; `Approve` decides and applies in one unit of work and refuses a
+  change asked of an older version; `Reject` destroys the new secret version a change carried. Proved by
+  `TestInstallationConnectorsGoThroughTheLifecycle` and the database's `TestInstallationConnectorsKeepTheirLifecycle`.
+  **Left:** the organisation half, the approval engine's object `connector` in `internal/domain/approval` and its
+  execution in the API, with task 7.1)
 - [ ] 4.4 Secret rotation:
   - a replaced secret is a new version referenced by the pending change, and switched on approval;
   - the old version stays enabled for the manifest's overlap (both verify webhooks), then is disabled and
@@ -131,6 +145,10 @@ secrets or connector traffic (SEC-20).
   - a rejected or expired change destroys its version.
   - Tests `TestRotationOverlapAcceptsBothWebhookKeys`, `TestRejectedChangeDestroysItsSecretVersion`.
     `// req: FR-INT-26` (secrets rotated without downtime)
+  (25 Oct 2026: the overlap from each manifest secret's `rotation_overlap_hours`, `connector.Cleanup` destroying replaced
+  versions past their overlap, every version of an uninstalled connector and a rejected or expired change's version,
+  Secret Manager first, then the database. Proved by `TestInstallationConnectorsGoThroughTheLifecycle`. **Left:**
+  scheduling `connectors.cleanup` as a platform job, with the wiring of task 6.1; the overlap's webhook check with 6.2)
 
 ## 5. The runtime
 
