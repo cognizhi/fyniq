@@ -23,7 +23,8 @@ type captures struct{ u *unitOfWork }
 type captureRow = sqlcdb.LiveCaptureAddressesRow
 
 func toCapture(r captureRow) storage.CaptureAddress {
-	return storage.CaptureAddress{ID: r.ID, LocalPart: r.LocalPart, UserID: r.UserID, CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt, RetiredAt: r.RetiredAt}
+	return storage.CaptureAddress{ID: r.ID, LocalPart: r.LocalPart, UserID: r.UserID, Kind: r.Kind, CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt,
+		RetiredAt: r.RetiredAt}
 }
 
 func captureOwner(user *uuid.UUID) any {
@@ -33,11 +34,11 @@ func captureOwner(user *uuid.UUID) any {
 	return user.String()
 }
 
-func (r captures) Create(ctx context.Context, localPart string, user *uuid.UUID) (storage.CaptureAddress, error) {
+func (r captures) Create(ctx context.Context, localPart string, user *uuid.UUID, kind string) (storage.CaptureAddress, error) {
 	if err := r.u.check(); err != nil {
 		return storage.CaptureAddress{}, err
 	}
-	old, err := r.u.q.LiveCaptureAddressOf(ctx, user)
+	old, err := r.u.q.LiveCaptureAddressOf(ctx, sqlcdb.LiveCaptureAddressOfParams{UserID: user, Kind: kind})
 	switch {
 	case err == nil:
 		if _, err := r.Retire(ctx, old.ID); err != nil {
@@ -46,14 +47,14 @@ func (r captures) Create(ctx context.Context, localPart string, user *uuid.UUID)
 	case !errors.Is(err, pgx.ErrNoRows):
 		return storage.CaptureAddress{}, mapError(err)
 	}
-	row, err := r.u.q.InsertCaptureAddress(ctx, sqlcdb.InsertCaptureAddressParams{LocalPart: strings.ToLower(localPart), UserID: user,
+	row, err := r.u.q.InsertCaptureAddress(ctx, sqlcdb.InsertCaptureAddressParams{LocalPart: strings.ToLower(localPart), UserID: user, Kind: kind,
 		CreatedBy: r.u.actor(ctx), CreatedAt: r.u.store.clock.Now()})
 	if err != nil {
 		return storage.CaptureAddress{}, mapError(err)
 	}
 	out := toCapture(captureRow(row))
 	if err := r.u.event(ctx, "capture_address.created", "capture_address", out.ID, nil, map[string][2]any{
-		"local_part": {nil, out.LocalPart}, "user_id": {nil, captureOwner(user)}}); err != nil {
+		"local_part": {nil, out.LocalPart}, "user_id": {nil, captureOwner(user)}, "kind": {nil, kind}}); err != nil {
 		return storage.CaptureAddress{}, err
 	}
 	return out, nil
@@ -111,21 +112,22 @@ func (r captures) Retire(ctx context.Context, id uuid.UUID) (storage.CaptureAddr
 type senderRow = sqlcdb.CaptureSendersInForceRow
 
 func toCaptureSender(r senderRow) storage.CaptureSender {
-	return storage.CaptureSender{ID: r.ID, Address: r.Address, UserID: r.UserID, Decision: r.Decision, DecidedBy: r.DecidedBy, DecidedAt: r.DecidedAt}
+	return storage.CaptureSender{ID: r.ID, Address: r.Address, UserID: r.UserID, Kind: r.Kind, Decision: r.Decision, DecidedBy: r.DecidedBy,
+		DecidedAt: r.DecidedAt}
 }
 
-func (r captures) Decide(ctx context.Context, sender string, user *uuid.UUID, decision string) (storage.CaptureSender, error) {
+func (r captures) Decide(ctx context.Context, sender string, user *uuid.UUID, kind, decision string) (storage.CaptureSender, error) {
 	if err := r.u.check(); err != nil {
 		return storage.CaptureSender{}, err
 	}
-	row, err := r.u.q.InsertCaptureSender(ctx, sqlcdb.InsertCaptureSenderParams{Address: strings.ToLower(sender), UserID: user, Decision: decision,
-		DecidedBy: r.u.actor(ctx), DecidedAt: r.u.store.clock.Now()})
+	row, err := r.u.q.InsertCaptureSender(ctx, sqlcdb.InsertCaptureSenderParams{Address: strings.ToLower(sender), UserID: user, Kind: kind,
+		Decision: decision, DecidedBy: r.u.actor(ctx), DecidedAt: r.u.store.clock.Now()})
 	if err != nil {
 		return storage.CaptureSender{}, mapError(err)
 	}
 	out := toCaptureSender(senderRow(row))
 	if err := r.u.event(ctx, "capture_sender."+decision, "capture_sender", out.ID, nil, map[string][2]any{
-		"address": {nil, out.Address}, "user_id": {nil, captureOwner(user)}, "decision": {nil, decision}}); err != nil {
+		"address": {nil, out.Address}, "user_id": {nil, captureOwner(user)}, "kind": {nil, kind}, "decision": {nil, decision}}); err != nil {
 		return storage.CaptureSender{}, err
 	}
 	return out, nil

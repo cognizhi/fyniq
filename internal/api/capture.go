@@ -49,6 +49,8 @@ type CaptureAddresses struct {
 	OrganisationETag string          `json:"organisation_etag" doc:"Send it in If-Match to change the organisation's address." example:"\"none\""`
 	Mine             *CaptureAddress `json:"mine,omitempty" doc:"The caller's own address; absent until they make one."`
 	MineETag         string          `json:"mine_etag" doc:"Send it in If-Match to change your own address." example:"\"none\""`
+	Bank             *CaptureAddress `json:"bank,omitempty" doc:"The bank-ingest address the banks' scheduled reports are sent to (FR-BNK-17); absent until an Administrator makes one."`
+	BankETag         string          `json:"bank_etag" doc:"Send it in If-Match to change the bank-ingest address." example:"\"none\""`
 }
 
 // CaptureAddressChange names an address, or leaves the name out to have none.
@@ -84,12 +86,14 @@ func (a *API) captureAddresses(ctx context.Context, u storage.UnitOfWork, user u
 	if err != nil {
 		return CaptureAddresses{}, err
 	}
-	out := CaptureAddresses{Domain: a.deps.Mail.CaptureDomain, OrganisationETag: etag("none"), MineETag: etag("none")}
+	out := CaptureAddresses{Domain: a.deps.Mail.CaptureDomain, OrganisationETag: etag("none"), MineETag: etag("none"), BankETag: etag("none")}
 	view := func(c storage.CaptureAddress) *CaptureAddress {
 		return &CaptureAddress{Address: c.LocalPart + "@" + a.deps.Mail.CaptureDomain, Name: c.LocalPart, CreatedAt: c.CreatedAt.UTC()}
 	}
 	for i := range live {
 		switch c := &live[i]; {
+		case c.Kind == storage.CaptureBank:
+			out.Bank, out.BankETag = view(*c), captureETag(c)
 		case c.UserID == nil:
 			out.Organisation, out.OrganisationETag = view(*c), captureETag(c)
 		case user != uuid.Nil && *c.UserID == user:
@@ -99,10 +103,10 @@ func (a *API) captureAddresses(ctx context.Context, u storage.UnitOfWork, user u
 	return out, nil
 }
 
-// liveOf is the live address of user, or of the organisation when user is nil.
-func liveOf(live []storage.CaptureAddress, user *uuid.UUID) *storage.CaptureAddress {
+// liveOf is the live address of kind of user, or of the organisation when user is nil.
+func liveOf(live []storage.CaptureAddress, user *uuid.UUID, kind string) *storage.CaptureAddress {
 	i := slices.IndexFunc(live, func(c storage.CaptureAddress) bool {
-		return (user == nil && c.UserID == nil) || (user != nil && c.UserID != nil && *c.UserID == *user)
+		return c.Kind == kind && ((user == nil && c.UserID == nil) || (user != nil && c.UserID != nil && *c.UserID == *user))
 	})
 	if i < 0 {
 		return nil
@@ -125,8 +129,8 @@ func checkCaptureName(raw string) (string, error) {
 	return name, nil
 }
 
-// setCaptureAddress makes, replaces or retires the live address of user (nil: the organisation's) over ifMatch.
-func (a *API) setCaptureAddress(ctx context.Context, in *captureAddressInput, user *uuid.UUID, caller uuid.UUID) (*captureAddressOutput, error) {
+// setCaptureAddress makes, replaces or retires the live address of kind of user (nil: the organisation's) over ifMatch.
+func (a *API) setCaptureAddress(ctx context.Context, in *captureAddressInput, user *uuid.UUID, kind string, caller uuid.UUID) (*captureAddressOutput, error) {
 	if a.deps.Mail.CaptureDomain == "" {
 		return nil, problem(CodeUnavailable, "Email-in is not set up for this deployment.", "Ask the deployment's operators to set its capture domain")
 	}
@@ -135,7 +139,7 @@ func (a *API) setCaptureAddress(ctx context.Context, in *captureAddressInput, us
 		if err != nil {
 			return CaptureAddresses{}, err
 		}
-		current := liveOf(live, user)
+		current := liveOf(live, user, kind)
 		if err := checkIfMatch(in.IfMatch, captureETag(current)); err != nil {
 			return CaptureAddresses{}, err
 		}
@@ -150,7 +154,7 @@ func (a *API) setCaptureAddress(ctx context.Context, in *captureAddressInput, us
 				return CaptureAddresses{}, err
 			}
 			if current == nil || current.LocalPart != name {
-				_, err = u.CaptureAddresses().Create(ctx, name, user)
+				_, err = u.CaptureAddresses().Create(ctx, name, user, kind)
 				if storage.CodeOf(err) == storage.CodeCaptureName {
 					return CaptureAddresses{}, problem(CodeCaptureTaken, fmt.Sprintf("%s@%s belongs to another organisation.", name, a.deps.Mail.CaptureDomain),
 						"Choose another name: a name stays with its organisation for good, so mail meant for one never reaches another",
@@ -202,7 +206,7 @@ func registerCapture(a *API) {
 			"Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, writes, func(ctx context.Context, in *captureAddressInput) (*captureAddressOutput, error) {
 		p, _ := authn.From(ctx)
-		return a.setCaptureAddress(ctx, in, nil, p.UserID)
+		return a.setCaptureAddress(ctx, in, nil, storage.CaptureDocuments, p.UserID)
 	})
 
 	register(a, authz.SetMyCaptureAddress, huma.Operation{
@@ -220,6 +224,20 @@ func registerCapture(a *API) {
 				"Sign in as yourself, or use the organisation's address")
 		}
 		user := p.UserID
-		return a.setCaptureAddress(ctx, in, &user, p.UserID)
+		return a.setCaptureAddress(ctx, in, &user, storage.CaptureDocuments, p.UserID)
+	})
+
+	register(a, authz.SetBankCaptureAddress, huma.Operation{
+		OperationID: "setBankCaptureAddress", Method: http.MethodPut, Path: "/v1/organisation/email/capture-addresses/bank",
+		Tags: []string{"Organisation"}, Summary: "Name the bank-ingest address",
+		Description: "Makes the organisation's bank-ingest address with a readable name, such as bank, replacing the one it has, or retires " +
+			"it when the name is left out (FR-BNK-17, FR-INT-22; p1-bank-import-reconcile design D10). The banks' scheduled reports are sent " +
+			"to it: only the senders each money account registers for its emailed reports are accepted, and only when DMARC passes; any " +
+			"other sender is quarantined. The name rules are the organisation address's (EML-05, EML-06, EML-07). Side effects: the address " +
+			"and its audit events. Needs If-Match with bank_etag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and " +
+			"saves nothing.",
+	}, writes, func(ctx context.Context, in *captureAddressInput) (*captureAddressOutput, error) {
+		p, _ := authn.From(ctx)
+		return a.setCaptureAddress(ctx, in, nil, storage.CaptureBank, p.UserID)
 	})
 }

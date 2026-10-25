@@ -60,6 +60,17 @@
       "format": "uuid",
       "type": "string"
     },
+    "kind": {
+      "description": "The address's kind: documents captured, or the banks' reports at the bank-ingest address.",
+      "enum": [
+        "documents",
+        "bank"
+      ],
+      "examples": [
+        "documents"
+      ],
+      "type": "string"
+    },
     "note": {
       "description": "What was not kept, or why it failed.",
       "examples": [
@@ -116,6 +127,7 @@
     "id",
     "address",
     "for",
+    "kind",
     "sender",
     "received_at",
     "status",

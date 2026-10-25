@@ -13,13 +13,14 @@ import (
 )
 
 const captureAddressByID = `-- name: CaptureAddressByID :one
-SELECT id, local_part, user_id, created_by, created_at, retired_at FROM fyniq.capture_address WHERE id = $1
+SELECT id, local_part, user_id, kind, created_by, created_at, retired_at FROM fyniq.capture_address WHERE id = $1
 `
 
 type CaptureAddressByIDRow struct {
 	ID        uuid.UUID
 	LocalPart string
 	UserID    *uuid.UUID
+	Kind      string
 	CreatedBy string
 	CreatedAt time.Time
 	RetiredAt *time.Time
@@ -32,6 +33,7 @@ func (q *Queries) CaptureAddressByID(ctx context.Context, id uuid.UUID) (Capture
 		&i.ID,
 		&i.LocalPart,
 		&i.UserID,
+		&i.Kind,
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.RetiredAt,
@@ -58,15 +60,16 @@ func (q *Queries) CaptureRoute(ctx context.Context, localPart string) (CaptureRo
 }
 
 const captureSendersInForce = `-- name: CaptureSendersInForce :many
-SELECT DISTINCT ON (address, user_id) id, address, user_id, decision, decided_by, decided_at
+SELECT DISTINCT ON (address, user_id, kind) id, address, user_id, kind, decision, decided_by, decided_at
 FROM fyniq.capture_sender
-ORDER BY address, user_id, decided_at DESC, id DESC
+ORDER BY address, user_id, kind, decided_at DESC, id DESC
 `
 
 type CaptureSendersInForceRow struct {
 	ID        uuid.UUID
 	Address   string
 	UserID    *uuid.UUID
+	Kind      string
 	Decision  string
 	DecidedBy string
 	DecidedAt time.Time
@@ -86,6 +89,7 @@ func (q *Queries) CaptureSendersInForce(ctx context.Context) ([]CaptureSendersIn
 			&i.ID,
 			&i.Address,
 			&i.UserID,
+			&i.Kind,
 			&i.Decision,
 			&i.DecidedBy,
 			&i.DecidedAt,
@@ -101,14 +105,15 @@ func (q *Queries) CaptureSendersInForce(ctx context.Context) ([]CaptureSendersIn
 }
 
 const insertCaptureAddress = `-- name: InsertCaptureAddress :one
-INSERT INTO fyniq.capture_address (local_part, user_id, created_by, created_at)
-VALUES ($1, $2, $3, $4)
-RETURNING id, local_part, user_id, created_by, created_at, retired_at
+INSERT INTO fyniq.capture_address (local_part, user_id, kind, created_by, created_at)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, local_part, user_id, kind, created_by, created_at, retired_at
 `
 
 type InsertCaptureAddressParams struct {
 	LocalPart string
 	UserID    *uuid.UUID
+	Kind      string
 	CreatedBy string
 	CreatedAt time.Time
 }
@@ -117,6 +122,7 @@ type InsertCaptureAddressRow struct {
 	ID        uuid.UUID
 	LocalPart string
 	UserID    *uuid.UUID
+	Kind      string
 	CreatedBy string
 	CreatedAt time.Time
 	RetiredAt *time.Time
@@ -126,6 +132,7 @@ func (q *Queries) InsertCaptureAddress(ctx context.Context, arg InsertCaptureAdd
 	row := q.db.QueryRow(ctx, insertCaptureAddress,
 		arg.LocalPart,
 		arg.UserID,
+		arg.Kind,
 		arg.CreatedBy,
 		arg.CreatedAt,
 	)
@@ -134,6 +141,7 @@ func (q *Queries) InsertCaptureAddress(ctx context.Context, arg InsertCaptureAdd
 		&i.ID,
 		&i.LocalPart,
 		&i.UserID,
+		&i.Kind,
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.RetiredAt,
@@ -142,14 +150,15 @@ func (q *Queries) InsertCaptureAddress(ctx context.Context, arg InsertCaptureAdd
 }
 
 const insertCaptureSender = `-- name: InsertCaptureSender :one
-INSERT INTO fyniq.capture_sender (address, user_id, decision, decided_by, decided_at)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, address, user_id, decision, decided_by, decided_at
+INSERT INTO fyniq.capture_sender (address, user_id, kind, decision, decided_by, decided_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, address, user_id, kind, decision, decided_by, decided_at
 `
 
 type InsertCaptureSenderParams struct {
 	Address   string
 	UserID    *uuid.UUID
+	Kind      string
 	Decision  string
 	DecidedBy string
 	DecidedAt time.Time
@@ -159,6 +168,7 @@ type InsertCaptureSenderRow struct {
 	ID        uuid.UUID
 	Address   string
 	UserID    *uuid.UUID
+	Kind      string
 	Decision  string
 	DecidedBy string
 	DecidedAt time.Time
@@ -168,6 +178,7 @@ func (q *Queries) InsertCaptureSender(ctx context.Context, arg InsertCaptureSend
 	row := q.db.QueryRow(ctx, insertCaptureSender,
 		arg.Address,
 		arg.UserID,
+		arg.Kind,
 		arg.Decision,
 		arg.DecidedBy,
 		arg.DecidedAt,
@@ -177,6 +188,7 @@ func (q *Queries) InsertCaptureSender(ctx context.Context, arg InsertCaptureSend
 		&i.ID,
 		&i.Address,
 		&i.UserID,
+		&i.Kind,
 		&i.Decision,
 		&i.DecidedBy,
 		&i.DecidedAt,
@@ -185,26 +197,33 @@ func (q *Queries) InsertCaptureSender(ctx context.Context, arg InsertCaptureSend
 }
 
 const liveCaptureAddressOf = `-- name: LiveCaptureAddressOf :one
-SELECT id, local_part, user_id, created_by, created_at, retired_at FROM fyniq.capture_address
-WHERE retired_at IS NULL AND user_id IS NOT DISTINCT FROM $1::uuid FOR UPDATE
+SELECT id, local_part, user_id, kind, created_by, created_at, retired_at FROM fyniq.capture_address
+WHERE retired_at IS NULL AND user_id IS NOT DISTINCT FROM $1::uuid AND kind = $2 FOR UPDATE
 `
+
+type LiveCaptureAddressOfParams struct {
+	UserID *uuid.UUID
+	Kind   string
+}
 
 type LiveCaptureAddressOfRow struct {
 	ID        uuid.UUID
 	LocalPart string
 	UserID    *uuid.UUID
+	Kind      string
 	CreatedBy string
 	CreatedAt time.Time
 	RetiredAt *time.Time
 }
 
-func (q *Queries) LiveCaptureAddressOf(ctx context.Context, userID *uuid.UUID) (LiveCaptureAddressOfRow, error) {
-	row := q.db.QueryRow(ctx, liveCaptureAddressOf, userID)
+func (q *Queries) LiveCaptureAddressOf(ctx context.Context, arg LiveCaptureAddressOfParams) (LiveCaptureAddressOfRow, error) {
+	row := q.db.QueryRow(ctx, liveCaptureAddressOf, arg.UserID, arg.Kind)
 	var i LiveCaptureAddressOfRow
 	err := row.Scan(
 		&i.ID,
 		&i.LocalPart,
 		&i.UserID,
+		&i.Kind,
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.RetiredAt,
@@ -213,14 +232,15 @@ func (q *Queries) LiveCaptureAddressOf(ctx context.Context, userID *uuid.UUID) (
 }
 
 const liveCaptureAddresses = `-- name: LiveCaptureAddresses :many
-SELECT id, local_part, user_id, created_by, created_at, retired_at FROM fyniq.capture_address
-WHERE retired_at IS NULL ORDER BY user_id NULLS FIRST, created_at
+SELECT id, local_part, user_id, kind, created_by, created_at, retired_at FROM fyniq.capture_address
+WHERE retired_at IS NULL ORDER BY user_id NULLS FIRST, kind DESC, created_at
 `
 
 type LiveCaptureAddressesRow struct {
 	ID        uuid.UUID
 	LocalPart string
 	UserID    *uuid.UUID
+	Kind      string
 	CreatedBy string
 	CreatedAt time.Time
 	RetiredAt *time.Time
@@ -239,6 +259,7 @@ func (q *Queries) LiveCaptureAddresses(ctx context.Context) ([]LiveCaptureAddres
 			&i.ID,
 			&i.LocalPart,
 			&i.UserID,
+			&i.Kind,
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.RetiredAt,
@@ -256,7 +277,7 @@ func (q *Queries) LiveCaptureAddresses(ctx context.Context) ([]LiveCaptureAddres
 const retireCaptureAddress = `-- name: RetireCaptureAddress :one
 UPDATE fyniq.capture_address SET retired_at = $1, retired_by = $2
 WHERE id = $3 AND retired_at IS NULL
-RETURNING id, local_part, user_id, created_by, created_at, retired_at
+RETURNING id, local_part, user_id, kind, created_by, created_at, retired_at
 `
 
 type RetireCaptureAddressParams struct {
@@ -269,6 +290,7 @@ type RetireCaptureAddressRow struct {
 	ID        uuid.UUID
 	LocalPart string
 	UserID    *uuid.UUID
+	Kind      string
 	CreatedBy string
 	CreatedAt time.Time
 	RetiredAt *time.Time
@@ -281,6 +303,7 @@ func (q *Queries) RetireCaptureAddress(ctx context.Context, arg RetireCaptureAdd
 		&i.ID,
 		&i.LocalPart,
 		&i.UserID,
+		&i.Kind,
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.RetiredAt,

@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -172,9 +173,9 @@ func (r banking) AddSource(ctx context.Context, n storage.NewMoneyAccountSource)
 	if err := r.u.check(); err != nil {
 		return storage.MoneyAccountSource{}, err
 	}
-	senders := n.Senders
-	if senders == nil {
-		senders = []string{}
+	senders := make([]string, len(n.Senders)) // kept in lower case, as mail is matched (FR-BNK-17)
+	for i, s := range n.Senders {
+		senders[i] = strings.ToLower(strings.TrimSpace(s))
 	}
 	row, err := r.u.q.InsertMoneyAccountSource(ctx, sqlcdb.InsertMoneyAccountSourceParams{MoneyAccountID: n.MoneyAccountID, Kind: n.Kind,
 		ConnectorID: n.ConnectorID, Senders: senders, ReportFormat: opt(n.ReportFormat), MappingID: n.MappingID, FromDate: n.FromDate,

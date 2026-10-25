@@ -58,7 +58,7 @@ func inboundAt(t *testing.T, org uuid.UUID, member *uuid.UUID, sender string) st
 			}
 		}
 		if addr.ID == uuid.Nil {
-			if addr, err = u.CaptureAddresses().Create(ctx, "in-"+uuid.NewString()[:8], member); err != nil {
+			if addr, err = u.CaptureAddresses().Create(ctx, "in-"+uuid.NewString()[:8], member, storage.CaptureDocuments); err != nil {
 				return err
 			}
 		}
@@ -255,4 +255,99 @@ func TestQuarantinedMailExpiresAndKeepsItsHistory(t *testing.T) {
 		err := asOrg(ctx, conn(t, x.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, m.ID); return err })
 		wantState(t, x.what, err, x.state, x.state)
 	}
+}
+
+// The bank-ingest address (FR-BNK-17, FR-INT-22; p1-bank-import-reconcile task 7.1, design D10): one per organisation,
+// beside its documents address and never a member's; a report from the sender a money account registers is accepted
+// when DMARC passes; one from another sender, or a forged one without DMARC, is quarantined; a sender a person accepts
+// there, or one accepted at the documents address, stays unknown; a sender rejected there is rejected.
+// req: FR-INT-22
+// req: FR-BNK-17
+// req: banking/bank-transactions Daily DBS sync without a bank API
+func TestTheBankIngestAddressKnowsOnlyTheBanksRegisteredSenders(t *testing.T) {
+	now := clock.System{}.Now()
+	b := newBankedBooks(t, "Bank ingest Pte Ltd", now)
+	var bank, docs storage.CaptureAddress
+	if err := store(t, "fyniq_api").Do(context.Background(), b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if _, err = u.Banking().AddSource(ctx, storage.NewMoneyAccountSource{MoneyAccountID: b.sgd.ID, Kind: storage.MoneySourceEmail,
+			Senders: []string{"IDEAL.Reports@dbs.example"}, ReportFormat: "mt940", FromDate: now.AddDate(0, 0, 1), At: now}); err != nil {
+			return err
+		}
+		if docs, err = u.CaptureAddresses().Create(ctx, "bills-"+uuid.NewString()[:8], nil, storage.CaptureDocuments); err != nil {
+			return err
+		}
+		if bank, err = u.CaptureAddresses().Create(ctx, "bank-"+uuid.NewString()[:8], nil, storage.CaptureBank); err != nil {
+			return err
+		}
+		_, err = u.CaptureAddresses().Decide(ctx, "ar@supplier.example", nil, storage.CaptureDocuments, storage.SenderAccepted)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if live := liveAddresses(t, b.Org); len(live) != 2 || live[docs.ID].Kind != storage.CaptureDocuments || live[bank.ID].Kind != storage.CaptureBank {
+		t.Fatalf("the live addresses: %+v", live)
+	}
+	member := uuid.New()
+	if err := store(t, "fyniq_api").Do(context.Background(), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.CaptureAddresses().Create(ctx, "bank-"+uuid.NewString()[:8], &member, storage.CaptureBank)
+		return err
+	}); err == nil {
+		t.Error("a member was given a bank-ingest address")
+	}
+
+	dir, err := local.NewDir(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	report := func(sender, dmarc string) storage.InboundMessage {
+		t.Helper()
+		var m storage.InboundMessage
+		if err := store(t, "fyniq_api").Do(context.Background(), b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			m, _, err = u.InboundMessages().Receive(ctx, storage.NewInboundMessage{AddressID: bank.ID, Provider: "resend", ProviderID: uuid.NewString(),
+				Sender: sender, Subject: "IDEAL scheduled report", ReceivedAt: now})
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		p := &fakeInbound{mail: ports.InboundEmail{From: sender, Subject: "IDEAL scheduled report", Text: ":20:STATEMENT", SPF: "pass", DKIM: "pass", DMARC: dmarc}}
+		if err := fetch(t, b.Org, m, p, dir, 1); err != nil {
+			t.Fatal(err)
+		}
+		got, _ := inbound(t, b.Org, m.ID)
+		return got
+	}
+	for _, c := range []struct{ name, sender, dmarc, want string }{
+		{"the registered sender", "ideal.reports@dbs.example", "pass", storage.InboundAccepted},
+		{"another sender", "alerts@dbs.example", "pass", storage.InboundQuarantined},
+		{"a forged sender without DMARC", "ideal.reports@dbs.example", "fail", storage.InboundQuarantined},
+		{"a sender accepted at the documents address", "ar@supplier.example", "pass", storage.InboundQuarantined},
+	} {
+		if got := report(c.sender, c.dmarc); got.Status != c.want {
+			t.Errorf("%s: %s; want %s", c.name, got.Status, c.want)
+		}
+	}
+	if err := store(t, "fyniq_api").Do(context.Background(), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.CaptureAddresses().Decide(ctx, "alerts@dbs.example", nil, storage.CaptureBank, storage.SenderRejected)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if got := report("alerts@dbs.example", "pass"); got.Status != storage.InboundRejected {
+		t.Errorf("a sender rejected there: %s", got.Status)
+	}
+}
+
+func liveAddresses(t *testing.T, org uuid.UUID) map[uuid.UUID]storage.CaptureAddress {
+	t.Helper()
+	out := map[uuid.UUID]storage.CaptureAddress{}
+	if err := store(t, "fyniq_api").Do(context.Background(), org, func(ctx context.Context, u storage.UnitOfWork) error {
+		live, err := u.CaptureAddresses().Live(ctx)
+		for _, a := range live {
+			out[a.ID] = a
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return out
 }

@@ -291,24 +291,28 @@ var (
 	ListMyInboundMessages         = Policy{Operation: "listMyInboundMessages", Capability: OwnNotifications, Need: View}
 	DecideCaptureSender           = Policy{Operation: "decideCaptureSender", Capability: Integrations, Need: Create}
 	DecideMyCaptureSender         = Policy{Operation: "decideMyCaptureSender", Capability: OwnNotifications, Need: Create}
-	ListNotifications             = Policy{Operation: "listNotifications", Capability: OwnNotifications, Need: View}
-	ReadNotification              = Policy{Operation: "readNotification", Capability: OwnNotifications, Need: Create}
-	UnreadNotification            = Policy{Operation: "unreadNotification", Capability: OwnNotifications, Need: Create}
-	ArchiveNotification           = Policy{Operation: "archiveNotification", Capability: OwnNotifications, Need: Create}
-	ReadAllNotifications          = Policy{Operation: "readAllNotifications", Capability: OwnNotifications, Need: Create}
-	GetNotificationPreferences    = Policy{Operation: "getNotificationPreferences", Capability: OwnNotifications, Need: View}
-	SetNotificationPreference     = Policy{Operation: "setNotificationPreference", Capability: OwnNotifications, Need: Create}
-	SetQuietHours                 = Policy{Operation: "setQuietHours", Capability: OwnNotifications, Need: Create}
-	SendTestNotification          = Policy{Operation: "sendTestNotification", Capability: OwnNotifications, Need: Create}
-	ListEmailMessages             = Policy{Operation: "listEmailMessages", Capability: Integrations, Need: View}
-	ListBanners                   = Policy{Operation: "listBanners", Capability: OwnNotifications, Need: View}
-	DismissBanner                 = Policy{Operation: "dismissBanner", Capability: OwnNotifications, Need: Create}
-	ListAnnouncements             = Policy{Operation: "listAnnouncements", Capability: Announcements, Need: View}
-	PublishAnnouncement           = Policy{Operation: "publishAnnouncement", Capability: Announcements, Need: Create}
-	WithdrawAnnouncement          = Policy{Operation: "withdrawAnnouncement", Capability: Announcements, Need: Create}
-	ListMembers                   = Policy{Operation: "listMembers", Capability: UsersAndRoles, Need: View}
-	ListMemberInvitations         = Policy{Operation: "listMemberInvitations", Capability: UsersAndRoles, Need: View}
-	CreateMemberInvitation        = Policy{Operation: "createMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
+	// The bank-ingest address and its quarantine (FR-BNK-17, p1-bank-import-reconcile task 7.1): bank data arriving by
+	// email, under "Bank data… connections".
+	SetBankCaptureAddress      = Policy{Operation: "setBankCaptureAddress", Capability: BankConnections, Need: Create}
+	DecideBankSender           = Policy{Operation: "decideBankSender", Capability: BankConnections, Need: Create}
+	ListNotifications          = Policy{Operation: "listNotifications", Capability: OwnNotifications, Need: View}
+	ReadNotification           = Policy{Operation: "readNotification", Capability: OwnNotifications, Need: Create}
+	UnreadNotification         = Policy{Operation: "unreadNotification", Capability: OwnNotifications, Need: Create}
+	ArchiveNotification        = Policy{Operation: "archiveNotification", Capability: OwnNotifications, Need: Create}
+	ReadAllNotifications       = Policy{Operation: "readAllNotifications", Capability: OwnNotifications, Need: Create}
+	GetNotificationPreferences = Policy{Operation: "getNotificationPreferences", Capability: OwnNotifications, Need: View}
+	SetNotificationPreference  = Policy{Operation: "setNotificationPreference", Capability: OwnNotifications, Need: Create}
+	SetQuietHours              = Policy{Operation: "setQuietHours", Capability: OwnNotifications, Need: Create}
+	SendTestNotification       = Policy{Operation: "sendTestNotification", Capability: OwnNotifications, Need: Create}
+	ListEmailMessages          = Policy{Operation: "listEmailMessages", Capability: Integrations, Need: View}
+	ListBanners                = Policy{Operation: "listBanners", Capability: OwnNotifications, Need: View}
+	DismissBanner              = Policy{Operation: "dismissBanner", Capability: OwnNotifications, Need: Create}
+	ListAnnouncements          = Policy{Operation: "listAnnouncements", Capability: Announcements, Need: View}
+	PublishAnnouncement        = Policy{Operation: "publishAnnouncement", Capability: Announcements, Need: Create}
+	WithdrawAnnouncement       = Policy{Operation: "withdrawAnnouncement", Capability: Announcements, Need: Create}
+	ListMembers                = Policy{Operation: "listMembers", Capability: UsersAndRoles, Need: View}
+	ListMemberInvitations      = Policy{Operation: "listMemberInvitations", Capability: UsersAndRoles, Need: View}
+	CreateMemberInvitation     = Policy{Operation: "createMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
 		Note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they wait for another Owner to approve them, and the request needs step-up (rev 0.36)."}
 	WithdrawMemberInvitation = Policy{Operation: "withdrawMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true}
 	AssignRole               = Policy{Operation: "assignRole", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
@@ -852,7 +856,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
-	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
+	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
