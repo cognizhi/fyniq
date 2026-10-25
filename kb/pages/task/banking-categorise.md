@@ -4,7 +4,7 @@ type: task
 title: Categorise and match the waiting bank lines
 summary: Accept, change or skip each waiting line's suggestion, run Reconcile now, and in Expert split, transfer, match or suspend lines
 sources:
-  - docs/user-guide/banking.md sha256:08b20a3037ebeb1cf4e123f03b4300e89e2b1e3f1a03779ef8092d187d693922
+  - docs/user-guide/banking.md sha256:e5b31dffa37f3a7a4fbb38cb67f84d33e460126f6811bb6df93037434ab98263
 data_class: general
 taint: trusted
 status: draft
@@ -44,5 +44,6 @@ aliases:
 - **Mark as a transfer** matches money moved between two of the company's accounts to the other side's line, or leaves it in transit until that line arrives.
 - **Match to documents** settles one customer's invoices or one supplier's bills with the line, several at once; what it pays beyond them stays as a credit with them, and a small shortfall settled in full clears within the settlement tolerance.
 - **Suspense** posts the line to suspense until its purpose is known.
+- Rules that suggest a category: [[banking.rules]]. What Fyniq reconciled by itself: [[banking.auto-reconciled]].
 
 (src: docs/user-guide/banking.md#categorise-the-waiting-lines)

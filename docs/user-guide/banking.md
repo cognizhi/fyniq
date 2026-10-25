@@ -117,6 +117,37 @@ In Expert mode:
   within the organisation's settlement tolerance.
 - **Suspense** posts the line to suspense until its purpose is known.
 
+## Bank rules
+
+**Rules** (Expert mode) teach Fyniq how to code lines that come back, such as every AWS charge to
+Software. A rule suggests; it does not post by itself.
+
+- A rule meets a line by what its description contains or a regular expression it matches, its
+  counterparty, money in or out, its size, its currency and its money account. It codes the line to an
+  account, with a GST code and, if you like, a contact.
+- Rules are in an order: the first rule a line meets is the one suggested.
+- **Test it** shows how many of the lines held the rule would have matched, and a few of them, before
+  you save it.
+- **Ask to apply by itself** asks another person to let the rule reconcile the lines it meets without a
+  click, within the organisation's auto-reconcile limits. You confirm it's you first; changing the rule
+  meanwhile stops the request, and a change afterwards needs a new approval.
+- **Rules to consider** lists lines coded the same way several times; **Make it a rule** starts a rule
+  from them. None applies until you save it.
+- A rule that no longer reads, such as one whose account was turned off, says so ⚠ and matches nothing
+  until it is changed. A rule an AI proposal made carries the AI label.
+
+## What Fyniq reconciled by itself
+
+**Auto-reconciled** lists what Fyniq reconciled without a click in the last 30 days and still stands:
+exact matches (the amount, the document's number and the contact), the other side of a transfer, and
+lines an approved rule met.
+
+- Each shows why, and the principal and time that did it.
+- **Undo it** puts the line back in the queue with your reason, while its month is open: what it posted
+  is reversed or voided on its own date.
+- The page shows the limits Fyniq works within. Each week the 5 largest and 5 others picked at random
+  join the weekly review.
+
 ## Freshness and gaps
 
 - **Complete to** is the last day the account's statements cover with no break before it.

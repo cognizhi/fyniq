@@ -340,6 +340,18 @@
       "label": "Suspense",
       "tooltip": "Post the line to suspense (2999) until its purpose is known; categorising or matching it later reverses that."
     },
+    "banking.rules": {
+      "label": "Bank rules",
+      "tooltip": "Rules suggest how to code the lines they meet, the first in the order winning; test each against the lines held before saving it."
+    },
+    "banking.auto-reconciled": {
+      "label": "Auto-reconciled",
+      "tooltip": "What Fyniq reconciled by itself, why and when; undo any of it while its month is open."
+    },
+    "bank-rule.auto-apply": {
+      "label": "Ask to apply by itself",
+      "tooltip": "Ask another person to let the rule reconcile the lines it meets without a click, within the organisation's limits."
+    },
     "purchases.bills": {
       "label": "Bills",
       "tooltip": "Every bill from a supplier: its total, when it falls due, and whether it is posted, waiting for approval or voided."

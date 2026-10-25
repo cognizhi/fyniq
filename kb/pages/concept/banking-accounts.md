@@ -4,7 +4,7 @@ type: concept
 title: Bank accounts, their data sources and freshness
 summary: Money accounts and the cash position, where their data comes from, an account's statements and lines, duplicates, alerts and gaps
 sources:
-  - docs/user-guide/banking.md sha256:08b20a3037ebeb1cf4e123f03b4300e89e2b1e3f1a03779ef8092d187d693922
+  - docs/user-guide/banking.md sha256:e5b31dffa37f3a7a4fbb38cb67f84d33e460126f6811bb6df93037434ab98263
 data_class: general
 taint: trusted
 status: draft
