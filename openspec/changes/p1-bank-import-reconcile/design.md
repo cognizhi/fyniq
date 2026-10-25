@@ -295,6 +295,16 @@ schedule), read-only:
   its reference drops it. Wise's own webhook route is the generic `/api/webhooks/bank/wise/{id}`, which the manifest
   cannot declare (a path per installation), so the operator registers it in Wise's dashboard.
 
+- As built (task 8.4), checked against Airwallex's pages on 26 Oct 2026: the bases are `https://api.airwallex.com`
+  and `https://api.sandbox.airwallex.com`; `POST /api/v1/authentication/login` exchanges `x-client-id` and `x-api-key`
+  for a token valid 30 minutes (201, `token`, `expires_at`), reused until a minute before it expires; scoped keys exist,
+  and Read on Balances covers `GET /api/v1/balances/current` and `GET /api/v1/balances/history`, so the key is
+  read-only and the client sends nothing else. Each money account's identifier is a currency of the wallet (its cash
+  balance); the history is read in windows of up to 7 days (`from_post_at`, `to_post_at`), page by page with
+  `page_after`, the cursor an opaque window start and bookmark; amounts are JSON numbers read as their text. Webhooks
+  carry `x-timestamp` (Unix milliseconds) and `x-signature`, the hex HMAC-SHA256 under the notification URL's secret of
+  the timestamp followed by the raw body; Airwallex leaves the window to the receiver, and Fyniq allows five minutes.
+
 ### D12. Organisation connector secrets in a dedicated project (the owner's decision)
 
 OpenTofu adds a secrets project per platform environment (`fyniq-staging-secrets`, `fyniq-prod-secrets` [verify the

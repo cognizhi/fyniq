@@ -1,0 +1,95 @@
+{
+  "id": "airwallex",
+  "name": "Airwallex",
+  "publisher": "Fyniq",
+  "version": "1.0.0",
+  "min_platform": "0.1.0",
+  "summary": "Reads an Airwallex wallet's cash balances and their history into Banking, read-only: each money account whose identifier is a currency of the wallet is fed hourly, and Airwallex's webhooks prompt an early sync.",
+  "scope": "organisation",
+  "capabilities": [
+    {
+      "kind": "bank-data",
+      "trigger": "system-rule",
+      "trigger_rule": "The sync schedule: the tick's hourly bank.sync, or an early sync a verified Airwallex webhook prompts.",
+      "on_pause": "hold",
+      "on_disable": "hold",
+      "in_flight": "finish"
+    }
+  ],
+  "configuration": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["client_id"],
+    "properties": {
+      "client_id": {
+        "type": "string",
+        "title": "Client ID",
+        "description": "The Client ID of the scoped API key, as the Airwallex web app shows it.",
+        "pattern": "^[A-Za-z0-9_-]{4,100}$"
+      },
+      "environment": {
+        "type": "string",
+        "title": "Environment",
+        "description": "Airwallex's production, or its sandbox for staging.",
+        "enum": ["production", "sandbox"],
+        "default": "production"
+      },
+      "history_days": {
+        "type": "integer",
+        "title": "History on the first sync",
+        "description": "How many days before today the first sync reads.",
+        "minimum": 1,
+        "maximum": 365,
+        "default": 90
+      }
+    }
+  },
+  "secrets": [
+    {
+      "name": "api_key",
+      "title": "API key",
+      "description": "A scoped API key with Read on Balances and nothing else (Settings › Developer › API keys).",
+      "used_by": [
+        "worker",
+        "api"
+      ],
+      "rotation_overlap_hours": 24
+    },
+    {
+      "name": "webhook_secret",
+      "title": "Webhook secret",
+      "description": "The secret of the notification URL Fyniq shows for this connector, which signs Airwallex's webhooks.",
+      "used_by": [
+        "api"
+      ],
+      "rotation_overlap_hours": 24
+    }
+  ],
+  "provider_scopes": [
+    "Balances: Read"
+  ],
+  "fyniq_scopes": [],
+  "data_classes": [],
+  "regions": [
+    "SG"
+  ],
+  "destinations": [
+    {
+      "host": "api.airwallex.com",
+      "port": 443
+    },
+    {
+      "host": "api.sandbox.airwallex.com",
+      "port": 443
+    }
+  ],
+  "webhooks": [],
+  "health_check": "Counts Airwallex's refusals and failed connections in recent syncs, and each feed's last sync and why it stopped.",
+  "test_action": "Lists the wallet's cash balances by currency, and reports whether Airwallex accepted the key.",
+  "local_substitute": "A fake Airwallex in tests; Prism serves contracts/partners/airwallex.yaml in the local partners profile.",
+  "limits": {
+    "requests_per_minute": 60,
+    "breaker_failures": 5,
+    "breaker_cooldown_seconds": 300
+  }
+}

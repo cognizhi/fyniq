@@ -209,10 +209,13 @@ before any code that parses bank files or touches connector secrets (SEC-20).
     in design D11's note. Still `[verify]`: a read-only token (Wise documents none, so the adapter sends GET only) and
     where Wise processes what it is sent (the manifest says GB). `contracts/partners/wise.yaml` is an extract of the
     published document, not the whole 1.8 MB; Prism serving it was not run here.
-- [ ] 8.4 Airwallex (design D11): manifest and adapter (client ID and API key, scoped where offered), balances and
+- [x] 8.4 Airwallex (design D11): manifest and adapter (client ID and API key, scoped where offered), balances and
   transactions, webhooks verified by HMAC-SHA256 over `x-timestamp` and the raw body within five minutes;
   `contracts/partners/airwallex.yaml` mocked by Prism; facts `[verify]`d against Airwallex's pages.
   - Tests: contract tests; a forged and a stale signature refused. `// req: FR-BNK-18`
+  - As built: `connectors/airwallex` and `internal/adapters/airwallex`; facts in design D11's note. Still `[verify]`:
+    where Airwallex processes what it is sent (the manifest says SG). `contracts/partners/airwallex.yaml` is written
+    from the reference pages (no published OpenAPI document); Prism serving it was not run here.
 - [ ] 8.5 The source switch (design D13; the owner's decision): a money account moves from emailed reports to an API
   connector from a date without a gap; the e-statement tie-out stays; the bank agreements are evidence on the account.
   - Tests: a switch to a fake API connector with the chain unbroken. `// req: FR-BNK-17`,
