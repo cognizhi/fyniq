@@ -480,6 +480,49 @@ installation_announcement | published_by | uuid | not null |
 installation_announcement | published_at | timestamp with time zone | not null | 
 installation_announcement | withdrawn_at | timestamp with time zone | null | 
 installation_announcement | withdrawn_by | uuid | null | 
+installation_change | id | uuid | not null | uuidv7()
+installation_change | connector_id | uuid | null | 
+installation_change | connector | text | not null | 
+installation_change | step | text | not null | 
+installation_change | summary | text | not null | 
+installation_change | change | jsonb | not null | 
+installation_change | envelope | text | not null | 
+installation_change | envelope_hash | bytea | not null | 
+installation_change | requested_by | uuid | not null | 
+installation_change | requested_at | timestamp with time zone | not null | 
+installation_change | requester_mfa_at | timestamp with time zone | not null | 
+installation_change | expires_at | timestamp with time zone | not null | 
+installation_change | status | text | not null | 'pending'::text
+installation_change | decided_by | uuid | null | 
+installation_change | decided_at | timestamp with time zone | null | 
+installation_change | decider_mfa_at | timestamp with time zone | null | 
+installation_change | reason | text | null | 
+installation_change | applied_at | timestamp with time zone | null | 
+installation_connector | id | uuid | not null | uuidv7()
+installation_connector | connector | text | not null | 
+installation_connector | manifest_version | text | not null | 
+installation_connector | manifest_hash | text | not null | 
+installation_connector | secret_names | text[] | not null | 
+installation_connector | consent | jsonb | not null | '{}'::jsonb
+installation_connector | state | text | not null | 
+installation_connector | configuration | jsonb | not null | '{}'::jsonb
+installation_connector | position | integer | not null | 
+installation_connector | test_passed | boolean | null | 
+installation_connector | test_reason | text | null | 
+installation_connector | tested_at | timestamp with time zone | null | 
+installation_connector | installed_by | text | not null | 
+installation_connector | installed_at | timestamp with time zone | not null | 
+installation_connector | changed_by | text | not null | 
+installation_connector | changed_at | timestamp with time zone | not null | 
+installation_connector | version | integer | not null | 1
+installation_connector_secret | id | uuid | not null | uuidv7()
+installation_connector_secret | connector_id | uuid | not null | 
+installation_connector_secret | name | text | not null | 
+installation_connector_secret | ref | text | not null | 
+installation_connector_secret | set_by | text | not null | 
+installation_connector_secret | set_at | timestamp with time zone | not null | 
+installation_connector_secret | valid_until | timestamp with time zone | null | 
+installation_connector_secret | destroyed_at | timestamp with time zone | null | 
 item | organisation_id | uuid | not null | current_org()
 item | id | uuid | not null | uuidv7()
 item | code | text | not null | 
@@ -621,6 +664,33 @@ organisation | fy_start_month | smallint | not null | 1
 organisation | books_start | date | null | 
 organisation | first_year_end | date | null | 
 organisation | time_zone | text | not null | 'Asia/Singapore'::text
+organisation_connector | organisation_id | uuid | not null | current_org()
+organisation_connector | id | uuid | not null | uuidv7()
+organisation_connector | connector | text | not null | 
+organisation_connector | manifest_version | text | not null | 
+organisation_connector | manifest_hash | text | not null | 
+organisation_connector | secret_names | text[] | not null | 
+organisation_connector | consent | jsonb | not null | '{}'::jsonb
+organisation_connector | state | text | not null | 
+organisation_connector | configuration | jsonb | not null | '{}'::jsonb
+organisation_connector | position | integer | not null | 
+organisation_connector | test_passed | boolean | null | 
+organisation_connector | test_reason | text | null | 
+organisation_connector | tested_at | timestamp with time zone | null | 
+organisation_connector | installed_by | text | not null | 
+organisation_connector | installed_at | timestamp with time zone | not null | 
+organisation_connector | changed_by | text | not null | 
+organisation_connector | changed_at | timestamp with time zone | not null | 
+organisation_connector | version | integer | not null | 1
+organisation_connector_secret | organisation_id | uuid | not null | current_org()
+organisation_connector_secret | id | uuid | not null | uuidv7()
+organisation_connector_secret | connector_id | uuid | not null | 
+organisation_connector_secret | name | text | not null | 
+organisation_connector_secret | ref | text | not null | 
+organisation_connector_secret | set_by | text | not null | 
+organisation_connector_secret | set_at | timestamp with time zone | not null | 
+organisation_connector_secret | valid_until | timestamp with time zone | null | 
+organisation_connector_secret | destroyed_at | timestamp with time zone | null | 
 organisation_setting | organisation_id | uuid | not null | current_org()
 organisation_setting | id | uuid | not null | uuidv7()
 organisation_setting | key | text | not null | 
@@ -1083,7 +1153,7 @@ approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
 approval_policy | approval_policy_id_not_null | NOT NULL id
-approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text])))
+approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text, 'connector'::text])))
 approval_policy | approval_policy_object_type_not_null | NOT NULL object_type
 approval_policy | approval_policy_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 approval_policy | approval_policy_organisation_id_not_null | NOT NULL organisation_id
@@ -1111,7 +1181,7 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK ((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK ((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))))
+approval_request | approval_request_object_known | CHECK (((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -1698,6 +1768,72 @@ installation_announcement | installation_announcement_starts_at_not_null | NOT N
 installation_announcement | installation_announcement_window | CHECK ((ends_at > starts_at))
 installation_announcement | installation_announcement_withdrawn_by_fkey | FOREIGN KEY (withdrawn_by) REFERENCES app_user(user_id)
 installation_announcement | installation_announcement_withdrawn_whole | CHECK (((withdrawn_at IS NULL) = (withdrawn_by IS NULL)))
+installation_change | installation_change_another_person | CHECK ((decided_by <> requested_by))
+installation_change | installation_change_applied_approved | CHECK (((applied_at IS NULL) OR (status = 'approved'::text)))
+installation_change | installation_change_change_not_null | NOT NULL change
+installation_change | installation_change_connector_fkey | FOREIGN KEY (connector_id) REFERENCES installation_connector(id)
+installation_change | installation_change_connector_not_null | NOT NULL connector
+installation_change | installation_change_decided_by_fkey | FOREIGN KEY (decided_by) REFERENCES app_user(user_id)
+installation_change | installation_change_decided_whole | CHECK ((((status = ANY (ARRAY['pending'::text, 'expired'::text])) = (decided_by IS NULL)) AND ((decided_by IS NULL) = (decided_at IS NULL)) AND ((decided_by IS NULL) = (decider_mfa_at IS NULL))))
+installation_change | installation_change_envelope_hash_not_null | NOT NULL envelope_hash
+installation_change | installation_change_envelope_not_null | NOT NULL envelope
+installation_change | installation_change_expires_at_not_null | NOT NULL expires_at
+installation_change | installation_change_expiry | CHECK ((expires_at > requested_at))
+installation_change | installation_change_hash_length | CHECK ((length(envelope_hash) = 32))
+installation_change | installation_change_id_not_null | NOT NULL id
+installation_change | installation_change_object | CHECK (((jsonb_typeof(change) = 'object'::text) AND (length(envelope) <= 65536)))
+installation_change | installation_change_pkey | PRIMARY KEY (id)
+installation_change | installation_change_reason_length | CHECK ((length(reason) <= 500))
+installation_change | installation_change_requested_at_not_null | NOT NULL requested_at
+installation_change | installation_change_requested_by_fkey | FOREIGN KEY (requested_by) REFERENCES app_user(user_id)
+installation_change | installation_change_requested_by_not_null | NOT NULL requested_by
+installation_change | installation_change_requester_mfa_at_not_null | NOT NULL requester_mfa_at
+installation_change | installation_change_status_known | CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'expired'::text])))
+installation_change | installation_change_status_not_null | NOT NULL status
+installation_change | installation_change_step_known | CHECK ((step = ANY (ARRAY['install'::text, 'configure'::text, 'secret'::text, 'enable'::text, 'resume'::text, 'disable'::text, 'uninstall'::text, 'order'::text, 'consent'::text])))
+installation_change | installation_change_step_not_null | NOT NULL step
+installation_change | installation_change_summary_length | CHECK (((length(summary) >= 1) AND (length(summary) <= 300)))
+installation_change | installation_change_summary_not_null | NOT NULL summary
+installation_connector | installation_connector_by_form | CHECK (((installed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (changed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
+installation_connector | installation_connector_changed_at_not_null | NOT NULL changed_at
+installation_connector | installation_connector_changed_by_not_null | NOT NULL changed_by
+installation_connector | installation_connector_configuration_not_null | NOT NULL configuration
+installation_connector | installation_connector_configuration_object | CHECK (((jsonb_typeof(configuration) = 'object'::text) AND (length((configuration)::text) <= 65536)))
+installation_connector | installation_connector_connector_not_null | NOT NULL connector
+installation_connector | installation_connector_consent_not_null | NOT NULL consent
+installation_connector | installation_connector_consent_object | CHECK (((jsonb_typeof(consent) = 'object'::text) AND (length((consent)::text) <= 16384)))
+installation_connector | installation_connector_hash_form | CHECK ((manifest_hash ~ '^[0-9a-f]{64}$'::text))
+installation_connector | installation_connector_id_form | CHECK ((connector ~ '^[a-z][a-z0-9-]{1,39}$'::text))
+installation_connector | installation_connector_id_not_null | NOT NULL id
+installation_connector | installation_connector_installed_at_not_null | NOT NULL installed_at
+installation_connector | installation_connector_installed_by_not_null | NOT NULL installed_by
+installation_connector | installation_connector_manifest_hash_not_null | NOT NULL manifest_hash
+installation_connector | installation_connector_manifest_version_not_null | NOT NULL manifest_version
+installation_connector | installation_connector_no_secret | CHECK ((NOT (configuration ?| secret_names)))
+installation_connector | installation_connector_pkey | PRIMARY KEY (id)
+installation_connector | installation_connector_position_not_null | NOT NULL "position"
+installation_connector | installation_connector_position_positive | CHECK ((("position" >= 1) AND ("position" <= 1000)))
+installation_connector | installation_connector_secret_names_form | CHECK (((cardinality(secret_names) <= 20) AND (array_to_string(secret_names, ','::text) ~ '^([a-z][a-z0-9_]{1,39}(,[a-z][a-z0-9_]{1,39})*)?$'::text)))
+installation_connector | installation_connector_secret_names_not_null | NOT NULL secret_names
+installation_connector | installation_connector_state_known | CHECK ((state = ANY (ARRAY['installed'::text, 'configured'::text, 'tested'::text, 'enabled'::text, 'paused'::text, 'disabled'::text, 'uninstalled'::text])))
+installation_connector | installation_connector_state_not_null | NOT NULL state
+installation_connector | installation_connector_test_reason_length | CHECK ((length(test_reason) <= 300))
+installation_connector | installation_connector_test_whole | CHECK ((((test_passed IS NULL) = (tested_at IS NULL)) AND ((test_reason IS NULL) OR (test_passed IS NOT NULL))))
+installation_connector | installation_connector_version_form | CHECK ((manifest_version ~ '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'::text))
+installation_connector | installation_connector_version_not_null | NOT NULL version
+installation_connector | installation_connector_version_positive | CHECK ((version >= 1))
+installation_connector_secret | installation_connector_secret_by_form | CHECK ((set_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+installation_connector_secret | installation_connector_secret_connector_fkey | FOREIGN KEY (connector_id) REFERENCES installation_connector(id)
+installation_connector_secret | installation_connector_secret_connector_id_not_null | NOT NULL connector_id
+installation_connector_secret | installation_connector_secret_id_not_null | NOT NULL id
+installation_connector_secret | installation_connector_secret_name_form | CHECK ((name ~ '^[a-z][a-z0-9_]{1,39}$'::text))
+installation_connector_secret | installation_connector_secret_name_not_null | NOT NULL name
+installation_connector_secret | installation_connector_secret_once | UNIQUE (ref)
+installation_connector_secret | installation_connector_secret_pkey | PRIMARY KEY (id)
+installation_connector_secret | installation_connector_secret_ref_form | CHECK ((((length(ref) >= 3) AND (length(ref) <= 512)) AND (ref ~ '^[A-Za-z0-9:/_.-]+$'::text)))
+installation_connector_secret | installation_connector_secret_ref_not_null | NOT NULL ref
+installation_connector_secret | installation_connector_secret_set_at_not_null | NOT NULL set_at
+installation_connector_secret | installation_connector_secret_set_by_not_null | NOT NULL set_by
 item | item_code_format | CHECK ((code ~ '^[0-9A-Za-z][0-9A-Za-z._/-]{0,29}$'::text))
 item | item_code_key | UNIQUE (organisation_id, code)
 item | item_code_not_null | NOT NULL code
@@ -1896,6 +2032,50 @@ organisation | organisation_uen_format | CHECK (((uen ~ '^[0-9A-Z]{9,10}$'::text
 organisation | organisation_version_not_null | NOT NULL version
 organisation | organisation_version_positive | CHECK ((version > 0))
 organisation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+organisation_connector | organisation_connector_by_form | CHECK (((installed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (changed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
+organisation_connector | organisation_connector_changed_at_not_null | NOT NULL changed_at
+organisation_connector | organisation_connector_changed_by_not_null | NOT NULL changed_by
+organisation_connector | organisation_connector_configuration_not_null | NOT NULL configuration
+organisation_connector | organisation_connector_configuration_object | CHECK (((jsonb_typeof(configuration) = 'object'::text) AND (length((configuration)::text) <= 65536)))
+organisation_connector | organisation_connector_connector_not_null | NOT NULL connector
+organisation_connector | organisation_connector_consent_not_null | NOT NULL consent
+organisation_connector | organisation_connector_consent_object | CHECK (((jsonb_typeof(consent) = 'object'::text) AND (length((consent)::text) <= 16384)))
+organisation_connector | organisation_connector_hash_form | CHECK ((manifest_hash ~ '^[0-9a-f]{64}$'::text))
+organisation_connector | organisation_connector_id_form | CHECK ((connector ~ '^[a-z][a-z0-9-]{1,39}$'::text))
+organisation_connector | organisation_connector_id_not_null | NOT NULL id
+organisation_connector | organisation_connector_installed_at_not_null | NOT NULL installed_at
+organisation_connector | organisation_connector_installed_by_not_null | NOT NULL installed_by
+organisation_connector | organisation_connector_manifest_hash_not_null | NOT NULL manifest_hash
+organisation_connector | organisation_connector_manifest_version_not_null | NOT NULL manifest_version
+organisation_connector | organisation_connector_no_secret | CHECK ((NOT (configuration ?| secret_names)))
+organisation_connector | organisation_connector_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+organisation_connector | organisation_connector_organisation_id_not_null | NOT NULL organisation_id
+organisation_connector | organisation_connector_pkey | PRIMARY KEY (organisation_id, id)
+organisation_connector | organisation_connector_position_not_null | NOT NULL "position"
+organisation_connector | organisation_connector_position_positive | CHECK ((("position" >= 1) AND ("position" <= 1000)))
+organisation_connector | organisation_connector_secret_names_form | CHECK (((cardinality(secret_names) <= 20) AND (array_to_string(secret_names, ','::text) ~ '^([a-z][a-z0-9_]{1,39}(,[a-z][a-z0-9_]{1,39})*)?$'::text)))
+organisation_connector | organisation_connector_secret_names_not_null | NOT NULL secret_names
+organisation_connector | organisation_connector_state_known | CHECK ((state = ANY (ARRAY['installed'::text, 'configured'::text, 'tested'::text, 'enabled'::text, 'paused'::text, 'disabled'::text, 'uninstalled'::text])))
+organisation_connector | organisation_connector_state_not_null | NOT NULL state
+organisation_connector | organisation_connector_test_reason_length | CHECK ((length(test_reason) <= 300))
+organisation_connector | organisation_connector_test_whole | CHECK ((((test_passed IS NULL) = (tested_at IS NULL)) AND ((test_reason IS NULL) OR (test_passed IS NOT NULL))))
+organisation_connector | organisation_connector_version_form | CHECK ((manifest_version ~ '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'::text))
+organisation_connector | organisation_connector_version_not_null | NOT NULL version
+organisation_connector | organisation_connector_version_positive | CHECK ((version >= 1))
+organisation_connector | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+organisation_connector_secret | organisation_connector_secret_by_form | CHECK ((set_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+organisation_connector_secret | organisation_connector_secret_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+organisation_connector_secret | organisation_connector_secret_connector_id_not_null | NOT NULL connector_id
+organisation_connector_secret | organisation_connector_secret_id_not_null | NOT NULL id
+organisation_connector_secret | organisation_connector_secret_name_form | CHECK ((name ~ '^[a-z][a-z0-9_]{1,39}$'::text))
+organisation_connector_secret | organisation_connector_secret_name_not_null | NOT NULL name
+organisation_connector_secret | organisation_connector_secret_once | UNIQUE (organisation_id, ref)
+organisation_connector_secret | organisation_connector_secret_organisation_id_not_null | NOT NULL organisation_id
+organisation_connector_secret | organisation_connector_secret_pkey | PRIMARY KEY (organisation_id, id)
+organisation_connector_secret | organisation_connector_secret_ref_form | CHECK ((((length(ref) >= 3) AND (length(ref) <= 512)) AND (ref ~ '^[A-Za-z0-9:/_.-]+$'::text)))
+organisation_connector_secret | organisation_connector_secret_ref_not_null | NOT NULL ref
+organisation_connector_secret | organisation_connector_secret_set_at_not_null | NOT NULL set_at
+organisation_connector_secret | organisation_connector_secret_set_by_not_null | NOT NULL set_by
 organisation_setting | organisation_setting_effective_from_not_null | NOT NULL effective_from
 organisation_setting | organisation_setting_id_not_null | NOT NULL id
 organisation_setting | organisation_setting_key_format | CHECK (((key ~ '^[a-z]+(\.[a-z_]+)+$'::text) AND (length(key) <= 60)))
@@ -2446,6 +2626,7 @@ CREATE INDEX idempotency_key_expires_idx ON fyniq.idempotency_key USING btree (o
 CREATE INDEX inbound_file_message ON fyniq.inbound_file USING btree (organisation_id, message_id)
 CREATE INDEX inbound_message_sender ON fyniq.inbound_message USING btree (organisation_id, sender, address_id) WHERE (status = 'quarantined'::text)
 CREATE INDEX inbound_message_status ON fyniq.inbound_message USING btree (organisation_id, status, received_at)
+CREATE INDEX installation_change_pending ON fyniq.installation_change USING btree (connector) WHERE (status = 'pending'::text)
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
 CREATE INDEX journal_entry_posting_date_idx ON fyniq.journal_entry USING btree (organisation_id, posting_date)
 CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organisation_id, account_id, posting_date)
@@ -2544,6 +2725,12 @@ CREATE UNIQUE INDEX inbound_file_pkey ON fyniq.inbound_file USING btree (organis
 CREATE UNIQUE INDEX inbound_message_once ON fyniq.inbound_message USING btree (organisation_id, provider, provider_id, address_id)
 CREATE UNIQUE INDEX inbound_message_pkey ON fyniq.inbound_message USING btree (organisation_id, id)
 CREATE UNIQUE INDEX installation_announcement_pkey ON fyniq.installation_announcement USING btree (id)
+CREATE UNIQUE INDEX installation_change_pkey ON fyniq.installation_change USING btree (id)
+CREATE UNIQUE INDEX installation_connector_live ON fyniq.installation_connector USING btree (connector) WHERE (state <> 'uninstalled'::text)
+CREATE UNIQUE INDEX installation_connector_pkey ON fyniq.installation_connector USING btree (id)
+CREATE UNIQUE INDEX installation_connector_secret_current ON fyniq.installation_connector_secret USING btree (connector_id, name) WHERE ((valid_until IS NULL) AND (destroyed_at IS NULL))
+CREATE UNIQUE INDEX installation_connector_secret_once ON fyniq.installation_connector_secret USING btree (ref)
+CREATE UNIQUE INDEX installation_connector_secret_pkey ON fyniq.installation_connector_secret USING btree (id)
 CREATE UNIQUE INDEX installation_pkey ON fyniq.installation USING btree (singleton)
 CREATE UNIQUE INDEX item_code_key ON fyniq.item USING btree (organisation_id, code)
 CREATE UNIQUE INDEX item_pkey ON fyniq.item USING btree (organisation_id, id)
@@ -2565,6 +2752,11 @@ CREATE UNIQUE INDEX notification_once ON fyniq.notification USING btree (organis
 CREATE UNIQUE INDEX notification_pkey ON fyniq.notification USING btree (organisation_id, id)
 CREATE UNIQUE INDEX notification_preference_pkey ON fyniq.notification_preference USING btree (organisation_id, id)
 CREATE UNIQUE INDEX opening_balance_pkey ON fyniq.opening_balance USING btree (organisation_id)
+CREATE UNIQUE INDEX organisation_connector_live ON fyniq.organisation_connector USING btree (organisation_id, connector) WHERE (state <> 'uninstalled'::text)
+CREATE UNIQUE INDEX organisation_connector_pkey ON fyniq.organisation_connector USING btree (organisation_id, id)
+CREATE UNIQUE INDEX organisation_connector_secret_current ON fyniq.organisation_connector_secret USING btree (organisation_id, connector_id, name) WHERE ((valid_until IS NULL) AND (destroyed_at IS NULL))
+CREATE UNIQUE INDEX organisation_connector_secret_once ON fyniq.organisation_connector_secret USING btree (organisation_id, ref)
+CREATE UNIQUE INDEX organisation_connector_secret_pkey ON fyniq.organisation_connector_secret USING btree (organisation_id, id)
 CREATE UNIQUE INDEX organisation_pkey ON fyniq.organisation USING btree (organisation_id)
 CREATE UNIQUE INDEX organisation_setting_pkey ON fyniq.organisation_setting USING btree (organisation_id, id)
 CREATE UNIQUE INDEX organisation_setting_version_key ON fyniq.organisation_setting USING btree (organisation_id, key, version)
@@ -2685,6 +2877,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEF
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.member_invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('member_invitation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation', 'organisation_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation_connector DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_connector', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_bill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'id')
@@ -2763,6 +2956,13 @@ CREATE TRIGGER inbound_message_guard BEFORE DELETE OR UPDATE ON fyniq.inbound_me
 CREATE TRIGGER inbound_message_no_truncate BEFORE TRUNCATE ON fyniq.inbound_message FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER installation_announcement_guard BEFORE DELETE OR UPDATE ON fyniq.installation_announcement FOR EACH ROW EXECUTE FUNCTION announcement_guard()
 CREATE TRIGGER installation_announcement_no_truncate BEFORE TRUNCATE ON fyniq.installation_announcement FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER installation_change_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.installation_change FOR EACH ROW EXECUTE FUNCTION installation_change_guard()
+CREATE TRIGGER installation_change_no_truncate BEFORE TRUNCATE ON fyniq.installation_change FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER installation_connector_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.installation_connector FOR EACH ROW EXECUTE FUNCTION connector_guard()
+CREATE TRIGGER installation_connector_no_truncate BEFORE TRUNCATE ON fyniq.installation_connector FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER installation_connector_secret_guard BEFORE DELETE OR UPDATE ON fyniq.installation_connector_secret FOR EACH ROW EXECUTE FUNCTION connector_secret_guard()
+CREATE TRIGGER installation_connector_secret_named BEFORE INSERT ON fyniq.installation_connector_secret FOR EACH ROW EXECUTE FUNCTION connector_secret_named()
+CREATE TRIGGER installation_connector_secret_no_truncate BEFORE TRUNCATE ON fyniq.installation_connector_secret FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER journal_entry_assign BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_assign()
 CREATE TRIGGER journal_entry_bill_release BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = 'bill_release'::text) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_bill_release()
 CREATE TRIGGER journal_entry_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_immutable()
@@ -2788,6 +2988,11 @@ CREATE TRIGGER notification_preference_guard BEFORE DELETE OR UPDATE ON fyniq.no
 CREATE TRIGGER notification_preference_no_truncate BEFORE TRUNCATE ON fyniq.notification_preference FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER opening_balance_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.opening_balance FOR EACH ROW EXECUTE FUNCTION opening_balance_guard()
 CREATE TRIGGER opening_balance_no_truncate BEFORE TRUNCATE ON fyniq.opening_balance FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER organisation_connector_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.organisation_connector FOR EACH ROW EXECUTE FUNCTION connector_guard()
+CREATE TRIGGER organisation_connector_no_truncate BEFORE TRUNCATE ON fyniq.organisation_connector FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER organisation_connector_secret_guard BEFORE DELETE OR UPDATE ON fyniq.organisation_connector_secret FOR EACH ROW EXECUTE FUNCTION connector_secret_guard()
+CREATE TRIGGER organisation_connector_secret_named BEFORE INSERT ON fyniq.organisation_connector_secret FOR EACH ROW EXECUTE FUNCTION connector_secret_named()
+CREATE TRIGGER organisation_connector_secret_no_truncate BEFORE TRUNCATE ON fyniq.organisation_connector_secret FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER organisation_created AFTER INSERT ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_created()
 CREATE TRIGGER organisation_guard BEFORE UPDATE ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_guard()
 CREATE TRIGGER organisation_kind_guard BEFORE INSERT OR UPDATE ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_kind_guard()
@@ -2889,6 +3094,8 @@ notification_event | tenant_isolation | * | (organisation_id = current_org()) | 
 notification_preference | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 opening_balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 organisation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+organisation_connector | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+organisation_connector_secret | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 organisation_setting | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 outbox | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -2923,6 +3130,7 @@ allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, 
 announcement_dismissal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5e05644e02afe264e8eef087f5ad7218
 announcement_dismissible() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c4dc44e3777faec4069ed0a9f0f172bd
 announcement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aef10077836a4f9111749cb3181c5788
+apply_installation_change(p_change uuid, p_connector text, p_id uuid, p_step text, p_at timestamp with time zone) → void | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8e8cf04d98279cfd8fcd5307219c31ac
 approval_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 54bfd8bf483ebb04da99069f2b6836cf
 approval_policy_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5c96f4771b1eddd81ec69ad86520e32a
 approval_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c3359e1c6e373efc4111560e22c9c455
@@ -2939,20 +3147,27 @@ audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, f
 balance_differences() → TABLE(account_id uuid, period_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 3fb15f23f1568ac9a4288b7dced1e16e
 beat(p_name text, p_at timestamp with time zone, p_detail text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 464af91fa7b0d569c10c9b291c9d6460
 bill_payment_plan_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d53bcb2c3cc4abaeb7eb39ce991bc40
+bootstrap_installation_connectors(p_rows jsonb, p_at timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | aaf122d42b55f7004f7bf7ec42326134
 capture_address_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 74c297c8ec1f2a43a920e66f732fd515
 capture_route(p_local text) → TABLE(organisation_id uuid, address_id uuid, user_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 172d93473f532f3e8728708678490889
 capture_sender_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d3ca1a62ec41cff9d93981758a2f74c
+change_installation_connector(p_by uuid, p_change uuid, p_step text, p_id uuid, p_version integer, p_state text, p_configuration jsonb, p_position integer, p_test_passed boolean, p_test_reason text, p_tested_at timestamp with time zone, p_manifest_version text, p_manifest_hash text, p_secret_names text[], p_consent jsonb, p_at timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 9b989ec9c61abe049b0de80a90368cbf
 check_entry_balanced() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b53334884d5e11426b962a38e77aed9
 claim_job_slot(p_job text, p_slot timestamp with time zone, p_holder text, p_until timestamp with time zone, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 25c90e46d6e3d1e87666459f6db394db
 claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 57aedc912c161d7d32a66f3e8840bd12
 close_checklist_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f4af92af3952d349375bb5a90970c137
 confirm_super_admin_recovery(p_by uuid, p_for uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 254723da0ff40bc2dc8dd67758ba97c3
+connector_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 06787f4aad13062e2a82e6f6927156d1
+connector_secret_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3cac10b5a22d195d4512f77359b4c64c
+connector_secret_named() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1a9173546f91feb840e7b1996f3342c4
 count_super_admins() → integer | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c51240844e3a2e9633d6e96de4827bd0
 create_scheduled_bill_draft(p_recurring_bill uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 034ac02e0e0c8386e09e6dfb54a6f8fa
 create_scheduled_draft(p_recurring_journal uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b23a8c0aa6277cadb7bd3f6aae5f5661
 create_scheduled_invoice_draft(p_recurring_invoice uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2965fc4edb05408641ee8a47909a2109
 create_scheduled_revaluation(p_period uuid, p_payload jsonb, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3a11f739d0529e16f9662b7ad7fd8477
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
+decide_installation_change(p_by uuid, p_id uuid, p_hash bytea, p_approve boolean, p_mfa_at timestamp with time zone, p_reason text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 338fe991475e9f427093a25bef17d1d0
+destroyed_installation_connector_secret(p_ref text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 87e77fee8faaf36987cfc16b94dc2d7c
 document_edit_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1f0d61ef9570468fad74328f6db07239
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 047cbe8b3eb5adba27f972e530a29a07
 document_link_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88e84bdb34f498a2ef91479f46bfcd43
@@ -2975,12 +3190,19 @@ end_user_session(p_user uuid, p_hash bytea, p_now timestamp with time zone) → 
 end_user_sessions(p_user uuid, p_keep_issuer text, p_keep_subject text, p_removed_subjects text[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e53e19f9fb118e4abd03ef536d8ce083
 evidence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e9a4de22d514e03c7917f207a26849f9
 evidence_never_deleted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c4003638e114bc7cbc14e63a1e638b1e
+expire_installation_changes(p_at timestamp with time zone) → SETOF uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0b005ff86bcc342e932239c43728b24d
 finish_job_slot(p_job text, p_slot timestamp with time zone, p_ok boolean, p_detail text, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ad4500fb0fd68beae2aba5eb5653db8b
 fx_feed_rate_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 849c4b9702a2ace8fe0e241dba3da8ef
 fx_rate_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df1d5890f30041246e4b0ce50b864488
 inbound_file_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9b3c6d083223c4f8e6521e1cd4cad263
 inbound_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3bd01c80a7acafbbc22e6ab62d336849
+install_installation_connector(p_by uuid, p_change uuid, p_connector text, p_version text, p_hash text, p_secret_names text[], p_consent jsonb, p_configuration jsonb, p_position integer, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 28e9f78bda8c33873df9d1ac445a1f0d
 installation_announcements() → TABLE(id uuid, message text, link text, severity text, roles text[], starts_at timestamp with time zone, ends_at timestamp with time zone, dismissible boolean, published_by uuid, published_at timestamp with time zone, withdrawn_at timestamp with time zone, withdrawn_by uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 0028b2bdb61c586e84ebdc774b1cfb72
+installation_change_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e47d994724614632ea53ff6d02f58a6d
+installation_changes() → SETOF installation_change | security definer | s | search_path=pg_catalog, fyniq, pg_temp | d0096b581dfcbbab5efc3b8098e7c53c
+installation_connector_secrets() → SETOF installation_connector_secret | security definer | s | search_path=pg_catalog, fyniq, pg_temp | d0384177811c50091218d19d0ddaff7a
+installation_connectors() → SETOF installation_connector | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2d213ce73f338601f22e68944f00a45f
+installation_dual_control() → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | a3a29b8dc4a420477e6b9ff6948499d8
 installation_org() → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9731da83e60ff6283071958a473dc801
 invite_super_admin(p_by uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a982d2e3cd5f5da8d5c1851b7fe08001
 issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1c6a399b76934acce5ae3a3dc9d8d7e8
@@ -3027,6 +3249,7 @@ recover_super_admin(p_recovery_hash bytea, p_confirmation_hash bytea, p_issuer t
 recurring_bill_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78176a4c51f0d011b1ad10b5635a8e7
 recurring_invoice_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2276687a770939a7a49195de610ec237
 recurring_journal_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4998ee7053cefac747e643b32d1a0311
+request_installation_change(p_by uuid, p_connector_id uuid, p_connector text, p_step text, p_summary text, p_change jsonb, p_envelope text, p_hash bytea, p_mfa_at timestamp with time zone, p_at timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 081e531ac2fa6d7a04725c2968ee4893
 require_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88b80585540483298b0397296b364b9d
 require_grant_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 10dc33c6231fa48667c6b95ffe2a04c4
 require_installation_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f9c3cec49b84db3497dc1be8e78f5180
@@ -3042,6 +3265,7 @@ scheduled_issue_fence() → trigger | security invoker | v | search_path=pg_cata
 session_for(p_hash bytea, p_now timestamp with time zone, p_idle interval, OUT issuer text, OUT subject text, OUT provider text, OUT user_id uuid, OUT organisation_id uuid, OUT roles text[], OUT step_up_at timestamp with time zone, OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1fa557346732ac0de88a7a7d9407fedc
 session_step_up(p_challenge uuid, p_session bytea, p_credential uuid, p_sign_count bigint, p_backup_state boolean, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 557b605544981a727167d857731ab8f9
 session_step_up_method(p_hash bytea) → text | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 69b01e01a7b355f060b2e48248d0d248
+set_installation_connector_secret(p_by uuid, p_change uuid, p_id uuid, p_name text, p_ref text, p_valid_until timestamp with time zone, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8e2b7bc27e6a1464a4d6957cd45085f4
 set_recovery_codes(p_user uuid, p_hashes bytea[], p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | fa0ec035edd7677410f7fb3b8de88b51
 set_setup_code(p_hash bytea) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1401833c664206cef80dad827e0bd549
 setup_done() → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 3872e1ae6024a26a11ca317f9463791c

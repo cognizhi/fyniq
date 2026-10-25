@@ -37,12 +37,14 @@ fyniq_api       EXECUTE   balance_differences()
 fyniq_api       EXECUTE   beat()
 fyniq_api       INSERT    bill_payment_plan (bill_id, planned_on, recorded_by)
 fyniq_api       SELECT    bill_payment_plan
+fyniq_api       EXECUTE   bootstrap_installation_connectors()
 fyniq_api       INSERT    capture_address (created_at, created_by, local_part, user_id)
 fyniq_api       SELECT    capture_address
 fyniq_api       UPDATE    capture_address (retired_at, retired_by)
 fyniq_api       EXECUTE   capture_route()
 fyniq_api       INSERT    capture_sender (address, decided_at, decided_by, decision, user_id)
 fyniq_api       SELECT    capture_sender
+fyniq_api       EXECUTE   change_installation_connector()
 fyniq_api       EXECUTE   claim_job_slot()
 fyniq_api       EXECUTE   claim_setup()
 fyniq_api       INSERT    close_checklist_entry (note, period_id, state, task_key, template_version, written_at, written_by)
@@ -61,6 +63,7 @@ fyniq_api       EXECUTE   current_org()
 fyniq_api       INSERT    customer_group (name, reminder_days)
 fyniq_api       SELECT    customer_group
 fyniq_api       UPDATE    customer_group (active, name, reminder_days, version)
+fyniq_api       EXECUTE   decide_installation_change()
 fyniq_api       INSERT    document (type)
 fyniq_api       SELECT    document
 fyniq_api       UPDATE    document (current_version, posted_at, posted_by, status)
@@ -116,7 +119,11 @@ fyniq_api       UPDATE    inbound_file (removed_at)
 fyniq_api       INSERT    inbound_message (address_id, provider, provider_id, received_at, sender, subject)
 fyniq_api       SELECT    inbound_message
 fyniq_api       UPDATE    inbound_message (decided_at, decided_by, status)
+fyniq_api       EXECUTE   install_installation_connector()
 fyniq_api       EXECUTE   installation_announcements()
+fyniq_api       EXECUTE   installation_changes()
+fyniq_api       EXECUTE   installation_connector_secrets()
+fyniq_api       EXECUTE   installation_connectors()
 fyniq_api       EXECUTE   installation_org()
 fyniq_api       EXECUTE   invite_super_admin()
 fyniq_api       INSERT    item (code, description, gst_code, name, revenue_account_id, type, unit)
@@ -150,6 +157,12 @@ fyniq_api       SELECT    opening_balance
 fyniq_api       INSERT    organisation (base_currency, base_minor_units, kind, name)
 fyniq_api       SELECT    organisation
 fyniq_api       UPDATE    organisation (bank_account_name, bank_account_number, bank_name, books_start, document_footer, email, first_year_end, fy_start_month, legal_name, mailing_address, name, paynow_uen, phone, registered_address, time_zone, uen, version, website)
+fyniq_api       INSERT    organisation_connector (changed_at, changed_by, configuration, connector, consent, installed_at, installed_by, manifest_hash, manifest_version, position, secret_names, state)
+fyniq_api       SELECT    organisation_connector
+fyniq_api       UPDATE    organisation_connector (changed_at, changed_by, configuration, consent, manifest_hash, manifest_version, position, secret_names, state, test_passed, test_reason, tested_at, version)
+fyniq_api       INSERT    organisation_connector_secret (connector_id, name, ref, set_at, set_by)
+fyniq_api       SELECT    organisation_connector_secret
+fyniq_api       UPDATE    organisation_connector_secret (valid_until)
 fyniq_api       INSERT    organisation_setting (effective_from, key, value, version)
 fyniq_api       SELECT    organisation_setting
 fyniq_api       INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
@@ -189,6 +202,7 @@ fyniq_api       SELECT    recurring_journal
 fyniq_api       UPDATE    recurring_journal (content_version, day_of_month, ends_on, every_months, name, next_on, starts_on, status, version)
 fyniq_api       INSERT    recurring_journal_version (content, edited_by, recurring_journal_id, version)
 fyniq_api       SELECT    recurring_journal_version
+fyniq_api       EXECUTE   request_installation_change()
 fyniq_api       INSERT    review_log_entry (actor, approval_id, kind, logged_at, object_key, object_type, summary)
 fyniq_api       SELECT    review_log_entry
 fyniq_api       INSERT    review_log_review (entry_id, note, reviewed_at, reviewed_by)
@@ -202,6 +216,7 @@ fyniq_api       USAGE     schema fyniq
 fyniq_api       EXECUTE   session_for()
 fyniq_api       EXECUTE   session_step_up()
 fyniq_api       EXECUTE   session_step_up_method()
+fyniq_api       EXECUTE   set_installation_connector_secret()
 fyniq_api       EXECUTE   set_recovery_codes()
 fyniq_api       EXECUTE   setup_done()
 fyniq_api       EXECUTE   skip_job_slots()
@@ -360,6 +375,8 @@ fyniq_readonly  SELECT    notification_event
 fyniq_readonly  SELECT    notification_preference
 fyniq_readonly  SELECT    opening_balance
 fyniq_readonly  SELECT    organisation
+fyniq_readonly  SELECT    organisation_connector
+fyniq_readonly  SELECT    organisation_connector_secret
 fyniq_readonly  SELECT    organisation_setting
 fyniq_readonly  SELECT    outbox
 fyniq_readonly  SELECT    period
@@ -414,6 +431,7 @@ fyniq_worker    EXECUTE   create_scheduled_revaluation()
 fyniq_worker    SELECT    currencies
 fyniq_worker    EXECUTE   current_org()
 fyniq_worker    SELECT    customer_group
+fyniq_worker    EXECUTE   destroyed_installation_connector_secret()
 fyniq_worker    SELECT    document
 fyniq_worker    UPDATE    document (posted_at, posted_by, status)
 fyniq_worker    INSERT    document_link (created_by, document_id, document_version, expires_at, message_id, token_hash)
@@ -438,6 +456,7 @@ fyniq_worker    SELECT    email_suppression
 fyniq_worker    INSERT    evidence (data_class, document_id, evidence_type, file_name, media_type, note, original_sha256, relates_on, sha256, size_bytes, source, staging_key, uploaded_by)
 fyniq_worker    SELECT    evidence
 fyniq_worker    UPDATE    evidence (finalised_at, locked_key, retain_until, state, version)
+fyniq_worker    EXECUTE   expire_installation_changes()
 fyniq_worker    EXECUTE   finish_job_slot()
 fyniq_worker    SELECT    fx_feed_rates
 fyniq_worker    SELECT    fx_rate
@@ -450,6 +469,9 @@ fyniq_worker    SELECT    inbound_file
 fyniq_worker    UPDATE    inbound_file (removed_at)
 fyniq_worker    SELECT    inbound_message
 fyniq_worker    UPDATE    inbound_message (dkim, dmarc, expires_at, fetched_at, last_error, spf, status)
+fyniq_worker    EXECUTE   installation_changes()
+fyniq_worker    EXECUTE   installation_connector_secrets()
+fyniq_worker    EXECUTE   installation_connectors()
 fyniq_worker    EXECUTE   installation_org()
 fyniq_worker    SELECT    item
 fyniq_worker    SELECT    item_price
@@ -474,6 +496,9 @@ fyniq_worker    UPDATE    notification_event (fanned_out_at)
 fyniq_worker    SELECT    notification_preference
 fyniq_worker    SELECT    opening_balance
 fyniq_worker    SELECT    organisation
+fyniq_worker    SELECT    organisation_connector
+fyniq_worker    SELECT    organisation_connector_secret
+fyniq_worker    UPDATE    organisation_connector_secret (destroyed_at)
 fyniq_worker    SELECT    organisation_setting
 fyniq_worker    INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_worker    SELECT    outbox

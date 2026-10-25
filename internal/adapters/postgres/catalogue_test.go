@@ -34,10 +34,13 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 // capture_name is the registry of email-in address names (000102): written by capture_address's trigger, read only
 // through capture_route. document_link_token is the registry of online links' hashes (000133): written by
 // document_link's trigger, read only through document_link_route. installation_announcement is the Super admins' banners to everyone (000108): written and read
-// only through SECURITY DEFINER functions.
+// only through SECURITY DEFINER functions. installation_connector, installation_connector_secret and installation_change
+// are the installation's connectors, their secret versions and the changes awaiting the other Super admin (000141):
+// written and read only through SECURITY DEFINER functions.
 var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbeat", "app_user", "user_identity", "installation", "super_admin",
 	"super_admin_grant", "user_session", "statutory_pack_version", "statutory_pack_row", "webauthn_credential", "webauthn_challenge",
-	"fx_feed_rate", "capture_name", "installation_announcement", "document_link_token"}
+	"fx_feed_rate", "capture_name", "installation_announcement", "document_link_token", "installation_connector",
+	"installation_connector_secret", "installation_change"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain", "opening_balance"}

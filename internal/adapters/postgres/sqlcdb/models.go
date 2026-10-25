@@ -640,6 +640,58 @@ type FyniqInstallationAnnouncement struct {
 	WithdrawnBy *uuid.UUID
 }
 
+type FyniqInstallationChange struct {
+	ID             uuid.UUID
+	ConnectorID    *uuid.UUID
+	Connector      string
+	Step           string
+	Summary        string
+	Change         []byte
+	Envelope       string
+	EnvelopeHash   []byte
+	RequestedBy    uuid.UUID
+	RequestedAt    time.Time
+	RequesterMfaAt time.Time
+	ExpiresAt      time.Time
+	Status         string
+	DecidedBy      *uuid.UUID
+	DecidedAt      *time.Time
+	DeciderMfaAt   *time.Time
+	Reason         *string
+	AppliedAt      *time.Time
+}
+
+type FyniqInstallationConnector struct {
+	ID              uuid.UUID
+	Connector       string
+	ManifestVersion string
+	ManifestHash    string
+	SecretNames     []string
+	Consent         []byte
+	State           string
+	Configuration   []byte
+	Position        int32
+	TestPassed      *bool
+	TestReason      *string
+	TestedAt        *time.Time
+	InstalledBy     string
+	InstalledAt     time.Time
+	ChangedBy       string
+	ChangedAt       time.Time
+	Version         int32
+}
+
+type FyniqInstallationConnectorSecret struct {
+	ID          uuid.UUID
+	ConnectorID uuid.UUID
+	Name        string
+	Ref         string
+	SetBy       string
+	SetAt       time.Time
+	ValidUntil  *time.Time
+	DestroyedAt *time.Time
+}
+
 type FyniqItem struct {
 	OrganisationID   uuid.UUID
 	ID               uuid.UUID
@@ -821,6 +873,39 @@ type FyniqOrganisation struct {
 	BooksStart        pgtype.Date
 	FirstYearEnd      pgtype.Date
 	TimeZone          string
+}
+
+type FyniqOrganisationConnector struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	Connector       string
+	ManifestVersion string
+	ManifestHash    string
+	SecretNames     []string
+	Consent         []byte
+	State           string
+	Configuration   []byte
+	Position        int32
+	TestPassed      *bool
+	TestReason      *string
+	TestedAt        *time.Time
+	InstalledBy     string
+	InstalledAt     time.Time
+	ChangedBy       string
+	ChangedAt       time.Time
+	Version         int32
+}
+
+type FyniqOrganisationConnectorSecret struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectorID    uuid.UUID
+	Name           string
+	Ref            string
+	SetBy          string
+	SetAt          time.Time
+	ValidUntil     *time.Time
+	DestroyedAt    *time.Time
 }
 
 type FyniqOrganisationSetting struct {
