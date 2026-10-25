@@ -29,6 +29,9 @@ var infrastructure = []string{
 	// The email providers' webhooks (FR-INT-21, FR-INT-22), signed by the provider, not API operations; in the local build
 	// Mailpit's, the substitute for receiving.
 	"POST /webhooks/email/resend", "POST /webhooks/email/zeptomail", "POST /webhooks/email/mailpit",
+	// The bank-data providers' webhooks (FR-BNK-16, FR-INT-27), verified by the connector against the provider's signature,
+	// not API operations: each only queues an early sync of the connector it names.
+	"POST /webhooks/bank/{connector}/{id}",
 }
 
 // Every route the API serves is a documented operation or named infrastructure: no private

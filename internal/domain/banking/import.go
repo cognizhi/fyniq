@@ -111,6 +111,31 @@ func Import(ctx context.Context, u storage.UnitOfWork, r ImportRequest) ([]Impor
 	return out, nil
 }
 
+// ImportStatement adds a statement already read, such as a bank-data connector's pull (FR-BNK-15), to money account
+// r.Account, in u: the same account, currency, duplicate and continuity checks as a file's (FR-BNK-04, FR-BNK-16).
+func ImportStatement(ctx context.Context, u storage.UnitOfWork, r ImportRequest, st bankfile.Statement) (ImportedStatement, error) {
+	if r.Account == nil {
+		return ImportedStatement{}, refuse(CodeRequest, "Import a pulled statement into its money account.", "the statement names no money account")
+	}
+	accounts, err := u.Banking().MoneyAccounts(ctx)
+	if err != nil {
+		return ImportedStatement{}, err
+	}
+	i := indexOf(accounts, *r.Account)
+	if i < 0 {
+		return ImportedStatement{}, refuse(CodeAccount, "Choose one of the organisation's money accounts.", "there is no such money account")
+	}
+	acct, err := accountOf(st, &accounts[i], accounts)
+	if err != nil {
+		return ImportedStatement{}, err
+	}
+	transit, err := u.BankMatching().InTransit(ctx)
+	if err != nil {
+		return ImportedStatement{}, err
+	}
+	return importOne(ctx, u, r, acct, st, transit)
+}
+
 func indexOf(accounts []storage.MoneyAccount, id uuid.UUID) int {
 	for i, a := range accounts {
 		if a.ID == id {

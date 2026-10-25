@@ -12,6 +12,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/app"
+	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/email"
@@ -54,6 +55,7 @@ func main() {
 			kinds[email.FetchKind] = fetcher.Work()
 			kinds[bankingest.Kind] = kit.BankReports(deps.Clock).Work() // FR-BNK-17: an accepted bank report, imported
 		}
+		kinds[bankfeed.Kind] = kit.BankFeeds(deps.Clock).Work()  // FR-BNK-15: an early sync a bank's verified webhook asked for
 		kinds[notify.FanoutKind] = kit.Fanout(deps.Clock).Work() // FR-NTF-05: one event, every person it concerns
 		kinds[notify.RelayKind] = kit.Relays(deps.Clock).Work()  // FR-ADM-07: the installation's notices, in each Super admin's organisation
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassWorker, Store: kit.Store, Tokens: kit.Tokens,

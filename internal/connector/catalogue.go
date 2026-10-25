@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -27,6 +28,8 @@ type Config struct {
 	SenderDomain string
 	// Consent is what the installed connector consented to send out and reach; a binding leaves off what needs more.
 	Consent storage.ConnectorConsent
+	// Clock is the runtime's clock, for an adapter that reads a period up to now (a bank feed's statement).
+	Clock ports.Clock
 }
 
 // String returns the configuration value name as a string, or def when it is unset or empty.
@@ -51,6 +54,10 @@ type Binding struct {
 	Manifest      Manifest
 	OutboundEmail func(Config) (ports.Email, error)
 	InboundEmail  func(Config) (ports.InboundMail, error)
+	BankData      func(Config) (ports.BankData, error)
+	// VerifyWebhook checks a provider's webhook to an installed organisation connector against its configuration and
+	// secrets, at now; nil: the connector takes no webhook. A verified webhook only prompts work: its body is never data.
+	VerifyWebhook func(c Config, h http.Header, body []byte, now time.Time) error
 }
 
 // kinds are the capabilities the binding has builders for.
@@ -61,6 +68,9 @@ func (b Binding) kinds() []Kind {
 	}
 	if b.InboundEmail != nil {
 		ks = append(ks, InboundEmail)
+	}
+	if b.BankData != nil {
+		ks = append(ks, BankData)
 	}
 	return ks
 }

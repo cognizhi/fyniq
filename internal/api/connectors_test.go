@@ -56,7 +56,8 @@ func fakeConnector(t testing.TB, id, scope string, secrets string) connector.Bin
 func testConnectors(t testing.TB, c ports.Clock) ConnectorDeps {
 	t.Helper()
 	bs := []connector.Binding{fakeConnector(t, "example-email", connector.ScopeInstallation, ""),
-		fakeConnector(t, "example-org", connector.ScopeOrganisation, `{"name":"key","title":"Key","description":"Its key.","used_by":["worker"],"rotation_overlap_hours":1}`)}
+		fakeConnector(t, "example-org", connector.ScopeOrganisation, `{"name":"key","title":"Key","description":"Its key.","used_by":["worker"],"rotation_overlap_hours":1}`),
+		fakeBankConnector(t)}
 	real, err := connectors.Catalogue()
 	if err != nil {
 		t.Fatal(err)

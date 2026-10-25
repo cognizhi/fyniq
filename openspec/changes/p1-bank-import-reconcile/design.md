@@ -268,6 +268,19 @@ schedule), read-only:
 - **Local and tests:** fakes in Go tests; Prism mocks from `contracts/partners/wise.yaml` and `airwallex.yaml` in the
   `partners` profile; the providers' sandboxes in staging.
 
+- As built (task 8.2): `ports.BankData` gives a connector's accounts and their settled transactions after a cursor, a
+  page at a time; `connector.Runtime.BankData` builds an organisation's enabled bank-data connector under the sync
+  schedule's authority, behind its rate limit and breaker, through the egress guard. `bankfeed.Syncer` (the tick's
+  hourly `bank.sync`, rev 0.144, and the outbox's `bank.sync` for an early sync) pulls each money account whose source
+  in force is that connector, the provider's account being the money account's identifier: each page is imported with
+  `banking.ImportStatement` (the file path's checks, format `api`) and its cursor saved in `bank_feed` in one unit of
+  work, as the connector's principal; a provider's refusal is kept on the feed. `bankfeed.Hooks` takes
+  `/webhooks/bank/{connector}/{id}`: the `connector_route` registry (kept by a trigger, read by a definer function)
+  finds the organisation before any tenant is set; 404 for an unknown, mismatched, disabled or uninstalled connector;
+  the binding's `VerifyWebhook` checks the signature (401 when it fails); a verified webhook queues one sync a minute at
+  most and its body is never read. A bank-data connector's steps also need C on "Bank data… connections"; its approval
+  stays the connector object's, whose row ("Integrations") grants the same people.
+
 ### D12. Organisation connector secrets in a dedicated project (the owner's decision)
 
 OpenTofu adds a secrets project per platform environment (`fyniq-staging-secrets`, `fyniq-prod-secrets` [verify the

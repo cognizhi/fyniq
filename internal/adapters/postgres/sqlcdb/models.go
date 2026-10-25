@@ -200,6 +200,18 @@ type FyniqBalance struct {
 	LineCount      int64
 }
 
+type FyniqBankFeed struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	MoneyAccountID  uuid.UUID
+	ConnectorID     uuid.UUID
+	ProviderAccount string
+	Cursor          string
+	SyncedAt        time.Time
+	LastError       *string
+	Version         int32
+}
+
 type FyniqBankGap struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID
@@ -417,6 +429,13 @@ type FyniqCloseChecklistTemplate struct {
 	Tasks          []byte
 	WrittenBy      string
 	WrittenAt      time.Time
+}
+
+type FyniqConnectorRoute struct {
+	ConnectorID uuid.UUID
+	Owner       uuid.UUID
+	Connector   string
+	State       string
 }
 
 type FyniqContact struct {

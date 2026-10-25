@@ -34,6 +34,7 @@ fyniq_api       EXECUTE   approval_void_pending_type()
 fyniq_api       INSERT    audit_event (body, id)
 fyniq_api       SELECT    balance
 fyniq_api       EXECUTE   balance_differences()
+fyniq_api       SELECT    bank_feed
 fyniq_api       INSERT    bank_gap (after_date, before_date, currency, expected_opening, found_at, found_opening, minor_units, money_account_id, statement_id)
 fyniq_api       SELECT    bank_gap
 fyniq_api       UPDATE    bank_gap (resolution, resolved_at, resolved_by)
@@ -188,6 +189,7 @@ fyniq_api       UPDATE    organisation (bank_account_name, bank_account_number, 
 fyniq_api       INSERT    organisation_connector (changed_at, changed_by, configuration, connector, consent, installed_at, installed_by, manifest_hash, manifest_version, position, secret_names, state)
 fyniq_api       SELECT    organisation_connector
 fyniq_api       UPDATE    organisation_connector (changed_at, changed_by, configuration, consent, manifest_hash, manifest_version, position, secret_names, state, test_passed, test_reason, tested_at, version)
+fyniq_api       EXECUTE   organisation_connector_route()
 fyniq_api       INSERT    organisation_connector_secret (connector_id, name, ref, set_at, set_by)
 fyniq_api       SELECT    organisation_connector_secret
 fyniq_api       UPDATE    organisation_connector_secret (valid_until)
@@ -363,6 +365,7 @@ fyniq_readonly  SELECT    audit_chain
 fyniq_readonly  SELECT    audit_event
 fyniq_readonly  SELECT    balance
 fyniq_readonly  EXECUTE   balance_differences()
+fyniq_readonly  SELECT    bank_feed
 fyniq_readonly  SELECT    bank_gap
 fyniq_readonly  SELECT    bank_line
 fyniq_readonly  SELECT    bank_match
@@ -457,6 +460,9 @@ fyniq_worker    INSERT    audit_event (body, id)
 fyniq_worker    SELECT    audit_event
 fyniq_worker    SELECT    balance
 fyniq_worker    EXECUTE   balance_differences()
+fyniq_worker    INSERT    bank_feed (connector_id, cursor, last_error, money_account_id, provider_account, synced_at)
+fyniq_worker    SELECT    bank_feed
+fyniq_worker    UPDATE    bank_feed (connector_id, cursor, last_error, provider_account, synced_at, version)
 fyniq_worker    INSERT    bank_gap (after_date, before_date, currency, expected_opening, found_at, found_opening, minor_units, money_account_id, statement_id)
 fyniq_worker    SELECT    bank_gap
 fyniq_worker    INSERT    bank_line (amount, booking_date, counterparty, currency, description, duplicate_of, fingerprint, minor_units, money_account_id, position, reference, running_balance, statement_id, status, status_at, status_by, value_date)

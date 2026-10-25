@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cognizhi/fyniq/compliance"
+	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/connector"
@@ -138,6 +139,9 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := journal.ReleaseBankTransactionsDueAll(ctx, k.Store, clock.Now())
 			return err
 		},
+		"bank.sync": func(ctx context.Context) error { // FR-BNK-15, FR-BNK-16: the bank-data connectors' pulls
+			return k.BankFeeds(clock).SyncAll(ctx)
+		},
 		"bank.review-sample": func(ctx context.Context) error { // FR-BNK-14, FM-3: the week's sample into the review
 			return banking.SampleAll(ctx, k.Store, clock.Now())
 		},
@@ -199,6 +203,11 @@ func (k *Kit) SalesSender(clock ports.Clock) salesmail.Sender {
 func (k *Kit) Fetcher(clock ports.Clock) email.Fetcher {
 	return email.Fetcher{Mail: k.Mail.Inbound, Store: k.Store, Files: k.Staging, Scanner: k.Scanner, Clock: clock,
 		Quarantined: notify.Quarantined(k.dispatcher(clock)), Accepted: bankingest.Accepted(k.dispatcher(clock))}
+}
+
+// BankFeeds syncs the organisations' bank-data connectors (FR-BNK-15, FR-BNK-16).
+func (k *Kit) BankFeeds(clock ports.Clock) bankfeed.Syncer {
+	return bankfeed.Syncer{Store: k.Store, Runtime: k.Runtime(clock), Clock: clock}
 }
 
 // BankReports imports the banks' emailed reports accepted at the bank-ingest address (FR-BNK-17).
