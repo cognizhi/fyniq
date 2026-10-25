@@ -52,6 +52,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/bank-rules/{rule_id}` (replaceBankRule): Change a bank rule
 - `POST /v1/bank-rules/{rule_id}/auto-apply-approval` (requestBankRuleAutoApply): Ask for approval to let a bank rule apply by itself
 - `POST /v1/bank-rules:back-test` (backTestBankRule): Back-test bank rule conditions
+- `GET /v1/bank-signals` (listBankSignals): List the incoming-funds signals
+- `POST /v1/bank-signals/{signal_id}/dismiss` (dismissBankSignal): Dismiss an incoming-funds signal
 - `GET /v1/bank-transfers` (listBankTransfers): List the transfers in transit
 - `POST /v1/bank-transfers` (recordBankTransfer): Record a transfer between money accounts
 - `GET /v1/bank-transfers/{transfer_id}` (getBankTransfer): Get a transfer

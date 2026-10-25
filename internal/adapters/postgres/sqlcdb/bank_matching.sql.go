@@ -216,6 +216,71 @@ func (q *Queries) BankRules(ctx context.Context) ([]FyniqBankRule, error) {
 	return items, nil
 }
 
+const bankSignal = `-- name: BankSignal :one
+SELECT organisation_id, id, money_account_id, amount, currency, minor_units, payer, reference, received_at, inbound_message_id, invoice_id, status, closed_line_id, closed_at FROM fyniq.bank_signal WHERE id = $1
+`
+
+func (q *Queries) BankSignal(ctx context.Context, id uuid.UUID) (FyniqBankSignal, error) {
+	row := q.db.QueryRow(ctx, bankSignal, id)
+	var i FyniqBankSignal
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.MoneyAccountID,
+		&i.Amount,
+		&i.Currency,
+		&i.MinorUnits,
+		&i.Payer,
+		&i.Reference,
+		&i.ReceivedAt,
+		&i.InboundMessageID,
+		&i.InvoiceID,
+		&i.Status,
+		&i.ClosedLineID,
+		&i.ClosedAt,
+	)
+	return i, err
+}
+
+const bankSignals = `-- name: BankSignals :many
+SELECT organisation_id, id, money_account_id, amount, currency, minor_units, payer, reference, received_at, inbound_message_id, invoice_id, status, closed_line_id, closed_at FROM fyniq.bank_signal ORDER BY received_at DESC, id DESC
+`
+
+func (q *Queries) BankSignals(ctx context.Context) ([]FyniqBankSignal, error) {
+	rows, err := q.db.Query(ctx, bankSignals)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqBankSignal
+	for rows.Next() {
+		var i FyniqBankSignal
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.MoneyAccountID,
+			&i.Amount,
+			&i.Currency,
+			&i.MinorUnits,
+			&i.Payer,
+			&i.Reference,
+			&i.ReceivedAt,
+			&i.InboundMessageID,
+			&i.InvoiceID,
+			&i.Status,
+			&i.ClosedLineID,
+			&i.ClosedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const bankTransfer = `-- name: BankTransfer :one
 SELECT organisation_id, id, from_account_id, to_account_id, from_line_id, to_line_id, on_date, from_currency, from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, entry_id, made_by, made_at, version, undone_by, undone_at, undo_reason FROM fyniq.bank_transfer WHERE id = $1
 `

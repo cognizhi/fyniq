@@ -1621,7 +1621,7 @@ bank_signal | bank_signal_payer_length | CHECK (((length(payer) >= 1) AND (lengt
 bank_signal | bank_signal_pkey | PRIMARY KEY (organisation_id, id)
 bank_signal | bank_signal_received_at_not_null | NOT NULL received_at
 bank_signal | bank_signal_reference_length | CHECK (((length(reference) >= 1) AND (length(reference) <= 140)))
-bank_signal | bank_signal_status_known | CHECK ((status = ANY (ARRAY['pending'::text, 'closed'::text, 'expired'::text])))
+bank_signal | bank_signal_status_known | CHECK ((status = ANY (ARRAY['pending'::text, 'closed'::text, 'expired'::text, 'dismissed'::text])))
 bank_signal | bank_signal_status_not_null | NOT NULL status
 bank_signal | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 bank_statement | bank_statement_account_fkey | FOREIGN KEY (organisation_id, money_account_id) REFERENCES money_account(organisation_id, id)

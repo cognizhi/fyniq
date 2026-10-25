@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AR-05]
+requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AR-05, FR-BNK-16]
 status: draft
 ---
 
@@ -49,9 +49,9 @@ the month the year starts in and the end of the first year no longer change.
 
 ## Settings that need a second approver
 
-- Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, the AI
-  assistant and details in notification email need a second approver before they change: they show **Needs a
-  second approver**.
+- Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when
+  incoming-funds alerts expire, the AI assistant and details in notification email need a second approver before
+  they change: they show **Needs a second approver**.
 - For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
   approves settings, such as an Owner, approves it (see [Approve a change](approvals.md)).
@@ -141,6 +141,19 @@ standard chart.
 - Across currencies, each side of a transfer is converted at its own currency's rate for the day;
   what is left after the fee goes to **FX and rounding** (7030).
 - A change needs a second approver, as the other accounting settings do.
+
+## Incoming-funds alerts
+
+A bank can email an alert as soon as money arrives, a day before the statement line. Sent to your
+bank-ingest address, the alert shows the invoice it most likely pays as **likely paid**, on the
+invoice and on Home. Nothing is posted, and the invoice stays open until the statement line is
+reconciled to it.
+
+- **Incoming-funds alerts expire after**: 7 days. An alert whose invoice no statement line has
+  reconciled by then stops showing the invoice as likely paid.
+- Anyone who reconciles bank lines can dismiss an alert sooner, with a reason, such as one that
+  points to the wrong invoice.
+- A change needs a second approver, as the other bank settings do.
 
 ## Capitalisation threshold
 

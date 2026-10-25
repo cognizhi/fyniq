@@ -172,12 +172,21 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   - As built: `internal/bankingest` (design D10's note); the end-to-end test drives Mailpit's webhook, the fetch and the
     worker's import in Go; a run on the local stack with Mailpit itself is not automated. The DBS IDEAL format stays
     `[verify]`: the import reads whichever of CSV, XLSX or MT940 the account's source names.
-- [ ] 7.3 Incoming-funds alerts (design D10): a pending signal matched to an open invoice by amount and customer;
+- [x] 7.3 Incoming-funds alerts (design D10): a pending signal matched to an open invoice by amount and customer;
   "likely paid" on the invoice and on Home; nothing posted; the signal closed by the statement line or expired. The
   signals' API operations (listed, and dismissed by a person) come with them, as task 9.1 left them.
   - Tests: UC-BNK-02's S$10,900 from "ACME ROBOTICS" to INV-0138, then the statement line reconciling it; the
     invoice's status and the ledger unchanged by the alert. `// req: FR-BNK-16`,
     `// req: banking/bank-transactions Incoming-funds alert speeds up matching`
+  - As built (PRD rev 0.145, the owner's decision of 26 Oct 2026): a message at the bank-ingest address with no
+    attachment is read as an alert (`banking.ParseAlert`; the DBS IDEAL wording stays `[verify]`); its likely invoice is
+    the one open invoice of its amount and currency whose customer the payer names; the match that settles the invoice
+    closes the signal in its transaction (`journal.MatchInvoices`, `journal.MatchRecorded`); the daily job
+    `bank.signals-expiry` expires the rest after `bank.signal_expiry_days` (7, under dual control); `listBankSignals`,
+    `dismissBankSignal` (status `dismissed`, migrations 000158/000159) and `likely_paid` on the invoice. Home's list
+    reads `listBankSignals?status=pending`; Home's inventory row had the hint in the violet AI card and now lists it on its
+    own, neutral, since a signal is not AI content (golden rule 11). At S$10,900 the statement line is over the
+    auto-reconcile line limit (S$500), so a person matches it in the test, as the default limits require.
 
 ## 8. Bank connectors
 

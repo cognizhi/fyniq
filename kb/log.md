@@ -197,3 +197,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-25] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the bank charges account setting, p1-bank-import-reconcile task 4.4)
 
 ## [2026-10-25] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (auto-reconcile's limits, p1-bank-import-reconcile task 5.1)
+
+## [2026-10-26] compile | docs/user-guide/organisation-settings.md, docs/user-guide/invoices.md → settings.organisation, settings.change, sales.invoices (incoming-funds alerts: likely paid, the expiry setting and dismissal; p1-bank-import-reconcile task 7.3, rev 0.145)

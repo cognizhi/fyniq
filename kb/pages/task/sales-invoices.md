@@ -4,14 +4,14 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:af4bb30fdd1e0e1e4131a3b407e4be11c46fa3949403557f97995a0c8c4d08a1
+  - docs/user-guide/invoices.md sha256:02952521f656020a489bc4e427d046c43b5bbcf847eb9ac832cdee157171055e
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-25
+compiled_at: 2026-10-26
 aliases:
   - invoice
   - sales invoice
@@ -50,6 +50,8 @@ aliases:
   - short payment
   - overpayment
   - settlement tolerance
+  - likely paid
+  - incoming-funds alert
 ---
 
 # Invoices
@@ -57,7 +59,8 @@ aliases:
 ## What it is
 
 - **Sales → Invoices** keeps each invoice to a customer, with its lines and GST, and each credit note; issuing an invoice adds its total to what the customer owes the company.
-- Its states are separate: **Draft**, **Awaiting approval** or **Rejected**; **Issued** or **Voided**; **Sent**, **Delivered**, **Viewed** or **Bounced** from its latest email; **Part paid**, **Paid** or **Written off**; and **Overdue** once its due date has passed while it is not paid in full.
+- Its states are separate: **Draft**, **Awaiting approval** or **Rejected**; **Issued** or **Voided**; **Sent**, **Delivered**, **Viewed** or **Bounced** from its latest email; **Part paid**, **Paid** or **Written off**; **Overdue** once its due date has passed while it is not paid in full; and **Likely paid** while a bank's incoming-funds alert for its amount, from its customer, waits for the statement line.
+- **Likely paid** is a hint only: the invoice stays open and nothing is posted until the line is reconciled to it; an alert expires after 7 days by default, or someone dismisses it ([[settings.organisation]]).
 - Reminders of overdue invoices and statements of account are under **Sales → Statements and reminders** ([[sales.statements]]).
 - A Bookkeeper, an AR specialist or an Accountant prepares invoices; an AR specialist or an Accountant issues, emails, voids and edits them; the Owner, the Auditor and the Tax agent can see them.
 

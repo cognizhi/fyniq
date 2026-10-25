@@ -2,7 +2,8 @@
 // D10): a message accepted at the bank-ingest address is imported by the worker through the money account whose email
 // source names its sender, each attachment as a statement with the continuity and duplicate checks. The worker holds no
 // posting right, so the lines wait in the queue for a person's Reconcile now (FR-BNK-14; the owner's decision of 26 Oct
-// 2026, rev 0.143).
+// 2026, rev 0.143). A message with no attachment is read as an incoming-funds alert (FR-BNK-16, UC-BNK-02; task 7.3):
+// a pending signal pointing to the invoice it most likely pays, posting nothing.
 package bankingest
 
 import (
@@ -33,7 +34,7 @@ var Actor = storage.Actor{Type: "service", ID: "bank.ingest"}
 // The audit actions of a report that imports nothing, so a person can see why in the trail.
 const (
 	ActionUnmatched = "bank_report.unmatched" // no money account's email source names the sender
-	ActionRefused   = "bank_report.refused"   // the file does not read, or is not for the account
+	ActionRefused   = "bank_report.refused"   // the file does not read, or is not for the account, or the alert does not read
 )
 
 type payload struct {
@@ -128,6 +129,8 @@ func sourceOf(ctx context.Context, u storage.UnitOfWork, sender string, day time
 //   - Each attachment is imported as statements of that account, in its own unit of work, through the source's format
 //     and mapping, with the continuity and duplicate checks: a second run drops every line it added the first time. A
 //     file that does not read is recorded (ActionRefused) and the others still import; a store failure is retried.
+//   - A message with no attachment is an incoming-funds alert: its text is recorded as a pending signal on the account
+//     (banking.RecordAlert), once per message; text that does not read as one is recorded (ActionRefused).
 func (g Importer) Work() outbox.Work {
 	return func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {
 		var p payload
@@ -139,6 +142,7 @@ func (g Importer) Work() outbox.Work {
 			m     storage.InboundMessage
 			src   *source
 			files []storage.InboundFile
+			body  *storage.InboundFile
 		)
 		if err := g.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 			var err error
@@ -158,8 +162,12 @@ func (g Importer) Work() outbox.Work {
 			}
 			all, err := u.InboundMessages().Files(ctx, m.ID)
 			for _, f := range all {
-				if f.Kind == storage.InboundAttachment && f.RemovedAt == nil {
+				switch {
+				case f.RemovedAt != nil:
+				case f.Kind == storage.InboundAttachment:
 					files = append(files, f)
+				case f.Kind == storage.InboundBody:
+					body = &f
 				}
 			}
 			return err
@@ -168,6 +176,9 @@ func (g Importer) Work() outbox.Work {
 		}
 		if src == nil {
 			return nil
+		}
+		if len(files) == 0 {
+			return g.alert(ctx, org, m, src, body)
 		}
 		for _, f := range files {
 			data, err := g.read(ctx, f.BlobKey)
@@ -192,6 +203,43 @@ func (g Importer) Work() outbox.Work {
 		}
 		return nil
 	}
+}
+
+// alert records a message's text as an incoming-funds alert on src's account, unless the message's signal is recorded
+// already; text that does not read as one, or an alert in another currency, is recorded in the audit trail instead.
+func (g Importer) alert(ctx context.Context, org uuid.UUID, m storage.InboundMessage, src *source, body *storage.InboundFile) error {
+	var text []byte
+	if body != nil {
+		var err error
+		if text, err = g.read(ctx, body.BlobKey); err != nil {
+			return err
+		}
+	}
+	a, ok := banking.ParseAlert(string(text))
+	return g.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		refuse := func(message string) error {
+			return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionRefused, ObjectType: "inbound_message", ObjectID: m.ID,
+				Changes: map[string][2]any{"file": {nil, "message.txt"}, "code": {nil, banking.CodeAlert}, "message": {nil, message}}})
+		}
+		if !ok {
+			return refuse("the message has no statement file, and its text is not an incoming-funds alert")
+		}
+		signals, err := u.BankMatching().Signals(ctx)
+		if err != nil {
+			return err
+		}
+		for _, s := range signals {
+			if s.InboundMessageID != nil && *s.InboundMessageID == m.ID {
+				return nil // recorded by an earlier run
+			}
+		}
+		_, err = banking.RecordAlert(ctx, u, src.account, a, &m.ID, m.ReceivedAt)
+		var refusal *banking.Error
+		if errors.As(err, &refusal) {
+			return refuse(refusal.Message)
+		}
+		return err
+	})
 }
 
 func (g Importer) read(ctx context.Context, key string) ([]byte, error) {

@@ -200,6 +200,9 @@ type Invoice struct {
 
 	// Recurring invoices (FR-AR-07; rev 0.135).
 	RecurringInvoice *RecurringOrigin `json:"recurring_invoice,omitempty" doc:"The recurring invoice, and the version of its content, the scheduler made this draft from; whoever wrote that version does not approve its issue (SOD-3)."`
+
+	// Incoming-funds alerts (FR-BNK-16, UC-BNK-02; rev 0.145).
+	LikelyPaid *LikelyPaid `json:"likely_paid,omitempty" doc:"An issued invoice not yet paid: the bank's incoming-funds alert that it is likely paid, while the alert waits for its statement line. A hint only: its settlement and the ledger stay as they are until the line is reconciled to it."`
 }
 
 // InvoiceRef names an invoice another document refers to.
@@ -465,9 +468,10 @@ type invoiceView struct {
 	base        money.Currency
 	today       time.Time
 	receivables uuid.UUID
-	gst         uuid.UUID         // 2200, the GST control account
-	asked       map[string]string // an invoice's ID: its pending request
-	rejected    map[string]int    // an invoice's ID: the version its latest rejected request to issue was for
+	gst         uuid.UUID                 // 2200, the GST control account
+	asked       map[string]string         // an invoice's ID: its pending request
+	rejected    map[string]int            // an invoice's ID: the version its latest rejected request to issue was for
+	likely      map[uuid.UUID]*LikelyPaid // an invoice's pending incoming-funds signal (FR-BNK-16)
 }
 
 func (a *API) invoiceView(ctx context.Context, u storage.UnitOfWork) (invoiceView, error) {
@@ -519,7 +523,8 @@ func (a *API) invoiceView(ctx context.Context, u storage.UnitOfWork) (invoiceVie
 			}
 		}
 	}
-	return v, nil
+	v.likely, err = likelyPaid(ctx, u)
+	return v, err
 }
 
 // invoiceOf is an invoice as the API shows it, from its document. withChecks fills its checks and ledger impact
@@ -678,6 +683,9 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 	}
 	if doc.Status == storage.DocumentPosted && out.States.Settlement != "paid" && out.DueDate != "" && out.DueDate < dateOf(v.today) {
 		out.States.Due = "overdue"
+	}
+	if doc.Status == storage.DocumentPosted && out.States.Settlement != "paid" && out.States.Settlement != "written_off" {
+		out.LikelyPaid = v.likely[doc.ID] // a hint only: the settlement and the ledger stay as they are (UC-BNK-02)
 	}
 	sends, err := u.DocumentSends().OfDocument(ctx, doc.ID) // FR-AR-06
 	if err != nil {

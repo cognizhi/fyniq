@@ -3,7 +3,7 @@ key: sales.invoices
 title: Invoices
 mode: basic
 roles: [bookkeeper, ar_specialist, accountant, controller, approver, owner, auditor, tax_agent]
-requirements: [FR-AR-03, FR-AR-04, FR-AR-05, FR-AR-06, FR-GL-03, FR-GL-12, FR-DOC-05, RND-LINE, RND-GST-EXCL, FM-1, FM-2, SOD-3]
+requirements: [FR-AR-03, FR-AR-04, FR-AR-05, FR-AR-06, FR-GL-03, FR-GL-12, FR-DOC-05, FR-BNK-16, RND-LINE, RND-GST-EXCL, FM-1, FM-2, SOD-3]
 status: draft            # written with the sales screens (P1, p1-sales task 8.1); reviewed with the accountant
 ---
 
@@ -21,7 +21,10 @@ An invoice has separate states:
 - **Issued** once it is in the books, or **Voided** once it is reversed;
 - **Sent**, **Delivered**, **Viewed** or **Bounced**, from its latest email;
 - **Part paid** or **Paid** once receipts or credits settle it, or **Written off**;
-- **Overdue** once its due date has passed while it is not paid in full.
+- **Overdue** once its due date has passed while it is not paid in full;
+- **Likely paid** while a bank's incoming-funds alert for its amount, from its customer, waits for the
+  statement line. It is a hint only: the invoice stays open, and nothing is posted, until the line is
+  reconciled to it. An alert expires after 7 days by default, or someone dismisses it.
 
 Reminders of overdue invoices, and statements of account, are under **Sales → Statements and
 reminders**.

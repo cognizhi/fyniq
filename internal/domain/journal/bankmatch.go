@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 	"unicode/utf8"
 
@@ -174,8 +175,14 @@ func (s BankTransactions) MatchInvoices(ctx context.Context, org uuid.UUID, m In
 		if err != nil {
 			return err
 		}
-		out, err = s.matched(ctx, u, line, storage.MatchReceipt, rec.Receipt, &rec.Entry, m.Basis, m.RuleID, m.At)
-		return err
+		if out, err = s.matched(ctx, u, line, storage.MatchReceipt, rec.Receipt, &rec.Entry, m.Basis, m.RuleID, m.At); err != nil {
+			return err
+		}
+		var invoices []uuid.UUID
+		for _, p := range m.Invoices {
+			invoices = append(invoices, p.InvoiceID)
+		}
+		return closeSignals(ctx, u, invoices, line.ID, m.At)
 	})
 	return out, err
 }
@@ -242,10 +249,52 @@ func (s BankTransactions) MatchRecorded(ctx context.Context, org, lineID, docume
 			return &banktransaction.Error{Code: CodeNotMoving, Message: fmt.Sprintf("%s does not move %s %s through the line's money account",
 				firstOf(doc.Number, string(doc.Type)), line.Amount, line.Currency), Fix: "Choose the receipt, payment, deposit or refund recorded for this money"}
 		}
-		out, err = s.matched(ctx, u, line, storage.MatchRecorded, doc, nil, basis, nil, at)
-		return err
+		if out, err = s.matched(ctx, u, line, storage.MatchRecorded, doc, nil, basis, nil, at); err != nil {
+			return err
+		}
+		if doc.Type != storage.DocumentCustomerReceipt {
+			return nil
+		}
+		org, err := u.Organisation(ctx)
+		if err != nil {
+			return err
+		}
+		base, err := money.Lookup(org.BaseCurrency)
+		if err != nil {
+			return err
+		}
+		d, err := receipt.Read(doc, base)
+		if err != nil {
+			return err
+		}
+		var invoices []uuid.UUID
+		for _, p := range d.Invoices {
+			invoices = append(invoices, p.InvoiceID)
+		}
+		return closeSignals(ctx, u, invoices, line.ID, at)
 	})
 	return out, err
+}
+
+// closeSignals closes the pending incoming-funds signals pointing to invoices, as the statement line matched to them
+// (FR-BNK-16, UC-BNK-02): in the unit of work of the match, so the invoice stops showing "likely paid" as it is paid.
+func closeSignals(ctx context.Context, u storage.UnitOfWork, invoices []uuid.UUID, line uuid.UUID, at time.Time) error {
+	if len(invoices) == 0 {
+		return nil
+	}
+	pending, err := u.BankMatching().PendingSignals(ctx)
+	if err != nil {
+		return err
+	}
+	for _, sig := range pending {
+		if sig.InvoiceID == nil || !slices.Contains(invoices, *sig.InvoiceID) {
+			continue
+		}
+		if _, err := u.BankMatching().CloseSignal(ctx, sig.ID, storage.SignalClosed, &line, at); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s BankTransactions) matched(ctx context.Context, u storage.UnitOfWork, line storage.BankLine, kind string, doc storage.Document, e *storage.Entry,
