@@ -162,13 +162,16 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   - Tests: a report from the registered sender accepted; one from another sender quarantined; a forged sender
     without DMARC quarantined. `// req: FR-INT-22`, `// req: banking/bank-transactions Daily DBS sync without a
     bank API`
-- [ ] 7.2 The daily report and the tie-out (design D10): an accepted report imported through its account's format
+- [x] 7.2 The daily report and the tie-out (design D10): an accepted report imported through its account's format
   and mapping, with the continuity and duplicate checks, its lines waiting for Reconcile now (rev 0.143, task 5.3);
   the monthly MT940 export or e-statement
   ties out the closing balance. Before the parser is pinned, confirm the format with a redacted sample of Cognizhi's
   DBS IDEAL report (`[verify]` until then).
   - Tests: a synthetic report through Mailpit end to end on the local stack; a missing day shown as a gap.
     `// req: FR-BNK-17`, `// req: banking/bank-transactions Daily DBS sync without a bank API`
+  - As built: `internal/bankingest` (design D10's note); the end-to-end test drives Mailpit's webhook, the fetch and the
+    worker's import in Go; a run on the local stack with Mailpit itself is not automated. The DBS IDEAL format stays
+    `[verify]`: the import reads whichever of CSV, XLSX or MT940 the account's source names.
 - [ ] 7.3 Incoming-funds alerts (design D10): a pending signal matched to an open invoice by amount and customer;
   "likely paid" on the invoice and on Home; nothing posted; the signal closed by the statement line or expired. The
   signals' API operations (listed, and dismissed by a person) come with them, as task 9.1 left them.

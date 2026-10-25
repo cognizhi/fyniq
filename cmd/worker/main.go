@@ -12,6 +12,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/app"
+	"github.com/cognizhi/fyniq/internal/bankingest"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/httpserver"
@@ -51,6 +52,7 @@ func main() {
 			fetcher := kit.Fetcher(deps.Clock)
 			fetcher.MailFrom = kit.InboundMail(kit.Runtime(deps.Clock)) // the enabled connector that receives email, read per fetch
 			kinds[email.FetchKind] = fetcher.Work()
+			kinds[bankingest.Kind] = kit.BankReports(deps.Clock).Work() // FR-BNK-17: an accepted bank report, imported
 		}
 		kinds[notify.FanoutKind] = kit.Fanout(deps.Clock).Work() // FR-NTF-05: one event, every person it concerns
 		kinds[notify.RelayKind] = kit.Relays(deps.Clock).Work()  // FR-ADM-07: the installation's notices, in each Super admin's organisation

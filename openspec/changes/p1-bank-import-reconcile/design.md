@@ -231,6 +231,16 @@ account's format and mapping, then runs D2's checks and D8.
   senders of each open account's email source in force or set for a later day, with DMARC `pass` (no SPF or DKIM
   fallback); a person's acceptance there settles the mail waiting and never makes a sender known; a rejection holds.
   The address is named and its quarantine decided under C on "Bank data… connections".
+- As built (task 7.2): a message accepted at the bank-ingest address, by the fetch or by a person from quarantine,
+  queues `bank.ingest` (`internal/bankingest`), which the worker runs as `service:bank.ingest`: the money account whose
+  email source names the sender (in force on the day it arrived, or set for a later day) imports each attachment
+  through the source's format and mapping, with the continuity and duplicate checks, the file kept as the statement's
+  (the staging store's `inbound/` key); the lines wait for Reconcile now. A sender no source names imports nothing
+  (`bank_report.unmatched` in the audit trail), nor does a file that does not read (`bank_report.refused`); the same
+  report again adds nothing. The month's MT940 export or e-statement ties out through the same checks: over agreeing
+  daily reports every line is dropped on proof, and a line whose running balance differs is kept as a possible
+  duplicate for a person. The DBS IDEAL report's format stays `[verify]` until a redacted sample: the import reads
+  whichever of CSV, XLSX or MT940 the account's source names.
 - **Incoming-funds alerts** become `bank_signal` rows (amount, currency, payer name, received at), matched to an open
   invoice by amount and customer: the invoice and Home show "likely paid" (UC-BNK-02). A signal posts nothing and
   closes when a statement line reconciles the invoice, or expires after a setting's days.

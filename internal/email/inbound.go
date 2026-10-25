@@ -180,6 +180,9 @@ type Fetcher struct {
 	// Quarantined tells whoever decides that a message waits in quarantine, in the unit of work that recorded it
 	// (notify.Quarantined, FR-NTF-01); nil tells nobody.
 	Quarantined func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, m storage.InboundMessage, addr storage.CaptureAddress, at time.Time) error
+	// Accepted is told of a message accepted, in the unit of work that recorded it, such as a bank report to import
+	// (bankingest.Accepted, FR-BNK-17); nil tells nobody.
+	Accepted func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, m storage.InboundMessage, addr storage.CaptureAddress, at time.Time) error
 }
 
 // Work is the worker's handler of FetchKind:
@@ -243,6 +246,9 @@ func (f Fetcher) Work() outbox.Work {
 				}
 				if fx.Status == storage.InboundQuarantined && f.Quarantined != nil {
 					return f.Quarantined(ctx, u, org, m, addr, now)
+				}
+				if fx.Status == storage.InboundAccepted && f.Accepted != nil {
+					return f.Accepted(ctx, u, org, m, addr, now)
 				}
 				return nil
 			})

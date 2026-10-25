@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cognizhi/fyniq/compliance"
+	"github.com/cognizhi/fyniq/internal/bankingest"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
@@ -197,7 +198,12 @@ func (k *Kit) SalesSender(clock ports.Clock) salesmail.Sender {
 // Fetcher fetches, decides and keeps received mail (FR-INT-22), telling whoever decides of quarantined mail.
 func (k *Kit) Fetcher(clock ports.Clock) email.Fetcher {
 	return email.Fetcher{Mail: k.Mail.Inbound, Store: k.Store, Files: k.Staging, Scanner: k.Scanner, Clock: clock,
-		Quarantined: notify.Quarantined(k.dispatcher(clock))}
+		Quarantined: notify.Quarantined(k.dispatcher(clock)), Accepted: bankingest.Accepted(k.dispatcher(clock))}
+}
+
+// BankReports imports the banks' emailed reports accepted at the bank-ingest address (FR-BNK-17).
+func (k *Kit) BankReports(clock ports.Clock) bankingest.Importer {
+	return bankingest.Importer{Store: k.Store, Files: k.Staging, Clock: clock}
 }
 
 // Committer commits attached files of records that are no longer drafts to the locked store (FR-DOC-13);

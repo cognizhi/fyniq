@@ -13,6 +13,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/bankingest"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -148,6 +149,7 @@ func (a *API) decideSender(ctx context.Context, in *senderDecisionInput, user *u
 			FieldProblem{CodeSenderNotAddress, "body.sender", "not an address", "Give one address"})
 	}
 	sender := strings.ToLower(parsed.Address)
+	p, _ := authn.From(ctx)
 	var deleted []string
 	w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (SenderDecisionResult, error) {
 		deleted = nil
@@ -168,9 +170,14 @@ func (a *API) decideSender(ctx context.Context, in *senderDecisionInput, user *u
 			return out, err
 		}
 		for _, m := range ms {
-			_, keys, err := email.Settle(ctx, u, m.ID, in.Body.Decision)
+			settled, keys, err := email.Settle(ctx, u, m.ID, in.Body.Decision)
 			if err != nil {
 				return out, err
+			}
+			if settled.Status == storage.InboundAccepted && a.deps.Outbox != nil { // an accepted bank report is imported (FR-BNK-17)
+				if err := bankingest.Queue(ctx, *a.deps.Outbox, u, p.Organisation, settled, *addr); err != nil {
+					return out, err
+				}
 			}
 			deleted = append(deleted, keys...)
 			out.Settled++
