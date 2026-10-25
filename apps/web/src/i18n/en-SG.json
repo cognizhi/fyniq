@@ -352,6 +352,14 @@
       "label": "Ask to apply by itself",
       "tooltip": "Ask another person to let the rule reconcile the lines it meets without a click, within the organisation's limits."
     },
+    "banking.reconciliation": {
+      "label": "Reconciliation",
+      "tooltip": "Prove the books agree with the bank for a month: the statement's balance, the books' balance and the lines between them."
+    },
+    "bank-reconciliation.sign": {
+      "label": "Sign it off",
+      "tooltip": "Sign off a reconciliation another person prepared, after confirming it's you; it is then locked with the month."
+    },
     "purchases.bills": {
       "label": "Bills",
       "tooltip": "Every bill from a supplier: its total, when it falls due, and whether it is posted, waiting for approval or voided."

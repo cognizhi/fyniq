@@ -59,6 +59,7 @@ const screens: Record<RouteId, RouteComponent> = {
   categorise: lazyRouteComponent(() => import("./screens/banking/Categorise"), "Categorise"),
   "bank-rules": lazyRouteComponent(() => import("./screens/banking/BankRules"), "BankRules"),
   "auto-reconciled": lazyRouteComponent(() => import("./screens/banking/AutoReconciled"), "AutoReconciled"),
+  "bank-reconciliation": lazyRouteComponent(() => import("./screens/banking/BankReconciliation"), "BankReconciliation"),
   accounting: lazyRouteComponent(() => import("./screens/accounting/Accounting"), "Accounting"),
   journals: lazyRouteComponent(() => import("./screens/accounting/Journals"), "Journals"),
   "journal-new": lazyRouteComponent(() => import("./screens/accounting/JournalPage"), "JournalPage"),

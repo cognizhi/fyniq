@@ -4,7 +4,7 @@ type: concept
 title: Bank accounts, their data sources and freshness
 summary: Money accounts and the cash position, where their data comes from, an account's statements and lines, duplicates, alerts and gaps
 sources:
-  - docs/user-guide/banking.md sha256:e5b31dffa37f3a7a4fbb38cb67f84d33e460126f6811bb6df93037434ab98263
+  - docs/user-guide/banking.md sha256:49aa643d2012253039f4a0e3060e4259e28c7e64c6a31f00c0e6e0891e5e4368
 data_class: general
 taint: trusted
 status: draft
@@ -56,7 +56,7 @@ aliases:
 - A **possible duplicate** looks like a line already held without the bank's reference or a running balance to prove it: **Compare** shows both side by side, then **Keep it** as a line of its own or **Exclude it** with the reason; neither posts anything.
 - **Incoming-funds alerts** are listed apart, as pending, never as lines: each names the invoice it likely pays, and **Dismiss** removes a wrong one with a reason.
 - **Transfers in transit** are transfers recorded with the account whose other side's line has not arrived yet.
-- Bringing statements in: [[banking.import]]. Working the waiting lines: [[banking.categorise]].
+- Bringing statements in: [[banking.import]]. Working the waiting lines: [[banking.categorise]]. Proving a month: [[banking.reconcile]].
 
 (src: docs/user-guide/banking.md#an-accounts-statements-and-lines)
 
