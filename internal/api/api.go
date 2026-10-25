@@ -284,6 +284,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerSetup(a)
 	registerSuperAdmins(a)
 	registerConnectors(a)
+	registerBanking(a)
 	registerBankRules(a)
 	registerSession(a)
 	return a

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "complete_to": {
+      "description": "The last day its statements cover with no gap before it.",
+      "examples": [
+        "2026-10-19"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "last_import": {
+      "description": "When its last statement arrived.",
+      "examples": [
+        "2026-10-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "open_gaps": {
+      "description": "Breaks in its balance chain not yet resolved.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "open_gaps"
+  ],
+  "title": "MoneyFreshness",
+  "type": "object"
+}

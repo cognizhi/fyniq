@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "left": {
+      "additionalProperties": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "description": "Lines left for a person, by why: no_match, ambiguous, line_cap, rule_cap, no_rate, refused.",
+      "examples": [
+        {
+          "line_cap": 2,
+          "no_match": 20
+        }
+      ],
+      "type": "object"
+    },
+    "reconciled": {
+      "description": "Lines reconciled by the system.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "reconciled",
+    "left"
+  ],
+  "title": "AutoReconciled",
+  "type": "object"
+}

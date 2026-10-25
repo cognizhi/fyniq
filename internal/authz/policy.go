@@ -498,6 +498,22 @@ var (
 	// RequestBankRuleAutoApply asks that a bank rule apply by itself (FR-BNK-14): those who categorise ask, and the approval
 	// engine has a person holding A approve it.
 	RequestBankRuleAutoApply = Policy{Operation: "requestBankRuleAutoApply", Capability: BankTransactions, Need: Create}
+
+	// Banking (FR-BNK-01…18; p1-bank-import-reconcile task 9.1): money accounts, their imports and lines under "Bank
+	// transactions, categorise"; a source fed by email or a connector under "Bank data… connections".
+	ListMoneyAccounts       = Policy{Operation: "listMoneyAccounts", Capability: BankTransactions, Need: View}
+	CreateMoneyAccount      = Policy{Operation: "createMoneyAccount", Capability: BankTransactions, Need: Create}
+	GetMoneyAccount         = Policy{Operation: "getMoneyAccount", Capability: BankTransactions, Need: View}
+	ReplaceMoneyAccount     = Policy{Operation: "replaceMoneyAccount", Capability: BankTransactions, Need: Create}
+	AddMoneyAccountSource   = Policy{Operation: "addMoneyAccountSource", Capability: BankConnections, Need: Create}
+	ResolveBankGap          = Policy{Operation: "resolveBankGap", Capability: BankTransactions, Need: Create}
+	ListStatementMappings   = Policy{Operation: "listStatementMappings", Capability: BankTransactions, Need: View}
+	CreateStatementMapping  = Policy{Operation: "createStatementMapping", Capability: BankTransactions, Need: Create}
+	ReplaceStatementMapping = Policy{Operation: "replaceStatementMapping", Capability: BankTransactions, Need: Create}
+	ImportBankStatements    = Policy{Operation: "importBankStatements", Capability: BankTransactions, Need: Create}
+	ListBankStatements      = Policy{Operation: "listBankStatements", Capability: BankTransactions, Need: View}
+	ListBankLines           = Policy{Operation: "listBankLines", Capability: BankTransactions, Need: View}
+	GetBankLine             = Policy{Operation: "getBankLine", Capability: BankTransactions, Need: View}
 	// Rendering an invoice as its document (FR-AR-05) reads it.
 	GetInvoiceDocument = Policy{Operation: "getInvoiceDocument", Capability: Invoices, Need: View}
 	// Emailing an issued invoice or a sent quote to the customer (FR-AR-06) speaks for the company to the outside, as
@@ -835,6 +851,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
 	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
 	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid, RequestBankRuleAutoApply,
+	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ResolveBankGap, ListStatementMappings,
+	CreateStatementMapping, ReplaceStatementMapping, ImportBankStatements, ListBankStatements, ListBankLines, GetBankLine,
 	ListQuotes, GetQuote, GetSalesPipeline, CreateQuote, ReplaceQuote, SendQuote, CancelQuote, AcceptQuote, DeclineQuote, InvoiceQuote,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,

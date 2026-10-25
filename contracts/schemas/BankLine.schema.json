@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "Signed: money in positive, money out negative."
+    },
+    "balance": {
+      "$ref": "Money.schema.json",
+      "description": "The running balance after it, when the statement gives it."
+    },
+    "booking_date": {
+      "description": "The day the bank booked it.",
+      "examples": [
+        "2026-10-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "counterparty": {
+      "description": "Who paid or was paid.",
+      "examples": [
+        "ACME ROBOTICS"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "The bank's description.",
+      "examples": [
+        "GIRO ACME ROBOTICS INV-0138"
+      ],
+      "type": "string"
+    },
+    "duplicate_of": {
+      "description": "A possible duplicate: the line it may duplicate.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b71"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The line's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "match": {
+      "$ref": "BankMatch.schema.json",
+      "description": "getBankLine only: what it is matched to now."
+    },
+    "money_account_id": {
+      "description": "Its money account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reference": {
+      "description": "The bank's own reference.",
+      "examples": [
+        "INV-0138"
+      ],
+      "type": "string"
+    },
+    "statement_id": {
+      "description": "The statement that brought it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "status": {
+      "description": "Where it stands in the queue (FR-BNK-06).",
+      "enum": [
+        "unreconciled",
+        "possible_duplicate",
+        "categorised",
+        "matched",
+        "transferred",
+        "suspense",
+        "excluded"
+      ],
+      "examples": [
+        "unreconciled"
+      ],
+      "type": "string"
+    },
+    "suggestions": {
+      "description": "getBankLine only, while it waits: what it may match, best first (FR-BNK-06, FR-BNK-07); never applied by itself.",
+      "items": {
+        "$ref": "BankSuggested.schema.json"
+      },
+      "type": "array"
+    },
+    "value_date": {
+      "description": "Its value date, when it differs.",
+      "examples": [
+        "2026-10-21"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "version": {
+      "description": "Its version, for If-Match.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "money_account_id",
+    "statement_id",
+    "booking_date",
+    "amount",
+    "status",
+    "suggestions",
+    "version"
+  ],
+  "title": "BankLine",
+  "type": "object"
+}

@@ -1632,6 +1632,393 @@ components:
       required:
         - quorum
       type: object
+    AutoReconciled:
+      additionalProperties: false
+      properties:
+        left:
+          additionalProperties:
+            format: int64
+            type: integer
+          description: "Lines left for a person, by why: no_match, ambiguous, line_cap, rule_cap, no_rate, refused."
+          examples:
+            - line_cap: 2
+              no_match: 20
+          type: object
+        reconciled:
+          description: Lines reconciled by the system.
+          examples:
+            - 12
+          format: int64
+          type: integer
+      required:
+        - reconciled
+        - left
+      type: object
+    BankGap:
+      additionalProperties: false
+      properties:
+        after_date:
+          description: The previous statement's last day.
+          examples:
+            - "2026-10-15"
+          format: date
+          type: string
+        before_date:
+          description: The next statement's first day.
+          examples:
+            - "2026-10-18"
+          format: date
+          type: string
+        expected_opening:
+          $ref: "#/components/schemas/Money"
+          description: The previous statement's closing balance.
+        found_opening:
+          $ref: "#/components/schemas/Money"
+          description: The next statement's opening balance.
+        id:
+          description: The gap's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b50
+          format: uuid
+          type: string
+        resolution:
+          description: How it was resolved, once it is.
+          examples:
+            - The bank's statement for 16–17 Oct imported
+          type: string
+      required:
+        - id
+        - before_date
+      type: object
+    BankImport:
+      additionalProperties: false
+      properties:
+        auto_reconciled:
+          $ref: "#/components/schemas/AutoReconciled"
+          description: "Once imported, not on a preview: what the system reconciled by itself (FR-BNK-14)."
+        statements:
+          description: Each statement the file held, for its money account.
+          items:
+            $ref: "#/components/schemas/ImportedStatement"
+          type: array
+      required:
+        - statements
+      type: object
+    BankLine:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "Signed: money in positive, money out negative."
+        balance:
+          $ref: "#/components/schemas/Money"
+          description: The running balance after it, when the statement gives it.
+        booking_date:
+          description: The day the bank booked it.
+          examples:
+            - "2026-10-20"
+          format: date
+          type: string
+        counterparty:
+          description: Who paid or was paid.
+          examples:
+            - ACME ROBOTICS
+          type: string
+        description:
+          description: The bank's description.
+          examples:
+            - GIRO ACME ROBOTICS INV-0138
+          type: string
+        duplicate_of:
+          description: "A possible duplicate: the line it may duplicate."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b71
+          format: uuid
+          type: string
+        id:
+          description: The line's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70
+          format: uuid
+          type: string
+        match:
+          $ref: "#/components/schemas/BankMatch"
+          description: "getBankLine only: what it is matched to now."
+        money_account_id:
+          description: Its money account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+          format: uuid
+          type: string
+        reference:
+          description: The bank's own reference.
+          examples:
+            - INV-0138
+          type: string
+        statement_id:
+          description: The statement that brought it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b60
+          format: uuid
+          type: string
+        status:
+          description: Where it stands in the queue (FR-BNK-06).
+          enum:
+            - unreconciled
+            - possible_duplicate
+            - categorised
+            - matched
+            - transferred
+            - suspense
+            - excluded
+          examples:
+            - unreconciled
+          type: string
+        suggestions:
+          description: "getBankLine only, while it waits: what it may match, best first (FR-BNK-06, FR-BNK-07); never applied by itself."
+          items:
+            $ref: "#/components/schemas/BankSuggested"
+          type: array
+        value_date:
+          description: Its value date, when it differs.
+          examples:
+            - "2026-10-21"
+          format: date
+          type: string
+        version:
+          description: Its version, for If-Match.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - money_account_id
+        - statement_id
+        - booking_date
+        - amount
+        - status
+        - suggestions
+        - version
+      type: object
+    BankMatch:
+      additionalProperties: false
+      properties:
+        basis:
+          description: "Who made it: a person, or the system for an exact match, a transfer's other side or an auto-apply rule (FR-BNK-14)."
+          enum:
+            - person
+            - exact
+            - transfer
+            - rule
+          examples:
+            - person
+          type: string
+        document_id:
+          description: The document it posted or matched.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b80
+          format: uuid
+          type: string
+        entry_id:
+          description: The entry made from the line, if one was.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b81
+          format: uuid
+          type: string
+        kind:
+          description: What it is.
+          enum:
+            - categorised
+            - receipt
+            - bill_payment
+            - recorded
+            - transfer
+            - suspense
+          examples:
+            - receipt
+          type: string
+        made_at:
+          description: When.
+          examples:
+            - "2026-10-20T09:30:00Z"
+          format: date-time
+          type: string
+        made_by:
+          description: Who made it.
+          examples:
+            - service:bank.auto-reconcile
+          type: string
+        rule_id:
+          description: The auto-apply rule that made it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b83
+          format: uuid
+          type: string
+        transfer_id:
+          description: The transfer it is a side of.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b82
+          format: uuid
+          type: string
+      required:
+        - kind
+        - basis
+        - made_by
+        - made_at
+      type: object
+    BankStatementIn:
+      additionalProperties: false
+      properties:
+        closing:
+          $ref: "#/components/schemas/Money"
+          description: Its closing balance, when the format gives it.
+        format:
+          description: Its format.
+          enum:
+            - csv
+            - xlsx
+            - ofx
+            - camt053
+            - mt940
+            - mt940_sap
+            - api
+          examples:
+            - camt053
+          type: string
+        from:
+          description: Its first day.
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        has_original:
+          description: Whether the file it came in is kept with it.
+          examples:
+            - true
+          type: boolean
+        id:
+          description: The statement's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b60
+          format: uuid
+          type: string
+        imported_at:
+          description: When.
+          examples:
+            - "2026-10-31T10:00:00Z"
+          format: date-time
+          type: string
+        imported_by:
+          description: Who or what imported it.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01
+          type: string
+        lines:
+          description: How many lines it added.
+          examples:
+            - 42
+          format: int64
+          type: integer
+        opening:
+          $ref: "#/components/schemas/Money"
+          description: Its opening balance, when the format gives it.
+        parser:
+          description: The reader's version that read it.
+          examples:
+            - camt053@1
+          type: string
+        source:
+          description: How it arrived.
+          enum:
+            - file
+            - email
+            - connector
+          examples:
+            - file
+          type: string
+        to:
+          description: Its last day.
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+      required:
+        - id
+        - source
+        - format
+        - parser
+        - from
+        - to
+        - lines
+        - imported_by
+        - imported_at
+        - has_original
+      type: object
+    BankSuggested:
+      additionalProperties: false
+      properties:
+        contact:
+          description: Its customer or supplier's name.
+          examples:
+            - Acme Robotics Pte Ltd
+          type: string
+        contact_id:
+          description: Its customer or supplier.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20
+          format: uuid
+          type: string
+        document_id:
+          description: The document.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b80
+          format: uuid
+          type: string
+        found:
+          description: "How it was found: money recorded by hand, the document's number exactly, once normalised, its amount from the contact the counterparty names, or the first rule the line meets."
+          enum:
+            - recorded
+            - reference
+            - normalised
+            - amount
+            - rule
+          examples:
+            - reference
+          type: string
+        kind:
+          description: What accepting it makes.
+          enum:
+            - recorded
+            - receipt
+            - bill_payment
+            - categorised
+          examples:
+            - receipt
+          type: string
+        number:
+          description: Its number.
+          examples:
+            - INV-0138
+          type: string
+        open:
+          $ref: "#/components/schemas/Money"
+          description: What is open of it.
+        rule_id:
+          description: The rule.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b83
+          format: uuid
+          type: string
+        rule_name:
+          description: The rule's name.
+          examples:
+            - AWS
+          type: string
+      required:
+        - found
+        - kind
+      type: object
     Banner:
       additionalProperties: false
       properties:
@@ -7524,6 +7911,140 @@ components:
         - ledger_revision
         - accounts
       type: object
+    ImportedLine:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "Signed: money in positive."
+        booking_date:
+          description: Its booking date.
+          examples:
+            - "2026-10-20"
+          format: date
+          type: string
+        counterparty:
+          description: Who paid or was paid.
+          examples:
+            - ACME ROBOTICS
+          type: string
+        description:
+          description: The bank's description.
+          examples:
+            - GIRO ACME ROBOTICS
+          type: string
+        duplicate_of:
+          description: The held line it duplicates or may duplicate.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b71
+          format: uuid
+          type: string
+        line_id:
+          description: The line saved, once imported.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70
+          format: uuid
+          type: string
+        outcome:
+          description: "add: a new line; possible_duplicate: kept for a person; duplicate: dropped, held already."
+          enum:
+            - add
+            - possible_duplicate
+            - duplicate
+          examples:
+            - add
+          type: string
+        position:
+          description: Its place in the statement.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        reference:
+          description: The bank's reference.
+          examples:
+            - INV-0138
+          type: string
+        transfer:
+          description: A transfer in transit it may be the other side of.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b82
+          format: uuid
+          type: string
+      required:
+        - position
+        - booking_date
+        - amount
+        - outcome
+      type: object
+    ImportedStatement:
+      additionalProperties: false
+      properties:
+        added:
+          description: New lines.
+          examples:
+            - 40
+          format: int64
+          type: integer
+        closing:
+          $ref: "#/components/schemas/Money"
+          description: Its closing balance, as given or derived.
+        dropped:
+          description: Lines held already, dropped on proof (FR-BNK-04).
+          examples:
+            - 1
+          format: int64
+          type: integer
+        flagged:
+          description: "Lines kept as possible duplicates, for a person (C.2 #51)."
+          examples:
+            - 1
+          format: int64
+          type: integer
+        from:
+          description: Its first day.
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        gap:
+          $ref: "#/components/schemas/BankGap"
+          description: A break in the balance chain this statement shows (FR-BNK-16).
+        lines:
+          description: Each incoming line and what becomes of it.
+          items:
+            $ref: "#/components/schemas/ImportedLine"
+          type: array
+        money_account_id:
+          description: Its money account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+          format: uuid
+          type: string
+        opening:
+          $ref: "#/components/schemas/Money"
+          description: Its opening balance, as given or derived.
+        statement_id:
+          description: The statement saved; absent on a preview, or when every line was held already.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b60
+          format: uuid
+          type: string
+        to:
+          description: Its last day.
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+      required:
+        - money_account_id
+        - from
+        - to
+        - added
+        - flagged
+        - dropped
+        - lines
+      type: object
     InboundFile:
       additionalProperties: false
       properties:
@@ -9616,6 +10137,59 @@ components:
         - base
         - balance
       type: object
+    LinesOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The lines, by booking date then position.
+          items:
+            $ref: "#/components/schemas/BankLine"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTIifQ
+          type: string
+      required:
+        - items
+      type: object
+    MappingNumber:
+      additionalProperties: false
+      properties:
+        brackets:
+          description: Whether (1,234.56) is money out.
+          examples:
+            - false
+          type: boolean
+        decimal:
+          description: "The decimal mark: . by default, or ,."
+          examples:
+            - .
+          pattern: ^[.,]$
+          type: string
+        thousands:
+          description: "The thousands separator, if any: a comma, a dot, a space or an apostrophe."
+          examples:
+            - ","
+          pattern: ^[,. ']$
+          type: string
+      type: object
+    MappingsOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The saved mappings, by name.
+          items:
+            $ref: "#/components/schemas/StatementMapping"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTIifQ
+          type: string
+      required:
+        - items
+      type: object
     MarkedAll:
       additionalProperties: false
       properties:
@@ -9913,6 +10487,331 @@ components:
       required:
         - amount
         - currency
+      type: object
+    MoneyAccount:
+      additionalProperties: false
+      properties:
+        account_code:
+          description: The chart account's code.
+          examples:
+            - "1010"
+          type: string
+        account_id:
+          description: "The chart account it posts to: one marked a money account, in its currency."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+          format: uuid
+          type: string
+        changed_at:
+          description: When it last changed.
+          examples:
+            - "2026-10-20T09:30:00Z"
+          format: date-time
+          type: string
+        closed_on:
+          description: "The day it closed: a closed account takes no import."
+          examples:
+            - "2027-03-31"
+          format: date
+          type: string
+        currency:
+          description: Its currency, the chart account's.
+          examples:
+            - SGD
+          pattern: ^[A-Z]{3}$
+          type: string
+        freshness:
+          $ref: "#/components/schemas/MoneyFreshness"
+          description: How up to date its data is (FR-BNK-16).
+        gaps:
+          description: "getMoneyAccount only: the breaks in its balance chain not yet resolved."
+          items:
+            $ref: "#/components/schemas/BankGap"
+          type: array
+        id:
+          description: The money account's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+          format: uuid
+          type: string
+        identifier:
+          description: The last four characters of what statements name it by (an account number, an IBAN or a provider's balance ID); the rest is never shown (SEC-15).
+          examples:
+            - …4567
+          type: string
+        institution:
+          description: The bank or provider.
+          examples:
+            - DBS
+          type: string
+        kind:
+          description: What kind of money account it is.
+          enum:
+            - bank
+            - card
+            - wallet
+            - payment_gateway
+            - cash
+          examples:
+            - bank
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - DBS current
+          type: string
+        opened_on:
+          description: The day it opened.
+          examples:
+            - "2026-01-05"
+          format: date
+          type: string
+        source:
+          $ref: "#/components/schemas/MoneySource"
+          description: Where its data comes from now; absent while its statements are uploaded as files.
+        sources:
+          description: "getMoneyAccount only: every source it has had, earliest first (UC-BNK-03)."
+          items:
+            $ref: "#/components/schemas/MoneySource"
+          type: array
+        version:
+          description: Its version, for If-Match.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        waiting:
+          description: "Its lines waiting in the queue: unreconciled, possible duplicates and in suspense."
+          examples:
+            - 12
+          format: int64
+          type: integer
+      required:
+        - id
+        - account_id
+        - account_code
+        - kind
+        - name
+        - currency
+        - freshness
+        - waiting
+        - gaps
+        - sources
+        - version
+      type: object
+    MoneyAccountDraft:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: "createMoneyAccount only: the chart account, marked a money account; its currency is the account's."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+          format: uuid
+          type: string
+        closed_on:
+          description: "replaceMoneyAccount only: the day it closed."
+          examples:
+            - "2027-03-31"
+          format: date
+          type: string
+        identifier:
+          description: "What statements name it by: the account number, an IBAN or a provider's balance ID. Written only; read back by its last four characters."
+          examples:
+            - 072-123456-7
+          maxLength: 64
+          type: string
+        institution:
+          description: The bank or provider.
+          examples:
+            - DBS
+          maxLength: 100
+          type: string
+        kind:
+          description: What kind of money account it is.
+          enum:
+            - bank
+            - card
+            - wallet
+            - payment_gateway
+            - cash
+          examples:
+            - bank
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - DBS current
+          maxLength: 100
+          minLength: 1
+          type: string
+        opened_on:
+          description: The day it opened.
+          examples:
+            - "2026-01-05"
+          format: date
+          type: string
+      required:
+        - kind
+        - name
+      type: object
+    MoneyAccountsOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The organisation's money accounts, by name.
+          items:
+            $ref: "#/components/schemas/MoneyAccount"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTIifQ
+          type: string
+      required:
+        - items
+      type: object
+    MoneyFreshness:
+      additionalProperties: false
+      properties:
+        complete_to:
+          description: The last day its statements cover with no gap before it.
+          examples:
+            - "2026-10-19"
+          format: date
+          type: string
+        last_import:
+          description: When its last statement arrived.
+          examples:
+            - "2026-10-20T09:30:00Z"
+          format: date-time
+          type: string
+        open_gaps:
+          description: Breaks in its balance chain not yet resolved.
+          examples:
+            - 0
+          format: int64
+          type: integer
+      required:
+        - open_gaps
+      type: object
+    MoneySource:
+      additionalProperties: false
+      properties:
+        connector_id:
+          description: "connector: the organisation connector that syncs it."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40
+          format: uuid
+          type: string
+        from_date:
+          description: The first day it is the source.
+          examples:
+            - "2026-11-01"
+          format: date
+          type: string
+        kind:
+          description: "file: statements a person uploads; email: reports the bank emails to the bank-ingest address; connector: an organisation connector's sync (FR-BNK-15)."
+          enum:
+            - file
+            - email
+            - connector
+          examples:
+            - email
+          type: string
+        mapping_id:
+          description: A CSV or XLSX format's saved column mapping.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b30
+          format: uuid
+          type: string
+        report_format:
+          description: "file and email: the format its statements come in."
+          enum:
+            - csv
+            - xlsx
+            - ofx
+            - camt053
+            - mt940
+            - mt940_sap
+          examples:
+            - csv
+          type: string
+        senders:
+          description: "email: the bank's registered addresses, the only senders accepted for it."
+          items:
+            description: An email address.
+            examples:
+              - ideal@dbs.example
+            format: email
+            type: string
+          type: array
+        set_by:
+          description: Who set it.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01
+          type: string
+      required:
+        - kind
+        - from_date
+        - senders
+      type: object
+    MoneySourceDraft:
+      additionalProperties: false
+      properties:
+        connector_id:
+          description: "connector: the organisation connector that syncs it."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40
+          format: uuid
+          type: string
+        from_date:
+          description: "The first day it is the source: after the current one's, so no day has two."
+          examples:
+            - "2026-11-01"
+          format: date
+          type: string
+        kind:
+          description: file, email or connector.
+          enum:
+            - file
+            - email
+            - connector
+          examples:
+            - email
+          type: string
+        mapping_id:
+          description: "CSV and XLSX: the saved column mapping."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b30
+          format: uuid
+          type: string
+        report_format:
+          description: "file and email: the statements' format."
+          enum:
+            - csv
+            - xlsx
+            - ofx
+            - camt053
+            - mt940
+            - mt940_sap
+          examples:
+            - csv
+          type: string
+        senders:
+          description: "email: the bank's registered addresses (DMARC must pass for each, FR-INT-22)."
+          items:
+            description: An email address.
+            examples:
+              - ideal@dbs.example
+            format: email
+            type: string
+          maxItems: 5
+          type:
+            - array
+            - "null"
+      required:
+        - kind
+        - from_date
       type: object
     NewMemberInvitation:
       additionalProperties: false
@@ -13361,6 +14260,19 @@ components:
       required:
         - reason
       type: object
+    ResolveGapInputBody:
+      additionalProperties: false
+      properties:
+        resolution:
+          description: "How it was resolved: the statement imported, or why there is none."
+          examples:
+            - The bank's statement for 16–17 Oct imported
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - resolution
+      type: object
     RetainedEarnings:
       additionalProperties: false
       properties:
@@ -14811,6 +15723,179 @@ components:
         - amount
         - balance
       type: object
+    StatementMapping:
+      additionalProperties: false
+      properties:
+        format:
+          description: The format it reads.
+          enum:
+            - csv
+            - xlsx
+          examples:
+            - csv
+          type: string
+        id:
+          description: The mapping's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b30
+          format: uuid
+          type: string
+        institution:
+          description: The bank it is for.
+          examples:
+            - DBS
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - DBS IDEAL CSV
+          type: string
+        spec:
+          $ref: "#/components/schemas/StatementMappingSpec"
+          description: How the columns read.
+        version:
+          description: Its version, for If-Match.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - name
+        - format
+        - spec
+        - version
+      type: object
+    StatementMappingDraft:
+      additionalProperties: false
+      properties:
+        format:
+          description: The format it reads.
+          enum:
+            - csv
+            - xlsx
+          examples:
+            - csv
+          type: string
+        institution:
+          description: The bank it is for.
+          examples:
+            - DBS
+          maxLength: 100
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - DBS IDEAL CSV
+          maxLength: 100
+          minLength: 1
+          type: string
+        spec:
+          $ref: "#/components/schemas/StatementMappingSpec"
+          description: How the columns read.
+      required:
+        - name
+        - format
+        - spec
+      type: object
+    StatementMappingSpec:
+      additionalProperties: false
+      properties:
+        amount:
+          description: A signed amount column; or in and out.
+          examples:
+            - Amount
+          maxLength: 100
+          type: string
+        balance:
+          description: The running balance's column.
+          examples:
+            - Balance
+          maxLength: 100
+          type: string
+        counterparty:
+          description: The counterparty's column.
+          examples:
+            - Payee
+          maxLength: 100
+          type: string
+        date:
+          description: The booking date's column.
+          examples:
+            - Transaction Date
+          maxLength: 100
+          minLength: 1
+          type: string
+        date_formats:
+          description: Go layouts for its dates, the first that reads winning, such as 02/01/2006 for day/month/year.
+          items:
+            description: A Go date layout, such as 02/01/2006 for day/month/year.
+            examples:
+              - 02/01/2006
+            maxLength: 40
+            type: string
+          maxItems: 5
+          type:
+            - array
+            - "null"
+        delimiter:
+          description: "CSV only: the delimiter, a comma by default; or ;, | or a tab."
+          examples:
+            - ","
+          pattern: ^[,;|\t]$
+          type: string
+        description:
+          description: Columns joined, in order, as the description.
+          items:
+            description: A column's header, as the file writes it.
+            examples:
+              - Description
+            maxLength: 100
+            type: string
+          maxItems: 5
+          type:
+            - array
+            - "null"
+        in:
+          description: The money-in column.
+          examples:
+            - Credit
+          maxLength: 100
+          type: string
+        number:
+          $ref: "#/components/schemas/MappingNumber"
+          description: How its amounts are written.
+        out:
+          description: The money-out column.
+          examples:
+            - Debit
+          maxLength: 100
+          type: string
+        reference:
+          description: The bank's reference column.
+          examples:
+            - Reference
+          maxLength: 100
+          type: string
+        skip:
+          description: Rows before the header row.
+          examples:
+            - 0
+          format: int64
+          maximum: 100
+          minimum: 0
+          type: integer
+        value_date:
+          description: The value date's column.
+          examples:
+            - Value Date
+          maxLength: 100
+          type: string
+      required:
+        - date_formats
+        - number
+        - date
+      type: object
     StatementPage:
       additionalProperties: false
       properties:
@@ -14857,6 +15942,22 @@ components:
         - customer_id
         - from
         - to
+      type: object
+    StatementsOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: Its statements, latest first.
+          items:
+            $ref: "#/components/schemas/BankStatementIn"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTIifQ
+          type: string
+      required:
+        - items
       type: object
     StatutoryPack:
       additionalProperties: false
@@ -19680,6 +20781,526 @@ paths:
       x-fyniq-permission:
         capability: (approvals)
         note: "Each approval's own policy decides: the Appendix D row of the object it changes. Never the AI (§9.6). Only the person who asked for the change withdraws it, signed in to Fyniq (rev 0.40)."
+        right: V
+  /v1/bank-imports:
+    post:
+      description: "Imports a statement file, as multipart/form-data (FR-BNK-02): CSV or XLSX through a saved mapping into the account chosen; OFX or QFX, camt.053 or MT940 into the money accounts their statements name, several at once. The file is an untrusted upload: its type is decided from its content and it is scanned for malware, as evidence is (FR-DOC-08), then read by a bounded reader that refuses what it cannot read with the line and field (BANKFILE-nn). Each line is new, kept as a possible duplicate for a person, or dropped only on proof (FR-BNK-04); a break in the balance chain is recorded as a gap (FR-BNK-16). Prefer: return=preview shows all of that and saves nothing. Once imported, the file is kept as its statements' file and the system reconciles what it may of the new lines by itself, within the organisation's limits (FR-BNK-14). Idempotent with Idempotency-Key."
+      operationId: importBankStatements
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            encoding:
+              file:
+                contentType: application/octet-stream
+              format:
+                contentType: text/plain
+              mapping_id:
+                contentType: text/plain
+              money_account_id:
+                contentType: text/plain
+            schema:
+              properties:
+                file:
+                  contentEncoding: binary
+                  contentMediaType: application/octet-stream
+                  description: "The statement: CSV, XLSX, OFX or QFX, camt.053 or MT940, up to 10 MB. It is checked and scanned for malware as evidence is, and kept as the statement's file."
+                  examples:
+                    - <?xml version="1.0"?><Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">…
+                  format: binary
+                  type: string
+                format:
+                  description: The file's format.
+                  enum:
+                    - csv
+                    - xlsx
+                    - ofx
+                    - camt053
+                    - mt940
+                    - mt940_sap
+                  examples:
+                    - camt053
+                  type: string
+                mapping_id:
+                  description: "CSV and XLSX: the saved column mapping."
+                  examples:
+                    - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b30
+                  format: uuid
+                  type: string
+                money_account_id:
+                  description: "The money account: required for CSV and XLSX; for the others, the file's own account must be it."
+                  examples:
+                    - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+                  format: uuid
+                  type: string
+              required:
+                - file
+                - format
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankImport"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankImport"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BANK-03` The money account is closed; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BANK-01` The statement is not for that money account; `BANK-02` The statement is in another currency than its account; `BANK-04` The statement file cannot be read; `BANK-05` The import is incomplete; `BANKFILE-01` The statement file is too large; `BANKFILE-02` The file is not of that format; `BANKFILE-03` An amount in the file is not exact; `BANKFILE-04` A date in the file does not read; `BANKFILE-05` A currency in the file is unknown; `BANKFILE-06` The column mapping does not fit the file; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Import bank statements
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - BANK-01
+        - BANK-02
+        - BANK-03
+        - BANK-04
+        - BANK-05
+        - BANKFILE-01
+        - BANKFILE-02
+        - BANKFILE-03
+        - BANKFILE-04
+        - BANKFILE-05
+        - BANKFILE-06
+        - DOC-01
+        - DOC-02
+        - DOC-03
+        - DOC-04
+        - DOC-05
+        - DOC-06
+        - DOC-07
+        - DOC-08
+        - DOC-09
+        - STORAGE-BANKING-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: C
+  /v1/bank-lines:
+    get:
+      description: "Bank lines by booking date then position, a page at a time: one account's or every account's, of a status or the queue (waiting: unreconciled, possible duplicates and suspense), between two days (FR-BNK-06). Read-only."
+      operationId: listBankLines
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only this money account's lines.
+          explode: false
+          in: query
+          name: money_account_id
+          schema:
+            description: Only this money account's lines.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+            format: uuid
+            type: string
+        - description: "Only lines with this status; waiting is the queue: unreconciled, possible duplicates and suspense."
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: "Only lines with this status; waiting is the queue: unreconciled, possible duplicates and suspense."
+            enum:
+              - unreconciled
+              - possible_duplicate
+              - categorised
+              - matched
+              - transferred
+              - suspense
+              - excluded
+              - waiting
+            examples:
+              - waiting
+            type: string
+        - description: Only lines booked on or after this day.
+          explode: false
+          in: query
+          name: from
+          schema:
+            description: Only lines booked on or after this day.
+            examples:
+              - "2026-10-01"
+            format: date
+            type: string
+        - description: Only lines booked on or before this day.
+          explode: false
+          in: query
+          name: to
+          schema:
+            description: Only lines booked on or before this day.
+            examples:
+              - "2026-10-31"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LinesOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List bank lines
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: V
+  /v1/bank-lines/{line_id}:
+    get:
+      description: "Returns a line with its ETag: what it is matched to now, and while it waits, what it may match, best first: money recorded by hand, documents whose number it names exactly or once normalised, documents of its amount from the contact it names, and the first rule it meets (FR-BNK-06, FR-BNK-07). Suggestions are never applied by themselves. Read-only."
+      operationId: getBankLine
+      parameters:
+        - description: The line's ID.
+          in: path
+          name: line_id
+          required: true
+          schema:
+            description: The line's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankLine"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The line's version, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `BANK-06` The bank rule does not fit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get a bank line
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - BANK-06
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
         right: V
   /v1/bank-rules/{rule_id}/auto-apply-approval:
     post:
@@ -46114,6 +47735,1194 @@ paths:
         capability: Users, roles, team mode
         note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they wait for another Owner to approve them, and the request needs step-up (rev 0.36)."
         right: C
+  /v1/money-accounts:
+    get:
+      description: "Every money account Banking keeps (FR-BNK-01), by name: its chart account, kind, currency, current source, how up to date its data is (FR-BNK-16) and how many of its lines wait in the queue. An identifier shows its last four characters only. Read-only."
+      operationId: listMoneyAccounts
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoneyAccountsOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the money accounts
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: V
+    post:
+      description: "Sets up a chart account marked a money account in Banking (FR-BNK-01): its kind, name, bank and what statements name it by, in the chart account's currency. One per chart account; an identifier is unique per currency. Its statements are uploaded as files until a source says otherwise. Side effects: the money account and its audit event, which keeps the identifier's last four characters only (SEC-15). Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: createMoneyAccount
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoneyAccountDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoneyAccount"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoneyAccount"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The money account's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The money account's URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Set up a money account
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-BANKING-01
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: C
+  /v1/money-accounts/{money_account_id}:
+    get:
+      description: "Returns a money account with its ETag: its current source and every earlier one (UC-BNK-03), its freshness, its open gaps and how many lines wait. Read-only."
+      operationId: getMoneyAccount
+      parameters:
+        - description: The money account's ID.
+          in: path
+          name: money_account_id
+          required: true
+          schema:
+            description: The money account's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoneyAccount"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The money account's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The money account's URL.
+                type: string
+            Preference-Applied:
+              schema:
+                description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get a money account
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: V
+    put:
+      description: "Changes a money account's kind, name, bank, identifier and the days it opened and closed: never its chart account or currency. A closed account takes no more imports. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: replaceMoneyAccount
+      parameters:
+        - description: The money account's ID.
+          in: path
+          name: money_account_id
+          required: true
+          schema:
+            description: The money account's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoneyAccountDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoneyAccount"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The money account's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The money account's URL.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change a money account
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-BANKING-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: C
+  /v1/money-accounts/{money_account_id}/gaps/{gap_id}/resolve:
+    post:
+      description: "Records how a break in a money account's balance chain was resolved (FR-BNK-16): the missing statement imported, or why there is none. Once only. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: resolveBankGap
+      parameters:
+        - description: The money account's ID.
+          in: path
+          name: money_account_id
+          required: true
+          schema:
+            description: The money account's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+            format: uuid
+            type: string
+        - description: The gap's ID.
+          in: path
+          name: gap_id
+          required: true
+          schema:
+            description: The gap's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b50
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveGapInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankGap"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Resolve a gap in a money account's statements
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-BANKING-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: C
+  /v1/money-accounts/{money_account_id}/sources:
+    post:
+      description: "Sets a money account's source from a day after its current one's (FR-BNK-15, UC-BNK-03): statements uploaded as files, reports the bank emails to the bank-ingest address from its registered senders, or an organisation connector's sync. Earlier sources are kept with their days, so the balance chain runs on without a gap. Needs a right on \"Bank data… connections\". Needs If-Match with the account's ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: addMoneyAccountSource
+      parameters:
+        - description: The money account's ID.
+          in: path
+          name: money_account_id
+          required: true
+          schema:
+            description: The money account's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoneySourceDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoneyAccount"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoneyAccount"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The money account's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The money account's URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change where a money account's data comes from
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-BANKING-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bank data, payment-provider and ticketing connections (rev 0.7)
+        right: C
+  /v1/money-accounts/{money_account_id}/statements:
+    get:
+      description: "A money account's imported statements, latest first: how each arrived, its reader's version, its days, its balances when the format gives them, and how many lines it added. Read-only."
+      operationId: listBankStatements
+      parameters:
+        - description: The money account's ID.
+          in: path
+          name: money_account_id
+          required: true
+          schema:
+            description: The money account's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+            format: uuid
+            type: string
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatementsOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List a money account's statements
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: V
   /v1/notification-preferences:
     get:
       description: "How the caller gets each notification type by email (FR-NTF-02; the owner's decisions of 24 Oct 2026): at once for security and approvals, in the daily digest at 08:00 Singapore time for the rest, unless they chose otherwise; in the app always. Security notices are locked on. And their quiet hours. The recommended values for a caller who is not a person. Read-only; no side effects."
@@ -66775,6 +69584,517 @@ paths:
       x-fyniq-permission:
         capability: (your session)
         right: V
+  /v1/statement-mappings:
+    get:
+      description: The saved column mappings of CSV and XLSX statements, one per bank's layout (FR-BNK-02). Read-only.
+      operationId: listStatementMappings
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingsOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the saved column mappings
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: V
+    post:
+      description: "Saves how a bank's CSV or XLSX statements read (FR-BNK-02): its date, amount (signed, or in and out), reference, counterparty, description and balance columns, its date layouts and how its amounts are written. A mapping that names no date or amount is refused (BANKFILE-06). Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: createStatementMapping
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatementMappingDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatementMapping"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatementMapping"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The mapping's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BANKFILE-06` The column mapping does not fit the file."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Save a column mapping
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - BANKFILE-06
+        - STORAGE-BANKING-01
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: C
+  /v1/statement-mappings/{mapping_id}:
+    put:
+      description: "Changes a saved mapping. Statements imported before keep what it read then. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: replaceStatementMapping
+      parameters:
+        - description: The mapping's ID.
+          in: path
+          name: mapping_id
+          required: true
+          schema:
+            description: The mapping's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b30
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatementMappingDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatementMapping"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The mapping's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BANKFILE-06` The column mapping does not fit the file."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change a column mapping
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - BANKFILE-06
+        - STORAGE-BANKING-01
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: C
   /v1/statements:
     get:
       description: The statements of account made, newest first, a page at a time, of one customer when customer_id is given, each as it was made, with its emails (FR-AR-08; PRD-001 rev 0.138). Read-only; no side effects.

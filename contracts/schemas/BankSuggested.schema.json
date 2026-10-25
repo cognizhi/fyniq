@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contact": {
+      "description": "Its customer or supplier's name.",
+      "examples": [
+        "Acme Robotics Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "contact_id": {
+      "description": "Its customer or supplier.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "document_id": {
+      "description": "The document.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b80"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "found": {
+      "description": "How it was found: money recorded by hand, the document's number exactly, once normalised, its amount from the contact the counterparty names, or the first rule the line meets.",
+      "enum": [
+        "recorded",
+        "reference",
+        "normalised",
+        "amount",
+        "rule"
+      ],
+      "examples": [
+        "reference"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "What accepting it makes.",
+      "enum": [
+        "recorded",
+        "receipt",
+        "bill_payment",
+        "categorised"
+      ],
+      "examples": [
+        "receipt"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number.",
+      "examples": [
+        "INV-0138"
+      ],
+      "type": "string"
+    },
+    "open": {
+      "$ref": "Money.schema.json",
+      "description": "What is open of it."
+    },
+    "rule_id": {
+      "description": "The rule.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b83"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "rule_name": {
+      "description": "The rule's name.",
+      "examples": [
+        "AWS"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "found",
+    "kind"
+  ],
+  "title": "BankSuggested",
+  "type": "object"
+}

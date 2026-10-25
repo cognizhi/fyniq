@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "description": "The format it reads.",
+      "enum": [
+        "csv",
+        "xlsx"
+      ],
+      "examples": [
+        "csv"
+      ],
+      "type": "string"
+    },
+    "institution": {
+      "description": "The bank it is for.",
+      "examples": [
+        "DBS"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "DBS IDEAL CSV"
+      ],
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "spec": {
+      "$ref": "StatementMappingSpec.schema.json",
+      "description": "How the columns read."
+    }
+  },
+  "required": [
+    "name",
+    "format",
+    "spec"
+  ],
+  "title": "StatementMappingDraft",
+  "type": "object"
+}

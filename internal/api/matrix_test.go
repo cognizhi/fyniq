@@ -2364,6 +2364,9 @@ func TestAuthorisationMatrix(t *testing.T) {
 	e := newEnv(t)
 	_, rows := authztest.AppendixD(t)
 	policies := e.api.Policies()
+	for op, call := range matrixBanking {
+		matrixCalls[op] = call
+	}
 	for op := range policies {
 		if matrixCalls[op] == nil {
 			t.Errorf("operation %s has no row in the authorisation matrix test", op)
