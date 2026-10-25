@@ -20,14 +20,14 @@ secrets or connector traffic (SEC-20).
 
 ## 2. Manifests and the catalogue
 
-- [ ] 2.1 The manifest format:
+- [x] 2.1 The manifest format:
   - `contracts/connectors/manifest.schema.json` with every field of FR-INT-25 and the per-capability fields
     of `design.md` (trigger, queued and in-flight work, secret rotation overlap, parser version,
     destinations, rate limit, breaker);
   - `internal/connector` loads and validates embedded manifests, and refuses a manifest whose configuration
     schema is not valid JSON Schema or whose secrets, capabilities or destinations are malformed.
   - Tests `TestEveryManifestValidates`, `TestManifestRefusals`. `// req: FR-INT-25`
-- [ ] 2.2 The first-party manifests and bindings:
+- [x] 2.2 The first-party manifests and bindings:
   - `connectors/smtp`, `connectors/zeptomail` and `connectors/resend` (outbound, and inbound for Resend), each
     a `manifest.json` and a binding to `internal/adapters/<provider>`;
   - destinations as the providers document them (SMTP "configured");
@@ -35,9 +35,18 @@ secrets or connector traffic (SEC-20).
   - their local substitutes (Mailpit for SMTP; fakes for ZeptoMail and Resend).
   - Tests: contract tests of each binding against its fake through the capability interface.
     `// req: FR-INT-20` (every adapter has a local substitute and contract tests), `// req: FR-INT-25`
-- [ ] 2.3 `make check` validates every manifest against the schema, and the catalogue lists exactly the
+- [x] 2.3 `make check` validates every manifest against the schema, and the catalogue lists exactly the
   connectors compiled in.
   - Tests `TestTheCatalogueIsTheCompiledSet`. `// req: FR-INT-25` (connector catalogue)
+  (25 Oct 2026, tasks 2.1 to 2.3: `contracts/connectors/manifest.schema.json`; `internal/connector` (`Parse` refuses an
+  unknown field and reports every problem at once, `Validate` checks a configuration and refuses a secret in it, the
+  canonical `Hash`, the `Catalogue` that checks each binding builds exactly its manifest's capabilities, `LocalFlavour`);
+  `connectors/smtp`, `zeptomail` and `resend` with their manifests and bindings, and `connectors.Catalogue`. The
+  manifests validate in `make test`, not `make check`: CI's `make check` job has no Go toolchain, and the JSON Schema
+  check is a Go test (`TestEveryManifestValidates`). Tests: `TestEveryManifestValidates`, `TestManifestRefusals` (the
+  schema refuses what the platform refuses), `TestValidateConfiguration`, `TestManifestHashIsCanonical`,
+  `TestTheCatalogueChecksItsBindings`, `TestTheCatalogueIsTheCompiledSet`, `TestTheEmailConnectorsSendThroughTheirFakes`,
+  `TestResendReceivesThroughItsFake`, `TestTheSMTPConnectorSpeaksPlainTextOnlyInTheLocalFlavour`)
 
 ## 3. Secrets
 
