@@ -19,7 +19,7 @@ import (
 )
 
 // SecretManagerAPI is Secret Manager's REST API.
-const SecretManagerAPI = "https://secretmanager.googleapis.com"
+const SecretManagerAPI = "https://secretmanager.googleapis.com" // #nosec G101 -- the API's address, not a credential
 
 // SecretManager is ports.SecretStore on Secret Manager (FR-INT-20, SEC-12): a secret typed in Settings › Integrations
 // becomes a new version of a secret OpenTofu created, and the database keeps the version's name. The service's own
