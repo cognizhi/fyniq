@@ -2,9 +2,9 @@
 key: banking.accounts
 type: concept
 title: Bank accounts, their data sources and freshness
-summary: The money accounts in Banking, the cash position, where each account's data comes from, and what complete to and a gap mean
+summary: Money accounts and the cash position, where their data comes from, an account's statements and lines, duplicates, alerts and gaps
 sources:
-  - docs/user-guide/banking.md sha256:51107fd0558f6c5fbaafe3945ca677eeaa22881e9238242d230a20d36f9d4f60
+  - docs/user-guide/banking.md sha256:565c6a46ef771bfa843f7ddb1a5e1fdb0c044640a14eddaa8d8774627dc75e2d
 data_class: general
 taint: trusted
 status: draft
@@ -24,6 +24,9 @@ aliases:
   - statement gap
   - complete to
   - read-only connection
+  - possible duplicate
+  - statement lines
+  - transfer in transit
 ---
 
 # Bank accounts, their data sources and freshness
@@ -45,6 +48,17 @@ aliases:
 - Setting the source and naming the bank-ingest address is for an Administrator. A source starts on a day and never changes the days before it, so switching from emailed reports to a connector leaves no gap.
 
 (src: docs/user-guide/banking.md#where-its-data-comes-from)
+
+## An account's statements and lines
+
+- An account's page lists its **statements**, each with its days, opening and closing balances, lines and how it came (a file, an emailed report or a connector): **Continues** when its opening is the previous closing, **Gap before it** ⚠ when not.
+- Its **lines** show the booking date, description, counterparty, amount and status: **Waiting**, **Reconciled**, **In suspense** ⚠, **Possible duplicate** ⚠ or **Excluded**; descriptions are shown as the bank sent them, as text.
+- A **possible duplicate** looks like a line already held without the bank's reference or a running balance to prove it: **Compare** shows both side by side, then **Keep it** as a line of its own or **Exclude it** with the reason; neither posts anything.
+- **Incoming-funds alerts** are listed apart, as pending, never as lines: each names the invoice it likely pays, and **Dismiss** removes a wrong one with a reason.
+- **Transfers in transit** are transfers recorded with the account whose other side's line has not arrived yet.
+- Bringing statements in: [[banking.import]].
+
+(src: docs/user-guide/banking.md#an-accounts-statements-and-lines)
 
 ## Freshness and gaps
 

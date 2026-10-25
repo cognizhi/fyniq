@@ -87,6 +87,8 @@ export const routes = [
   // Banking (FR-BNK-01, FR-BNK-13, FR-BNK-15…18; p1-bank-import-reconcile task 10.1): Basic; safety (gaps, freshness) shows in both modes.
   { kind: "route", id: "banking", path: "/banking", mode: "basic", signedIn: true, help: "banking.accounts", guide: "banking.accounts" },
   { kind: "route", id: "bank-account-new", path: "/banking/accounts/new", mode: "basic", signedIn: true, help: "bank-account.new", guide: "banking.accounts#add-a-money-account" },
+  { kind: "route", id: "bank-account", path: "/banking/accounts/$accountId", mode: "basic", signedIn: true, help: "banking.account", guide: "banking.accounts#an-accounts-statements-and-lines" },
+  { kind: "route", id: "statement-import", path: "/banking/import", mode: "basic", signedIn: true, help: "banking.import", guide: "banking.accounts#import-statements" },
   { kind: "route", id: "accounting", path: "/accounting", mode: "expert", signedIn: true, help: "nav.accounting", guide: "accounting.journals" },
   { kind: "route", id: "journals", path: "/accounting/journals", mode: "expert", signedIn: true, help: "accounting.journals", guide: "accounting.journals" },
   { kind: "route", id: "journal-new", path: "/accounting/journals/new", mode: "expert", signedIn: true, help: "journal.new", guide: "accounting.journals#prepare-a-journal" },

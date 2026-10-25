@@ -3,7 +3,7 @@ key: banking.accounts
 title: Bank accounts
 mode: basic
 roles: [bookkeeper, accountant, controller, owner, administrator, ar_specialist, ap_specialist, payment_releaser, auditor, tax_agent]
-requirements: [FR-BNK-01, FR-BNK-13, FR-BNK-15, FR-BNK-16, FR-BNK-17, FR-BNK-18, FR-INT-22]
+requirements: [FR-BNK-01, FR-BNK-02, FR-BNK-04, FR-BNK-09, FR-BNK-11, FR-BNK-13, FR-BNK-15, FR-BNK-16, FR-BNK-17, FR-BNK-18, FR-DOC-08, FR-INT-22]
 status: draft            # written with the banking screens (P1, p1-bank-import-reconcile task 10.1); reviewed with the accountant
 ---
 
@@ -49,6 +49,41 @@ Select **Add account** and follow the three steps.
 Setting where the data comes from, and naming the bank-ingest address, is for an Administrator. A
 source starts on a day and is never changed for the days before it, so switching from emailed reports to
 a connector leaves no gap.
+
+## An account's statements and lines
+
+Select an account to see its statements, its lines and anything that waits for a person.
+
+- **Statements** lists each statement with its days, its opening and closing balances, its lines and
+  how it came: a file, an emailed report or a connector. **Continues** means its opening balance is the
+  previous statement's closing balance; **Gap before it** ⚠ means it is not.
+- **Lines** shows each line's booking date, description, counterparty, amount and status: **Waiting**,
+  **Reconciled**, **In suspense** ⚠, **Possible duplicate** ⚠ or **Excluded**. Descriptions are shown as
+  the bank sent them, as text.
+- A **possible duplicate** is a line that looks like one already held, without the bank's reference or a
+  running balance to prove it. Select **Compare** to see both side by side, then **Keep it** as a line
+  of its own, or **Exclude it** with the reason. Neither posts anything.
+- **Incoming-funds alerts** are listed apart, as pending: they are not lines, and nothing is posted from
+  them. Each names the invoice it likely pays; **Dismiss** one with a reason when it is wrong.
+- **Transfers in transit** are transfers recorded with this account whose other side's line has not
+  arrived yet.
+
+## Import statements
+
+Select **Import statement**, then choose the bank's files: several at once, for one account or several.
+
+1. For each file, check its **format**. A CSV or XLSX file needs its **account** and a saved **column
+   mapping**; OFX, camt.053 and MT940 files name their own account.
+2. Select **Preview**: for each statement it shows the lines to add, the lines held already and dropped,
+   the possible duplicates kept for you, and whether it continues the balance chain. Nothing is saved.
+3. Select **Import**. Each file is imported on its own, with its own result; Fyniq then reconciles what it
+   can by itself, within the organisation's limits, and the rest waits in the queue.
+
+- Each file is checked and scanned for malware before it is read, and kept with its statements.
+- **New column mapping** saves which column of a bank's CSV or XLSX export holds the date, the amount (one
+  signed column, or money in and money out), and optionally the reference, counterparty, description and
+  running balance. With a running balance, an overlap with a statement held already is proved, and its
+  lines are dropped.
 
 ## Freshness and gaps
 
