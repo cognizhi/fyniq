@@ -13,6 +13,8 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/email"
+	"github.com/cognizhi/fyniq/internal/maildns"
+	"github.com/cognizhi/fyniq/internal/mailhooks"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -241,4 +243,161 @@ func EmailDrift(ctx context.Context, k *Kit, env func(string) string) (string, e
 	}
 	return fmt.Sprintf("FYNIQ_EMAIL_PROVIDERS says %s, but the enabled email connectors are %s: the connectors decide, and the variable "+
 		"is no longer read; remove it or change the connectors in Settings › Integrations", strings.Join(want, ","), strings.Join(live, ",")), nil
+}
+
+// installation reads the installation's connectors and their secret versions in the installation organisation's unit of
+// work; ok is false before first-run setup or before any connector is installed, when the deployment's settings apply.
+func (k *Kit) installation(ctx context.Context) (all []storage.InstalledConnector, secrets []storage.ConnectorSecret, ok bool, err error) {
+	if k.Connectors == nil {
+		return nil, nil, false, nil
+	}
+	org, err := k.Store.InstallationOrganisation(ctx)
+	if errors.Is(err, ports.ErrNotFound) {
+		return nil, nil, false, nil
+	}
+	if err != nil {
+		return nil, nil, false, err
+	}
+	err = k.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		if all, err = u.Connectors().Installation(ctx); err != nil {
+			return err
+		}
+		secrets, err = u.Connectors().InstallationSecrets(ctx)
+		return err
+	})
+	return all, secrets, err == nil && len(all) > 0, err
+}
+
+// WebhookKeys are a provider's webhook keys for each request (mailhooks.Receiver.Keys, rev 0.139): its connector's
+// current key and one still in its rotation overlap, newest first; mailhooks.ErrOff when the connector is not enabled
+// or paused, or its key was never set. Before the bootstrap, the deployment's.
+func (k *Kit) WebhookKeys(cache *connector.SecretCache, clock ports.Clock) func(ctx context.Context, provider string) ([]string, error) {
+	static := map[string]string{"resend": k.Mail.ResendWebhookSecret, "zeptomail": k.Mail.ZeptoMailWebhookKey}
+	return func(ctx context.Context, provider string) ([]string, error) {
+		all, secrets, ok, err := k.installation(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			if static[provider] == "" {
+				return nil, mailhooks.ErrOff
+			}
+			return []string{static[provider]}, nil
+		}
+		i := slices.IndexFunc(all, func(c storage.InstalledConnector) bool { return c.Connector == provider && c.State != storage.ConnectorUninstalled })
+		b, known := k.Connectors.Get(provider)
+		if i < 0 || !known || (all[i].State != storage.ConnectorEnabled && all[i].State != storage.ConnectorPaused) {
+			return nil, mailhooks.ErrOff
+		}
+		var name string
+		for _, w := range b.Manifest.Webhooks {
+			name = w.Secret
+		}
+		now := clock.Now()
+		var current, overlap []ports.SecretRef
+		for _, s := range secrets {
+			switch {
+			case s.ConnectorID != all[i].ID || s.Name != name || s.DestroyedAt != nil:
+			case s.ValidUntil == nil:
+				current = append(current, s.Ref)
+			case s.ValidUntil.After(now):
+				overlap = append(overlap, s.Ref)
+			}
+		}
+		var keys []string
+		for _, ref := range append(current, overlap...) {
+			v, err := cache.Get(ctx, ref)
+			if err != nil {
+				return nil, err
+			}
+			keys = append(keys, v)
+		}
+		if len(keys) == 0 {
+			return nil, mailhooks.ErrOff
+		}
+		return keys, nil
+	}
+}
+
+// InboundMail is the provider of each fetch of received mail (email.Fetcher.MailFrom): the enabled connector that
+// receives email, or the deployment's before the bootstrap; ports.ErrNotFound when none is.
+func (k *Kit) InboundMail(rt *connector.Runtime) func(ctx context.Context, org uuid.UUID) (ports.InboundMail, error) {
+	return func(ctx context.Context, org uuid.UUID) (ports.InboundMail, error) {
+		var in ports.InboundMail
+		installed := false
+		err := k.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			all, err := u.Connectors().Installation(ctx)
+			if err != nil {
+				return err
+			}
+			installed = slices.ContainsFunc(all, func(c storage.InstalledConnector) bool {
+				b, ok := k.Connectors.Get(c.Connector)
+				return ok && b.InboundEmail != nil
+			})
+			if installed {
+				in, _, err = rt.InboundEmail(ctx, u, connector.Authority{Trigger: connector.TriggerSystem, Rule: "a message received for an email-in address"})
+			}
+			return err
+		})
+		if !installed && err == nil {
+			if k.Mail.Inbound == nil {
+				return nil, ports.ErrNotFound
+			}
+			return k.Mail.Inbound, nil
+		}
+		return in, err
+	}
+}
+
+// MailDNS are the records each sending domain needs, for the domain checks: the email connectors' (each provider's in
+// its configuration, rev 0.139), or the deployment's before the bootstrap.
+func (k *Kit) MailDNS(ctx context.Context) map[string][]maildns.Record {
+	all, _, ok, err := k.installation(ctx)
+	if err != nil || !ok {
+		return k.Mail.DNS
+	}
+	out := map[string][]maildns.Record{}
+	for _, c := range all {
+		if c.State == storage.ConnectorUninstalled {
+			continue
+		}
+		raw, err := json.Marshal(c.Configuration["dns_records"])
+		if err != nil {
+			continue
+		}
+		var recs map[string][]maildns.Record
+		if json.Unmarshal(raw, &recs) != nil {
+			continue
+		}
+		for d, rs := range recs {
+			for _, r := range rs {
+				if !slices.Contains(out[d], r) {
+					out[d] = append(out[d], r)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// MailProviders are the enabled email connectors' names in order, for the email settings; the deployment's before the
+// bootstrap.
+func (k *Kit) MailProviders(ctx context.Context) []string {
+	all, _, ok, err := k.installation(ctx)
+	if err != nil || !ok {
+		names := make([]string, 0, len(k.Mail.Providers))
+		for _, p := range k.Mail.Providers {
+			names = append(names, p.Name())
+		}
+		return names
+	}
+	slices.SortStableFunc(all, func(x, y storage.InstalledConnector) int { return x.Position - y.Position })
+	var out []string
+	for _, c := range all {
+		if b, ok := k.Connectors.Get(c.Connector); ok && b.OutboundEmail != nil && c.State == storage.ConnectorEnabled {
+			out = append(out, c.Connector)
+		}
+	}
+	return out
 }

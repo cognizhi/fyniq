@@ -598,7 +598,7 @@ Records the caller's approval, as the accountant, of a version of one accounting
 
 **Get the email settings** (`getEmailSettings`)
 
-The organisation's outbound email (FR-INT-21; the owner's decision of 23 Oct 2026): the deployment's providers in order, the first primary and the next its failover, the platform's sender and the domains a sender may be chosen on, which the deployment's operators set, with each domain's DNS records and DMARC policy as checked within the hour; and the organisation's sender of each purpose, or the platform's. No provider key is ever shown. Read-only; no side effects.
+The organisation's outbound email (FR-INT-21; the owner's decisions of 23 and 25 Oct 2026): the enabled email connectors in order, the first primary and the next its failover, the platform's sender and the domains a sender may be chosen on, which the deployment's operators set, with each domain's DNS records and DMARC policy as checked within the hour; and the organisation's sender of each purpose, or the platform's. No provider key is ever shown. Read-only; no side effects.
 
 - **Permission:** View on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)
 - **Responses:**

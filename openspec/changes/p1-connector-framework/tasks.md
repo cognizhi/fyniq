@@ -228,24 +228,34 @@ secrets or connector traffic (SEC-20).
   `TestBootstrapFromTheDeployment`, which also covers running once, a failed bootstrap leaving nothing installed, the
   wait before setup and the drift warning; the fallback to the deployment's providers in
   `TestEmailGoesThroughTheConnectorsEnabledAtEachSend`)
-- [ ] 6.2 The worker sends through `Runtime.For("outbound-email")` per attempt instead of providers built at
+- [x] 6.2 The worker sends through `Runtime.For("outbound-email")` per attempt instead of providers built at
   start.
   - The API's webhooks read their connector's secret per request; they are accepted while it is enabled or
     paused, and refused once it is disabled or uninstalled.
   - Tests: the existing email and webhook suites pass through connectors; `TestWebhookOfADisabledConnectorIsRefused`.
     `// req: FR-INT-21`, `// req: FR-INT-20`
   (25 Oct 2026, the sending half: `email.WorkFrom` reads its providers for each message from `Kit.EmailProviders`, the
-  enabled connectors through `connector.Runtime`, or the deployment's until the bootstrap. **Left:** the webhooks and
-  inbound mail, with task 6.3)
-- [ ] 6.3 The platform sender and sending domains become the outbound-email capability's installation
+  enabled connectors through `connector.Runtime`, or the deployment's until the bootstrap. The webhooks: the receiver's
+  `Keys` reads each request's keys through `Kit.WebhookKeys` (current and in overlap, newest first) and refuses a disabled
+  or uninstalled connector with 404; inbound mail through `Kit.InboundMail` per fetch, held when no receiving connector is
+  enabled. Tests: `TestEmailGoesThroughTheConnectorsEnabledAtEachSend`, `TestWebhookKeysAreReadForEachRequest`,
+  `TestTheConnectorsDecideTheWebhookKeysProvidersAndRecords`; the existing email, webhook and inbound suites)
+- [x] 6.3 The platform sender and sending domains become the outbound-email capability's installation
   settings, and each provider's DNS records live in its configuration.
   - `email.domains` and `getEmailSettings` read them from there; the capture domain stays the deployment's.
   - Tests: the domain-check and email-settings suites. `// req: FR-INT-21`
-- [ ] 6.4 Upgrade notes in the commit body: operators add `FYNIQ_CONNECTOR_SECRETS` before the deployment,
+  (25 Oct 2026: each provider's DNS records in its configuration (the bootstrap puts the deployment's on the primary);
+  `Kit.MailDNS` feeds the nightly `email.domains` job and the settings' check, `Kit.MailProviders` the settings' list.
+  *Changed while building:* the platform sender and the sending domains stay the deployment's, as `design.md` records.
+  Tests: `TestTheConnectorsDecideTheWebhookKeysProvidersAndRecords` and the existing domain and settings suites)
+- [x] 6.4 Upgrade notes in the commit body: operators add `FYNIQ_CONNECTOR_SECRETS` before the deployment,
   and may remove the provider variables after the bootstrap (`design.md`, Migration Plan).
   - `deploy/local/` and `make dev` bootstrap SMTP to Mailpit; `make up` and `scripts/local-smoke.sh` still
     send.
   - Verified by `scripts/local-smoke.sh` (QA-LOCAL-01).
+  (25 Oct 2026: the upgrade notes are in the commit of tasks 4.4, 5.1 and 6.1 and in `infra/README.md`; local mode
+  bootstraps SMTP to Mailpit through `mailEnv`'s defaults once first-run setup is done, and sends through the deployment's
+  Mailpit before. `scripts/local-smoke.sh` runs in CI, not here)
 
 ## 7. The API
 

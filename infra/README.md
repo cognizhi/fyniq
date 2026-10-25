@@ -97,8 +97,11 @@ The tests check the controls on the planned configuration:
    providers' keys where they are, the root's `connector_secret_sources` names them, such as
    `{ "zeptomail.send_token" = "zeptomail-key", "zeptomail.webhook_key" = "zeptomail-webhook-key",
    "resend.api_key" = "resend-key", "resend.webhook_secret" = "resend-webhook-secret" }`, so they
-   are referenced, never copied. The first-start bootstrap that installs the email connectors with
-   those references arrives with `p1-connector-framework` task 6.1; until then email is sent as above. The module gives the `worker`
+   are referenced, never copied. On first start (and each tick until it has), the API installs the
+   email connectors from these settings with references to those secrets; until it has, email is
+   sent as above, and once it has, `FYNIQ_EMAIL_PROVIDERS`, the keys' variables, the providers'
+   URLs and `FYNIQ_MAIL_DNS` are no longer read and may be removed (the API warns once if they
+   differ). `FYNIQ_MAIL_FROM`, `FYNIQ_MAIL_DOMAINS` and `FYNIQ_CAPTURE_DOMAIN` stay the deployment's. The module gives the `worker`
    and `jobs` `FYNIQ_PUBLIC_ORIGIN` from `public_origin`, for the links in notifications' emails
    (rev 0.108).
 7. Run the Infrastructure workflow by hand for `staging` with **apply**. After that, pushes to

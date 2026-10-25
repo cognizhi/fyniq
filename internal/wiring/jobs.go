@@ -75,7 +75,7 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 		email.DomainsJob: func(ctx context.Context) error {
-			results, err := email.CheckDomains(ctx, k.Store, k.Store, net.DefaultResolver, k.Mail.Domains, k.Mail.DNS)
+			results, err := email.CheckDomains(ctx, k.Store, k.Store, net.DefaultResolver, k.Mail.Domains, k.MailDNS(ctx))
 			if err != nil {
 				return err
 			}

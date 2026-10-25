@@ -47,8 +47,10 @@ func main() {
 		// FR-INT-21: send queued mail once, through the email connectors enabled when each send starts, or the deployment's
 		// providers until the first-start bootstrap has installed them (rev 0.139); none enabled: the message waits.
 		kinds[email.Kind] = email.WorkFrom(kit.EmailProviders(kit.Runtime(deps.Clock)), kit.Store, kit.Mail.From, deps.Clock, files)
-		if kit.Mail.Inbound != nil && kit.Staging != nil && kit.Scanner != nil { // FR-INT-22: fetch, decide and keep received mail
-			kinds[email.FetchKind] = kit.Fetcher(deps.Clock).Work()
+		if kit.Staging != nil && kit.Scanner != nil { // FR-INT-22: fetch, decide and keep received mail
+			fetcher := kit.Fetcher(deps.Clock)
+			fetcher.MailFrom = kit.InboundMail(kit.Runtime(deps.Clock)) // the enabled connector that receives email, read per fetch
+			kinds[email.FetchKind] = fetcher.Work()
 		}
 		kinds[notify.FanoutKind] = kit.Fanout(deps.Clock).Work() // FR-NTF-05: one event, every person it concerns
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassWorker, Store: kit.Store, Tokens: kit.Tokens,

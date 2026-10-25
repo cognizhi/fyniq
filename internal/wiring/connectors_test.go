@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/email"
+	"github.com/cognizhi/fyniq/internal/mailhooks"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -343,4 +344,80 @@ func payload(t *testing.T, id uuid.UUID, to string) []byte {
 		t.Fatal(err)
 	}
 	return b
+}
+
+// Once the connectors are installed, they decide: a provider's webhook keys are its connector's current key and the one a
+// rotation replaced while in its overlap, newest first, and none once the connector is disabled; the email settings list
+// the enabled connectors in order; the domain checks read each connector's DNS records.
+// req: FR-INT-26
+// req: FR-INT-21
+// asvs: V13.3.4
+func TestTheConnectorsDecideTheWebhookKeysProvidersAndRecords(t *testing.T) {
+	ctx := context.Background()
+	w := startConnectors(t, true)
+	cat, err := connectors.Catalogue()
+	if err != nil {
+		t.Fatal(err)
+	}
+	k := &Kit{Store: w.api, Connectors: cat, ConnectorSecrets: w.secrets, Egress: &egress.Guard{Local: true},
+		Mail: MailConfig{ZeptoMailWebhookKey: "the-deployments-key", Providers: []ports.Email{fake{name: "smtp", sends: new(int), took: map[string]bool{}}}}}
+	keys := k.WebhookKeys(connector.NewSecretCache(w.secrets, w.clock), w.clock)
+	if got, err := keys(ctx, "zeptomail"); err != nil || len(got) != 1 || got[0] != "the-deployments-key" {
+		t.Fatalf("before the bootstrap: %v, %v", got, err)
+	}
+	if got := k.MailProviders(ctx); len(got) != 1 || got[0] != "smtp" {
+		t.Fatalf("the deployment's providers: %v", got)
+	}
+	s := connector.Installations{Catalogue: cat, Secrets: w.secrets, Admins: w.api, Clock: w.clock}
+	var zepto storage.InstalledConnector
+	do := func(st string, in connector.Input, value string) {
+		t.Helper()
+		if err := w.api.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			r, err := s.Step(ctx, u, w.superAdmin, w.clock.Now(), zepto.ID, zepto.Version, st, in, value)
+			zepto = r.Connector
+			return err
+		}); err != nil {
+			t.Fatalf("%s: %v", st, err)
+		}
+	}
+	if err := w.api.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		r, err := s.Install(ctx, u, w.superAdmin, w.clock.Now(), "zeptomail")
+		zepto = r.Connector
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	do(storage.StepConfigure, connector.Input{Configuration: map[string]any{"dns_records": map[string]any{
+		"mail.example.com": []any{map[string]any{"type": "TXT", "name": "zm._domainkey.mail.example.com", "value": "v=DKIM1"}}}}}, "")
+	do(storage.StepTest, connector.Input{Test: &storage.ConnectorTest{Passed: true, Reason: "Accepted.", At: w.clock.Now()}}, "")
+	do(storage.StepSecret, connector.Input{Secret: "send_token"}, "send-token-one")
+	if _, err := keys(ctx, "zeptomail"); !errors.Is(err, mailhooks.ErrOff) {
+		t.Fatalf("installed, not enabled, no webhook key: %v", err)
+	}
+	do(storage.StepSecret, connector.Input{Secret: "webhook_key"}, "webhook-key-one")
+	do(storage.StepEnable, connector.Input{}, "")
+	if got, err := keys(ctx, "zeptomail"); err != nil || len(got) != 1 || got[0] != "webhook-key-one" {
+		t.Fatalf("enabled: %v, %v", got, err)
+	}
+	do(storage.StepSecret, connector.Input{Secret: "webhook_key"}, "webhook-key-two")
+	if got, err := keys(ctx, "zeptomail"); err != nil || len(got) != 2 || got[0] != "webhook-key-two" || got[1] != "webhook-key-one" {
+		t.Fatalf("in the rotation's overlap: %v, %v", got, err)
+	}
+	w.clock.Advance(24 * time.Hour)
+	if got, err := keys(ctx, "zeptomail"); err != nil || len(got) != 1 || got[0] != "webhook-key-two" {
+		t.Fatalf("after the overlap: %v, %v", got, err)
+	}
+	if got := k.MailProviders(ctx); len(got) != 1 || got[0] != "zeptomail" {
+		t.Fatalf("the enabled connectors: %v", got)
+	}
+	if recs := k.MailDNS(ctx); len(recs["mail.example.com"]) != 1 || recs["mail.example.com"][0].Value != "v=DKIM1" {
+		t.Fatalf("the connectors' records: %+v", recs)
+	}
+	if _, err := keys(ctx, "resend"); !errors.Is(err, mailhooks.ErrOff) {
+		t.Fatalf("a provider with no connector: %v", err)
+	}
+	do(storage.StepDisable, connector.Input{}, "")
+	if _, err := keys(ctx, "zeptomail"); !errors.Is(err, mailhooks.ErrOff) {
+		t.Fatalf("a disabled connector: %v", err)
+	}
 }
