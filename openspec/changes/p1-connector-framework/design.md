@@ -154,8 +154,10 @@
 - **Upgrades never widen what a running connector does:**
   - the installation keeps the manifest it consented to;
   - when a release ships a newer manifest, the catalogue shows the diff;
-  - a version with no new scopes, data classes, destinations or webhooks runs under the existing consent;
-    its first run is recorded as `connector.upgraded` by the service actor;
+  - a version with no new scopes, data classes, destinations or webhooks runs under the existing consent too;
+    the catalogue shows it as an upgrade that asks nothing new, and the record moves to it through the consent
+    step like any other upgrade. *Changed while building (task 5.4):* the service no longer records such an
+    upgrade itself on its first run, which would need a database function that skips the Super admin check;
   - a widening version keeps running under the old consent: the egress guard allows only the consented
     destinations, and the adapter receives the consented data classes and leaves what needs more turned off,
     until the Owner (or the Super admin) consents through the dual-controlled `consent` step.

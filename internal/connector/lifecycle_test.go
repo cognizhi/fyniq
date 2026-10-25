@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/pgtest"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/connector"
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -403,5 +404,68 @@ func TestOrganisationConnectorsGoThroughTheLifecycle(t *testing.T) {
 	}
 	if v, err := w.secrets.Get(ctx, ref); err != nil || v != "org-key-one" || string(ref)[:len("local:org-")] != "local:org-" {
 		t.Fatalf("the organisation's key: %q %q %v", ref, v, err)
+	}
+}
+
+// The runtime reads the enabled connectors in each piece of work's own unit of work, never from a cache: a pause stops
+// the very next piece of work, which can still reconcile an earlier attempt with the paused connector.
+// req: FR-INT-20
+// req: QA-SEC-04
+// asvs: V2.3.2
+func TestTheRuntimeReadsTheConnectorsAtEachPieceOfWork(t *testing.T) {
+	w := start(t)
+	cat, err := connectors.Catalogue()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := connector.Installations{Catalogue: cat, Secrets: w.secrets, Admins: w.store, Clock: w.clock}
+	first := w.superAdmin(t, "Only")
+	now := w.clock.Now()
+	var smtp storage.InstalledConnector
+	steps := []struct {
+		step string
+		in   connector.Input
+	}{
+		{storage.StepConfigure, connector.Input{Configuration: map[string]any{"address": "smtp.example.com:587"}}},
+		{storage.StepTest, connector.Input{Test: &storage.ConnectorTest{Passed: true, Reason: "Accepted.", At: now}}},
+		{storage.StepEnable, connector.Input{}},
+	}
+	if err := w.do(t, func(ctx context.Context, u storage.UnitOfWork) error {
+		r, err := s.Install(ctx, u, first, now, "smtp")
+		smtp = r.Connector
+		for _, x := range steps {
+			if err != nil {
+				return err
+			}
+			r, err = s.Step(ctx, u, first, now, smtp.ID, smtp.Version, x.step, x.in, "")
+			smtp = r.Connector
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	rt := &connector.Runtime{Catalogue: cat, Secrets: connector.NewSecretCache(w.secrets, w.clock), Egress: &egress.Guard{Local: true}, Clock: w.clock}
+	mail := func() connector.Mail {
+		var m connector.Mail
+		if err := w.do(t, func(ctx context.Context, u storage.UnitOfWork) error {
+			var err error
+			m, err = rt.OutboundEmail(ctx, u, connector.OutboxEmail)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	if m := mail(); len(m.Enabled) != 1 || m.Enabled[0].Name() != "smtp" {
+		t.Fatalf("enabled: %+v", m)
+	}
+	if err := w.do(t, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := s.Pause(ctx, u, first, smtp.ID, smtp.Version)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if m := mail(); len(m.Enabled) != 0 || m.Reconcile["smtp"] == nil {
+		t.Fatalf("after the pause: %+v", m)
 	}
 }

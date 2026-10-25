@@ -26,6 +26,8 @@ func Binding() (connector.Binding, error) {
 		if addr == "" {
 			return nil, fmt.Errorf("the SMTP server is not set: set its host and port in Settings › Integrations")
 		}
-		return adapter.New(addr, c.String("domain", c.SenderDomain), connector.LocalFlavour), nil
+		s := adapter.New(addr, c.String("domain", c.SenderDomain), connector.LocalFlavour)
+		s.Dial = c.Dial
+		return s, nil
 	}}, nil
 }
