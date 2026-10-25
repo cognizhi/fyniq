@@ -52,10 +52,11 @@ interface Draft extends Record<TextKey, string> {
   payment_terms_days: string;
   discount_percent: string; // a supplier's early-payment discount (FR-AP-13): blank for none
   discount_days: string;
+  customer_group_id: string; // a customer's reminder schedule (FR-AR-08): blank for the standard one
   active: boolean;
 }
 
-const blank: Draft = { legal_name: "", uen_or_tax_id: "", billing_email: "", remittance_email: "", phone: "", country: "SG", tax_residence: "", currency: "SGD", peppol_id: "", default_gst_code: "", address: "", customer: true, vendor: false, payment_terms_days: "", discount_percent: "", discount_days: "", active: true };
+const blank: Draft = { legal_name: "", uen_or_tax_id: "", billing_email: "", remittance_email: "", phone: "", country: "SG", tax_residence: "", currency: "SGD", peppol_id: "", default_gst_code: "", address: "", customer: true, vendor: false, payment_terms_days: "", discount_percent: "", discount_days: "", customer_group_id: "", active: true };
 
 function draftOf(c: Contact): Draft {
   const s = (v: string | undefined) => v ?? "";
@@ -74,6 +75,7 @@ function draftOf(c: Contact): Draft {
     customer: c.customer,
     vendor: c.vendor,
     payment_terms_days: c.payment_terms_days === undefined ? "" : String(c.payment_terms_days),
+    customer_group_id: s(c.customer_group_id),
     discount_percent: s(c.discount_percent),
     discount_days: c.discount_days === undefined ? "" : String(c.discount_days),
     active: c.active,
@@ -116,6 +118,15 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof Draft, string>>>({});
   const [dupes, setDupes] = useState<Duplicate[] | null>(null);
+  const groups = useQuery({
+    queryKey: ["customer-groups"],
+    enabled: editing !== null,
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/customer-groups", { params: { query: { page_size: 500 } } });
+      if (error) throw error;
+      return data.items ?? [];
+    },
+  });
   const base = isNew ? blank : one.data ? draftOf(one.data.contact) : null;
   const d = draft ?? base;
   const set = (k: keyof Draft, v: string | boolean) => {
@@ -158,6 +169,7 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
         body.discount_percent = pct;
         body.discount_days = Number(within);
       }
+      if (d.customer && d.customer_group_id) body.customer_group_id = d.customer_group_id;
       // First a preview, which lists the contacts it may duplicate (FR-CT-04); then, once seen, the add.
       if (dupes === null) {
         const check = await api.POST("/v1/contacts", { params: { header: { Prefer: "return=preview" } }, body: body as never });
@@ -183,6 +195,8 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
     for (const k of [...textFields.map(([k]) => k), "address"] as TextKey[]) if (d[k].trim() !== base[k]) changes[k] = d[k].trim();
     for (const k of ["customer", "vendor", "active"] as const) if (d[k] !== base[k]) changes[k] = d[k];
     if (terms !== base.payment_terms_days) changes.payment_terms_days = terms ? Number(terms) : -1; // -1 clears it
+    const group = d.customer ? d.customer_group_id : "";
+    if (group !== base.customer_group_id) changes.customer_group_id = group; // "" takes it out of its group
     if (pct !== base.discount_percent || within !== base.discount_days) {
       changes.discount_percent = pct; // "" with -1 clears the discount
       changes.discount_days = within ? Number(within) : -1;
@@ -260,6 +274,26 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
           <div className="fy-form fy-form--2">
             {textFields.map(([k, label, help]) => input(k, label, help, k.endsWith("email") ? "email" : "text"))}
             {input("payment_terms_days", "Payment terms (days)", "Empty: the organisation's default")}
+            {d.customer && (
+              <div className="fy-field">
+                <label className="fy-label" htmlFor={`${id}-group`}>
+                  {helpText("contact.customer-group").label}
+                </label>
+                <select className="fy-select" id={`${id}-group`} value={d.customer_group_id} onChange={(e) => set("customer_group_id", e.target.value)} aria-describedby={`${id}-group-help`}>
+                  <option value="">None: the standard reminders</option>
+                  {(groups.data ?? [])
+                    .filter((g) => g.active || g.id === d.customer_group_id)
+                    .map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                </select>
+                <span className="fy-help" id={`${id}-group-help`}>
+                  {helpText("contact.customer-group").tooltip}
+                </span>
+              </div>
+            )}
             {d.vendor && (
               <>
                 {input("discount_percent", "Early-payment discount (%)", "A supplier's discount for paying early, such as 2")}

@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:25325b48b4c9a7bc387964b773e063a2164339df092b3ab1932bc500e33f71e5
+  - docs/user-guide/invoices.md sha256:af4bb30fdd1e0e1e4131a3b407e4be11c46fa3949403557f97995a0c8c4d08a1
 data_class: general
 taint: trusted
 status: draft
@@ -58,6 +58,7 @@ aliases:
 
 - **Sales → Invoices** keeps each invoice to a customer, with its lines and GST, and each credit note; issuing an invoice adds its total to what the customer owes the company.
 - Its states are separate: **Draft**, **Awaiting approval** or **Rejected**; **Issued** or **Voided**; **Sent**, **Delivered**, **Viewed** or **Bounced** from its latest email; **Part paid**, **Paid** or **Written off**; and **Overdue** once its due date has passed while it is not paid in full.
+- Reminders of overdue invoices and statements of account are under **Sales → Statements and reminders** ([[sales.statements]]).
 - A Bookkeeper, an AR specialist or an Accountant prepares invoices; an AR specialist or an Accountant issues, emails, voids and edits them; the Owner, the Auditor and the Tax agent can see them.
 
 (src: docs/user-guide/invoices.md#what-it-is)
@@ -105,6 +106,12 @@ aliases:
 - Set to **Issue and send** under **What the scheduler does**, the scheduler issues and emails each invoice itself, but only once another person (not the one who wrote the lines) approves the content through **Ask for approval**; each is listed for the weekly review, and a change of content needs the approval again.
 
 (src: docs/user-guide/invoices.md#invoices-the-scheduler-issues-and-sends)
+
+## What the customer sees
+
+- The email's secure link opens the invoice or quote without signing in: the document as its PDF shows it, the amount due or total, and **Download the PDF**; on a sent quote still valid, the customer accepts with their name or declines, with a comment kept as a record ([[sales.quotes]]). It shows nothing else, works until it ends or is revoked, and the first opening marks the invoice **Viewed**.
+
+(src: docs/user-guide/invoices.md#what-the-customer-sees)
 
 ## Approval
 

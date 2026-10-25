@@ -95,6 +95,39 @@ describe("a supplier's early-payment discount", () => {
   });
 });
 
+// req: FR-AR-08
+describe("a customer's reminder group", () => {
+  it("puts the customer in an active group, and takes it out to the standard schedule", async () => {
+    const seen = answer({
+      "GET /v1/contacts": { status: 200, body: { items: [northwind] } },
+      "GET /v1/contacts/c1": { status: 200, body: { ...northwind, customer_group_id: "g2" }, headers: { ETag: '"1"' } },
+      "GET /v1/customer-groups": {
+        status: 200,
+        body: {
+          standard_reminder_days: [-3, 0, 7, 30],
+          items: [
+            { id: "g1", name: "Key accounts", reminder_days: [0, 14], active: true, version: 1 },
+            { id: "g2", name: "Old schedule", reminder_days: [30], active: false, version: 2 },
+            { id: "g3", name: "Retired", reminder_days: [], active: false, version: 1 },
+          ],
+        },
+      },
+      "PATCH /v1/contacts/c1": { status: 200, body: { ...northwind, version: 2 } },
+    });
+    renderPage(Contacts, { path: "/contacts", session: bookkeeper });
+    fireEvent.click(await screen.findByRole("button", { name: "Change Northwind Analytics Pte Ltd" }));
+    const dialog = await screen.findByRole("dialog");
+    await within(dialog).findByRole("option", { name: "Key accounts" });
+    const group = within(dialog).getByLabelText("Customer group") as HTMLSelectElement;
+    // Its own inactive group stays shown; another inactive one is offered to no one.
+    expect(group.value).toBe("g2");
+    expect(within(dialog).queryByRole("option", { name: "Retired" })).toBeNull();
+    fireEvent.change(group, { target: { value: "" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save the contact" }));
+    await waitFor(() => expect(seen.find((x) => x.method === "PATCH")?.body).toEqual({ customer_group_id: "" }));
+  });
+});
+
 const consult = { id: "i1", code: "CONSULT", name: "Consulting", type: "service", unit: "hour", gst_code: "SR", revenue_account_id: "r1", prices: [{ currency: "SGD", unit_price: "180.00" }], active: true, version: 1 };
 
 // req: FR-ITM-01

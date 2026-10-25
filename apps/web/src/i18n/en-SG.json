@@ -843,6 +843,54 @@
     "recurring-invoice.ask-approval": {
       "label": "Ask for approval",
       "tooltip": "Another person approves this content; until then, and after any change, the scheduler makes drafts."
+    },
+    "sales.statements-reminders": {
+      "label": "Statements and reminders",
+      "tooltip": "Chase what customers owe: the reminders due, a customer's statement of account, and the reminder schedules."
+    },
+    "sales.reminders": {
+      "label": "Reminders due",
+      "tooltip": "The reminders due today, each waiting to be sent or skipped while payments are recorded by hand."
+    },
+    "reminder.send": {
+      "label": "Send",
+      "tooltip": "Email the reminder now, with the invoice's PDF and a secure link."
+    },
+    "reminder.skip": {
+      "label": "Skip",
+      "tooltip": "Send nothing this time; the next reminder in the schedule comes when it is due."
+    },
+    "sales.statements": {
+      "label": "Statement of account",
+      "tooltip": "A customer's statement for a period: the balance brought forward, each document, and the balance due with its ageing."
+    },
+    "statement.show": {
+      "label": "Show it",
+      "tooltip": "Work the statement out for the customer and period, without keeping anything."
+    },
+    "statement.make": {
+      "label": "Make and email",
+      "tooltip": "Keep the statement as it is, numbered, and email it to the customer with its PDF."
+    },
+    "statement.make-only": {
+      "label": "Make it",
+      "tooltip": "Keep the statement as it is, numbered, for an AR specialist or an Accountant to email."
+    },
+    "sales.reminder-schedules": {
+      "label": "Reminder schedules",
+      "tooltip": "When customers' open invoices are due a reminder: the standard schedule, and each customer group's."
+    },
+    "contact.customer-group": {
+      "label": "Customer group",
+      "tooltip": "The reminder schedule this customer follows; none for the standard one: 3 days before the due date, on it, and 7 and 30 days after."
+    },
+    "public.document": {
+      "label": "Your document",
+      "tooltip": "A quote or invoice sent to you, opened through its secure link: no sign-in needed."
+    },
+    "public.download": {
+      "label": "Download the PDF",
+      "tooltip": "Save the document as the sender issued it, to keep for your records."
     }
   }
 }
