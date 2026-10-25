@@ -151,6 +151,59 @@ balance | minor_units | smallint | not null |
 balance | amount | numeric(20,4) | not null | 
 balance | base_amount | numeric(20,4) | not null | 
 balance | line_count | bigint | not null | 
+bank_gap | organisation_id | uuid | not null | current_org()
+bank_gap | id | uuid | not null | uuidv7()
+bank_gap | money_account_id | uuid | not null | 
+bank_gap | statement_id | uuid | not null | 
+bank_gap | after_date | date | null | 
+bank_gap | before_date | date | not null | 
+bank_gap | currency | text | not null | 
+bank_gap | minor_units | smallint | not null | 
+bank_gap | expected_opening | numeric(20,4) | null | 
+bank_gap | found_opening | numeric(20,4) | null | 
+bank_gap | found_at | timestamp with time zone | not null | 
+bank_gap | resolved_by | text | null | 
+bank_gap | resolved_at | timestamp with time zone | null | 
+bank_gap | resolution | text | null | 
+bank_line | organisation_id | uuid | not null | current_org()
+bank_line | id | uuid | not null | uuidv7()
+bank_line | statement_id | uuid | not null | 
+bank_line | money_account_id | uuid | not null | 
+bank_line | position | integer | not null | 
+bank_line | booking_date | date | not null | 
+bank_line | value_date | date | null | 
+bank_line | amount | numeric(20,4) | not null | 
+bank_line | currency | text | not null | 
+bank_line | minor_units | smallint | not null | 
+bank_line | reference | text | null | 
+bank_line | counterparty | text | null | 
+bank_line | description | text | null | 
+bank_line | running_balance | numeric(20,4) | null | 
+bank_line | fingerprint | text | not null | 
+bank_line | status | text | not null | 
+bank_line | duplicate_of | uuid | null | 
+bank_line | status_by | text | not null | 
+bank_line | status_at | timestamp with time zone | not null | 
+bank_line | created_xact | bigint | not null | ((pg_current_xact_id())::text)::bigint
+bank_line | version | integer | not null | 1
+bank_statement | organisation_id | uuid | not null | current_org()
+bank_statement | id | uuid | not null | uuidv7()
+bank_statement | money_account_id | uuid | not null | 
+bank_statement | source | text | not null | 
+bank_statement | format | text | not null | 
+bank_statement | parser_version | text | not null | 
+bank_statement | period_from | date | not null | 
+bank_statement | period_to | date | not null | 
+bank_statement | currency | text | not null | 
+bank_statement | minor_units | smallint | not null | 
+bank_statement | opening_balance | numeric(20,4) | null | 
+bank_statement | closing_balance | numeric(20,4) | null | 
+bank_statement | line_count | integer | not null | 
+bank_statement | file_ref | text | null | 
+bank_statement | connector_id | uuid | null | 
+bank_statement | imported_by | text | not null | 
+bank_statement | imported_at | timestamp with time zone | not null | 
+bank_statement | created_xact | bigint | not null | ((pg_current_xact_id())::text)::bigint
 bill_payment_plan | organisation_id | uuid | not null | current_org()
 bill_payment_plan | id | uuid | not null | uuidv7()
 bill_payment_plan | bill_id | uuid | not null | 
@@ -601,6 +654,32 @@ member_invitation | expires_at | timestamp with time zone | not null |
 member_invitation | accepted_at | timestamp with time zone | null | 
 member_invitation | accepted_by | uuid | null | 
 member_invitation | withdrawn_at | timestamp with time zone | null | 
+money_account | organisation_id | uuid | not null | current_org()
+money_account | id | uuid | not null | uuidv7()
+money_account | account_id | uuid | not null | 
+money_account | kind | text | not null | 
+money_account | name | text | not null | 
+money_account | institution | text | null | 
+money_account | identifier | text | null | 
+money_account | currency | text | not null | 
+money_account | opened_on | date | null | 
+money_account | closed_on | date | null | 
+money_account | created_by | text | not null | 
+money_account | created_at | timestamp with time zone | not null | 
+money_account | changed_by | text | not null | 
+money_account | changed_at | timestamp with time zone | not null | 
+money_account | version | integer | not null | 1
+money_account_source | organisation_id | uuid | not null | current_org()
+money_account_source | id | uuid | not null | uuidv7()
+money_account_source | money_account_id | uuid | not null | 
+money_account_source | kind | text | not null | 
+money_account_source | connector_id | uuid | null | 
+money_account_source | senders | text[] | not null | '{}'::text[]
+money_account_source | report_format | text | null | 
+money_account_source | mapping_id | uuid | null | 
+money_account_source | from_date | date | not null | 
+money_account_source | set_by | text | not null | 
+money_account_source | set_at | timestamp with time zone | not null | 
 notification | organisation_id | uuid | not null | current_org()
 notification | id | uuid | not null | uuidv7()
 notification | event_id | uuid | not null | 
@@ -886,6 +965,17 @@ sod_override | reason | text | not null |
 sod_override | request_id | uuid | not null | 
 sod_override | created_by | uuid | not null | 
 sod_override | created_at | timestamp with time zone | not null | 
+statement_mapping | organisation_id | uuid | not null | current_org()
+statement_mapping | id | uuid | not null | uuidv7()
+statement_mapping | name | text | not null | 
+statement_mapping | institution | text | null | 
+statement_mapping | format | text | not null | 
+statement_mapping | spec | jsonb | not null | 
+statement_mapping | created_by | text | not null | 
+statement_mapping | created_at | timestamp with time zone | not null | 
+statement_mapping | changed_by | text | not null | 
+statement_mapping | changed_at | timestamp with time zone | not null | 
+statement_mapping | version | integer | not null | 1
 statutory_pack_activation | organisation_id | uuid | not null | current_org()
 statutory_pack_activation | id | uuid | not null | uuidv7()
 statutory_pack_activation | version_id | text | not null | 
@@ -1267,6 +1357,85 @@ balance | balance_organisation_id_not_null | NOT NULL organisation_id
 balance | balance_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)
 balance | balance_period_id_not_null | NOT NULL period_id
 balance | balance_pkey | PRIMARY KEY (organisation_id, id)
+bank_gap | bank_gap_account_fkey | FOREIGN KEY (organisation_id, money_account_id) REFERENCES money_account(organisation_id, id)
+bank_gap | bank_gap_amounts_scale | CHECK (((expected_opening <> 'NaN'::numeric) AND (expected_opening = trunc(expected_opening, (minor_units)::integer)) AND (found_opening <> 'NaN'::numeric) AND (found_opening = trunc(found_opening, (minor_units)::integer))))
+bank_gap | bank_gap_before_date_not_null | NOT NULL before_date
+bank_gap | bank_gap_by_form | CHECK ((resolved_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+bank_gap | bank_gap_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
+bank_gap | bank_gap_currency_not_null | NOT NULL currency
+bank_gap | bank_gap_dates_ordered | CHECK ((before_date >= after_date))
+bank_gap | bank_gap_found_at_not_null | NOT NULL found_at
+bank_gap | bank_gap_id_not_null | NOT NULL id
+bank_gap | bank_gap_minor_units_not_null | NOT NULL minor_units
+bank_gap | bank_gap_money_account_id_not_null | NOT NULL money_account_id
+bank_gap | bank_gap_organisation_id_not_null | NOT NULL organisation_id
+bank_gap | bank_gap_pkey | PRIMARY KEY (organisation_id, id)
+bank_gap | bank_gap_resolution_length | CHECK (((length(btrim(resolution)) >= 1) AND (length(btrim(resolution)) <= 500)))
+bank_gap | bank_gap_resolved_whole | CHECK ((((resolved_by IS NULL) = (resolved_at IS NULL)) AND ((resolved_by IS NULL) = (resolution IS NULL))))
+bank_gap | bank_gap_statement_fkey | FOREIGN KEY (organisation_id, statement_id) REFERENCES bank_statement(organisation_id, id)
+bank_gap | bank_gap_statement_id_not_null | NOT NULL statement_id
+bank_gap | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+bank_line | bank_line_account_fkey | FOREIGN KEY (organisation_id, money_account_id) REFERENCES money_account(organisation_id, id)
+bank_line | bank_line_amount_not_null | NOT NULL amount
+bank_line | bank_line_amount_scale | CHECK (((amount <> 'NaN'::numeric) AND (amount <> (0)::numeric) AND (amount = trunc(amount, (minor_units)::integer))))
+bank_line | bank_line_booking_date_not_null | NOT NULL booking_date
+bank_line | bank_line_by_form | CHECK ((status_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+bank_line | bank_line_counterparty_length | CHECK (((length(counterparty) >= 1) AND (length(counterparty) <= 200)))
+bank_line | bank_line_created_xact_not_null | NOT NULL created_xact
+bank_line | bank_line_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
+bank_line | bank_line_currency_not_null | NOT NULL currency
+bank_line | bank_line_description_length | CHECK (((length(description) >= 1) AND (length(description) <= 500)))
+bank_line | bank_line_duplicate_fkey | FOREIGN KEY (organisation_id, duplicate_of) REFERENCES bank_line(organisation_id, id)
+bank_line | bank_line_duplicate_of | CHECK (((status = 'possible_duplicate'::text) <= (duplicate_of IS NOT NULL)))
+bank_line | bank_line_fingerprint_form | CHECK ((fingerprint ~ '^[0-9a-f]{64}$'::text))
+bank_line | bank_line_fingerprint_not_null | NOT NULL fingerprint
+bank_line | bank_line_id_not_null | NOT NULL id
+bank_line | bank_line_minor_units_not_null | NOT NULL minor_units
+bank_line | bank_line_money_account_id_not_null | NOT NULL money_account_id
+bank_line | bank_line_organisation_id_not_null | NOT NULL organisation_id
+bank_line | bank_line_pkey | PRIMARY KEY (organisation_id, id)
+bank_line | bank_line_position_key | UNIQUE (organisation_id, statement_id, "position")
+bank_line | bank_line_position_not_null | NOT NULL "position"
+bank_line | bank_line_position_positive | CHECK (("position" >= 1))
+bank_line | bank_line_reference_length | CHECK (((length(reference) >= 1) AND (length(reference) <= 140)))
+bank_line | bank_line_running_balance_scale | CHECK (((running_balance <> 'NaN'::numeric) AND (running_balance = trunc(running_balance, (minor_units)::integer))))
+bank_line | bank_line_statement_fkey | FOREIGN KEY (organisation_id, statement_id) REFERENCES bank_statement(organisation_id, id)
+bank_line | bank_line_statement_id_not_null | NOT NULL statement_id
+bank_line | bank_line_status_at_not_null | NOT NULL status_at
+bank_line | bank_line_status_by_not_null | NOT NULL status_by
+bank_line | bank_line_status_known | CHECK ((status = ANY (ARRAY['unreconciled'::text, 'possible_duplicate'::text, 'categorised'::text, 'matched'::text, 'transferred'::text, 'suspense'::text, 'excluded'::text])))
+bank_line | bank_line_status_not_null | NOT NULL status
+bank_line | bank_line_version_not_null | NOT NULL version
+bank_line | bank_line_version_positive | CHECK ((version >= 1))
+bank_line | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+bank_statement | bank_statement_account_fkey | FOREIGN KEY (organisation_id, money_account_id) REFERENCES money_account(organisation_id, id)
+bank_statement | bank_statement_balances_scale | CHECK (((opening_balance <> 'NaN'::numeric) AND (opening_balance = trunc(opening_balance, (minor_units)::integer)) AND (closing_balance <> 'NaN'::numeric) AND (closing_balance = trunc(closing_balance, (minor_units)::integer))))
+bank_statement | bank_statement_by_form | CHECK ((imported_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+bank_statement | bank_statement_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+bank_statement | bank_statement_connector_source | CHECK (((source = 'connector'::text) = (connector_id IS NOT NULL)))
+bank_statement | bank_statement_created_xact_not_null | NOT NULL created_xact
+bank_statement | bank_statement_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
+bank_statement | bank_statement_currency_not_null | NOT NULL currency
+bank_statement | bank_statement_file_ref_form | CHECK ((((length(file_ref) >= 1) AND (length(file_ref) <= 512)) AND (file_ref ~ '^[A-Za-z0-9:/_.-]+$'::text)))
+bank_statement | bank_statement_format_known | CHECK ((format = ANY (ARRAY['csv'::text, 'xlsx'::text, 'ofx'::text, 'camt053'::text, 'mt940'::text, 'mt940_sap'::text, 'api'::text])))
+bank_statement | bank_statement_format_not_null | NOT NULL format
+bank_statement | bank_statement_id_not_null | NOT NULL id
+bank_statement | bank_statement_imported_at_not_null | NOT NULL imported_at
+bank_statement | bank_statement_imported_by_not_null | NOT NULL imported_by
+bank_statement | bank_statement_line_count | CHECK (((line_count >= 0) AND (line_count <= 100000)))
+bank_statement | bank_statement_line_count_not_null | NOT NULL line_count
+bank_statement | bank_statement_minor_units_not_null | NOT NULL minor_units
+bank_statement | bank_statement_money_account_id_not_null | NOT NULL money_account_id
+bank_statement | bank_statement_organisation_id_not_null | NOT NULL organisation_id
+bank_statement | bank_statement_parser_form | CHECK ((parser_version ~ '^[a-z0-9_]+@[0-9]+$'::text))
+bank_statement | bank_statement_parser_version_not_null | NOT NULL parser_version
+bank_statement | bank_statement_period_from_not_null | NOT NULL period_from
+bank_statement | bank_statement_period_ordered | CHECK ((period_to >= period_from))
+bank_statement | bank_statement_period_to_not_null | NOT NULL period_to
+bank_statement | bank_statement_pkey | PRIMARY KEY (organisation_id, id)
+bank_statement | bank_statement_source_known | CHECK ((source = ANY (ARRAY['file'::text, 'email'::text, 'connector'::text])))
+bank_statement | bank_statement_source_not_null | NOT NULL source
+bank_statement | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 bill_payment_plan | bill_payment_plan_bill_fkey | FOREIGN KEY (organisation_id, bill_id) REFERENCES document(organisation_id, id)
 bill_payment_plan | bill_payment_plan_bill_id_not_null | NOT NULL bill_id
 bill_payment_plan | bill_payment_plan_id_not_null | NOT NULL id
@@ -1956,6 +2125,51 @@ member_invitation | member_invitation_roles_known | CHECK ((((cardinality(roles)
 member_invitation | member_invitation_roles_not_null | NOT NULL roles
 member_invitation | member_invitation_used_once | CHECK ((((accepted_at IS NULL) = (accepted_by IS NULL)) AND ((accepted_at IS NULL) OR (withdrawn_at IS NULL))))
 member_invitation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+money_account | money_account_account_fkey | FOREIGN KEY (organisation_id, account_id) REFERENCES account(organisation_id, id)
+money_account | money_account_account_id_not_null | NOT NULL account_id
+money_account | money_account_account_key | UNIQUE (organisation_id, account_id)
+money_account | money_account_by_form | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (changed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
+money_account | money_account_changed_at_not_null | NOT NULL changed_at
+money_account | money_account_changed_by_not_null | NOT NULL changed_by
+money_account | money_account_created_at_not_null | NOT NULL created_at
+money_account | money_account_created_by_not_null | NOT NULL created_by
+money_account | money_account_currency_form | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+money_account | money_account_currency_not_null | NOT NULL currency
+money_account | money_account_dates_ordered | CHECK ((closed_on >= opened_on))
+money_account | money_account_id_not_null | NOT NULL id
+money_account | money_account_identifier_form | CHECK (((identifier ~ '^[A-Za-z0-9][A-Za-z0-9 ./-]*$'::text) AND (length(identifier) <= 64)))
+money_account | money_account_institution_length | CHECK (((length(btrim(institution)) >= 1) AND (length(btrim(institution)) <= 120)))
+money_account | money_account_kind_known | CHECK ((kind = ANY (ARRAY['bank'::text, 'card'::text, 'wallet'::text, 'payment_gateway'::text, 'cash'::text])))
+money_account | money_account_kind_not_null | NOT NULL kind
+money_account | money_account_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120)))
+money_account | money_account_name_not_null | NOT NULL name
+money_account | money_account_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+money_account | money_account_organisation_id_not_null | NOT NULL organisation_id
+money_account | money_account_pkey | PRIMARY KEY (organisation_id, id)
+money_account | money_account_version_not_null | NOT NULL version
+money_account | money_account_version_positive | CHECK ((version >= 1))
+money_account | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+money_account_source | money_account_source_account_fkey | FOREIGN KEY (organisation_id, money_account_id) REFERENCES money_account(organisation_id, id)
+money_account_source | money_account_source_by_form | CHECK ((set_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+money_account_source | money_account_source_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+money_account_source | money_account_source_connector_kind | CHECK (((kind = 'connector'::text) = (connector_id IS NOT NULL)))
+money_account_source | money_account_source_email_senders | CHECK (((kind <> 'email'::text) OR (((cardinality(senders) >= 1) AND (cardinality(senders) <= 10)) AND (report_format IS NOT NULL))))
+money_account_source | money_account_source_format_known | CHECK ((report_format = ANY (ARRAY['csv'::text, 'xlsx'::text, 'ofx'::text, 'camt053'::text, 'mt940'::text, 'mt940_sap'::text])))
+money_account_source | money_account_source_from_date_not_null | NOT NULL from_date
+money_account_source | money_account_source_from_key | UNIQUE (organisation_id, money_account_id, from_date)
+money_account_source | money_account_source_id_not_null | NOT NULL id
+money_account_source | money_account_source_kind_known | CHECK ((kind = ANY (ARRAY['file'::text, 'email'::text, 'connector'::text])))
+money_account_source | money_account_source_kind_not_null | NOT NULL kind
+money_account_source | money_account_source_mapping_fkey | FOREIGN KEY (organisation_id, mapping_id) REFERENCES statement_mapping(organisation_id, id)
+money_account_source | money_account_source_mapping_format | CHECK (((mapping_id IS NULL) OR (report_format = ANY (ARRAY['csv'::text, 'xlsx'::text]))))
+money_account_source | money_account_source_money_account_id_not_null | NOT NULL money_account_id
+money_account_source | money_account_source_organisation_id_not_null | NOT NULL organisation_id
+money_account_source | money_account_source_pkey | PRIMARY KEY (organisation_id, id)
+money_account_source | money_account_source_senders_form | CHECK (((cardinality(senders) <= 10) AND (array_to_string(senders, ' '::text) ~ '^([a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]+( [a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]+)*)?$'::text)))
+money_account_source | money_account_source_senders_not_null | NOT NULL senders
+money_account_source | money_account_source_set_at_not_null | NOT NULL set_at
+money_account_source | money_account_source_set_by_not_null | NOT NULL set_by
+money_account_source | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 notification | notification_actionable_not_null | NOT NULL actionable
 notification | notification_created_at_not_null | NOT NULL created_at
 notification | notification_digest_fkey | FOREIGN KEY (organisation_id, digest_id) REFERENCES notification_digest(organisation_id, id)
@@ -2416,6 +2630,26 @@ sod_override | sod_override_team_mode_fkey | FOREIGN KEY (organisation_id, team_
 sod_override | sod_override_team_mode_version_not_null | NOT NULL team_mode_version
 sod_override | sod_override_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
 sod_override | sod_override_user_id_not_null | NOT NULL user_id
+statement_mapping | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+statement_mapping | statement_mapping_by_form | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (changed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
+statement_mapping | statement_mapping_changed_at_not_null | NOT NULL changed_at
+statement_mapping | statement_mapping_changed_by_not_null | NOT NULL changed_by
+statement_mapping | statement_mapping_created_at_not_null | NOT NULL created_at
+statement_mapping | statement_mapping_created_by_not_null | NOT NULL created_by
+statement_mapping | statement_mapping_format_known | CHECK ((format = ANY (ARRAY['csv'::text, 'xlsx'::text])))
+statement_mapping | statement_mapping_format_not_null | NOT NULL format
+statement_mapping | statement_mapping_id_not_null | NOT NULL id
+statement_mapping | statement_mapping_institution_length | CHECK (((length(btrim(institution)) >= 1) AND (length(btrim(institution)) <= 120)))
+statement_mapping | statement_mapping_name_key | UNIQUE (organisation_id, name)
+statement_mapping | statement_mapping_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120)))
+statement_mapping | statement_mapping_name_not_null | NOT NULL name
+statement_mapping | statement_mapping_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+statement_mapping | statement_mapping_organisation_id_not_null | NOT NULL organisation_id
+statement_mapping | statement_mapping_pkey | PRIMARY KEY (organisation_id, id)
+statement_mapping | statement_mapping_spec_not_null | NOT NULL spec
+statement_mapping | statement_mapping_spec_object | CHECK (((jsonb_typeof(spec) = 'object'::text) AND (length((spec)::text) <= 16384)))
+statement_mapping | statement_mapping_version_not_null | NOT NULL version
+statement_mapping | statement_mapping_version_positive | CHECK ((version >= 1))
 statutory_pack_activation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 statutory_pack_activation | statutory_pack_activation_activated_at_not_null | NOT NULL activated_at
 statutory_pack_activation | statutory_pack_activation_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES approval_request(organisation_id, id)
@@ -2608,6 +2842,11 @@ CREATE INDEX announcement_ends ON fyniq.announcement USING btree (organisation_i
 CREATE INDEX approval_request_by_status ON fyniq.approval_request USING btree (organisation_id, status, requested_at)
 CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisation_id, created_xact, object_type, object_id)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
+CREATE INDEX bank_gap_open ON fyniq.bank_gap USING btree (organisation_id, money_account_id) WHERE (resolved_at IS NULL)
+CREATE INDEX bank_line_account_date ON fyniq.bank_line USING btree (organisation_id, money_account_id, booking_date)
+CREATE INDEX bank_line_fingerprint ON fyniq.bank_line USING btree (organisation_id, fingerprint)
+CREATE INDEX bank_line_queue ON fyniq.bank_line USING btree (organisation_id, money_account_id, booking_date) WHERE (status = ANY (ARRAY['unreconciled'::text, 'possible_duplicate'::text, 'suspense'::text]))
+CREATE INDEX bank_statement_account_period ON fyniq.bank_statement USING btree (organisation_id, money_account_id, period_to)
 CREATE INDEX bill_payment_plan_bill ON fyniq.bill_payment_plan USING btree (organisation_id, bill_id, recorded_at)
 CREATE INDEX capture_sender_latest ON fyniq.capture_sender USING btree (organisation_id, address, decided_at)
 CREATE INDEX close_checklist_entry_period ON fyniq.close_checklist_entry USING btree (organisation_id, period_id, task_key, written_at)
@@ -2676,6 +2915,10 @@ CREATE UNIQUE INDEX audit_event_pkey ON fyniq.audit_event USING btree (organisat
 CREATE UNIQUE INDEX audit_event_seq_key ON fyniq.audit_event USING btree (organisation_id, seq)
 CREATE UNIQUE INDEX balance_key ON fyniq.balance USING btree (organisation_id, account_id, period_id, currency)
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
+CREATE UNIQUE INDEX bank_gap_pkey ON fyniq.bank_gap USING btree (organisation_id, id)
+CREATE UNIQUE INDEX bank_line_pkey ON fyniq.bank_line USING btree (organisation_id, id)
+CREATE UNIQUE INDEX bank_line_position_key ON fyniq.bank_line USING btree (organisation_id, statement_id, "position")
+CREATE UNIQUE INDEX bank_statement_pkey ON fyniq.bank_statement USING btree (organisation_id, id)
 CREATE UNIQUE INDEX bill_payment_plan_pkey ON fyniq.bill_payment_plan USING btree (organisation_id, id)
 CREATE UNIQUE INDEX capture_address_live_owner ON fyniq.capture_address USING btree (organisation_id, COALESCE(user_id, '00000000-0000-0000-0000-000000000000'::uuid)) WHERE (retired_at IS NULL)
 CREATE UNIQUE INDEX capture_address_pkey ON fyniq.capture_address USING btree (organisation_id, id)
@@ -2746,6 +2989,11 @@ CREATE UNIQUE INDEX journal_line_pkey ON fyniq.journal_line USING btree (organis
 CREATE UNIQUE INDEX ledger_revision_pkey ON fyniq.ledger_revision USING btree (organisation_id)
 CREATE UNIQUE INDEX member_invitation_code_key ON fyniq.member_invitation USING btree (organisation_id, code_hash)
 CREATE UNIQUE INDEX member_invitation_pkey ON fyniq.member_invitation USING btree (organisation_id, id)
+CREATE UNIQUE INDEX money_account_account_key ON fyniq.money_account USING btree (organisation_id, account_id)
+CREATE UNIQUE INDEX money_account_identifier ON fyniq.money_account USING btree (organisation_id, identifier, currency) WHERE (identifier IS NOT NULL)
+CREATE UNIQUE INDEX money_account_pkey ON fyniq.money_account USING btree (organisation_id, id)
+CREATE UNIQUE INDEX money_account_source_from_key ON fyniq.money_account_source USING btree (organisation_id, money_account_id, from_date)
+CREATE UNIQUE INDEX money_account_source_pkey ON fyniq.money_account_source USING btree (organisation_id, id)
 CREATE UNIQUE INDEX notification_digest_pkey ON fyniq.notification_digest USING btree (organisation_id, id)
 CREATE UNIQUE INDEX notification_event_pkey ON fyniq.notification_event USING btree (organisation_id, id)
 CREATE UNIQUE INDEX notification_once ON fyniq.notification USING btree (organisation_id, event_id, user_id)
@@ -2791,6 +3039,8 @@ CREATE UNIQUE INDEX sales_reminder_once ON fyniq.sales_reminder USING btree (org
 CREATE UNIQUE INDEX sales_reminder_pkey ON fyniq.sales_reminder USING btree (organisation_id, id)
 CREATE UNIQUE INDEX sod_override_once ON fyniq.sod_override USING btree (organisation_id, request_id, user_id, conflict)
 CREATE UNIQUE INDEX sod_override_pkey ON fyniq.sod_override USING btree (organisation_id, id)
+CREATE UNIQUE INDEX statement_mapping_name_key ON fyniq.statement_mapping USING btree (organisation_id, name)
+CREATE UNIQUE INDEX statement_mapping_pkey ON fyniq.statement_mapping USING btree (organisation_id, id)
 CREATE UNIQUE INDEX statutory_pack_activation_pkey ON fyniq.statutory_pack_activation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX statutory_pack_activation_version_key ON fyniq.statutory_pack_activation USING btree (organisation_id, version_id)
 CREATE UNIQUE INDEX statutory_pack_row_pkey ON fyniq.statutory_pack_row USING btree (version_id, pinned, table_name, row_no)
@@ -2821,6 +3071,7 @@ CREATE CONSTRAINT TRIGGER journal_line_base_only AFTER INSERT ON fyniq.journal_l
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('allocation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bank_statement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_statement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bill_payment_plan DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'bill_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.capture_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_sender', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_entry', 'id')
@@ -2834,6 +3085,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version D
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'message_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_sender', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.money_account_source DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('money_account', 'money_account_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.notification_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('notification_event', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.notification_preference DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('notification_preference', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.opening_balance DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
@@ -2862,6 +3114,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounti
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.announcement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('announcement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_gap DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_gap', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.capture_address DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_address', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.customer_group DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('customer_group', 'id')
@@ -2876,6 +3129,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.member_invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('member_invitation', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.money_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('money_account', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation', 'organisation_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation_connector DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_connector', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
@@ -2883,9 +3137,11 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurrin
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_journal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('role_assignment', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.statement_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statement_mapping', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_installation_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin_grant DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_grant_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.user_membership DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('user_membership', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER UPDATE ON fyniq.bank_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_line', 'id')
 CREATE TRIGGER account_guard BEFORE INSERT OR UPDATE ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_guard()
 CREATE TRIGGER accounting_framework_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_framework FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('framework', 'confirmed')
 CREATE TRIGGER accounting_policy_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_policy FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('policy', 'approved')
@@ -2906,6 +3162,9 @@ CREATE TRIGGER audit_chain_no_truncate BEFORE TRUNCATE ON fyniq.audit_chain FOR 
 CREATE TRIGGER audit_event_append BEFORE INSERT ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_event_append()
 CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON fyniq.audit_event FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER bank_gap_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_gap FOR EACH ROW EXECUTE FUNCTION bank_gap_guard()
+CREATE TRIGGER bank_line_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_line FOR EACH ROW EXECUTE FUNCTION bank_line_guard()
+CREATE TRIGGER bank_statement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_statement FOR EACH ROW EXECUTE FUNCTION bank_statement_guard()
 CREATE TRIGGER bill_payment_plan_immutable BEFORE DELETE OR UPDATE ON fyniq.bill_payment_plan FOR EACH ROW EXECUTE FUNCTION bill_payment_plan_immutable()
 CREATE TRIGGER capture_address_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.capture_address FOR EACH ROW EXECUTE FUNCTION capture_address_guard()
 CREATE TRIGGER capture_address_no_truncate BEFORE TRUNCATE ON fyniq.capture_address FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -2978,6 +3237,8 @@ CREATE TRIGGER last_owner_guard BEFORE UPDATE OF revoked_at ON fyniq.role_assign
 CREATE TRIGGER ledger_revision_guard BEFORE DELETE OR UPDATE ON fyniq.ledger_revision FOR EACH ROW EXECUTE FUNCTION ledger_revision_guard()
 CREATE TRIGGER member_invitation_guard BEFORE UPDATE ON fyniq.member_invitation FOR EACH ROW EXECUTE FUNCTION member_invitation_guard()
 CREATE TRIGGER membership_guard BEFORE INSERT OR UPDATE ON fyniq.user_membership FOR EACH ROW EXECUTE FUNCTION membership_guard()
+CREATE TRIGGER money_account_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.money_account FOR EACH ROW EXECUTE FUNCTION money_account_guard()
+CREATE TRIGGER money_account_source_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.money_account_source FOR EACH ROW EXECUTE FUNCTION money_account_source_guard()
 CREATE TRIGGER notification_digest_guard BEFORE DELETE OR UPDATE ON fyniq.notification_digest FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER notification_digest_no_truncate BEFORE TRUNCATE ON fyniq.notification_digest FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER notification_event_guard BEFORE DELETE OR UPDATE ON fyniq.notification_event FOR EACH ROW EXECUTE FUNCTION notification_event_guard()
@@ -3031,6 +3292,7 @@ CREATE TRIGGER scheduled_issue_fence BEFORE INSERT OR UPDATE ON fyniq.document_s
 CREATE TRIGGER scheduled_issue_fence BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER sod_override_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.sod_override FOR EACH ROW EXECUTE FUNCTION sod_override_guard()
 CREATE TRIGGER statement_guard BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN ((new.type = 'statement'::text)) EXECUTE FUNCTION statement_guard()
+CREATE TRIGGER statement_mapping_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.statement_mapping FOR EACH ROW EXECUTE FUNCTION statement_mapping_guard()
 CREATE TRIGGER statutory_pack_activation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.statutory_pack_activation FOR EACH ROW EXECUTE FUNCTION statutory_pack_activation_guard()
 CREATE TRIGGER statutory_pack_row_immutable BEFORE DELETE OR UPDATE ON fyniq.statutory_pack_row FOR EACH ROW EXECUTE FUNCTION statutory_pack_immutable()
 CREATE TRIGGER statutory_pack_version_immutable BEFORE DELETE OR UPDATE ON fyniq.statutory_pack_version FOR EACH ROW EXECUTE FUNCTION statutory_pack_immutable()
@@ -3055,6 +3317,9 @@ approval_signature | tenant_isolation | * | (organisation_id = current_org()) | 
 audit_chain | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+bank_gap | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+bank_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+bank_statement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bill_payment_plan | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_address | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_sender | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -3088,6 +3353,8 @@ journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (orga
 journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 member_invitation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+money_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+money_account_source | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 notification | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 notification_digest | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 notification_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -3116,6 +3383,7 @@ review_log_review | tenant_isolation | * | (organisation_id = current_org()) | (
 role_assignment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 sales_reminder | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 sod_override | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+statement_mapping | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 statutory_pack_activation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 team_mode | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 user_membership | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -3145,6 +3413,9 @@ audit_chain_guard() → trigger | security invoker | v | search_path=pg_catalog,
 audit_event_append() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b28a8a36f47d380d03f4120d6fab3ae
 audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d06777cbb7f0bd4dfb455fd25fe4970
 balance_differences() → TABLE(account_id uuid, period_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 3fb15f23f1568ac9a4288b7dced1e16e
+bank_gap_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aa70c7f4e8b3f508860e4983c5813b44
+bank_line_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d8b48d4418d8aca35f08e24805b98378
+bank_statement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2375aff85db5cee60bba8eea6a3b5004
 beat(p_name text, p_at timestamp with time zone, p_detail text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 464af91fa7b0d569c10c9b291c9d6460
 bill_payment_plan_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d53bcb2c3cc4abaeb7eb39ce991bc40
 bootstrap_installation_connectors(p_rows jsonb, p_at timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | aaf122d42b55f7004f7bf7ec42326134
@@ -3225,6 +3496,8 @@ member_emails() → TABLE(user_id uuid, email text) | security definer | s | sea
 member_invitation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bbbd3cfc69b3ef2e3f033c058258160c
 member_names() → TABLE(user_id uuid, display_name text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9cbac1cf633afffdb29757fcd8b4615f
 membership_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 128d9c99c0ed6f6f65e25de8d48962e4
+money_account_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e476d7ba9a85e485d5ab2f1665b4c59c
+money_account_source_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8171a26dc6379c626b612b8db542d1b9
 notification_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0f2b969415ae5bd9d1ebfa65933ad19e
 notification_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d9d3ebc8e803ce5555a7d2b708d60ba
 notification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cf1b2a8e993363d09a3a57e923c66929
@@ -3276,6 +3549,7 @@ start_session(p_hash bytea, p_issuer text, p_subject text, p_provider text, p_no
 start_session_from(p_hash bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone, p_expires timestamp with time zone, p_step_up_at timestamp with time zone, p_user_agent text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1cf88db937e5114212c27309fb2c56ba
 started_job_slot(p_job text, p_slot timestamp with time zone, p_execution text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7756c126ccf9097216eb5bc9be493cd7
 statement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2f57d5f472d19b821ddeea1e5123d676
+statement_mapping_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 29d615528a6b2d6d1b5a1b34b7c9c575
 statutory_pack_activation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7ef02590dc3dd32325e6222bb4d1789d
 statutory_pack_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c9f66a7d4fd181c1348790e46eaba6d7
 super_admin_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | dc4916e4ee7460c18329392b923b6a4a

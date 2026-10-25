@@ -19,7 +19,7 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 
 ## 2. The store
 
-- [ ] 2.1 Money accounts, statements and lines (design D1, D2):
+- [x] 2.1 Money accounts, statements and lines (design D1, D2):
   - migrations for `money_account` (one per chart money account), `money_account_source` (effective-dated),
     `statement_mapping`, `bank_statement`, `bank_line` and `bank_gap`, each with `organisation_id`,
     `FORCE ROW LEVEL SECURITY`, a guard trigger (facts immutable, status forward only) with its `FY` codes, grants
@@ -28,6 +28,9 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   - Tests: lifecycle and attack tests (change a line's amount, rewind a status, read another organisation's lines,
     delete a statement) in `internal/adapters/postgres`. `// req: FR-BNK-01`, `// req: FR-BNK-04`, `// req: INV-06`,
     `// req: QA-ENG-05`
+  (25 Oct 2026: migration 000144, `FY216`–`FY221`; `storage.Banking` and its adapter; no `NOT VALID` constraint, so no
+  validating migration. A statement's import event stands for its lines, which arrive only in its transaction; each
+  later status change is audited. Proved by `TestBankingStoreKeepsWhatTheBankSaid` and the NaN attacks)
 - [ ] 2.2 Rules, matches, transfers, signals, auto-reconciliations and reconciliations (design D5 to D10):
   - migrations for `bank_rule`, `bank_match`, `bank_transfer`, `bank_signal`, `auto_reconciliation` and
     `bank_reconciliation`, with the same tenancy, guards, grants and audit; a signed-off reconciliation is

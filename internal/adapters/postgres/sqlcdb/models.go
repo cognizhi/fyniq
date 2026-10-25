@@ -200,6 +200,68 @@ type FyniqBalance struct {
 	LineCount      int64
 }
 
+type FyniqBankGap struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	MoneyAccountID  uuid.UUID
+	StatementID     uuid.UUID
+	AfterDate       pgtype.Date
+	BeforeDate      time.Time
+	Currency        string
+	MinorUnits      int16
+	ExpectedOpening *string
+	FoundOpening    *string
+	FoundAt         time.Time
+	ResolvedBy      *string
+	ResolvedAt      *time.Time
+	Resolution      *string
+}
+
+type FyniqBankLine struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	StatementID    uuid.UUID
+	MoneyAccountID uuid.UUID
+	Position       int32
+	BookingDate    time.Time
+	ValueDate      pgtype.Date
+	Amount         string
+	Currency       string
+	MinorUnits     int16
+	Reference      *string
+	Counterparty   *string
+	Description    *string
+	RunningBalance *string
+	Fingerprint    string
+	Status         string
+	DuplicateOf    *uuid.UUID
+	StatusBy       string
+	StatusAt       time.Time
+	CreatedXact    int64
+	Version        int32
+}
+
+type FyniqBankStatement struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	MoneyAccountID uuid.UUID
+	Source         string
+	Format         string
+	ParserVersion  string
+	PeriodFrom     time.Time
+	PeriodTo       time.Time
+	Currency       string
+	MinorUnits     int16
+	OpeningBalance *string
+	ClosingBalance *string
+	LineCount      int32
+	FileRef        *string
+	ConnectorID    *uuid.UUID
+	ImportedBy     string
+	ImportedAt     time.Time
+	CreatedXact    int64
+}
+
 type FyniqBillPaymentPlan struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -794,6 +856,38 @@ type FyniqMemberInvitation struct {
 	WithdrawnAt    *time.Time
 }
 
+type FyniqMoneyAccount struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	AccountID      uuid.UUID
+	Kind           string
+	Name           string
+	Institution    *string
+	Identifier     *string
+	Currency       string
+	OpenedOn       pgtype.Date
+	ClosedOn       pgtype.Date
+	CreatedBy      string
+	CreatedAt      time.Time
+	ChangedBy      string
+	ChangedAt      time.Time
+	Version        int32
+}
+
+type FyniqMoneyAccountSource struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	MoneyAccountID uuid.UUID
+	Kind           string
+	ConnectorID    *uuid.UUID
+	Senders        []string
+	ReportFormat   *string
+	MappingID      *uuid.UUID
+	FromDate       time.Time
+	SetBy          string
+	SetAt          time.Time
+}
+
 type FyniqNotification struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -1161,6 +1255,20 @@ type FyniqSodOverride struct {
 	RequestID       uuid.UUID
 	CreatedBy       uuid.UUID
 	CreatedAt       time.Time
+}
+
+type FyniqStatementMapping struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Name           string
+	Institution    *string
+	Format         string
+	Spec           []byte
+	CreatedBy      string
+	CreatedAt      time.Time
+	ChangedBy      string
+	ChangedAt      time.Time
+	Version        int32
 }
 
 type FyniqStatutoryPackActivation struct {
