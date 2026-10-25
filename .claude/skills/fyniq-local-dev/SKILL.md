@@ -61,7 +61,7 @@ check for anything the substitute cannot prove (risk R17).
 | *(default)* `core` | postgres, hydra, gcs, mailpit, api (with the local sign-in page), ai, mcp, worker, executor, web (Vite in `make dev`, the image in `make up`), caddy |
 | `obs` | otel-collector, jaeger |
 | `scan` | clamav |
-| `partners` | prism (Peppol AP, bank), stripe-mock |
+| `partners` | One Prism mock per partner document in `contracts/partners/` (today `partner-example-bank` on 4010, the template); each connector adds its partner's document and service (`contracts/partners/README.md`). Prism runs from the web build's pinned Node at an exact version, as it has no multi-platform image (NFR-IMG-08), its package cached in the `prism-npm` volume; `TestEveryPartnerDocumentIsMocked` keeps documents and services in step. stripe-mock arrives with `p1-payment-providers` |
 | `pubsub` (P2) | Pub/Sub emulator |
 
 Our own services always run with `read_only: true`, `user: "65532:65532"`, `cap_drop: [ALL]`

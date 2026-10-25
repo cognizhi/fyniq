@@ -70,6 +70,20 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  # Partner API mocks (§12.8, p1-connector-framework task 8.1): Prism answers at contract level from a partner's OpenAPI
+  # document in contracts/partners/, one service per document, added with the connector that calls that partner. Prism
+  # publishes no multi-platform image (NFR-IMG-08), so it runs from the web build's pinned Node at an exact version, its
+  # package cached in a volume so later starts need no network. `docker compose --profile partners up`.
+  partner-example-bank:
+    image: node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1
+    profiles: [partners]
+    command: ["npx", "--yes", "@stoplight/prism-cli@5.14.2", "mock", "--host", "0.0.0.0", "--port", "4010", "/partners/example-bank.yaml"]
+    volumes:
+      - ../../contracts/partners:/partners:ro
+      - prism-npm:/root/.npm
+    ports:
+      - "127.0.0.1:${FYNIQ_PARTNER_PORT:-4010}:4010"
+
   gcs:                                        # Cloud Storage JSON API emulator (Bucket Lock is not emulated)
     image: fsouza/fake-gcs-server:1.56@sha256:797ce226d62f947c009dc40246b30cfb456b8473d8241407f9d6f2c04e4d69ef
     command: ["-scheme", "http", "-port", "4443", "-public-host", "localhost:4443", "-backend", "memory"]
@@ -206,4 +220,5 @@ services:
       oauth: { condition: service_started }
 
 volumes:
+  prism-npm:
   pgdata:

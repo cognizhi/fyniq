@@ -284,11 +284,16 @@ secrets or connector traffic (SEC-20).
 
 ## 8. Local mode
 
-- [ ] 8.1 The `partners` Compose profile: Prism, pinned by digest, serving every OpenAPI document in
+- [x] 8.1 The `partners` Compose profile: Prism, pinned by digest, serving every OpenAPI document in
   `contracts/partners/` (with its `README.md`: each connector adds its partner's document with itself).
   - Documented in the `fyniq-local-dev` skill, and `make up` unchanged without the profile.
   - Verified by starting the profile with a sample document in a test, and by `make check`.
   - `// req: platform/local-mode Local edge, email, messaging and partner substitutes`
+  (25 Oct 2026: `partner-example-bank` in the `partners` profile with `contracts/partners/example-bank.yaml`, the
+  template, and `contracts/partners/README.md`. Prism has no multi-platform image (NFR-IMG-08), so it runs at 5.14.2 from
+  the web build's pinned Node, cached in the `prism-npm` volume. Verified by starting the profile here and reading the
+  document's example back from `/accounts`; `TestEveryPartnerDocumentIsMocked` keeps documents and services in step, and
+  `make up` is unchanged)
 
 ## 9. The screens
 
