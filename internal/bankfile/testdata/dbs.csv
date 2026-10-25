@@ -1,0 +1,6 @@
+Account statement
+Account: 072-123456-7
+Transaction Date,Value Date,Reference,Description,Withdrawal (SGD),Deposit (SGD),Balance
+03/10/2025,03/10/2025,BR25100301,"ACME ROBOTICS, INV-0001",,109.00,"1,109.00"
+04/10/2025,04/10/2025,BR25100402,TRANSFER TO WISE,"1,350.00",,-241.00
+,,,,,,

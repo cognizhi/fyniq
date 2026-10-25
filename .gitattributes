@@ -3,3 +3,5 @@
 *.jpg binary
 *.ico binary
 *.woff2 binary
+# Bank statement fixtures keep their bytes as the bank wrote them (CRLF line endings included).
+internal/bankfile/testdata/** -text
