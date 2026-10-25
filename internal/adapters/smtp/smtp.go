@@ -28,6 +28,9 @@ type Sender struct {
 	addr      string // host:port
 	plaintext bool   // the server may be spoken to without TLS
 	domain    string // the Message-ID's domain
+	// Dial connects to the server; nil dials directly. The connector runtime gives the egress guard's (SEC-36), so a
+	// configured host never reaches a private address or the metadata service.
+	Dial func(ctx context.Context, network, addr string) (net.Conn, error)
 }
 
 // New returns a Sender for addr. plaintext allows a server without STARTTLS, for Mailpit in the local stack;
@@ -144,8 +147,12 @@ func mixed(b *strings.Builder, boundary, text string, files []ports.EmailAttachm
 // deliver runs one SMTP transaction. Errors before DATA is accepted are refusals (nothing was taken); an
 // error after it leaves the outcome unknown.
 func (s *Sender) deliver(ctx context.Context, from string, to []string, msg string) error {
-	var d net.Dialer
-	conn, err := d.DialContext(ctx, "tcp", s.addr)
+	dial := s.Dial
+	if dial == nil {
+		var d net.Dialer
+		dial = d.DialContext
+	}
+	conn, err := dial(ctx, "tcp", s.addr)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ports.ErrEmailRefused, err)
 	}

@@ -160,7 +160,13 @@ secrets or connector traffic (SEC-20).
   - Tests `// req: FR-INT-20` G4-096 (`TestDisabledConnectorCommitsNothingNew`, with queued and in-flight work),
     `TestPausedConnectorHoldsItsQueue`, `TestFailoverSkipsAPausedConnector`. `// req: QA-SEC-04` (its
     connector half)
-- [ ] 5.2 The egress guard `internal/egress`:
+  (25 Oct 2026, the runtime: `connector.Runtime` reads the enabled installation connectors in each piece of work's unit of
+  work, never cached; `Mail` gives the enabled adapters in order and every installed one (enabled, paused or disabled) by
+  name to reconcile an earlier attempt; a connector whose secret cannot be read is skipped with the reason. Proved by
+  `TestTheMailOfAPieceOfWorkIsTheEnabledConnectorsInOrder` and `TestTheRuntimeReadsTheConnectorsAtEachPieceOfWork`.
+  **Left:** the email job holding a message without using an attempt when none is enabled, and the G4-096 test through
+  the worker, with task 6.2)
+- [x] 5.2 The egress guard `internal/egress`:
   - an HTTP client and an SMTP dialer that refuse loopback, private, link-local, unique-local and metadata
     addresses and internal names;
   - they dial the checked address, follow no redirect, and limit time and size;
@@ -170,13 +176,18 @@ secrets or connector traffic (SEC-20).
   - Tests `TestEgressRefusals` (the metadata address, loopback, private ranges, an internal name, a redirect
     to one, a name that changes between check and connect), `TestTestActionNeverReturnsTheBody`.
     `// req: SEC-36` (connector traffic), `// req: QA-SEC-04`
-- [ ] 5.3 The connector principal, rate limits and circuit breaker:
+  (25 Oct 2026: `internal/egress`, `connector.Allows` on the consented destinations, the SMTP adapter's `Dial` hook and
+  `Runtime.TestEmail`. Tests: `TestEgressRefusals`, `TestEgressDialsTheAddressItChecked`,
+  `TestEgressFollowsNoRedirectAndBoundsTheAnswer`, `TestTestActionNeverReturnsTheBody`)
+- [x] 5.3 The connector principal, rate limits and circuit breaker:
   - work is audited as `integration:connector/<id>` on behalf of its trigger;
   - per-instance limits and a breaker from the manifest;
   - an open breaker counts as "not accepted" only for sends never handed over.
   - Tests `TestConnectorWorkIsAuditedAsItsOwnPrincipal`, `TestBreakerFailsOverOnlyWhatWasNeverHandedOver`.
     `// req: FR-INT-27`
-- [ ] 5.4 Upgrades and consent:
+  (25 Oct 2026: `connector.Principal`; a per-instance token bucket and breaker per installed connector in
+  `connector.Runtime`, a held send a refusal (`ErrHeld`), reconciliation never held. Tests: the two named above)
+- [x] 5.4 Upgrades and consent:
   - the installation keeps its consented manifest;
   - a non-widening release runs under it, and its first run is recorded as `connector.upgraded`;
   - a widening release runs under the old consent (destinations and data classes) until the dual-controlled
@@ -184,10 +195,16 @@ secrets or connector traffic (SEC-20).
   - the manifest diff is computed for the screen.
   - Tests `TestWideningManifestRunsUnderTheOldConsent`, `TestManifestDiff`. `// req: FR-INT-26` (upgrade shows
     the manifest diff; new scopes or data classes need consent)
-- [ ] 5.5 Who may trigger a capability: the runtime refuses work whose trigger does not match the manifest's
+  (25 Oct 2026: each installed connector keeps its `consent` (migration 000141), the runtime binds its traffic to it, and
+  `connector.Diff` and `Widens` show what a release asks. Tests: `TestWideningManifestRunsUnderTheOldConsent`, which also
+  checks the diff, and `TestPlanFollowsTheLifecycle`'s consent step)
+- [x] 5.5 Who may trigger a capability: the runtime refuses work whose trigger does not match the manifest's
   (a human authority, a system rule or nobody), and a connector approves nothing.
   - Tests `TestTriggerMustMatchTheManifest`, and the never-list test extended to connectors.
     `// req: FR-INT-27`, `// req: AI-66`
+  (25 Oct 2026: `connector.Authority`, checked against each capability's trigger before an adapter is built; work from an
+  AI proposal needs the approval of the underlying action. No AI never-list test exists yet (the AI tools arrive later), so
+  `TestTriggerMustMatchTheManifest` proves the connector's part)
 
 ## 6. The email providers move in
 

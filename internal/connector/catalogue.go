@@ -1,12 +1,15 @@
 package connector
 
 import (
+	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"slices"
 	"strings"
 
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // Config is what a binding builds a connector's adapter from, for one piece of work: the configuration the manifest's
@@ -17,8 +20,13 @@ type Config struct {
 	// HTTP is the client for the connector's HTTP traffic; nil leaves the adapter's own. The runtime gives the egress
 	// guard's client, bound to the manifest's consented destinations (SEC-36).
 	HTTP *http.Client
+	// Dial connects a connector that is not HTTP (SMTP); nil dials directly. The runtime gives the egress guard's, bound
+	// to the consented destinations.
+	Dial func(ctx context.Context, network, addr string) (net.Conn, error)
 	// SenderDomain is the platform sender's domain, for an adapter that needs one (SMTP's Message-ID).
 	SenderDomain string
+	// Consent is what the installed connector consented to send out and reach; a binding leaves off what needs more.
+	Consent storage.ConnectorConsent
 }
 
 // String returns the configuration value name as a string, or def when it is unset or empty.
