@@ -32,7 +32,7 @@ type Setting struct {
 	Key                 string          `json:"key" doc:"The setting's key." example:"sales.payment_terms_days"`
 	Group               string          `json:"group" doc:"Where settings show it." example:"Defaults"`
 	Label               string          `json:"label" doc:"Its name." example:"Payment terms for invoices"`
-	Kind                string          `json:"kind" enum:"switch,days,years,amount_sgd,percent,text" doc:"What it holds: switch is \"true\" or \"false\"; days and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text." example:"days"`
+	Kind                string          `json:"kind" enum:"switch,days,years,amount_sgd,percent,text,account_code" doc:"What it holds: switch is \"true\" or \"false\"; days and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460." example:"days"`
 	Value               string          `json:"value" doc:"Its value on the day asked for, as a string." example:"30"`
 	EffectiveFrom       string          `json:"effective_from,omitempty" format:"date" doc:"The day that value took effect; absent while it has the value it shipped with." example:"2026-11-01"`
 	RecommendedValue    string          `json:"recommended_value" doc:"The value it ships with (FR-ORG-08)." example:"30"`

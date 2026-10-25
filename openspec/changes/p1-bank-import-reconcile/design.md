@@ -148,6 +148,13 @@ date window, not yet matched), the line matches it and posts nothing new.
   rule before the oracle session.
 - *Alternative:* the received leg at the paid leg's base amount (the implied rate), with no difference at transfer.
   Rejected by the owner: it hides the conversion's cost in the balance until revaluation.
+- As built (task 4.4): `bank_transfer@1` (Cr the paying account, Dr the receiving one, each at RND-FX of its own
+  currency's rate for the day; Dr the bank charges account with the fee in the paying currency; the rest to 7030; in
+  one currency the legs differ by the fee only). The bank charges account is the setting `bank.charges_account`, a new
+  setting kind `account_code` holding an account's code, 6460 by default, under dual control. `RecordTransfer` writes
+  the record, posts its entry and matches the lines known; `CompleteTransfer` matches the other side when it arrives,
+  posting nothing. The replay reads the transfer's record and the rates its entry kept. Undoing a transfer comes with
+  auto-reconcile's undo (task 5.1).
 
 ### D7. Suspense and classification
 

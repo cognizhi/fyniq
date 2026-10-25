@@ -96,7 +96,7 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   - Tests: each matching order; a hand-recorded receipt matched without a second posting; G4-038 (USD invoice paid
     short stays part-paid; the SGD bill's S$120.00 stays open). `// req: FR-BNK-07`, `// req: FR-BNK-08`,
     `// req: FR-AR-18`
-- [ ] 4.4 Transfers (design D6): one record, matched on both accounts, in transit with one side; across currencies
+- [x] 4.4 Transfers (design D6): one record, matched on both accounts, in transit with one side; across currencies
   each leg at its day's rate, a reported fee to the bank charges setting (default 6460), the rest to 7030, no rate
   refused (FX-01).
   - Tests: same-currency transfer recorded once; in transit; a Wise SGD-to-USD conversion with a fee, hand-worked.

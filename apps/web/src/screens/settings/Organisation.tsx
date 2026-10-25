@@ -87,6 +87,7 @@ function check(s: Setting, v: string): string {
   if (s.kind === "amount_sgd") return /^\d{1,14}(\.\d{1,2})?$/.test(t) ? "" : "Enter an amount in Singapore dollars, such as 1000.00, without the S$ or commas.";
   if (s.kind === "percent") return /^\d{1,3}(\.\d{1,4})?$/.test(t) ? "" : "Enter a percentage, such as 3, without the % sign.";
   if (s.kind === "text") return t ? "" : "Enter a value.";
+  if (s.kind === "account_code") return /^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$/.test(t) ? "" : "Enter the code of an account in your chart, such as 6460.";
   return "";
 }
 

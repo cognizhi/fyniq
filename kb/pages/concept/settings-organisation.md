@@ -2,16 +2,16 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings and recommended values: features, terms, GST, simplified tax invoices, tolerances, thresholds, variances, email-in, retention
+summary: Company-wide settings and recommended values: features, terms, GST, tax invoices, tolerances, bank charges, thresholds, variances, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:5ad06e57442ecad6c710f9054216c2d08fac0d0beca57a22e867f65dde1cf5b2
+  - docs/user-guide/organisation-settings.md sha256:cdb4dad416d182f14ba56e2652cdaba28eeab5873b0303f7073dc90c684f529c
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-24
+compiled_at: 2026-10-25
 aliases:
   - feature switches
   - default settings
@@ -26,6 +26,8 @@ aliases:
   - email-in
   - notification email
   - simplified tax invoice
+  - bank charges account
+  - transfer fee
 ---
 
 # Organisation settings and their recommended values
@@ -87,6 +89,15 @@ aliases:
 - An overpayment above S$1.00 stays with the customer as a credit; anything above tolerance needs a reason-coded adjustment.
 
 (src: docs/user-guide/organisation-settings.md#settlement-tolerances)
+
+## Bank charges
+
+- A fee the bank or provider reports on a transfer between the company's money accounts (Wise shows one on each conversion) goes to the **bank charges account**: 6460 Bank charges in the standard chart.
+- Another account can be chosen by its code, such as a fees account added to the chart.
+- Across currencies each side of a transfer is converted at its own currency's rate for the day; what is left after the fee goes to **FX and rounding** (7030).
+- A change needs a second approver, as the other accounting settings do.
+
+(src: docs/user-guide/organisation-settings.md#bank-charges)
 
 ## Capitalisation threshold
 

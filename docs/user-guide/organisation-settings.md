@@ -49,8 +49,8 @@ the month the year starts in and the end of the first year no longer change.
 
 ## Settings that need a second approver
 
-- Thresholds, retention, the accounting sign-off, the AI assistant and details in notification email need a
-  second approver before they change: they show **Needs a second approver**.
+- Thresholds, retention, the accounting sign-off, the bank charges account, the AI assistant and details in
+  notification email need a second approver before they change: they show **Needs a second approver**.
 - For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
   approves settings, such as an Owner, approves it (see [Approve a change](approvals.md)).
@@ -116,6 +116,17 @@ rounding** (7030) instead of leaving the document part-paid.
 - An overpayment above S$1.00 stays with the customer as a credit.
 - Anything above the tolerance needs an adjustment with a reason, such as a discount or bank
   charges.
+
+## Bank charges
+
+When you record a transfer between two of your money accounts, a fee the bank or provider reports
+(Wise shows one on each conversion) goes to the **bank charges account**: 6460 Bank charges in the
+standard chart.
+
+- Choose another account by its code, such as a fees account you added to the chart.
+- Across currencies, each side of a transfer is converted at its own currency's rate for the day;
+  what is left after the fee goes to **FX and rounding** (7030).
+- A change needs a second approver, as the other accounting settings do.
 
 ## Capitalisation threshold
 
