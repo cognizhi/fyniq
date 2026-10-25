@@ -6,7 +6,7 @@ secrets or connector traffic (SEC-20).
 
 ## 1. Before code
 
-- [ ] 1.1 The threat model `docs/security/threat-models/connectors.md`:
+- [x] 1.1 The threat model `docs/security/threat-models/connectors.md`:
   - assets: provider keys, webhook secrets, the email path;
   - actors: a Super admin, an Owner, an Administrator, an attacker with a stolen session, a malicious
     configured host;
@@ -15,6 +15,8 @@ secrets or connector traffic (SEC-20).
   - each case is mapped to its control and the test that proves it.
   - Verified by review in the pull request, before the first code slice merges.
   - Refs `// req: SEC-20`, FR-INT-20, FR-INT-26, SEC-36.
+  (25 Oct 2026: `docs/security/threat-models/connectors.md`, T1 to T16, each mapped to its control and the test of
+  tasks 3 to 7 that proves it)
 
 ## 2. Manifests and the catalogue
 
