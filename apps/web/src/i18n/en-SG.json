@@ -680,6 +680,82 @@
       "label": "End now",
       "tooltip": "End this announcement now, or cancel it before it starts; to say more, publish another."
     },
+    "settings.integrations": {
+      "label": "Integrations",
+      "tooltip": "The connectors that link Fyniq to other services, such as the email providers: their status and health, and the catalogue this release ships."
+    },
+    "settings.integration": {
+      "label": "Connector",
+      "tooltip": "One connector: its lifecycle, configuration and secrets, its test and health, an upgrade to consent to, and its history."
+    },
+    "connector.install": {
+      "label": "Install",
+      "tooltip": "Install the connector and consent to its manifest; it stays off until it is configured, tested and enabled. A second person approves it first."
+    },
+    "connector.health": {
+      "label": "Health",
+      "tooltip": "OK when the connector is enabled and its last test passed; Failing when that test failed; Not tested otherwise."
+    },
+    "connector.data-classes": {
+      "label": "Sends out",
+      "tooltip": "The kinds of data the connector's manifest says it sends out of Fyniq, such as personal data or business figures, and nothing else."
+    },
+    "connector.configure": {
+      "label": "Save changes",
+      "tooltip": "Ask to save the configuration; a second person approves it, and the connector is tested again before it is enabled."
+    },
+    "connector.secret": {
+      "label": "Set",
+      "tooltip": "Store the value in Secret Manager at once; it is never shown again, and it is used once a second person approves."
+    },
+    "connector.test": {
+      "label": "Test connection",
+      "tooltip": "Run the connector's test action now and record whether it passed, with the reason; never what the provider sent back."
+    },
+    "connector.enable": {
+      "label": "Enable",
+      "tooltip": "Ask to turn the connector on: it needs a passed test and every secret set, and a second person approves it."
+    },
+    "connector.pause": {
+      "label": "Pause",
+      "tooltip": "Stop new work at once and hold its queue; the others are told. Takes effect without waiting for a second person."
+    },
+    "connector.resume": {
+      "label": "Resume",
+      "tooltip": "Ask to pick up where it stopped; a second person approves it."
+    },
+    "connector.disable": {
+      "label": "Disable",
+      "tooltip": "Ask to turn the connector off; what happens to its queued work is in its manifest. A second person approves it."
+    },
+    "connector.uninstall": {
+      "label": "Uninstall",
+      "tooltip": "Ask to remove the connector for good and delete its secrets; its audit history stays. A second person approves it."
+    },
+    "connector.consent": {
+      "label": "Consent to the upgrade",
+      "tooltip": "Consent to the release's manifest; new data classes, destinations or scopes need a second person's approval too."
+    },
+    "connector.order": {
+      "label": "Move",
+      "tooltip": "Ask to change its place among the email providers: 1 sends, the next only what the ones before it refused."
+    },
+    "connector.approve": {
+      "label": "Approve",
+      "tooltip": "Approve the other Super admin's change to an installation connector, over the request you read; it takes effect at once."
+    },
+    "connector.reject": {
+      "label": "Reject",
+      "tooltip": "Reject the change with a reason; a secret set for it is destroyed."
+    },
+    "email.sender": {
+      "label": "Change",
+      "tooltip": "Choose the address on a sending domain that this purpose's email comes from, or go back to the platform's sender."
+    },
+    "email.release": {
+      "label": "Release",
+      "tooltip": "Send to this address again; fix the contact's email first, or the next message bounces too."
+    },
     "nav.sales": {
       "label": "Sales",
       "tooltip": "What the company sells: invoices to customers, what they owe, and getting paid."
