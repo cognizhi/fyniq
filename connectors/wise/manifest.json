@@ -1,0 +1,84 @@
+{
+  "id": "wise",
+  "name": "Wise",
+  "publisher": "Fyniq",
+  "version": "1.0.0",
+  "min_platform": "0.1.0",
+  "summary": "Reads a Wise business profile's balances and their statements into Banking, read-only: each money account whose identifier is a Wise balance ID is fed hourly, and Wise's balance webhooks prompt an early sync.",
+  "scope": "organisation",
+  "capabilities": [
+    {
+      "kind": "bank-data",
+      "trigger": "system-rule",
+      "trigger_rule": "The sync schedule: the tick's hourly bank.sync, or an early sync a verified Wise webhook prompts.",
+      "on_pause": "hold",
+      "on_disable": "hold",
+      "in_flight": "finish"
+    }
+  ],
+  "configuration": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["profile_id"],
+    "properties": {
+      "profile_id": {
+        "type": "string",
+        "title": "Business profile ID",
+        "description": "The Wise business profile whose balances are read, as Wise shows it.",
+        "pattern": "^[0-9]{1,20}$"
+      },
+      "environment": {
+        "type": "string",
+        "title": "Environment",
+        "description": "Wise's production, or its sandbox for staging.",
+        "enum": ["production", "sandbox"],
+        "default": "production"
+      },
+      "history_days": {
+        "type": "integer",
+        "title": "History on the first sync",
+        "description": "How many days before today the first sync reads, at most 469 (Wise's longest statement).",
+        "minimum": 1,
+        "maximum": 469,
+        "default": 90
+      }
+    }
+  },
+  "secrets": [
+    {
+      "name": "api_token",
+      "title": "API token",
+      "description": "A personal API token of the business account (Your Account › Connect and manage apps › API tokens). Fyniq only reads with it: choose read-only access if Wise offers it.",
+      "used_by": [
+        "worker",
+        "api"
+      ],
+      "rotation_overlap_hours": 24
+    }
+  ],
+  "provider_scopes": [],
+  "fyniq_scopes": [],
+  "data_classes": [],
+  "regions": [
+    "GB"
+  ],
+  "destinations": [
+    {
+      "host": "api.wise.com",
+      "port": 443
+    },
+    {
+      "host": "api.wise-sandbox.com",
+      "port": 443
+    }
+  ],
+  "webhooks": [],
+  "health_check": "Counts Wise's refusals and failed connections in recent syncs, and each feed's last sync and why it stopped.",
+  "test_action": "Lists the profile's standard balances, and reports whether Wise accepted the token.",
+  "local_substitute": "A fake Wise in tests; Prism serves contracts/partners/wise.yaml in the local partners profile.",
+  "limits": {
+    "requests_per_minute": 60,
+    "breaker_failures": 5,
+    "breaker_cooldown_seconds": 300
+  }
+}

@@ -281,6 +281,20 @@ schedule), read-only:
   most and its body is never read. A bank-data connector's steps also need C on "Bank data… connections"; its approval
   stays the connector object's, whose row ("Integrations") grants the same people.
 
+- As built (task 8.3), checked against Wise's pages on 26 Oct 2026: the Platform API's bases are
+  `https://api.wise.com/2026Q4` and `https://api.wise-sandbox.com/2026Q4`; a profile's balances are
+  `GET /profiles/{profileId}/balances?types=STANDARD` and a statement
+  `GET /profiles/{profileId}/balance-statements/{balanceId}/statement.json` (`currency`, `intervalStart`, `intervalEnd`,
+  `type=COMPACT`; at most 469 days; amounts as JSON numbers, read as their text); statements by API are supported and
+  need no strong customer authentication for profiles based in Singapore; webhooks carry `X-Signature-SHA256`, RSA
+  PKCS #1 v1.5 over SHA-256 of the raw body, Base64, under the production or sandbox key the event-handling guide
+  publishes (the reference code's example verifies in the tests). Not confirmed: a read-only token. Wise's
+  personal-token guide lists quotes, recipients and transfers, so the adapter refuses any request but GET before it
+  leaves, and the secret's description asks for read-only access where Wise offers it. Each money account's
+  identifier is a Wise balance ID; the cursor is the last statement's end; a transaction at the boundary comes again and
+  its reference drops it. Wise's own webhook route is the generic `/api/webhooks/bank/wise/{id}`, which the manifest
+  cannot declare (a path per installation), so the operator registers it in Wise's dashboard.
+
 ### D12. Organisation connector secrets in a dedicated project (the owner's decision)
 
 OpenTofu adds a secrets project per platform environment (`fyniq-staging-secrets`, `fyniq-prod-secrets` [verify the

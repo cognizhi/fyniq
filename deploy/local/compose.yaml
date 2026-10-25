@@ -84,6 +84,17 @@ services:
     ports:
       - "127.0.0.1:${FYNIQ_PARTNER_PORT:-4010}:4010"
 
+  # Wise (p1-bank-import-reconcile task 8.3): the extract of its published API, the two read-only operations Fyniq calls.
+  partner-wise:
+    image: node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1
+    profiles: [partners]
+    command: ["npx", "--yes", "@stoplight/prism-cli@5.14.2", "mock", "--host", "0.0.0.0", "--port", "4011", "/partners/wise.yaml"]
+    volumes:
+      - ../../contracts/partners:/partners:ro
+      - prism-npm:/root/.npm
+    ports:
+      - "127.0.0.1:${FYNIQ_PARTNER_WISE_PORT:-4011}:4011"
+
   gcs:                                        # Cloud Storage JSON API emulator (Bucket Lock is not emulated)
     image: fsouza/fake-gcs-server:1.56@sha256:797ce226d62f947c009dc40246b30cfb456b8473d8241407f9d6f2c04e4d69ef
     command: ["-scheme", "http", "-port", "4443", "-public-host", "localhost:4443", "-backend", "memory"]

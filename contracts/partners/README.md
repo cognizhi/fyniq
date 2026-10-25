@@ -7,6 +7,7 @@ sandbox, which staging uses.
 | File | Partner | Mocked by | Added with |
 |---|---|---|---|
 | `example-bank.yaml` | A made-up bank: the template | `partner-example-bank` on port 4010 | `p1-connector-framework` |
+| `wise.yaml` | Wise: an extract of its published Platform API (2026Q4), the two read-only operations the `wise` connector calls, retrieved 26 Oct 2026 | `partner-wise` on port 4011 | `p1-bank-import-reconcile` |
 
 Each connector that calls a partner adds, in the same change:
 

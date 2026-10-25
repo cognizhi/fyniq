@@ -199,12 +199,16 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   - As built: `ports.BankData`, `connector.Binding.BankData` and `VerifyWebhook`, `internal/bankfeed` (the sync and the
     webhook receiver), `bank_feed` and the `connector_route` registry (migration 000155), the platform job `bank.sync`
     (rev 0.144). The provider account is the money account's identifier.
-- [ ] 8.3 Wise (design D11): manifest and adapter (organisation scope, bank-data, read-only token), balance mapping to
+- [x] 8.3 Wise (design D11): manifest and adapter (organisation scope, bank-data, read-only token), balance mapping to
   money accounts, statements and transactions, `balances#update` verified with RSA-SHA256; `contracts/partners/wise.yaml`
   mocked by Prism in the `partners` profile; the providers' facts `[verify]`d against Wise's pages before the
   manifest is pinned.
   - Tests: contract tests against the fake and the partner document; a forged signature refused.
     `// req: FR-BNK-18`, `// req: banking/bank-transactions Wise or Airwallex account syncs itself`
+  - As built: `connectors/wise` and `internal/adapters/wise`; the facts checked against Wise's pages on 26 Oct 2026 are
+    in design D11's note. Still `[verify]`: a read-only token (Wise documents none, so the adapter sends GET only) and
+    where Wise processes what it is sent (the manifest says GB). `contracts/partners/wise.yaml` is an extract of the
+    published document, not the whole 1.8 MB; Prism serving it was not run here.
 - [ ] 8.4 Airwallex (design D11): manifest and adapter (client ID and API key, scoped where offered), balances and
   transactions, webhooks verified by HMAC-SHA256 over `x-timestamp` and the raw body within five minutes;
   `contracts/partners/airwallex.yaml` mocked by Prism; facts `[verify]`d against Airwallex's pages.
