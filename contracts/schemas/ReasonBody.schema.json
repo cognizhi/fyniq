@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "description": "Why, kept in the audit trail and on the reversal.",
+      "examples": [
+        "Matched to the wrong invoice"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "ReasonBody",
+  "type": "object"
+}

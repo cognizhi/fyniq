@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "line_id": {
+      "description": "The side's line that arrived: the paying account's money out or the receiving account's money in, of the amount recorded.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b71"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "line_id"
+  ],
+  "title": "CompleteTransferInputBody",
+  "type": "object"
+}

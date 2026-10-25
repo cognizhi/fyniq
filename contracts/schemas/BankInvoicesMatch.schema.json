@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The invoices' currency; left out, the line's.",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "customer_id": {
+      "description": "The customer who paid.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "invoices": {
+      "description": "What the line settles of each invoice.",
+      "items": {
+        "$ref": "CustomerReceiptPart.schema.json"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "unapplied": {
+      "$ref": "Money.schema.json",
+      "description": "What it received beyond the invoices, kept as a credit with the customer (FR-AR-18). Left out, what the parts leave of the line when the invoices are in its currency, else nothing."
+    }
+  },
+  "required": [
+    "customer_id",
+    "invoices"
+  ],
+  "title": "BankInvoicesMatch",
+  "type": "object"
+}

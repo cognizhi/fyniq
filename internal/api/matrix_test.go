@@ -2364,8 +2364,10 @@ func TestAuthorisationMatrix(t *testing.T) {
 	e := newEnv(t)
 	_, rows := authztest.AppendixD(t)
 	policies := e.api.Policies()
-	for op, call := range matrixBanking {
-		matrixCalls[op] = call
+	for _, rows := range []map[string]func(e *env, tok string) (response, func() bool){matrixBanking, matrixBankLines} {
+		for op, call := range rows {
+			matrixCalls[op] = call
+		}
 	}
 	for op := range policies {
 		if matrixCalls[op] == nil {

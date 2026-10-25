@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account it posts to: an active posting account, not a money account, receivables or payables.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "Its signed amount in the line's currency, money in positive. Left out, the rest of the line, for one part at most: a whole line is one part without it."
+    },
+    "description": {
+      "description": "What it was.",
+      "examples": [
+        "AWS October"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "gst_code": {
+      "description": "Its GST code from the sg-gst pack on the line's date; left out, the account's default.",
+      "examples": [
+        "TX"
+      ],
+      "maxLength": 16,
+      "type": "string"
+    },
+    "spread_months": {
+      "description": "Months it spreads over from the line's month, as a prepayment or deferred income released monthly (FR-GL-03); 0 for none.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "maximum": 60,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "account_id"
+  ],
+  "title": "BankPartDraft",
+  "type": "object"
+}

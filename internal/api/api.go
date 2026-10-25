@@ -75,6 +75,7 @@ type API struct {
 	receipts     journal.CustomerReceipts
 	writeOffs    journal.WriteOffs
 	payments     journal.BillPayments
+	bank         journal.BankTransactions
 	applications journal.CreditApplications
 	refunds      journal.SupplierRefunds
 	orders       journal.PurchaseOrders
@@ -187,7 +188,7 @@ func New(mux humago.Mux, d Deps) *API {
 		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
 		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store},
 		customerApplications: journal.CustomerCreditApplications{Store: d.Store}, customerRefunds: journal.CustomerRefunds{Store: d.Store},
-		deposits: journal.CustomerDeposits{Store: d.Store}, quotes: journal.Quotes{Store: d.Store}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
+		deposits: journal.CustomerDeposits{Store: d.Store}, bank: journal.BankTransactions{Store: d.Store, Clock: d.Clock}, quotes: journal.Quotes{Store: d.Store}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {
@@ -207,6 +208,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.customerApplications.AfterPosting = a.afterPosting
 	a.customerRefunds.AfterPosting = a.afterPosting
 	a.deposits.AfterPosting = a.afterPosting
+	a.bank.AfterPosting = a.afterPosting
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(limitUploads{mux}, cfg)
@@ -285,6 +287,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerSuperAdmins(a)
 	registerConnectors(a)
 	registerBanking(a)
+	registerBankLines(a)
 	registerBankRules(a)
 	registerSession(a)
 	return a

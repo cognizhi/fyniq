@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
+	"github.com/cognizhi/fyniq/internal/domain/banktransaction"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
@@ -593,6 +594,26 @@ var codeFacts = map[string]struct {
 	banking.CodeRule:        {422, "The bank rule does not fit"},
 	banking.CodeAutoOn:      {409, "The rule applies by itself already"},
 	banking.CodeRuleOff:     {409, "The rule is switched off"},
+	banking.CodeLineState:   {409, "The line is not where that needs it"},
+
+	// Bank transactions, matches and transfers (FR-BNK-05…09).
+	banktransaction.CodeNotTransaction: {404, "Not a bank transaction"},
+	banktransaction.CodeBadDraft:       {422, "The saved bank transaction cannot be read"},
+	banktransaction.CodeLine:           {404, "No such bank line"},
+	banktransaction.CodeGSTCode:        {422, "The GST code is not in the pack"},
+	banktransaction.CodeContact:        {422, "The contact does not exist"},
+	banktransaction.CodeTooLong:        {422, "The reference is too long"},
+	banktransaction.CodeRest:           {422, "More than one part takes the rest"},
+	journal.CodeLineDone:               {409, "The line is not waiting to be categorised"},
+	journal.CodeNotCategory:            {409, "The line is not categorised"},
+	journal.CodeDirection:              {422, "The line goes the other way"},
+	journal.CodeRecorded:               {409, "The money was recorded by hand already"},
+	journal.CodeNotMoving:              {422, "The document does not move the line's money"},
+	journal.CodeOverParts:              {422, "The parts settle more than the line"},
+	journal.CodeTransferLine:           {422, "The line cannot be that side of the transfer"},
+	journal.CodeTransferUndone:         {409, "The transfer was undone"},
+	ledger.CodeBankPart:                {422, "A part of the line does not fit"},
+	ledger.CodeTransfer:                {422, "The transfer's legs do not fit"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -749,6 +770,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		sme *statement.Error
 		cne *connector.Error
 		bke *banking.Error
+		bte *banktransaction.Error
 		bfe *bankfile.Error
 		pe  *period.Error
 		ae  *accounting.Error
@@ -805,6 +827,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(bfe.Code, sentence(bfe.Error()[len(bfe.Code)+2:]), sentence(bfe.Fix))
 	case errors.As(err, &bke):
 		return problem(bke.Code, sentence(bke.Message), sentence(bke.Fix))
+	case errors.As(err, &bte):
+		return problem(bte.Code, sentence(bte.Message), sentence(bte.Fix))
 	case errors.As(err, &cne):
 		return problem(cne.Code, sentence(cne.Message), sentence(connectorFixes[cne.Code]))
 	case errors.As(err, &fe):

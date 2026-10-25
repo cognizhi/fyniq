@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The transfers in transit, latest first.",
+      "items": {
+        "$ref": "BankTransfer.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "The next page's cursor; absent on the last page.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b90"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "TransfersOutputBody",
+  "type": "object"
+}

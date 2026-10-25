@@ -623,10 +623,6 @@ type linesOutput struct {
 	}
 }
 
-type linePath struct {
-	LineID string `path:"line_id" format:"uuid" doc:"The line's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70"`
-}
-
 type lineOutput struct {
 	ETag string `header:"ETag" doc:"The line's version, for If-Match."`
 	Body BankLine
@@ -1211,7 +1207,7 @@ func registerBanking(a *API) {
 		Description: "Returns a line with its ETag: what it is matched to now, and while it waits, what it may match, best first: money " +
 			"recorded by hand, documents whose number it names exactly or once normalised, documents of its amount from the contact it " +
 			"names, and the first rule it meets (FR-BNK-06, FR-BNK-07). Suggestions are never applied by themselves. Read-only.",
-	}, []string{CodeNotFound, banking.CodeRule}, func(ctx context.Context, in *linePath) (*lineOutput, error) {
+	}, []string{CodeNotFound, banking.CodeRule}, func(ctx context.Context, in *LinePath) (*lineOutput, error) {
 		id, err := parseID("line_id", in.LineID)
 		if err != nil {
 			return nil, err
