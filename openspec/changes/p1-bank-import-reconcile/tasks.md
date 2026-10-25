@@ -275,9 +275,13 @@ before any code that parses bank files or touches connector secrets (SEC-20).
     (both sides or in transit), match to chosen invoices or bills, and suspense. The grid is a table: range
     selection, paste and fill-down (FR-UX-05, FR-UX-07) come with the app shell's grid (`p1-app-shell`); AI
     suggestions and their tier-1 proposal arrive with the AI assistant; the rules side-peek comes with 10.4.
-- [ ] 10.4 `bank-rules` (`/banking/rules`) and `auto-reconciled` (`/banking/auto-reconciled`): rules with the
+- [x] 10.4 `bank-rules` (`/banking/rules`) and `auto-reconciled` (`/banking/auto-reconciled`): rules with the
   back-test and the auto-apply request; what was reconciled, why, and undo.
   - Component tests with axe. `// req: FR-BNK-05`, `// req: FR-BNK-14`
+  - As built: rules in their order with their status (suggests, applies by itself, off, does not read ⚠; an AI-made
+    rule labelled), made and changed in a dialog with Test it, the auto-apply request after step-up on the rule's
+    version, and the rules to consider; the Auto-reconciled list with why, by whom and when, the limits shown, and
+    undo with a reason. Which lines are in the week's review sample is in the review log (Inbox), not marked here.
 - [ ] 10.5 `bank-reconciliation` (`/banking/reconciliations/$account/$period`): balances, items, difference,
   prepare and sign-off.
   - Component tests with axe. `// req: FR-BNK-10`

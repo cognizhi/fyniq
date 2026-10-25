@@ -85,6 +85,12 @@ export function BankTabs() {
       <Link to="/banking/categorise" activeOptions={{ exact: true, includeSearch: false }}>
         Categorise
       </Link>
+      <Link to="/banking/auto-reconciled" activeOptions={{ exact: true }}>
+        Auto-reconciled
+      </Link>
+      <Link className="fy-expert-only" to="/banking/rules" activeOptions={{ exact: true }}>
+        Rules
+      </Link>
     </nav>
   );
 }
