@@ -190,12 +190,15 @@ before any code that parses bank files or touches connector secrets (SEC-20).
     OpenTofu configures them (`org_secrets.tf`) and gives each `tofu-<env>` account its own. The API makes an
     organisation's secret the first time it is typed, in Singapore under the environment's secrets key
     (`FYNIQ_ORG_SECRETS_KEY`); `gcp.SplitSecrets` sends every `org-` name there. Not applied: no cloud account yet.
-- [ ] 8.2 The bank-data port and sync (design D11): accounts, balances and transactions since a cursor; the sync job
+- [x] 8.2 The bank-data port and sync (design D11): accounts, balances and transactions since a cursor; the sync job
   per enabled connector on the tick through the egress guard, writing statements and lines and its cursor in one unit
   of work, the lines waiting for Reconcile now (rev 0.143, task 5.3); the webhook route that only prompts an early sync (404 for an unknown, disabled or uninstalled connector);
   bank-data connector steps checked against Appendix D's "Bank data… connections" row and its approval policy.
   - Tests: a sync from a fake; a webhook prompting one; a webhook body never trusted for data; the permission row.
     `// req: FR-BNK-15`, `// req: FR-BNK-16`, `// req: FR-INT-27`
+  - As built: `ports.BankData`, `connector.Binding.BankData` and `VerifyWebhook`, `internal/bankfeed` (the sync and the
+    webhook receiver), `bank_feed` and the `connector_route` registry (migration 000155), the platform job `bank.sync`
+    (rev 0.144). The provider account is the money account's identifier.
 - [ ] 8.3 Wise (design D11): manifest and adapter (organisation scope, bank-data, read-only token), balance mapping to
   money accounts, statements and transactions, `balances#update` verified with RSA-SHA256; `contracts/partners/wise.yaml`
   mocked by Prism in the `partners` profile; the providers' facts `[verify]`d against Wise's pages before the

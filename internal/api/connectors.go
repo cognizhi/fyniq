@@ -1016,6 +1016,9 @@ func registerOrganisationConnectors(a *API, writes, versioned, locks []string) {
 			case b.Manifest.Scope != connector.ScopeOrganisation:
 				return nil, problem(connector.CodeScope, b.Manifest.Name+" is installed installation-wide by a Super admin.", connectorFixes[connector.CodeScope])
 			}
+			if err := bankDataRow(ctx, b); err != nil {
+				return nil, err
+			}
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (any, error) {
 				return ask(ctx, u, connectorChange{Step: storage.StepInstall, Connector: b.Manifest.ID}, b.Manifest.ID, "Install "+b.Manifest.Name,
 					[]ApprovalDiff{{Field: "connector", After: b.Manifest.ID}})
@@ -1038,6 +1041,11 @@ func registerOrganisationConnectors(a *API, writes, versioned, locks []string) {
 			c, err := installedOne(ctx, u, false, id)
 			if err != nil {
 				return nil, err
+			}
+			if b, ok := a.deps.Connectors.Catalogue.Get(c.Connector); ok {
+				if err := bankDataRow(ctx, b); err != nil {
+					return nil, err
+				}
 			}
 			if err := checkIfMatch(ifMatch, etag(c.Version)); err != nil {
 				return nil, err
@@ -1131,19 +1139,27 @@ func registerOrganisationConnectors(a *API, writes, versioned, locks []string) {
 			"with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and sends nothing.",
 	}, append(append(append([]string{CodeNoEmailAddress, CodeSessionRequired, CodeUnavailable}, locks...), versioned...), ConnectorCodes...),
 		func(ctx context.Context, in *testConnectorInput) (*connectorTestOutput, error) {
-			to, err := a.testAddress(ctx)
-			if err != nil {
-				return nil, err
-			}
 			return testOutput(orgStep(ctx, in, in.IdempotencyKey, in.Prefer, in.IfMatch, in.ID, func(ctx context.Context, u storage.UnitOfWork, c storage.InstalledConnector) (any, error) {
 				secrets, err := u.Connectors().OrganisationSecrets(ctx)
 				if err != nil {
 					return nil, err
 				}
+				b, _ := a.deps.Connectors.Catalogue.Get(c.Connector)
+				var to string
+				if b.BankData == nil { // an email connector's test goes to the caller's own address
+					if to, err = a.testAddress(ctx); err != nil {
+						return nil, err
+					}
+				}
 				if storage.IsPreview(ctx) { // a preview checks the request and sends nothing
 					return a.connectorOf(c, secrets), nil
 				}
-				result := a.deps.Connectors.Runtime.TestEmail(ctx, c, secrets, to, a.deps.Mail.From)
+				var result storage.ConnectorTest
+				if b.BankData != nil { // a bank-data connector lists the accounts it reads (FR-BNK-15)
+					result = a.deps.Connectors.Runtime.TestBankData(ctx, c, secrets)
+				} else {
+					result = a.deps.Connectors.Runtime.TestEmail(ctx, c, secrets, to, a.deps.Mail.From)
+				}
 				r, err := a.organisations().Apply(ctx, u, c.ID, c.Version, storage.StepTest, connector.Input{Test: &result})
 				if err != nil {
 					return nil, err
@@ -1151,6 +1167,21 @@ func registerOrganisationConnectors(a *API, writes, versioned, locks []string) {
 				return a.connectorOf(r.Connector, secrets), nil
 			}))
 		})
+}
+
+// bankDataRow refuses a step of a bank-data connector to a caller without C on Appendix D's own row for it, "Bank data…
+// connections", besides "Integrations" (FR-BNK-15; p1-bank-import-reconcile task 8.2): a bank feed is bank data.
+func bankDataRow(ctx context.Context, b connector.Binding) error {
+	if b.BankData == nil {
+		return nil
+	}
+	p, _ := authn.From(ctx)
+	policy := authz.Policy{Operation: "bank-data connector", Capability: authz.BankConnections, Need: authz.Create}
+	if d := authz.Decide(policy, p.Roles, p.AI()); !d.Allowed {
+		return problem(CodeForbidden, fmt.Sprintf("%s is a bank-data connector, and your roles hold no %q right on %q.", b.Manifest.Name, string(policy.Need),
+			policy.Capability), "Ask an Owner or Administrator for a role with that right (PRD-001 Appendix D).")
+	}
+	return nil
 }
 
 func stepWord(step string) string {

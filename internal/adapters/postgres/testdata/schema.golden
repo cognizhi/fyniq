@@ -151,6 +151,15 @@ balance | minor_units | smallint | not null |
 balance | amount | numeric(20,4) | not null | 
 balance | base_amount | numeric(20,4) | not null | 
 balance | line_count | bigint | not null | 
+bank_feed | organisation_id | uuid | not null | current_org()
+bank_feed | id | uuid | not null | uuidv7()
+bank_feed | money_account_id | uuid | not null | 
+bank_feed | connector_id | uuid | not null | 
+bank_feed | provider_account | text | not null | 
+bank_feed | cursor | text | not null | ''::text
+bank_feed | synced_at | timestamp with time zone | not null | 
+bank_feed | last_error | text | null | 
+bank_feed | version | integer | not null | 1
 bank_gap | organisation_id | uuid | not null | current_org()
 bank_gap | id | uuid | not null | uuidv7()
 bank_gap | money_account_id | uuid | not null | 
@@ -328,6 +337,10 @@ close_checklist_template | version | integer | not null |
 close_checklist_template | tasks | jsonb | not null | 
 close_checklist_template | written_by | text | not null | 
 close_checklist_template | written_at | timestamp with time zone | not null | 
+connector_route | connector_id | uuid | not null | 
+connector_route | owner | uuid | not null | 
+connector_route | connector | text | not null | 
+connector_route | state | text | not null | 
 contact | organisation_id | uuid | not null | current_org()
 contact | id | uuid | not null | uuidv7()
 contact | legal_name | text | not null | 
@@ -1441,6 +1454,23 @@ balance | balance_organisation_id_not_null | NOT NULL organisation_id
 balance | balance_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)
 balance | balance_period_id_not_null | NOT NULL period_id
 balance | balance_pkey | PRIMARY KEY (organisation_id, id)
+bank_feed | bank_feed_account_fkey | FOREIGN KEY (organisation_id, money_account_id) REFERENCES money_account(organisation_id, id)
+bank_feed | bank_feed_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+bank_feed | bank_feed_connector_id_not_null | NOT NULL connector_id
+bank_feed | bank_feed_cursor_length | CHECK ((length(cursor) <= 2000))
+bank_feed | bank_feed_cursor_not_null | NOT NULL cursor
+bank_feed | bank_feed_id_key | UNIQUE (organisation_id, id)
+bank_feed | bank_feed_id_not_null | NOT NULL id
+bank_feed | bank_feed_last_error_length | CHECK ((length(last_error) <= 500))
+bank_feed | bank_feed_money_account_id_not_null | NOT NULL money_account_id
+bank_feed | bank_feed_organisation_id_not_null | NOT NULL organisation_id
+bank_feed | bank_feed_pkey | PRIMARY KEY (organisation_id, money_account_id)
+bank_feed | bank_feed_provider_account_length | CHECK (((length(provider_account) >= 1) AND (length(provider_account) <= 200)))
+bank_feed | bank_feed_provider_account_not_null | NOT NULL provider_account
+bank_feed | bank_feed_synced_at_not_null | NOT NULL synced_at
+bank_feed | bank_feed_version_not_null | NOT NULL version
+bank_feed | bank_feed_version_positive | CHECK ((version >= 1))
+bank_feed | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 bank_gap | bank_gap_account_fkey | FOREIGN KEY (organisation_id, money_account_id) REFERENCES money_account(organisation_id, id)
 bank_gap | bank_gap_amounts_scale | CHECK (((expected_opening <> 'NaN'::numeric) AND (expected_opening = trunc(expected_opening, (minor_units)::integer)) AND (found_opening <> 'NaN'::numeric) AND (found_opening = trunc(found_opening, (minor_units)::integer))))
 bank_gap | bank_gap_before_date_not_null | NOT NULL before_date
@@ -1727,6 +1757,11 @@ close_checklist_template | close_checklist_template_version_positive | CHECK ((v
 close_checklist_template | close_checklist_template_written_at_not_null | NOT NULL written_at
 close_checklist_template | close_checklist_template_written_by_not_null | NOT NULL written_by
 close_checklist_template | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+connector_route | connector_route_connector_id_not_null | NOT NULL connector_id
+connector_route | connector_route_connector_not_null | NOT NULL connector
+connector_route | connector_route_owner_not_null | NOT NULL owner
+connector_route | connector_route_pkey | PRIMARY KEY (connector_id)
+connector_route | connector_route_state_not_null | NOT NULL state
 contact | contact_country_format | CHECK ((country ~ '^[A-Z]{2}$'::text))
 contact | contact_created_at_not_null | NOT NULL created_at
 contact | contact_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
@@ -3066,6 +3101,7 @@ CREATE INDEX announcement_ends ON fyniq.announcement USING btree (organisation_i
 CREATE INDEX approval_request_by_status ON fyniq.approval_request USING btree (organisation_id, status, requested_at)
 CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisation_id, created_xact, object_type, object_id)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
+CREATE INDEX bank_feed_connector ON fyniq.bank_feed USING btree (organisation_id, connector_id)
 CREATE INDEX bank_gap_open ON fyniq.bank_gap USING btree (organisation_id, money_account_id) WHERE (resolved_at IS NULL)
 CREATE INDEX bank_line_account_date ON fyniq.bank_line USING btree (organisation_id, money_account_id, booking_date)
 CREATE INDEX bank_line_fingerprint ON fyniq.bank_line USING btree (organisation_id, fingerprint)
@@ -3142,6 +3178,8 @@ CREATE UNIQUE INDEX audit_event_pkey ON fyniq.audit_event USING btree (organisat
 CREATE UNIQUE INDEX audit_event_seq_key ON fyniq.audit_event USING btree (organisation_id, seq)
 CREATE UNIQUE INDEX balance_key ON fyniq.balance USING btree (organisation_id, account_id, period_id, currency)
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
+CREATE UNIQUE INDEX bank_feed_id_key ON fyniq.bank_feed USING btree (organisation_id, id)
+CREATE UNIQUE INDEX bank_feed_pkey ON fyniq.bank_feed USING btree (organisation_id, money_account_id)
 CREATE UNIQUE INDEX bank_gap_pkey ON fyniq.bank_gap USING btree (organisation_id, id)
 CREATE UNIQUE INDEX bank_line_pkey ON fyniq.bank_line USING btree (organisation_id, id)
 CREATE UNIQUE INDEX bank_line_position_key ON fyniq.bank_line USING btree (organisation_id, statement_id, "position")
@@ -3164,6 +3202,7 @@ CREATE UNIQUE INDEX capture_sender_pkey ON fyniq.capture_sender USING btree (org
 CREATE UNIQUE INDEX close_checklist_entry_pkey ON fyniq.close_checklist_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_template_pkey ON fyniq.close_checklist_template USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_template_version_key ON fyniq.close_checklist_template USING btree (organisation_id, version)
+CREATE UNIQUE INDEX connector_route_pkey ON fyniq.connector_route USING btree (connector_id)
 CREATE UNIQUE INDEX contact_document_template_pkey ON fyniq.contact_document_template USING btree (organisation_id, id)
 CREATE UNIQUE INDEX contact_pkey ON fyniq.contact USING btree (organisation_id, id)
 CREATE UNIQUE INDEX currency_code_minor_units_key ON fyniq.currency USING btree (code, minor_units)
@@ -3351,6 +3390,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounti
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.announcement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('announcement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_feed DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_feed', 'money_account_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_gap DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_gap', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_match DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_line', 'line_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_reconciliation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_reconciliation', 'id')
@@ -3404,6 +3444,8 @@ CREATE TRIGGER audit_chain_no_truncate BEFORE TRUNCATE ON fyniq.audit_chain FOR 
 CREATE TRIGGER audit_event_append BEFORE INSERT ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_event_append()
 CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON fyniq.audit_event FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER bank_feed_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_feed FOR EACH ROW EXECUTE FUNCTION bank_feed_guard()
+CREATE TRIGGER bank_feed_no_truncate BEFORE TRUNCATE ON fyniq.bank_feed FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER bank_gap_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_gap FOR EACH ROW EXECUTE FUNCTION bank_gap_guard()
 CREATE TRIGGER bank_line_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_line FOR EACH ROW EXECUTE FUNCTION bank_line_guard()
 CREATE TRIGGER bank_match_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_match FOR EACH ROW EXECUTE FUNCTION bank_match_guard()
@@ -3501,6 +3543,7 @@ CREATE TRIGGER opening_balance_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.
 CREATE TRIGGER opening_balance_no_truncate BEFORE TRUNCATE ON fyniq.opening_balance FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER organisation_connector_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.organisation_connector FOR EACH ROW EXECUTE FUNCTION connector_guard()
 CREATE TRIGGER organisation_connector_no_truncate BEFORE TRUNCATE ON fyniq.organisation_connector FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER organisation_connector_routed AFTER INSERT OR UPDATE OF state ON fyniq.organisation_connector FOR EACH ROW EXECUTE FUNCTION organisation_connector_routed()
 CREATE TRIGGER organisation_connector_secret_guard BEFORE DELETE OR UPDATE ON fyniq.organisation_connector_secret FOR EACH ROW EXECUTE FUNCTION connector_secret_guard()
 CREATE TRIGGER organisation_connector_secret_named BEFORE INSERT ON fyniq.organisation_connector_secret FOR EACH ROW EXECUTE FUNCTION connector_secret_named()
 CREATE TRIGGER organisation_connector_secret_no_truncate BEFORE TRUNCATE ON fyniq.organisation_connector_secret FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -3567,6 +3610,7 @@ approval_signature | tenant_isolation | * | (organisation_id = current_org()) | 
 audit_chain | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+bank_feed | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_gap | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_match | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -3668,6 +3712,7 @@ audit_chain_guard() → trigger | security invoker | v | search_path=pg_catalog,
 audit_event_append() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b28a8a36f47d380d03f4120d6fab3ae
 audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d06777cbb7f0bd4dfb455fd25fe4970
 balance_differences() → TABLE(account_id uuid, period_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 3fb15f23f1568ac9a4288b7dced1e16e
+bank_feed_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 44b4e05c97a31d2e77d3cb543863849c
 bank_gap_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aa70c7f4e8b3f508860e4983c5813b44
 bank_line_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d8b48d4418d8aca35f08e24805b98378
 bank_match_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 77572e05359c76183975bc337e3affc6
@@ -3765,6 +3810,8 @@ notification_append_only() → trigger | security invoker | v | search_path=pg_c
 notification_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d9d3ebc8e803ce5555a7d2b708d60ba
 notification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cf1b2a8e993363d09a3a57e923c66929
 opening_balance_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c2ce7b1e284de3ad59fe6cb84f6a4efd
+organisation_connector_route(p_id uuid) → TABLE(organisation_id uuid, connector text, state text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 5f3c5bc22d3b807ee390beb8be8df823
+organisation_connector_routed() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e2531e8042725c748ea5b1b3618ba342
 organisation_created() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 680a26e58b46782835405da52a7402e9
 organisation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e64f58bdebe328f60e1806f8c9cbcbe6
 organisation_kind_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ca73dacb480df743be50b20da1632d78

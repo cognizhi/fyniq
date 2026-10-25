@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
@@ -157,6 +158,72 @@ func (r *Runtime) InboundEmail(ctx context.Context, u storage.UnitOfWork, a Auth
 	return nil, storage.InstalledConnector{}, ports.ErrNotFound
 }
 
+// SyncSchedule is the authority of a bank-data connector's sync: the platform's schedule, or an early sync its verified
+// webhook prompted (p1-bank-import-reconcile design D11).
+var SyncSchedule = Authority{Trigger: TriggerSystem, Rule: "the sync schedule"}
+
+// ErrNotEnabled is an organisation connector that is not enabled, or not installed here.
+var ErrNotEnabled = errors.New("the connector is not enabled")
+
+// organisation reads an organisation's connector id and its secrets, and its binding.
+func (r *Runtime) organisation(ctx context.Context, u storage.UnitOfWork, id uuid.UUID) (Binding, storage.InstalledConnector, []storage.ConnectorSecret, error) {
+	all, err := u.Connectors().Organisation(ctx)
+	if err != nil {
+		return Binding{}, storage.InstalledConnector{}, nil, err
+	}
+	i := slices.IndexFunc(all, func(c storage.InstalledConnector) bool { return c.ID == id })
+	if i < 0 {
+		return Binding{}, storage.InstalledConnector{}, nil, fmt.Errorf("%w: no connector %s here", ErrNotEnabled, id)
+	}
+	b, ok := r.Catalogue.Get(all[i].Connector)
+	if !ok {
+		return Binding{}, all[i], nil, fmt.Errorf("%w: %s is not in this release", ErrNotEnabled, all[i].Connector)
+	}
+	secrets, err := u.Connectors().OrganisationSecrets(ctx)
+	return b, all[i], secrets, err
+}
+
+// BankData is an organisation's enabled bank-data connector id under authority a, behind its rate limit and circuit
+// breaker; ErrNotEnabled while it is paused, disabled or uninstalled.
+func (r *Runtime) BankData(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, a Authority) (ports.BankData, storage.InstalledConnector, error) {
+	b, c, secrets, err := r.organisation(ctx, u, id)
+	if err != nil {
+		return nil, c, err
+	}
+	if c.State != storage.ConnectorEnabled || b.BankData == nil {
+		return nil, c, fmt.Errorf("%w: %s is %s", ErrNotEnabled, c.Connector, c.State)
+	}
+	if err := checkTrigger(b.Manifest, BankData, a); err != nil {
+		return nil, c, err
+	}
+	config, err := r.config(ctx, c, secrets)
+	if err != nil {
+		return nil, c, err
+	}
+	bd, err := b.BankData(config)
+	if err != nil {
+		return nil, c, err
+	}
+	return guardedBankData{BankData: bd, g: r.guard(c.ID, b.Manifest.Limits), clock: r.Clock}, c, nil
+}
+
+// VerifyWebhook checks a webhook to organisation connector id with its binding, against its configuration and current
+// secrets: ErrNotEnabled for a connector that is not enabled or paused, or takes no webhook.
+func (r *Runtime) VerifyWebhook(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, h http.Header, body []byte) (storage.InstalledConnector, error) {
+	b, c, secrets, err := r.organisation(ctx, u, id)
+	if err != nil {
+		return c, err
+	}
+	if (c.State != storage.ConnectorEnabled && c.State != storage.ConnectorPaused) || b.VerifyWebhook == nil {
+		return c, fmt.Errorf("%w: %s is %s", ErrNotEnabled, c.Connector, c.State)
+	}
+	config, err := r.config(ctx, c, secrets)
+	if err != nil {
+		return c, err
+	}
+	return c, b.VerifyWebhook(config, h, body, r.Clock.Now())
+}
+
 // config is what connector c's binding builds from: its configuration, its current secrets, and clients bound to its
 // consented destinations.
 func (r *Runtime) config(ctx context.Context, c storage.InstalledConnector, secrets []storage.ConnectorSecret) (Config, error) {
@@ -172,7 +239,7 @@ func (r *Runtime) config(ctx context.Context, c storage.InstalledConnector, secr
 	}
 	allow := Allows(c.Consent, c.Configuration)
 	g := r.Egress
-	return Config{Values: c.Configuration, Secrets: values, SenderDomain: r.SenderDomain, Consent: c.Consent,
+	return Config{Values: c.Configuration, Secrets: values, SenderDomain: r.SenderDomain, Consent: c.Consent, Clock: r.Clock,
 		HTTP: g.Client(allow),
 		Dial: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			host, port, err := net.SplitHostPort(addr)
@@ -263,6 +330,43 @@ func (r *Runtime) TestEmail(ctx context.Context, c storage.InstalledConnector, s
 		return fail(b.Manifest.Name + " refused the test message: check the key, the endpoint and that the sending domain is verified there.")
 	}
 	return fail(b.Manifest.Name + " did not answer in time, or the answer was lost: try again.")
+}
+
+// TestBankData is the bank-data connectors' test action (FR-INT-20): the accounts the credentials read, by count and
+// currency, never their balances; pass or fail in Fyniq's words, never the provider's answer.
+func (r *Runtime) TestBankData(ctx context.Context, c storage.InstalledConnector, secrets []storage.ConnectorSecret) storage.ConnectorTest {
+	now := r.Clock.Now()
+	fail := func(reason string) storage.ConnectorTest {
+		return storage.ConnectorTest{Passed: false, Reason: reason, At: now}
+	}
+	b, ok := r.Catalogue.Get(c.Connector)
+	if !ok || b.BankData == nil {
+		return fail("This connector reads no bank data.")
+	}
+	config, err := r.config(ctx, c, secrets)
+	if err != nil {
+		return fail("A secret of the connector cannot be read: set it again.")
+	}
+	bd, err := b.BankData(config)
+	if err != nil {
+		return fail("The connector is not fully set up: " + setupReason(err))
+	}
+	accounts, err := bd.Accounts(ctx)
+	switch {
+	case errors.Is(err, egress.ErrRefused), errors.Is(err, egress.ErrRedirect):
+		return fail("Fyniq refused the connection: the address is not one the connector may reach (a private or internal address, or a redirect).")
+	case err != nil:
+		return fail(b.Manifest.Name + " refused, or did not answer: check the token and the profile, then try again.")
+	}
+	var currencies []string
+	for _, a := range accounts {
+		if !slices.Contains(currencies, a.Currency) {
+			currencies = append(currencies, a.Currency)
+		}
+	}
+	slices.Sort(currencies)
+	return storage.ConnectorTest{Passed: true, Reason: fmt.Sprintf("%s listed %d account(s) in %s.", b.Manifest.Name, len(accounts),
+		strings.Join(currencies, ", ")), At: now}
 }
 
 // setupReason is a binding's own refusal, which names what to set and never a value.
@@ -411,4 +515,29 @@ func (e guardedEmail) Send(ctx context.Context, m ports.OutboundEmail) (ports.Em
 	r, err := e.Email.Send(ctx, m)
 	e.g.end(err != nil && !errors.Is(err, ports.ErrEmailRefused), e.clock.Now())
 	return r, err
+}
+
+// guardedBankData is a bank-data adapter behind its connector's guard: a call the guard holds reaches no provider.
+type guardedBankData struct {
+	ports.BankData
+	g     *guard
+	clock ports.Clock
+}
+
+func (b guardedBankData) Accounts(ctx context.Context) ([]ports.BankDataAccount, error) {
+	if err := b.g.begin(b.clock.Now()); err != nil {
+		return nil, err
+	}
+	out, err := b.BankData.Accounts(ctx)
+	b.g.end(err != nil, b.clock.Now())
+	return out, err
+}
+
+func (b guardedBankData) Transactions(ctx context.Context, account, cursor string) (ports.BankDataPage, error) {
+	if err := b.g.begin(b.clock.Now()); err != nil {
+		return ports.BankDataPage{}, err
+	}
+	out, err := b.BankData.Transactions(ctx, account, cursor)
+	b.g.end(err != nil, b.clock.Now())
+	return out, err
 }

@@ -279,6 +279,49 @@ type Banking interface {
 	Gaps(ctx context.Context, moneyAccountID uuid.UUID, open bool) ([]BankGap, error)
 	// ResolveGap resolves an open gap with its reason: CodeBanking when it is resolved already.
 	ResolveGap(ctx context.Context, id uuid.UUID, resolution string, at time.Time) (BankGap, error)
+
+	// Feed is a money account's feed, locked for its sync; ports.ErrNotFound before its first sync.
+	Feed(ctx context.Context, moneyAccountID uuid.UUID) (BankFeed, error)
+	// Feeds are every money account's feed.
+	Feeds(ctx context.Context) ([]BankFeed, error)
+	// SaveFeed records where a feed got to: its first record at version 0, else the next version of the one held at
+	// version (CodeVersion when it moved since).
+	SaveFeed(ctx context.Context, n NewBankFeed, version int) (BankFeed, error)
+}
+
+// BankFeed is where a money account fed by an organisation's bank-data connector got to (FR-BNK-15, FR-BNK-16): the
+// provider's account it is, the cursor after the last transaction imported, its last sync, and why it stopped.
+type BankFeed struct {
+	MoneyAccountID  uuid.UUID
+	ConnectorID     uuid.UUID
+	ProviderAccount string
+	Cursor          string
+	SyncedAt        time.Time
+	LastError       string // "" when the last sync finished
+	Version         int
+}
+
+// NewBankFeed is a feed's position as a sync leaves it.
+type NewBankFeed struct {
+	MoneyAccountID  uuid.UUID
+	ConnectorID     uuid.UUID
+	ProviderAccount string
+	Cursor          string
+	SyncedAt        time.Time
+	LastError       string
+}
+
+// ConnectorRoute is an installed organisation connector as a provider's webhook finds it, before any tenant is set.
+type ConnectorRoute struct {
+	Organisation uuid.UUID
+	Connector    string // its id in the catalogue
+	State        string
+}
+
+// ConnectorRoutes find the organisation of an installed connector, before any tenant is set.
+type ConnectorRoutes interface {
+	// OrganisationConnectorRoute is the route of installed connector id; ports.ErrNotFound for none.
+	OrganisationConnectorRoute(ctx context.Context, id uuid.UUID) (ConnectorRoute, error)
 }
 
 // BankRule codes lines in its order (FR-BNK-05); it auto-applies only under an approved request (FR-BNK-14).

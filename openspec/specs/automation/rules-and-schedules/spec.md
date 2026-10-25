@@ -63,6 +63,10 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **WHEN** the tick runs `bank.review-sample`, weekly on Monday at 02:00 in Singapore
 - **THEN** it puts the previous week's 5 largest auto-reconciliations and 5 others at random in each organisation's weekly review (FR-BNK-14, FM-3), as `scheduler:bank.review-sample`
 
+#### Scenario: The bank-data connectors' sync (rev 0.144)
+- **WHEN** the tick runs `bank.sync`, hourly at five past
+- **THEN** each organisation's enabled bank-data connectors pull their accounts since their feeds' cursors (FR-BNK-15, FR-BNK-16), as the connector's own principal, and the worker posts nothing
+
 ### Requirement: FR-AUT-02 Automated postings under a system principal
 Every automated posting SHALL run under a named system principal with its own audit identity, and SHALL respect period locks and approval policies.
 
