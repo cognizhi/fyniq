@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/adapters/local"
+	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/notify"
@@ -51,10 +52,11 @@ func emitted(t *testing.T, org, user uuid.UUID, typ, title string, at time.Time)
 	return ev
 }
 
-// fanout fans ev out as the worker, at at.
+// fanout fans ev out as the worker, at at: the store's clock too, which stamps each notification's created_at, so a
+// test's dates do not depend on the day it runs.
 func fanout(t *testing.T, org uuid.UUID, ev storage.NotificationEvent, at time.Time) notify.Fanout {
 	t.Helper()
-	worker := store(t, "fyniq_worker")
+	worker := store(t, "fyniq_worker", postgres.WithClock(clock.NewFrozen(at)))
 	f := notify.Fanout{Store: worker, Dispatcher: outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: clock.NewFrozen(at)},
 		Clock: clock.NewFrozen(at), Origin: "https://fyniq.test"}
 	payload, _ := json.Marshal(map[string]any{"event_id": ev.ID})
