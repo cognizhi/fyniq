@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "added": {
+      "$ref": "ConsentChange.schema.json",
+      "description": "What the release's manifest asks beyond the consent."
+    },
+    "changed_at": {
+      "examples": [
+        "2026-10-25T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "configuration": {
+      "additionalProperties": {},
+      "description": "Its configuration; never a secret.",
+      "examples": [
+        {
+          "url": "https://cpaas.zoho.com/v1.1/email"
+        }
+      ],
+      "type": "object"
+    },
+    "connector": {
+      "description": "Its id in the catalogue.",
+      "examples": [
+        "zeptomail"
+      ],
+      "type": "string"
+    },
+    "health": {
+      "description": "ok when enabled and its last test passed; failing when that test failed; unknown otherwise.",
+      "enum": [
+        "ok",
+        "failing",
+        "unknown"
+      ],
+      "examples": [
+        "ok"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"
+      ],
+      "type": "string"
+    },
+    "installation": {
+      "description": "Installed for everyone by a Super admin; false for the organisation's.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "installed_at": {
+      "examples": [
+        "2026-10-25T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "installed_by": {
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e41"
+      ],
+      "type": "string"
+    },
+    "manifest_version": {
+      "description": "The manifest it consented to.",
+      "examples": [
+        "1.0.0"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "examples": [
+        "Zoho ZeptoMail"
+      ],
+      "type": "string"
+    },
+    "position": {
+      "description": "Its place among the connectors of its kind: 1 is the primary.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "release_version": {
+      "description": "The release's manifest; differs when an upgrade is available.",
+      "examples": [
+        "1.0.0"
+      ],
+      "type": "string"
+    },
+    "removed": {
+      "$ref": "ConsentChange.schema.json",
+      "description": "What it no longer asks."
+    },
+    "secrets": {
+      "items": {
+        "$ref": "ConnectorSecretState.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "state": {
+      "description": "Where it is in its lifecycle.",
+      "enum": [
+        "installed",
+        "configured",
+        "tested",
+        "enabled",
+        "paused",
+        "disabled",
+        "uninstalled"
+      ],
+      "examples": [
+        "enabled"
+      ],
+      "type": "string"
+    },
+    "test": {
+      "$ref": "ConnectorTestResult.schema.json"
+    },
+    "upgrade_widens": {
+      "description": "The release's manifest asks for more: it runs under the old consent until someone consents (FR-INT-26).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "version": {
+      "description": "Its version, for If-Match.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "webhooks_to_remove": {
+      "description": "After an uninstall: the webhooks a person removes from the provider's dashboard.",
+      "items": {
+        "$ref": "ConnectorWebhookInfo.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "connector",
+    "name",
+    "installation",
+    "state",
+    "health",
+    "position",
+    "manifest_version",
+    "release_version",
+    "upgrade_widens",
+    "added",
+    "removed",
+    "configuration",
+    "secrets",
+    "installed_by",
+    "installed_at",
+    "changed_at",
+    "version"
+  ],
+  "title": "Connector",
+  "type": "object"
+}

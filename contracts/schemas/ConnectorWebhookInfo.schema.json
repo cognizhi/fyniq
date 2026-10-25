@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "events": {
+      "description": "The events it sends.",
+      "items": {
+        "description": "An event the webhook sends.",
+        "examples": [
+          "hardbounce"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "path": {
+      "description": "Where the provider calls.",
+      "examples": [
+        "/api/webhooks/email/zeptomail"
+      ],
+      "type": "string"
+    },
+    "registered_by": {
+      "description": "operator: a person sets it in the provider's dashboard, and removes it after an uninstall.",
+      "enum": [
+        "connector",
+        "operator"
+      ],
+      "examples": [
+        "operator"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "path",
+    "events",
+    "registered_by"
+  ],
+  "title": "ConnectorWebhookInfo",
+  "type": "object"
+}

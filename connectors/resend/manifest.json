@@ -2,7 +2,7 @@
   "id": "resend",
   "name": "Resend",
   "publisher": "Fyniq",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "min_platform": "0.1.0",
   "summary": "Sends the platform's email through Resend, records its delivery events, and receives the email-in addresses' mail.",
   "scope": "installation",
@@ -138,7 +138,7 @@
     }
   ],
   "health_check": "Counts Resend's refusals and failed connections in recent sends and fetches.",
-  "test_action": "Sends one test message to the signed-in person's own verified address and reports whether Resend accepted it.",
+  "test_action": "Sends one test message to the organisation's own email address, from its profile, and reports whether Resend accepted it.",
   "local_substitute": "A fake Resend server in tests; the local stack sends through Mailpit and receives through Mailpit's webhook.",
   "limits": {
     "requests_per_minute": 600,

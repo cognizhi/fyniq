@@ -2,7 +2,7 @@
   "id": "smtp",
   "name": "SMTP",
   "publisher": "Fyniq",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "min_platform": "0.1.0",
   "summary": "Sends the platform's email through an SMTP server the deployment chooses, over STARTTLS.",
   "scope": "installation",
@@ -92,7 +92,7 @@
   ],
   "webhooks": [],
   "health_check": "Counts the server's refusals and broken connections in recent sends; the server cannot be asked what became of a message.",
-  "test_action": "Sends one test message to the signed-in person's own verified address and reports whether the server took it.",
+  "test_action": "Sends one test message to the organisation's own email address, from its profile, and reports whether the server took it.",
   "local_substitute": "Mailpit in the local stack (localhost:1025, without TLS), and an SMTP fake in tests.",
   "limits": {
     "requests_per_minute": 600,

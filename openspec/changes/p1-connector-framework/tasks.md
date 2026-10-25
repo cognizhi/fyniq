@@ -121,7 +121,7 @@ secrets or connector traffic (SEC-20).
   Tests: `TestPlanFollowsTheLifecycle`, `TestInstallationConnectorsGoThroughTheLifecycle`,
   `TestOrganisationConnectorsGoThroughTheLifecycle` (the canceller), `TestAfterRollbackRunsOnlyWhenNothingCommits`, and the
   adapter's audit checks in `TestInstallationConnectorsKeepTheirLifecycle`)
-- [ ] 4.3 Dual control:
+- [x] 4.3 Dual control:
   - organisation connectors through the approval engine: object `connector`, operation `connector.change`,
     the FM-1 policy of Appendix D's "Organisation integrations" row;
   - installation connectors through `installation_change`: an RFC 8785 envelope, a decider who is another
@@ -136,8 +136,10 @@ secrets or connector traffic (SEC-20).
   every step but pause and test, with an RFC 8785 envelope; `Approve` decides and applies in one unit of work and refuses a
   change asked of an older version; `Reject` destroys the new secret version a change carried. Proved by
   `TestInstallationConnectorsGoThroughTheLifecycle` and the database's `TestInstallationConnectorsKeepTheirLifecycle`.
-  **Left:** the organisation half, the approval engine's object `connector` in `internal/domain/approval` and its
-  execution in the API, with task 7.1)
+  The organisation half, with task 7.1: the approval engine's object `connector` and operation `connector.change`
+  (dependencies: the installed connector's version and state, or whether it is installed; Appendix D's "Organisation
+  integrations" row; the founders' FM-1 policy), executed through `connector.Organisations` on the final approval.
+  Proved by `TestOrganisationConnectorsThroughTheAPI` and `TestOrganisationConnectorsGoThroughTheLifecycle`)
 - [x] 4.4 Secret rotation:
   - a replaced secret is a new version referenced by the pending change, and switched on approval;
   - the old version stays enabled for the manifest's overlap (both verify webhooks), then is disabled and
@@ -259,7 +261,7 @@ secrets or connector traffic (SEC-20).
 
 ## 7. The API
 
-- [ ] 7.1 The operations of `design.md`:
+- [x] 7.1 The operations of `design.md`:
   - `getConnectorCatalogue`;
   - installation and organisation connectors: list (cursor-paginated), get, install, configuration with
     `If-Match`, write-only secrets (`204`), test, enable, pause, resume, disable, uninstall, consent;
@@ -270,6 +272,15 @@ secrets or connector traffic (SEC-20).
   - policies in `authz/policy.go` (Super admin; Appendix D "Organisation integrations") and matrix rows.
   - Tests `TestConnectorsThroughTheAPI`, `TestNoAnswerCarriesASecret`, the matrix rows, Spectral clean
     (`make api-check`), `TestEveryOperationIsDocumented`. `// req: FR-INT-01`, `// req: FR-INT-20`
+  (25 Oct 2026: `internal/api/connectors.go`, 18 operations: `listConnectorCatalogue`; the installation's list, get,
+  install, configure, set a secret (write-only, `writeOnly` in the contract), take a step (one `steps` operation for
+  enable, pause, resume, disable, uninstall, consent and order, rather than one operation each), test, and the changes'
+  list, approve and reject (the envelope's SHA-256 signed); the organisation's list, get, install, configure, set a
+  secret, take a step and test, every step but pause and test answering 202 with the approval request. The test sends to
+  the organisation's own email address from its profile, as FR-INT-21's test send does, rather than the person's sign-in
+  address (the manifests at 1.0.1 say so). Tests: `TestConnectorsThroughTheAPI` (which also proves that no answer, log
+  or audit event carries a key), `TestOrganisationConnectorsThroughTheAPI`, the 18 matrix rows,
+  `TestEveryOperationIsDocumented`, `make api-check`)
 
 ## 8. Local mode
 

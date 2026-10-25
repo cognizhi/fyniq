@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "configuration": {
+      "additionalProperties": {},
+      "description": "Every field, as the connector's configuration schema describes it; never a secret.",
+      "examples": [
+        {
+          "url": "https://cpaas.zoho.com/v1.1/email"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "configuration"
+  ],
+  "title": "ConfigureConnectorRequest",
+  "type": "object"
+}

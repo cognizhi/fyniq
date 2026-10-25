@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "data_classes": {
+      "items": {
+        "description": "A class of data (AI-75).",
+        "enum": [
+          "know-how",
+          "business-figures",
+          "personal-data",
+          "payroll",
+          "restricted"
+        ],
+        "examples": [
+          "personal-data"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "destinations": {
+      "items": {
+        "$ref": "ConnectorDestination.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "scopes": {
+      "description": "The provider's and Fyniq's scopes.",
+      "items": {
+        "description": "A scope.",
+        "examples": [
+          "fyniq.read.banking"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "webhooks": {
+      "items": {
+        "description": "A webhook's path.",
+        "examples": [
+          "/api/webhooks/email/zeptomail"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "data_classes",
+    "scopes",
+    "destinations",
+    "webhooks"
+  ],
+  "title": "ConsentChange",
+  "type": "object"
+}

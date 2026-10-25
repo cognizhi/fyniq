@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "envelope_hash": {
+      "description": "The SHA-256 of the envelope you read, hex.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why, for a rejection.",
+      "examples": [
+        "Not this key."
+      ],
+      "maxLength": 500,
+      "type": "string"
+    }
+  },
+  "required": [
+    "envelope_hash"
+  ],
+  "title": "DecideChangeRequest",
+  "type": "object"
+}

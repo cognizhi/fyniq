@@ -400,6 +400,69 @@ var matrixCalls = map[string]matrixCall{
 	"getEmailSettings": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/organisation/email", tok, nil), nil
 	},
+	"listConnectorCatalogue": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/connector-catalogue", tok, nil), nil
+	},
+	"listInstallationConnectors": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/installation/connectors", tok, nil), nil
+	},
+	"getInstallationConnector": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/installation/connectors/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f70", tok, nil), nil
+	},
+	"installInstallationConnector": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/installation/connectors", tok, map[string]any{"connector": "example-email"}), nil
+	},
+	"configureInstallationConnector": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPut, "/v1/installation/connectors/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f70/configuration", tok,
+			map[string]any{"configuration": map[string]any{}}, "If-Match", "*"), nil
+	},
+	"setInstallationConnectorSecret": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPut, "/v1/installation/connectors/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f70/secrets/send_token", tok,
+			map[string]any{"value": "matrix-value"}, "If-Match", "*"), nil
+	},
+	"stepInstallationConnector": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/installation/connectors/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f70/steps", tok,
+			map[string]any{"step": "pause"}, "If-Match", "*"), nil
+	},
+	"testInstallationConnector": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/installation/connectors/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f70/test", tok, nil, "If-Match", "*"), nil
+	},
+	"listInstallationChanges": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/installation/changes", tok, nil), nil
+	},
+	"approveInstallationChange": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/installation/changes/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f71/approve", tok,
+			map[string]any{"envelope_hash": strings.Repeat("0", 64)}), nil
+	},
+	"rejectInstallationChange": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/installation/changes/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f71/reject", tok,
+			map[string]any{"envelope_hash": strings.Repeat("0", 64)}), nil
+	},
+	"listOrganisationConnectors": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/connectors", tok, nil), nil
+	},
+	"getOrganisationConnector": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/connectors/"+matrixOrgConnector(e), tok, nil), nil
+	},
+	"installOrganisationConnector": func(e *env, tok string) (response, func() bool) {
+		return askConnector(e, tok, http.MethodPost, "/v1/organisation/connectors", map[string]any{"connector": "example-org"})
+	},
+	"configureOrganisationConnector": func(e *env, tok string) (response, func() bool) {
+		return askConnector(e, tok, http.MethodPut, "/v1/organisation/connectors/"+matrixOrgConnector(e)+"/configuration",
+			map[string]any{"configuration": map[string]any{"address": "smtp.example.com:587"}}, "If-Match", "*")
+	},
+	"setOrganisationConnectorSecret": func(e *env, tok string) (response, func() bool) {
+		return askConnector(e, tok, http.MethodPut, "/v1/organisation/connectors/"+matrixOrgConnector(e)+"/secrets/key",
+			map[string]any{"value": "matrix-value"}, "If-Match", "*")
+	},
+	"stepOrganisationConnector": func(e *env, tok string) (response, func() bool) {
+		return askConnector(e, tok, http.MethodPost, "/v1/organisation/connectors/"+matrixOrgConnector(e)+"/steps",
+			map[string]any{"step": "uninstall"}, "If-Match", "*")
+	},
+	"testOrganisationConnector": func(e *env, tok string) (response, func() bool) {
+		matrixProfileEmail(e)
+		return e.call(http.MethodPost, "/v1/organisation/connectors/"+matrixOrgConnector(e)+"/test", tok, nil, "If-Match", "*"), nil
+	},
 	"setEmailSender": func(e *env, tok string) (response, func() bool) {
 		reminders := func() any {
 			return e.call(http.MethodGet, "/v1/organisation/email", e.as(authz.Auditor), nil).Body["senders"].([]any)[2].(map[string]any)["etag"]

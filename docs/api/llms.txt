@@ -55,6 +55,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bills/{bill_id}/void-approval` (requestBillVoid): Ask for approval to void a bill
 - `GET /v1/close-checklist-template` (getCloseChecklistTemplate): Get the close checklist template
 - `PUT /v1/close-checklist-template` (replaceCloseChecklistTemplate): Change the close checklist template
+- `GET /v1/connector-catalogue` (listConnectorCatalogue): List the connectors of this release
 - `GET /v1/contacts` (listContacts): List the contacts
 - `POST /v1/contacts` (createContact): Add a contact
 - `GET /v1/contacts/{contact_id}` (getContact): Get a contact
@@ -117,6 +118,16 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/installation/announcements` (listInstallationAnnouncements): List the announcements to everyone
 - `POST /v1/installation/announcements` (publishInstallationAnnouncement): Publish a banner to everyone
 - `POST /v1/installation/announcements/{announcement_id}/withdraw` (withdrawInstallationAnnouncement): Withdraw an announcement to everyone
+- `GET /v1/installation/changes` (listInstallationChanges): List the changes waiting for a Super admin
+- `POST /v1/installation/changes/{change_id}/approve` (approveInstallationChange): Approve a change to an installation connector
+- `POST /v1/installation/changes/{change_id}/reject` (rejectInstallationChange): Reject a change to an installation connector
+- `GET /v1/installation/connectors` (listInstallationConnectors): List the installation's connectors
+- `POST /v1/installation/connectors` (installInstallationConnector): Install a connector for everyone
+- `GET /v1/installation/connectors/{connector_id}` (getInstallationConnector): Read one of the installation's connectors
+- `PUT /v1/installation/connectors/{connector_id}/configuration` (configureInstallationConnector): Configure one of the installation's connectors
+- `PUT /v1/installation/connectors/{connector_id}/secrets/{secret}` (setInstallationConnectorSecret): Set a secret of one of the installation's connectors
+- `POST /v1/installation/connectors/{connector_id}/steps` (stepInstallationConnector): Take a step of an installation connector's lifecycle
+- `POST /v1/installation/connectors/{connector_id}/test` (testInstallationConnector): Test one of the installation's connectors
 - `GET /v1/invoices` (listInvoices): List the invoices
 - `POST /v1/invoices` (createInvoice): Save a draft invoice
 - `GET /v1/invoices/{invoice_id}` (getInvoice): Get an invoice
@@ -179,6 +190,13 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/organisation/accounting/framework/{version}/confirm` (confirmAccountingFramework): Confirm the accounting framework
 - `POST /v1/organisation/accounting/policies/{area}` (recordAccountingPolicy): Record an accounting policy
 - `POST /v1/organisation/accounting/policies/{area}/{version}/approve` (approveAccountingPolicy): Approve an accounting policy
+- `GET /v1/organisation/connectors` (listOrganisationConnectors): List the organisation's connectors
+- `POST /v1/organisation/connectors` (installOrganisationConnector): Install a connector for the organisation
+- `GET /v1/organisation/connectors/{connector_id}` (getOrganisationConnector): Read one of the organisation's connectors
+- `PUT /v1/organisation/connectors/{connector_id}/configuration` (configureOrganisationConnector): Configure one of the organisation's connectors
+- `PUT /v1/organisation/connectors/{connector_id}/secrets/{secret}` (setOrganisationConnectorSecret): Set a secret of one of the organisation's connectors
+- `POST /v1/organisation/connectors/{connector_id}/steps` (stepOrganisationConnector): Take a step of an organisation connector's lifecycle
+- `POST /v1/organisation/connectors/{connector_id}/test` (testOrganisationConnector): Test one of the organisation's connectors
 - `GET /v1/organisation/email` (getEmailSettings): Get the email settings
 - `GET /v1/organisation/email/capture-addresses` (getCaptureAddresses): Get the email-in addresses
 - `PUT /v1/organisation/email/capture-addresses/mine` (setMyCaptureAddress): Name your own email-in address

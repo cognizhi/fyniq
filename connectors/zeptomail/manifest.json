@@ -2,7 +2,7 @@
   "id": "zeptomail",
   "name": "Zoho ZeptoMail",
   "publisher": "Fyniq",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "min_platform": "0.1.0",
   "summary": "Sends the platform's email through Zoho ZeptoMail (Zoho CPaaS), and records its bounces and complaints.",
   "scope": "installation",
@@ -115,7 +115,7 @@
     }
   ],
   "health_check": "Counts ZeptoMail's refusals and failed connections in recent sends; ZeptoMail cannot be asked what became of a message.",
-  "test_action": "Sends one test message to the signed-in person's own verified address and reports whether ZeptoMail accepted it.",
+  "test_action": "Sends one test message to the organisation's own email address, from its profile, and reports whether ZeptoMail accepted it.",
   "local_substitute": "A fake ZeptoMail server in tests; the local stack sends through Mailpit instead.",
   "limits": {
     "requests_per_minute": 600,

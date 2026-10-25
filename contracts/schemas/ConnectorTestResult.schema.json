@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at": {
+      "examples": [
+        "2026-10-25T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "passed": {
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "reason": {
+      "examples": [
+        "Zoho ZeptoMail accepted the test message."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "passed",
+    "reason",
+    "at"
+  ],
+  "title": "ConnectorTestResult",
+  "type": "object"
+}

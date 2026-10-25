@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "capabilities": {
+      "items": {
+        "$ref": "ConnectorCapability.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "configuration": {
+      "additionalProperties": {},
+      "description": "The JSON Schema of its configuration.",
+      "examples": [
+        {
+          "properties": {},
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    },
+    "data_classes": {
+      "description": "The data classes it sends out of Fyniq.",
+      "items": {
+        "description": "A class of data (AI-75).",
+        "enum": [
+          "know-how",
+          "business-figures",
+          "personal-data",
+          "payroll",
+          "restricted"
+        ],
+        "examples": [
+          "personal-data"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "destinations": {
+      "description": "Every place it connects to (SEC-36).",
+      "items": {
+        "$ref": "ConnectorDestination.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "health_check": {
+      "examples": [
+        "Counts refusals and failed connections in recent sends."
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The connector's id.",
+      "examples": [
+        "zeptomail"
+      ],
+      "type": "string"
+    },
+    "local_substitute": {
+      "examples": [
+        "Mailpit in the local stack."
+      ],
+      "type": "string"
+    },
+    "name": {
+      "examples": [
+        "Zoho ZeptoMail"
+      ],
+      "type": "string"
+    },
+    "publisher": {
+      "examples": [
+        "Fyniq"
+      ],
+      "type": "string"
+    },
+    "regions": {
+      "description": "Where the provider processes what it is sent.",
+      "items": {
+        "description": "A country code, EU, or configured.",
+        "examples": [
+          "US"
+        ],
+        "pattern": "^([A-Z]{2}|EU|configured)$",
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "scope": {
+      "description": "Installed by a Super admin for everyone, or by an organisation.",
+      "enum": [
+        "installation",
+        "organisation"
+      ],
+      "examples": [
+        "installation"
+      ],
+      "type": "string"
+    },
+    "secrets": {
+      "items": {
+        "$ref": "ConnectorSecretInfo.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "summary": {
+      "examples": [
+        "Sends the platform's email through Zoho ZeptoMail."
+      ],
+      "type": "string"
+    },
+    "test_action": {
+      "examples": [
+        "Sends one test message to the organisation's own email address."
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The release's manifest version.",
+      "examples": [
+        "1.0.0"
+      ],
+      "type": "string"
+    },
+    "webhooks": {
+      "items": {
+        "$ref": "ConnectorWebhookInfo.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "publisher",
+    "version",
+    "summary",
+    "scope",
+    "capabilities",
+    "data_classes",
+    "regions",
+    "destinations",
+    "secrets",
+    "webhooks",
+    "configuration",
+    "health_check",
+    "test_action",
+    "local_substitute"
+  ],
+  "title": "CatalogueEntry",
+  "type": "object"
+}

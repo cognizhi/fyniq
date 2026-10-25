@@ -2,12 +2,14 @@ package connector_test
 
 import (
 	"errors"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/connector"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -101,5 +103,31 @@ func TestPlanFollowsTheLifecycle(t *testing.T) {
 	if err != nil || consented.ManifestHash != m.Hash() || consented.ManifestVersion != "1.0.0" || len(consented.SecretNames) != 1 ||
 		len(consented.Consent.Destinations) != 2 || consented.Consent.DataClasses[0] != "personal-data" {
 		t.Errorf("consent: %+v, %v", consented, err)
+	}
+}
+
+// The clean-up destroys the new key of an organisation's connector request that ended without applying (rejected,
+// withdrawn, expired, or pending past its expiry) within eight days of its end; never one approved, still pending or
+// of another object.
+// req: FR-INT-26
+// asvs: V13.3.4
+func TestRefusedRequestsLoseTheirNewKeys(t *testing.T) {
+	now := time.Date(2026, 10, 25, 9, 0, 0, 0, time.UTC)
+	change := func(ref string) []byte { return []byte(`{"execute":{"step":"secret","ref":"` + ref + `"}}`) }
+	at := func(d time.Duration) *time.Time { x := now.Add(d); return &x }
+	requests := []storage.ApprovalRequest{
+		{ObjectType: "connector", Status: "rejected", DecidedAt: at(-time.Hour), Change: change("rejected")},
+		{ObjectType: "connector", Status: "void", DecidedAt: at(-time.Hour), Change: change("withdrawn")},
+		{ObjectType: "connector", Status: "expired", ExpiresAt: now.Add(-time.Hour), Change: change("expired")},
+		{ObjectType: "connector", Status: "pending", ExpiresAt: now.Add(-time.Minute), Change: change("lapsed")},
+		{ObjectType: "connector", Status: "pending", ExpiresAt: now.Add(time.Hour), Change: change("waiting")},
+		{ObjectType: "connector", Status: "approved", DecidedAt: at(-time.Hour), Change: change("approved")},
+		{ObjectType: "connector", Status: "rejected", DecidedAt: at(-9 * 24 * time.Hour), Change: change("long-ago")},
+		{ObjectType: "invoice", Status: "rejected", DecidedAt: at(-time.Hour), Change: change("other")},
+	}
+	got := connector.RefusedRefs(requests, now)
+	want := []ports.SecretRef{"rejected", "withdrawn", "expired", "lapsed"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("%v; want %v", got, want)
 	}
 }

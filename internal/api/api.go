@@ -56,6 +56,9 @@ type Deps struct {
 	// Mail is the deployment's outbound email: its providers' names, the platform's sender and the sending domains
 	// (FR-INT-21, rev 0.102). Zero: no provider, and no sender can be chosen.
 	Mail MailInfo
+	// Connectors are the release's connectors, their keys' store and runtime (FR-INT-20); a nil catalogue answers that
+	// connectors are not configured.
+	Connectors ConnectorDeps
 	// Origin is the web app's origin as the browser sees it, such as https://fyniq.example.com: passkeys are registered
 	// and asserted for it and its host (FR-ADM-02). Empty: no passkey ceremony runs.
 	Origin string
@@ -138,6 +141,7 @@ func Config(version string) huma.Config {
 			Description: "http://localhost:8080/api behind Caddy (make up); http://localhost:8081 for the api service (make dev)"}}}}
 	cfg.Tags = []*huma.Tag{
 		{Name: "Installation", Description: "First-run setup of a new installation (FR-ADM-06)."},
+		{Name: "Connectors", Description: "Outside services as connectors: the catalogue, the installation's and the organisation's, their lifecycle, keys and tests (FR-INT-20, FR-INT-25…27)."},
 		{Name: "Session", Description: "Signing in to the web app: the providers, and your own session (SEC-05, FR-ADM-08)."},
 		{Name: "Organisation", Description: "The organisation your session is in."},
 		{Name: "Chart of accounts", Description: "Accounts: what the ledger posts to (PRD-001 §8.2)."},
@@ -278,6 +282,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerEvidence(a)
 	registerSetup(a)
 	registerSuperAdmins(a)
+	registerConnectors(a)
 	registerSession(a)
 	return a
 }
