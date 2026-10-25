@@ -181,6 +181,11 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **WHEN** any lifecycle step is taken
 - **THEN** it is audited and dual-controlled
 
+#### Scenario: Pause is the one step one person takes at once (rev 0.139)
+- **WHEN** a person who may manage a connector pauses it, with step-up
+- **THEN** it pauses at once without a second person, is audited, and the other Super admin or the Owners are notified
+- **AND** resuming, disabling and every other step still wait for the second person
+
 ### Requirement: FR-INT-27 Connector rules
 A connector SHALL use only the domain commands and read APIs the UI uses, with no private write path, and SHALL run as its own principal with its own audit identity, rate limits and circuit breaker.
 
