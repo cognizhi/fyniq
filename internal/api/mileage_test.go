@@ -13,6 +13,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -84,7 +85,8 @@ func TestMileageIsClaimedAtTheRate(t *testing.T) {
 	}
 	path := "/v1/expense-claims/" + r.str("id")
 	g := e.call(http.MethodGet, path, ahkow, nil)
-	if !strings.Contains(g.Raw, `"code":"CLAIM-19"`) || !strings.Contains(g.Raw, "the organisation has set no rate per km for a car on 2026-10-14") {
+	if !strings.Contains(g.Raw, `"code":"CLAIM-19"`) || !strings.Contains(g.Raw, "the organisation has set no rate per km for a car on 2026-10-14") ||
+		strings.Contains(g.Raw, ledger.CodeZeroLine) { // the reason, not also the engine's "the line's amount is zero" (found in the dev stack)
 		t.Fatalf("a trip with no rate: %s", g.Raw)
 	}
 	e.problemIs(e.call(http.MethodPost, path+"/submit", ahkow, nil, "If-Match", r.Header.Get("ETag")), "submitExpenseClaim", 422, claim.CodeMileageRate)

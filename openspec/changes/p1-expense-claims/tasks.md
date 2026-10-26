@@ -94,12 +94,20 @@
   `/purchases/claims/$claimId` is the claim view read-only with the decision panel, approve or return with a comment
   through the approval confirmation; `ExpensePolicy.tsx` at `/settings/expense-policy`, the categories with their account
   and thresholds, the starter categories, and the way to the settings under dual control.)
-- [ ] 8.3 The guide pages `claims.my-claims` and `claims.approve-team` updated to what is built, compiled into
+- [x] 8.3 The guide pages `claims.my-claims` and `claims.approve-team` updated to what is built, compiled into
   `kb/pages/`, `make kb-index` and `make kb-lint` clean; the screens checked in the dev stack against the real API.
   `// req: QA-UI-05`
-  (26 Oct 2026, in part: both guide pages rewritten to what is built and compiled into
-  `kb/pages/task/claims-make-a-claim.md` and `claims-approve-team-claims.md`; kb-index and kb-lint clean. **Left:** the
-  screens checked in the dev stack against the real API.)
+  (26 Oct 2026: both guide pages rewritten to what is built and compiled into `kb/pages/task/claims-make-a-claim.md`
+  and `claims-approve-team-claims.md`; kb-index and kb-lint clean. Checked in the dev stack the same day against the
+  real API, in headless Chrome as three local test people of the smoke organisation: the Controller loaded the starter
+  categories in Settings › Expense policy; a member whose only role is Employee landed on My claims, saved a claim for a
+  S$27.30 taxi, attached its receipt, picked it on the line and submitted it, confirming it's them (the look-alike
+  receipt on an earlier draft showed ⚠); the Approver opened it from Purchases › Expense claims and approved it; the
+  member saw it approved and S$27.30 owed. A trip with no rate per km was saved and showed why. The check found the
+  engine's "the line's amount is zero" beside CLAIM-19 on such a trip: it is left out now (regression in
+  `TestMileageIsClaimedAtTheRate`). The smoke organisation's 2150 predates the seed loader's roles, so a role-carrying
+  2151 was added for the check. Not checked there: card lines and cash advances, which need a card's statement and money
+  recorded under "Payment batches"; their screens are covered by `claims.test.tsx` and their API by the Go suites.)
 
 ## 9. The oracle
 
