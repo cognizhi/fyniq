@@ -386,3 +386,105 @@ func ReplayClaimReimbursement(rule string, r ClaimReimbursement, s Settings) (En
 	e, _, err := f(r, s)
 	return e, err
 }
+
+// The cash advance's source type and rule version (FR-AP-17; posting rule "Cash advance to an employee", PRD-001 §10.2;
+// p1-expense-claims design D8).
+const (
+	SourceCashAdvance = "cash_advance"
+	RuleCashAdvance   = "cash_advance@1"
+)
+
+// CodeAdvance is an advance whose accounts or amount do not fit: no advances account, or one a money account; an amount
+// that is not more than zero in the base currency.
+const CodeAdvance = "LEDGER-38"
+
+// CashAdvance is one version of a cash advance as the rule reads it: money paid out to a member before a trip, or, when
+// Refund, what is left of an advance coming back; the money account it moved through, in the base currency; the advances
+// account (the setting claims.advances_account, 1250); and the amount in the base currency.
+type CashAdvance struct {
+	ID       uuid.UUID
+	Version  int
+	Date     time.Time
+	Memo     string
+	Refund   bool
+	Account  uuid.UUID
+	Advances uuid.UUID
+	Amount   money.Money
+}
+
+// CashAdvanceIdentity is the posting identity of an advance version under a rule version (§11.4).
+func CashAdvanceIdentity(id uuid.UUID, version int, rule string) string {
+	return identity(SourceCashAdvance, id, version, rule)
+}
+
+// PostCashAdvance turns one version of a cash advance into its entry (cash_advance@1): an advance posts Dr the advances
+// account · Cr the money account with its amount; a refund posts Dr the money account · Cr the advances account. Every
+// rule is checked first and every failure returned together (ENG-22).
+func PostCashAdvance(a CashAdvance, s Settings) (Entry, error) {
+	var probs Problems
+	add := func(code, field, msg, fix string) { probs = append(probs, Problem{code, field, msg, fix}) }
+	if a.Date.IsZero() {
+		add(CodeNoDate, "date", "the advance has no date", "Enter the date the money moved")
+	}
+	if len(a.Memo) > MaxMemo {
+		add(CodeTooLong, "memo", fmt.Sprintf("the memo has %d characters; the most is %d", len(a.Memo), MaxMemo), "Shorten the reference")
+	}
+	acc, ok := s.Accounts[a.Account]
+	switch {
+	case !ok:
+		add(CodeUnknownAccount, "money_account", "the account does not exist in this organisation", "Choose the bank, card or wallet account it moved through")
+	case acc.Group || !acc.Active || !acc.Money:
+		add(CodeNotMoneyAccount, "money_account", fmt.Sprintf("account %s is not an active money account", acc.Code), "Choose the bank, card or wallet account it moved through")
+	case acc.Currency != "" && acc.Currency != s.Base.Code:
+		add(CodePaymentAmount, "money_account", fmt.Sprintf("account %s holds %s, but an advance is in %s", acc.Code, acc.Currency, s.Base),
+			fmt.Sprintf("Use an account in %s", s.Base))
+	}
+	adv, ok := s.Accounts[a.Advances]
+	switch {
+	case !ok:
+		add(CodeAdvance, "advances_account", "the organisation has no advances account", "Set the advances account in Settings › Organisation, such as 1250")
+	case adv.Group || !adv.Active || adv.Money:
+		add(CodeAdvance, "advances_account", fmt.Sprintf("account %s is not an active, postable account that is not a money account", adv.Code),
+			"Set the advances account to one such as 1250 Staff & director advances")
+	}
+	if a.Amount.Currency() != s.Base || a.Amount.Sign() <= 0 {
+		add(CodeAdvance, "amount", fmt.Sprintf("the amount is %s %s", a.Amount, a.Amount.Currency()), fmt.Sprintf("Enter the amount in %s, more than zero", s.Base))
+	}
+	if len(probs) > 0 {
+		return Entry{}, probs
+	}
+	debit, credit := a.Advances, a.Account
+	if a.Refund {
+		debit, credit = a.Account, a.Advances
+	}
+	y, m, d := a.Date.Date()
+	return Entry{
+		PostingDate:     time.Date(y, m, d, 0, 0, 0, 0, time.UTC),
+		Source:          Source{Type: SourceCashAdvance, ID: a.ID.String(), Version: a.Version},
+		RuleVersion:     RuleCashAdvance,
+		PostingIdentity: CashAdvanceIdentity(a.ID, a.Version, RuleCashAdvance),
+		Memo:            a.Memo,
+		Lines: []Line{
+			{AccountID: debit, Amount: a.Amount, Rate: money.Identity(s.Base), Base: a.Amount, Description: a.Memo},
+			{AccountID: credit, Amount: a.Amount.Neg(), Rate: money.Identity(s.Base), Base: a.Amount.Neg(), Description: a.Memo},
+		},
+	}, nil
+}
+
+// CashAdvanceRule turns one version of an advance into its entry under one rule version.
+type CashAdvanceRule func(a CashAdvance, s Settings) (Entry, error)
+
+// CashAdvanceRules are every advance rule version the engine has posted with, by name.
+var CashAdvanceRules = map[string]CashAdvanceRule{
+	RuleCashAdvance: PostCashAdvance,
+}
+
+// ReplayCashAdvance re-runs the rule version that posted an advance's entry over the same version (ENG-06).
+func ReplayCashAdvance(rule string, a CashAdvance, s Settings) (Entry, error) {
+	f, ok := CashAdvanceRules[rule]
+	if !ok {
+		return Entry{}, Problems{{CodeUnknownRule, "rule_version", fmt.Sprintf("the engine has no rule version %s", rule),
+			"Restore the rule version: an old version is never removed while an entry names it (ENG-06)"}}
+	}
+	return f(a, s)
+}

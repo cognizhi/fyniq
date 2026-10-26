@@ -492,6 +492,15 @@ var (
 	VoidClaimReimbursement        = Policy{Operation: "voidClaimReimbursement", Capability: PaymentBatches, Need: Create, Unqualified: true}
 	RequestClaimReimbursementVoid = Policy{Operation: "requestClaimReimbursementVoid", Capability: PaymentBatches, Need: Create, Unqualified: true}
 	GetExpenseClaimsOwed          = Policy{Operation: "getExpenseClaimsOwed", Capability: ExpenseClaims, Need: View}
+	// Cash advances to members and their refunds (FR-AP-17; rev 0.148), as reimbursements: recorded and voided under C on
+	// "Payment batches", a void in Founder mode asked for and approved by another person who holds A there; read under V
+	// on "Expense claims", which the handlers narrow to the caller's own for an Employee, whose claims settle them.
+	ListCashAdvances        = Policy{Operation: "listCashAdvances", Capability: ExpenseClaims, Need: View}
+	GetCashAdvance          = Policy{Operation: "getCashAdvance", Capability: ExpenseClaims, Need: View}
+	RecordCashAdvance       = Policy{Operation: "recordCashAdvance", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	RecordCashAdvanceRefund = Policy{Operation: "recordCashAdvanceRefund", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	VoidCashAdvance         = Policy{Operation: "voidCashAdvance", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	RequestCashAdvanceVoid  = Policy{Operation: "requestCashAdvanceVoid", Capability: PaymentBatches, Need: Create, Unqualified: true}
 	// Invoices (FR-AR-03; p1-sales), as bills: read under V, prepared under C (the Bookkeeper, the AR specialist, the
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
 	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
@@ -919,6 +928,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListWithholdingDecisions, RecordWithholdingDecision, PlanBillPayment, ListBillReminders,
 	ListExpenseClaims, GetExpenseClaim, CreateExpenseClaim, ReplaceExpenseClaim, SubmitExpenseClaim, WithdrawExpenseClaim,
 	ListClaimReimbursements, GetClaimReimbursement, RecordClaimReimbursement, VoidClaimReimbursement, RequestClaimReimbursementVoid, GetExpenseClaimsOwed,
+	ListCashAdvances, GetCashAdvance, RecordCashAdvance, RecordCashAdvanceRefund, VoidCashAdvance, RequestCashAdvanceVoid,
 	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
 	ListClaimCategories, CreateClaimCategory, ReplaceClaimCategory, LoadStarterClaimCategories,
 	AddExpenseClaimEvidence, ListExpenseClaimEvidence, GetExpenseClaimEvidence, RemoveExpenseClaimEvidence,

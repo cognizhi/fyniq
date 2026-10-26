@@ -52,7 +52,8 @@
         "connector",
         "bank_rule",
         "expense_claim",
-        "claim_reimbursement"
+        "claim_reimbursement",
+        "cash_advance"
       ],
       "examples": [
         "organisation_setting"

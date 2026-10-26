@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What it settled, in the base currency."
+    },
+    "date": {
+      "description": "The day it settled the advance: the claim's or the refund's date.",
+      "examples": [
+        "2026-10-10"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "document_id": {
+      "description": "The claim or refund.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fd1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number.",
+      "examples": [
+        "CLM-0007"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "description": "expense_claim for a claim that settled it; cash_advance for a refund.",
+      "enum": [
+        "expense_claim",
+        "cash_advance"
+      ],
+      "examples": [
+        "expense_claim"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "document_id",
+    "type",
+    "date",
+    "amount"
+  ],
+  "title": "CashAdvanceSettlement",
+  "type": "object"
+}

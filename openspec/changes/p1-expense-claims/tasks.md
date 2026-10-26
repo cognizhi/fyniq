@@ -56,7 +56,7 @@
 
 ## 6. Cash advances
 
-- [ ] 6.1 `cash_advance@1` and its refund, recorded under the "Payment batches" row as reimbursements are (rev 0.148); the advance a claim settles in the claim's draft, and the setting
+- [x] 6.1 `cash_advance@1` and its refund, recorded under the "Payment batches" row as reimbursements are (rev 0.148); the advance a claim settles in the claim's draft, and the setting
   `claims.advances_account` (1250); a claim settling an advance (`expense_claim@1` credits it already); what is left
   refunded and matched from the bank; ⚠ on an advance unsettled past the deadline (the C.2 #39 line arrives with `p1-checks`).
   - Tests: UC-EXP-03: S$800 advanced, S$742.15 claimed in IDR at the rate cascade, S$57.85 refunded and matched; claims

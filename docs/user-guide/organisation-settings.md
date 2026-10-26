@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AR-05, FR-BNK-16]
+requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16]
 status: draft
 ---
 
@@ -154,6 +154,15 @@ reconciled to it.
 - Anyone who reconciles bank lines can dismiss an alert sooner, with a reason, such as one that
   points to the wrong invoice.
 - A change needs a second approver, as the other bank settings do.
+
+## Advances account
+
+Money advanced to a member before a trip waits on the **advances account** until their claims settle
+it or they refund what is left: 1250 Staff & director advances in the standard chart.
+
+- Choose another account by its code, such as a staff advances account you added to the chart.
+- An advance, a refund of one, and a claim that settles one all post to it.
+- A change needs a second approver, as the other accounting settings do.
 
 ## Claim deadline
 

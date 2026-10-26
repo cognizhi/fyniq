@@ -76,6 +76,9 @@ const (
 	// second person who holds A on "Payment batches" approves it (the owner's decision of 26 Oct 2026, rev 0.148); its
 	// key is its id.
 	ObjectReimbursement = "claim_reimbursement"
+	// ObjectCashAdvance is a cash advance to a member, or its refund, recorded by hand, to void (FR-AP-17, FR-GL-12,
+	// FM-1): a second person who holds A on "Payment batches" approves it (rev 0.148); its key is its id.
+	ObjectCashAdvance = "cash_advance"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -126,6 +129,8 @@ const (
 	OpClaimPost = "expense_claim.post"
 	// OpReimbursementVoid voids a reimbursement of expense claims.
 	OpReimbursementVoid = "claim_reimbursement.void"
+	// OpCashAdvanceVoid voids a cash advance or its refund.
+	OpCashAdvanceVoid = "cash_advance.void"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -141,6 +146,7 @@ var Operations = map[string]string{
 	OpCustomerRefundVoid: ObjectCustomerRefund, OpDepositVoid: ObjectDeposit, OpRecurringApprove: ObjectRecurringInvoice,
 	OpConnectorChange: ObjectConnector, OpRuleAutoApply: ObjectBankRule, OpClaimPost: ObjectClaim,
 	OpReimbursementVoid: ObjectReimbursement,
+	OpCashAdvanceVoid:   ObjectCashAdvance,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -195,10 +201,12 @@ var Dependencies = map[string][]string{
 	ObjectConnector: {"connector_version", "state"},
 	// the rule's version, and the SHA-256 of its conditions and action: what the back-test was run on
 	ObjectBankRule: {"rule_version", "rule"},
-	// the claim's version and status, and what the company owes for it in the base currency
+	// the claim's version and status, and what the company owes for it in the base currency, with what it settles of an advance
 	ObjectClaim: {"claim_version", "status", "owed"},
 	// the reimbursement's status, and what it paid back in the base currency
 	ObjectReimbursement: {"status", "paid"},
+	// the advance's status, and its amount in the base currency
+	ObjectCashAdvance: {"status", "amount"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -231,6 +239,7 @@ var Rows = map[string]string{
 	ObjectBankRule:            "Bank transactions, categorise",
 	ObjectClaim:               "Expense claims",
 	ObjectReimbursement:       "Payment batches",
+	ObjectCashAdvance:         "Payment batches",
 }
 
 // The limits of a policy.
@@ -292,6 +301,7 @@ var Policies = map[string]Policy{
 	ObjectBankRule:            {ObjectType: ObjectBankRule, Version: "founder/bank_rule@2026-10-25.1", Steps: []Step{{Quorum: 1}}},
 	ObjectClaim:               {ObjectType: ObjectClaim, Version: "founder/expense_claim@2026-10-26.1", Steps: []Step{{Quorum: 1}}},
 	ObjectReimbursement:       {ObjectType: ObjectReimbursement, Version: "founder/claim_reimbursement@2026-10-26.1", Steps: []Step{{Quorum: 1}}},
+	ObjectCashAdvance:         {ObjectType: ObjectCashAdvance, Version: "founder/cash_advance@2026-10-26.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

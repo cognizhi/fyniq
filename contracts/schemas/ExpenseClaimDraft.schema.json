@@ -2,6 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "advance_id": {
+      "description": "The claimant's cash advance it settles (listCashAdvances, open=true): the claim credits it up to what is still open on it, and the company reimburses the rest (FR-AP-17, UC-EXP-03).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "date": {
       "description": "The claim's date: the day its entry posts on, on or after every receipt's.",
       "examples": [

@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings and recommended values: features, terms, GST, tolerances, banking, claim deadline, mileage rates, thresholds, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:4c225feb8f2f7df19c12b48e99fb000e38ce2a3f4b4c2bc918b9e64dd1bde1e3
+  - docs/user-guide/organisation-settings.md sha256:d28371323fb0fb23d9e50f45681c7c0a705d851954f0547a18ff5cff8b6328d1
 data_class: general
 taint: trusted
 status: draft
@@ -33,6 +33,8 @@ aliases:
   - incoming-funds alert
   - likely paid
   - alert expiry
+  - advances account
+  - staff advance
   - claim deadline
   - late claim
   - mileage rate
@@ -127,6 +129,14 @@ aliases:
 - A change needs a second approver, as the other bank settings do.
 
 (src: docs/user-guide/organisation-settings.md#incoming-funds-alerts)
+
+## Advances account
+
+- Money advanced to a member before a trip waits on the **advances account** until their claims settle it or they refund what is left: 1250 Staff & director advances in the standard chart.
+- Choose another account by its code; an advance, a refund of one, and a claim that settles one all post to it.
+- A change needs a second approver, as the other accounting settings do.
+
+(src: docs/user-guide/organisation-settings.md#advances-account)
 
 ## Claim deadline
 

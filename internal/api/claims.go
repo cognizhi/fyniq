@@ -41,7 +41,7 @@ const (
 
 // ClaimCodes are the codes the posting rule and the claim's own checks answer.
 var ClaimCodes = []string{claim.CodeClaimant, claim.CodeCategory, claim.CodeTooLong, claim.CodeReceipt, claim.CodeGSTCode, claim.CodeMileage,
-	claim.CodeMileageRate, claim.CodeReceiptRequired, claim.CodeLateReason, claim.CodeDuplicate, claim.CodeReceiptFile, ledger.CodeClaimLine, ledger.CodeClaimPaid, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency}
+	claim.CodeMileageRate, claim.CodeReceiptRequired, claim.CodeLateReason, claim.CodeDuplicate, claim.CodeReceiptFile, claim.CodeClaimAdvance, ledger.CodeClaimLine, ledger.CodeClaimPaid, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency}
 
 // ClaimApprovalCodes are the codes an approval of a claim's post may answer: the claimant's own, and the posting's.
 func ClaimApprovalCodes() []string {
@@ -81,6 +81,7 @@ type ExpenseClaimDraft struct {
 	Title      string             `json:"title,omitempty" maxLength:"120" doc:"What the claim is for." example:"Acme visit"`
 	Notes      string             `json:"notes,omitempty" maxLength:"2000" doc:"Notes for the approver: why a line is above its limit, for example." example:"Client lunch ran over the meals limit."`
 	LateReason string             `json:"late_reason,omitempty" maxLength:"500" doc:"Why a line past the claim deadline is claimed late: required before submitting such a claim (FR-AP-15)." example:"The receipt was found after the trip"`
+	AdvanceID  string             `json:"advance_id,omitempty" format:"uuid" doc:"The claimant's cash advance it settles (listCashAdvances, open=true): the claim credits it up to what is still open on it, and the company reimburses the rest (FR-AP-17, UC-EXP-03)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa1"`
 	Lines      []ExpenseClaimLine `json:"lines" nullable:"false" maxItems:"100" doc:"Its lines: a receipt or a trip each."`
 }
 
@@ -98,13 +99,15 @@ type ExpenseClaim struct {
 	Status        string              `json:"status" enum:"draft,posted,reversed" doc:"Draft (✎) until it is approved, then posted." example:"draft"`
 	Version       int                 `json:"version" doc:"The version of its content; with the status it makes the ETag." example:"1"`
 	Claimant      Person              `json:"claimant" doc:"Who claims: the member the company owes."`
-	Stage         string              `json:"stage" enum:"draft,submitted,returned,approved,scheduled,paid" doc:"Where it stands for its claimant (FR-AP-14): draft; submitted while its approval waits; returned when its latest request was rejected, with the comment; approved once posted; paid once reimbursements paid back all it owes. scheduled arrives with payment batches." example:"submitted"`
+	Stage         string              `json:"stage" enum:"draft,submitted,returned,approved,scheduled,paid" doc:"Where it stands for its claimant (FR-AP-14): draft; submitted while its approval waits; returned when its latest request was rejected, with the comment; approved once posted; paid once reimbursements, and the advance it settles, cover all it owes. scheduled arrives with payment batches." example:"submitted"`
 	Date          string              `json:"date,omitempty" format:"date" doc:"The claim's date." example:"2026-10-26"`
 	Title         string              `json:"title,omitempty" doc:"What it is for." example:"Acme visit"`
 	Notes         string              `json:"notes,omitempty" doc:"Its notes." example:"Client lunch ran over the meals limit."`
 	LateReason    string              `json:"late_reason,omitempty" doc:"Why a line past the claim deadline is claimed late." example:"The receipt was found after the trip"`
+	AdvanceID     string              `json:"advance_id,omitempty" format:"uuid" doc:"The cash advance it settles." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa1"`
+	Settles       *Money              `json:"settles,omitempty" doc:"What it settles of the advance, in the base currency: as posted, or as posting would settle it now (the least of its total and what is open on the advance). The rest of its total is reimbursed."`
 	Lines         []ExpenseClaimLine  `json:"lines" nullable:"false" doc:"The lines as entered."`
-	Total         *Money              `json:"total,omitempty" doc:"What the company owes for it in the base currency, as posted or as posting would post it; absent while it cannot post."`
+	Total         *Money              `json:"total,omitempty" doc:"What the company owes for it in the base currency, as posted or as posting would post it, what it settles of an advance included; absent while it cannot post."`
 	Returned      *ExpenseClaimReturn `json:"returned,omitempty" doc:"Its latest return, while it is returned."`
 	TaxDecisions  []BillTaxDecision   `json:"input_tax_decisions" nullable:"false" doc:"getExpenseClaim only: how each line's input tax was decided, one a line in order (FR-AP-20)."`
 	Checks        []BillCheck         `json:"checks" nullable:"false" doc:"getExpenseClaim only: what stops a draft being submitted (✖), and the warnings it posts with (⚠), such as a line above its category's limit, which finance approves too."`
@@ -186,6 +189,13 @@ func claimDraftOf(in ExpenseClaimDraft, base money.Currency) (claim.Draft, error
 			fields = append(fields, FieldProblem{Code: CodeInvalid, Field: "body.date", Message: "is not a date", Fix: "Send the date as YYYY-MM-DD"})
 		}
 		d.Date = t
+	}
+	if in.AdvanceID != "" {
+		id, err := uuid.Parse(in.AdvanceID)
+		if err != nil {
+			fields = append(fields, FieldProblem{Code: CodeInvalid, Field: "body.advance_id", Message: "is not an ID", Fix: "Send the advance's ID"})
+		}
+		d.AdvanceID = &id
 	}
 	for i, l := range in.Lines {
 		at := func(f string) string { return "body.lines[" + strconv.Itoa(i) + "]." + f }
@@ -346,6 +356,9 @@ func (a *API) claimOf(ctx context.Context, u storage.UnitOfWork, v claimView, do
 		Claimant: Person{Kind: "user", ID: d.ClaimantID.String()}, Stage: "draft", Date: dayText(d.Date), Title: d.Title, Notes: d.Notes, LateReason: d.LateReason,
 		Lines: claimLinesOut(d, nil), TaxDecisions: []BillTaxDecision{}, Checks: []BillCheck{}, LedgerImpact: []EntryLine{},
 		PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: doc.PostedAt}
+	if d.AdvanceID != nil {
+		out.AdvanceID = d.AdvanceID.String()
+	}
 	var returnedBy *Person
 	if r, ok := v.latest[out.ID]; ok && doc.Status == storage.DocumentDraft {
 		switch approval.Status(r.Status) {
@@ -401,6 +414,10 @@ func (a *API) claimOf(ctx context.Context, u storage.UnitOfWork, v claimView, do
 		if len(c.Problems) == 0 {
 			t := moneyOut(c.Owed)
 			out.Total = &t
+			if x := c.Prepared.Claim.Settles; x != nil {
+				settles := moneyOut(*x)
+				out.Settles = &settles
+			}
 			if withChecks {
 				out.LedgerImpact = impactOf(c.Entry)
 			}
@@ -436,14 +453,33 @@ func (a *API) claimOf(ctx context.Context, u storage.UnitOfWork, v claimView, do
 			}
 		}
 	}
-	t := moneyOut(owed)
+	settled := money.Zero(v.base) // what it settled of the advance, as its allocation kept it
+	if d.AdvanceID != nil {
+		allocs, err := u.Allocations().OfSource(ctx, doc.ID)
+		if err != nil {
+			return ExpenseClaim{}, err
+		}
+		for _, a := range allocs {
+			if a.DocumentID == *d.AdvanceID && a.SourceVersion == doc.Version {
+				if x, err := money.ParseStored(string(a.Amount), v.base); err == nil {
+					settled, _ = settled.Add(x)
+				}
+			}
+		}
+		if !settled.IsZero() {
+			x := moneyOut(settled)
+			out.Settles = &x
+		}
+	}
+	total, _ := owed.Add(settled)
+	t := moneyOut(total)
 	out.Total = &t
-	if doc.Status == storage.DocumentPosted { // paid once reimbursements have paid back all it owes (FR-AP-14)
+	if doc.Status == storage.DocumentPosted { // paid once reimbursements, and the advance it settles, cover all it owes (FR-AP-14)
 		b, err := claim.Balances(ctx, u, []storage.Document{doc}, v.base, time.Time{})
 		if err != nil {
 			return ExpenseClaim{}, err
 		}
-		if x, ok := b[doc.ID]; ok && x.Owed.Sign() > 0 && x.Open.Sign() <= 0 {
+		if x, ok := b[doc.ID]; ok && total.Sign() > 0 && x.Open.Sign() <= 0 {
 			out.Stage = "paid"
 		}
 	}
@@ -510,6 +546,9 @@ func claimDependencies(ctx context.Context, u storage.UnitOfWork, key string) (i
 		}
 		if len(c.Problems) == 0 {
 			owed = c.Owed.String() + " " + c.Owed.Currency().Code
+			if x := c.Prepared.Claim.Settles; x != nil { // what it settles of the advance: the entry's split (FR-AP-17)
+				owed += ", settling " + x.String() + " " + x.Currency().Code + " of the advance"
+			}
 		}
 	}
 	return doc.Version, map[string]any{"claim_version": doc.Version, "status": string(doc.Status), "owed": owed}, nil

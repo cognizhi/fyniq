@@ -43,8 +43,19 @@ func checkClaim(ctx context.Context, u storage.UnitOfWork, doc storage.Document,
 	if err != nil {
 		return CheckedClaim{}, err
 	}
-	out := CheckedClaim{Prepared: p, Problems: probs, Owed: money.Zero(s.Base)}
 	entry, err := ledger.PostExpenseClaim(p.Claim, s)
+	if err == nil && p.Advance != nil { // what it settles of the advance: the least of what it owes and what is open (FR-AP-17)
+		owed := money.Zero(s.Base)
+		for _, l := range entry.Lines {
+			if s.Accounts[l.AccountID].Role == ledger.RoleExpenseClaimsPayable {
+				owed, _ = owed.Add(l.Base.Neg())
+			}
+		}
+		if p.Claim.Settles = p.Settle(owed); p.Claim.Settles != nil {
+			entry, err = ledger.PostExpenseClaim(p.Claim, s)
+		}
+	}
+	out := CheckedClaim{Prepared: p, Problems: probs, Owed: money.Zero(s.Base)}
 	if ps, ok := err.(ledger.Problems); ok {
 		for _, x := range ps {
 			if x.Code == ledger.CodeMissingRate && probs.Has(fx.CodeNoRate) {
@@ -172,6 +183,12 @@ func (s Claims) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, err
 		if err != nil {
 			return err
 		}
+		if d, err := claim.Read(doc, settings.Base); err == nil && d.AdvanceID != nil {
+			// The advance it settles, locked so two claims or a refund of it wait for each other (ENG-47).
+			if _, err := u.Documents().Lock(ctx, *d.AdvanceID); err != nil && !errors.Is(err, ports.ErrNotFound) {
+				return err
+			}
+		}
 		c, err := checkClaim(ctx, u, doc, settings)
 		if err != nil {
 			return err
@@ -187,6 +204,13 @@ func (s Claims) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, err
 		if out, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
 			return err
 		}
+		if x := c.Prepared.Claim.Settles; x != nil && !x.IsZero() { // what it settles of the advance
+			if _, err := u.Allocations().Add(ctx, storage.NewAllocation{SourceID: doc.ID, SourceVersion: doc.Version, DocumentID: *c.Prepared.Draft.AdvanceID,
+				On: c.Prepared.Draft.Date, Currency: x.Currency().Code, Amount: storage.Decimal(x.String()), BaseCurrency: settings.Base.Code,
+				BaseAmount: storage.Decimal(x.String()), RealisedFX: "0"}); err != nil {
+				return err
+			}
+		}
 		if err := u.Documents().SetStatus(ctx, id, storage.DocumentPosted); err != nil {
 			return err
 		}
@@ -201,7 +225,8 @@ func (s Claims) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, err
 
 // replayExpenseClaim posts a claim version again as its entry posted it (ENG-06): each line's account, rate and whether
 // its GST was claimed as the entry kept them, so a category moved to another account since, or a rate added to the
-// cascade since, does not change what the claim posted.
+// cascade since, does not change what the claim posted; what it settled of an advance as its allocation kept it, to
+// the advances account the entry credited.
 func replayExpenseClaim(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings, e storage.Entry) (ledger.Entry, error) {
 	p, _, err := claim.Prepare(ctx, u, doc, s.Base)
 	if err != nil {
@@ -213,6 +238,29 @@ func replayExpenseClaim(ctx context.Context, u storage.UnitOfWork, doc storage.D
 	}
 	c := p.Claim
 	c.Memo = stored.Memo
+	c.Settles, c.Advances = nil, uuid.Nil
+	if p.Draft.AdvanceID != nil {
+		allocs, err := u.Allocations().OfSource(ctx, doc.ID)
+		if err != nil {
+			return ledger.Entry{}, err
+		}
+		for _, a := range allocs {
+			if a.ReversesID != nil || a.DocumentID != *p.Draft.AdvanceID || a.SourceVersion != doc.Version {
+				continue
+			}
+			x, err := money.ParseStored(string(a.Amount), s.Base)
+			if err != nil {
+				return ledger.Entry{}, err
+			}
+			c.Settles = &x
+			for _, l := range stored.Lines {
+				role := s.Accounts[l.AccountID].Role
+				if l.Base.Equal(x.Neg()) && role != ledger.RoleExpenseClaimsPayable && role != ledger.RoleFXRounding {
+					c.Advances = l.AccountID
+				}
+			}
+		}
+	}
 	k := 0 // the next stored line that is a claim line's cost
 	for i := range c.Lines {
 		l := &c.Lines[i]

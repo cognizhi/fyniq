@@ -42,6 +42,9 @@ type Prepared struct {
 	Warnings   []Warning
 	OverLimit  bool
 	Trips      map[int]Trip // a mileage line's trip, by its index in Lines
+	// Advance is where the advance the claim settles stands before the claim, nil when it settles none or cannot settle
+	// it: the claim settles the least of what it owes and what is open (Settle).
+	Advance *AdvanceBalance
 }
 
 // Trip is what RND-MILEAGE made of a mileage line (FR-AP-16): the distance it is claimed for, to 0.1 km, the vehicle's
@@ -192,8 +195,40 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 		c.Lines = append(c.Lines, ledger.ClaimLine{AccountID: cat.AccountID, Description: describe(l), Amount: l.Amount, GST: l.GST,
 			Claimable: dec.Condition == bill.Claimable && dec.Reason != bill.ReasonNoGST, Rate: rate, StatedBase: l.StatedGST, Paid: l.Paid})
 	}
+	if d.AdvanceID != nil {
+		b, prob, err := OpenAdvance(ctx, u, *d.AdvanceID, d.ClaimantID, base)
+		if err != nil {
+			return Prepared{}, nil, err
+		}
+		switch {
+		case prob != nil:
+			probs = append(probs, *prob)
+		case b.Open.Sign() <= 0:
+			add(CodeClaimAdvance, "advance_id", "nothing is still open on the advance", "Settle none: the company reimburses the claim")
+		default:
+			out.Advance = &b
+			if !d.Date.IsZero() {
+				if c.Advances, err = AdvancesAccount(ctx, u, d.Date); err != nil {
+					return Prepared{}, nil, err
+				}
+			}
+		}
+	}
 	out.Claim = c
 	return out, probs, nil
+}
+
+// Settle is what a claim that owes owed settles of the advance it names (FR-AP-17, UC-EXP-03): the least of owed and
+// what is open on the advance, in the base currency; nil when it settles none. The rest is owed on 2150 and reimbursed.
+func (p Prepared) Settle(owed money.Money) *money.Money {
+	if p.Advance == nil || owed.Sign() <= 0 {
+		return nil
+	}
+	x := owed
+	if over, err := owed.Cmp(p.Advance.Open); err == nil && over > 0 {
+		x = p.Advance.Open
+	}
+	return &x
 }
 
 // memo names a claim in its entry: what it is for.
