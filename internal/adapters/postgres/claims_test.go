@@ -130,3 +130,58 @@ func TestClaimCategoriesKeepTheirPolicy(t *testing.T) {
 		t.Errorf("organisation B counts %d categories", n)
 	}
 }
+
+// Saved places stay their person's (migration 000166): a place keeps its person and creation, changes one version at
+// a time, is never deleted, and a person has one live place of a name; every change is audited, and another
+// organisation sees none of it.
+// req: FR-AP-16
+// req: INV-06
+// req: QA-ENG-05
+// asvs: V8.4.1
+func TestClaimPlacesStayTheirPersons(t *testing.T) {
+	ctx := context.Background()
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	a := books(t, "Places organisation A Pte Ltd")
+	b := books(t, "Places organisation B Pte Ltd")
+	st := store(t, "fyniq_api")
+	mei, ali := founder(t, st, a.Org, 1, now), founder(t, st, a.Org, 2, now)
+	do := func(fn func(ctx context.Context, u storage.UnitOfWork) error) error { return st.Do(ctx, a.Org, fn) }
+	var office storage.ClaimPlace
+	if err := do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if office, err = u.ClaimPlaces().Create(ctx, storage.NewClaimPlace{UserID: mei, Name: "Office", Address: "1 Raffles Place", Active: true, At: now}); err != nil {
+			return err
+		}
+		_, err = u.ClaimPlaces().Create(ctx, storage.NewClaimPlace{UserID: ali, Name: "Office", Address: "8 Marina View", Active: true, At: now})
+		return err
+	}); err != nil {
+		t.Fatalf("two people's offices: %v", err)
+	}
+	if err := do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.ClaimPlaces().Create(ctx, storage.NewClaimPlace{UserID: mei, Name: " office ", Address: "Elsewhere", Active: true, At: now})
+		return err
+	}); storage.CodeOf(err) != storage.CodeInvalid {
+		t.Errorf("a second live Office of hers: %v", err)
+	}
+	if err := do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		office, err = u.ClaimPlaces().Change(ctx, office.ID, office.Version, storage.NewClaimPlace{Name: "Office", Address: "2 Raffles Place", At: now})
+		return err
+	}); err != nil || office.Version != 2 || office.Active || office.UserID != mei {
+		t.Fatalf("moving it out of use: %+v %v", office, err)
+	}
+	if got := actions(t, a.Org, office.ID); !slices.Contains(got, "claim_place.created") || !slices.Contains(got, "claim_place.changed") {
+		t.Errorf("audit: %v", got)
+	}
+	for _, x := range []struct{ role, what, stmt, state string }{
+		{"fyniq_migrator", "delete a place", "DELETE FROM fyniq.claim_place WHERE id = $1", "FY234"},
+		{"fyniq_migrator", "give it to another person", "UPDATE fyniq.claim_place SET user_id = (SELECT user_id FROM fyniq.claim_place WHERE id <> $1 LIMIT 1), version = version + 1 WHERE id = $1", "FY234"},
+		{"fyniq_migrator", "skip a version", "UPDATE fyniq.claim_place SET name = 'HQ', version = version + 2 WHERE id = $1", "FY234"},
+		{"fyniq_api", "delete a place as the API", "DELETE FROM fyniq.claim_place WHERE id = $1", "42501"},
+		{"fyniq_api", "change its person as the API", "UPDATE fyniq.claim_place SET user_id = user_id WHERE id = $1", "42501"},
+	} {
+		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, office.ID); return err })
+		wantState(t, x.what, err, x.state)
+	}
+	if n := count(t, b.Org, "claim_place"); n != 0 {
+		t.Errorf("organisation B counts %d places", n)
+	}
+}

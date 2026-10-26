@@ -15,7 +15,7 @@
     },
     "amount": {
       "$ref": "Money.schema.json",
-      "description": "What the receipt shows was paid, including GST, in its currency."
+      "description": "A receipt: what it shows was paid, including GST, in its currency (required). A trip: in answers, what RND-MILEAGE made of it."
     },
     "attendees": {
       "description": "Who attended, for a meal or entertainment.",
@@ -33,8 +33,15 @@
       "format": "uuid",
       "type": "string"
     },
+    "claimed_km": {
+      "description": "A trip, in answers: the distance rounded to 0.1 km (RND-MILEAGE).",
+      "examples": [
+        "18.4"
+      ],
+      "type": "string"
+    },
     "date": {
-      "description": "The receipt's date: its rate and its GST treatment are read on it.",
+      "description": "The receipt's or the trip's date: its rate and its GST treatment are read on it.",
       "examples": [
         "2026-10-24"
       ],
@@ -42,11 +49,19 @@
       "type": "string"
     },
     "description": {
-      "description": "What it was for.",
+      "description": "What it was for: a trip's purpose.",
       "examples": [
         "Taxi to Acme"
       ],
       "maxLength": 500,
+      "type": "string"
+    },
+    "distance": {
+      "description": "A trip: the whole trip's distance in km, as driven.",
+      "examples": [
+        "18.4"
+      ],
+      "pattern": "^[0-9]{1,5}(\\.[0-9]{1,3})?$",
       "type": "string"
     },
     "document": {
@@ -61,6 +76,14 @@
       ],
       "type": "string"
     },
+    "from": {
+      "description": "A trip: where it started, an address or a saved place's (claim places). Never sent anywhere: the maps service stays off.",
+      "examples": [
+        "Office, 1 Raffles Place"
+      ],
+      "maxLength": 300,
+      "type": "string"
+    },
     "fx_rate": {
       "description": "For a receipt in another currency, a rate into the base currency typed by the claimant; left out, the rate on its date (ENG-40).",
       "examples": [
@@ -73,7 +96,7 @@
       "description": "The GST the receipt shows, in its currency; none when left out."
     },
     "gst_code": {
-      "description": "The receipt's GST code for purchases, from the sg-gst pack: TX when it shows GST, NR when the merchant is not GST-registered, OP outside Singapore.",
+      "description": "A receipt's GST code for purchases, from the sg-gst pack: TX when it shows GST, NR when the merchant is not GST-registered, OP outside Singapore. A trip has none.",
       "examples": [
         "NR"
       ],
@@ -81,9 +104,10 @@
       "type": "string"
     },
     "kind": {
-      "description": "receipt: what was bought, as the receipt shows it (the default). Mileage lines arrive with the mileage rates (FR-AP-16).",
+      "description": "receipt: what was bought, as the receipt shows it (the default); mileage: a trip in the claimant's own car or motorcycle, at the organisation's rate per km (FR-AP-16).",
       "enum": [
-        "receipt"
+        "receipt",
+        "mileage"
       ],
       "examples": [
         "receipt"
@@ -102,15 +126,43 @@
       "$ref": "Money.schema.json",
       "description": "For a receipt in another currency: what left the claimant's account in the base currency, as their card statement shows it; what the company owes them for it (FR-AP-17). Left out: the amount at the rate on its date."
     },
+    "rate": {
+      "$ref": "Money.schema.json",
+      "description": "A trip, in answers: the vehicle's rate per km on its date."
+    },
+    "return": {
+      "description": "A trip: true when it came back the same way. The distance is still the whole trip's, as driven.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
     "stated_gst": {
       "$ref": "Money.schema.json",
       "description": "For a receipt in another currency: the GST its tax invoice states in the base currency (ENG-42); without it the GST is not claimed."
+    },
+    "to": {
+      "description": "A trip: where it went.",
+      "examples": [
+        "Acme HQ, 10 Anson Road"
+      ],
+      "maxLength": 300,
+      "type": "string"
+    },
+    "vehicle": {
+      "description": "A trip: the vehicle, whose rate per km it is claimed at.",
+      "enum": [
+        "car",
+        "motorcycle"
+      ],
+      "examples": [
+        "car"
+      ],
+      "type": "string"
     }
   },
   "required": [
-    "category_id",
-    "amount",
-    "gst_code"
+    "category_id"
   ],
   "title": "ExpenseClaimLine",
   "type": "object"

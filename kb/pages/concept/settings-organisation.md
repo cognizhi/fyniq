@@ -2,9 +2,9 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings and recommended values: features, terms, GST, tax invoices, tolerances, banking, thresholds, variances, email-in, retention
+summary: Company-wide settings and recommended values: features, terms, GST, tax invoices, tolerances, banking, mileage rates, thresholds, variances, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:d4ec445f62076415f72ed3720fd198765b17c982efe59182596070e906b29688
+  - docs/user-guide/organisation-settings.md sha256:33027ea03ca78f11922e01499f96491d5aaffc4c4b6d9fb390c8f7930a8b5346
 data_class: general
 taint: trusted
 status: draft
@@ -33,6 +33,8 @@ aliases:
   - incoming-funds alert
   - likely paid
   - alert expiry
+  - mileage rate
+  - rate per km
 ---
 
 # Organisation settings and their recommended values
@@ -123,6 +125,16 @@ aliases:
 - A change needs a second approver, as the other bank settings do.
 
 (src: docs/user-guide/organisation-settings.md#incoming-funds-alerts)
+
+## Mileage rates
+
+- A member who drives their own car or motorcycle for the company claims the distance at the organisation's **rate per km** for the vehicle.
+- IRAS prescribes no rate per km; it must be reasonable, so both rates ship **not set**, and a mileage claim waits until the owner or the accountant sets its vehicle's rate.
+- Each rate is in Singapore dollars, from 0.01 to 5.00, and takes effect from a day, never back-dated: a trip is claimed at the rate in force on its date.
+- The distance is rounded to 0.1 km and the amount to the cent, trip by trip; a mileage line claims no GST.
+- A change needs a second approver, as the other money settings do.
+
+(src: docs/user-guide/organisation-settings.md#mileage-rates)
 
 ## Capitalisation threshold
 

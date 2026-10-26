@@ -40,8 +40,8 @@ const (
 )
 
 // ClaimCodes are the codes the posting rule and the claim's own checks answer.
-var ClaimCodes = []string{claim.CodeClaimant, claim.CodeCategory, claim.CodeTooLong, claim.CodeReceipt, claim.CodeGSTCode, ledger.CodeClaimLine,
-	ledger.CodeClaimPaid, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency}
+var ClaimCodes = []string{claim.CodeClaimant, claim.CodeCategory, claim.CodeTooLong, claim.CodeReceipt, claim.CodeGSTCode, claim.CodeMileage,
+	claim.CodeMileageRate, ledger.CodeClaimLine, ledger.CodeClaimPaid, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency}
 
 // ClaimApprovalCodes are the codes an approval of a claim's post may answer: the claimant's own, and the posting's.
 func ClaimApprovalCodes() []string {
@@ -50,13 +50,13 @@ func ClaimApprovalCodes() []string {
 
 // ExpenseClaimLine is one line of a claim: a receipt, as the receipt shows it.
 type ExpenseClaimLine struct {
-	Kind        string `json:"kind,omitempty" enum:"receipt" doc:"receipt: what was bought, as the receipt shows it (the default). Mileage lines arrive with the mileage rates (FR-AP-16)." example:"receipt"`
-	Date        string `json:"date,omitempty" format:"date" doc:"The receipt's date: its rate and its GST treatment are read on it." example:"2026-10-24"`
+	Kind        string `json:"kind,omitempty" enum:"receipt,mileage" doc:"receipt: what was bought, as the receipt shows it (the default); mileage: a trip in the claimant's own car or motorcycle, at the organisation's rate per km (FR-AP-16)." example:"receipt"`
+	Date        string `json:"date,omitempty" format:"date" doc:"The receipt's or the trip's date: its rate and its GST treatment are read on it." example:"2026-10-24"`
 	Merchant    string `json:"merchant,omitempty" maxLength:"120" doc:"Who was paid, as the receipt shows it." example:"ComfortDelGro"`
 	CategoryID  string `json:"category_id" format:"uuid" doc:"The expense policy's category it is for: the account it costs (FR-AP-15)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fc1"`
-	Description string `json:"description,omitempty" maxLength:"500" doc:"What it was for." example:"Taxi to Acme"`
-	Amount      Money  `json:"amount" doc:"What the receipt shows was paid, including GST, in its currency."`
-	GSTCode     string `json:"gst_code" pattern:"^[A-Z]{2,4}$" doc:"The receipt's GST code for purchases, from the sg-gst pack: TX when it shows GST, NR when the merchant is not GST-registered, OP outside Singapore." example:"NR"`
+	Description string `json:"description,omitempty" maxLength:"500" doc:"What it was for: a trip's purpose." example:"Taxi to Acme"`
+	Amount      *Money `json:"amount,omitempty" doc:"A receipt: what it shows was paid, including GST, in its currency (required). A trip: in answers, what RND-MILEAGE made of it."`
+	GSTCode     string `json:"gst_code,omitempty" pattern:"^[A-Z]{2,4}$" doc:"A receipt's GST code for purchases, from the sg-gst pack: TX when it shows GST, NR when the merchant is not GST-registered, OP outside Singapore. A trip has none." example:"NR"`
 	GST         *Money `json:"gst,omitempty" doc:"The GST the receipt shows, in its currency; none when left out."`
 	StatedGST   *Money `json:"stated_gst,omitempty" doc:"For a receipt in another currency: the GST its tax invoice states in the base currency (ENG-42); without it the GST is not claimed."`
 	Paid        *Money `json:"paid,omitempty" doc:"For a receipt in another currency: what left the claimant's account in the base currency, as their card statement shows it; what the company owes them for it (FR-AP-17). Left out: the amount at the rate on its date."`
@@ -64,6 +64,13 @@ type ExpenseClaimLine struct {
 	Attendees   string `json:"attendees,omitempty" maxLength:"500" doc:"Who attended, for a meal or entertainment." example:"Mei Ling Tan; Tan Wei, Acme"`
 	Document    string `json:"document,omitempty" enum:"tax_invoice,simplified,none" doc:"What the receipt is, for its input tax (FR-AP-20): a tax invoice (the default), a simplified tax invoice (the merchant's GST number, no customer named), or none." example:"simplified"`
 	AddressedTo string `json:"addressed_to,omitempty" enum:"company,agent" doc:"For a tax invoice: addressed to the company (the default), or to the claimant as its agent." example:"company"`
+	From        string `json:"from,omitempty" maxLength:"300" doc:"A trip: where it started, an address or a saved place's (claim places). Never sent anywhere: the maps service stays off." example:"Office, 1 Raffles Place"`
+	To          string `json:"to,omitempty" maxLength:"300" doc:"A trip: where it went." example:"Acme HQ, 10 Anson Road"`
+	Return      bool   `json:"return,omitempty" doc:"A trip: true when it came back the same way. The distance is still the whole trip's, as driven." example:"true"`
+	Vehicle     string `json:"vehicle,omitempty" enum:"car,motorcycle" doc:"A trip: the vehicle, whose rate per km it is claimed at." example:"car"`
+	Distance    string `json:"distance,omitempty" pattern:"^[0-9]{1,5}(\\.[0-9]{1,3})?$" doc:"A trip: the whole trip's distance in km, as driven." example:"18.4"`
+	ClaimedKm   string `json:"claimed_km,omitempty" doc:"A trip, in answers: the distance rounded to 0.1 km (RND-MILEAGE)." example:"18.4"`
+	Rate        *Money `json:"rate,omitempty" doc:"A trip, in answers: the vehicle's rate per km on its date."`
 }
 
 // ExpenseClaimDraft is a claim as its claimant enters it.
@@ -187,11 +194,23 @@ func claimDraftOf(in ExpenseClaimDraft, base money.Currency) (claim.Draft, error
 		line.CategoryID = id
 		if l.Date != "" {
 			if line.Date, err = time.Parse(time.DateOnly, l.Date); err != nil {
-				fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("date"), Message: "is not a date", Fix: "Send the receipt's date as YYYY-MM-DD"})
+				fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("date"), Message: "is not a date", Fix: "Send the date as YYYY-MM-DD"})
 			}
 		}
+		if l.Kind == claim.LineMileage {
+			line.Kind, line.From, line.To, line.Return, line.Vehicle = claim.LineMileage, strings.TrimSpace(l.From), strings.TrimSpace(l.To), l.Return, l.Vehicle
+			if line.Distance, err = money.ParseQuantity(cmpOr(l.Distance, "0"), at("distance")); err != nil {
+				fields = append(fields, fieldOf(err, at("distance")))
+			}
+			d.Lines = append(d.Lines, line)
+			continue
+		}
+		if l.Amount == nil {
+			fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("amount"), Message: "is missing", Fix: "Send what the receipt shows was paid"})
+			continue
+		}
 		var bad *FieldProblem
-		if line.Amount, bad = moneyIn(l.Amount, at("amount")); bad != nil {
+		if line.Amount, bad = moneyIn(*l.Amount, at("amount")); bad != nil {
 			fields = append(fields, *bad)
 			continue
 		}
@@ -233,12 +252,23 @@ func claimDraftOf(in ExpenseClaimDraft, base money.Currency) (claim.Draft, error
 	return d, nil
 }
 
-// claimLinesOut are a claim's lines as the API shows them.
-func claimLinesOut(d claim.Draft) []ExpenseClaimLine {
+// claimLinesOut are a claim's lines as the API shows them, each trip with what RND-MILEAGE made of it when trips says.
+func claimLinesOut(d claim.Draft, trips map[int]claim.Trip) []ExpenseClaimLine {
 	out := make([]ExpenseClaimLine, 0, len(d.Lines))
-	for _, l := range d.Lines {
+	for i, l := range d.Lines {
+		if l.Kind == claim.LineMileage {
+			x := ExpenseClaimLine{Kind: claim.LineMileage, Date: dayText(l.Date), CategoryID: l.CategoryID.String(), Description: l.Description,
+				From: l.From, To: l.To, Return: l.Return, Vehicle: l.Vehicle, Distance: l.Distance.String()}
+			if t, ok := trips[i]; ok {
+				amount, rate := moneyOut(t.Amount), moneyOut(t.Rate)
+				x.Amount, x.Rate, x.ClaimedKm = &amount, &rate, t.Km.String()
+			}
+			out = append(out, x)
+			continue
+		}
+		amount := moneyOut(l.Amount)
 		x := ExpenseClaimLine{Kind: claim.LineReceipt, Date: dayText(l.Date), Merchant: l.Merchant, CategoryID: l.CategoryID.String(),
-			Description: l.Description, Amount: moneyOut(l.Amount), GSTCode: l.GSTCode, Attendees: l.Attendees, Document: l.Document,
+			Description: l.Description, Amount: &amount, GSTCode: l.GSTCode, Attendees: l.Attendees, Document: l.Document,
 			AddressedTo: l.AddressedTo}
 		g := moneyOut(l.GST)
 		x.GST = &g
@@ -300,7 +330,7 @@ func (a *API) claimOf(ctx context.Context, u storage.UnitOfWork, v claimView, do
 	}
 	out := ExpenseClaim{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version,
 		Claimant: Person{Kind: "user", ID: d.ClaimantID.String()}, Stage: "draft", Date: dayText(d.Date), Title: d.Title, Notes: d.Notes,
-		Lines: claimLinesOut(d), TaxDecisions: []BillTaxDecision{}, Checks: []BillCheck{}, LedgerImpact: []EntryLine{},
+		Lines: claimLinesOut(d, nil), TaxDecisions: []BillTaxDecision{}, Checks: []BillCheck{}, LedgerImpact: []EntryLine{},
 		PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: doc.PostedAt}
 	var returnedBy *Person
 	if r, ok := v.latest[out.ID]; ok && doc.Status == storage.DocumentDraft {
@@ -330,6 +360,7 @@ func (a *API) claimOf(ctx context.Context, u storage.UnitOfWork, v claimView, do
 		if err != nil {
 			return ExpenseClaim{}, err
 		}
+		out.Lines = claimLinesOut(d, c.Prepared.Trips)
 		if withChecks {
 			out.TaxDecisions = taxDecisionsOut(c.Prepared.InputTax)
 			for _, p := range c.Problems {
@@ -353,11 +384,12 @@ func (a *API) claimOf(ctx context.Context, u storage.UnitOfWork, v claimView, do
 	if err != nil {
 		return ExpenseClaim{}, err
 	}
+	p, _, err := claim.Prepare(ctx, u, doc, v.base)
+	if err != nil {
+		return ExpenseClaim{}, err
+	}
+	out.Lines = claimLinesOut(d, p.Trips)
 	if withChecks {
-		p, _, err := claim.Prepare(ctx, u, doc, v.base)
-		if err != nil {
-			return ExpenseClaim{}, err
-		}
 		out.TaxDecisions = taxDecisionsOut(p.InputTax)
 	}
 	accounts, err := u.Accounts().List(ctx)

@@ -4881,6 +4881,84 @@ components:
         - paid
         - open
       type: object
+    ClaimPlace:
+      additionalProperties: false
+      properties:
+        active:
+          description: "false once put out of use: kept, as trips name its address."
+          examples:
+            - true
+          type: boolean
+        address:
+          description: Its address, as the member typed it.
+          examples:
+            - 1 Raffles Place, Singapore 048616
+          type: string
+        id:
+          description: The place's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa1
+          format: uuid
+          type: string
+        name:
+          description: What the member calls it.
+          examples:
+            - Office
+          type: string
+        version:
+          description: Its version, for If-Match.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - name
+        - address
+        - active
+        - version
+      type: object
+    ClaimPlaceDraft:
+      additionalProperties: false
+      properties:
+        active:
+          description: false puts it out of use; left out, in use.
+          examples:
+            - true
+          type: boolean
+        address:
+          description: Its address.
+          examples:
+            - 1 Raffles Place, Singapore 048616
+          maxLength: 300
+          minLength: 1
+          type: string
+        name:
+          description: What to call it, unique among the member's places in use.
+          examples:
+            - Office
+          maxLength: 80
+          minLength: 1
+          type: string
+      required:
+        - name
+        - address
+      type: object
+    ClaimPlacePage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/ClaimPlace"
+          type: array
+        next_cursor:
+          description: Pass it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEwMCJ9
+          type: string
+      required:
+        - items
+      type: object
     ClaimReimbursement:
       additionalProperties: false
       properties:
@@ -8319,7 +8397,7 @@ components:
           type: string
         amount:
           $ref: "#/components/schemas/Money"
-          description: What the receipt shows was paid, including GST, in its currency.
+          description: "A receipt: what it shows was paid, including GST, in its currency (required). A trip: in answers, what RND-MILEAGE made of it."
         attendees:
           description: Who attended, for a meal or entertainment.
           examples:
@@ -8332,17 +8410,28 @@ components:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fc1
           format: uuid
           type: string
+        claimed_km:
+          description: "A trip, in answers: the distance rounded to 0.1 km (RND-MILEAGE)."
+          examples:
+            - "18.4"
+          type: string
         date:
-          description: "The receipt's date: its rate and its GST treatment are read on it."
+          description: "The receipt's or the trip's date: its rate and its GST treatment are read on it."
           examples:
             - "2026-10-24"
           format: date
           type: string
         description:
-          description: What it was for.
+          description: "What it was for: a trip's purpose."
           examples:
             - Taxi to Acme
           maxLength: 500
+          type: string
+        distance:
+          description: "A trip: the whole trip's distance in km, as driven."
+          examples:
+            - "18.4"
+          pattern: ^[0-9]{1,5}(\.[0-9]{1,3})?$
           type: string
         document:
           description: "What the receipt is, for its input tax (FR-AP-20): a tax invoice (the default), a simplified tax invoice (the merchant's GST number, no customer named), or none."
@@ -8353,6 +8442,12 @@ components:
           examples:
             - simplified
           type: string
+        from:
+          description: "A trip: where it started, an address or a saved place's (claim places). Never sent anywhere: the maps service stays off."
+          examples:
+            - Office, 1 Raffles Place
+          maxLength: 300
+          type: string
         fx_rate:
           description: For a receipt in another currency, a rate into the base currency typed by the claimant; left out, the rate on its date (ENG-40).
           examples:
@@ -8362,15 +8457,16 @@ components:
           $ref: "#/components/schemas/Money"
           description: The GST the receipt shows, in its currency; none when left out.
         gst_code:
-          description: "The receipt's GST code for purchases, from the sg-gst pack: TX when it shows GST, NR when the merchant is not GST-registered, OP outside Singapore."
+          description: "A receipt's GST code for purchases, from the sg-gst pack: TX when it shows GST, NR when the merchant is not GST-registered, OP outside Singapore. A trip has none."
           examples:
             - NR
           pattern: ^[A-Z]{2,4}$
           type: string
         kind:
-          description: "receipt: what was bought, as the receipt shows it (the default). Mileage lines arrive with the mileage rates (FR-AP-16)."
+          description: "receipt: what was bought, as the receipt shows it (the default); mileage: a trip in the claimant's own car or motorcycle, at the organisation's rate per km (FR-AP-16)."
           enum:
             - receipt
+            - mileage
           examples:
             - receipt
           type: string
@@ -8383,13 +8479,33 @@ components:
         paid:
           $ref: "#/components/schemas/Money"
           description: "For a receipt in another currency: what left the claimant's account in the base currency, as their card statement shows it; what the company owes them for it (FR-AP-17). Left out: the amount at the rate on its date."
+        rate:
+          $ref: "#/components/schemas/Money"
+          description: "A trip, in answers: the vehicle's rate per km on its date."
+        return:
+          description: "A trip: true when it came back the same way. The distance is still the whole trip's, as driven."
+          examples:
+            - true
+          type: boolean
         stated_gst:
           $ref: "#/components/schemas/Money"
           description: "For a receipt in another currency: the GST its tax invoice states in the base currency (ENG-42); without it the GST is not claimed."
+        to:
+          description: "A trip: where it went."
+          examples:
+            - Acme HQ, 10 Anson Road
+          maxLength: 300
+          type: string
+        vehicle:
+          description: "A trip: the vehicle, whose rate per km it is claimed at."
+          enum:
+            - car
+            - motorcycle
+          examples:
+            - car
+          type: string
       required:
         - category_id
-        - amount
-        - gst_code
       type: object
     ExpenseClaimPage:
       additionalProperties: false
@@ -11851,6 +11967,99 @@ components:
           type: string
       required:
         - role
+      type: object
+    MileageLog:
+      additionalProperties: false
+      properties:
+        claimant:
+          $ref: "#/components/schemas/Person"
+          description: Whose trips.
+        month:
+          description: The month, YYYY-MM.
+          examples:
+            - 2026-10
+          type: string
+        total:
+          $ref: "#/components/schemas/Money"
+          description: What the trips with a rate come to.
+        trips:
+          description: Their trips in the month, on drafts and claims alike, oldest first.
+          items:
+            $ref: "#/components/schemas/MileageTrip"
+          type: array
+      required:
+        - month
+        - claimant
+        - trips
+        - total
+      type: object
+    MileageTrip:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: Its amount; absent while its vehicle has no rate per km on its date.
+        claim_id:
+          description: The claim it is on.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fd1
+          format: uuid
+          type: string
+        claim_number:
+          description: The claim's number.
+          examples:
+            - CLM-0007
+          type: string
+        claimed_km:
+          description: The distance claimed, to 0.1 km; 0 while it has no rate.
+          examples:
+            - "18.4"
+          type: string
+        date:
+          description: The trip's date.
+          examples:
+            - "2026-10-24"
+          format: date
+          type: string
+        from:
+          description: Where it started.
+          examples:
+            - Office
+          type: string
+        purpose:
+          description: What it was for.
+          examples:
+            - Client visit
+          type: string
+        return:
+          description: true for a return trip.
+          examples:
+            - true
+          type: boolean
+        stage:
+          description: Where the claim stands.
+          examples:
+            - approved
+          type: string
+        to:
+          description: Where it went.
+          examples:
+            - Acme HQ
+          type: string
+        vehicle:
+          description: The vehicle.
+          examples:
+            - car
+          type: string
+      required:
+        - date
+        - claim_id
+        - stage
+        - from
+        - to
+        - return
+        - vehicle
+        - claimed_km
       type: object
     Money:
       additionalProperties: false
@@ -21527,7 +21736,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APPLY-02` The saved application cannot be read; `APPLY-07` The void is dated before the application; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `CLAIM-16` The void is dated before the reimbursement; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `DEPOSIT-02` The saved deposit cannot be read; `DEPOSIT-07` The void is dated before the deposit; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APPLY-02` The saved application cannot be read; `APPLY-07` The void is dated before the application; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `CLAIM-16` The void is dated before the reimbursement; `CLAIM-18` A trip is incomplete; `CLAIM-19` No rate per km is set for the vehicle; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `DEPOSIT-02` The saved deposit cannot be read; `DEPOSIT-07` The void is dated before the deposit; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long."
         "428":
           content:
             application/problem+json:
@@ -21643,6 +21852,8 @@ paths:
         - CLAIM-12
         - CLAIM-15
         - CLAIM-16
+        - CLAIM-18
+        - CLAIM-19
         - CREDIT-01
         - CREDIT-02
         - CREDIT-06
@@ -32486,6 +32697,502 @@ paths:
       x-fyniq-permission:
         capability: Bank transactions, categorise
         right: V
+  /v1/claim-places:
+    get:
+      description: The caller's own places for trips (FR-AP-16), those in use first, by name, a page at a time. Nobody sees another member's. Read-only; no side effects.
+      operationId: listClaimPlaces
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimPlacePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List your saved places
+      tags:
+        - Expense claims
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - CLAIM-09
+      x-fyniq-permission:
+        capability: Expense claims
+        right: C
+    post:
+      description: "Saves a place the caller drives between, by name and address, their own (FR-AP-16). Its address is never sent anywhere. Side effects: the place and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: createClaimPlace
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimPlaceDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimPlace"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimPlace"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The place's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Save a place for your trips
+      tags:
+        - Expense claims
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - CLAIM-09
+        - STORAGE-CLAIM-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Expense claims
+        right: C
+  /v1/claim-places/{place_id}:
+    put:
+      description: "Changes the name or address of one of the caller's places, or puts it out of use; it is never deleted, as trips name its address. Side effects: its next version and its audit event. Needs If-Match with its ETag. Prefer: return=preview checks it and saves nothing."
+      operationId: replaceClaimPlace
+      parameters:
+        - description: The place's ID.
+          in: path
+          name: place_id
+          required: true
+          schema:
+            description: The place's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa1
+            format: uuid
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimPlaceDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimPlace"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The place's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change one of your saved places
+      tags:
+        - Expense claims
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CLAIM-09
+        - STORAGE-CLAIM-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: Expense claims
+        right: C
   /v1/claim-reimbursements:
     get:
       description: "The reimbursements recorded by hand, newest date first, a page at a time, narrowed by claimant (FR-AP-07): each with its claimant, the account it left, and what it paid back of each claim. Read-only; no side effects."
@@ -43605,6 +44312,125 @@ paths:
       x-fyniq-permission:
         capability: Expense claims
         right: C
+  /v1/expense-claims/mileage-log:
+    get:
+      description: "The trips of a member's claims in a month, oldest first, each with its places, vehicle, the distance claimed to 0.1 km and its amount at the rate in force on its date (FR-AP-16's monthly mileage log): the caller's own, or another member's for a person who sees everyone's claims. Read-only; no side effects."
+      operationId: getMileageLog
+      parameters:
+        - description: The month, YYYY-MM.
+          explode: false
+          in: query
+          name: month
+          required: true
+          schema:
+            description: The month, YYYY-MM.
+            examples:
+              - 2026-10
+            pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+            type: string
+        - description: Another member's log, for a person who sees everyone's claims; left out, the caller's own.
+          explode: false
+          in: query
+          name: claimant_id
+          schema:
+            description: Another member's log, for a person who sees everyone's claims; left out, the caller's own.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MileageLog"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `CLAIM-01` Not an expense claim."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `CLAIM-03` The saved claim cannot be read."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: A member's mileage log for a month
+      tags:
+        - Expense claims
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CLAIM-01
+        - CLAIM-03
+      x-fyniq-permission:
+        capability: Expense claims
+        right: V
   /v1/expense-claims/owed:
     get:
       description: "The 2150 sub-ledger by person (FR-AP-14, design D4): each claimant's approved claims with something still owed, and what the company owes them in all, as at a day (the organisation's today by default). A person whose right is their own claims only (an Employee) gets just their own: what My claims shows as owed to them. Everyone's also shows 2150's balance from the balance service and any difference from the claims, never hidden. Read-only; no side effects."
@@ -44173,7 +44999,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `CLAIM-18` A trip is incomplete; `CLAIM-19` No rate per km is set for the vehicle; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit."
         "428":
           content:
             application/problem+json:
@@ -44251,6 +45077,8 @@ paths:
         - CLAIM-07
         - CLAIM-08
         - CLAIM-09
+        - CLAIM-18
+        - CLAIM-19
         - FX-01
         - LEDGER-01
         - LEDGER-02

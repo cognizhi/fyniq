@@ -469,6 +469,12 @@ var (
 	ReplaceExpenseClaim  = Policy{Operation: "replaceExpenseClaim", Capability: ExpenseClaims, Need: Create}
 	SubmitExpenseClaim   = Policy{Operation: "submitExpenseClaim", Capability: ExpenseClaims, Need: Create}
 	WithdrawExpenseClaim = Policy{Operation: "withdrawExpenseClaim", Capability: ExpenseClaims, Need: Create}
+	// A claimant's saved places and monthly mileage log (FR-AP-16) are their own, under the Employee's "C (own)"; the
+	// mileage log of another person is read under V on "Expense claims".
+	ListClaimPlaces   = Policy{Operation: "listClaimPlaces", Capability: ExpenseClaims, Need: Create}
+	CreateClaimPlace  = Policy{Operation: "createClaimPlace", Capability: ExpenseClaims, Need: Create}
+	ReplaceClaimPlace = Policy{Operation: "replaceClaimPlace", Capability: ExpenseClaims, Need: Create}
+	GetMileageLog     = Policy{Operation: "getMileageLog", Capability: ExpenseClaims, Need: View}
 	// Reimbursements of claims recorded by hand (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148): under the
 	// "Payment batches" row, which the batches take over later. Read under V, recorded and voided under C (the
 	// Accountant, the AP specialist); in Founder mode a void is asked for and approved by another person who holds A
@@ -897,6 +903,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListWithholdingDecisions, RecordWithholdingDecision, PlanBillPayment, ListBillReminders,
 	ListExpenseClaims, GetExpenseClaim, CreateExpenseClaim, ReplaceExpenseClaim, SubmitExpenseClaim, WithdrawExpenseClaim,
 	ListClaimReimbursements, GetClaimReimbursement, RecordClaimReimbursement, VoidClaimReimbursement, RequestClaimReimbursementVoid, GetExpenseClaimsOwed,
+	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
 	ListDocumentTemplates, GetDocumentTemplate, GetDocumentTemplateCatalogue, ListDocumentTemplateVersions, GetDocumentTemplateVersion,
 	CreateDocumentTemplate, ReplaceDocumentTemplate, RequestDocumentTemplatePublication, PublishDocumentTemplate, PreviewDocumentTemplate,
 	ExportDocumentTemplates, ImportDocumentTemplates, ListDocumentTemplateDefaults, SetDocumentTemplateDefault, GetAppliedDocumentTemplate,

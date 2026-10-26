@@ -115,3 +115,81 @@ func (r claimCategories) Get(ctx context.Context, id uuid.UUID) (storage.ClaimCa
 	}
 	return toClaimCategory(row), nil
 }
+
+func (u *unitOfWork) ClaimPlaces() storage.ClaimPlaces { return claimPlaces{u} }
+
+type claimPlaces struct{ u *unitOfWork }
+
+func toClaimPlace(r sqlcdb.FyniqClaimPlace) storage.ClaimPlace {
+	return storage.ClaimPlace{ID: r.ID, UserID: r.UserID, Name: r.Name, Address: r.Address, Active: r.Active, CreatedAt: r.CreatedAt,
+		ChangedAt: r.ChangedAt, Version: int(r.Version)}
+}
+
+func (r claimPlaces) Create(ctx context.Context, n storage.NewClaimPlace) (storage.ClaimPlace, error) {
+	if err := r.u.check(); err != nil {
+		return storage.ClaimPlace{}, err
+	}
+	row, err := r.u.q.InsertClaimPlace(ctx, sqlcdb.InsertClaimPlaceParams{UserID: n.UserID, Name: n.Name, Address: n.Address, By: r.u.actor(ctx), At: n.At})
+	if err != nil {
+		return storage.ClaimPlace{}, mapError(err)
+	}
+	out := toClaimPlace(row)
+	return out, r.u.event(ctx, "claim_place.created", "claim_place", out.ID, &out.Version, map[string][2]any{"user_id": {nil, out.UserID.String()},
+		"name": {nil, out.Name}, "address": {nil, out.Address}})
+}
+
+func (r claimPlaces) Change(ctx context.Context, id uuid.UUID, version int, n storage.NewClaimPlace) (storage.ClaimPlace, error) {
+	before, err := r.Get(ctx, id)
+	if err != nil {
+		return before, err
+	}
+	row, err := r.u.q.UpdateClaimPlace(ctx, sqlcdb.UpdateClaimPlaceParams{Name: n.Name, Address: n.Address, Active: n.Active, By: r.u.actor(ctx), At: n.At,
+		ID: id, Version: small(version)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.ClaimPlace{}, &storage.Error{Code: storage.CodeVersion, Message: "the saved place changed since it was read"}
+	}
+	if err != nil {
+		return storage.ClaimPlace{}, mapError(err)
+	}
+	after := toClaimPlace(row)
+	changes := map[string][2]any{}
+	if before.Name != after.Name {
+		changes["name"] = [2]any{before.Name, after.Name}
+	}
+	if before.Address != after.Address {
+		changes["address"] = [2]any{before.Address, after.Address}
+	}
+	if before.Active != after.Active {
+		changes["active"] = [2]any{before.Active, after.Active}
+	}
+	return after, r.u.event(ctx, "claim_place.changed", "claim_place", id, &after.Version, changes)
+}
+
+func (r claimPlaces) List(ctx context.Context, user uuid.UUID) ([]storage.ClaimPlace, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.ClaimPlaces(ctx, user)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.ClaimPlace, 0, len(rows))
+	for _, x := range rows {
+		out = append(out, toClaimPlace(x))
+	}
+	return out, nil
+}
+
+func (r claimPlaces) Get(ctx context.Context, id uuid.UUID) (storage.ClaimPlace, error) {
+	if err := r.u.check(); err != nil {
+		return storage.ClaimPlace{}, err
+	}
+	row, err := r.u.q.ClaimPlace(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.ClaimPlace{}, ports.ErrNotFound
+	}
+	if err != nil {
+		return storage.ClaimPlace{}, mapError(err)
+	}
+	return toClaimPlace(row), nil
+}

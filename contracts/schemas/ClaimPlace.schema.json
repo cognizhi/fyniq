@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "active": {
+      "description": "false once put out of use: kept, as trips name its address.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "address": {
+      "description": "Its address, as the member typed it.",
+      "examples": [
+        "1 Raffles Place, Singapore 048616"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The place's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "What the member calls it.",
+      "examples": [
+        "Office"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "Its version, for If-Match.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "address",
+    "active",
+    "version"
+  ],
+  "title": "ClaimPlace",
+  "type": "object"
+}

@@ -93,6 +93,12 @@ var Catalogue = []Definition{
 	{Key: "bank.tolerance_foreign_percent", Group: "Settlement tolerances", Label: "Foreign-currency tolerance, percentage of the document",
 		Kind: Percent, Recommended: "3", Reason: "Bank charges and rate differences on foreign payments are usually within 3% of the document",
 		Guide: guide + "settlement-tolerances", Requirement: "FR-BNK-08", DualControl: true, Min: "0", Max: "10"},
+	{Key: "claims.mileage_rate_car", Group: "Expense claims", Label: "Mileage rate for a car, per km", Kind: AmountSGD, Recommended: "",
+		Reason: "IRAS prescribes no rate per km: it must be reasonable, so the owner or the accountant sets it, and mileage claims wait until then",
+		Guide:  guide + "mileage-rates", Requirement: "FR-AP-16", DualControl: true, Min: "0.01", Max: "5.00"},
+	{Key: "claims.mileage_rate_motorcycle", Group: "Expense claims", Label: "Mileage rate for a motorcycle, per km", Kind: AmountSGD, Recommended: "",
+		Reason: "IRAS prescribes no rate per km: it must be reasonable, so the owner or the accountant sets it, and mileage claims wait until then",
+		Guide:  guide + "mileage-rates", Requirement: "FR-AP-16", DualControl: true, Min: "0.01", Max: "5.00"},
 	{Key: "close.variance_amount", Group: "Period close", Label: "Variance to explain, amount", Kind: AmountSGD, Recommended: "1000.00",
 		Reason: "At the close, an income or expense account that moved by more than S$1,000 against the previous month, and by more than the percentage, needs a short explanation",
 		Guide:  guide + "variances-at-the-close", Requirement: "FR-GL-14", DualControl: true, Min: "0.00", Max: "1000000.00"},
@@ -176,10 +182,14 @@ var (
 )
 
 // Normalise reads raw as a value of d, and returns it as stored: "true", "30", "50.00" or "2.5". It refuses
-// a value outside d's range.
+// a value outside d's range. A setting that ships unset (its recommended value empty, such as a mileage rate the
+// organisation sets itself) takes "" for "not set".
 func Normalise(d Definition, raw string) (string, *Problem) {
 	bad := func(fix string) (string, *Problem) {
 		return "", &Problem{CodeValue, "value", fmt.Sprintf("%q is not a value for %s", raw, d.Label), fix}
+	}
+	if raw == "" && d.Recommended == "" && !d.Fixed {
+		return "", nil
 	}
 	switch d.Kind {
 	case Switch:

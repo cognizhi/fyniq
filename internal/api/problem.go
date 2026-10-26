@@ -632,6 +632,8 @@ var codeFacts = map[string]struct {
 	ledger.CodeClaimLine:          {422, "A claim line's amounts do not fit"},
 	ledger.CodeClaimPaid:          {422, "What was paid or settled does not fit"},
 	storage.CodeClaim:             {409, "The expense claim record does not allow that"},
+	claim.CodeMileage:             {422, "A trip is incomplete"},
+	claim.CodeMileageRate:         {422, "No rate per km is set for the vehicle"},
 	claim.CodeNotReimbursement:    {404, "Not a reimbursement of expense claims"},
 	claim.CodeNotOwed:             {422, "A claim is not the claimant's approved claim"},
 	claim.CodeOverpaid:            {422, "It pays back more than is owed on a claim"},
