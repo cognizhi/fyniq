@@ -301,6 +301,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerClaims(a)
 	registerReimbursements(a)
 	registerMileage(a)
+	registerClaimCategories(a)
 	registerSession(a)
 	return a
 }

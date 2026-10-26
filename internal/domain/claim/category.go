@@ -4,8 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -76,4 +80,67 @@ func CheckAccount(acc storage.Account) string {
 		return fmt.Sprintf("account %s is a %s account, not an expense or asset", acc.Code, acc.Type)
 	}
 	return ""
+}
+
+// The refusals of a claim category (ENG-23; FR-AP-15).
+const (
+	CodeCategoryName    = "CLAIM-20" // a category with no name, a name too long, or one another category in use has
+	CodeCategoryAccount = "CLAIM-21" // an account a claim cannot cost: not an active, postable expense or asset account, or a money, control or system one
+	CodeCategoryLimit   = "CLAIM-22" // a limit or threshold below zero, or with more decimals than the base currency has
+	CodeStarterLoaded   = "CLAIM-23" // the organisation has categories already: the starter set loads only into none
+)
+
+// MaxCategoryName is the longest name a category keeps (db/migrations/000160).
+const MaxCategoryName = 80
+
+// Problem is one reason a category cannot be saved: its stable code, the field, what is wrong and how to fix it.
+type Problem struct {
+	Code    string
+	Field   string
+	Message string
+	Fix     string
+}
+
+// CheckCategory is every reason a category as entered cannot be saved, as problems with their fields (ENG-22): its
+// name against the organisation's other categories in use (self, being changed, aside), its account (nil: none of the
+// organisation's), and its limits, which are amounts in base.
+func CheckCategory(n storage.NewClaimCategory, acc *storage.Account, base money.Currency, others []storage.ClaimCategory, self uuid.UUID) []Problem {
+	var out []Problem
+	add := func(code, field, msg, fix string) { out = append(out, Problem{code, field, msg, fix}) }
+	name := strings.TrimSpace(n.Name)
+	switch {
+	case name == "":
+		add(CodeCategoryName, "name", "the category has no name", "Name what its claims are for, such as Local travel")
+	case len(name) > MaxCategoryName:
+		add(CodeCategoryName, "name", fmt.Sprintf("the name has %d characters; the most is %d", len(name), MaxCategoryName), "Shorten it")
+	case n.Active:
+		for _, o := range others {
+			if o.Active && o.ID != self && strings.EqualFold(strings.TrimSpace(o.Name), name) {
+				add(CodeCategoryName, "name", "another category in use is called "+o.Name, "Choose another name, or change that category")
+				break
+			}
+		}
+	}
+	if acc == nil {
+		add(CodeCategoryAccount, "account_id", "the account does not exist in this organisation", "Choose an expense or asset account from the chart")
+	} else if why := CheckAccount(*acc); why != "" {
+		add(CodeCategoryAccount, "account_id", why, "Choose an expense or asset account that is not a money, control or system account")
+	}
+	for _, x := range []struct {
+		field string
+		v     *storage.Decimal
+	}{{"limit", n.LineLimit}, {"receipt_above", n.ReceiptAbove}, {"attendees_above", n.AttendeesAbove}} {
+		if x.v == nil {
+			continue
+		}
+		m, err := money.ParseField(string(*x.v), base, x.field)
+		switch {
+		case err != nil:
+			add(CodeCategoryLimit, x.field, fmt.Sprintf("%q is not an amount in %s", *x.v, base),
+				fmt.Sprintf("Enter it in %s with at most %d decimals", base, base.MinorUnits))
+		case m.Sign() < 0 || x.field == "limit" && m.IsZero():
+			add(CodeCategoryLimit, x.field, fmt.Sprintf("it is %s %s", m, base), "Enter an amount above zero, or leave it out for none")
+		}
+	}
+	return out
 }

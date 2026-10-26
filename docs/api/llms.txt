@@ -83,6 +83,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bills/{bill_id}/void` (voidBill): Void a posted bill
 - `POST /v1/bills/{bill_id}/void-approval` (requestBillVoid): Ask for approval to void a bill
 - `GET /v1/cash-position` (getCashPosition): Get the cash position
+- `GET /v1/claim-categories` (listClaimCategories): List the expense policy's categories
+- `POST /v1/claim-categories` (createClaimCategory): Add a category to the expense policy
+- `PUT /v1/claim-categories/{category_id}` (replaceClaimCategory): Change a category of the expense policy
+- `POST /v1/claim-categories:load-starter` (loadStarterClaimCategories): Load the starter categories
 - `GET /v1/claim-places` (listClaimPlaces): List your saved places
 - `POST /v1/claim-places` (createClaimPlace): Save a place for your trips
 - `PUT /v1/claim-places/{place_id}` (replaceClaimPlace): Change one of your saved places

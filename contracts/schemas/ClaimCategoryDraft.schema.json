@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account its claim lines cost: an active, postable expense or asset account that is not a money, control or system account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "active": {
+      "description": "false puts it out of use; left out, in use.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "attendees_above": {
+      "$ref": "Money.schema.json",
+      "description": "Above it, a line names who attended; left out, never asked."
+    },
+    "limit": {
+      "$ref": "Money.schema.json",
+      "description": "The most a line of it is, in the base currency; left out, no limit."
+    },
+    "mileage": {
+      "description": "Make it the mileage category (one in use at most); never changes once made.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "name": {
+      "description": "What its claims are for, unique among the categories in use.",
+      "examples": [
+        "Meals \u0026 entertainment"
+      ],
+      "maxLength": 80,
+      "type": "string"
+    },
+    "receipt_above": {
+      "$ref": "Money.schema.json",
+      "description": "Above it, a line needs its receipt; left out, never required."
+    }
+  },
+  "required": [
+    "name",
+    "account_id"
+  ],
+  "title": "ClaimCategoryDraft",
+  "type": "object"
+}

@@ -475,6 +475,12 @@ var (
 	CreateClaimPlace  = Policy{Operation: "createClaimPlace", Capability: ExpenseClaims, Need: Create}
 	ReplaceClaimPlace = Policy{Operation: "replaceClaimPlace", Capability: ExpenseClaims, Need: Create}
 	GetMileageLog     = Policy{Operation: "getMileageLog", Capability: ExpenseClaims, Need: View}
+	// The expense policy's categories (FR-AP-15, design D6): read by everyone who claims or sees claims (V), changed by
+	// those who approve claims (A: the Approver, the Controller).
+	ListClaimCategories        = Policy{Operation: "listClaimCategories", Capability: ExpenseClaims, Need: View}
+	CreateClaimCategory        = Policy{Operation: "createClaimCategory", Capability: ExpenseClaims, Need: Approve}
+	ReplaceClaimCategory       = Policy{Operation: "replaceClaimCategory", Capability: ExpenseClaims, Need: Approve}
+	LoadStarterClaimCategories = Policy{Operation: "loadStarterClaimCategories", Capability: ExpenseClaims, Need: Approve}
 	// Reimbursements of claims recorded by hand (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148): under the
 	// "Payment batches" row, which the batches take over later. Read under V, recorded and voided under C (the
 	// Accountant, the AP specialist); in Founder mode a void is asked for and approved by another person who holds A
@@ -904,6 +910,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListExpenseClaims, GetExpenseClaim, CreateExpenseClaim, ReplaceExpenseClaim, SubmitExpenseClaim, WithdrawExpenseClaim,
 	ListClaimReimbursements, GetClaimReimbursement, RecordClaimReimbursement, VoidClaimReimbursement, RequestClaimReimbursementVoid, GetExpenseClaimsOwed,
 	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
+	ListClaimCategories, CreateClaimCategory, ReplaceClaimCategory, LoadStarterClaimCategories,
 	ListDocumentTemplates, GetDocumentTemplate, GetDocumentTemplateCatalogue, ListDocumentTemplateVersions, GetDocumentTemplateVersion,
 	CreateDocumentTemplate, ReplaceDocumentTemplate, RequestDocumentTemplatePublication, PublishDocumentTemplate, PreviewDocumentTemplate,
 	ExportDocumentTemplates, ImportDocumentTemplates, ListDocumentTemplateDefaults, SetDocumentTemplateDefault, GetAppliedDocumentTemplate,

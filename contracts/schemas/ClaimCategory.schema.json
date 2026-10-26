@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "That account's code.",
+      "examples": [
+        "6530"
+      ],
+      "type": "string"
+    },
+    "account_id": {
+      "description": "The account its claim lines cost.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "active": {
+      "description": "false once put out of use: kept, as claims name it.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "attendees_above": {
+      "$ref": "Money.schema.json",
+      "description": "Above it, a line names who attended (⚠ until it does). Absent: never asked."
+    },
+    "id": {
+      "description": "The category's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fc1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "limit": {
+      "$ref": "Money.schema.json",
+      "description": "The most a line of it is, in the base currency; above it the line shows ⚠ and finance approves the claim too. Absent: no limit."
+    },
+    "mileage": {
+      "description": "true for the mileage category: trips in a member's own vehicle (FR-AP-16). It never changes.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "name": {
+      "description": "What its claims are for.",
+      "examples": [
+        "Meals \u0026 entertainment"
+      ],
+      "type": "string"
+    },
+    "receipt_above": {
+      "$ref": "Money.schema.json",
+      "description": "Above it, a line needs its receipt attached (✖ until it is). Absent: never required."
+    },
+    "version": {
+      "description": "Its version, for If-Match.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "account_id",
+    "mileage",
+    "active",
+    "version"
+  ],
+  "title": "ClaimCategory",
+  "type": "object"
+}
