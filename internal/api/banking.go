@@ -42,6 +42,7 @@ type MoneyAccount struct {
 	Currency    string         `json:"currency" pattern:"^[A-Z]{3}$" doc:"Its currency, the chart account's." example:"SGD"`
 	OpenedOn    string         `json:"opened_on,omitempty" format:"date" doc:"The day it opened." example:"2026-01-05"`
 	ClosedOn    string         `json:"closed_on,omitempty" format:"date" doc:"The day it closed: a closed account takes no import." example:"2027-03-31"`
+	Cardholder  *Person        `json:"cardholder,omitempty" doc:"A card: its holder, whose My claims shows its lines to complete with a receipt and a category (FR-AP-18)."`
 	Source      *MoneySource   `json:"source,omitempty" doc:"Where its data comes from now; absent while its statements are uploaded as files."`
 	Freshness   MoneyFreshness `json:"freshness" doc:"How up to date its data is (FR-BNK-16)."`
 	Waiting     int            `json:"waiting" doc:"Its lines waiting in the queue: unreconciled, possible duplicates and in suspense." example:"12"`
@@ -141,13 +142,14 @@ type BankSuggested struct {
 
 // MoneyAccountDraft is a money account as written.
 type MoneyAccountDraft struct {
-	AccountID   string `json:"account_id,omitempty" format:"uuid" doc:"createMoneyAccount only: the chart account, marked a money account; its currency is the account's." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
-	Kind        string `json:"kind" enum:"bank,card,wallet,payment_gateway,cash" doc:"What kind of money account it is." example:"bank"`
-	Name        string `json:"name" minLength:"1" maxLength:"100" doc:"Its name." example:"DBS current"`
-	Institution string `json:"institution,omitempty" maxLength:"100" doc:"The bank or provider." example:"DBS"`
-	Identifier  string `json:"identifier,omitempty" maxLength:"64" doc:"What statements name it by: the account number, an IBAN or a provider's balance ID. Written only; read back by its last four characters." example:"072-123456-7"`
-	OpenedOn    string `json:"opened_on,omitempty" format:"date" doc:"The day it opened." example:"2026-01-05"`
-	ClosedOn    string `json:"closed_on,omitempty" format:"date" doc:"replaceMoneyAccount only: the day it closed." example:"2027-03-31"`
+	AccountID    string `json:"account_id,omitempty" format:"uuid" doc:"createMoneyAccount only: the chart account, marked a money account; its currency is the account's." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
+	Kind         string `json:"kind" enum:"bank,card,wallet,payment_gateway,cash" doc:"What kind of money account it is." example:"bank"`
+	Name         string `json:"name" minLength:"1" maxLength:"100" doc:"Its name." example:"DBS current"`
+	Institution  string `json:"institution,omitempty" maxLength:"100" doc:"The bank or provider." example:"DBS"`
+	Identifier   string `json:"identifier,omitempty" maxLength:"64" doc:"What statements name it by: the account number, an IBAN or a provider's balance ID. Written only; read back by its last four characters." example:"072-123456-7"`
+	OpenedOn     string `json:"opened_on,omitempty" format:"date" doc:"The day it opened." example:"2026-01-05"`
+	ClosedOn     string `json:"closed_on,omitempty" format:"date" doc:"replaceMoneyAccount only: the day it closed." example:"2027-03-31"`
+	CardholderID string `json:"cardholder_id,omitempty" format:"uuid" doc:"A card only: its holder, an active member's user ID, who completes its lines from My claims (FR-AP-18). Left out, it has none." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 }
 
 // MoneySourceDraft is a source to set from a day after the current one's.
@@ -326,6 +328,18 @@ func page[T any](items []T, id func(T) string, q PageQuery) ([]T, string, error)
 func moneyAccountOf(ctx context.Context, u storage.UnitOfWork, a storage.MoneyAccount, full bool) (MoneyAccount, error) {
 	out := MoneyAccount{ID: a.ID.String(), AccountID: a.AccountID.String(), Kind: a.Kind, Name: a.Name, Institution: a.Institution, Currency: a.Currency,
 		Version: a.Version, Gaps: []BankGap{}, Sources: []MoneySource{}}
+	if a.CardholderID != nil {
+		out.Cardholder = &Person{Kind: "user", ID: a.CardholderID.String()}
+		ms, err := u.Members().List(ctx, a.ChangedAt) // the members' names; the day decides only their roles
+		if err != nil {
+			return MoneyAccount{}, err
+		}
+		for _, m := range ms {
+			if m.UserID == *a.CardholderID {
+				out.Cardholder.Name = m.DisplayName
+			}
+		}
+	}
 	changed := a.ChangedAt
 	out.Changed = &changed
 	if a.Identifier != "" {
@@ -450,6 +464,29 @@ func idText(id *uuid.UUID) string {
 		return ""
 	}
 	return id.String()
+}
+
+// optionalID reads an ID that may be left out.
+func optionalID(field, s string) (*uuid.UUID, *FieldProblem) {
+	if s == "" {
+		return nil, nil
+	}
+	id, err := uuid.Parse(s)
+	if err != nil {
+		return nil, &FieldProblem{Code: CodeInvalid, Field: field, Message: "is not an ID", Fix: "Send the ID"}
+	}
+	return &id, nil
+}
+
+// fieldProblems are the problems found among those that may be nil.
+func fieldProblems(found ...*FieldProblem) []FieldProblem {
+	var out []FieldProblem
+	for _, f := range found {
+		if f != nil {
+			out = append(out, *f)
+		}
+	}
+	return out
 }
 
 func optionalDate(field, s string) (*time.Time, *FieldProblem) {
@@ -667,26 +704,30 @@ func registerBanking(a *API) {
 		OperationID: "createMoneyAccount", Method: http.MethodPost, Path: "/v1/money-accounts", Tags: []string{"Banking"},
 		Summary: "Set up a money account", DefaultStatus: http.StatusCreated,
 		Description: "Sets up a chart account marked a money account in Banking (FR-BNK-01): its kind, name, bank and what statements name it " +
-			"by, in the chart account's currency. One per chart account; an identifier is unique per currency. Its statements are uploaded " +
+			"by, in the chart account's currency; a card's holder, an active member who completes its lines from My claims (FR-AP-18). One per chart account; an identifier is unique per currency. Its statements are uploaded " +
 			"as files until a source says otherwise. Side effects: the money account and its audit event, which keeps the identifier's " +
 			"last four characters only (SEC-15). Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.",
-	}, creates, func(ctx context.Context, in *createMoneyAccountInput) (*moneyAccountOutput, error) {
+	}, append([]string{banking.CodeCardholder}, creates...), func(ctx context.Context, in *createMoneyAccountInput) (*moneyAccountOutput, error) {
 		account, err := parseID("body.account_id", in.Body.AccountID)
 		if err != nil {
 			return nil, err
 		}
 		opened, bad := optionalDate("body.opened_on", in.Body.OpenedOn)
-		if bad != nil {
-			return nil, invalid([]FieldProblem{*bad})
+		holder, bad2 := optionalID("body.cardholder_id", in.Body.CardholderID)
+		if bad != nil || bad2 != nil {
+			return nil, invalid(fieldProblems(bad, bad2))
 		}
 		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (MoneyAccount, error) {
 			acc, err := u.Accounts().Get(ctx, account)
 			if err != nil {
 				return MoneyAccount{}, err
 			}
+			if err := banking.CheckCardholder(ctx, u, in.Body.Kind, holder); err != nil {
+				return MoneyAccount{}, err
+			}
 			m, err := u.Banking().CreateMoneyAccount(ctx, storage.NewMoneyAccount{AccountID: account, Kind: in.Body.Kind, Name: strings.TrimSpace(in.Body.Name),
 				Institution: strings.TrimSpace(in.Body.Institution), Identifier: strings.TrimSpace(in.Body.Identifier), Currency: acc.Currency, OpenedOn: opened,
-				At: a.deps.Clock.Now()})
+				CardholderID: holder, At: a.deps.Clock.Now()})
 			if err != nil {
 				return MoneyAccount{}, err
 			}
@@ -731,10 +772,10 @@ func registerBanking(a *API) {
 	register(a, authz.ReplaceMoneyAccount, huma.Operation{
 		OperationID: "replaceMoneyAccount", Method: http.MethodPut, Path: "/v1/money-accounts/{money_account_id}", Tags: []string{"Banking"},
 		Summary: "Change a money account",
-		Description: "Changes a money account's kind, name, bank, identifier and the days it opened and closed: never its chart account or " +
+		Description: "Changes a money account's kind, name, bank, identifier, the days it opened and closed, and a card's holder: never its chart account or " +
 			"currency. A closed account takes no more imports. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: " +
 			"return=preview saves nothing.",
-	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, storage.CodeVersion}, writes...), func(ctx context.Context, in *replaceMoneyAccountInput) (*moneyAccountOutput, error) {
+	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, storage.CodeVersion, banking.CodeCardholder}, writes...), func(ctx context.Context, in *replaceMoneyAccountInput) (*moneyAccountOutput, error) {
 		id, err := parseID("money_account_id", in.MoneyAccountID)
 		if err != nil {
 			return nil, err
@@ -744,14 +785,9 @@ func registerBanking(a *API) {
 		}
 		opened, bad := optionalDate("body.opened_on", in.Body.OpenedOn)
 		closed, bad2 := optionalDate("body.closed_on", in.Body.ClosedOn)
-		if bad != nil || bad2 != nil {
-			var fp []FieldProblem
-			for _, b := range []*FieldProblem{bad, bad2} {
-				if b != nil {
-					fp = append(fp, *b)
-				}
-			}
-			return nil, invalid(fp)
+		holder, bad3 := optionalID("body.cardholder_id", in.Body.CardholderID)
+		if bad != nil || bad2 != nil || bad3 != nil {
+			return nil, invalid(fieldProblems(bad, bad2, bad3))
 		}
 		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (MoneyAccount, error) {
 			m, err := u.Banking().MoneyAccount(ctx, id)
@@ -765,8 +801,12 @@ func registerBanking(a *API) {
 			if identifier == "" {
 				identifier = m.Identifier // written only: left out, it stays
 			}
+			if err := banking.CheckCardholder(ctx, u, in.Body.Kind, holder); err != nil {
+				return MoneyAccount{}, err
+			}
 			if m, err = u.Banking().ChangeMoneyAccount(ctx, id, m.Version, storage.MoneyAccountChange{Kind: in.Body.Kind, Name: strings.TrimSpace(in.Body.Name),
-				Institution: strings.TrimSpace(in.Body.Institution), Identifier: identifier, OpenedOn: opened, ClosedOn: closed, At: a.deps.Clock.Now()}); err != nil {
+				Institution: strings.TrimSpace(in.Body.Institution), Identifier: identifier, OpenedOn: opened, ClosedOn: closed, CardholderID: holder,
+				At: a.deps.Clock.Now()}); err != nil {
 				return MoneyAccount{}, err
 			}
 			return moneyAccountOf(ctx, u, m, true)

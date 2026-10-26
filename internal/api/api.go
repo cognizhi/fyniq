@@ -303,6 +303,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerClaims(a)
 	registerReimbursements(a)
 	registerAdvances(a)
+	registerCards(a)
 	registerMileage(a)
 	registerClaimCategories(a)
 	registerClaimEvidence(a)

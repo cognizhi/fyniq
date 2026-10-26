@@ -4368,6 +4368,278 @@ components:
         - mine_etag
         - bank_etag
       type: object
+    CardEvidence:
+      additionalProperties: false
+      properties:
+        data_class:
+          description: The personal data it holds (FR-DOC-09).
+          enum:
+            - general
+            - personal
+            - bank
+            - payroll
+            - identity
+          examples:
+            - general
+          type: string
+        document_id:
+          description: What completing it made, which the file is attached to.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c09
+          format: uuid
+          type: string
+        evidence_type:
+          description: What the file is.
+          examples:
+            - receipt
+          type: string
+        file_name:
+          description: "The name it was uploaded with: data, never a path."
+          examples:
+            - receipt.png
+          type: string
+        id:
+          description: The file's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21
+          format: uuid
+          type: string
+        line_id:
+          description: The card line.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c01
+          format: uuid
+          type: string
+        media_type:
+          description: Its type, decided from its content.
+          examples:
+            - image/png
+          type: string
+        note:
+          description: A short note.
+          examples:
+            - Taxi e-receipt
+          type: string
+        original_sha256:
+          description: The SHA-256 of the file as received, in hexadecimal.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        relates_on:
+          description: The date it relates to.
+          examples:
+            - "2026-10-14"
+          format: date
+          type: string
+        retain_until:
+          description: "Once final: kept, and never deletable, until then (FR-DOC-02)."
+          examples:
+            - "2034-01-01T00:00:00+08:00"
+          format: date-time
+          type: string
+        sha256:
+          description: "The SHA-256 of the file as stored, in hexadecimal: image metadata such as location is stripped first."
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        size_bytes:
+          description: Its size as stored, in bytes.
+          examples:
+            - 48213
+          format: int64
+          type: integer
+        source:
+          description: How it arrived.
+          enum:
+            - upload
+            - paste
+            - email
+            - api
+            - generated
+          examples:
+            - paste
+          type: string
+        state:
+          description: "Attached until it is committed to the retention-locked store, then final: append-only."
+          enum:
+            - attached
+            - removed
+            - final
+          examples:
+            - final
+          type: string
+        uploaded_at:
+          description: When it was attached.
+          examples:
+            - "2026-10-14T09:15:00Z"
+          format: date-time
+          type: string
+        uploaded_by:
+          description: "Who uploaded it: an actor of the audit trail."
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          type: string
+        version:
+          description: The file's version; it makes the ETag.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - line_id
+        - document_id
+        - evidence_type
+        - file_name
+        - media_type
+        - size_bytes
+        - sha256
+        - original_sha256
+        - source
+        - data_class
+        - uploaded_by
+        - uploaded_at
+        - state
+        - version
+      type: object
+    CardEvidencePage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The files on this page.
+          items:
+            $ref: "#/components/schemas/CardEvidence"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTIifQ
+          type: string
+      required:
+        - items
+      type: object
+    CardLine:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "What moved, in the card's currency: spend is negative."
+        booking_date:
+          description: The day it was booked on the card.
+          examples:
+            - "2026-10-14"
+          format: date
+          type: string
+        card:
+          description: The card's name.
+          examples:
+            - Corporate Visa
+          type: string
+        completed:
+          description: "How it was completed: spend for the company, or personal spend the holder owes."
+          enum:
+            - spend
+            - personal
+          examples:
+            - spend
+          type: string
+        counterparty:
+          description: Who was paid, as the statement says.
+          examples:
+            - Grab
+          type: string
+        description:
+          description: What the statement says.
+          examples:
+            - GRAB *TRIP SINGAPORE
+          type: string
+        document_id:
+          description: "What completing it made: a bank transaction, or the personal spend recorded as an advance. Its receipt is attached to it."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c09
+          format: uuid
+          type: string
+        id:
+          description: The bank line's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c01
+          format: uuid
+          type: string
+        money_account_id:
+          description: The card's money account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+          format: uuid
+          type: string
+        status:
+          description: "Where the line stands in Banking's queue: unreconciled lines wait to be completed."
+          enum:
+            - unreconciled
+            - possible_duplicate
+            - categorised
+            - matched
+            - transferred
+            - suspense
+            - excluded
+          examples:
+            - unreconciled
+          type: string
+        version:
+          description: The line's version; it makes the ETag.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - money_account_id
+        - card
+        - booking_date
+        - amount
+        - status
+        - version
+      type: object
+    CardLinePage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/CardLine"
+          type: array
+        next_cursor:
+          description: Pass it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEwMCJ9
+          type: string
+      required:
+        - items
+      type: object
+    CardSpendDraft:
+      additionalProperties: false
+      properties:
+        category_id:
+          description: "Spend for the company: the expense policy's category it was for (listClaimCategories); its account is the cost."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c20
+          format: uuid
+          type: string
+        description:
+          description: What it was for.
+          examples:
+            - Taxi to Acme
+          maxLength: 140
+          type: string
+        gst_code:
+          description: "Spend for the company: the GST code of the receipt, such as TX when it shows GST; left out, the account's default."
+          examples:
+            - TX
+          type: string
+        personal:
+          description: "true when it was personal spend: the holder owes it, recorded as an advance to them, and refunds it (recordCashAdvanceRefund)."
+          examples:
+            - false
+          type: boolean
+      type: object
     CashAccount:
       additionalProperties: false
       properties:
@@ -12719,6 +12991,9 @@ components:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
           format: uuid
           type: string
+        cardholder:
+          $ref: "#/components/schemas/Person"
+          description: "A card: its holder, whose My claims shows its lines to complete with a receipt and a category (FR-AP-18)."
         changed_at:
           description: When it last changed.
           examples:
@@ -12823,6 +13098,12 @@ components:
           description: "createMoneyAccount only: the chart account, marked a money account; its currency is the account's."
           examples:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+          format: uuid
+          type: string
+        cardholder_id:
+          description: "A card only: its holder, an active member's user ID, who completes its lines from My claims (FR-AP-18). Left out, it has none."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
           format: uuid
           type: string
         closed_on:
@@ -33177,6 +33458,804 @@ paths:
       x-fyniq-permission:
         capability: Bills, vendor credits
         right: P
+  /v1/card-lines:
+    get:
+      description: "The lines of the company cards the caller holds (FR-AP-18), newest first, a page at a time, or only those still waiting to be completed: each with what completing it made. Nobody sees another holder's card lines here; finance sees them in Banking. Read-only; no side effects."
+      operationId: listCardLines
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only lines still waiting to be completed.
+          explode: false
+          in: query
+          name: waiting
+          schema:
+            description: Only lines still waiting to be completed.
+            examples:
+              - true
+            type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardLinePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the lines of your company cards
+      tags:
+        - Expense claims
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - CLAIM-09
+      x-fyniq-permission:
+        capability: Expense claims
+        right: C
+  /v1/card-lines/{line_id}/complete:
+    post:
+      description: "Completes a waiting line of a company card the caller holds (FR-AP-18, design D9). Spent for the company: with a category of the expense policy and its GST code, the line is categorised to the category's account as Banking categorises it (bank_transaction@1). Personal spend: it is recorded as an advance to the caller from the card, Dr the advances account · Cr the card (cash_advance@1), and the line matched to it; the caller owes it until they refund it, and no claim settles it. Then attach the receipt (addCardLineEvidence). Only the card's holder completes its lines. Side effects: the bank transaction or the advance, its entry, the line's match and status, audit events. Needs If-Match with the line's ETag. Idempotent with Idempotency-Key; Prefer: return=preview returns the line as it would be and saves nothing."
+      operationId: completeCardLine
+      parameters:
+        - description: The card line's ID.
+          in: path
+          name: line_id
+          required: true
+          schema:
+            description: The card line's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardSpendDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardLine"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The line's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `CLAIM-34` The line is not on a card you hold; `TEAM-04` Your roles conflict for this action."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BANKTXN-08` The line is not waiting to be categorised; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BANKTXN-04` The GST code is not in the pack; `BANKTXN-06` The reference is too long; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-30` The refund does not fit the advance; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-25` Not an active money account; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-38` The advance's accounts or amount do not fit; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Complete a line of your company card
+      tags:
+        - Expense claims
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - BANKTXN-04
+        - BANKTXN-06
+        - BANKTXN-08
+        - CLAIM-05
+        - CLAIM-06
+        - CLAIM-09
+        - CLAIM-30
+        - CLAIM-34
+        - FX-01
+        - JOURNAL-01
+        - JOURNAL-04
+        - JOURNAL-11
+        - LEDGER-01
+        - LEDGER-02
+        - LEDGER-03
+        - LEDGER-04
+        - LEDGER-05
+        - LEDGER-06
+        - LEDGER-07
+        - LEDGER-08
+        - LEDGER-09
+        - LEDGER-10
+        - LEDGER-11
+        - LEDGER-12
+        - LEDGER-13
+        - LEDGER-14
+        - LEDGER-15
+        - LEDGER-16
+        - LEDGER-17
+        - LEDGER-25
+        - LEDGER-26
+        - LEDGER-38
+        - STORAGE-DOC-02
+        - STORAGE-DUPLICATE-01
+        - STORAGE-INV-01
+        - STORAGE-INV-02
+        - STORAGE-INV-03
+        - STORAGE-INV-04
+        - STORAGE-INV-05
+        - STORAGE-INV-13
+        - STORAGE-LOCK-01
+        - STORAGE-PERIOD-01
+        - STORAGE-RETRY-01
+        - TEAM-04
+      x-fyniq-permission:
+        capability: Expense claims
+        right: C
+  /v1/card-lines/{line_id}/evidence:
+    get:
+      description: The files attached to what completing a line of the caller's own card made, oldest first, a page at a time (FR-AP-18, FR-DOC-05); none while it is not completed. Read-only; no side effects.
+      operationId: listCardLineEvidence
+      parameters:
+        - description: The card line's ID.
+          in: path
+          name: line_id
+          required: true
+          schema:
+            description: The card line's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c01
+            format: uuid
+            type: string
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardEvidencePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the receipts of a line of your company card
+      tags:
+        - Evidence
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CLAIM-09
+      x-fyniq-permission:
+        capability: Expense claims
+        right: C
+    post:
+      description: "Attaches a file, such as the receipt pasted or dropped, to what completing a line of the caller's own card made (FR-AP-18, FR-DOC-05), as multipart/form-data: the bank transaction, or the personal spend. The line is completed first (CLAIM-35). The file's type is decided from its content; it is scanned for malware and its image metadata, such as location, is stripped before it is stored (FR-DOC-08); it is committed to the retention-locked store and is append-only (FR-DOC-13). Side effects: the file, its evidence row and its audit event with the SHA-256 of the file as received and as stored (FR-DOC-07). Only the card's holder attaches. Needs If-Match with the line's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing."
+      operationId: addCardLineEvidence
+      parameters:
+        - description: The card line's ID.
+          in: path
+          name: line_id
+          required: true
+          schema:
+            description: The card line's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c01
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            encoding:
+              data_class:
+                contentType: text/plain
+              evidence_type:
+                contentType: text/plain
+              file:
+                contentType: application/octet-stream
+              note:
+                contentType: text/plain
+              relates_on:
+                contentType: text/plain
+              source:
+                contentType: text/plain
+            schema:
+              properties:
+                data_class:
+                  description: The personal data it holds (FR-DOC-09); general by default. Payroll and identity files wait for payroll permissions.
+                  enum:
+                    - general
+                    - personal
+                    - bank
+                  examples:
+                    - general
+                  type: string
+                evidence_type:
+                  description: What the file is, such as receipt, board resolution or screenshot.
+                  examples:
+                    - receipt
+                  maxLength: 100
+                  minLength: 1
+                  type: string
+                file:
+                  contentEncoding: binary
+                  contentMediaType: application/octet-stream
+                  description: "The file: PDF, PNG, JPEG, WebP, CSV, plain text, XLSX, DOCX (no macros), EML or MSG, up to 25 MB. Its type is decided from its content, never from its name or Content-Type."
+                  examples:
+                    - "%PDF-1.7 … (the file's bytes)"
+                  format: binary
+                  type: string
+                note:
+                  description: A short note.
+                  examples:
+                    - Paid by PayNow
+                  maxLength: 1000
+                  type: string
+                relates_on:
+                  description: The date it relates to.
+                  examples:
+                    - "2026-10-20"
+                  format: date
+                  type: string
+                source:
+                  description: "How a person added it: upload (the default) or paste. An integration's file is always api."
+                  enum:
+                    - upload
+                    - paste
+                  examples:
+                    - upload
+                  type: string
+              required:
+                - file
+                - evidence_type
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardEvidence"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardEvidence"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The file's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CLAIM-35` The card line is not completed yet; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Attach the receipt of a line of your company card
+      tags:
+        - Evidence
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - CLAIM-09
+        - CLAIM-35
+        - DOC-01
+        - DOC-02
+        - DOC-03
+        - DOC-04
+        - DOC-05
+        - DOC-06
+        - DOC-07
+        - DOC-08
+        - DOC-09
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Expense claims
+        right: C
   /v1/cash-advances:
     get:
       description: "Money advanced to members and what they refunded, newest date first, a page at a time, narrowed by member or to the advances still open (FR-AP-17): each with its member, the account it moved through, and for an advance what claims settled, what was refunded and what is still open, with ⚠ when it is open more than the claim deadline after it was paid. A person whose right on \"Expense claims\" is their own claims only (an Employee) gets just their own: the advances their claim can settle. Read-only; no side effects."
@@ -60408,7 +61487,7 @@ paths:
         capability: Bank transactions, categorise
         right: V
     post:
-      description: "Sets up a chart account marked a money account in Banking (FR-BNK-01): its kind, name, bank and what statements name it by, in the chart account's currency. One per chart account; an identifier is unique per currency. Its statements are uploaded as files until a source says otherwise. Side effects: the money account and its audit event, which keeps the identifier's last four characters only (SEC-15). Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      description: "Sets up a chart account marked a money account in Banking (FR-BNK-01): its kind, name, bank and what statements name it by, in the chart account's currency; a card's holder, an active member who completes its lines from My claims (FR-AP-18). One per chart account; an identifier is unique per currency. Its statements are uploaded as files until a source says otherwise. Side effects: the money account and its audit event, which keeps the identifier's last four characters only (SEC-15). Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
       operationId: createMoneyAccount
       parameters:
         - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
@@ -60534,7 +61613,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BANK-14` The cardholder does not fit the money account."
         "429":
           content:
             application/problem+json:
@@ -60591,6 +61670,7 @@ paths:
         - API-INPUT-03
         - API-INPUT-04
         - API-RATE-01
+        - BANK-14
         - STORAGE-BANKING-01
         - STORAGE-DUPLICATE-01
         - STORAGE-LOCK-01
@@ -60721,7 +61801,7 @@ paths:
         capability: Bank transactions, categorise
         right: V
     put:
-      description: "Changes a money account's kind, name, bank, identifier and the days it opened and closed: never its chart account or currency. A closed account takes no more imports. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      description: "Changes a money account's kind, name, bank, identifier, the days it opened and closed, and a card's holder: never its chart account or currency. A closed account takes no more imports. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
       operationId: replaceMoneyAccount
       parameters:
         - description: The money account's ID.
@@ -60858,7 +61938,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BANK-14` The cardholder does not fit the money account."
         "428":
           content:
             application/problem+json:
@@ -60924,6 +62004,7 @@ paths:
         - API-INPUT-04
         - API-NOT-FOUND-01
         - API-RATE-01
+        - BANK-14
         - STORAGE-BANKING-01
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01

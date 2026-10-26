@@ -65,7 +65,7 @@
 
 ## 7. Company-card spend
 
-- [ ] 7.1 A card money account's lines assigned to its cardholder; completed from My claims with the receipt and a
+- [x] 7.1 A card money account's lines assigned to its cardholder; completed from My claims with the receipt and a
   category (the banking command, the evidence attached); personal spend posts Dr 1250 · Cr the card account.
   - Tests: a card line completed by its cardholder, not by another member; personal spend owed. `// req: FR-AP-18`
 

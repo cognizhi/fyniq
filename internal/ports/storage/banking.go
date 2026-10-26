@@ -62,10 +62,12 @@ type MoneyAccount struct {
 	Currency    string
 	OpenedOn    *time.Time
 	ClosedOn    *time.Time
-	CreatedBy   string
-	CreatedAt   time.Time
-	ChangedAt   time.Time
-	Version     int
+	// CardholderID is a card's holder, a member's user ID, whose My claims shows its lines (FR-AP-18); nil for none.
+	CardholderID *uuid.UUID
+	CreatedBy    string
+	CreatedAt    time.Time
+	ChangedAt    time.Time
+	Version      int
 }
 
 // NewMoneyAccount opens a money account on a chart account.
@@ -77,7 +79,9 @@ type NewMoneyAccount struct {
 	Identifier  string
 	Currency    string
 	OpenedOn    *time.Time
-	At          time.Time
+	// CardholderID is a card's holder, a member's user ID (FR-AP-18); nil for none.
+	CardholderID *uuid.UUID
+	At           time.Time
 }
 
 // MoneyAccountChange is what may change on a money account: everything but its chart account and currency.
@@ -88,7 +92,9 @@ type MoneyAccountChange struct {
 	Identifier  string
 	OpenedOn    *time.Time
 	ClosedOn    *time.Time
-	At          time.Time
+	// CardholderID is a card's holder, a member's user ID (FR-AP-18); nil for none.
+	CardholderID *uuid.UUID
+	At           time.Time
 }
 
 // MoneyAccountSource is where a money account's data comes from, from a date (UC-BNK-03 keeps the history).

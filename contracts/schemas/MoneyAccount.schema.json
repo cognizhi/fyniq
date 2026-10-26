@@ -17,6 +17,10 @@
       "format": "uuid",
       "type": "string"
     },
+    "cardholder": {
+      "$ref": "Person.schema.json",
+      "description": "A card: its holder, whose My claims shows its lines to complete with a receipt and a category (FR-AP-18)."
+    },
     "changed_at": {
       "description": "When it last changed.",
       "examples": [

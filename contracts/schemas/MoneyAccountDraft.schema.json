@@ -10,6 +10,14 @@
       "format": "uuid",
       "type": "string"
     },
+    "cardholder_id": {
+      "description": "A card only: its holder, an active member's user ID, who completes its lines from My claims (FR-AP-18). Left out, it has none.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "closed_on": {
       "description": "replaceMoneyAccount only: the day it closed.",
       "examples": [

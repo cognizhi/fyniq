@@ -235,6 +235,17 @@ func (s BankTransactions) MatchBills(ctx context.Context, org uuid.UUID, m BillM
 func (s BankTransactions) MatchRecorded(ctx context.Context, org, lineID, documentID uuid.UUID, basis string, at time.Time) (Matched, error) {
 	var out Matched
 	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		out, err = s.matchRecorded(ctx, u, lineID, documentID, basis, at)
+		return err
+	})
+	return out, err
+}
+
+// matchRecorded is MatchRecorded in u, the caller's unit of work: for a command that records the document with it.
+func (s BankTransactions) matchRecorded(ctx context.Context, u storage.UnitOfWork, lineID, documentID uuid.UUID, basis string, at time.Time) (Matched, error) {
+	var out Matched
+	err := func() error {
 		line, acct, _, err := s.matchable(ctx, u, lineID, at)
 		if err != nil {
 			return err
@@ -272,7 +283,7 @@ func (s BankTransactions) MatchRecorded(ctx context.Context, org, lineID, docume
 			invoices = append(invoices, p.InvoiceID)
 		}
 		return closeSignals(ctx, u, invoices, line.ID, at)
-	})
+	}()
 	return out, err
 }
 

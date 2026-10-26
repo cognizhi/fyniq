@@ -793,6 +793,7 @@ money_account | created_at | timestamp with time zone | not null |
 money_account | changed_by | text | not null | 
 money_account | changed_at | timestamp with time zone | not null | 
 money_account | version | integer | not null | 1
+money_account | cardholder_id | uuid | null | 
 money_account_source | organisation_id | uuid | not null | current_org()
 money_account_source | id | uuid | not null | uuidv7()
 money_account_source | money_account_id | uuid | not null | 
@@ -2457,6 +2458,8 @@ money_account | money_account_account_fkey | FOREIGN KEY (organisation_id, accou
 money_account | money_account_account_id_not_null | NOT NULL account_id
 money_account | money_account_account_key | UNIQUE (organisation_id, account_id)
 money_account | money_account_by_form | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (changed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
+money_account | money_account_cardholder_card | CHECK (((cardholder_id IS NULL) OR (kind = 'card'::text)))
+money_account | money_account_cardholder_fkey | FOREIGN KEY (cardholder_id) REFERENCES app_user(user_id)
 money_account | money_account_changed_at_not_null | NOT NULL changed_at
 money_account | money_account_changed_by_not_null | NOT NULL changed_by
 money_account | money_account_created_at_not_null | NOT NULL created_at

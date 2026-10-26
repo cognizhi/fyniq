@@ -175,9 +175,9 @@ fyniq_api       INSERT    member_invitation (code_hash, created_at, display_name
 fyniq_api       SELECT    member_invitation
 fyniq_api       UPDATE    member_invitation (withdrawn_at)
 fyniq_api       EXECUTE   member_names()
-fyniq_api       INSERT    money_account (account_id, changed_at, changed_by, created_at, created_by, currency, identifier, institution, kind, name, opened_on)
+fyniq_api       INSERT    money_account (account_id, cardholder_id, changed_at, changed_by, created_at, created_by, currency, identifier, institution, kind, name, opened_on)
 fyniq_api       SELECT    money_account
-fyniq_api       UPDATE    money_account (changed_at, changed_by, closed_on, identifier, institution, kind, name, opened_on, version)
+fyniq_api       UPDATE    money_account (cardholder_id, changed_at, changed_by, closed_on, identifier, institution, kind, name, opened_on, version)
 fyniq_api       INSERT    money_account_source (connector_id, from_date, kind, mapping_id, money_account_id, report_format, senders, set_at, set_by)
 fyniq_api       SELECT    money_account_source
 fyniq_api       SELECT    notification
