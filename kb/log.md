@@ -215,3 +215,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-26] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (claim deadline, FR-AP-15; p1-expense-claims task 5.1)
 
 ## [2026-10-26] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (advances account, FR-AP-17; p1-expense-claims task 6.1)
+
+## [2026-10-26] compile | docs/user-guide/claims-my-claims.md → claims.make-a-claim (the receipt, evidence, submit, card-line and cash-advance screens built, p1-expense-claims task 8.1)

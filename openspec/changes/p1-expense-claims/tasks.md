@@ -75,6 +75,16 @@
   the landing for personal-only people), `claim-editor` (receipt from paste, drop or the capture address), and
   `mileage-claim`; help keys and registry entries; component tests with axe.
   `// req: FR-AP-14`, `// req: FR-UX-39`
+  (26 Oct 2026, in part: `screens/claims/MyClaims.tsx` at `/me/claims` and `/me`: claims by stage with filters, what
+  the company owes, a returned claim's comment up front, the Card lines tab (complete with the policy's category or as
+  personal spend, then the receipt) and the Cash advances tab; `ClaimEditor.tsx` at `/me/claims/new` and
+  `/me/claims/$claimId`: receipt lines in any currency, the advance a claim settles, the receipt attached through the
+  evidence panel and picked on its line, the policy's checks, save, submit with step-up and withdraw, the ledger
+  impact in Expert; Home lands a person whose only role is Employee on My claims; `getClaimGSTCodes` gives the claim
+  screens the purchase GST codes under "Expense claims"; the guide page `claims.my-claims` rewritten to what is built and
+  compiled. Tests `claims.test.tsx` with axe. **Left:** `mileage-claim` and the Mileage tab, export of the history,
+  receipt capture by paste, drop or the capture address (the file is chosen), and FR-UX-39's personal navigation,
+  which is `p1-app-shell` task 2.1's.)
 - [ ] 8.2 `claims-review` (the approver's queue with the policy outcome, approve and return with a comment) and
   `expense-policy` (categories, limits and the settings); component tests with axe. `// req: FR-AP-15`, `// req: FR-AP-17`
 - [ ] 8.3 The guide pages `claims.my-claims` and `claims.approve-team` updated to what is built, compiled into

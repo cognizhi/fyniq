@@ -10,7 +10,12 @@ import { helpText } from "../../i18n";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 
-type Evidence = components["schemas"]["Evidence"] | components["schemas"]["BillEvidence"] | components["schemas"]["InvoiceEvidence"];
+type Evidence =
+  | components["schemas"]["Evidence"]
+  | components["schemas"]["BillEvidence"]
+  | components["schemas"]["InvoiceEvidence"]
+  | components["schemas"]["ClaimEvidence"]
+  | components["schemas"]["CardEvidence"];
 type DataClass = "general" | "personal" | "bank";
 
 // Who attaches evidence to a journal: C on "Evidence: add, supersede" and a view of the journal (Appendix D): the Owner,
@@ -23,9 +28,10 @@ export const billAttachers = ["owner", "controller", "accountant", "bookkeeper",
 // Who attaches evidence to an invoice: C on "Evidence: add, supersede" and a view of invoices (Appendix D). The API decides.
 export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeeper", "ar_specialist", "approver", "tax_agent"];
 
-// A record evidence goes on: a journal, a bill or vendor credit, or an invoice or credit note (FR-DOC-05), at its ETag.
+// A record evidence goes on: a journal, a bill or vendor credit, an invoice or credit note, an expense claim, or a
+// completed line of a company card (FR-DOC-05, FR-AP-14, FR-AP-18), at its ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill" | "invoice";
+  kind: "journal" | "bill" | "invoice" | "claim" | "card-line";
   id: string;
   etag: string;
 }
@@ -35,7 +41,12 @@ const kindsOf = {
   journal: ["calculation", "invoice", "receipt", "statement", "agreement", "board resolution", "screenshot"],
   bill: ["invoice", "receipt", "quotation", "statement", "agreement", "screenshot"],
   invoice: ["purchase order", "contract", "delivery confirmation", "timesheet", "agreement", "screenshot"],
+  claim: ["receipt", "tax invoice", "card statement", "boarding pass", "screenshot"],
+  "card-line": ["receipt", "tax invoice", "screenshot"],
 };
+
+// nouns name each record in the panel's words.
+const nouns = { journal: "journal", bill: "bill", invoice: "invoice", claim: "claim", "card-line": "card line" };
 
 // Result is an evidence call's answer, whichever record it went to.
 type Result = { data?: Evidence; error?: unknown };
@@ -47,7 +58,11 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
       ? await api.GET("/v1/bills/{bill_id}/evidence", { params: { path: { bill_id: r.id }, query: { page_size: 100 } } })
       : r.kind === "invoice"
         ? await api.GET("/v1/invoices/{invoice_id}/evidence", { params: { path: { invoice_id: r.id }, query: { page_size: 100 } } })
-        : await api.GET("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: r.id }, query: { page_size: 100 } } });
+        : r.kind === "claim"
+          ? await api.GET("/v1/expense-claims/{claim_id}/evidence", { params: { path: { claim_id: r.id }, query: { page_size: 100 } } })
+          : r.kind === "card-line"
+            ? await api.GET("/v1/card-lines/{line_id}/evidence", { params: { path: { line_id: r.id }, query: { page_size: 100 } } })
+            : await api.GET("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: r.id }, query: { page_size: 100 } } });
   if (out.error) throw out.error;
   return out.data.items ?? [];
 }
@@ -86,7 +101,7 @@ export function JournalEvidence({ journalId, journalEtag, draft, mayAttach, onCh
 // first. Those who attach evidence add a file with what it is; on a draft a file comes off again, and once the record
 // is posted its files are kept, append-only, until the retention ends.
 export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record: EvidenceRecord; draft: boolean; mayAttach: boolean; onChanged: (message: string) => void }) {
-  const noun = record.kind;
+  const noun = nouns[record.kind];
   const kinds = kindsOf[record.kind];
   const queries = useQueryClient();
   const confirm = useConfirm();
@@ -100,10 +115,10 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [failed, setFailed] = useState("");
-  const attach = helpText(`${noun}.attach-evidence`);
-  const q = useQuery({ queryKey: [`${noun}-evidence`, record.id], queryFn: () => files(record) });
+  const attach = helpText(`${record.kind}.attach-evidence`);
+  const q = useQuery({ queryKey: [`${record.kind}-evidence`, record.id], queryFn: () => files(record) });
   const items = q.data ?? [];
-  const refresh = () => queries.invalidateQueries({ queryKey: [`${noun}-evidence`, record.id] });
+  const refresh = () => queries.invalidateQueries({ queryKey: [`${record.kind}-evidence`, record.id] });
 
   const add = async () => {
     const lack = { file: !file, kind: !kind.trim() };
@@ -129,7 +144,11 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
         ? api.POST("/v1/bills/{bill_id}/evidence", { params: { path: { bill_id: record.id }, header }, body, bodySerializer })
         : record.kind === "invoice"
           ? api.POST("/v1/invoices/{invoice_id}/evidence", { params: { path: { invoice_id: record.id }, header }, body, bodySerializer })
-          : api.POST("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: record.id }, header }, body, bodySerializer });
+          : record.kind === "claim"
+            ? api.POST("/v1/expense-claims/{claim_id}/evidence", { params: { path: { claim_id: record.id }, header }, body, bodySerializer })
+            : record.kind === "card-line"
+              ? api.POST("/v1/card-lines/{line_id}/evidence", { params: { path: { line_id: record.id }, header }, body, bodySerializer })
+              : api.POST("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: record.id }, header }, body, bodySerializer });
     const out = await guarded(confirm, post);
     setBusy(false);
     setFailed("The file was not attached");
@@ -146,19 +165,24 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
   const remove = async (e: Evidence) => {
     setBusy(true);
     setProblem(null);
+    if (record.kind === "card-line") return; // a card line's document is posted: its files stay
     const read: Result & { response: Response } =
       record.kind === "bill"
         ? await api.GET("/v1/bills/{bill_id}/evidence/{evidence_id}", { params: { path: { bill_id: record.id, evidence_id: e.id } } })
         : record.kind === "invoice"
           ? await api.GET("/v1/invoices/{invoice_id}/evidence/{evidence_id}", { params: { path: { invoice_id: record.id, evidence_id: e.id } } })
-          : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
+          : record.kind === "claim"
+            ? await api.GET("/v1/expense-claims/{claim_id}/evidence/{evidence_id}", { params: { path: { claim_id: record.id, evidence_id: e.id } } })
+            : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
     const header = { "If-Match": etagOf(read.response) };
     const del = (): Promise<Result> =>
       record.kind === "bill"
         ? api.DELETE("/v1/bills/{bill_id}/evidence/{evidence_id}", { params: { path: { bill_id: record.id, evidence_id: e.id }, header } })
         : record.kind === "invoice"
           ? api.DELETE("/v1/invoices/{invoice_id}/evidence/{evidence_id}", { params: { path: { invoice_id: record.id, evidence_id: e.id }, header } })
-          : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
+          : record.kind === "claim"
+            ? api.DELETE("/v1/expense-claims/{claim_id}/evidence/{evidence_id}", { params: { path: { claim_id: record.id, evidence_id: e.id }, header } })
+            : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
     const out = read.error ? read : await guarded(confirm, del);
     setBusy(false);
     setFailed("The file was not removed");
@@ -173,7 +197,13 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
         Evidence
       </h2>
       <p className="fy-small fy-muted">
-        {record.kind === "bill"
+        {record.kind === "claim"
+          ? draft
+            ? "The receipt for each line, pasted, dropped or chosen. Name it on its line. While the claim is a draft, a file can come off again."
+            : "The receipts the claim rests on. Once it is approved they are kept, and never deleted, for as long as the records are."
+          : record.kind === "card-line"
+          ? "The receipt for what you paid with the card. It is kept, and never deleted, for as long as the records are."
+          : record.kind === "bill"
           ? draft
             ? "The supplier's invoice, and any other file the bill rests on. While it is a draft, a file can come off again."
             : "The supplier's invoice, and any other file the bill rests on. Once it is posted they are kept, and never deleted, for as long as the records are."
@@ -263,7 +293,7 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
             </datalist>
             {missing.kind && (
               <span className="fy-error" id={`${id}-kind-error`}>
-                {record.kind === "bill" ? "Say what the file is, such as the invoice or a receipt." : record.kind === "invoice" ? "Say what the file is, such as the customer's purchase order." : "Say what the file is, such as a calculation or an invoice."}
+                {record.kind === "bill" || record.kind === "claim" || record.kind === "card-line" ? "Say what the file is, such as the invoice or a receipt." : record.kind === "invoice" ? "Say what the file is, such as the customer's purchase order." : "Say what the file is, such as a calculation or an invoice."}
               </span>
             )}
           </div>

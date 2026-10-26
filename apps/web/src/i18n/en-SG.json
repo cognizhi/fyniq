@@ -1055,6 +1055,50 @@
     "public.download": {
       "label": "Download the PDF",
       "tooltip": "Save the document as the sender issued it, to keep for your records."
+    },
+    "claims.my-claims": {
+      "label": "My claims",
+      "tooltip": "Costs you paid for the company: your claims by stage, what the company still owes you, your company-card lines and your cash advances."
+    },
+    "claims.personal": {
+      "label": "My claims",
+      "tooltip": "Your own claims, card lines and cash advances: all that Fyniq shows when claims are all you do in it."
+    },
+    "claim.new": {
+      "label": "New claim",
+      "tooltip": "Claim back what you paid for the company: add the receipt, what it was for and the amount on it."
+    },
+    "claims.claim": {
+      "label": "Claim",
+      "tooltip": "One of your claims: its receipts, what the expense policy says about it, and where it stands."
+    },
+    "claims.owed": {
+      "label": "What the company owes you",
+      "tooltip": "Your approved claims not yet paid back, in the base currency. Claims waiting for approval are not in it yet."
+    },
+    "claim.save": {
+      "label": "Save draft",
+      "tooltip": "Keep the claim as a draft: nothing is sent for approval, and you can change it."
+    },
+    "claim.submit": {
+      "label": "Submit",
+      "tooltip": "Send the claim for approval, after you confirm it's you. Another person approves it; finance too when a line is above its limit or late."
+    },
+    "claim.withdraw": {
+      "label": "Withdraw",
+      "tooltip": "Take the claim back from approval: it becomes a draft again to change and submit."
+    },
+    "claim.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach a receipt: a photo, a screenshot or a PDF. Fyniq scans it and strips image metadata such as location; then pick it on its line."
+    },
+    "card-line.complete": {
+      "label": "Complete",
+      "tooltip": "Say what a payment with your company card was for: the category of its receipt, or personal spend that you refund."
+    },
+    "card-line.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the receipt for a payment with your company card. It is kept, and never deleted, for as long as the records are."
     }
   }
 }

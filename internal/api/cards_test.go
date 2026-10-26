@@ -172,6 +172,9 @@ var matrixCards = map[string]func(e *env, tok string) (response, func() bool){
 			return len(l.Body["items"].([]any)) == 0
 		}
 	},
+	"getClaimGSTCodes": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/expense-claims/gst-codes?on=2026-10-15", tok, nil), nil
+	},
 	"listCardLineEvidence": func(e *env, tok string) (response, func() bool) {
 		l := e.lineOn(e.cardOf(matrixApprover(e)), "-27.30", nil)
 		return e.call(http.MethodGet, "/v1/card-lines/"+l.ID.String()+"/evidence", steppedUp(e, tok), nil), nil

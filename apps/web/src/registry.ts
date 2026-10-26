@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, Contact, House, Inbox, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, Contact, House, Inbox, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -57,6 +57,12 @@ export const routes = [
   { kind: "route", id: "install", path: "/install", mode: "basic", signedIn: false, help: "installation.setup", guide: "installation.setup" },
   // The customer's view of a quote or invoice through the secure link its email carried (FR-AR-06, FR-AR-16): no sign-in.
   { kind: "route", id: "document-view", path: "/d", mode: "basic", signedIn: false, help: "public.document", guide: "sales.invoices#what-the-customer-sees" },
+  // My claims (FR-AP-14, FR-AP-18, FR-UX-39; p1-expense-claims task 8.1): a member's own claims, card lines and cash
+  // advances; /me is where a person whose rights are personal only lands.
+  { kind: "route", id: "personal", path: "/me", mode: "basic", signedIn: true, help: "claims.personal", guide: "claims.my-claims" },
+  { kind: "route", id: "my-claims", path: "/me/claims", mode: "basic", signedIn: true, help: "claims.my-claims", guide: "claims.my-claims" },
+  { kind: "route", id: "claim-new", path: "/me/claims/new", mode: "basic", signedIn: true, help: "claim.new", guide: "claims.my-claims#claim-a-receipt" },
+  { kind: "route", id: "claim", path: "/me/claims/$claimId", mode: "basic", signedIn: true, help: "claims.claim", guide: "claims.my-claims#submit-a-claim" },
   { kind: "route", id: "inbox", path: "/inbox", mode: "basic", signedIn: true, help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
   { kind: "route", id: "approval", path: "/approvals/$approvalId", mode: "basic", signedIn: true, help: "approvals.request", guide: "approvals.decide#approve-or-reject" },
   { kind: "route", id: "review-log", path: "/review-log", mode: "basic", signedIn: true, help: "approvals.review-log", guide: "approvals.decide#review-high-risk-actions" },
@@ -191,6 +197,13 @@ export const actions = [
   { kind: "action", id: "chart.add", mode: "expert", help: "chart.add", guide: "accounting.chart#add-an-account" },
   { kind: "action", id: "chart.load-standard", mode: "expert", help: "chart.load-standard", guide: "accounting.chart#start-from-the-standard-chart" },
   { kind: "action", id: "bill.save", mode: "basic", help: "bill.save", guide: "purchases.bills#enter-a-bill" },
+  { kind: "action", id: "claims.owed", mode: "basic", help: "claims.owed", guide: "claims.my-claims#follow-your-claims" },
+  { kind: "action", id: "claim.save", mode: "basic", help: "claim.save", guide: "claims.my-claims#claim-a-receipt" },
+  { kind: "action", id: "claim.submit", mode: "basic", help: "claim.submit", guide: "claims.my-claims#submit-a-claim" },
+  { kind: "action", id: "claim.withdraw", mode: "basic", help: "claim.withdraw", guide: "claims.my-claims#submit-a-claim" },
+  { kind: "action", id: "claim.attach-evidence", mode: "basic", help: "claim.attach-evidence", guide: "claims.my-claims#attach-the-receipt" },
+  { kind: "action", id: "card-line.complete", mode: "basic", help: "card-line.complete", guide: "claims.my-claims#complete-your-company-card-lines" },
+  { kind: "action", id: "card-line.attach-evidence", mode: "basic", help: "card-line.attach-evidence", guide: "claims.my-claims#complete-your-company-card-lines" },
   { kind: "action", id: "bill.post", mode: "basic", help: "bill.post", guide: "purchases.bills#check-and-post-a-bill" },
   { kind: "action", id: "bill.ask-approval", mode: "basic", help: "bill.ask-approval", guide: "purchases.bills#bills-above-the-self-approval-threshold" },
   { kind: "action", id: "bill.void", mode: "basic", help: "bill.void", guide: "purchases.bills#void-or-edit-a-posted-bill" },
@@ -333,6 +346,7 @@ export const actions = [
 // module adds its item with its first screen; the sidebar holds at most 13 (§7.1).
 export const nav = [
   { kind: "nav", id: "nav.home", route: "/", icon: House, group: "main", roles: "all", bottom: true, mode: "basic", help: "home.overview", guide: "home.overview" },
+  { kind: "nav", id: "nav.my-claims", route: "/me/claims", icon: Wallet, group: "personal", roles: ["employee"], mode: "basic", help: "claims.my-claims", guide: "claims.my-claims" },
   { kind: "nav", id: "nav.inbox", route: "/inbox", icon: Inbox, group: "main", roles: "all", bottom: true, mode: "basic", help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
   { kind: "nav", id: "nav.contacts", route: "/contacts", icon: Contact, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "accountant", "controller", "owner", "auditor", "tax_agent", "dpo"], mode: "basic", help: "contacts.overview", guide: "contacts.manage" },
   { kind: "nav", id: "nav.sales", route: "/sales/invoices", icon: Receipt, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "basic", help: "nav.sales", guide: "sales.invoices" },

@@ -161,6 +161,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/document-templates/{template_id}/versions/{number}` (getDocumentTemplateVersion): Read a template version
 - `GET /v1/expense-claims` (listExpenseClaims): List expense claims
 - `POST /v1/expense-claims` (createExpenseClaim): Save a draft expense claim
+- `GET /v1/expense-claims/gst-codes` (getClaimGSTCodes): Get the GST codes for a claim's receipts
 - `GET /v1/expense-claims/mileage-log` (getMileageLog): A member's mileage log for a month
 - `GET /v1/expense-claims/owed` (getExpenseClaimsOwed): What the company owes its claimants
 - `GET /v1/expense-claims/{claim_id}` (getExpenseClaim): Get an expense claim

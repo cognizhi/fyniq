@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, Navigate } from "@tanstack/react-router";
 import { ChevronRight, Circle, CircleCheck, ClipboardCheck, ClockAlert, Stamp, TriangleAlert } from "lucide-react";
 import { api } from "../api/client";
 import { useSignedIn } from "../session";
@@ -169,7 +169,20 @@ function SetUp({ steps }: { steps: Step[] }) {
 // Home is the first signed-in page (docs/design/screens Home): what waits for the person, and while
 // the company is new, the set-up checklist. The pulse card, tiles and deadlines arrive with the
 // ledger's reports.
+// personalRoles are the roles whose rights are a person's own items only (FR-UX-39): someone who holds no other lands
+// on My claims, with nothing of the company's finances.
+export const personalRoles = ["employee"];
+
+export function personalOnly(roles: readonly string[] | null | undefined): boolean {
+  return (roles ?? []).length > 0 && (roles ?? []).every((r) => personalRoles.includes(r));
+}
+
 export function Home() {
+  const { session } = useSignedIn();
+  return personalOnly(session.roles) ? <Navigate to="/me/claims" replace /> : <Workspace />;
+}
+
+function Workspace() {
   const { session, organisation } = useSignedIn();
   const c = useCounts();
   const steps: Step[] = [];
