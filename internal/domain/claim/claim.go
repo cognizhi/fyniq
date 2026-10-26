@@ -41,6 +41,7 @@ const (
 	MaxMerchant  = 120
 	MaxAttendees = 500
 	MaxNotes     = 2000
+	MaxReason    = 500 // why a line is late, or a receipt not a duplicate
 )
 
 // The kinds of line: a receipt, what was bought as the receipt shows it; or a trip in the member's own vehicle (FR-AP-16).
@@ -72,6 +73,7 @@ type Draft struct {
 	Title      string
 	Lines      []Line
 	Notes      string
+	LateReason string // why a line past the claim deadline is claimed late (FR-AP-15)
 }
 
 // Line is one line of a claim. A mileage line (Kind LineMileage) is a trip: its date, its category (the mileage
@@ -103,6 +105,10 @@ type Line struct {
 	Return      bool
 	Vehicle     string
 	Distance    money.Quantity
+	// ReceiptID is the receipt's file among the claim's evidence, nil while none is attached; DuplicateReason is why a
+	// receipt whose file is on another record is not a duplicate (FR-AP-15, UC-EXP-01).
+	ReceiptID       *uuid.UUID
+	DuplicateReason string
 }
 
 // payload is a claim as a document version stores it: dates as text, amounts with their currency.
@@ -112,6 +118,7 @@ type payload struct {
 	Title      string        `json:"title,omitempty"`
 	Lines      []payloadLine `json:"lines"`
 	Notes      string        `json:"notes,omitempty"`
+	LateReason string        `json:"late_reason,omitempty"`
 }
 
 type payloadLine struct {
@@ -135,6 +142,8 @@ type payloadLine struct {
 	Return       bool         `json:"return,omitempty"`
 	Vehicle      string       `json:"vehicle,omitempty"`
 	Distance     string       `json:"distance,omitempty"`
+	ReceiptID    *uuid.UUID   `json:"receipt_id,omitempty"`
+	Duplicate    string       `json:"duplicate_reason,omitempty"`
 }
 
 func day(t time.Time) string {
@@ -150,12 +159,12 @@ func Encode(d Draft) ([]byte, error) {
 	for _, x := range []struct {
 		field, text string
 		most        int
-	}{{"title", d.Title, MaxTitle}, {"notes", d.Notes, MaxNotes}} {
+	}{{"title", d.Title, MaxTitle}, {"notes", d.Notes, MaxNotes}, {"late_reason", d.LateReason, MaxReason}} {
 		if len(x.text) > x.most {
 			return nil, &Error{CodeTooLong, fmt.Sprintf("%s: %d characters; the most is %d", x.field, len(x.text), x.most), "Shorten it"}
 		}
 	}
-	p := payload{ClaimantID: d.ClaimantID, Date: day(d.Date), Title: d.Title, Notes: d.Notes, Lines: []payloadLine{}}
+	p := payload{ClaimantID: d.ClaimantID, Date: day(d.Date), Title: d.Title, Notes: d.Notes, LateReason: d.LateReason, Lines: []payloadLine{}}
 	for i, r := range d.Lines {
 		f := func(name string) string { return fmt.Sprintf("lines[%d].%s", i+1, name) }
 		if r.Kind == LineMileage {
@@ -172,7 +181,8 @@ func Encode(d Draft) ([]byte, error) {
 		for _, x := range []struct {
 			field, text string
 			most        int
-		}{{"merchant", r.Merchant, MaxMerchant}, {"description", r.Description, MaxDescription}, {"attendees", r.Attendees, MaxAttendees}} {
+		}{{"merchant", r.Merchant, MaxMerchant}, {"description", r.Description, MaxDescription}, {"attendees", r.Attendees, MaxAttendees},
+			{"duplicate_reason", r.DuplicateReason, MaxReason}} {
 			if len(x.text) > x.most {
 				return nil, &Error{CodeTooLong, fmt.Sprintf("%s: %d characters; the most is %d", f(x.field), len(x.text), x.most), "Shorten it"}
 			}
@@ -192,7 +202,8 @@ func Encode(d Draft) ([]byte, error) {
 		amount, gst := r.Amount, r.GST
 		pl := payloadLine{Kind: LineReceipt, Date: day(r.Date), Merchant: r.Merchant, CategoryID: r.CategoryID, Description: r.Description,
 			Amount: &amount, GSTCode: r.GSTCode, GST: &gst, StatedGST: r.StatedGST, Paid: r.Paid, Attendees: r.Attendees,
-			Document: or(r.Document, bill.DocTaxInvoice, ""), AddressedTo: or(r.AddressedTo, bill.ToCompany, "")}
+			Document: or(r.Document, bill.DocTaxInvoice, ""), AddressedTo: or(r.AddressedTo, bill.ToCompany, ""), ReceiptID: r.ReceiptID,
+			Duplicate: r.DuplicateReason}
 		if r.Rate != nil {
 			pl.FXRate, pl.FXRateSource = r.Rate.String(), r.Rate.Source
 		}
@@ -228,7 +239,7 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 	if err := json.Unmarshal(doc.Payload, &p); err != nil {
 		return Draft{}, bad(err.Error())
 	}
-	d := Draft{ClaimantID: p.ClaimantID, Title: p.Title, Notes: p.Notes}
+	d := Draft{ClaimantID: p.ClaimantID, Title: p.Title, Notes: p.Notes, LateReason: p.LateReason}
 	var err error
 	if p.Date != "" {
 		if d.Date, err = time.Parse(time.DateOnly, p.Date); err != nil {
@@ -248,7 +259,8 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 			return Draft{}, bad(fmt.Sprintf("a line of kind %q", l.Kind))
 		}
 		r := Line{Kind: LineReceipt, Merchant: l.Merchant, CategoryID: l.CategoryID, Description: l.Description, Amount: *l.Amount, GSTCode: l.GSTCode, GST: *l.GST,
-			StatedGST: l.StatedGST, Paid: l.Paid, Attendees: l.Attendees, Document: l.Document, AddressedTo: l.AddressedTo}
+			StatedGST: l.StatedGST, Paid: l.Paid, Attendees: l.Attendees, Document: l.Document, AddressedTo: l.AddressedTo, ReceiptID: l.ReceiptID,
+			DuplicateReason: l.Duplicate}
 		if l.Date != "" {
 			if r.Date, err = time.Parse(time.DateOnly, l.Date); err != nil {
 				return Draft{}, bad(fmt.Sprintf("the receipt's date %q", l.Date))

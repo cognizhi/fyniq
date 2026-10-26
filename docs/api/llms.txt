@@ -155,6 +155,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/expense-claims/owed` (getExpenseClaimsOwed): What the company owes its claimants
 - `GET /v1/expense-claims/{claim_id}` (getExpenseClaim): Get an expense claim
 - `PUT /v1/expense-claims/{claim_id}` (replaceExpenseClaim): Change a draft expense claim
+- `GET /v1/expense-claims/{claim_id}/evidence` (listExpenseClaimEvidence): List a claim's receipts
+- `POST /v1/expense-claims/{claim_id}/evidence` (addExpenseClaimEvidence): Attach a receipt to your claim
+- `GET /v1/expense-claims/{claim_id}/evidence/{evidence_id}` (getExpenseClaimEvidence): Get a claim's receipt file
+- `DELETE /v1/expense-claims/{claim_id}/evidence/{evidence_id}` (removeExpenseClaimEvidence): Remove a receipt from your draft claim
 - `POST /v1/expense-claims/{claim_id}/submit` (submitExpenseClaim): Submit an expense claim for approval
 - `POST /v1/expense-claims/{claim_id}/withdraw` (withdrawExpenseClaim): Withdraw a submitted expense claim
 - `GET /v1/fx/feed` (listFeedRates): List the daily feed's rates

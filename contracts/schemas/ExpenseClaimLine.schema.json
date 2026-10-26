@@ -76,6 +76,14 @@
       ],
       "type": "string"
     },
+    "duplicate_reason": {
+      "description": "A receipt whose file is on another record: why it is not a duplicate. Required before submitting such a line; the approver sees it (UC-EXP-01).",
+      "examples": [
+        "The hotel issued one invoice for both rooms; each of us claims their own night"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
     "from": {
       "description": "A trip: where it started, an address or a saved place's (claim places). Never sent anywhere: the maps service stays off.",
       "examples": [
@@ -129,6 +137,14 @@
     "rate": {
       "$ref": "Money.schema.json",
       "description": "A trip, in answers: the vehicle's rate per km on its date."
+    },
+    "receipt_id": {
+      "description": "A receipt: its file among the claim's evidence (addExpenseClaimEvidence). Above its category's receipt threshold it is required (FR-AP-15).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"
+      ],
+      "format": "uuid",
+      "type": "string"
     },
     "return": {
       "description": "A trip: true when it came back the same way. The distance is still the whole trip's, as driven.",

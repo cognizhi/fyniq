@@ -3191,6 +3191,8 @@ CREATE INDEX document_template_type ON fyniq.document_template USING btree (orga
 CREATE INDEX email_event_message ON fyniq.email_event USING btree (organisation_id, message_id, occurred_at)
 CREATE INDEX email_sender_latest ON fyniq.email_sender USING btree (organisation_id, purpose, set_at)
 CREATE INDEX evidence_document ON fyniq.evidence USING btree (organisation_id, document_id, id)
+CREATE INDEX evidence_original_sha256 ON fyniq.evidence USING btree (organisation_id, original_sha256)
+CREATE INDEX evidence_sha256 ON fyniq.evidence USING btree (organisation_id, sha256)
 CREATE INDEX fx_rate_lookup ON fyniq.fx_rate USING btree (organisation_id, currency, kind, on_date)
 CREATE INDEX gst_registration_no_overlap ON fyniq.gst_registration USING gist (organisation_id, daterange(registered_from, deregistered_from, '[)'::text))
 CREATE INDEX idempotency_key_expires_idx ON fyniq.idempotency_key USING btree (organisation_id, expires_at)

@@ -41,7 +41,7 @@ const (
 
 // ClaimCodes are the codes the posting rule and the claim's own checks answer.
 var ClaimCodes = []string{claim.CodeClaimant, claim.CodeCategory, claim.CodeTooLong, claim.CodeReceipt, claim.CodeGSTCode, claim.CodeMileage,
-	claim.CodeMileageRate, ledger.CodeClaimLine, ledger.CodeClaimPaid, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency}
+	claim.CodeMileageRate, claim.CodeReceiptRequired, claim.CodeLateReason, claim.CodeDuplicate, claim.CodeReceiptFile, ledger.CodeClaimLine, ledger.CodeClaimPaid, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency}
 
 // ClaimApprovalCodes are the codes an approval of a claim's post may answer: the claimant's own, and the posting's.
 func ClaimApprovalCodes() []string {
@@ -71,14 +71,17 @@ type ExpenseClaimLine struct {
 	Distance    string `json:"distance,omitempty" pattern:"^[0-9]{1,5}(\\.[0-9]{1,3})?$" doc:"A trip: the whole trip's distance in km, as driven." example:"18.4"`
 	ClaimedKm   string `json:"claimed_km,omitempty" doc:"A trip, in answers: the distance rounded to 0.1 km (RND-MILEAGE)." example:"18.4"`
 	Rate        *Money `json:"rate,omitempty" doc:"A trip, in answers: the vehicle's rate per km on its date."`
+	ReceiptID   string `json:"receipt_id,omitempty" format:"uuid" doc:"A receipt: its file among the claim's evidence (addExpenseClaimEvidence). Above its category's receipt threshold it is required (FR-AP-15)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
+	Duplicate   string `json:"duplicate_reason,omitempty" maxLength:"500" doc:"A receipt whose file is on another record: why it is not a duplicate. Required before submitting such a line; the approver sees it (UC-EXP-01)." example:"The hotel issued one invoice for both rooms; each of us claims their own night"`
 }
 
 // ExpenseClaimDraft is a claim as its claimant enters it.
 type ExpenseClaimDraft struct {
-	Date  string             `json:"date,omitempty" format:"date" doc:"The claim's date: the day its entry posts on, on or after every receipt's." example:"2026-10-26"`
-	Title string             `json:"title,omitempty" maxLength:"120" doc:"What the claim is for." example:"Acme visit"`
-	Notes string             `json:"notes,omitempty" maxLength:"2000" doc:"Notes for the approver: why a line is above its limit, for example." example:"Client lunch ran over the meals limit."`
-	Lines []ExpenseClaimLine `json:"lines" nullable:"false" maxItems:"100" doc:"Its lines: a receipt each."`
+	Date       string             `json:"date,omitempty" format:"date" doc:"The claim's date: the day its entry posts on, on or after every receipt's." example:"2026-10-26"`
+	Title      string             `json:"title,omitempty" maxLength:"120" doc:"What the claim is for." example:"Acme visit"`
+	Notes      string             `json:"notes,omitempty" maxLength:"2000" doc:"Notes for the approver: why a line is above its limit, for example." example:"Client lunch ran over the meals limit."`
+	LateReason string             `json:"late_reason,omitempty" maxLength:"500" doc:"Why a line past the claim deadline is claimed late: required before submitting such a claim (FR-AP-15)." example:"The receipt was found after the trip"`
+	Lines      []ExpenseClaimLine `json:"lines" nullable:"false" maxItems:"100" doc:"Its lines: a receipt or a trip each."`
 }
 
 // ExpenseClaimReturn is the latest return of a claim to its claimant: who returned it, when, and why (UC-EXP-04).
@@ -99,6 +102,7 @@ type ExpenseClaim struct {
 	Date          string              `json:"date,omitempty" format:"date" doc:"The claim's date." example:"2026-10-26"`
 	Title         string              `json:"title,omitempty" doc:"What it is for." example:"Acme visit"`
 	Notes         string              `json:"notes,omitempty" doc:"Its notes." example:"Client lunch ran over the meals limit."`
+	LateReason    string              `json:"late_reason,omitempty" doc:"Why a line past the claim deadline is claimed late." example:"The receipt was found after the trip"`
 	Lines         []ExpenseClaimLine  `json:"lines" nullable:"false" doc:"The lines as entered."`
 	Total         *Money              `json:"total,omitempty" doc:"What the company owes for it in the base currency, as posted or as posting would post it; absent while it cannot post."`
 	Returned      *ExpenseClaimReturn `json:"returned,omitempty" doc:"Its latest return, while it is returned."`
@@ -174,7 +178,7 @@ func ownClaimsOnly(p authn.Principal) bool {
 
 // claimDraftOf reads a claim from the request, with every invalid field at once; the claimant is the caller's.
 func claimDraftOf(in ExpenseClaimDraft, base money.Currency) (claim.Draft, error) {
-	d := claim.Draft{Title: strings.TrimSpace(in.Title), Notes: in.Notes}
+	d := claim.Draft{Title: strings.TrimSpace(in.Title), Notes: in.Notes, LateReason: strings.TrimSpace(in.LateReason)}
 	var fields []FieldProblem
 	if in.Date != "" {
 		t, err := time.Parse(time.DateOnly, in.Date)
@@ -186,7 +190,14 @@ func claimDraftOf(in ExpenseClaimDraft, base money.Currency) (claim.Draft, error
 	for i, l := range in.Lines {
 		at := func(f string) string { return "body.lines[" + strconv.Itoa(i) + "]." + f }
 		line := claim.Line{Kind: claim.LineReceipt, Merchant: strings.TrimSpace(l.Merchant), Description: l.Description, GSTCode: l.GSTCode,
-			Attendees: strings.TrimSpace(l.Attendees), Document: l.Document, AddressedTo: l.AddressedTo}
+			Attendees: strings.TrimSpace(l.Attendees), Document: l.Document, AddressedTo: l.AddressedTo, DuplicateReason: strings.TrimSpace(l.Duplicate)}
+		if l.ReceiptID != "" {
+			r, err := uuid.Parse(l.ReceiptID)
+			if err != nil {
+				fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("receipt_id"), Message: "is not an ID", Fix: "Send the receipt file's ID"})
+			}
+			line.ReceiptID = &r
+		}
 		id, err := uuid.Parse(l.CategoryID)
 		if err != nil {
 			fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("category_id"), Message: "is not an ID", Fix: "Send the category's ID"})
@@ -269,7 +280,10 @@ func claimLinesOut(d claim.Draft, trips map[int]claim.Trip) []ExpenseClaimLine {
 		amount := moneyOut(l.Amount)
 		x := ExpenseClaimLine{Kind: claim.LineReceipt, Date: dayText(l.Date), Merchant: l.Merchant, CategoryID: l.CategoryID.String(),
 			Description: l.Description, Amount: &amount, GSTCode: l.GSTCode, Attendees: l.Attendees, Document: l.Document,
-			AddressedTo: l.AddressedTo}
+			AddressedTo: l.AddressedTo, Duplicate: l.DuplicateReason}
+		if l.ReceiptID != nil {
+			x.ReceiptID = l.ReceiptID.String()
+		}
 		g := moneyOut(l.GST)
 		x.GST = &g
 		if l.StatedGST != nil {
@@ -329,7 +343,7 @@ func (a *API) claimOf(ctx context.Context, u storage.UnitOfWork, v claimView, do
 		return ExpenseClaim{}, err
 	}
 	out := ExpenseClaim{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version,
-		Claimant: Person{Kind: "user", ID: d.ClaimantID.String()}, Stage: "draft", Date: dayText(d.Date), Title: d.Title, Notes: d.Notes,
+		Claimant: Person{Kind: "user", ID: d.ClaimantID.String()}, Stage: "draft", Date: dayText(d.Date), Title: d.Title, Notes: d.Notes, LateReason: d.LateReason,
 		Lines: claimLinesOut(d, nil), TaxDecisions: []BillTaxDecision{}, Checks: []BillCheck{}, LedgerImpact: []EntryLine{},
 		PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: doc.PostedAt}
 	var returnedBy *Person
@@ -367,6 +381,20 @@ func (a *API) claimOf(ctx context.Context, u storage.UnitOfWork, v claimView, do
 				out.Checks = append(out.Checks, BillCheck{Severity: "error", Code: p.Code, Field: journalField(p.Field), Message: p.Message, Fix: p.Fix})
 			}
 			for _, w := range c.Prepared.Warnings {
+				out.Checks = append(out.Checks, BillCheck{Severity: "warning", Code: w.Code, Field: journalField(w.Field), Message: w.Message, Fix: w.Fix})
+			}
+			today, err := orgToday(ctx, a, u)
+			if err != nil {
+				return ExpenseClaim{}, err
+			}
+			policy, err := claim.Policy(ctx, u, doc, c.Prepared, v.base, today)
+			if err != nil {
+				return ExpenseClaim{}, err
+			}
+			for _, p := range policy.Problems {
+				out.Checks = append(out.Checks, BillCheck{Severity: "error", Code: p.Code, Field: journalField(p.Field), Message: p.Message, Fix: p.Fix})
+			}
+			for _, w := range policy.Warnings {
 				out.Checks = append(out.Checks, BillCheck{Severity: "warning", Code: w.Code, Field: journalField(w.Field), Message: w.Message, Fix: w.Fix})
 			}
 		}
@@ -784,11 +812,19 @@ func registerClaims(a *API) {
 			if err != nil {
 				return Approval{}, err
 			}
-			if len(checked.Problems) > 0 {
-				return Approval{}, claimProblems(checked.Problems)
+			today, err := orgToday(ctx, a, u)
+			if err != nil {
+				return Approval{}, err
+			}
+			policy, err := claim.Policy(ctx, u, doc, checked.Prepared, v.base, today)
+			if err != nil {
+				return Approval{}, err
+			}
+			if probs := append(slices.Clone(checked.Problems), policy.Problems...); len(probs) > 0 {
+				return Approval{}, claimProblems(probs)
 			}
 			var then []approval.Step
-			if checked.Prepared.OverLimit { // a line above its category's limit: finance approves too (FR-AP-17)
+			if policy.Finance { // a line above its category's limit or past the deadline: finance approves too (FR-AP-17)
 				then = []approval.Step{{Quorum: 1, Roles: []string{string(authz.Controller)}}}
 			}
 			owed := checked.Owed.String()
@@ -798,7 +834,7 @@ func registerClaims(a *API) {
 				Summary: fmt.Sprintf("Expense claim %s of %s, %s %s", what, name, owed, v.base.Code),
 				Execute: map[string]any{"claim_id": id.String(), "claim_version": doc.Version},
 				Diff: []ApprovalDiff{{Field: "status", Before: "draft", After: "posted"}, {Field: "owed", After: owed + " " + v.base.Code},
-					{Field: "finance_step", After: strconv.FormatBool(checked.Prepared.OverLimit)}},
+					{Field: "finance_step", After: strconv.FormatBool(policy.Finance)}},
 				Amounts: []approval.Amount{{Amount: owed, Currency: v.base.Code}}, Then: then})
 		})
 		if err != nil {

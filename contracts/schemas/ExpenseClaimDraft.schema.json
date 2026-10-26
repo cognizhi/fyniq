@@ -10,8 +10,16 @@
       "format": "date",
       "type": "string"
     },
+    "late_reason": {
+      "description": "Why a line past the claim deadline is claimed late: required before submitting such a claim (FR-AP-15).",
+      "examples": [
+        "The receipt was found after the trip"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
     "lines": {
-      "description": "Its lines: a receipt each.",
+      "description": "Its lines: a receipt or a trip each.",
       "items": {
         "$ref": "ExpenseClaimLine.schema.json"
       },

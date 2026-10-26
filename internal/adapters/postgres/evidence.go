@@ -237,3 +237,18 @@ func (r evidenceFiles) Known(ctx context.Context, lockedKeys []string) (map[stri
 	}
 	return keySet(r.u.q.KnownLockedKeys(ctx, lockedKeys))
 }
+
+func (r evidenceFiles) ByHash(ctx context.Context, hash string) ([]storage.Evidence, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.EvidenceByHash(ctx, hash)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Evidence, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, toEvidence(evidenceRow(row)))
+	}
+	return out, nil
+}

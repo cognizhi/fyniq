@@ -52,3 +52,10 @@ SELECT locked_key::text FROM fyniq.evidence WHERE locked_key = ANY(sqlc.arg(keys
 SELECT id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
   staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version
 FROM fyniq.evidence WHERE state = 'final' AND id > sqlc.arg(after)::uuid ORDER BY id LIMIT sqlc.arg(page_size);
+
+-- name: EvidenceByHash :many
+SELECT id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
+  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version
+FROM fyniq.evidence
+WHERE (original_sha256 = sqlc.arg(hash) OR sha256 = sqlc.arg(hash)) AND state <> 'removed'
+ORDER BY uploaded_at, id LIMIT 100;

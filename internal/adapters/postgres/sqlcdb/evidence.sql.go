@@ -13,6 +13,80 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const evidenceByHash = `-- name: EvidenceByHash :many
+SELECT id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
+  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version
+FROM fyniq.evidence
+WHERE (original_sha256 = $1 OR sha256 = $1) AND state <> 'removed'
+ORDER BY uploaded_at, id LIMIT 100
+`
+
+type EvidenceByHashRow struct {
+	ID             uuid.UUID
+	DocumentID     uuid.UUID
+	EvidenceType   string
+	Note           *string
+	RelatesOn      pgtype.Date
+	FileName       string
+	MediaType      string
+	SizeBytes      int64
+	Sha256         string
+	OriginalSha256 string
+	Source         string
+	DataClass      string
+	StagingKey     string
+	UploadedBy     string
+	UploadedAt     time.Time
+	State          string
+	RemovedAt      *time.Time
+	LockedKey      *string
+	RetainUntil    *time.Time
+	FinalisedAt    *time.Time
+	Version        int32
+}
+
+func (q *Queries) EvidenceByHash(ctx context.Context, hash string) ([]EvidenceByHashRow, error) {
+	rows, err := q.db.Query(ctx, evidenceByHash, hash)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EvidenceByHashRow
+	for rows.Next() {
+		var i EvidenceByHashRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DocumentID,
+			&i.EvidenceType,
+			&i.Note,
+			&i.RelatesOn,
+			&i.FileName,
+			&i.MediaType,
+			&i.SizeBytes,
+			&i.Sha256,
+			&i.OriginalSha256,
+			&i.Source,
+			&i.DataClass,
+			&i.StagingKey,
+			&i.UploadedBy,
+			&i.UploadedAt,
+			&i.State,
+			&i.RemovedAt,
+			&i.LockedKey,
+			&i.RetainUntil,
+			&i.FinalisedAt,
+			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const finaliseEvidence = `-- name: FinaliseEvidence :one
 UPDATE fyniq.evidence SET state = 'final', locked_key = $1, retain_until = $2,
   finalised_at = $3, version = version + 1
