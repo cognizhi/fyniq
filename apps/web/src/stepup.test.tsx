@@ -48,7 +48,8 @@ describe("confirming it's you", () => {
     fireEvent.click(screen.getByRole("button", { name: "Use a passkey" }));
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("API-PASSKEY-01");
-    expect(document.activeElement).toBe(alert);
+    // The refusal takes focus in an effect after it appears: wait for it, as a loaded CI runner may assert first.
+    await waitFor(() => expect(document.activeElement).toBe(alert));
   });
 
   it("treats a cancelled passkey as a choice, not an error", async () => {
