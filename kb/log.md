@@ -211,3 +211,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-26] compile | docs/user-guide/banking.md → banking.reconcile (new) and the banking pages rehashed (reconciling an account for a month; p1-bank-import-reconcile task 10.5)
 
 ## [2026-10-26] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (mileage rates, FR-AP-16; p1-expense-claims task 4.1)
+
+## [2026-10-26] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (claim deadline, FR-AP-15; p1-expense-claims task 5.1)

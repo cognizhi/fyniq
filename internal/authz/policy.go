@@ -751,6 +751,16 @@ var (
 		Note: "Needs the right to view bills as well."}
 	RemoveBillEvidence = Policy{Operation: "removeBillEvidence", Capability: Evidence, Need: Create, Parent: Bills,
 		Note: "Needs the right to view bills as well; only while the bill is a draft (FR-DOC-07)."}
+	// A claim's receipts (FR-AP-14, FR-DOC-05): the evidence right and the right to view expense claims; the handlers keep
+	// adding and removing to the claimant, and an Employee's reading to their own claims.
+	AddExpenseClaimEvidence = Policy{Operation: "addExpenseClaimEvidence", Capability: Evidence, Need: Create, Parent: ExpenseClaims,
+		Note: "Only the claimant attaches. AI and MCP clients only propose attaching a document (doc.attach)."}
+	ListExpenseClaimEvidence = Policy{Operation: "listExpenseClaimEvidence", Capability: Evidence, Need: View, Parent: ExpenseClaims,
+		Note: "Needs the right to view expense claims as well: an Employee's own only."}
+	GetExpenseClaimEvidence = Policy{Operation: "getExpenseClaimEvidence", Capability: Evidence, Need: View, Parent: ExpenseClaims,
+		Note: "Needs the right to view expense claims as well: an Employee's own only."}
+	RemoveExpenseClaimEvidence = Policy{Operation: "removeExpenseClaimEvidence", Capability: Evidence, Need: Create, Parent: ExpenseClaims,
+		Note: "Only the claimant removes; only while the claim is a draft (FR-DOC-07)."}
 	// An invoice's evidence, such as the customer's purchase order, as a bill's (FR-DOC-05): the evidence right and the
 	// right to view invoices.
 	AddInvoiceEvidence = Policy{Operation: "addInvoiceEvidence", Capability: Evidence, Need: Create, Parent: Invoices,
@@ -911,6 +921,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListClaimReimbursements, GetClaimReimbursement, RecordClaimReimbursement, VoidClaimReimbursement, RequestClaimReimbursementVoid, GetExpenseClaimsOwed,
 	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
 	ListClaimCategories, CreateClaimCategory, ReplaceClaimCategory, LoadStarterClaimCategories,
+	AddExpenseClaimEvidence, ListExpenseClaimEvidence, GetExpenseClaimEvidence, RemoveExpenseClaimEvidence,
 	ListDocumentTemplates, GetDocumentTemplate, GetDocumentTemplateCatalogue, ListDocumentTemplateVersions, GetDocumentTemplateVersion,
 	CreateDocumentTemplate, ReplaceDocumentTemplate, RequestDocumentTemplatePublication, PublishDocumentTemplate, PreviewDocumentTemplate,
 	ExportDocumentTemplates, ImportDocumentTemplates, ListDocumentTemplateDefaults, SetDocumentTemplateDefault, GetAppliedDocumentTemplate,

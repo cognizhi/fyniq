@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-16, FR-AR-05, FR-BNK-16]
+requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AR-05, FR-BNK-16]
 status: draft
 ---
 
@@ -154,6 +154,16 @@ reconciled to it.
 - Anyone who reconciles bank lines can dismiss an alert sooner, with a reason, such as one that
   points to the wrong invoice.
 - A change needs a second approver, as the other bank settings do.
+
+## Claim deadline
+
+A member claims what they spent within the **claim deadline**: 60 days from the receipt's or the
+trip's date by default.
+
+- A line older than that when the claim is submitted is **late**: the claim shows it, the member says
+  why before submitting, and finance (the Controller) approves the claim as well as its usual
+  approver.
+- From 1 to 365 days. A change needs a second approver, as the other money settings do.
 
 ## Mileage rates
 

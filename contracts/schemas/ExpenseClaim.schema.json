@@ -44,6 +44,13 @@
       },
       "type": "array"
     },
+    "late_reason": {
+      "description": "Why a line past the claim deadline is claimed late.",
+      "examples": [
+        "The receipt was found after the trip"
+      ],
+      "type": "string"
+    },
     "ledger_impact": {
       "description": "getExpenseClaim only: the lines posting it writes (a draft), or wrote (posted): debits positive.",
       "items": {

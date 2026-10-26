@@ -46,7 +46,7 @@
 
 ## 5. The expense policy and duplicates
 
-- [ ] 5.1 Claim categories through the API (A to change, design D6), and the starter set for an organisation that
+- [x] 5.1 Claim categories through the API (A to change, design D6), and the starter set for an organisation that
   loaded its chart before it (`claim.LoadStarter`); `claims.deadline_days` (60), whose breach adds finance's step as a
   line above its limit does (2.1); the checks at
   submission: receipt required ✖, attendees ⚠, above the limit ⚠ with finance's step, past the deadline ⚠ with a

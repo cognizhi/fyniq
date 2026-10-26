@@ -2,9 +2,9 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings and recommended values: features, terms, GST, tax invoices, tolerances, banking, mileage rates, thresholds, variances, email-in, retention
+summary: Company-wide settings and recommended values: features, terms, GST, tolerances, banking, claim deadline, mileage rates, thresholds, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:33027ea03ca78f11922e01499f96491d5aaffc4c4b6d9fb390c8f7930a8b5346
+  - docs/user-guide/organisation-settings.md sha256:4c225feb8f2f7df19c12b48e99fb000e38ce2a3f4b4c2bc918b9e64dd1bde1e3
 data_class: general
 taint: trusted
 status: draft
@@ -33,6 +33,8 @@ aliases:
   - incoming-funds alert
   - likely paid
   - alert expiry
+  - claim deadline
+  - late claim
   - mileage rate
   - rate per km
 ---
@@ -125,6 +127,14 @@ aliases:
 - A change needs a second approver, as the other bank settings do.
 
 (src: docs/user-guide/organisation-settings.md#incoming-funds-alerts)
+
+## Claim deadline
+
+- A member claims what they spent within the **claim deadline**: 60 days from the receipt's or the trip's date by default.
+- A line older than that when the claim is submitted is **late**: the claim shows it, the member says why before submitting, and finance (the Controller) approves the claim as well as its usual approver.
+- From 1 to 365 days; a change needs a second approver, as the other money settings do.
+
+(src: docs/user-guide/organisation-settings.md#claim-deadline)
 
 ## Mileage rates
 
