@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What it pays back of the claim, in the base currency: at most what is still owed on it."
+    },
+    "claim_id": {
+      "description": "The claim it pays back: an approved claim of the claimant.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fd1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "claim_number": {
+      "description": "The claim's number, in answers.",
+      "examples": [
+        "CLM-0007"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "claim_id",
+    "amount"
+  ],
+  "title": "ClaimReimbursementPart",
+  "type": "object"
+}

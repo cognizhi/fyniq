@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"pgregory.net/rapid"
@@ -351,4 +352,73 @@ func checkBalanced(e Entry) error {
 // hasCode says whether err is problems with one of code.
 func hasCode(err error, code string) bool {
 	return slices.Contains(codes(err), code)
+}
+
+var (
+	dbs       = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000001020"), Code: "1020", Active: true, Type: "asset", Money: true}
+	wiseUSD   = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000001030"), Code: "1030", Active: true, Type: "asset", Money: true, Currency: "USD"}
+	reimburse = uuid.MustParse("0192f1a0-0000-7000-8000-0000000c1b10")
+	claimTwo  = uuid.MustParse("0192f1a0-0000-7000-8000-0000000c1a20")
+)
+
+// Worked by hand (FR-AP-07, the owner's decision of 26 Oct 2026): S$92.10 paid back from DBS settles two claims, S$27.30
+// and S$64.80: Dr 2150 92.10, Cr 1020 92.10, with a settlement of each claim in SGD and no FX.
+// req: FR-AP-07
+// req: purchases/expense-claims FR-AP-07 Expense claims
+func TestPostClaimReimbursement(t *testing.T) {
+	s := claiming()
+	s.Accounts[dbs.ID], s.Accounts[wiseUSD.ID] = dbs, wiseUSD
+	r := ClaimReimbursement{ID: reimburse, Version: 1, Date: day, Memo: "Ah Kow FAST 1234", Account: dbs.ID, Claims: []PaidClaim{
+		{ClaimID: claimID, Amount: amt(t, "27.30", sgd)}, {ClaimID: claimTwo, Amount: amt(t, "64.80", sgd)}}}
+	e, settled, err := PostClaimReimbursement(r, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := legs(s, e); got != "2150 92.10 SGD = 92.10; 1020 -92.10 SGD = -92.10" {
+		t.Errorf("the entry: %s", got)
+	}
+	if len(settled) != 2 || settled[1].DocumentID != claimTwo || settled[1].Base.String() != "64.80" || !settled[1].RealisedFX.IsZero() {
+		t.Errorf("the settlements: %+v", settled)
+	}
+	if e.PostingIdentity != ClaimReimbursementIdentity(reimburse, 1, RuleClaimReimbursement) || e.Source.Type != SourceClaimReimbursement {
+		t.Errorf("the identity: %+v", e)
+	}
+	if again, err := ReplayClaimReimbursement(RuleClaimReimbursement, r, s); err != nil || legs(s, again) != legs(s, e) {
+		t.Errorf("replay: %s %v", legs(s, again), err)
+	}
+	if _, err := ReplayClaimReimbursement("claim_reimbursement@0", r, s); !hasCode(err, CodeUnknownRule) {
+		t.Errorf("an unknown rule: %v", err)
+	}
+
+	// Refused whole: from a USD wallet, from an account that is not a money account, a zero amount, no date.
+	bad := r
+	bad.Date, bad.Account = time.Time{}, wiseUSD.ID
+	bad.Claims = []PaidClaim{{ClaimID: claimID, Amount: amt(t, "0.00", sgd)}}
+	_, _, err = PostClaimReimbursement(bad, s)
+	if got := codes(err); !slices.Equal(got, []string{CodeNoDate, CodePaymentAmount, CodePaymentAmount}) {
+		t.Errorf("refused: %v", got)
+	}
+	if probs, _ := err.(Problems); len(probs) != 3 || probs[2].Field != "claims[1].amount" {
+		t.Errorf("the zero amount's field: %+v", probs)
+	}
+	long := r
+	long.Memo = strings.Repeat("m", MaxMemo)
+	if _, _, err := PostClaimReimbursement(long, s); err != nil {
+		t.Errorf("the longest memo: %v", err)
+	}
+	long.Memo += "m"
+	if _, _, err := PostClaimReimbursement(long, s); !hasCode(err, CodeTooLong) {
+		t.Errorf("a memo too long: %v", err)
+	}
+	bad = r
+	bad.Account, bad.Claims = meals.ID, nil
+	if _, _, err := PostClaimReimbursement(bad, s); !hasCode(err, CodeNotMoneyAccount) || !hasCode(err, CodeTooFewLines) {
+		t.Errorf("a cost account and no claims: %v", err)
+	}
+	bare := claiming()
+	bare.Accounts[dbs.ID] = dbs
+	delete(bare.Accounts, claimsPayable.ID)
+	if _, _, err := PostClaimReimbursement(r, bare); !hasCode(err, CodeSystemRole) {
+		t.Errorf("no 2150: %v", err)
+	}
 }

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
@@ -181,6 +182,49 @@ func TestExpenseClaimsPostThroughThePostingService(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+
+	// Paid back by hand from DBS (FR-AP-07): Dr 2150 · Cr DBS, an allocation to the claim; voided, a reversing allocation.
+	var dbs storage.Account
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		dbs, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1020", Name: "DBS current", Type: storage.Asset,
+			AccountAttributes: storage.AccountAttributes{MoneyAccount: true, Currency: "SGD"}})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	pays := journal.ClaimReimbursements{Store: s}
+	back, err := pays.Record(ctx, b.Org, claim.Reimbursement{ClaimantID: b.Claimant, Date: oct26, AccountID: dbs.ID, Reference: "FAST 1",
+		Claims: []claim.Part{{ClaimID: doc.ID, Amount: sgdOf(t, "263.80")}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := legsOf(t, s, b.Org, back.Entry); got != "2150 263.8 SGD = 263.8; 1020 -263.8 SGD = -263.8" || back.Reimbursement.Number != "RB-0001" || len(back.Allocations) != 1 {
+		t.Errorf("the reimbursement: %s %+v", got, back.Reimbursement)
+	}
+	if _, err := pays.Record(ctx, b.Org, claim.Reimbursement{ClaimantID: b.Claimant, Date: oct26, AccountID: dbs.ID,
+		Claims: []claim.Part{{ClaimID: doc.ID, Amount: sgdOf(t, "0.01")}}}); !hasProblem(err, claim.CodeOverpaid) {
+		t.Errorf("paying back more than is owed: %v", err)
+	}
+	if v, err := pays.Void(ctx, b.Org, back.Reimbursement.ID, oct26, "Paid to the wrong account"); err != nil || v.Reimbursement.Status != storage.DocumentReversed ||
+		len(v.Allocations) != 1 || v.Allocations[0].Amount != "-263.8000" && v.Allocations[0].Amount != "-263.80" {
+		t.Fatalf("voiding it: %+v %v", v, err)
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		r, err := journal.Replay(ctx, u)
+		if err == nil && len(r.Mismatches) > 0 {
+			t.Errorf("the replay after the reimbursement: %+v", r.Mismatches)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// A reimbursement settles expense claims, and nothing else (FY171).
+	wantState(t, "a reimbursement settling a reimbursement", asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.allocation (source_id, source_version, document_id, on_date, currency, minor_units, amount, base_currency,
+base_minor_units, base_amount, realised_fx, written_by, written_at) VALUES ($1, 1, $1, '2026-10-26', 'SGD', 2, 1, 'SGD', 2, 1, 0, 'user:x', now())`,
+			back.Reimbursement.ID)
+		return err
+	}), "FY171")
 
 	// A returned claim is a draft its claimant revises: each version is kept (UC-EXP-04's history).
 	second, err := claims.Create(ctx, b.Org, claim.Draft{ClaimantID: b.Claimant, Date: oct26, Lines: []claim.Line{taxi}})

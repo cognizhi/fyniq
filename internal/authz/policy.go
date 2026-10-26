@@ -102,9 +102,10 @@ const (
 // self-approval threshold, and voiding one (rev 0.53); posting a bill above the threshold, and voiding one (p1-purchases);
 // publishing a document template (rev 0.95); issuing an invoice above the threshold, and voiding or editing one (p1-sales);
 // a step of an organisation connector's lifecycle (p1-connector-framework, FR-INT-26); a bank rule's auto-apply
-// (p1-bank-import-reconcile, FR-BNK-14); posting an expense claim (p1-expense-claims, FR-AP-17).
+// (p1-bank-import-reconcile, FR-BNK-14); posting an expense claim (p1-expense-claims, FR-AP-17), and voiding a
+// reimbursement of claims (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
-	Invoices, Integrations, BankTransactions, ExpenseClaims}
+	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -468,6 +469,17 @@ var (
 	ReplaceExpenseClaim  = Policy{Operation: "replaceExpenseClaim", Capability: ExpenseClaims, Need: Create}
 	SubmitExpenseClaim   = Policy{Operation: "submitExpenseClaim", Capability: ExpenseClaims, Need: Create}
 	WithdrawExpenseClaim = Policy{Operation: "withdrawExpenseClaim", Capability: ExpenseClaims, Need: Create}
+	// Reimbursements of claims recorded by hand (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148): under the
+	// "Payment batches" row, which the batches take over later. Read under V, recorded and voided under C (the
+	// Accountant, the AP specialist); in Founder mode a void is asked for and approved by another person who holds A
+	// there (the Controller, FM-1). What the company owes its claimants is read under "Expense claims" (V), each
+	// claimant their own.
+	ListClaimReimbursements       = Policy{Operation: "listClaimReimbursements", Capability: PaymentBatches, Need: View, Unqualified: true}
+	GetClaimReimbursement         = Policy{Operation: "getClaimReimbursement", Capability: PaymentBatches, Need: View, Unqualified: true}
+	RecordClaimReimbursement      = Policy{Operation: "recordClaimReimbursement", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	VoidClaimReimbursement        = Policy{Operation: "voidClaimReimbursement", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	RequestClaimReimbursementVoid = Policy{Operation: "requestClaimReimbursementVoid", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	GetExpenseClaimsOwed          = Policy{Operation: "getExpenseClaimsOwed", Capability: ExpenseClaims, Need: View}
 	// Invoices (FR-AR-03; p1-sales), as bills: read under V, prepared under C (the Bookkeeper, the AR specialist, the
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
 	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
@@ -884,6 +896,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes, GetSalesGSTCodes,
 	ListWithholdingDecisions, RecordWithholdingDecision, PlanBillPayment, ListBillReminders,
 	ListExpenseClaims, GetExpenseClaim, CreateExpenseClaim, ReplaceExpenseClaim, SubmitExpenseClaim, WithdrawExpenseClaim,
+	ListClaimReimbursements, GetClaimReimbursement, RecordClaimReimbursement, VoidClaimReimbursement, RequestClaimReimbursementVoid, GetExpenseClaimsOwed,
 	ListDocumentTemplates, GetDocumentTemplate, GetDocumentTemplateCatalogue, ListDocumentTemplateVersions, GetDocumentTemplateVersion,
 	CreateDocumentTemplate, ReplaceDocumentTemplate, RequestDocumentTemplatePublication, PublishDocumentTemplate, PreviewDocumentTemplate,
 	ExportDocumentTemplates, ImportDocumentTemplates, ListDocumentTemplateDefaults, SetDocumentTemplateDefault, GetAppliedDocumentTemplate,
@@ -960,8 +973,9 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 			q := p
 			q.Capability = row
 			// An Employee's own claims ("C (own)") are not the approvals: a claimant reaches their claim's request from the
-			// claim (design D10), and never the approvals or the review log.
-			q.Unqualified = row == ExpenseClaims
+			// claim (design D10), and never the approvals or the review log; nor is the Payroll administrator's "C
+			// (salaries)" on payment batches.
+			q.Unqualified = row == ExpenseClaims || row == PaymentBatches
 			if r, ok := holds(q, roles); ok {
 				return Decision{Allowed: true, Right: r}
 			}

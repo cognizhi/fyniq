@@ -72,6 +72,10 @@ const (
 	// claimant asks; one person other than them who holds A on "Expense claims" approves, and the Controller too when a
 	// line is above its category's limit; its key is the claim's id.
 	ObjectClaim = "expense_claim"
+	// ObjectReimbursement is a reimbursement of expense claims recorded by hand, to void (FR-AP-07, FR-GL-12, FM-1): a
+	// second person who holds A on "Payment batches" approves it (the owner's decision of 26 Oct 2026, rev 0.148); its
+	// key is its id.
+	ObjectReimbursement = "claim_reimbursement"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -120,6 +124,8 @@ const (
 	OpRuleAutoApply = "bank_rule.auto_apply"
 	// OpClaimPost posts an expense claim (FR-AP-07, FR-AP-17).
 	OpClaimPost = "expense_claim.post"
+	// OpReimbursementVoid voids a reimbursement of expense claims.
+	OpReimbursementVoid = "claim_reimbursement.void"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -134,6 +140,7 @@ var Operations = map[string]string{
 	OpWriteOffPost: ObjectWriteOff, OpWriteOffVoid: ObjectWriteOff, OpCustomerApplicationVoid: ObjectCustomerApplication,
 	OpCustomerRefundVoid: ObjectCustomerRefund, OpDepositVoid: ObjectDeposit, OpRecurringApprove: ObjectRecurringInvoice,
 	OpConnectorChange: ObjectConnector, OpRuleAutoApply: ObjectBankRule, OpClaimPost: ObjectClaim,
+	OpReimbursementVoid: ObjectReimbursement,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -190,6 +197,8 @@ var Dependencies = map[string][]string{
 	ObjectBankRule: {"rule_version", "rule"},
 	// the claim's version and status, and what the company owes for it in the base currency
 	ObjectClaim: {"claim_version", "status", "owed"},
+	// the reimbursement's status, and what it paid back in the base currency
+	ObjectReimbursement: {"status", "paid"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -221,6 +230,7 @@ var Rows = map[string]string{
 	ObjectConnector:           "Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)",
 	ObjectBankRule:            "Bank transactions, categorise",
 	ObjectClaim:               "Expense claims",
+	ObjectReimbursement:       "Payment batches",
 }
 
 // The limits of a policy.
@@ -281,6 +291,7 @@ var Policies = map[string]Policy{
 	ObjectConnector:           {ObjectType: ObjectConnector, Version: "founder/connector@2026-10-25.1", Steps: []Step{{Quorum: 1}}},
 	ObjectBankRule:            {ObjectType: ObjectBankRule, Version: "founder/bank_rule@2026-10-25.1", Steps: []Step{{Quorum: 1}}},
 	ObjectClaim:               {ObjectType: ObjectClaim, Version: "founder/expense_claim@2026-10-26.1", Steps: []Step{{Quorum: 1}}},
+	ObjectReimbursement:       {ObjectType: ObjectReimbursement, Version: "founder/claim_reimbursement@2026-10-26.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

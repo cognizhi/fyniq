@@ -280,3 +280,109 @@ func ReplayExpenseClaim(rule string, c Claim, s Settings) (Entry, error) {
 	}
 	return f(c, s)
 }
+
+// The reimbursement's source type and rule version (FR-AP-07; the owner's decisions of 26 Oct 2026, rev 0.147: recorded
+// by hand until payment batches; p1-expense-claims design D7).
+const (
+	SourceClaimReimbursement = "claim_reimbursement"
+	RuleClaimReimbursement   = "claim_reimbursement@1"
+)
+
+// PaidClaim is what a reimbursement settles of one claim, in the base currency: what the company owes is in it.
+type PaidClaim struct {
+	ClaimID uuid.UUID
+	Amount  money.Money
+}
+
+// ClaimReimbursement is one version of a reimbursement of a claimant's claims as the rule reads it: the money account it
+// left, in the base currency, and what it settles of each claim.
+type ClaimReimbursement struct {
+	ID      uuid.UUID
+	Version int
+	Date    time.Time
+	Memo    string    // the claimant and the bank's reference
+	Account uuid.UUID // the money account it was paid from
+	Claims  []PaidClaim
+}
+
+// ClaimReimbursementIdentity is the posting identity of a reimbursement version under a rule version (§11.4).
+func ClaimReimbursementIdentity(id uuid.UUID, version int, rule string) string {
+	return identity(SourceClaimReimbursement, id, version, rule)
+}
+
+// PostClaimReimbursement turns one version of a reimbursement into its entry (claim_reimbursement@1) and the
+// settlements it records: Dr 2150 Expense claims payable with what it settles, Cr the money account with the same, both
+// in the base currency. Every rule is checked first and every failure returned together (ENG-22).
+func PostClaimReimbursement(r ClaimReimbursement, s Settings) (Entry, []Settlement, error) {
+	var probs Problems
+	add := func(code, field, msg, fix string) { probs = append(probs, Problem{code, field, msg, fix}) }
+	if r.Date.IsZero() {
+		add(CodeNoDate, "date", "the reimbursement has no date", "Enter the date the money left the account")
+	}
+	if len(r.Memo) > MaxMemo {
+		add(CodeTooLong, "memo", fmt.Sprintf("the memo has %d characters; the most is %d", len(r.Memo), MaxMemo), "Shorten the reference")
+	}
+	if len(r.Claims) == 0 {
+		add(CodeTooFewLines, "claims", "the reimbursement settles no claim", "Choose the claims it pays back")
+	}
+	acc, ok := s.Accounts[r.Account]
+	switch {
+	case !ok:
+		add(CodeUnknownAccount, "money_account", "the account does not exist in this organisation", "Choose the bank, card or wallet account it was paid from")
+	case acc.Group || !acc.Active || !acc.Money:
+		add(CodeNotMoneyAccount, "money_account", fmt.Sprintf("account %s is not an active money account", acc.Code), "Choose the bank, card or wallet account it was paid from")
+	case acc.Currency != "" && acc.Currency != s.Base.Code:
+		add(CodePaymentAmount, "money_account", fmt.Sprintf("account %s holds %s, but what the company owes its claimants is in %s", acc.Code, acc.Currency, s.Base),
+			fmt.Sprintf("Pay it back from an account in %s", s.Base))
+	}
+	payable, hasPayable := s.byRole(RoleExpenseClaimsPayable)
+	if !hasPayable {
+		add(CodeSystemRole, "claims", "the chart has no expense claims payable account",
+			"Load the standard chart's 2150 Expense claims payable, or give a liability account the role")
+	}
+	total := money.Zero(s.Base)
+	var out []Settlement
+	for i, c := range r.Claims {
+		if c.Amount.Currency() != s.Base || c.Amount.Sign() <= 0 {
+			add(CodePaymentAmount, fmt.Sprintf("claims[%d].amount", i+1), fmt.Sprintf("it settles %s %s of the claim", c.Amount, c.Amount.Currency()),
+				fmt.Sprintf("Enter what it pays back of the claim in %s, more than zero", s.Base))
+			continue
+		}
+		total, _ = total.Add(c.Amount)
+		out = append(out, Settlement{DocumentID: c.ClaimID, Amount: c.Amount, Base: c.Amount, RealisedFX: money.Zero(s.Base), Tolerance: money.Zero(s.Base)})
+	}
+	if len(probs) > 0 {
+		return Entry{}, nil, probs
+	}
+	y, m, d := r.Date.Date()
+	return Entry{
+		PostingDate:     time.Date(y, m, d, 0, 0, 0, 0, time.UTC),
+		Source:          Source{Type: SourceClaimReimbursement, ID: r.ID.String(), Version: r.Version},
+		RuleVersion:     RuleClaimReimbursement,
+		PostingIdentity: ClaimReimbursementIdentity(r.ID, r.Version, RuleClaimReimbursement),
+		Memo:            r.Memo,
+		Lines: []Line{
+			{AccountID: payable.ID, Amount: total, Rate: money.Identity(s.Base), Base: total, Description: r.Memo},
+			{AccountID: r.Account, Amount: total.Neg(), Rate: money.Identity(s.Base), Base: total.Neg(), Description: r.Memo},
+		},
+	}, out, nil
+}
+
+// ClaimReimbursementRule turns one version of a reimbursement into its entry under one rule version.
+type ClaimReimbursementRule func(r ClaimReimbursement, s Settings) (Entry, []Settlement, error)
+
+// ClaimReimbursementRules are every reimbursement rule version the engine has posted with, by name.
+var ClaimReimbursementRules = map[string]ClaimReimbursementRule{
+	RuleClaimReimbursement: PostClaimReimbursement,
+}
+
+// ReplayClaimReimbursement re-runs the rule version that posted a reimbursement's entry over the same version (ENG-06).
+func ReplayClaimReimbursement(rule string, r ClaimReimbursement, s Settings) (Entry, error) {
+	f, ok := ClaimReimbursementRules[rule]
+	if !ok {
+		return Entry{}, Problems{{CodeUnknownRule, "rule_version", fmt.Sprintf("the engine has no rule version %s", rule),
+			"Restore the rule version: an old version is never removed while an entry names it (ENG-06)"}}
+	}
+	e, _, err := f(r, s)
+	return e, err
+}

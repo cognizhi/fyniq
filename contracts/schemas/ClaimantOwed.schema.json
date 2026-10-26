@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "claimant": {
+      "$ref": "Person.schema.json",
+      "description": "The claimant."
+    },
+    "claims": {
+      "description": "Their approved claims with something still owed, oldest first.",
+      "items": {
+        "$ref": "ClaimOwed.schema.json"
+      },
+      "type": "array"
+    },
+    "open": {
+      "$ref": "Money.schema.json",
+      "description": "What the company owes them, in the base currency."
+    }
+  },
+  "required": [
+    "claimant",
+    "open",
+    "claims"
+  ],
+  "title": "ClaimantOwed",
+  "type": "object"
+}

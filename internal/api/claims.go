@@ -88,7 +88,7 @@ type ExpenseClaim struct {
 	Status        string              `json:"status" enum:"draft,posted,reversed" doc:"Draft (✎) until it is approved, then posted." example:"draft"`
 	Version       int                 `json:"version" doc:"The version of its content; with the status it makes the ETag." example:"1"`
 	Claimant      Person              `json:"claimant" doc:"Who claims: the member the company owes."`
-	Stage         string              `json:"stage" enum:"draft,submitted,returned,approved,scheduled,paid" doc:"Where it stands for its claimant (FR-AP-14): draft; submitted while its approval waits; returned when its latest request was rejected, with the comment; approved once posted. scheduled and paid arrive with reimbursements and payment batches." example:"submitted"`
+	Stage         string              `json:"stage" enum:"draft,submitted,returned,approved,scheduled,paid" doc:"Where it stands for its claimant (FR-AP-14): draft; submitted while its approval waits; returned when its latest request was rejected, with the comment; approved once posted; paid once reimbursements paid back all it owes. scheduled arrives with payment batches." example:"submitted"`
 	Date          string              `json:"date,omitempty" format:"date" doc:"The claim's date." example:"2026-10-26"`
 	Title         string              `json:"title,omitempty" doc:"What it is for." example:"Acme visit"`
 	Notes         string              `json:"notes,omitempty" doc:"Its notes." example:"Client lunch ran over the meals limit."`
@@ -118,7 +118,7 @@ type ExpenseClaimPath struct {
 type claimListInput struct {
 	PageQuery
 	Whose string `query:"whose" enum:"mine,waiting_for_me,everyone" default:"mine" doc:"mine: the caller's own claims (the default); waiting_for_me: the claims whose approval the caller may sign now; everyone: every member's, for a person who holds a right on everyone's (a person whose right is their own claims sees only theirs)." example:"mine"`
-	Stage string `query:"stage" enum:"draft,submitted,returned,approved" doc:"Only claims at this stage." example:"submitted"`
+	Stage string `query:"stage" enum:"draft,submitted,returned,approved,paid" doc:"Only claims at this stage." example:"submitted"`
 }
 
 type claimListOutput struct{ Body ExpenseClaimPage }
@@ -378,6 +378,15 @@ func (a *API) claimOf(ctx context.Context, u storage.UnitOfWork, v claimView, do
 	}
 	t := moneyOut(owed)
 	out.Total = &t
+	if doc.Status == storage.DocumentPosted { // paid once reimbursements have paid back all it owes (FR-AP-14)
+		b, err := claim.Balances(ctx, u, []storage.Document{doc}, v.base, time.Time{})
+		if err != nil {
+			return ExpenseClaim{}, err
+		}
+		if x, ok := b[doc.ID]; ok && x.Owed.Sign() > 0 && x.Open.Sign() <= 0 {
+			out.Stage = "paid"
+		}
+	}
 	if withChecks {
 		out.LedgerImpact = entryOf(e).Lines
 	}

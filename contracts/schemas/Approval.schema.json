@@ -99,7 +99,8 @@
         "recurring_invoice",
         "connector",
         "bank_rule",
-        "expense_claim"
+        "expense_claim",
+        "claim_reimbursement"
       ],
       "examples": [
         "organisation_setting"
@@ -141,7 +142,8 @@
         "recurring_invoice.approve",
         "connector.change",
         "bank_rule.auto_apply",
-        "expense_claim.post"
+        "expense_claim.post",
+        "claim_reimbursement.void"
       ],
       "examples": [
         "organisation_setting.change"

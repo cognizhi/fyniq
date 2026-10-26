@@ -2,7 +2,11 @@ package journal
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"slices"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -10,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -235,4 +240,244 @@ func replayExpenseClaim(ctx context.Context, u storage.UnitOfWork, doc storage.D
 		k++
 	}
 	return ledger.ReplayExpenseClaim(e.RuleVersion, c, s)
+}
+
+// ClaimReimbursements records money paid back to claimants for their claims, by hand until payment batches (FR-AP-07;
+// the owner's decisions of 26 Oct 2026, rev 0.147 and 0.148): each in one unit of work, the document, its entry from
+// claim_reimbursement@1 and an allocation for each claim it settles together (ENG-02). It is undone by a void, a
+// reversing entry with reversing allocations, which reopens the claims (FR-GL-12).
+type ClaimReimbursements struct {
+	Store storage.Store
+	// AfterPosting runs inside the unit of work after an entry (or its reversal) is written and the document updated.
+	AfterPosting func(ctx context.Context, uow storage.UnitOfWork, doc storage.Document, entry storage.Entry) error
+}
+
+// CheckedReimbursement is a reimbursement as recording it would post it, written nowhere.
+type CheckedReimbursement struct {
+	Prepared    claim.PreparedReimbursement
+	Entry       ledger.Entry
+	Settlements []ledger.Settlement
+	Problems    ledger.Problems
+}
+
+// RecordedReimbursement is a recorded reimbursement, or its void: its document, the entry it posted, and its allocations.
+type RecordedReimbursement struct {
+	Reimbursement storage.Document
+	Entry         storage.Entry
+	Allocations   []storage.Allocation
+}
+
+func checkReimbursement(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings) (CheckedReimbursement, error) {
+	p, probs, err := claim.PrepareReimbursement(ctx, u, doc, s.Base)
+	if err != nil {
+		return CheckedReimbursement{}, err
+	}
+	out := CheckedReimbursement{Prepared: p, Problems: probs}
+	entry, settled, err := ledger.PostClaimReimbursement(p.Rule, s)
+	if ps, ok := err.(ledger.Problems); ok {
+		out.Problems = append(out.Problems, ps...)
+	} else if err != nil {
+		return CheckedReimbursement{}, err
+	}
+	if len(out.Problems) == 0 {
+		out.Entry, out.Settlements = entry, settled
+	}
+	return out, nil
+}
+
+// lockClaims locks the claims a reimbursement settles, in the order of their IDs, so two reimbursements of one claim
+// wait for each other (ENG-47).
+func lockClaims(ctx context.Context, u storage.UnitOfWork, r claim.Reimbursement) error {
+	ids := make([]uuid.UUID, 0, len(r.Claims))
+	for _, c := range r.Claims {
+		ids = append(ids, c.ClaimID)
+	}
+	slices.SortFunc(ids, func(a, b uuid.UUID) int { return strings.Compare(a.String(), b.String()) })
+	for _, id := range slices.Compact(ids) {
+		if _, err := u.Documents().Lock(ctx, id); err != nil && !errors.Is(err, ports.ErrNotFound) {
+			return err
+		}
+	}
+	return nil
+}
+
+// Check runs the rule over a reimbursement as it would be recorded, and writes nothing.
+func (s ClaimReimbursements) Check(ctx context.Context, org uuid.UUID, r claim.Reimbursement) (CheckedReimbursement, error) {
+	b, err := claim.EncodeReimbursement(r)
+	if err != nil {
+		return CheckedReimbursement{}, err
+	}
+	var out CheckedReimbursement
+	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		settings, err := loadSettings(ctx, u)
+		if err != nil {
+			return err
+		}
+		doc := storage.Document{ID: uuid.Nil, Type: storage.DocumentClaimReimbursement, Version: 1, Status: storage.DocumentDraft, Payload: b}
+		out, err = checkReimbursement(ctx, u, doc, settings)
+		return err
+	})
+	return out, err
+}
+
+// Record records a reimbursement and posts it in one transaction: the document, its number (RB-, gap-free), its entry, an
+// allocation for each claim it settles, and the document's change to posted. A reimbursement the rule refuses writes
+// nothing and answers every problem.
+func (s ClaimReimbursements) Record(ctx context.Context, org uuid.UUID, r claim.Reimbursement) (RecordedReimbursement, error) {
+	var out RecordedReimbursement
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		out, err = s.RecordIn(ctx, u, r)
+		return err
+	})
+	return out, err
+}
+
+// RecordIn records a reimbursement in u, the caller's unit of work: what Record does, for a command that writes more with
+// it, as matching a bank line does (ENG-02).
+func (s ClaimReimbursements) RecordIn(ctx context.Context, u storage.UnitOfWork, r claim.Reimbursement) (RecordedReimbursement, error) {
+	b, err := claim.EncodeReimbursement(r)
+	if err != nil {
+		return RecordedReimbursement{}, err
+	}
+	if err := lockClaims(ctx, u, r); err != nil {
+		return RecordedReimbursement{}, err
+	}
+	doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentClaimReimbursement, Payload: b})
+	if err != nil {
+		return RecordedReimbursement{}, err
+	}
+	settings, err := loadSettings(ctx, u)
+	if err != nil {
+		return RecordedReimbursement{}, err
+	}
+	c, err := checkReimbursement(ctx, u, doc, settings)
+	if err != nil {
+		return RecordedReimbursement{}, err
+	}
+	if len(c.Problems) > 0 {
+		return RecordedReimbursement{}, c.Problems
+	}
+	if doc.Number, err = u.Sequences().Number(ctx, doc.ID, storage.DocumentClaimReimbursement); err != nil {
+		return RecordedReimbursement{}, err
+	}
+	out := RecordedReimbursement{}
+	if out.Entry, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
+		return RecordedReimbursement{}, err
+	}
+	for _, x := range c.Settlements {
+		a, err := u.Allocations().Add(ctx, storage.NewAllocation{SourceID: doc.ID, SourceVersion: doc.Version, DocumentID: x.DocumentID, On: r.Date,
+			Currency: x.Amount.Currency().Code, Amount: storage.Decimal(x.Amount.String()), BaseCurrency: settings.Base.Code,
+			BaseAmount: storage.Decimal(x.Base.String()), RealisedFX: storage.Decimal(x.RealisedFX.String())})
+		if err != nil {
+			return RecordedReimbursement{}, err
+		}
+		out.Allocations = append(out.Allocations, a)
+	}
+	if err := u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted); err != nil {
+		return RecordedReimbursement{}, err
+	}
+	doc.Status = storage.DocumentPosted
+	out.Reimbursement = doc
+	if s.AfterPosting == nil {
+		return out, nil
+	}
+	return out, s.AfterPosting(ctx, u, doc, out.Entry)
+}
+
+// Void undoes a posted reimbursement with a reversing entry dated date, with a reason (FR-GL-12), and a reversing
+// allocation for each of its allocations on that date, which reopens the claims. The date is not before the
+// reimbursement's, and its period must be open (INV-03).
+func (s ClaimReimbursements) Void(ctx context.Context, org, id uuid.UUID, date time.Time, reason string) (RecordedReimbursement, error) {
+	if reason != "" {
+		ctx = storage.WithReason(ctx, reason)
+	}
+	var out RecordedReimbursement
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		out, err = s.VoidIn(ctx, u, id, date, reason)
+		return err
+	})
+	return out, err
+}
+
+// VoidIn voids a posted reimbursement in u, the caller's unit of work: what Void does, for undoing the match of the bank
+// line it was matched to in the same transaction.
+func (s ClaimReimbursements) VoidIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, date time.Time, reason string) (RecordedReimbursement, error) {
+	doc, err := u.Documents().Lock(ctx, id)
+	if err != nil {
+		return RecordedReimbursement{}, err
+	}
+	r, err := claim.ReadReimbursement(doc)
+	if err != nil {
+		return RecordedReimbursement{}, err
+	}
+	if doc.Status != storage.DocumentPosted {
+		return RecordedReimbursement{}, &claim.Error{Code: claim.CodeNotPosted, Message: fmt.Sprintf("the reimbursement is %s, not posted", doc.Status),
+			Fix: "Only a posted reimbursement is voided"}
+	}
+	y, m, dd := date.Date()
+	date = time.Date(y, m, dd, 0, 0, 0, 0, time.UTC)
+	if date.Before(r.Date) {
+		return RecordedReimbursement{}, &claim.Error{Code: claim.CodeVoidDate, Message: fmt.Sprintf("the void is dated %s, before the reimbursement's %s",
+			date.Format(time.DateOnly), r.Date.Format(time.DateOnly)), Fix: "Date the void on or after the reimbursement"}
+	}
+	if err := lockClaims(ctx, u, r); err != nil {
+		return RecordedReimbursement{}, err
+	}
+	settings, err := loadSettings(ctx, u)
+	if err != nil {
+		return RecordedReimbursement{}, err
+	}
+	stored, err := u.Ledger().ByIdentity(ctx, ledger.ClaimReimbursementIdentity(doc.ID, doc.Version, ledger.RuleClaimReimbursement))
+	if err != nil {
+		return RecordedReimbursement{}, err
+	}
+	original, err := fromStorage(stored, settings.Base)
+	if err != nil {
+		return RecordedReimbursement{}, err
+	}
+	reversal, err := ledger.Reverse(original, date, reason)
+	if err != nil {
+		return RecordedReimbursement{}, err
+	}
+	out := RecordedReimbursement{}
+	if out.Entry, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+		return RecordedReimbursement{}, err
+	}
+	allocs, err := u.Allocations().OfSource(ctx, doc.ID)
+	if err != nil {
+		return RecordedReimbursement{}, err
+	}
+	for _, a := range allocs {
+		if a.ReversesID != nil {
+			continue
+		}
+		id := a.ID
+		x, err := u.Allocations().Add(ctx, storage.NewAllocation{SourceID: a.SourceID, SourceVersion: a.SourceVersion, DocumentID: a.DocumentID, On: date,
+			Currency: a.Currency, Amount: negated(a.Amount), BaseCurrency: a.BaseCurrency, BaseAmount: negated(a.BaseAmount),
+			RealisedFX: negated(a.RealisedFX), Tolerance: negated(a.Tolerance), ReversesID: &id})
+		if err != nil {
+			return RecordedReimbursement{}, err
+		}
+		out.Allocations = append(out.Allocations, x)
+	}
+	if err := u.Documents().SetStatus(ctx, id, storage.DocumentReversed); err != nil {
+		return RecordedReimbursement{}, err
+	}
+	doc.Status = storage.DocumentReversed
+	out.Reimbursement = doc
+	if s.AfterPosting == nil {
+		return out, nil
+	}
+	return out, s.AfterPosting(ctx, u, doc, out.Entry)
+}
+
+// replayClaimReimbursement posts a reimbursement version again as its entry posted it (ENG-06).
+func replayClaimReimbursement(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings, e storage.Entry) (ledger.Entry, error) {
+	p, _, err := claim.PrepareReimbursement(ctx, u, doc, s.Base)
+	if err != nil {
+		return ledger.Entry{}, err
+	}
+	return ledger.ReplayClaimReimbursement(e.RuleVersion, p.Rule, s)
 }

@@ -28,7 +28,7 @@
 
 ## 3. Reimbursement and what the company owes
 
-- [ ] 3.1 `claim_reimbursement@1` recorded by hand with its allocations under the "Payment batches" row (C; rev 0.148),
+- [x] 3.1 `claim_reimbursement@1` recorded by hand with its allocations under the "Payment batches" row (C; rev 0.148),
   voided while its period is open (in Founder mode on the Controller's approval, FM-1); bank import
   matches it as money recorded by hand (design D7); the 2150 sub-ledger by person, reconciled with 2150 (design D4).
   - Tests: a reimbursement settles two claims; matched from a bank line; My claims' "the company owes you" equals the

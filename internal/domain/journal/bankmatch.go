@@ -368,7 +368,7 @@ func (s BankTransactions) Unmatch(ctx context.Context, org, lineID uuid.UUID, re
 // money out.
 var recordedTypes = map[bool][]storage.DocumentType{
 	true:  {storage.DocumentCustomerReceipt, storage.DocumentCustomerDeposit, storage.DocumentSupplierRefund},
-	false: {storage.DocumentBillPayment, storage.DocumentCustomerRefund},
+	false: {storage.DocumentBillPayment, storage.DocumentCustomerRefund, storage.DocumentClaimReimbursement},
 }
 
 // RecordedFor are the documents recorded by hand for a line's money (design D5): posted receipts, payments, deposits
@@ -457,6 +457,8 @@ func moves(ctx context.Context, u storage.UnitOfWork, doc storage.Document, line
 			ledger.CustomerRefundIdentity(doc.ID, doc.Version, ledger.RuleDepositRefund)}
 	case storage.DocumentSupplierRefund:
 		identities = []string{ledger.SupplierRefundIdentity(doc.ID, doc.Version, ledger.RuleSupplierRefund)}
+	case storage.DocumentClaimReimbursement: // money paid back to a claimant (FR-AP-07)
+		identities = []string{ledger.ClaimReimbursementIdentity(doc.ID, doc.Version, ledger.RuleClaimReimbursement)}
 	}
 	var e storage.Entry
 	found := false
