@@ -109,7 +109,7 @@
 
 ## 10. Finish
 
-- [ ] 10.1 The threat model `docs/security/threat-models/expense-claims.md`, each abuse case with its test; `make check`,
+- [x] 10.1 The threat model `docs/security/threat-models/expense-claims.md`, each abuse case with its test; `make check`,
   `make test`, `make scan` and `make images` pass; a conventional commit with upgrade notes (the mileage rates to set).
 
 ## Workflow follow-up
