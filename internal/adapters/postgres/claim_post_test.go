@@ -6,9 +6,11 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
@@ -19,27 +21,23 @@ import (
 )
 
 // claimBooks are Books with the claim rule's system accounts, three expense accounts, the starter-like categories, a
-// member who claims and a user who is not a member.
+// founder who claims, another who approves, and a user who is not a member.
 type claimBooks struct {
 	porttest.Books
 	Payable, Overseas, Meals, Other storage.Account
 	Travel, Dining, Abroad, Mileage storage.ClaimCategory
-	Claimant, Stranger              uuid.UUID
+	Claimant, Approver, Stranger    uuid.UUID
 }
 
-func newClaimBooks(t *testing.T, ctx context.Context, s storage.Store, name string) claimBooks {
+func newClaimBooks(t *testing.T, ctx context.Context, s *postgres.Store, name string) claimBooks {
 	t.Helper()
 	b := claimBooks{Books: porttest.NewBooks(t, s, name)}
-	for _, x := range []struct {
-		to   *uuid.UUID
-		name string
-	}{{&b.Claimant, "Mei Ling Tan"}, {&b.Stranger, "Not A Member"}} {
-		if err := conn(t, "fyniq_migrator").QueryRow(ctx, "INSERT INTO fyniq.app_user (display_name) VALUES ($1) RETURNING user_id", x.name).
-			Scan(x.to); err != nil {
-			t.Fatal(err)
-		}
-	}
 	now := porttest.Day(10, 1)
+	b.Claimant, b.Approver = founder(t, s, b.Org, 1, now), founder(t, s, b.Org, 2, now)
+	if err := conn(t, "fyniq_migrator").QueryRow(ctx, "INSERT INTO fyniq.app_user (display_name) VALUES ('Not A Member') RETURNING user_id").
+		Scan(&b.Stranger); err != nil {
+		t.Fatal(err)
+	}
 	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
 		for _, a := range []struct {
 			to *storage.Account
@@ -72,9 +70,6 @@ func newClaimBooks(t *testing.T, ctx context.Context, s storage.Store, name stri
 				return err
 			}
 		}
-		if _, err = u.Members().Add(ctx, b.Claimant); err != nil {
-			return err
-		}
 		if _, err = u.GSTRegistrations().Create(ctx, storage.NewGSTRegistration{RegisteredFrom: now, GSTNumber: "202612345K",
 			ReturnFrequency: "quarterly", QuarterStartMonth: 1, AccountingBasis: "invoice", RecordedAt: now}); err != nil {
 			return err
@@ -92,13 +87,17 @@ func newClaimBooks(t *testing.T, ctx context.Context, s storage.Store, name stri
 // with its number, checked and posted through the posting service in one transaction with its entry. UC-EXP-01's
 // S$27.30 taxi shows no GST; a S$109.00 meal on a simplified tax invoice claims its S$9.00 GST, the organisation being
 // GST-registered; an IDR 1,500,000.00 hotel takes the cascade's rate on its date, S$127.50. The company owes S$263.80
-// on 2150. Every problem comes back at once; a posted claim does not change; the replay reproduces the entry after
-// its category moves to another account.
+// on 2150. It posts only under an approved request its claimant asked for and did not sign (FY233). Every problem comes
+// back at once; a posted claim does not change; the replay reproduces the entry after its category moves to another
+// account.
 // req: FR-AP-07
 // req: ledger/posting-rules Posting an expense claim
 // req: purchases/expense-claims Out-of-pocket receipt claim
 // req: FR-AP-20
+// req: FR-AP-17
 // req: ENG-06
+// req: QA-ENG-05
+// asvs: V8.2.2
 func TestExpenseClaimsPostThroughThePostingService(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "mei-ling"}})
 	s := store(t, "fyniq_api")
@@ -128,6 +127,22 @@ func TestExpenseClaimsPostThroughThePostingService(t *testing.T) {
 	if got := []string{c.Prepared.InputTax[0].Reason, c.Prepared.InputTax[1].Reason}; got[0] != bill.ReasonNoGST || got[1] != bill.ReasonSimplified {
 		t.Errorf("input tax decided as %v", got)
 	}
+	// Posted without an approval, or under one its claimant signed, the claim is refused at commit (FY233).
+	if _, err := claims.Post(ctx, b.Org, doc.ID); storage.CodeOf(err) != storage.CodeClaim {
+		t.Fatalf("posting without an approval: %v", err)
+	}
+	selfSigned := request(t, s, b.Org, b.Approver, "expense_claim", doc.ID.String(), "expense_claim.post", `{"execute":{}}`,
+		[]storage.ApprovalStep{{Quorum: 1}}, oct26)
+	if err := signs(s, b.Org, selfSigned, 1, b.Claimant, oct26); err != nil {
+		t.Fatal(err)
+	}
+	if err := decides(s, b.Org, selfSigned, "approved", oct26); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := claims.Post(ctx, b.Org, doc.ID); storage.CodeOf(err) != storage.CodeClaim {
+		t.Fatalf("posting under the claimant's own signature: %v", err)
+	}
+	approved(t, s, b, doc.ID, oct26)
 	e, err := claims.Post(ctx, b.Org, doc.ID)
 	if err != nil {
 		t.Fatal(err)
@@ -225,6 +240,18 @@ func TestExpenseClaimsPostThroughThePostingService(t *testing.T) {
 	if _, err := claims.Create(ctx, b.Org, claim.Draft{ClaimantID: b.Claimant, Lines: []claim.Line{{Document: "receipt", Amount: sgdOf(t, "1.00"),
 		GST: money.Zero(sgd)}}}); !claimCode(err, claim.CodeReceipt) {
 		t.Errorf("a document Fyniq cannot read: %v", err)
+	}
+}
+
+// approved approves posting claim id as the approval engine does: its claimant asks, and the other founder signs.
+func approved(t *testing.T, s *postgres.Store, b claimBooks, id uuid.UUID, now time.Time) {
+	t.Helper()
+	req := request(t, s, b.Org, b.Claimant, "expense_claim", id.String(), "expense_claim.post", `{"execute":{}}`, []storage.ApprovalStep{{Quorum: 1}}, now)
+	if err := signs(s, b.Org, req, 1, b.Approver, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := decides(s, b.Org, req, "approved", now); err != nil {
+		t.Fatal(err)
 	}
 }
 

@@ -19,13 +19,27 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// Prepared is a claim version as the rule reads it, with what it shows beside its entry: each line's category, and how
-// each line's input tax was decided (FR-AP-20).
+// WarnOverLimit is a line above its category's limit (⚠, FR-AP-15): it posts, and finance approves it too (FR-AP-17).
+const WarnOverLimit = "CLAIM-OVER-LIMIT"
+
+// Warning is one ⚠ of a claim: it posts, and its approvers see why it is flagged.
+type Warning struct {
+	Code    string
+	Field   string
+	Message string
+	Fix     string
+}
+
+// Prepared is a claim version as the rule reads it, with what it shows beside its entry: each line's category, how each
+// line's input tax was decided (FR-AP-20), and its warnings; OverLimit says a line is above its category's limit, so
+// finance approves it too (FR-AP-17; the owner's decision of 26 Oct 2026).
 type Prepared struct {
 	Draft      Draft
 	Claim      ledger.Claim
 	Categories []storage.ClaimCategory // one a line, in order; the zero category where it could not be read
 	InputTax   []bill.Decision         // one a line, in order
+	Warnings   []Warning
+	OverLimit  bool
 }
 
 // Prepare reads one version of a claim for the rule: its claimant, each line's category and the account it costs, its
@@ -136,6 +150,25 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 				"Choose the GST code for the receipt, such as TX when it shows GST, or NR when the merchant is not GST-registered")
 		}
 		out.InputTax = append(out.InputTax, dec)
+
+		// Above its category's limit, in the base currency: what the company owes for the line (FR-AP-15).
+		if cat.LineLimit != nil {
+			owed, ok := l.Amount, cur == base
+			switch {
+			case cur != base && l.Paid != nil:
+				owed, ok = *l.Paid, l.Paid.Currency() == base
+			case cur != base && rate != nil:
+				t, err := rounding.FX(l.Amount, *rate)
+				owed, ok = t, err == nil
+			}
+			limit, err := money.ParseStored(string(*cat.LineLimit), base)
+			if over, cmpErr := owed.Cmp(limit); ok && err == nil && cmpErr == nil && over > 0 {
+				out.OverLimit = true
+				out.Warnings = append(out.Warnings, Warning{WarnOverLimit, f("amount"),
+					fmt.Sprintf("%s %s is above the %s category's limit of %s %s a line", owed, base, cat.Name, limit, base),
+					"It can still be claimed: finance approves it too; say why in the claim's notes"})
+			}
+		}
 		c.Lines = append(c.Lines, ledger.ClaimLine{AccountID: cat.AccountID, Description: describe(l), Amount: l.Amount, GST: l.GST,
 			Claimable: dec.Condition == bill.Claimable && dec.Reason != bill.ReasonNoGST, Rate: rate, StatedBase: l.StatedGST, Paid: l.Paid})
 	}

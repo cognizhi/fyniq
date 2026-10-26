@@ -18,13 +18,13 @@
 
 ## 2. Submit, approve, return
 
-- [ ] 2.1 The API: create, read, list (mine, waiting for me, everyone's for V), change a draft, submit, and the claim's
+- [x] 2.1 The API: create, read, list (mine, waiting for me, everyone's for V), change a draft, submit, and the claim's
   approval request with its steps (design D3); approving posts it; rejecting returns it with the comment; resubmitting
-  makes a new version. Every operation in the contract first (`make openapi`), with the matrix rows (QA-SEC-03).
-  - Tests: nobody approves their own claim; in Founder mode the other founder approves; above a limit or past the
-    deadline the Controller's step follows; a returned claim keeps both versions. `// req: FR-AP-17`,
-    `// req: FR-AP-14`, `// req: purchases/expense-claims Claim returned for a policy breach`,
-    `// req: purchases/expense-claims Interim routing until line managers and ordered steps`
+  makes a new version. Every operation in the contract first (`make openapi`), with the matrix rows (QA-SEC-03). The
+  database posts a claim only under an approved request its claimant asked for and did not sign (FY233).
+  - Tests: nobody approves their own claim; in Founder mode the other founder approves; above a limit the Controller's
+    step follows (past the deadline arrives with `claims.deadline_days` in 5.1); a returned claim keeps both versions.
+    `// req: FR-AP-17`, `// req: FR-AP-14`, `// req: purchases/expense-claims Claim returned for a policy breach`
 
 ## 3. Reimbursement and what the company owes
 
@@ -47,7 +47,8 @@
 ## 5. The expense policy and duplicates
 
 - [ ] 5.1 Claim categories through the API (A to change, design D6), and the starter set for an organisation that
-  loaded its chart before it (`claim.LoadStarter`); `claims.deadline_days` (60); the checks at
+  loaded its chart before it (`claim.LoadStarter`); `claims.deadline_days` (60), whose breach adds finance's step as a
+  line above its limit does (2.1); the checks at
   submission: receipt required ✖, attendees ⚠, above the limit ⚠ with finance's step, past the deadline ⚠ with a
   reason and finance's step; duplicate receipts across people by file hash ✖ until a reason is recorded, look-alikes ⚠.
   - Tests: each breach named on the claim; UC-EXP-04's S$64.80 meal without attendees returned; a receipt claimed by

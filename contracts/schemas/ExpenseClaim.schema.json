@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval_asked": {
+      "description": "The pending request to post it, while it is submitted.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "checks": {
+      "description": "getExpenseClaim only: what stops a draft being submitted (✖), and the warnings it posts with (⚠), such as a line above its category's limit, which finance approves too.",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "claimant": {
+      "$ref": "Person.schema.json",
+      "description": "Who claims: the member the company owes."
+    },
+    "date": {
+      "description": "The claim's date.",
+      "examples": [
+        "2026-10-26"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The claim's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fd1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "input_tax_decisions": {
+      "description": "getExpenseClaim only: how each line's input tax was decided, one a line in order (FR-AP-20).",
+      "items": {
+        "$ref": "BillTaxDecision.schema.json"
+      },
+      "type": "array"
+    },
+    "ledger_impact": {
+      "description": "getExpenseClaim only: the lines posting it writes (a draft), or wrote (posted): debits positive.",
+      "items": {
+        "$ref": "EntryLine.schema.json"
+      },
+      "type": "array"
+    },
+    "lines": {
+      "description": "The lines as entered.",
+      "items": {
+        "$ref": "ExpenseClaimLine.schema.json"
+      },
+      "type": "array"
+    },
+    "notes": {
+      "description": "Its notes.",
+      "examples": [
+        "Client lunch ran over the meals limit."
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number from the claim sequence, given when it is first saved (FR-ORG-04).",
+      "examples": [
+        "CLM-0007"
+      ],
+      "type": "string"
+    },
+    "posted_at": {
+      "description": "When it was posted.",
+      "examples": [
+        "2026-10-26T06:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "posted_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who approved it last: its entry's poster."
+    },
+    "prepared_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who saved the current version."
+    },
+    "returned": {
+      "$ref": "ExpenseClaimReturn.schema.json",
+      "description": "Its latest return, while it is returned."
+    },
+    "stage": {
+      "description": "Where it stands for its claimant (FR-AP-14): draft; submitted while its approval waits; returned when its latest request was rejected, with the comment; approved once posted. scheduled and paid arrive with reimbursements and payment batches.",
+      "enum": [
+        "draft",
+        "submitted",
+        "returned",
+        "approved",
+        "scheduled",
+        "paid"
+      ],
+      "examples": [
+        "submitted"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "Draft (✎) until it is approved, then posted.",
+      "enum": [
+        "draft",
+        "posted",
+        "reversed"
+      ],
+      "examples": [
+        "draft"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "What it is for.",
+      "examples": [
+        "Acme visit"
+      ],
+      "type": "string"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "What the company owes for it in the base currency, as posted or as posting would post it; absent while it cannot post."
+    },
+    "version": {
+      "description": "The version of its content; with the status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "version",
+    "claimant",
+    "stage",
+    "lines",
+    "input_tax_decisions",
+    "checks",
+    "ledger_impact"
+  ],
+  "title": "ExpenseClaim",
+  "type": "object"
+}

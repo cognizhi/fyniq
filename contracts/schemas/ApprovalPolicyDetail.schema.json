@@ -60,7 +60,8 @@
         "customer_deposit",
         "recurring_invoice",
         "connector",
-        "bank_rule"
+        "bank_rule",
+        "expense_claim"
       ],
       "examples": [
         "organisation_setting"

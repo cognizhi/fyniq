@@ -137,6 +137,12 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/document-templates/{template_id}/publish` (publishDocumentTemplate): Publish a template
 - `GET /v1/document-templates/{template_id}/versions` (listDocumentTemplateVersions): List a template's versions
 - `GET /v1/document-templates/{template_id}/versions/{number}` (getDocumentTemplateVersion): Read a template version
+- `GET /v1/expense-claims` (listExpenseClaims): List expense claims
+- `POST /v1/expense-claims` (createExpenseClaim): Save a draft expense claim
+- `GET /v1/expense-claims/{claim_id}` (getExpenseClaim): Get an expense claim
+- `PUT /v1/expense-claims/{claim_id}` (replaceExpenseClaim): Change a draft expense claim
+- `POST /v1/expense-claims/{claim_id}/submit` (submitExpenseClaim): Submit an expense claim for approval
+- `POST /v1/expense-claims/{claim_id}/withdraw` (withdrawExpenseClaim): Withdraw a submitted expense claim
 - `GET /v1/fx/feed` (listFeedRates): List the daily feed's rates
 - `GET /v1/fx/money-accounts` (listForeignMoneyAccounts): List the money accounts' balances in other currencies
 - `GET /v1/fx/rate` (lookupFxRate): Find the rate a posting takes

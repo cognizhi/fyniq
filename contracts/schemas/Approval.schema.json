@@ -98,7 +98,8 @@
         "customer_deposit",
         "recurring_invoice",
         "connector",
-        "bank_rule"
+        "bank_rule",
+        "expense_claim"
       ],
       "examples": [
         "organisation_setting"
@@ -139,7 +140,8 @@
         "customer_deposit.void",
         "recurring_invoice.approve",
         "connector.change",
-        "bank_rule.auto_apply"
+        "bank_rule.auto_apply",
+        "expense_claim.post"
       ],
       "examples": [
         "organisation_setting.change"

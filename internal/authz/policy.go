@@ -102,9 +102,9 @@ const (
 // self-approval threshold, and voiding one (rev 0.53); posting a bill above the threshold, and voiding one (p1-purchases);
 // publishing a document template (rev 0.95); issuing an invoice above the threshold, and voiding or editing one (p1-sales);
 // a step of an organisation connector's lifecycle (p1-connector-framework, FR-INT-26); a bank rule's auto-apply
-// (p1-bank-import-reconcile, FR-BNK-14).
+// (p1-bank-import-reconcile, FR-BNK-14); posting an expense claim (p1-expense-claims, FR-AP-17).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
-	Invoices, Integrations, BankTransactions}
+	Invoices, Integrations, BankTransactions, ExpenseClaims}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -458,6 +458,16 @@ var (
 	RequestBillPost = Policy{Operation: "requestBillPost", Capability: Bills, Need: Post}
 	RequestBillVoid = Policy{Operation: "requestBillVoid", Capability: Bills, Need: Post}
 	EditBill        = Policy{Operation: "editBill", Capability: Bills, Need: Post}
+	// Expense claims (FR-AP-07, FR-AP-14, FR-AP-17; p1-expense-claims): a claimant's own under the Employee's "C (own)",
+	// which the handlers narrow to the caller's own claims (design D10); everyone's under V (the Owner, the Accountant,
+	// the Bookkeeper, the AP specialist, the Auditor, the Tax agent) or A (the Approver, the Controller). Submitting asks
+	// another person's approval through the approval engine; the AI drafts a claim only through a proposal (Appendix D).
+	ListExpenseClaims    = Policy{Operation: "listExpenseClaims", Capability: ExpenseClaims, Need: View}
+	GetExpenseClaim      = Policy{Operation: "getExpenseClaim", Capability: ExpenseClaims, Need: View}
+	CreateExpenseClaim   = Policy{Operation: "createExpenseClaim", Capability: ExpenseClaims, Need: Create}
+	ReplaceExpenseClaim  = Policy{Operation: "replaceExpenseClaim", Capability: ExpenseClaims, Need: Create}
+	SubmitExpenseClaim   = Policy{Operation: "submitExpenseClaim", Capability: ExpenseClaims, Need: Create}
+	WithdrawExpenseClaim = Policy{Operation: "withdrawExpenseClaim", Capability: ExpenseClaims, Need: Create}
 	// Invoices (FR-AR-03; p1-sales), as bills: read under V, prepared under C (the Bookkeeper, the AR specialist, the
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
 	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
@@ -873,6 +883,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence, AddBillEvidence, ListBillEvidence, GetBillEvidence, RemoveBillEvidence,
 	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes, GetSalesGSTCodes,
 	ListWithholdingDecisions, RecordWithholdingDecision, PlanBillPayment, ListBillReminders,
+	ListExpenseClaims, GetExpenseClaim, CreateExpenseClaim, ReplaceExpenseClaim, SubmitExpenseClaim, WithdrawExpenseClaim,
 	ListDocumentTemplates, GetDocumentTemplate, GetDocumentTemplateCatalogue, ListDocumentTemplateVersions, GetDocumentTemplateVersion,
 	CreateDocumentTemplate, ReplaceDocumentTemplate, RequestDocumentTemplatePublication, PublishDocumentTemplate, PreviewDocumentTemplate,
 	ExportDocumentTemplates, ImportDocumentTemplates, ListDocumentTemplateDefaults, SetDocumentTemplateDefault, GetAppliedDocumentTemplate,
@@ -948,6 +959,9 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 		for _, row := range ApprovalRows {
 			q := p
 			q.Capability = row
+			// An Employee's own claims ("C (own)") are not the approvals: a claimant reaches their claim's request from the
+			// claim (design D10), and never the approvals or the review log.
+			q.Unqualified = row == ExpenseClaims
 			if r, ok := holds(q, roles); ok {
 				return Decision{Allowed: true, Right: r}
 			}

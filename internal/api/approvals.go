@@ -58,9 +58,9 @@ type ApprovalSignature struct {
 // and its signatures.
 type Approval struct {
 	ID              string              `json:"id" format:"uuid" doc:"The request's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
-	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit,recurring_invoice,connector,bank_rule" doc:"What it changes." example:"organisation_setting"`
+	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit,recurring_invoice,connector,bank_rule,expense_claim" doc:"What it changes." example:"organisation_setting"`
 	ObjectKey       string              `json:"object_key" doc:"Which one: the setting's key, the membership's ID, the invitation's code hash, the object type whose approval policy changes, the statutory pack version, or organisation for the team mode." example:"bank.tolerance_base"`
-	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void,recurring_invoice.approve,connector.change,bank_rule.auto_apply" doc:"What executes on its approval." example:"organisation_setting.change"`
+	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void,recurring_invoice.approve,connector.change,bank_rule.auto_apply,expense_claim.post" doc:"What executes on its approval." example:"organisation_setting.change"`
 	Summary         string              `json:"summary" doc:"What it does, in a sentence." example:"Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20"`
 	Status          string              `json:"status" enum:"pending,approved,rejected,void,expired" doc:"pending waits for approval; approved executed it; void means its record, a dependency, its approval policy or the team mode changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days." example:"pending"`
 	StatusReason    string              `json:"status_reason,omitempty" doc:"Why it was rejected or voided." example:"the setting changed after the request"`
@@ -264,6 +264,9 @@ type pendingChange struct {
 	// Content is what the change needs beside its envelope, too large to sign in it, such as an edit's lines: the
 	// envelope holds its SHA-256 in Execute instead (rev 0.54).
 	Content []byte
+	// Then are steps after the policy's own for this change only, such as finance's on an expense claim above its
+	// category's limit (FR-AP-17): the request keeps them with the policy's.
+	Then []approval.Step
 }
 
 // stored is what a request keeps of its change.
@@ -653,6 +656,15 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		e.ObjectVersion = doc.Version
 		e.Dependencies["status"] = string(doc.Status)
 		e.Dependencies["received"] = x.Amount.Amount + " " + x.Amount.Currency
+	case approval.ObjectClaim: // the claim's version and status, and what the company owes for it (FR-AP-17)
+		version, deps, err := claimDependencies(ctx, u, c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = version
+		for k, v := range deps {
+			e.Dependencies[k] = v
+		}
 	case approval.ObjectBankRule: // the rule's version, and its conditions and action (FR-BNK-14)
 		version, deps, err := ruleDependencies(ctx, u, c.ObjectKey)
 		if err != nil {
@@ -760,9 +772,13 @@ func (a *API) requestApproval(ctx context.Context, u storage.UnitOfWork, c pendi
 	if err != nil {
 		return Approval{}, err
 	}
+	steps := policy.Steps
+	if len(c.Then) > 0 {
+		steps = append(slices.Clone(policy.Steps), c.Then...)
+	}
 	r, err := u.Approvals().Request(ctx, storage.NewApprovalRequest{ObjectType: c.ObjectType, ObjectKey: c.ObjectKey, Operation: c.Operation,
 		Summary: c.Summary, Change: change, Envelope: string(envelope), EnvelopeHash: approval.Hash(envelope), PolicyVersion: policy.Version,
-		PolicySteps: storageSteps(policy.Steps), RequestedBy: p.UserID, RequestedAt: now, RequesterMFAMethod: stepUpMethod, RequesterMFAAt: p.StepUpAt, ExpiresAt: now.Add(approval.TTL)})
+		PolicySteps: storageSteps(steps), RequestedBy: p.UserID, RequestedAt: now, RequesterMFAMethod: stepUpMethod, RequesterMFAAt: p.StepUpAt, ExpiresAt: now.Add(approval.TTL)})
 	if err != nil {
 		return Approval{}, err
 	}
@@ -828,12 +844,21 @@ func mayApprove(p authn.Principal, objectType string) bool {
 	return authz.Decide(authz.Policy{Operation: "approve", Capability: approvalRow(objectType), Need: authz.Approve}, p.Roles, p.AI()).Allowed
 }
 
-// maySee reports whether p may see a request: they asked for it, or hold a right on its object's row.
+// maySee reports whether p may see a request: they asked for it, or hold a right on its object's row. On "Expense
+// claims" a right on one's own claims only (the Employee's "C (own)") sees only the requests one asked for: one's own
+// claims (design D10).
 func maySee(p authn.Principal, r storage.ApprovalRequest) bool {
 	if p.UserID != uuid.Nil && p.UserID == r.RequestedBy {
 		return true
 	}
-	return authz.Decide(authz.Policy{Operation: "view", Capability: approvalRow(r.ObjectType), Need: authz.View}, p.Roles, p.AI()).Allowed
+	view := authz.Policy{Operation: "view", Capability: approvalRow(r.ObjectType), Need: authz.View}
+	if r.ObjectType == approval.ObjectClaim {
+		if mayApprove(p, r.ObjectType) {
+			return true
+		}
+		view.Unqualified = true
+	}
+	return authz.Decide(view, p.Roles, p.AI()).Allowed
 }
 
 // approvalOf is a request as the API shows it to the caller.
@@ -1061,6 +1086,8 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 			return err
 		}
 		return nil
+	case approval.OpClaimPost: // FR-AP-17: nobody approves their own claim
+		return claimExecutable(ctx, u, r, signer)
 	case approval.OpBillPost: // SOD-3: whoever prepared the bill never approves its post
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {
@@ -1432,6 +1459,17 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		return a.executeConnector(ctx, u, s)
 	case approval.OpRuleAutoApply: // FR-BNK-14: the rule applies by itself from now on
 		return a.executeRuleAutoApply(ctx, u, r, s)
+	case approval.OpClaimPost: // FR-AP-07: the approved claim posts, as its last approver
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		o, err := u.Organisation(ctx)
+		if err != nil {
+			return err
+		}
+		_, err = a.claims.Post(ctx, o.ID, id)
+		return err
 	case approval.OpRecurringApprove: // FR-AR-07: the version approved for issue and send
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {
@@ -1617,7 +1655,7 @@ func registerApprovals(a *API) {
 	}, append([]string{CodeNotFound, CodeSessionRequired, CodeStepUpRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused,
 		CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale, CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion, storage.CodeMembership},
 		append(append(append(append(append(append(append(locks, ApprovalCodes...), MemberCodes...), SettingCodes...), PolicyCodes...), PackCodes...), PasskeyCodes...),
-			append(append(append(JournalApprovalCodes(), BillApprovalCodes()...), PaymentApprovalCodes()...), append(append(append(ApplicationApprovalCodes(), RefundApprovalCodes()...), OrderApprovalCodes()...), append(append(append(TemplateApprovalCodes(), InvoiceApprovalCodes()...), ReceiptApprovalCodes()...), append(append(append(WriteOffApprovalCodes(), CustomerApplicationApprovalCodes()...), CustomerRefundApprovalCodes()...), DepositApprovalCodes()...)...)...)...)...)...),
+			append(append(append(JournalApprovalCodes(), BillApprovalCodes()...), PaymentApprovalCodes()...), append(append(append(ApplicationApprovalCodes(), RefundApprovalCodes()...), OrderApprovalCodes()...), append(append(append(TemplateApprovalCodes(), InvoiceApprovalCodes()...), ReceiptApprovalCodes()...), append(append(append(WriteOffApprovalCodes(), CustomerApplicationApprovalCodes()...), CustomerRefundApprovalCodes()...), append(DepositApprovalCodes(), ClaimApprovalCodes()...)...)...)...)...)...)...),
 		func(ctx context.Context, in *approvalDecideInput) (*approvalWriteOutput, error) {
 			id, err := parseID("approval_id", in.ApprovalID)
 			if err != nil {
