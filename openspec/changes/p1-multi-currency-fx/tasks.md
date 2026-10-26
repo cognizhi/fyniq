@@ -116,7 +116,7 @@
   (22 Oct 2026: the ten operations of #136, #140 and this change's last slice are in `contracts/openapi/fyniq.v1.yaml`
   with their schemas and reference, pass Spectral, and each has its row: `TestAuthorisationMatrix` fails on an operation
   without one.)
-- [ ] 7.2 The MAS adapter of `RateFeed` at the cloud gate, once MAS confirms redistribution (FR-GL-05 [verify])
+- [ ] 7.2 [live-verify] The MAS adapter of `RateFeed` at the cloud gate, once MAS confirms redistribution (FR-GL-05 [verify])
 - [ ] 7.3 Finish with `make check`, `make test` and `make test-e2e`
   (22 Oct 2026: all three pass on the last slice, `make test-e2e` 16 of 16. Left open until 3.6, 3.7, 4.2's sales half,
   4.3, 4.5, 6.1 and 7.2 land.)

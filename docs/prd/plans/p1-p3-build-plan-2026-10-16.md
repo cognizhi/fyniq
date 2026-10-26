@@ -104,11 +104,12 @@ Every other P1 row is "P1 after go-live". Applied change by change, the "Launch"
     founders' money and the equity register, reports, KPIs and planning;
   - checks, the audit explorer, compliance and PDPA;
   - hardening, operations, the migration and readiness.
-- **Still to decide**, before each change's wave starts:
-  - expense claims (wave 2);
-  - payment files (wave 3);
-  - the payment providers: whether Stripe or HitPay carry any go-live transaction (wave 3);
-  - the company secretary (wave 6).
+- **Decided by the owner on 26 Oct 2026** (PRD-001 rev 0.146):
+  - expense claims (wave 2) and payment files (wave 3) join the launch subset; each names its estimate, and the
+    work it displaces, with its proposal (§17.4);
+  - the payment providers follow go-live: neither Stripe nor HitPay carries a go-live transaction, and customers pay
+    by bank transfer, which bank import matches.
+- **Still to decide**, before its wave starts: the company secretary (wave 6).
 - **GST:** the monitor and the calendar are in the launch subset; the F5 return follows registration
   (question 2: not registered for now).
 - **After go-live:**
@@ -197,13 +198,13 @@ providers.
 | 2 | `p1-multi-currency-fx` | FX rates and the rate cascade, realised and unrealised FX, GST on foreign-currency documents, foreign-currency bank accounts, month-end revaluation with automatic reversal | 8 | 1 | `p1-general-ledger-close` | Rates from a file or fixture; the live rate source is configured at the cloud gate | The accountant confirms the tolerances (Q32) | Accountant | Launch |
 | 2 | `p1-sales` | Quotes and orders, conversion, invoices, credit notes and refunds, tax-invoice particulars, branded PDFs and sending, recurring invoices, reminders and statements, deposits, allocations, write-offs, AR ageing; their posting rules | 22 | 7 | `p1-general-ledger-close`, `p1-templates-email` | — | — | Accountant | Launch |
 | 2 | `p1-purchases` | Purchase orders, bills, vendor credits, recurring bills, track and pay, AP ageing, input-tax eligibility, non-resident payments; their posting rules | 10 | 4 | `p1-general-ledger-close`, `p1-documents-evidence` | — | — | Accountant; co-founder for payee changes (#6) | Launch |
-| 2 | `p1-expense-claims` | Expense claims, My claims, mileage, employee claims processing, the expense policy, company-card imports and cash advances; their posting rules | 14 | 6 | `p1-purchases` | — | — | — | Decide (Q25) |
+| 2 | `p1-expense-claims` | Expense claims, My claims, mileage, employee claims processing, the expense policy, company-card imports and cash advances; their posting rules | 14 | 6 | `p1-purchases` | — | — | — | Launch (owner, 26 Oct 2026) |
 | 2 | `p1-fixed-assets` | Asset register, depreciation by the scheduler, disposals | 5 | 1 | `p1-purchases` | — | — | Accountant | Launch |
 | 2 | `p1-projects` | Projects, timesheets, time entry, cost and billing rates, approval, costs, budgets, billing methods and project reports (feature-switched) | 13 | 5 | `p1-sales`, `p1-purchases` | — | — | — | Launch |
 | 3 | `p1-connector-framework` | The integration framework, connector manifests, lifecycle and rules (FR-INT-20, 25…27) | 5 | 2 | P0 | Every connector is tested against a fake of its service | — | Security (#4) | Launch |
 | 3 | `p1-bank-import-reconcile` | Money accounts, statement import (CSV, XLSX, OFX, MT940, camt.053), duplicates, rules, categorising, matching, settlement differences, transfers, reconciliation with sign-off, suspense, daily cash, deterministic auto-reconcile, DBS emailed reports and the Wise and Airwallex sync | 25 | 9 | `p1-sales`, `p1-purchases`, `p1-connector-framework` | Statement files; DBS reports through Mailpit; Wise and Airwallex against fakes | A redacted DBS IDEAL daily report; the accountant confirms the cross-currency transfer rule (accounts held: DBS, Wise, Airwallex, rev 0.140) | Co-founder (#6) | Launch |
-| 3 | `p1-payments-out` | Payment batches as bank files with dual-controlled release and remittance advice | 1 | 1 | `p1-bank-import-reconcile`, `p1-approval-engine` | Files only | — | Co-founder (#6): money movement | Decide (Q25) |
-| 3 | `p1-payment-providers` | Stripe (Model B) and HitPay (Model A's PayNow QR) as read-only connectors: events and postings, refunds and disputes, fees and their GST, payout reconciliation; the provider sale, fee and payout posting rule | 9 | 2 | `p1-connector-framework`, `p1-sales` | Stripe and HitPay test-mode fixtures and fakes | Stripe and HitPay accounts | Accountant | Decide: whether Stripe or HitPay carry go-live transactions |
+| 3 | `p1-payments-out` | Payment batches as bank files with dual-controlled release and remittance advice | 1 | 1 | `p1-bank-import-reconcile`, `p1-approval-engine` | Files only | — | Co-founder (#6): money movement | Launch (owner, 26 Oct 2026) |
+| 3 | `p1-payment-providers` | Stripe (Model B) and HitPay (Model A's PayNow QR) as read-only connectors: events and postings, refunds and disputes, fees and their GST, payout reconciliation; the provider sale, fee and payout posting rule | 9 | 2 | `p1-connector-framework`, `p1-sales` | Stripe and HitPay test-mode fixtures and fakes | Stripe and HitPay accounts | Accountant | After go-live: neither carries a go-live transaction (owner, 26 Oct 2026) |
 | 4 | `p1-gst` | The GST F5 return (recorded filing), IRAS audit listings, the registration monitor, the statutory calendar and GST corrections | 9 | 4 | `p1-sales`, `p1-purchases`, `p1-statutory-packs` | — | GST registration (not registered for now, Q2) | Tax agent (#5) | Monitor and calendar at launch; F5 at registration (Q2) |
 | 4 | `p1-founders-money` | Director accounts, costs paid personally, pre-incorporation costs, founder pay choice, settlement routes, conversion to share capital, waiver, the register of share issues, ACRA steps, presentation and year-end confirmation; their posting rules | 22 | 5 | `p1-general-ledger-close`, `p1-purchases` | — | A board minute on the founders' loans; the accountant confirms (Q15) | Accountant | Launch |
 | 4 | `p1-equity-register` | Holders, share classes, equity transactions, SAFEs and notes, the option-pool register, the cap table at any date, round modelling, investor records and linked statutory checks; share-issue and conversion posting rules | 15 | 8 | `p1-founders-money` | — | A lawyer confirms the SAFE's conversion terms (Q33) | Accountant | Launch |
@@ -255,7 +256,9 @@ not a Fyniq wave.
 ## The cloud gate and go-live
 
 `cloud-first-deployment` collects everything only Google Cloud can prove: the gate of PRD-001 §17.5. It
-owns no requirement of its own: each row stays with its change and is closed here.
+owns no requirement of its own: each row stays with its change and is closed here. By the owner's decision of 26 Oct
+2026, such work is built and tested offline first and tagged `[live-verify]` in its change's tasks; the register of
+what to verify, row by row, is [`live-verification.md`](live-verification.md).
 
 - **The first apply.** `infra/README.md`, starting with the founder's organisation, billing account and
   projects.

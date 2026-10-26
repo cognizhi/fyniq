@@ -14,7 +14,7 @@
 ## 3. Sign-in
 
 - [x] 3.1 Add the `SignIn` port with Identity Platform and the Firebase emulator, and Google and Zoho providers with the configured issuer per provider; test `// req: FR-ADM-08` rejects an ID token from another issuer (slice 4a: the port, the ID-token check every provider passes with its test, the local fallback the PRD names instead of the emulator (§12.8 rev 0.19: a dev OpenID Connect issuer in the local build), first-party sessions and the web app's sign-in; slice 4b: the Identity Platform adapter with Google and Zoho, which opens the release build once configured; built and tested against a fake of Identity Platform's REST API, the live run held for staging with task 3.2)
-- [ ] 3.2 Complete a live Zoho sign-in through the US data centre in staging and store the evidence (§17.3 exit item 7)
+- [ ] 3.2 [live-verify] Complete a live Zoho sign-in through the US data centre in staging and store the evidence (§17.3 exit item 7)
 
 ## 4. First-run setup and Super admins
 
