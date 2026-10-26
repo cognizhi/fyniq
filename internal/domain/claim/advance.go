@@ -33,10 +33,12 @@ const AdvancesSetting = "claims.advances_account"
 // names an advance, what is left of that advance coming back. Recorded by hand under the "Payment batches" row (the
 // owner's decision of 26 Oct 2026, rev 0.148): to whom (a member's user ID), the date the money moved, the money account
 // (a money chart account, in the base currency) it moved through, the amount in the base currency, the bank's
-// reference, and notes.
+// reference, and notes. Personal marks personal spend on a company card, made from the card's line (FR-AP-18): the
+// cardholder owes it and refunds it; no claim settles it.
 type Advance struct {
 	PersonID  uuid.UUID
 	Refunds   *uuid.UUID
+	Personal  bool
 	Date      time.Time
 	AccountID uuid.UUID
 	Amount    money.Money
@@ -47,6 +49,7 @@ type Advance struct {
 type advancePayload struct {
 	PersonID  uuid.UUID    `json:"person_id"`
 	Refunds   *uuid.UUID   `json:"refunds,omitempty"`
+	Personal  bool         `json:"personal,omitempty"`
 	Date      string       `json:"date,omitempty"`
 	AccountID uuid.UUID    `json:"money_account_id"`
 	Amount    *money.Money `json:"amount,omitempty"`
@@ -63,7 +66,7 @@ func EncodeAdvance(a Advance) ([]byte, error) {
 		return nil, &Error{CodeTooLong, fmt.Sprintf("notes: %d characters; the most is %d", len(a.Notes), MaxNotes), "Shorten them"}
 	}
 	amount := a.Amount
-	return json.Marshal(advancePayload{PersonID: a.PersonID, Refunds: a.Refunds, Date: day(a.Date), AccountID: a.AccountID, Amount: &amount,
+	return json.Marshal(advancePayload{PersonID: a.PersonID, Refunds: a.Refunds, Personal: a.Personal, Date: day(a.Date), AccountID: a.AccountID, Amount: &amount,
 		Reference: a.Reference, Notes: a.Notes})
 }
 
@@ -83,7 +86,7 @@ func ReadAdvance(doc storage.Document) (Advance, error) {
 		}
 		return Advance{}, &Error{CodeBadDraft, "the saved advance cannot be read: " + what, "Record it again"}
 	}
-	a := Advance{PersonID: p.PersonID, Refunds: p.Refunds, AccountID: p.AccountID, Amount: *p.Amount, Reference: p.Reference, Notes: p.Notes}
+	a := Advance{PersonID: p.PersonID, Refunds: p.Refunds, Personal: p.Personal, AccountID: p.AccountID, Amount: *p.Amount, Reference: p.Reference, Notes: p.Notes}
 	if p.Date != "" {
 		d, err := time.Parse(time.DateOnly, p.Date)
 		if err != nil {
@@ -193,6 +196,8 @@ func OpenAdvance(ctx context.Context, u storage.UnitOfWork, id, claimant uuid.UU
 	switch {
 	case a.Refunds != nil:
 		return refuse(fmt.Sprintf("%s is the refund of an advance, not an advance", doc.Number))
+	case a.Personal:
+		return refuse(fmt.Sprintf("%s is personal spend on a company card: it is refunded, not settled by a claim", doc.Number))
 	case a.PersonID != claimant:
 		return refuse(fmt.Sprintf("advance %s was paid to another person", doc.Number))
 	}
@@ -219,8 +224,11 @@ func PrepareAdvance(ctx context.Context, u storage.UnitOfWork, doc storage.Docum
 		return PreparedAdvance{}, nil, err
 	}
 	memo := "Cash advance"
-	if a.Refunds != nil {
+	switch {
+	case a.Refunds != nil:
 		memo = "Cash advance refunded"
+	case a.Personal:
+		memo = "Personal spend on a company card"
 	}
 	out := PreparedAdvance{Draft: a, Rule: ledger.CashAdvance{ID: doc.ID, Version: doc.Version, Date: a.Date, Refund: a.Refunds != nil,
 		Account: a.AccountID, Amount: a.Amount, Memo: strings.TrimSpace(memo + " " + a.Reference)}}

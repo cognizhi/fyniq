@@ -126,7 +126,11 @@ arrives with `p1-checks`).
 A card is a money account of kind `card` (banking). Its lines are assigned to a cardholder (a member) on the money
 account; the cardholder sees their card lines in My claims and completes each with a receipt and a category, which
 categorises the bank line (the banking command) with the evidence attached. A line marked personal spend posts Dr 1250
-(the cardholder owes it) · Cr the card account, repaid by bank transfer or, later, through payroll (FR-PAY-16).
+(the cardholder owes it) · Cr the card account, repaid by bank transfer or, later, through payroll (FR-PAY-16). As
+built (task 7.1): personal spend is a `cash_advance` to the cardholder from the card account, marked personal and matched
+to the line, so what each person owes on 1250 is read in one place and repaid with the advance's refund; no claim settles
+it. The receipt is attached to what completing the line made (the bank transaction, or the advance). The lines are at
+`/v1/card-lines`, the caller's own cards only.
 
 ### D10. Permissions and personal data
 

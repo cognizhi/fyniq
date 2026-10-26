@@ -501,6 +501,12 @@ var (
 	RecordCashAdvanceRefund = Policy{Operation: "recordCashAdvanceRefund", Capability: PaymentBatches, Need: Create, Unqualified: true}
 	VoidCashAdvance         = Policy{Operation: "voidCashAdvance", Capability: PaymentBatches, Need: Create, Unqualified: true}
 	RequestCashAdvanceVoid  = Policy{Operation: "requestCashAdvanceVoid", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	// A company card's lines are completed by its holder from My claims (FR-AP-18, design D9), under the Employee's "C (own)":
+	// the handlers narrow them to the cards the caller holds, and the categories to the expense policy's.
+	ListCardLines        = Policy{Operation: "listCardLines", Capability: ExpenseClaims, Need: Create}
+	CompleteCardLine     = Policy{Operation: "completeCardLine", Capability: ExpenseClaims, Need: Create}
+	AddCardLineEvidence  = Policy{Operation: "addCardLineEvidence", Capability: ExpenseClaims, Need: Create}
+	ListCardLineEvidence = Policy{Operation: "listCardLineEvidence", Capability: ExpenseClaims, Need: Create}
 	// Invoices (FR-AR-03; p1-sales), as bills: read under V, prepared under C (the Bookkeeper, the AR specialist, the
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
 	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
@@ -929,6 +935,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListExpenseClaims, GetExpenseClaim, CreateExpenseClaim, ReplaceExpenseClaim, SubmitExpenseClaim, WithdrawExpenseClaim,
 	ListClaimReimbursements, GetClaimReimbursement, RecordClaimReimbursement, VoidClaimReimbursement, RequestClaimReimbursementVoid, GetExpenseClaimsOwed,
 	ListCashAdvances, GetCashAdvance, RecordCashAdvance, RecordCashAdvanceRefund, VoidCashAdvance, RequestCashAdvanceVoid,
+	ListCardLines, CompleteCardLine, AddCardLineEvidence, ListCardLineEvidence,
 	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
 	ListClaimCategories, CreateClaimCategory, ReplaceClaimCategory, LoadStarterClaimCategories,
 	AddExpenseClaimEvidence, ListExpenseClaimEvidence, GetExpenseClaimEvidence, RemoveExpenseClaimEvidence,

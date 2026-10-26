@@ -35,6 +35,8 @@ func dec(s string) *storage.Decimal {
 // req: FR-BNK-01
 // req: FR-BNK-04
 // req: FR-BNK-16
+// req: FR-AP-18
+// req: FR-AP-18
 // req: INV-06
 // req: QA-ENG-05
 // asvs: V8.4.1, V16.3.3, V2.3.2
@@ -96,6 +98,15 @@ func TestBankingStoreKeepsWhatTheBankSaid(t *testing.T) {
 		return err
 	}); storage.CodeOf(err) != storage.CodeVersion {
 		t.Fatalf("a stale change: %v", err)
+	}
+	// Only a card names a holder (FR-AP-18): a bank account does not take one.
+	holder := founder(t, st, a.Org, 7, now)
+	if err := do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Banking().ChangeMoneyAccount(ctx, acct.ID, renamed.Version, storage.MoneyAccountChange{Kind: storage.MoneyBank, Name: "DBS operating",
+			Institution: "DBS Bank", Identifier: "072-123456-7", CardholderID: &holder, At: now})
+		return err
+	}); storage.CodeOf(err) != storage.CodeInvalid {
+		t.Fatalf("a holder on a bank account: %v", err)
 	}
 
 	// Sources are added from later dates.

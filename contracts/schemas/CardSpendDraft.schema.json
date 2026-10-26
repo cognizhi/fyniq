@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "category_id": {
+      "description": "Spend for the company: the expense policy's category it was for (listClaimCategories); its account is the cost.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "description": {
+      "description": "What it was for.",
+      "examples": [
+        "Taxi to Acme"
+      ],
+      "maxLength": 140,
+      "type": "string"
+    },
+    "gst_code": {
+      "description": "Spend for the company: the GST code of the receipt, such as TX when it shows GST; left out, the account's default.",
+      "examples": [
+        "TX"
+      ],
+      "type": "string"
+    },
+    "personal": {
+      "description": "true when it was personal spend: the holder owes it, recorded as an advance to them, and refunds it (recordCashAdvanceRefund).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "title": "CardSpendDraft",
+  "type": "object"
+}

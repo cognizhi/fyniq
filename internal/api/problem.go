@@ -582,6 +582,7 @@ var codeFacts = map[string]struct {
 	banking.CodeAccount:     {422, "The statement is not for that money account"},
 	banking.CodeCurrency:    {422, "The statement is in another currency than its account"},
 	banking.CodeClosed:      {409, "The money account is closed"},
+	banking.CodeCardholder:  {422, "The cardholder does not fit the money account"},
 	banking.CodeFile:        {422, "The statement file cannot be read"},
 	banking.CodeRequest:     {422, "The import is incomplete"},
 	banking.CodeNoStatement: {409, "No statement balance for the period"},
@@ -655,6 +656,8 @@ var codeFacts = map[string]struct {
 	claim.CodeClaimAdvance:        {422, "The claim cannot settle that advance"},
 	ledger.CodeAdvance:            {422, "The advance's accounts or amount do not fit"},
 	CodeAdvanceVoidApproval:       {409, "Voiding needs a second person"},
+	journal.CodeNotYourCard:       {403, "The line is not on a card you hold"},
+	CodeCardNotDone:               {409, "The card line is not completed yet"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).

@@ -2,16 +2,17 @@
 -- lines and gaps.
 
 -- name: InsertMoneyAccount :one
-INSERT INTO fyniq.money_account (account_id, kind, name, institution, identifier, currency, opened_on, created_by, created_at,
-  changed_by, changed_at)
+INSERT INTO fyniq.money_account (account_id, kind, name, institution, identifier, currency, opened_on, cardholder_id, created_by,
+  created_at, changed_by, changed_at)
 VALUES (sqlc.arg(account_id), sqlc.arg(kind), sqlc.arg(name), sqlc.narg(institution), sqlc.narg(identifier), sqlc.arg(currency),
-  sqlc.narg(opened_on), sqlc.arg(by), sqlc.arg(at), sqlc.arg(by), sqlc.arg(at))
+  sqlc.narg(opened_on), sqlc.narg(cardholder_id), sqlc.arg(by), sqlc.arg(at), sqlc.arg(by), sqlc.arg(at))
 RETURNING id;
 
 -- name: UpdateMoneyAccount :execrows
 UPDATE fyniq.money_account
    SET kind = sqlc.arg(kind), name = sqlc.arg(name), institution = sqlc.narg(institution), identifier = sqlc.narg(identifier),
-       opened_on = sqlc.narg(opened_on), closed_on = sqlc.narg(closed_on), changed_by = sqlc.arg(by), changed_at = sqlc.arg(at),
+       opened_on = sqlc.narg(opened_on), closed_on = sqlc.narg(closed_on), cardholder_id = sqlc.narg(cardholder_id),
+       changed_by = sqlc.arg(by), changed_at = sqlc.arg(at),
        version = version + 1
  WHERE id = sqlc.arg(id) AND version = sqlc.arg(version);
 

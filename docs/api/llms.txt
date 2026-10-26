@@ -82,6 +82,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bills/{bill_id}/post-approval` (requestBillPost): Ask for approval to post a bill
 - `POST /v1/bills/{bill_id}/void` (voidBill): Void a posted bill
 - `POST /v1/bills/{bill_id}/void-approval` (requestBillVoid): Ask for approval to void a bill
+- `GET /v1/card-lines` (listCardLines): List the lines of your company cards
+- `POST /v1/card-lines/{line_id}/complete` (completeCardLine): Complete a line of your company card
+- `GET /v1/card-lines/{line_id}/evidence` (listCardLineEvidence): List the receipts of a line of your company card
+- `POST /v1/card-lines/{line_id}/evidence` (addCardLineEvidence): Attach the receipt of a line of your company card
 - `GET /v1/cash-advances` (listCashAdvances): List cash advances and their refunds
 - `POST /v1/cash-advances` (recordCashAdvance): Record a cash advance to a member
 - `GET /v1/cash-advances/{advance_id}` (getCashAdvance): Get a cash advance or its refund

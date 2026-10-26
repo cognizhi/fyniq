@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What moved, in the card's currency: spend is negative."
+    },
+    "booking_date": {
+      "description": "The day it was booked on the card.",
+      "examples": [
+        "2026-10-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "card": {
+      "description": "The card's name.",
+      "examples": [
+        "Corporate Visa"
+      ],
+      "type": "string"
+    },
+    "completed": {
+      "description": "How it was completed: spend for the company, or personal spend the holder owes.",
+      "enum": [
+        "spend",
+        "personal"
+      ],
+      "examples": [
+        "spend"
+      ],
+      "type": "string"
+    },
+    "counterparty": {
+      "description": "Who was paid, as the statement says.",
+      "examples": [
+        "Grab"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "What the statement says.",
+      "examples": [
+        "GRAB *TRIP SINGAPORE"
+      ],
+      "type": "string"
+    },
+    "document_id": {
+      "description": "What completing it made: a bank transaction, or the personal spend recorded as an advance. Its receipt is attached to it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c09"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The bank line's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "money_account_id": {
+      "description": "The card's money account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "status": {
+      "description": "Where the line stands in Banking's queue: unreconciled lines wait to be completed.",
+      "enum": [
+        "unreconciled",
+        "possible_duplicate",
+        "categorised",
+        "matched",
+        "transferred",
+        "suspense",
+        "excluded"
+      ],
+      "examples": [
+        "unreconciled"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The line's version; it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "money_account_id",
+    "card",
+    "booking_date",
+    "amount",
+    "status",
+    "version"
+  ],
+  "title": "CardLine",
+  "type": "object"
+}

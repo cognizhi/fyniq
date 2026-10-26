@@ -440,23 +440,24 @@ func (q *Queries) InsertBankStatement(ctx context.Context, arg InsertBankStateme
 
 const insertMoneyAccount = `-- name: InsertMoneyAccount :one
 
-INSERT INTO fyniq.money_account (account_id, kind, name, institution, identifier, currency, opened_on, created_by, created_at,
-  changed_by, changed_at)
+INSERT INTO fyniq.money_account (account_id, kind, name, institution, identifier, currency, opened_on, cardholder_id, created_by,
+  created_at, changed_by, changed_at)
 VALUES ($1, $2, $3, $4, $5, $6,
-  $7, $8, $9, $8, $9)
+  $7, $8, $9, $10, $9, $10)
 RETURNING id
 `
 
 type InsertMoneyAccountParams struct {
-	AccountID   uuid.UUID
-	Kind        string
-	Name        string
-	Institution *string
-	Identifier  *string
-	Currency    string
-	OpenedOn    pgtype.Date
-	By          string
-	At          time.Time
+	AccountID    uuid.UUID
+	Kind         string
+	Name         string
+	Institution  *string
+	Identifier   *string
+	Currency     string
+	OpenedOn     pgtype.Date
+	CardholderID *uuid.UUID
+	By           string
+	At           time.Time
 }
 
 // The banking store (p1-bank-import-reconcile task 2.1): money accounts, their sources, saved mappings, statements,
@@ -470,6 +471,7 @@ func (q *Queries) InsertMoneyAccount(ctx context.Context, arg InsertMoneyAccount
 		arg.Identifier,
 		arg.Currency,
 		arg.OpenedOn,
+		arg.CardholderID,
 		arg.By,
 		arg.At,
 	)
@@ -568,7 +570,7 @@ func (q *Queries) InsertStatementMapping(ctx context.Context, arg InsertStatemen
 }
 
 const moneyAccount = `-- name: MoneyAccount :one
-SELECT organisation_id, id, account_id, kind, name, institution, identifier, currency, opened_on, closed_on, created_by, created_at, changed_by, changed_at, version FROM fyniq.money_account WHERE id = $1
+SELECT organisation_id, id, account_id, kind, name, institution, identifier, currency, opened_on, closed_on, created_by, created_at, changed_by, changed_at, version, cardholder_id FROM fyniq.money_account WHERE id = $1
 `
 
 func (q *Queries) MoneyAccount(ctx context.Context, id uuid.UUID) (FyniqMoneyAccount, error) {
@@ -590,6 +592,7 @@ func (q *Queries) MoneyAccount(ctx context.Context, id uuid.UUID) (FyniqMoneyAcc
 		&i.ChangedBy,
 		&i.ChangedAt,
 		&i.Version,
+		&i.CardholderID,
 	)
 	return i, err
 }
@@ -631,7 +634,7 @@ func (q *Queries) MoneyAccountSources(ctx context.Context, moneyAccountID uuid.U
 }
 
 const moneyAccounts = `-- name: MoneyAccounts :many
-SELECT organisation_id, id, account_id, kind, name, institution, identifier, currency, opened_on, closed_on, created_by, created_at, changed_by, changed_at, version FROM fyniq.money_account ORDER BY name, id
+SELECT organisation_id, id, account_id, kind, name, institution, identifier, currency, opened_on, closed_on, created_by, created_at, changed_by, changed_at, version, cardholder_id FROM fyniq.money_account ORDER BY name, id
 `
 
 func (q *Queries) MoneyAccounts(ctx context.Context) ([]FyniqMoneyAccount, error) {
@@ -659,6 +662,7 @@ func (q *Queries) MoneyAccounts(ctx context.Context) ([]FyniqMoneyAccount, error
 			&i.ChangedBy,
 			&i.ChangedAt,
 			&i.Version,
+			&i.CardholderID,
 		); err != nil {
 			return nil, err
 		}
@@ -799,22 +803,24 @@ func (q *Queries) StatementMappings(ctx context.Context) ([]FyniqStatementMappin
 const updateMoneyAccount = `-- name: UpdateMoneyAccount :execrows
 UPDATE fyniq.money_account
    SET kind = $1, name = $2, institution = $3, identifier = $4,
-       opened_on = $5, closed_on = $6, changed_by = $7, changed_at = $8,
+       opened_on = $5, closed_on = $6, cardholder_id = $7,
+       changed_by = $8, changed_at = $9,
        version = version + 1
- WHERE id = $9 AND version = $10
+ WHERE id = $10 AND version = $11
 `
 
 type UpdateMoneyAccountParams struct {
-	Kind        string
-	Name        string
-	Institution *string
-	Identifier  *string
-	OpenedOn    pgtype.Date
-	ClosedOn    pgtype.Date
-	By          string
-	At          time.Time
-	ID          uuid.UUID
-	Version     int32
+	Kind         string
+	Name         string
+	Institution  *string
+	Identifier   *string
+	OpenedOn     pgtype.Date
+	ClosedOn     pgtype.Date
+	CardholderID *uuid.UUID
+	By           string
+	At           time.Time
+	ID           uuid.UUID
+	Version      int32
 }
 
 func (q *Queries) UpdateMoneyAccount(ctx context.Context, arg UpdateMoneyAccountParams) (int64, error) {
@@ -825,6 +831,7 @@ func (q *Queries) UpdateMoneyAccount(ctx context.Context, arg UpdateMoneyAccount
 		arg.Identifier,
 		arg.OpenedOn,
 		arg.ClosedOn,
+		arg.CardholderID,
 		arg.By,
 		arg.At,
 		arg.ID,
