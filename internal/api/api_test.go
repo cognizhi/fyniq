@@ -684,10 +684,11 @@ func TestDocumentNumbers(t *testing.T) {
 	}
 }
 
-// The standard chart loads once into an organisation with no account: 87 accounts with every attribute;
-// a second load, or a load into an organisation with accounts, is refused.
+// The standard chart loads once into an organisation with no account: 87 accounts with every attribute, and the
+// expense policy's starter claim categories; a second load, or a load into an organisation with accounts, is refused.
 // req: FR-COA-01
 // req: FR-COA-02
+// req: FR-AP-15
 func TestStandardChart(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
@@ -707,16 +708,47 @@ func TestStandardChart(t *testing.T) {
 	}
 
 	if r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil, "Prefer", "return=preview"); r.Status != 200 ||
-		r.Body["accounts"] != float64(87) || len(list()) != 0 {
+		r.Body["accounts"] != float64(87) || r.Body["claim_categories"] != float64(7) || len(list()) != 0 {
 		t.Fatalf("the preview: %d %s", r.Status, r.Raw)
 	}
 	r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil, "Idempotency-Key", uuid.NewString())
-	if r.Status != 201 || r.Body["accounts"] != float64(87) || r.Header.Get("Location") != "/v1/accounts" {
+	if r.Status != 201 || r.Body["accounts"] != float64(87) || r.Body["claim_categories"] != float64(7) || r.Header.Get("Location") != "/v1/accounts" {
 		t.Fatalf("loading the chart: %d %v %s", r.Status, r.Header, r.Raw)
 	}
 	accounts := list()
 	if len(accounts) != 87 {
 		t.Fatalf("%d accounts after loading", len(accounts))
+	}
+	// The expense policy's starter categories come with it, each on its standard account with no limit (FR-AP-15).
+	if err := e.store.Do(ctx, org.ID, func(ctx context.Context, u storage.UnitOfWork) error {
+		cats, err := u.ClaimCategories().List(ctx)
+		if err != nil {
+			return err
+		}
+		got := map[string]string{}
+		for _, c := range cats {
+			if c.LineLimit != nil || c.ReceiptAbove != nil || c.AttendeesAbove != nil || !c.Active || c.Currency != "SGD" {
+				t.Errorf("starter category %s: %+v", c.Name, c)
+			}
+			got[c.Name] = c.AccountID.String()
+			if c.Mileage {
+				got[c.Name] += " mileage"
+			}
+		}
+		for name, code := range map[string]string{"Local travel": "6510", "Overseas travel": "6520", "Meals & entertainment": "6530",
+			"Software & subscriptions": "6210", "Telephone & internet": "6330", "Office supplies": "6340", "Mileage": "6510 mileage"} {
+			id, mileage, _ := strings.Cut(code, " ")
+			want := accounts[id]["id"].(string)
+			if mileage != "" {
+				want += " mileage"
+			}
+			if got[name] != want {
+				t.Errorf("starter category %s: %q, want %q", name, got[name], want)
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
 	}
 	for code, want := range map[string]map[string]any{
 		"1020": {"type": "asset", "report_group": "Cash & bank", "cash_flow_line": "Cash & cash equivalents", "money_account": true, "default_gst_code": "NA"},

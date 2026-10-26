@@ -445,10 +445,15 @@ VALUES ('%s', '%s', '%s', %s, 'Reviewed.', 0, '%s', %s)`, period, check, by, at,
 // nanAttacks try NaN and an out-of-range value in each numeric column; TestEveryNumericColumn…
 // fails when a numeric column has no entry here.
 var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) error{
-	"bank_transfer.from_amount":             func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "from", v) },
-	"bank_transfer.to_amount":               func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "to", v) },
-	"bank_transfer.fee":                     func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "fee", v) },
-	"bank_signal.amount":                    func(t *testing.T, b porttest.Books, v string) error { return rawSignal(t, b, v) },
+	"bank_transfer.from_amount":    func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "from", v) },
+	"bank_transfer.to_amount":      func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "to", v) },
+	"bank_transfer.fee":            func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "fee", v) },
+	"bank_signal.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawSignal(t, b, v) },
+	"claim_category.line_limit":    func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "limit", v) },
+	"claim_category.receipt_above": func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "receipt", v) },
+	"claim_category.attendees_above": func(t *testing.T, b porttest.Books, v string) error {
+		return rawClaimCategory(t, b, "attendees", v)
+	},
 	"bank_reconciliation.statement_balance": func(t *testing.T, b porttest.Books, v string) error { return rawReconciliation(t, b, "statement", v) },
 	"bank_reconciliation.book_balance":      func(t *testing.T, b porttest.Books, v string) error { return rawReconciliation(t, b, "book", v) },
 	"bank_reconciliation.unreconciled_total": func(t *testing.T, b porttest.Books, v string) error {
@@ -1174,6 +1179,24 @@ func rawTransfer(t *testing.T, b porttest.Books, target, value string) error {
 from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, made_by, made_at)
 VALUES ($1, $2, $3, '2026-10-04', 'SGD', 2, $4::numeric, 'USD', 2, $5::numeric, $6::numeric, 'user:x', now())`,
 			uuid.New(), uuid.New(), uuid.New(), pick("from", "1350.00"), pick("to", "1000.00"), pick("fee", "5.00"))
+		return err
+	})
+}
+
+func rawClaimCategory(t *testing.T, b porttest.Books, target, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	pick := func(name string) any {
+		if name == target {
+			return value
+		}
+		return nil
+	}
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.claim_category (name, account_id, currency, minor_units, line_limit, receipt_above,
+attendees_above, created_by, created_at, changed_by, changed_at)
+VALUES ('Meals', $1, 'SGD', 2, $2::numeric, $3::numeric, $4::numeric, 'user:x', now(), 'user:x', now())`,
+			b.Rent.ID, pick("limit"), pick("receipt"), pick("attendees"))
 		return err
 	})
 }

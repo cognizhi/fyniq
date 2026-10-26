@@ -281,3 +281,15 @@ func checkFacts(d Draft) ledger.Problems {
 	}
 	return out
 }
+
+// DecideReceipt decides one receipt's input tax as a bill line's is decided (FR-AP-20), for a document that reads
+// purchases receipt by receipt, such as an expense claim: f its facts, its GST and GST code, the sg-gst version in force
+// on its date and the organisation's GST registration then, and its total including GST in the base currency (nil
+// when it cannot be converted), which a simplified tax invoice's limit is read against. It also says whether the GST
+// code is a purchase code of the version.
+func DecideReceipt(f InputTax, gst money.Money, gstCode string, version pack.Version, registered bool, date time.Time, total *money.Money,
+	base money.Currency) (Decision, bool) {
+	code, ok := pack.Code(version, gstCode)
+	x := facts{registered: registered, version: version, date: date, total: total, base: base}
+	return decide(f, Line{GST: gst, GSTCode: gstCode}, code, ok, x), ok && code.Direction == pack.DirPurchase
+}

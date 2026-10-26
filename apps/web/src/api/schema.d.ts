@@ -63,7 +63,7 @@ export interface paths {
         put?: never;
         /**
          * Load the standard chart of accounts
-         * @description Loads the standard Singapore start-up chart into an organisation that has no account yet: 87 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Loads the standard Singapore start-up chart into an organisation that has no account yet: 87 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each, and the expense policy's starter claim categories (local and overseas travel, meals, software, telephone, office supplies and mileage, with no limits: FR-AP-15) with theirs. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["loadStandardChart"];
         delete?: never;
@@ -9269,6 +9269,12 @@ export interface components {
              * @example 86
              */
             accounts: number;
+            /**
+             * Format: int64
+             * @description How many starter claim categories the expense policy now holds, each with no limit until the organisation sets one (FR-AP-15).
+             * @example 7
+             */
+            claim_categories: number;
         };
         ChecklistItem: {
             /**
@@ -17124,7 +17130,7 @@ export interface components {
              * @example journal
              * @enum {string}
              */
-            document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement";
+            document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance";
             /**
              * @description The number the next document takes, as printed.
              * @example JNL-0042
@@ -51517,7 +51523,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description The document type. */
-                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement";
+                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance";
             };
             cookie?: never;
         };
@@ -51601,7 +51607,7 @@ export interface operations {
             };
             path: {
                 /** @description The document type. */
-                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement";
+                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance";
             };
             cookie?: never;
         };

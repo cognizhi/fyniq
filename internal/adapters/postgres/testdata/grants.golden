@@ -68,6 +68,9 @@ fyniq_api       EXECUTE   capture_route()
 fyniq_api       INSERT    capture_sender (address, decided_at, decided_by, decision, kind, user_id)
 fyniq_api       SELECT    capture_sender
 fyniq_api       EXECUTE   change_installation_connector()
+fyniq_api       INSERT    claim_category (account_id, attendees_above, changed_at, changed_by, created_at, created_by, currency, line_limit, mileage, minor_units, name, receipt_above)
+fyniq_api       SELECT    claim_category
+fyniq_api       UPDATE    claim_category (account_id, active, attendees_above, changed_at, changed_by, line_limit, name, receipt_above, version)
 fyniq_api       EXECUTE   claim_job_slot()
 fyniq_api       EXECUTE   claim_setup()
 fyniq_api       INSERT    close_checklist_entry (note, period_id, state, task_key, template_version, written_at, written_by)
@@ -377,6 +380,7 @@ fyniq_readonly  SELECT    bank_transfer
 fyniq_readonly  SELECT    bill_payment_plan
 fyniq_readonly  SELECT    capture_address
 fyniq_readonly  SELECT    capture_sender
+fyniq_readonly  SELECT    claim_category
 fyniq_readonly  SELECT    close_checklist_entry
 fyniq_readonly  SELECT    close_checklist_template
 fyniq_readonly  SELECT    contact
@@ -485,6 +489,7 @@ fyniq_worker    SELECT    bill_payment_plan
 fyniq_worker    SELECT    capture_address
 fyniq_worker    EXECUTE   capture_route()
 fyniq_worker    SELECT    capture_sender
+fyniq_worker    SELECT    claim_category
 fyniq_worker    SELECT    close_checklist_entry
 fyniq_worker    SELECT    close_checklist_template
 fyniq_worker    SELECT    contact

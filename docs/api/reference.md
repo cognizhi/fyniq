@@ -1840,7 +1840,7 @@ Changes the fields sent and keeps the rest: the name, the group it sits under, w
 
 **Load the standard chart of accounts** (`loadStandardChart`)
 
-Loads the standard Singapore start-up chart into an organisation that has no account yet: 87 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+Loads the standard Singapore start-up chart into an organisation that has no account yet: 87 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each, and the expense policy's starter claim categories (local and overseas travel, meals, software, telephone, office supplies and mileage, with no limits: FR-AP-15) with theirs. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
 
 - **Permission:** Create on Chart of accounts, dimensions. The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1).
 - **Parameters:**

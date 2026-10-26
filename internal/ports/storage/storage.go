@@ -105,6 +105,8 @@ type UnitOfWork interface {
 	// BankMatching is bank rules, matches, transfers, signals and reconciliations (FR-BNK-05, FR-BNK-07, FR-BNK-09,
 	// FR-BNK-10, FR-BNK-14).
 	BankMatching() BankMatching
+	// ClaimCategories are the expense policy's categories (FR-AP-15).
+	ClaimCategories() ClaimCategories
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))
@@ -455,6 +457,14 @@ const (
 	// DocumentBankAgreement holds a money account's bank agreements as evidence: posted when made, it posts nothing and is
 	// never reversed (FR-DOC-05, p1-bank-import-reconcile design D13).
 	DocumentBankAgreement DocumentType = "bank_agreement"
+	// DocumentExpenseClaim is a member's claim for what they spent for the company (FR-AP-07, FR-AP-17;
+	// p1-expense-claims): its receipt and mileage lines, posted by expense_claim@1 once another person approves it.
+	DocumentExpenseClaim DocumentType = "expense_claim"
+	// DocumentClaimReimbursement is money paid back to a claimant for their claims, recorded by hand until payment
+	// batches (FR-AP-07; the owner's decision of 26 Oct 2026).
+	DocumentClaimReimbursement DocumentType = "claim_reimbursement"
+	// DocumentCashAdvance is money advanced to a person, which their claims settle or they refund (FR-AP-17, UC-EXP-03).
+	DocumentCashAdvance DocumentType = "cash_advance"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -620,6 +630,7 @@ const (
 	// period is open; a gap is resolved once (FR-BNK-01, FR-BNK-04, FR-BNK-16).
 	CodeBanking        = "STORAGE-BANKING-01"
 	CodeBillPlan       = "STORAGE-PLAN-01"       // a bill's payment plan never changes: a later one replaces it
+	CodeClaim          = "STORAGE-CLAIM-01"      // a claim category costs a plain expense or asset account in the base currency and is never deleted
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
 	CodeBanner         = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends

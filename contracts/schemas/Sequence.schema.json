@@ -27,7 +27,10 @@
         "customer_deposit",
         "quote",
         "sales_order",
-        "statement"
+        "statement",
+        "expense_claim",
+        "claim_reimbursement",
+        "cash_advance"
       ],
       "examples": [
         "journal"

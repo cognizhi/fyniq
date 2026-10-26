@@ -91,8 +91,9 @@ mileage lines by month.
 
 - **Claim categories** (a table): name, the expense account (a posting account, not a control or money account), a
   limit per claim line (optional), "receipt required above" (optional), "attendees required above" (optional), and
-  whether it is the mileage category. A starter set comes with the standard chart (local travel, meals, software and
-  subscriptions, office supplies, mileage), each limit unset until the organisation sets it.
+  whether it is the mileage category. A starter set comes with the standard chart (local and overseas travel, meals and
+  entertainment, software and subscriptions, telephone and internet, office supplies, mileage; `claim.Starter`), each
+  limit unset until the organisation sets it.
 - **Settings** (FR-ORG-08, recommended values): `claims.deadline_days` 60 (FR-AP-15's example); the mileage rates
   (D5).
 - **Checks at submission:** a missing receipt where required ✖; attendees missing where required ⚠ and returned by

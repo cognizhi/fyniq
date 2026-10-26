@@ -4583,8 +4583,15 @@ components:
             - 86
           format: int64
           type: integer
+        claim_categories:
+          description: How many starter claim categories the expense policy now holds, each with no limit until the organisation sets one (FR-AP-15).
+          examples:
+            - 7
+          format: int64
+          type: integer
       required:
         - accounts
+        - claim_categories
       type: object
     ChecklistItem:
       additionalProperties: false
@@ -15980,6 +15987,9 @@ components:
             - quote
             - sales_order
             - statement
+            - expense_claim
+            - claim_reimbursement
+            - cash_advance
           examples:
             - journal
           type: string
@@ -19514,7 +19524,7 @@ paths:
         right: C
   /v1/accounts:load-standard-chart:
     post:
-      description: "Loads the standard Singapore start-up chart into an organisation that has no account yet: 87 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      description: "Loads the standard Singapore start-up chart into an organisation that has no account yet: 87 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each, and the expense policy's starter claim categories (local and overseas travel, meals, software, telephone, office supplies and mileage, with no limits: FR-AP-15) with theirs. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
       operationId: loadStandardChart
       parameters:
         - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
@@ -63477,6 +63487,9 @@ paths:
               - quote
               - sales_order
               - statement
+              - expense_claim
+              - claim_reimbursement
+              - cash_advance
             examples:
               - journal
             type: string
@@ -63594,6 +63607,9 @@ paths:
               - quote
               - sales_order
               - statement
+              - expense_claim
+              - claim_reimbursement
+              - cash_advance
             examples:
               - journal
             type: string
