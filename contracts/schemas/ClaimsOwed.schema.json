@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_balance": {
+      "$ref": "Money.schema.json",
+      "description": "Everyone's only: 2150 Expense claims payable's balance through the day, as a credit."
+    },
+    "as_at": {
+      "description": "The day it is read as at: the claims dated by then, less what was paid back by then.",
+      "examples": [
+        "2026-10-26"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "difference": {
+      "$ref": "Money.schema.json",
+      "description": "Everyone's only: the account's balance less the sub-ledger's total; anything but zero is something the claims do not explain, such as a manual journal to 2150."
+    },
+    "people": {
+      "description": "Each claimant the company owes, by name; for a person whose right is their own claims only, just themselves.",
+      "items": {
+        "$ref": "ClaimantOwed.schema.json"
+      },
+      "type": "array"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "What the company owes them together."
+    }
+  },
+  "required": [
+    "as_at",
+    "people",
+    "total"
+  ],
+  "title": "ClaimsOwed",
+  "type": "object"
+}

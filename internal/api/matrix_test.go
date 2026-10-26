@@ -2323,8 +2323,8 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 		}
 		for _, c := range authz.ApprovalRows {
 			cell := authztest.ParseCell(rows[string(c)][authz.Column(role)])
-			if c == authz.ExpenseClaims && cell.Qualifier != "" {
-				continue // an Employee's own claims are reached from the claim, not the approvals (design D10)
+			if (c == authz.ExpenseClaims || c == authz.PaymentBatches) && cell.Qualifier != "" {
+				continue // an Employee's own claims are reached from the claim, not the approvals (design D10); nor is "C (salaries)"
 			}
 			if ok, _ := authztest.Allows(cell, p.Need); ok {
 				return true, false
@@ -2368,7 +2368,7 @@ func TestAuthorisationMatrix(t *testing.T) {
 	e := newEnv(t)
 	_, rows := authztest.AppendixD(t)
 	policies := e.api.Policies()
-	for _, rows := range []map[string]func(e *env, tok string) (response, func() bool){matrixBanking, matrixBankLines, matrixBankRules, matrixBankIngest, matrixBankSignals, matrixClaims} {
+	for _, rows := range []map[string]func(e *env, tok string) (response, func() bool){matrixBanking, matrixBankLines, matrixBankRules, matrixBankIngest, matrixBankSignals, matrixClaims, matrixReimbursements} {
 		for op, call := range rows {
 			matrixCalls[op] = call
 		}

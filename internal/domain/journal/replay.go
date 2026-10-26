@@ -209,6 +209,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 		}
 		return strings.Join(ledger.Differences(want, stored), "; "), nil
 	}
+	if doc.Type == storage.DocumentClaimReimbursement { // money paid back to a claimant, settling their claims (FR-AP-07)
+		want, err := replayClaimReimbursement(ctx, u, doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
 	if claim.IsClaim(doc) { // a member's expense claim, with the accounts, rates and input tax its entry kept (FR-AP-07)
 		want, err := replayExpenseClaim(ctx, u, doc, s, e)
 		if err != nil {

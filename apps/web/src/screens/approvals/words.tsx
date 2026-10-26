@@ -41,6 +41,7 @@ const operations: Record<Approval["operation"], string> = {
   "connector.change": "Change a connector",
   "bank_rule.auto_apply": "Let a bank rule apply by itself",
   "expense_claim.post": "Approve an expense claim",
+  "claim_reimbursement.void": "Void a reimbursement of expense claims",
 };
 
 export function operationLabel(op: string): string {
@@ -73,6 +74,7 @@ const objects: Record<string, string> = {
   connector: "Connector",
   bank_rule: "Bank rule",
   expense_claim: "Expense claim",
+  claim_reimbursement: "Reimbursement of expense claims",
 };
 
 export function objectLabel(t: string): string {

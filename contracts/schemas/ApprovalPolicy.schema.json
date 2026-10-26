@@ -51,7 +51,8 @@
         "recurring_invoice",
         "connector",
         "bank_rule",
-        "expense_claim"
+        "expense_claim",
+        "claim_reimbursement"
       ],
       "examples": [
         "organisation_setting"

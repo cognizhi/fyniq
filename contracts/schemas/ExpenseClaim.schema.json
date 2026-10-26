@@ -93,7 +93,7 @@
       "description": "Its latest return, while it is returned."
     },
     "stage": {
-      "description": "Where it stands for its claimant (FR-AP-14): draft; submitted while its approval waits; returned when its latest request was rejected, with the comment; approved once posted. scheduled and paid arrive with reimbursements and payment batches.",
+      "description": "Where it stands for its claimant (FR-AP-14): draft; submitted while its approval waits; returned when its latest request was rejected, with the comment; approved once posted; paid once reimbursements paid back all it owes. scheduled arrives with payment batches.",
       "enum": [
         "draft",
         "submitted",

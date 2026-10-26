@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "claim_id": {
+      "description": "The claim.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fd1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "date": {
+      "description": "Its date.",
+      "examples": [
+        "2026-10-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number.",
+      "examples": [
+        "CLM-0007"
+      ],
+      "type": "string"
+    },
+    "open": {
+      "$ref": "Money.schema.json",
+      "description": "What the company still owes for it."
+    },
+    "owed": {
+      "$ref": "Money.schema.json",
+      "description": "What its entry credited to 2150."
+    },
+    "paid": {
+      "$ref": "Money.schema.json",
+      "description": "What reimbursements paid back of it, net of their voids."
+    }
+  },
+  "required": [
+    "claim_id",
+    "owed",
+    "paid",
+    "open"
+  ],
+  "title": "ClaimOwed",
+  "type": "object"
+}
