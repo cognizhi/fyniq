@@ -27,6 +27,12 @@ Source: PRD-001 §8.6 · Priority M · Phase P1 (web) / P2 (PWA)
 - **WHEN** a director chooses to keep a claim as a loan to the company
 - **THEN** it is kept as a loan instead of being reimbursed (FR-EQ-02)
 
+#### Scenario: Reimbursement recorded by hand until payment batches (rev 0.147)
+- **GIVEN** payment batches (FR-BNK-12) do not exist yet
+- **WHEN** an approved claim is reimbursed
+- **THEN** the reimbursement is recorded by hand, Dr 2150 · Cr Bank, and bank import matches it
+- **AND** a director's "keep as a loan" arrives with the director accounts of founders' money (the owner's decision of 26 Oct 2026)
+
 ### Requirement: FR-AP-08 Corporate card transactions
 The system SHALL import corporate card transactions, by feed or statement, with receipt matching and missing-receipt reminders.
 
@@ -188,6 +194,12 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 #### Scenario: Claim deadline applies
 - **WHEN** a claim is submitted
 - **THEN** the claim deadline of the expense policy (FR-AP-15) applies
+
+#### Scenario: Interim routing until line managers and ordered steps (rev 0.147)
+- **GIVEN** the line manager is not yet on the employee record and the approval engine has no ordered steps
+- **WHEN** a claim is submitted
+- **THEN** one person other than the claimant who holds A on "Expense claims" approves it (in Founder mode, the other founder)
+- **AND** finance (the Controller) also approves it when it is above its category limit or past the claim deadline (the owner's decision of 26 Oct 2026)
 
 #### Scenario: A fixed allowance is not a claim
 - **WHEN** an employee receives a fixed allowance
