@@ -109,6 +109,8 @@ Every other P1 row is "P1 after go-live". Applied change by change, the "Launch"
     work it displaces, with its proposal (§17.4);
   - the payment providers follow go-live: neither Stripe nor HitPay carries a go-live transaction, and customers pay
     by bank transfer, which bank import matches.
+  - projects follow go-live (PRD-001 rev 0.147): feature-switched off by default, they make room for expense claims
+    and payment files.
 - **Still to decide**, before its wave starts: the company secretary (wave 6).
 - **GST:** the monitor and the calendar are in the launch subset; the F5 return follows registration
   (question 2: not registered for now).
@@ -200,7 +202,7 @@ providers.
 | 2 | `p1-purchases` | Purchase orders, bills, vendor credits, recurring bills, track and pay, AP ageing, input-tax eligibility, non-resident payments; their posting rules | 10 | 4 | `p1-general-ledger-close`, `p1-documents-evidence` | — | — | Accountant; co-founder for payee changes (#6) | Launch |
 | 2 | `p1-expense-claims` | Expense claims, My claims, mileage, employee claims processing, the expense policy, company-card imports and cash advances; their posting rules | 14 | 6 | `p1-purchases` | — | — | — | Launch (owner, 26 Oct 2026) |
 | 2 | `p1-fixed-assets` | Asset register, depreciation by the scheduler, disposals | 5 | 1 | `p1-purchases` | — | — | Accountant | Launch |
-| 2 | `p1-projects` | Projects, timesheets, time entry, cost and billing rates, approval, costs, budgets, billing methods and project reports (feature-switched) | 13 | 5 | `p1-sales`, `p1-purchases` | — | — | — | Launch |
+| 2 | `p1-projects` | Projects, timesheets, time entry, cost and billing rates, approval, costs, budgets, billing methods and project reports (feature-switched) | 13 | 5 | `p1-sales`, `p1-purchases` | — | — | — | After go-live (owner, 26 Oct 2026: displaced by expense claims and payment files) |
 | 3 | `p1-connector-framework` | The integration framework, connector manifests, lifecycle and rules (FR-INT-20, 25…27) | 5 | 2 | P0 | Every connector is tested against a fake of its service | — | Security (#4) | Launch |
 | 3 | `p1-bank-import-reconcile` | Money accounts, statement import (CSV, XLSX, OFX, MT940, camt.053), duplicates, rules, categorising, matching, settlement differences, transfers, reconciliation with sign-off, suspense, daily cash, deterministic auto-reconcile, DBS emailed reports and the Wise and Airwallex sync | 25 | 9 | `p1-sales`, `p1-purchases`, `p1-connector-framework` | Statement files; DBS reports through Mailpit; Wise and Airwallex against fakes | A redacted DBS IDEAL daily report; the accountant confirms the cross-currency transfer rule (accounts held: DBS, Wise, Airwallex, rev 0.140) | Co-founder (#6) | Launch |
 | 3 | `p1-payments-out` | Payment batches as bank files with dual-controlled release and remittance advice | 1 | 1 | `p1-bank-import-reconcile`, `p1-approval-engine` | Files only | — | Co-founder (#6): money movement | Launch (owner, 26 Oct 2026) |
