@@ -276,6 +276,12 @@ Source: PRD-001 §10.2
 - **WHEN** an asset disposal is posted
 - **THEN** it posts Dr 1590 (accumulated depreciation), Bank or AR (proceeds), loss on disposal; Cr asset cost account, gain on disposal, GST control if applicable
 
+#### Scenario: Proceeds through a sales invoice (rev 0.149)
+- **GIVEN** an asset sold on a sales invoice to the buyer, whose line credits the disposal clearing account
+- **WHEN** its disposal is posted
+- **THEN** the disposal debits the clearing account with the proceeds in place of Bank, and posts no GST: the invoice charges its own
+- **AND** the gain or loss falls in the disposal's month, whatever the invoice's
+
 ### Requirement: Income tax provision
 The income tax provision SHALL be proposed from the tax working paper and posted as an approved journal, Dr 8010 Income tax expense and Cr 2300 Income tax payable.
 
