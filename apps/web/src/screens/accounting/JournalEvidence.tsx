@@ -120,6 +120,14 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
   const items = q.data ?? [];
   const refresh = () => queries.invalidateQueries({ queryKey: [`${record.kind}-evidence`, record.id] });
 
+  // choose takes a file dropped or pasted; a receipt's kind is said for it when none is.
+  const choose = (f: File) => {
+    setFile(f);
+    setMissing({ ...missing, file: false });
+    if (!kind.trim() && (record.kind === "claim" || record.kind === "card-line")) setKind("receipt");
+    if (input.current) input.current.value = "";
+  };
+
   const add = async () => {
     const lack = { file: !file, kind: !kind.trim() };
     setMissing(lack);
@@ -243,6 +251,28 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
       )}
       {mayAttach && (
         <div className="fy-stack fy-stack--3">
+          {/* A file dropped here, or a screenshot pasted while it has focus, is chosen as the file input chooses it. */}
+          <div
+            className="fy-dropzone"
+            tabIndex={0}
+            aria-label={`Drop or paste a file to attach to the ${noun}`}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const f = e.dataTransfer.files[0];
+              if (f) choose(f);
+            }}
+            onPaste={(e) => {
+              const f = e.clipboardData.files[0];
+              if (f) {
+                e.preventDefault();
+                choose(f);
+              }
+            }}
+          >
+            <Icon of={Paperclip} size={20} />
+            <span className="fy-small">{file ? `Chosen: ${file.name}` : "Drop a file here, or select here and paste a screenshot"}</span>
+          </div>
           <div className="fy-field">
             <label className="fy-label" htmlFor={`${id}-file`}>
               File

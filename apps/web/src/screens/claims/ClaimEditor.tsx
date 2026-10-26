@@ -406,7 +406,14 @@ export function ClaimEditor() {
           ))}
           {form.trips.length > 0 && (
             <section className="fy-card fy-card--pad fy-stack fy-stack--2" aria-label="Trips">
-              <h2 className="fy-h3">Trips in your own vehicle</h2>
+              <div className="fy-row fy-row--between">
+                <h2 className="fy-h3">Trips in your own vehicle</h2>
+                {editable && claim && (
+                  <Link className="fy-btn fy-btn--ghost fy-btn--sm" to="/me/claims/$claimId/mileage" params={{ claimId: claim.id }}>
+                    Change the trips
+                  </Link>
+                )}
+              </div>
               <ul className="fy-stack fy-stack--2">
                 {form.trips.map((t, i) => (
                   <li key={i} className="fy-small">

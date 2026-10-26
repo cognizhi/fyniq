@@ -2,9 +2,9 @@
 key: claims.make-a-claim
 type: task
 title: Claim back money spent for the company
-summary: How a member claims a receipt in My claims, attaches it and submits it, completes company-card lines, and uses a cash advance
+summary: How a member claims a receipt or a trip in My claims, attaches the receipt and submits it, completes company-card lines, and uses a cash advance
 sources:
-  - docs/user-guide/claims-my-claims.md sha256:b0a341fc9fb85d5414b6d25fd613fcdedd9771cce148fa839d69ddeff5aa368b
+  - docs/user-guide/claims-my-claims.md sha256:73ef83977b8361d2e4db0a2ddbd4085b60bb02c94f9a3f363af9aa0fb34ac0bd
 data_class: general
 taint: trusted
 status: draft
@@ -19,6 +19,7 @@ aliases:
   - company card
   - personal spend
   - cash advance
+  - mileage claim
 ---
 
 # Claim back money spent for the company
@@ -47,9 +48,23 @@ aliases:
 
 (src: docs/user-guide/claims-my-claims.md#claim-a-receipt)
 
+## Claim a trip in your own vehicle
+
+- **My claims** › **Mileage trip**: each trip's date, purpose, from and to (a saved place or an
+  address typed; places driven between often are saved under **Your saved places**), whether it
+  was a return trip, the vehicle (car or motorcycle) and the distance driven for the whole trip,
+  there and back for a return trip, as a map app shows it. Fyniq sends no address anywhere.
+- After **Save draft** the claim shows what each trip comes to: the distance to the nearest 0.1 km
+  times the company's rate for the vehicle on the trip's date; it is submitted from there. Until
+  the company sets the rate for the vehicle, the trip cannot be submitted.
+- The **Mileage** tab is the log of a month's trips.
+
+(src: docs/user-guide/claims-my-claims.md#claim-a-trip-in-your-own-vehicle)
+
 ## Attach the receipt
 
-- Under **Evidence** on the saved claim: choose the file, say what it is, **Attach**; Fyniq scans
+- Under **Evidence** on the saved claim: drop the file, paste a screenshot into the drop area, or
+  choose the file; say what it is, **Attach**; Fyniq scans
   it and strips image details such as location. Then pick it on its line under **Its receipt**.
 - Above the category's receipt amount a line cannot be submitted without its receipt; a file
   already on another record blocks the line until the person says why it is not a duplicate.
@@ -63,7 +78,8 @@ aliases:
 - Another person approves it, and finance too when a line is above its limit or past the
   deadline; nobody approves their own claim. The manager's side: [[claims.approve-team-claims]].
 - Stages: draft, submitted, returned, approved or paid. **What the company owes you** totals the
-  approved claims not yet paid back; a returned claim shows the approver's comment to fix.
+  approved claims not yet paid back; **Export history** downloads the claims as a CSV file; a
+  returned claim shows the approver's comment to fix.
 
 (src: docs/user-guide/claims-my-claims.md#submit-a-claim) (src: docs/user-guide/claims-my-claims.md#follow-your-claims)
 

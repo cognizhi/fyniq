@@ -82,9 +82,12 @@
   evidence panel and picked on its line, the policy's checks, save, submit with step-up and withdraw, the ledger
   impact in Expert; Home lands a person whose only role is Employee on My claims; `getClaimGSTCodes` gives the claim
   screens the purchase GST codes under "Expense claims"; the guide page `claims.my-claims` rewritten to what is built and
-  compiled. Tests `claims.test.tsx` with axe. **Left:** `mileage-claim` and the Mileage tab, export of the history,
-  receipt capture by paste, drop or the capture address (the file is chosen), and FR-UX-39's personal navigation,
-  which is `p1-app-shell` task 2.1's.)
+  compiled. Later the same day: `MileageClaim.tsx` at `/me/claims/new/mileage` and `/me/claims/$claimId/mileage`
+  (trips from saved places or typed, the whole trip's distance, the vehicle; saving keeps the claim's receipts) and the
+  Mileage tab (the monthly log); the history's export (CSV, plain decimals, formulas made inert); a file dropped on, or a
+  screenshot pasted into, the evidence panel. Tests `claims.test.tsx` with axe. **Left:** receipt capture through the
+  member's capture address (inbound email for claims is not built), and FR-UX-39's personal navigation, which is
+  `p1-app-shell` task 2.1's.)
 - [ ] 8.2 `claims-review` (the approver's queue with the policy outcome, approve and return with a comment) and
   `expense-policy` (categories, limits and the settings); component tests with axe. `// req: FR-AP-15`, `// req: FR-AP-17`
 - [ ] 8.3 The guide pages `claims.my-claims` and `claims.approve-team` updated to what is built, compiled into

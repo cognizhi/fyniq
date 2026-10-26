@@ -1099,6 +1099,22 @@
     "card-line.attach-evidence": {
       "label": "Attach",
       "tooltip": "Attach the receipt for a payment with your company card. It is kept, and never deleted, for as long as the records are."
+    },
+    "claim.new-mileage": {
+      "label": "Mileage trip",
+      "tooltip": "Claim a business trip in your own car or motorcycle: the company pays the distance at its rate per km."
+    },
+    "claims.trips": {
+      "label": "Trips",
+      "tooltip": "The trips in your own vehicle on a draft claim: where from and to, the vehicle and the distance driven."
+    },
+    "claims.mileage-log": {
+      "label": "Mileage",
+      "tooltip": "Your trips in a month, on drafts and claims alike, with the distance claimed and what each comes to."
+    },
+    "claims.export": {
+      "label": "Export history",
+      "tooltip": "Download your claims as a CSV file: each one's number, date, title, stage and amount."
     }
   }
 }

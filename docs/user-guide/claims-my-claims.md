@@ -4,7 +4,7 @@ title: Claim back money you spent for the company
 mode: basic
 roles: [employee, approver, owner]
 requirements: [FR-AP-14, FR-AP-15, FR-AP-16, FR-AP-17, FR-AP-18, FR-UX-39]
-status: draft            # the receipt screens are built (P1); mileage trips and the approver's queue follow
+status: draft            # the claimant's screens are built (P1); the approver's queue follows
 ---
 
 # Claim back money you spent for the company
@@ -38,9 +38,25 @@ My claims and shows only your own items; you never see the company's figures.
 5. For a meal or entertainment, name who attended.
 6. Select **Save draft**. You can come back and change a draft as often as you like.
 
+## Claim a trip in your own vehicle
+
+1. Open **My claims** and select **Mileage trip**.
+2. For each trip: the date, the purpose, where you went from and to, and whether it was a return
+   trip. Pick a saved place, or type the address; save the places you drive between often under
+   **Your saved places**.
+3. Enter the distance driven for the whole trip, there and back for a return trip, as a map app
+   shows it. Fyniq sends no address anywhere.
+4. Choose the vehicle: car or motorcycle.
+5. Select **Save draft**. The claim shows what each trip comes to: the distance to the nearest
+   0.1 km times the company's rate for the vehicle on the trip's date. Submit it from there.
+
+The **Mileage** tab of My claims is your log of a month's trips. Until the company sets its rate
+for your vehicle, a trip cannot be submitted.
+
 ## Attach the receipt
 
-1. On the saved claim, under **Evidence**, choose the file and say what it is, such as a receipt.
+1. On the saved claim, under **Evidence**, drop the file, or select the drop area and paste a
+   screenshot, or choose the file. Say what it is, such as a receipt.
 2. Select **Attach**. Fyniq scans the file and strips image details such as location.
 3. On the receipt's line, pick the file under **Its receipt**.
 
@@ -61,6 +77,7 @@ Nobody approves their own claim.
 
 - Each claim shows its stage: draft, submitted, returned, approved or paid.
 - **What the company owes you** is the total of your approved claims not yet paid back.
+- **Export history** downloads your claims as a CSV file.
 - A returned claim shows the approver's comment at the top of My claims: open it, fix it and
   submit it again. Each version is kept.
 
