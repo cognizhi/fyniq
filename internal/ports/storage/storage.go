@@ -628,9 +628,11 @@ const (
 	// CodeBanking: a money account sits on a money chart account in its currency and is never deleted; a source or a
 	// statement never changes; a line keeps what the bank said and moves only along the queue, back only while its
 	// period is open; a gap is resolved once (FR-BNK-01, FR-BNK-04, FR-BNK-16).
-	CodeBanking        = "STORAGE-BANKING-01"
-	CodeBillPlan       = "STORAGE-PLAN-01"       // a bill's payment plan never changes: a later one replaces it
-	CodeClaim          = "STORAGE-CLAIM-01"      // a claim category costs a plain expense or asset account in the base currency and is never deleted
+	CodeBanking  = "STORAGE-BANKING-01"
+	CodeBillPlan = "STORAGE-PLAN-01" // a bill's payment plan never changes: a later one replaces it
+	// CodeClaim: a claim category costs a plain expense or asset account in the base currency and is never deleted; an
+	// expense claim posts only under an approved request its claimant asked for and did not sign (FR-AP-15, FR-AP-17).
+	CodeClaim          = "STORAGE-CLAIM-01"
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
 	CodeBanner         = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends

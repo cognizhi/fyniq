@@ -68,6 +68,10 @@ const (
 	// ObjectBankRule is a bank rule that auto-applies once approved (FR-BNK-14, FR-APR-01): a person holding A on "Bank
 	// transactions, categorise" approves it after its back-test; its key is the rule's id.
 	ObjectBankRule = "bank_rule"
+	// ObjectClaim is a member's expense claim to post (FR-AP-17; the owner's decision of 26 Oct 2026, rev 0.147): its
+	// claimant asks; one person other than them who holds A on "Expense claims" approves, and the Controller too when a
+	// line is above its category's limit; its key is the claim's id.
+	ObjectClaim = "expense_claim"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -114,6 +118,8 @@ const (
 	OpConnectorChange = "connector.change"
 	// OpRuleAutoApply marks a bank rule auto-apply (FR-BNK-14).
 	OpRuleAutoApply = "bank_rule.auto_apply"
+	// OpClaimPost posts an expense claim (FR-AP-07, FR-AP-17).
+	OpClaimPost = "expense_claim.post"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -127,7 +133,7 @@ var Operations = map[string]string{
 	OpInvoicePost: ObjectInvoice, OpInvoiceVoid: ObjectInvoice, OpInvoiceEdit: ObjectInvoice, OpReceiptVoid: ObjectReceipt,
 	OpWriteOffPost: ObjectWriteOff, OpWriteOffVoid: ObjectWriteOff, OpCustomerApplicationVoid: ObjectCustomerApplication,
 	OpCustomerRefundVoid: ObjectCustomerRefund, OpDepositVoid: ObjectDeposit, OpRecurringApprove: ObjectRecurringInvoice,
-	OpConnectorChange: ObjectConnector, OpRuleAutoApply: ObjectBankRule,
+	OpConnectorChange: ObjectConnector, OpRuleAutoApply: ObjectBankRule, OpClaimPost: ObjectClaim,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -182,6 +188,8 @@ var Dependencies = map[string][]string{
 	ObjectConnector: {"connector_version", "state"},
 	// the rule's version, and the SHA-256 of its conditions and action: what the back-test was run on
 	ObjectBankRule: {"rule_version", "rule"},
+	// the claim's version and status, and what the company owes for it in the base currency
+	ObjectClaim: {"claim_version", "status", "owed"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -212,6 +220,7 @@ var Rows = map[string]string{
 	ObjectRecurringInvoice:    "Invoices, credit notes",
 	ObjectConnector:           "Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)",
 	ObjectBankRule:            "Bank transactions, categorise",
+	ObjectClaim:               "Expense claims",
 }
 
 // The limits of a policy.
@@ -271,6 +280,7 @@ var Policies = map[string]Policy{
 	ObjectRecurringInvoice:    {ObjectType: ObjectRecurringInvoice, Version: "founder/recurring_invoice@2026-10-24.1", Steps: []Step{{Quorum: 1}}},
 	ObjectConnector:           {ObjectType: ObjectConnector, Version: "founder/connector@2026-10-25.1", Steps: []Step{{Quorum: 1}}},
 	ObjectBankRule:            {ObjectType: ObjectBankRule, Version: "founder/bank_rule@2026-10-25.1", Steps: []Step{{Quorum: 1}}},
+	ObjectClaim:               {ObjectType: ObjectClaim, Version: "founder/expense_claim@2026-10-26.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
+	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
 	"github.com/cognizhi/fyniq/internal/domain/credits"
@@ -615,6 +616,22 @@ var codeFacts = map[string]struct {
 	journal.CodeTransferUndone:         {409, "The transfer was undone"},
 	ledger.CodeBankPart:                {422, "A part of the line does not fit"},
 	ledger.CodeTransfer:                {422, "The transfer's legs do not fit"},
+
+	// Expense claims (FR-AP-07, FR-AP-15, FR-AP-17).
+	claim.CodeNotClaim:   {404, "Not an expense claim"},
+	claim.CodeNotDraft:   {409, "The claim is not a draft"},
+	claim.CodeBadDraft:   {422, "The saved claim cannot be read"},
+	claim.CodeClaimant:   {422, "The claimant is not a member"},
+	claim.CodeCategory:   {422, "The line's category cannot be claimed"},
+	claim.CodeTooLong:    {422, "A text of the claim is too long"},
+	claim.CodeReceipt:    {422, "A receipt line is incomplete"},
+	claim.CodeGSTCode:    {422, "Not a GST code for purchases"},
+	CodeClaimNotYours:    {403, "Only the claimant changes or submits their claim"},
+	CodeClaimWaiting:     {409, "The claim waits for approval"},
+	CodeOwnClaim:         {403, "Nobody approves their own claim"},
+	ledger.CodeClaimLine: {422, "A claim line's amounts do not fit"},
+	ledger.CodeClaimPaid: {422, "What was paid or settled does not fit"},
+	storage.CodeClaim:    {409, "The expense claim record does not allow that"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -771,6 +788,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		sme *statement.Error
 		cne *connector.Error
 		bke *banking.Error
+		cle *claim.Error
 		bte *banktransaction.Error
 		bfe *bankfile.Error
 		pe  *period.Error
@@ -826,6 +844,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(ce.Code, sentence(ce.Message), sentence(ce.Fix))
 	case errors.As(err, &bfe): // a reader's refusal, with the line and field it names (ENG-23)
 		return problem(bfe.Code, sentence(bfe.Error()[len(bfe.Code)+2:]), sentence(bfe.Fix))
+	case errors.As(err, &cle):
+		return problem(cle.Code, sentence(cle.Message), sentence(cle.Fix))
 	case errors.As(err, &bke):
 		return problem(bke.Code, sentence(bke.Message), sentence(bke.Fix))
 	case errors.As(err, &bte):

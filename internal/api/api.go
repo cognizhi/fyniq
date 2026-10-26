@@ -88,6 +88,7 @@ type API struct {
 	customerRefunds      journal.CustomerRefunds
 	deposits             journal.CustomerDeposits // customer deposits (FR-AR-09)
 	quotes               journal.Quotes           // quotes and sales orders (FR-AR-01)
+	claims               journal.Claims           // members' expense claims (FR-AP-07)
 }
 
 func init() {
@@ -150,6 +151,7 @@ func Config(version string) huma.Config {
 		{Name: "Purchases", Description: "Bills from suppliers: drafted, approved, posted and voided; posted history never changes (FR-AP-02, FR-GL-12)."},
 		{Name: "Sales", Description: "Invoices to customers: drafted, approved, issued and voided; posted history never changes (FR-AR-03, FR-GL-12)."},
 		{Name: "Banking", Description: "Money accounts, their statements and lines, and the rules that code them; a rule applies by itself only once a second person approves it (FR-BNK-01…18)."},
+		{Name: "Expense claims", Description: "Members' claims for what they spent for the company: drafted and submitted by the claimant, approved by someone else, posted to 2150 Expense claims payable (FR-AP-07, FR-AP-14, FR-AP-17)."},
 		{Name: "Periods", Description: "Accounting periods and financial years: a posting's period is the month of its date (FR-ORG-02, FR-GL-08)."},
 		{Name: "Exchange rates", Description: "Rates into the base currency: the daily feed, the organisation's own rates for a day and its monthly table, and the cascade a posting takes its rate from (FR-GL-05, ENG-40)."},
 		{Name: "Reports", Description: "Reports read from the ledger at one revision: the general ledger (FR-GL-11), and the statements as they arrive."},
@@ -188,7 +190,7 @@ func New(mux humago.Mux, d Deps) *API {
 		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
 		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store},
 		customerApplications: journal.CustomerCreditApplications{Store: d.Store}, customerRefunds: journal.CustomerRefunds{Store: d.Store},
-		deposits: journal.CustomerDeposits{Store: d.Store}, bank: journal.BankTransactions{Store: d.Store, Clock: d.Clock}, quotes: journal.Quotes{Store: d.Store}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
+		deposits: journal.CustomerDeposits{Store: d.Store}, bank: journal.BankTransactions{Store: d.Store, Clock: d.Clock}, quotes: journal.Quotes{Store: d.Store}, claims: journal.Claims{Store: d.Store}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {
@@ -209,6 +211,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.customerRefunds.AfterPosting = a.afterPosting
 	a.deposits.AfterPosting = a.afterPosting
 	a.bank.AfterPosting = a.afterPosting
+	a.claims.AfterPosting = a.afterPosting
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(limitUploads{mux}, cfg)
@@ -293,6 +296,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerBankAgreements(a)
 	registerBankSignals(a)
 	registerBankRules(a)
+	registerClaims(a)
 	registerSession(a)
 	return a
 }

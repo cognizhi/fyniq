@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "addressed_to": {
+      "description": "For a tax invoice: addressed to the company (the default), or to the claimant as its agent.",
+      "enum": [
+        "company",
+        "agent"
+      ],
+      "examples": [
+        "company"
+      ],
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What the receipt shows was paid, including GST, in its currency."
+    },
+    "attendees": {
+      "description": "Who attended, for a meal or entertainment.",
+      "examples": [
+        "Mei Ling Tan; Tan Wei, Acme"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "category_id": {
+      "description": "The expense policy's category it is for: the account it costs (FR-AP-15).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fc1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "date": {
+      "description": "The receipt's date: its rate and its GST treatment are read on it.",
+      "examples": [
+        "2026-10-24"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "description": {
+      "description": "What it was for.",
+      "examples": [
+        "Taxi to Acme"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "document": {
+      "description": "What the receipt is, for its input tax (FR-AP-20): a tax invoice (the default), a simplified tax invoice (the merchant's GST number, no customer named), or none.",
+      "enum": [
+        "tax_invoice",
+        "simplified",
+        "none"
+      ],
+      "examples": [
+        "simplified"
+      ],
+      "type": "string"
+    },
+    "fx_rate": {
+      "description": "For a receipt in another currency, a rate into the base currency typed by the claimant; left out, the rate on its date (ENG-40).",
+      "examples": [
+        "0.0000850"
+      ],
+      "type": "string"
+    },
+    "gst": {
+      "$ref": "Money.schema.json",
+      "description": "The GST the receipt shows, in its currency; none when left out."
+    },
+    "gst_code": {
+      "description": "The receipt's GST code for purchases, from the sg-gst pack: TX when it shows GST, NR when the merchant is not GST-registered, OP outside Singapore.",
+      "examples": [
+        "NR"
+      ],
+      "pattern": "^[A-Z]{2,4}$",
+      "type": "string"
+    },
+    "kind": {
+      "description": "receipt: what was bought, as the receipt shows it (the default). Mileage lines arrive with the mileage rates (FR-AP-16).",
+      "enum": [
+        "receipt"
+      ],
+      "examples": [
+        "receipt"
+      ],
+      "type": "string"
+    },
+    "merchant": {
+      "description": "Who was paid, as the receipt shows it.",
+      "examples": [
+        "ComfortDelGro"
+      ],
+      "maxLength": 120,
+      "type": "string"
+    },
+    "paid": {
+      "$ref": "Money.schema.json",
+      "description": "For a receipt in another currency: what left the claimant's account in the base currency, as their card statement shows it; what the company owes them for it (FR-AP-17). Left out: the amount at the rate on its date."
+    },
+    "stated_gst": {
+      "$ref": "Money.schema.json",
+      "description": "For a receipt in another currency: the GST its tax invoice states in the base currency (ENG-42); without it the GST is not claimed."
+    }
+  },
+  "required": [
+    "category_id",
+    "amount",
+    "gst_code"
+  ],
+  "title": "ExpenseClaimLine",
+  "type": "object"
+}

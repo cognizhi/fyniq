@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "The claim's date: the day its entry posts on, on or after every receipt's.",
+      "examples": [
+        "2026-10-26"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "lines": {
+      "description": "Its lines: a receipt each.",
+      "items": {
+        "$ref": "ExpenseClaimLine.schema.json"
+      },
+      "maxItems": 100,
+      "type": "array"
+    },
+    "notes": {
+      "description": "Notes for the approver: why a line is above its limit, for example.",
+      "examples": [
+        "Client lunch ran over the meals limit."
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "title": {
+      "description": "What the claim is for.",
+      "examples": [
+        "Acme visit"
+      ],
+      "maxLength": 120,
+      "type": "string"
+    }
+  },
+  "required": [
+    "lines"
+  ],
+  "title": "ExpenseClaimDraft",
+  "type": "object"
+}

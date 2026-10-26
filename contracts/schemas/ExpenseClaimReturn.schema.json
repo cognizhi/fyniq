@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-26T06:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "by": {
+      "$ref": "Person.schema.json",
+      "description": "Who returned it."
+    },
+    "comment": {
+      "description": "Why, in the approver's words: what to fix.",
+      "examples": [
+        "Add who attended the lunch."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "at",
+    "comment"
+  ],
+  "title": "ExpenseClaimReturn",
+  "type": "object"
+}
