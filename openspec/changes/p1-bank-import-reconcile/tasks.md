@@ -308,6 +308,8 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   `make check`, `make test`, `make scan`, `make infra-check` and `make images` pass; a conventional commit with
   upgrade notes (the secrets project before the first organisation connector).
   - Not verified here: a live sync with Wise, Airwallex and DBS in staging, which needs their sandboxes and accounts.
+    `[live-verify]` in the dev cloud (`docs/prd/plans/live-verification.md`): the secrets project applied, live syncs and
+    verified webhooks from the Wise and Airwallex sandboxes, a DBS report and alert through the live inbound provider.
   - As built (26 Oct 2026): the 18 abuse cases of `docs/security/threat-models/banking.md` each name their tests;
     `TestTheAIWritesNothingInBanking` proves T17 at the API while the MCP and AI services expose no tool; the security
     README lists V1.5.1 and V4.1.5 (the webhooks, `[verify]` the wording). `make check`, `make test`, `make scan`,
