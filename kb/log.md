@@ -221,3 +221,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-26] compile | docs/user-guide/claims-my-claims.md → claims.make-a-claim (the mileage trip screen and the Mileage tab, p1-expense-claims task 8.1)
 
 ## [2026-10-26] compile | docs/user-guide/claims-my-claims.md → claims.make-a-claim (drop or paste a receipt; export the history)
+
+## [2026-10-26] compile | docs/user-guide/claims-approve-team.md → claims.approve-team-claims (the approver's queue, returning with a comment, and the expense policy screen; p1-expense-claims task 8.2)

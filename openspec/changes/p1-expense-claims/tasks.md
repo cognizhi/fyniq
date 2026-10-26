@@ -88,11 +88,18 @@
   screenshot pasted into, the evidence panel. Tests `claims.test.tsx` with axe. **Left:** receipt capture through the
   member's capture address (inbound email for claims is not built), and FR-UX-39's personal navigation, which is
   `p1-app-shell` task 2.1's.)
-- [ ] 8.2 `claims-review` (the approver's queue with the policy outcome, approve and return with a comment) and
+- [x] 8.2 `claims-review` (the approver's queue with the policy outcome, approve and return with a comment) and
   `expense-policy` (categories, limits and the settings); component tests with axe. `// req: FR-AP-15`, `// req: FR-AP-17`
+  (26 Oct 2026: `ClaimsReview.tsx` at `/purchases/claims`, To approve and All claims; a claim opened from it at
+  `/purchases/claims/$claimId` is the claim view read-only with the decision panel, approve or return with a comment
+  through the approval confirmation; `ExpensePolicy.tsx` at `/settings/expense-policy`, the categories with their account
+  and thresholds, the starter categories, and the way to the settings under dual control.)
 - [ ] 8.3 The guide pages `claims.my-claims` and `claims.approve-team` updated to what is built, compiled into
   `kb/pages/`, `make kb-index` and `make kb-lint` clean; the screens checked in the dev stack against the real API.
   `// req: QA-UI-05`
+  (26 Oct 2026, in part: both guide pages rewritten to what is built and compiled into
+  `kb/pages/task/claims-make-a-claim.md` and `claims-approve-team-claims.md`; kb-index and kb-lint clean. **Left:** the
+  screens checked in the dev stack against the real API.)
 
 ## 9. The oracle
 

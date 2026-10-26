@@ -1115,6 +1115,26 @@
     "claims.export": {
       "label": "Export history",
       "tooltip": "Download your claims as a CSV file: each one's number, date, title, stage and amount."
+    },
+    "claims.review": {
+      "label": "Expense claims",
+      "tooltip": "Members' claims: those waiting for your approval, with what the expense policy says about each, and everyone's."
+    },
+    "claims.review-claim": {
+      "label": "Expense claim",
+      "tooltip": "A member's claim: its receipts, what the expense policy says about it, and approving or returning it."
+    },
+    "settings.expense-policy": {
+      "label": "Expense policy",
+      "tooltip": "What members claim for: the categories, the account each costs, its limit a line and when a receipt or who attended is needed."
+    },
+    "expense-policy.add": {
+      "label": "Add a category",
+      "tooltip": "Add a category members claim for, with the account it costs and its limits."
+    },
+    "expense-policy.load-starter": {
+      "label": "Load the starter categories",
+      "tooltip": "Start from Fyniq's categories, each on the standard chart's account: travel, meals, mileage and the rest. Check each one after."
     }
   }
 }

@@ -2,40 +2,57 @@
 key: claims.approve-team
 title: Approve your team's claims
 mode: basic
-roles: [employee, approver]
-requirements: [FR-AP-17, FR-UX-39, FR-UX-40, FR-APR-02, FR-APR-03]
-status: draft            # written ahead of the feature (P1); reviewed when the screens are built
+roles: [approver, controller]
+requirements: [FR-AP-15, FR-AP-17, FR-UX-40, FR-APR-02, FR-APR-03]
+status: draft            # the approver's screens are built (P1); routing to the line manager follows the people records
 ---
 
 # Approve your team's claims
 
 ## What it is
 
-When you are someone's line manager, their expense claims come to you first. You see each claim
-under **To approve** with its receipt, and nothing else of the company's finances. Being a line
-manager gives you no other right in Fyniq.
+A member's expense claim is approved by another person before the company pays it back. Until
+Fyniq knows each person's line manager from the people records, a claim goes to someone who
+approves expense claims, such as an Approver; when a line is above its category's limit or past
+the claim deadline, the Controller approves it too. Nobody approves their own claim.
 
 ## Before you start
 
-- You are a person's line manager when the people records say so. Ask HR if a claim reaches the
-  wrong person.
-- If you also approve bills or purchase orders for a department, you work in a finance workspace
-  cut to that department, and the claims wait in your **Inbox** instead.
+- You approve claims when you hold the right to approve expense claims: the Approver and the
+  Controller do.
+- Approving needs you to confirm it's you, with a passkey or by signing in again.
 
-## Steps
+## Approve or return a claim
 
-1. Open **To approve**. Each claim shows who sent it, what it is for, the amount and the receipt.
-2. Check the receipt, the category and, for a car trip, the purpose and the distance.
-3. Select **Approve**, or **Return with a note…** and say what needs fixing.
-4. Approved claims move on to finance. **Recently approved by you** lists what you approved.
+1. Open **Purchases** › **Expense claims**. **To approve** lists the claims waiting for you.
+2. Open a claim. Check its receipts, what each line is for, and what the expense policy says
+   about it: lines marked **Review** were sent with a reason, such as a meal without who attended.
+3. Select **Approve**. The confirmation shows exactly what you sign; sign it.
+4. Or select **Return with a comment**, and say what needs fixing. The claimant sees your comment
+   in My claims, fixes the claim and submits it again; each version is kept.
+5. When you approve the last step, the claim is posted and the company owes the claimant.
+
+**All claims** lists every member's claims by stage, for those who see them all.
+
+## Set the expense policy
+
+1. Open **Settings** › **Expense policy**.
+2. With no categories yet, select **Load the starter categories**, then check each one.
+3. For each category: the account its claims cost, the most a line can be, the amount above which
+   a line needs its receipt, and the amount above which a meal names who attended. One category is
+   the mileage category, for trips in a member's own vehicle.
+4. The claim deadline, the rate per km for a car and for a motorcycle, and the account cash
+   advances post to are organisation settings: change them under **Settings** › **Organisation**,
+   with a second person's approval.
 
 ## Common problems
 
 | What you see | What to do |
 |---|---|
-| A claim from someone who is not in your team | Return it with a note, and ask HR to correct the line manager in the people records |
-| Your own claim | In Standard mode you cannot approve it; it goes to your own line manager |
-| A link to a finance page shows "not part of your access" | That page is outside your rights. Use the way back; your claims to approve are all under To approve |
+| Your own claim | You cannot approve it; another person does |
+| A claim above a category's limit | It needs the Controller's approval too, after yours |
+| A receipt that is on another record | The claimant gave a reason why it is not a duplicate; check it before you approve |
+| A link to a finance page shows "not part of your access" | That page is outside your rights. Use the way back |
 
 ## Related
 

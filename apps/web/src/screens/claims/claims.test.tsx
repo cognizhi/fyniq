@@ -4,9 +4,12 @@ import type { Session } from "../../api/client";
 import { answer, ownerSession, problem, seen, type Answer } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
+import { noAuthenticator } from "../../test/webauthn";
 import { personalOnly } from "../Home";
 import { checkClaim, ClaimEditor, newReceipt, type ClaimForm } from "./ClaimEditor";
 import type { Advance, CardLine, Claim } from "./claims";
+import { ClaimsReview } from "./ClaimsReview";
+import { checkCategory, ExpensePolicy } from "./ExpensePolicy";
 import { checkTrips, MileageClaim, newTrip } from "./MileageClaim";
 import { claimsCSV, MyClaims } from "./MyClaims";
 
@@ -321,5 +324,106 @@ describe("a claim's receipt", () => {
     // The test DOM's File reaches the request without its bytes, which a browser sends, so only the part is checked.
     expect(sent?.body).toMatchObject({ evidence_type: "receipt", data_class: "general", source: "upload" });
     expect((sent?.body as Record<string, unknown>).file).toBeDefined();
+  });
+});
+
+const approver = { ...ownerSession, user_id: "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77", roles: ["approver"] } as Session;
+const claimApproval = {
+  id: "r1",
+  object_type: "expense_claim",
+  object_key: "c2",
+  operation: "expense_claim.post",
+  summary: "Post claim CLM-0002 of Ah Kow, 64.80 SGD",
+  policy: "founder/expense_claim@2026-10-26.1",
+  version: 1,
+  status: "pending",
+  requested_at: "2026-10-15T01:00:00Z",
+  requested_by: me,
+  requested_by_name: "Ah Kow",
+  expires_at: "2026-10-22T01:00:00Z",
+  current_step: 1,
+  steps: [{ quorum: 1, roles: ["approver", "controller"], users: [], approvals: 0 }],
+  signatures: [],
+  diff: [],
+  envelope: '{"object":"c2"}',
+  envelope_hash: "ab".repeat(32),
+  you_may_approve: true,
+};
+
+// req: FR-AP-17
+// req: FR-APR-01
+// req: FR-AP-15
+describe("approving claims and the expense policy", () => {
+  it("lists the claims waiting for the approver, and everyone's; axe finds nothing", async () => {
+    answer({
+      "GET /v1/expense-claims": (_b, req) => {
+        const whose = new URL(req.url).searchParams.get("whose");
+        return { status: 200, body: { items: whose === "waiting_for_me" ? [claim({ id: "c2", stage: "submitted", title: "Client lunch" })] : [claim(), claim({ id: "c2", stage: "submitted", title: "Client lunch" })] } };
+      },
+    });
+    renderPage(ClaimsReview, { path: "/purchases/claims", session: approver, organisation, mode: "basic" });
+    const table = await screen.findByRole("table", { name: "Claims waiting for you" });
+    expect(within(table).getByRole("link", { name: "Client lunch" }).getAttribute("href")).toBe("/purchases/claims/c2");
+    expect(within(table).getByText("Ah Kow")).toBeTruthy();
+    await noViolations(document.body);
+    fireEvent.click(screen.getByRole("button", { name: "All claims" }));
+    expect(await screen.findByRole("table", { name: "All claims" })).toBeTruthy();
+    expect(seen.some((s) => s.query.includes("whose=everyone"))).toBe(true);
+  });
+
+  it("returns a claim to its claimant with a comment, signed as an approval", async () => {
+    noAuthenticator();
+    answer({
+      "GET /v1/expense-claims/c2": { status: 200, headers: { ETag: '"1-draft"' }, body: claim({ id: "c2", stage: "submitted", approval_asked: "r1", checks: [{ severity: "warning", code: "CLAIM-ATTENDEES", field: "lines[0].attendees", message: "a Meals line above 50.00 SGD names who attended", fix: "Name who attended" }] }) },
+      "GET /v1/approvals/r1": { status: 200, headers: { ETag: '"1"' }, body: claimApproval },
+      "GET /v1/claim-categories": { status: 200, body: categories },
+      "GET /v1/expense-claims/gst-codes": { status: 200, body: codes },
+      "GET /v1/cash-advances": { status: 200, body: { items: [] } },
+      "GET /v1/expense-claims/c2/evidence": { status: 200, body: { items: [] } },
+      "POST /v1/approvals/r1/reject": { status: 200, body: { ...claimApproval, status: "rejected" } },
+    });
+    renderPage(ClaimEditor, { path: "/purchases/claims/c2", route: "/purchases/claims/$claimId", session: approver, organisation, mode: "basic" });
+    expect(await screen.findByText("It waits for your approval")).toBeTruthy();
+    expect(screen.getByText("Ah Kow's claim")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Submit" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Return with a comment" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/Why you reject it/), { target: { value: "Add who attended." } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Reject" }));
+    expect(await screen.findByText("Returned to the claimant with your comment.")).toBeTruthy();
+    expect(seen.find((s) => s.path === "/v1/approvals/r1/reject")?.body).toMatchObject({ reason: "Add who attended.", envelope_hash: "ab".repeat(32) });
+  });
+
+  it("checks a category before it is sent, loads the starter categories and adds one", async () => {
+    expect(Object.keys(checkCategory({ name: " ", account_id: "", mileage: false, limit: "-5", receipt_above: "abc", attendees_above: "", active: true }, "SGD").errors).sort()).toEqual([
+      "account_id",
+      "limit",
+      "name",
+      "receipt_above",
+    ]);
+    let loaded = false;
+    answer({
+      "GET /v1/claim-categories": () => ({ status: 200, body: loaded ? categories : { items: [] } }),
+      "POST /v1/claim-categories:load-starter": () => {
+        loaded = true;
+        return { status: 201, body: categories };
+      },
+      "GET /v1/accounts": { status: 200, body: { items: [{ id: "a6530", code: "6530", name: "Meals & entertainment", type: "expense", group: false, active: true, money_account: false, control: false, version: 1 }] } },
+      "POST /v1/claim-categories": { status: 201, body: { id: "gifts", name: "Client gifts", account_id: "a6530", mileage: false, active: true, version: 1 } },
+    });
+    renderPage(ExpensePolicy, { path: "/settings/expense-policy", session: { ...approver, roles: ["controller"] } as Session, organisation, mode: "expert" });
+    fireEvent.click(await screen.findByRole("button", { name: "Load the starter categories" }));
+    const table = await screen.findByRole("table", { name: "Categories" });
+    expect(within(table).getByText("50.00 SGD")).toBeTruthy();
+    await noViolations(document.body);
+    fireEvent.click(screen.getByRole("button", { name: "Add a category" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "Client gifts" } });
+    await within(dialog).findByRole("option", { name: "6530 Meals & entertainment" });
+    fireEvent.change(within(dialog).getByLabelText("Account it costs"), { target: { value: "a6530" } });
+    fireEvent.change(within(dialog).getByLabelText("Limit a line (SGD, optional)"), { target: { value: "100" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(seen.find((s) => s.method === "POST" && s.path === "/v1/claim-categories")?.body).toMatchObject({ name: "Client gifts", account_id: "a6530", limit: { amount: "100", currency: "SGD" }, active: true }));
+    expect(await screen.findByText("Client gifts is saved.")).toBeTruthy();
   });
 });

@@ -14,6 +14,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { EvidencePanel } from "../accounting/JournalEvidence";
+import { ConfirmDecision } from "../approvals/Decide";
 import { money, StageChip, useCategories, useClaimGSTCodes, type Claim, type ClaimLine } from "./claims";
 
 type Draft = components["schemas"]["ExpenseClaimDraft"];
@@ -238,9 +239,10 @@ export function ClaimEditor() {
       <div className="fy-pagehead">
         <div className="fy-pagehead__text">
           <nav className="fy-breadcrumb" aria-label="Breadcrumb">
-            <Link to="/me/claims">My claims</Link>
+            {mine ? <Link to="/me/claims">My claims</Link> : <Link to="/purchases/claims">Expense claims</Link>}
           </nav>
           <h1 className="fy-h1">{claim ? claim.title || claim.number || "Claim" : "New claim"}</h1>
+          {claim && !mine && <p className="fy-secondary">{claim.claimant.name}'s claim</p>}
           {claim && (
             <p className="fy-row fy-row--wrap gap-2">
               <StageChip stage={claim.stage} />
@@ -257,6 +259,7 @@ export function ClaimEditor() {
           {said}
         </p>
       )}
+      {claim && !mine && claim.approval_asked && <Decide approvalId={claim.approval_asked} claimId={claim.id} />}
       {claim?.returned && (
         <div className="fy-banner fy-banner--warning">
           <Icon of={TriangleAlert} size={20} />
@@ -501,6 +504,67 @@ export function ClaimEditor() {
         </section>
       )}
     </div>
+  );
+}
+
+// Decide approves a claim waiting for the person, or returns it to its claimant with a comment (FR-AP-17, UC-EXP-04),
+// signed as any approval is (FR-APR-03): the claimant sees the comment in My claims, fixes the claim and submits it again.
+function Decide({ approvalId, claimId }: { approvalId: string; claimId: string }) {
+  const queries = useQueryClient();
+  const [decision, setDecision] = useState<"approve" | "reject" | null>(null);
+  const [said, setSaid] = useState("");
+  const q = useQuery({
+    queryKey: ["approval", approvalId],
+    queryFn: async () => {
+      const r = await api.GET("/v1/approvals/{approval_id}", { params: { path: { approval_id: approvalId } } });
+      if (r.error) throw r.error;
+      return { approval: r.data, etag: etagOf(r.response) || `"${r.data.version}"` };
+    },
+  });
+  const a = q.data?.approval;
+  if (said) {
+    return (
+      <p className="fy-small" role="status">
+        {said}
+      </p>
+    );
+  }
+  if (!a || a.status !== "pending") return null;
+  return (
+    <section className="fy-card fy-card--pad fy-stack fy-stack--3" aria-label="Your decision">
+      <h2 className="fy-h3">{a.you_may_approve ? "It waits for your approval" : "It waits for approval"}</h2>
+      <p className="fy-small fy-secondary">
+        {a.you_may_approve
+          ? "Check its receipts and what the expense policy says, then approve it, or return it with a comment saying what to fix."
+          : "Another person approves it: nobody approves their own claim, and each step needs its own right."}
+      </p>
+      {a.you_may_approve && (
+        <div className="fy-row fy-row--wrap gap-2">
+          <Button variant="secondary" onClick={() => setDecision("reject")}>
+            <Icon of={Undo2} />
+            Return with a comment
+          </Button>
+          <Button onClick={() => setDecision("approve")} title={helpText("approval.approve").tooltip}>
+            <Icon of={CircleCheck} />
+            {helpText("approval.approve").label}
+          </Button>
+        </div>
+      )}
+      {q.data && (
+        <ConfirmDecision
+          approval={q.data.approval}
+          etag={q.data.etag}
+          decision={decision}
+          onClose={() => setDecision(null)}
+          onDecided={async (done) => {
+            setDecision(null);
+            setSaid(decision === "reject" ? "Returned to the claimant with your comment." : done.status === "approved" ? "Approved: the claim is posted." : "Approved: it waits for the next step.");
+            await queries.invalidateQueries({ queryKey: ["expense-claim", claimId] });
+            await queries.invalidateQueries({ queryKey: ["expense-claims"] });
+          }}
+        />
+      )}
+    </section>
   );
 }
 
