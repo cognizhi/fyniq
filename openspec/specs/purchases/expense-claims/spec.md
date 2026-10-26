@@ -33,6 +33,11 @@ Source: PRD-001 §8.6 · Priority M · Phase P1 (web) / P2 (PWA)
 - **THEN** the reimbursement is recorded by hand, Dr 2150 · Cr Bank, and bank import matches it
 - **AND** a director's "keep as a loan" arrives with the director accounts of founders' money (the owner's decision of 26 Oct 2026)
 
+#### Scenario: Who records a reimbursement by hand (rev 0.148)
+- **WHEN** a reimbursement is recorded by hand
+- **THEN** it is recorded under Appendix D's "Payment batches" row: the Accountant or the AP specialist records it (C)
+- **AND** in Founder mode voiding it needs a second person who holds A on that row, the Controller (FM-1), so whoever approves a claim is not who pays it (the owner's decision of 26 Oct 2026)
+
 ### Requirement: FR-AP-08 Corporate card transactions
 The system SHALL import corporate card transactions, by feed or statement, with receipt matching and missing-receipt reminders.
 
@@ -186,6 +191,11 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **WHEN** a cash advance is paid to an employee
 - **THEN** it posts Dr 1250, Cr Bank
 - **AND** it is settled by claims, with the balance refunded, or deducted from salary only under FR-PAY-16
+
+#### Scenario: Who records a cash advance (rev 0.148)
+- **WHEN** a cash advance, or the refund of what is left of one, is recorded
+- **THEN** it is recorded under the "Payment batches" row as a reimbursement is: the Accountant or the AP specialist records it
+- **AND** in Founder mode voiding it needs the Controller (FM-1; the owner's decision of 26 Oct 2026)
 
 #### Scenario: Foreign-currency claim
 - **WHEN** a foreign-currency claim is reimbursed

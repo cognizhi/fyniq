@@ -28,7 +28,8 @@
 
 ## 3. Reimbursement and what the company owes
 
-- [ ] 3.1 `claim_reimbursement@1` recorded by hand with its allocations, voided while its period is open; bank import
+- [ ] 3.1 `claim_reimbursement@1` recorded by hand with its allocations under the "Payment batches" row (C; rev 0.148),
+  voided while its period is open (in Founder mode on the Controller's approval, FM-1); bank import
   matches it as money recorded by hand (design D7); the 2150 sub-ledger by person, reconciled with 2150 (design D4).
   - Tests: a reimbursement settles two claims; matched from a bank line; My claims' "the company owes you" equals the
     sub-ledger. `// req: FR-AP-07`, `// req: purchases/expense-claims Reimbursement recorded by hand until payment batches`
@@ -54,7 +55,7 @@
 
 ## 6. Cash advances
 
-- [ ] 6.1 `cash_advance@1` and its refund; the advance a claim settles in the claim's draft, and the setting
+- [ ] 6.1 `cash_advance@1` and its refund, recorded under the "Payment batches" row as reimbursements are (rev 0.148); the advance a claim settles in the claim's draft, and the setting
   `claims.advances_account` (1250); a claim settling an advance (`expense_claim@1` credits it already); what is left
   refunded and matched from the bank; ⚠ on an advance unsettled past the deadline (the C.2 #39 line arrives with `p1-checks`).
   - Tests: UC-EXP-03: S$800 advanced, S$742.15 claimed in IDR at the rate cascade, S$57.85 refunded and matched; claims

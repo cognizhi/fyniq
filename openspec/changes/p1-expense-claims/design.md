@@ -113,8 +113,8 @@ later puts approved claims in batches.
 
 ### D8. Cash advances
 
-An advance is recorded by finance (C on "Expense claims" is the claimant's own; recording an advance needs A, as it
-moves money), with its person, amount and money account. A claim marks the advance it settles; the claim's credit goes
+An advance is recorded by finance under Appendix D's "Payment batches" row, as a reimbursement is (D10; the owner's
+decision of 26 Oct 2026, rev 0.148, superseding "A on Expense claims"), with its person, amount and money account. A claim marks the advance it settles; the claim's credit goes
 to 1250 up to what is open on the advance, and the rest to 2150. What is left on the advance is refunded (a bank line
 matched to the refund) or stays open; past the claim deadline it shows ⚠ on the advance (the check line in C.2 #39
 arrives with `p1-checks`).
@@ -129,7 +129,10 @@ categorises the bank line (the banking command) with the evidence attached. A li
 ### D10. Permissions and personal data
 
 Appendix D's "Expense claims" row: Employee C (own), Approver and Controller A, Owner, Accountant, Bookkeeper, AP,
-Auditor and Tax agent V. A member sees and changes only their own claims (row filter and the API's check); approvers
+Auditor and Tax agent V. Nobody holds P there, so the money paid to a member, a reimbursement recorded by hand and a
+cash advance with its refund, is recorded under the "Payment batches" row, which the batches take over later: the
+Accountant and the AP specialist record it (C), and in Founder mode a void needs the Controller (A, FM-1); whoever
+approves a claim is then not who pays it (the owner's decision of 26 Oct 2026, rev 0.148). A member sees and changes only their own claims (row filter and the API's check); approvers
 see the claims waiting for them and those they decided. Receipts are evidence of data class `general` unless marked
 otherwise; card numbers on receipts are not parsed or stored as fields. The threat model covers self-approval,
 duplicate claims, inflated foreign-currency amounts, tampered receipts and cross-person reads.
