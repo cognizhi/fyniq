@@ -90,12 +90,14 @@ func newClaimBooks(t *testing.T, ctx context.Context, s *postgres.Store, name st
 // GST-registered; an IDR 1,500,000.00 hotel takes the cascade's rate on its date, S$127.50. The company owes S$263.80
 // on 2150. It posts only under an approved request its claimant asked for and did not sign (FY233). Every problem comes
 // back at once; a posted claim does not change; the replay reproduces the entry after its category moves to another
-// account.
+// account. A cash advance posts Dr 1250 · Cr the bank and its refund the other way, settling it by allocation; the
+// guard lets only a claim or a refund settle an advance (FY171).
 // req: FR-AP-07
 // req: ledger/posting-rules Posting an expense claim
 // req: purchases/expense-claims Out-of-pocket receipt claim
 // req: FR-AP-20
 // req: FR-AP-17
+// req: ledger/posting-rules Cash advance to an employee
 // req: ENG-06
 // req: QA-ENG-05
 // asvs: V8.2.2
@@ -225,6 +227,60 @@ base_minor_units, base_amount, realised_fx, written_by, written_at) VALUES ($1, 
 			back.Reimbursement.ID)
 		return err
 	}), "FY171")
+
+	// A cash advance to the claimant (FR-AP-17): Dr 1250 · Cr DBS; what is left of it refunded, Dr DBS · Cr 1250, with an
+	// allocation to the advance; not more than is open on it; an advance a refund settled is not voided.
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "1250", Name: "Staff & director advances", Type: storage.Asset})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	advs := journal.CashAdvances{Store: s}
+	adv, err := advs.Record(ctx, b.Org, claim.Advance{PersonID: b.Claimant, Date: oct26, AccountID: dbs.ID, Amount: sgdOf(t, "800.00"), Reference: "FAST 2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := legsOf(t, s, b.Org, adv.Entry); got != "1250 800 SGD = 800; 1020 -800 SGD = -800" || adv.Advance.Number != "ADV-0001" {
+		t.Errorf("the advance: %s %+v", got, adv.Advance)
+	}
+	refund := claim.Advance{PersonID: b.Claimant, Refunds: &adv.Advance.ID, Date: oct26, AccountID: dbs.ID, Amount: sgdOf(t, "800.01")}
+	if _, err := advs.Record(ctx, b.Org, refund); !hasProblem(err, claim.CodeAdvanceRefund) {
+		t.Errorf("refunding more than is open: %v", err)
+	}
+	refund.Amount = sgdOf(t, "57.85")
+	back2, err := advs.Record(ctx, b.Org, refund)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := legsOf(t, s, b.Org, back2.Entry); got != "1020 57.85 SGD = 57.85; 1250 -57.85 SGD = -57.85" || len(back2.Allocations) != 1 {
+		t.Errorf("the refund: %s %+v", got, back2.Allocations)
+	}
+	var ce *claim.Error
+	if _, err := advs.Void(ctx, b.Org, adv.Advance.ID, oct26, "Wrong person"); !errors.As(err, &ce) || ce.Code != claim.CodeAdvanceSettled {
+		t.Errorf("voiding an advance a refund settled: %v", err)
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		r, err := journal.Replay(ctx, u)
+		if err == nil && len(r.Mismatches) > 0 {
+			t.Errorf("the replay after the advance: %+v", r.Mismatches)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// An advance is settled by a claim or a refund, and settles nothing itself (FY171).
+	for _, x := range []struct {
+		what     string
+		src, dst uuid.UUID
+	}{{"a reimbursement settling an advance", back.Reimbursement.ID, adv.Advance.ID}, {"an advance settling a claim", adv.Advance.ID, doc.ID}} {
+		wantState(t, x.what, asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, `INSERT INTO fyniq.allocation (source_id, source_version, document_id, on_date, currency, minor_units, amount, base_currency,
+base_minor_units, base_amount, realised_fx, written_by, written_at) VALUES ($1, 1, $2, '2026-10-26', 'SGD', 2, 1, 'SGD', 2, 1, 0, 'user:x', now())`,
+				x.src, x.dst)
+			return err
+		}), "FY171")
+	}
 
 	// A returned claim is a draft its claimant revises: each version is kept (UC-EXP-04's history).
 	second, err := claims.Create(ctx, b.Org, claim.Draft{ClaimantID: b.Claimant, Date: oct26, Lines: []claim.Line{taxi}})

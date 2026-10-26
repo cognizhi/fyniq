@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What moved, in the base currency."
+    },
+    "approval_asked": {
+      "description": "The pending request to void it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "checks": {
+      "description": "Its warnings (⚠): an advance still open more than the claim deadline after it was paid.",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "date": {
+      "description": "The day the money moved.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "Its ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "advance: money paid to the member; refund: what is left of an advance coming back.",
+      "enum": [
+        "advance",
+        "refund"
+      ],
+      "examples": [
+        "advance"
+      ],
+      "type": "string"
+    },
+    "ledger_impact": {
+      "description": "getCashAdvance only: the lines its entry wrote: debits positive.",
+      "items": {
+        "$ref": "EntryLine.schema.json"
+      },
+      "type": "array"
+    },
+    "money_account_id": {
+      "description": "The account it moved through.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "notes": {
+      "description": "Its notes.",
+      "examples": [
+        "Jakarta trip, 6 to 9 October"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number from the advance sequence (FR-ORG-04).",
+      "examples": [
+        "ADV-0001"
+      ],
+      "type": "string"
+    },
+    "open": {
+      "$ref": "Money.schema.json",
+      "description": "A posted advance: what is still open on it, which the member's next claims settle or they refund."
+    },
+    "person": {
+      "$ref": "Person.schema.json",
+      "description": "The member it was paid to, or who refunded it."
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2026-10-01T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who recorded it."
+    },
+    "reference": {
+      "description": "The bank's reference.",
+      "examples": [
+        "FAST 77120"
+      ],
+      "type": "string"
+    },
+    "refunded": {
+      "$ref": "Money.schema.json",
+      "description": "A posted advance: what the member refunded of it, net of voids."
+    },
+    "refunds": {
+      "$ref": "CashAdvanceRef.schema.json",
+      "description": "A refund: the advance it refunds."
+    },
+    "settled": {
+      "$ref": "Money.schema.json",
+      "description": "A posted advance: what the member's claims settled of it."
+    },
+    "settled_by": {
+      "description": "getCashAdvance only, for an advance: each claim and refund that settled it, net of voids.",
+      "items": {
+        "$ref": "CashAdvanceSettlement.schema.json"
+      },
+      "type": "array"
+    },
+    "status": {
+      "description": "posted once recorded; reversed by a void.",
+      "enum": [
+        "posted",
+        "reversed"
+      ],
+      "examples": [
+        "posted"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The version of its content; with the status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "status",
+    "version",
+    "person",
+    "money_account_id",
+    "amount",
+    "settled_by",
+    "checks",
+    "ledger_impact"
+  ],
+  "title": "CashAdvance",
+  "type": "object"
+}

@@ -57,12 +57,7 @@ func Policy(ctx context.Context, u storage.UnitOfWork, doc storage.Document, p P
 	warn := func(code, field, msg, fix string) {
 		out.Warnings = append(out.Warnings, Warning{code, field, msg, fix})
 	}
-	changes, err := u.Settings().Changes(ctx, DeadlineSetting)
-	if err != nil {
-		return Outcome{}, err
-	}
-	def, _ := settings.Lookup(DeadlineSetting)
-	days, err := strconv.Atoi(settings.On(def, changes, today).Value)
+	days, err := Deadline(ctx, u, today)
 	if err != nil {
 		return Outcome{}, err
 	}
@@ -127,6 +122,37 @@ func Policy(ctx context.Context, u storage.UnitOfWork, doc storage.Document, p P
 		}
 	}
 	return out, nil
+}
+
+// Deadline is the claim deadline in days in force on a day (the setting claims.deadline_days, FR-AP-15).
+func Deadline(ctx context.Context, u storage.UnitOfWork, on time.Time) (int, error) {
+	changes, err := u.Settings().Changes(ctx, DeadlineSetting)
+	if err != nil {
+		return 0, err
+	}
+	def, _ := settings.Lookup(DeadlineSetting)
+	return strconv.Atoi(settings.On(def, changes, on).Value)
+}
+
+// WarnAdvanceOpen is an advance still open past the claim deadline after its date (⚠, FR-AP-17, design D8; the check
+// line C.2 #39 arrives with p1-checks).
+const WarnAdvanceOpen = "CLAIM-ADVANCE-OPEN"
+
+// AdvanceWarnings are an advance's warnings on today: something still open on it more than the claim deadline after
+// the day it was paid.
+func AdvanceWarnings(ctx context.Context, u storage.UnitOfWork, a Advance, b AdvanceBalance, today time.Time) ([]Warning, error) {
+	if a.Refunds != nil || b.Open.Sign() <= 0 || a.Date.IsZero() {
+		return nil, nil
+	}
+	days, err := Deadline(ctx, u, today)
+	if err != nil {
+		return nil, err
+	}
+	if !a.Date.AddDate(0, 0, days).Before(today) {
+		return nil, nil
+	}
+	return []Warning{{WarnAdvanceOpen, "open", fmt.Sprintf("%s %s is still open on an advance paid on %s, more than the claim deadline of %d days ago",
+		b.Open, b.Open.Currency(), day(a.Date), days), "Ask for the claims that settle it, or for what is left to be refunded"}}, nil
 }
 
 // lineOwed is what the company owes for a receipt line in the base currency: its amount, what was paid for it, or its

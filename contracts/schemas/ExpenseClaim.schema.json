@@ -2,6 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "advance_id": {
+      "description": "The cash advance it settles.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "approval_asked": {
       "description": "The pending request to post it, while it is submitted.",
       "examples": [
@@ -99,8 +107,12 @@
       "$ref": "ExpenseClaimReturn.schema.json",
       "description": "Its latest return, while it is returned."
     },
+    "settles": {
+      "$ref": "Money.schema.json",
+      "description": "What it settles of the advance, in the base currency: as posted, or as posting would settle it now (the least of its total and what is open on the advance). The rest of its total is reimbursed."
+    },
     "stage": {
-      "description": "Where it stands for its claimant (FR-AP-14): draft; submitted while its approval waits; returned when its latest request was rejected, with the comment; approved once posted; paid once reimbursements paid back all it owes. scheduled arrives with payment batches.",
+      "description": "Where it stands for its claimant (FR-AP-14): draft; submitted while its approval waits; returned when its latest request was rejected, with the comment; approved once posted; paid once reimbursements, and the advance it settles, cover all it owes. scheduled arrives with payment batches.",
       "enum": [
         "draft",
         "submitted",
@@ -135,7 +147,7 @@
     },
     "total": {
       "$ref": "Money.schema.json",
-      "description": "What the company owes for it in the base currency, as posted or as posting would post it; absent while it cannot post."
+      "description": "What the company owes for it in the base currency, as posted or as posting would post it, what it settles of an advance included; absent while it cannot post."
     },
     "version": {
       "description": "The version of its content; with the status it makes the ETag.",

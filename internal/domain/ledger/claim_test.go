@@ -422,3 +422,44 @@ func TestPostClaimReimbursement(t *testing.T) {
 		t.Errorf("no 2150: %v", err)
 	}
 }
+
+var advance = uuid.MustParse("0192f1a0-0000-7000-8000-0000000ad010")
+
+// Worked by hand (UC-EXP-03): S$800.00 advanced from DBS posts Dr 1250 800.00, Cr 1020 800.00; the S$57.85 left, refunded
+// to DBS, posts Dr 1020 57.85, Cr 1250 57.85. Every problem comes back at once.
+// req: ledger/posting-rules Cash advance to an employee
+// req: FR-AP-17
+func TestPostCashAdvance(t *testing.T) {
+	s := claiming()
+	s.Accounts[dbs.ID], s.Accounts[wiseUSD.ID] = dbs, wiseUSD
+	a := CashAdvance{ID: advance, Version: 1, Date: day, Memo: "Jakarta trip", Account: dbs.ID, Advances: advances.ID, Amount: amt(t, "800.00", sgd)}
+	e, err := PostCashAdvance(a, s)
+	if err != nil || legs(s, e) != "1250 800.00 SGD = 800.00; 1020 -800.00 SGD = -800.00" || e.PostingIdentity != CashAdvanceIdentity(advance, 1, RuleCashAdvance) {
+		t.Fatalf("the advance: %s %v", legs(s, e), err)
+	}
+	back := a
+	back.Refund, back.Amount = true, amt(t, "57.85", sgd)
+	if e, err := PostCashAdvance(back, s); err != nil || legs(s, e) != "1020 57.85 SGD = 57.85; 1250 -57.85 SGD = -57.85" {
+		t.Errorf("the refund: %s %v", legs(s, e), err)
+	}
+	if again, err := ReplayCashAdvance(RuleCashAdvance, a, s); err != nil || legs(s, again) != legs(s, e) {
+		t.Errorf("replay: %v", err)
+	}
+	if _, err := ReplayCashAdvance("cash_advance@0", a, s); !hasCode(err, CodeUnknownRule) {
+		t.Errorf("an unknown rule: %v", err)
+	}
+	bad := CashAdvance{ID: advance, Version: 1, Memo: strings.Repeat("m", MaxMemo+1), Account: wiseUSD.ID, Advances: dbs.ID, Amount: amt(t, "0.00", sgd)}
+	_, err = PostCashAdvance(bad, s)
+	if got := codes(err); !slices.Equal(got, []string{CodeNoDate, CodeTooLong, CodePaymentAmount, CodeAdvance, CodeAdvance}) {
+		t.Errorf("refused: %v", got)
+	}
+	bad = CashAdvance{ID: advance, Version: 1, Date: day, Account: meals.ID, Advances: uuid.Nil, Amount: amt(t, "10.00", usd)}
+	if got := codes(func() error { _, err := PostCashAdvance(bad, s); return err }()); !slices.Equal(got, []string{CodeNotMoneyAccount, CodeAdvance, CodeAdvance}) {
+		t.Errorf("a cost account, no advances account, USD: %v", got)
+	}
+	long := a
+	long.Memo = strings.Repeat("m", MaxMemo)
+	if _, err := PostCashAdvance(long, s); err != nil {
+		t.Errorf("the longest memo: %v", err)
+	}
+}

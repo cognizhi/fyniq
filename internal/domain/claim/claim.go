@@ -73,7 +73,8 @@ type Draft struct {
 	Title      string
 	Lines      []Line
 	Notes      string
-	LateReason string // why a line past the claim deadline is claimed late (FR-AP-15)
+	LateReason string     // why a line past the claim deadline is claimed late (FR-AP-15)
+	AdvanceID  *uuid.UUID // the claimant's cash advance it settles, up to what is open on it (FR-AP-17); nil: none
 }
 
 // Line is one line of a claim. A mileage line (Kind LineMileage) is a trip: its date, its category (the mileage
@@ -119,6 +120,7 @@ type payload struct {
 	Lines      []payloadLine `json:"lines"`
 	Notes      string        `json:"notes,omitempty"`
 	LateReason string        `json:"late_reason,omitempty"`
+	AdvanceID  *uuid.UUID    `json:"advance_id,omitempty"`
 }
 
 type payloadLine struct {
@@ -164,7 +166,8 @@ func Encode(d Draft) ([]byte, error) {
 			return nil, &Error{CodeTooLong, fmt.Sprintf("%s: %d characters; the most is %d", x.field, len(x.text), x.most), "Shorten it"}
 		}
 	}
-	p := payload{ClaimantID: d.ClaimantID, Date: day(d.Date), Title: d.Title, Notes: d.Notes, LateReason: d.LateReason, Lines: []payloadLine{}}
+	p := payload{ClaimantID: d.ClaimantID, Date: day(d.Date), Title: d.Title, Notes: d.Notes, LateReason: d.LateReason, AdvanceID: d.AdvanceID,
+		Lines: []payloadLine{}}
 	for i, r := range d.Lines {
 		f := func(name string) string { return fmt.Sprintf("lines[%d].%s", i+1, name) }
 		if r.Kind == LineMileage {
@@ -239,7 +242,7 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 	if err := json.Unmarshal(doc.Payload, &p); err != nil {
 		return Draft{}, bad(err.Error())
 	}
-	d := Draft{ClaimantID: p.ClaimantID, Title: p.Title, Notes: p.Notes, LateReason: p.LateReason}
+	d := Draft{ClaimantID: p.ClaimantID, Title: p.Title, Notes: p.Notes, LateReason: p.LateReason, AdvanceID: p.AdvanceID}
 	var err error
 	if p.Date != "" {
 		if d.Date, err = time.Parse(time.DateOnly, p.Date); err != nil {

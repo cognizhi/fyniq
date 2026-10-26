@@ -648,6 +648,13 @@ var codeFacts = map[string]struct {
 	claim.CodeNotPosted:           {409, "The reimbursement is not posted"},
 	claim.CodeVoidDate:            {422, "The void is dated before the reimbursement"},
 	CodeReimbursementVoidApproval: {409, "Voiding needs a second person"},
+	claim.CodeNotAdvance:          {404, "Not a cash advance"},
+	claim.CodeAdvancePerson:       {422, "The advance is not paid to an active member"},
+	claim.CodeAdvanceRefund:       {422, "The refund does not fit the advance"},
+	claim.CodeAdvanceSettled:      {409, "The advance cannot be voided as it stands"},
+	claim.CodeClaimAdvance:        {422, "The claim cannot settle that advance"},
+	ledger.CodeAdvance:            {422, "The advance's accounts or amount do not fit"},
+	CodeAdvanceVoidApproval:       {409, "Voiding needs a second person"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).

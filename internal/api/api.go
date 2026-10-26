@@ -90,6 +90,7 @@ type API struct {
 	quotes               journal.Quotes              // quotes and sales orders (FR-AR-01)
 	claims               journal.Claims              // members' expense claims (FR-AP-07)
 	reimbursements       journal.ClaimReimbursements // claims paid back, recorded by hand (FR-AP-07)
+	advances             journal.CashAdvances        // cash advances to members and their refunds (FR-AP-17)
 }
 
 func init() {
@@ -191,7 +192,7 @@ func New(mux humago.Mux, d Deps) *API {
 		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
 		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store},
 		customerApplications: journal.CustomerCreditApplications{Store: d.Store}, customerRefunds: journal.CustomerRefunds{Store: d.Store},
-		deposits: journal.CustomerDeposits{Store: d.Store}, bank: journal.BankTransactions{Store: d.Store, Clock: d.Clock}, quotes: journal.Quotes{Store: d.Store}, claims: journal.Claims{Store: d.Store}, reimbursements: journal.ClaimReimbursements{Store: d.Store}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
+		deposits: journal.CustomerDeposits{Store: d.Store}, bank: journal.BankTransactions{Store: d.Store, Clock: d.Clock}, quotes: journal.Quotes{Store: d.Store}, claims: journal.Claims{Store: d.Store}, reimbursements: journal.ClaimReimbursements{Store: d.Store}, advances: journal.CashAdvances{Store: d.Store}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {
@@ -214,6 +215,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.bank.AfterPosting = a.afterPosting
 	a.claims.AfterPosting = a.afterPosting
 	a.reimbursements.AfterPosting = a.afterPosting
+	a.advances.AfterPosting = a.afterPosting
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(limitUploads{mux}, cfg)
@@ -300,6 +302,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerBankRules(a)
 	registerClaims(a)
 	registerReimbursements(a)
+	registerAdvances(a)
 	registerMileage(a)
 	registerClaimCategories(a)
 	registerClaimEvidence(a)

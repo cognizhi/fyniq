@@ -100,7 +100,8 @@
         "connector",
         "bank_rule",
         "expense_claim",
-        "claim_reimbursement"
+        "claim_reimbursement",
+        "cash_advance"
       ],
       "examples": [
         "organisation_setting"
@@ -143,7 +144,8 @@
         "connector.change",
         "bank_rule.auto_apply",
         "expense_claim.post",
-        "claim_reimbursement.void"
+        "claim_reimbursement.void",
+        "cash_advance.void"
       ],
       "examples": [
         "organisation_setting.change"

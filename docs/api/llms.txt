@@ -82,6 +82,12 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bills/{bill_id}/post-approval` (requestBillPost): Ask for approval to post a bill
 - `POST /v1/bills/{bill_id}/void` (voidBill): Void a posted bill
 - `POST /v1/bills/{bill_id}/void-approval` (requestBillVoid): Ask for approval to void a bill
+- `GET /v1/cash-advances` (listCashAdvances): List cash advances and their refunds
+- `POST /v1/cash-advances` (recordCashAdvance): Record a cash advance to a member
+- `GET /v1/cash-advances/{advance_id}` (getCashAdvance): Get a cash advance or its refund
+- `POST /v1/cash-advances/{advance_id}/refunds` (recordCashAdvanceRefund): Record the refund of what is left of a cash advance
+- `POST /v1/cash-advances/{advance_id}/void` (voidCashAdvance): Void a cash advance or its refund
+- `POST /v1/cash-advances/{advance_id}/void-approval` (requestCashAdvanceVoid): Ask for approval to void a cash advance or its refund
 - `GET /v1/cash-position` (getCashPosition): Get the cash position
 - `GET /v1/claim-categories` (listClaimCategories): List the expense policy's categories
 - `POST /v1/claim-categories` (createClaimCategory): Add a category to the expense policy

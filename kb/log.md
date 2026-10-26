@@ -213,3 +213,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-26] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (mileage rates, FR-AP-16; p1-expense-claims task 4.1)
 
 ## [2026-10-26] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (claim deadline, FR-AP-15; p1-expense-claims task 5.1)
+
+## [2026-10-26] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (advances account, FR-AP-17; p1-expense-claims task 6.1)

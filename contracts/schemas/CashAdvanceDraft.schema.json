@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What was advanced, in the base currency."
+    },
+    "date": {
+      "description": "The day the money left the account.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "money_account_id": {
+      "description": "The bank, card or wallet account it left: an active money account in the base currency.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "notes": {
+      "description": "Notes kept with it: what it is for.",
+      "examples": [
+        "Jakarta trip, 6 to 9 October"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "person_id": {
+      "description": "Who it is paid to: a member's user ID, whose claims settle it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reference": {
+      "description": "The bank's reference for it.",
+      "examples": [
+        "FAST 77120"
+      ],
+      "maxLength": 140,
+      "type": "string"
+    }
+  },
+  "required": [
+    "person_id",
+    "date",
+    "money_account_id",
+    "amount"
+  ],
+  "title": "CashAdvanceDraft",
+  "type": "object"
+}
