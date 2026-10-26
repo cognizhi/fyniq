@@ -36,7 +36,7 @@
 
 ## 4. Mileage
 
-- [ ] 4.1 `RND-MILEAGE` in `internal/domain/rounding`; the mileage rates as effective-dated settings (unset until the
+- [x] 4.1 `RND-MILEAGE` in `internal/domain/rounding`; the mileage rates as effective-dated settings (unset until the
   owner or the accountant sets them; mileage refused with a plain message until then); mileage lines in the claim's
   draft; saved places per person (migration, RLS, grants, audit); the monthly mileage log; mileage lines post with no
   GST (`expense_claim@1` already refuses GST on a mileage line).

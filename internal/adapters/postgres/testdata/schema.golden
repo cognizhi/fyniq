@@ -338,6 +338,17 @@ claim_category | created_at | timestamp with time zone | not null |
 claim_category | changed_by | text | not null | 
 claim_category | changed_at | timestamp with time zone | not null | 
 claim_category | version | integer | not null | 1
+claim_place | organisation_id | uuid | not null | current_org()
+claim_place | id | uuid | not null | uuidv7()
+claim_place | user_id | uuid | not null | 
+claim_place | name | text | not null | 
+claim_place | address | text | not null | 
+claim_place | active | boolean | not null | true
+claim_place | created_by | text | not null | 
+claim_place | created_at | timestamp with time zone | not null | 
+claim_place | changed_by | text | not null | 
+claim_place | changed_at | timestamp with time zone | not null | 
+claim_place | version | integer | not null | 1
 close_checklist_entry | organisation_id | uuid | not null | current_org()
 close_checklist_entry | id | uuid | not null | uuidv7()
 close_checklist_entry | period_id | uuid | not null | 
@@ -1765,6 +1776,25 @@ claim_category | claim_category_pkey | PRIMARY KEY (organisation_id, id)
 claim_category | claim_category_version_not_null | NOT NULL version
 claim_category | claim_category_version_positive | CHECK ((version >= 1))
 claim_category | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+claim_place | claim_place_active_not_null | NOT NULL active
+claim_place | claim_place_address_length | CHECK (((length(btrim(address)) >= 1) AND (length(btrim(address)) <= 300)))
+claim_place | claim_place_address_not_null | NOT NULL address
+claim_place | claim_place_by_form | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (changed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
+claim_place | claim_place_changed_at_not_null | NOT NULL changed_at
+claim_place | claim_place_changed_by_not_null | NOT NULL changed_by
+claim_place | claim_place_created_at_not_null | NOT NULL created_at
+claim_place | claim_place_created_by_not_null | NOT NULL created_by
+claim_place | claim_place_id_not_null | NOT NULL id
+claim_place | claim_place_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 80)))
+claim_place | claim_place_name_not_null | NOT NULL name
+claim_place | claim_place_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+claim_place | claim_place_organisation_id_not_null | NOT NULL organisation_id
+claim_place | claim_place_pkey | PRIMARY KEY (organisation_id, id)
+claim_place | claim_place_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+claim_place | claim_place_user_id_not_null | NOT NULL user_id
+claim_place | claim_place_version_not_null | NOT NULL version
+claim_place | claim_place_version_positive | CHECK ((version >= 1))
+claim_place | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 close_checklist_entry | close_checklist_entry_actor_format | CHECK ((written_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 close_checklist_entry | close_checklist_entry_id_not_null | NOT NULL id
 close_checklist_entry | close_checklist_entry_key_format | CHECK ((task_key ~ '^[a-z0-9][a-z0-9-]{0,39}$'::text))
@@ -3241,6 +3271,8 @@ CREATE UNIQUE INDEX capture_sender_pkey ON fyniq.capture_sender USING btree (org
 CREATE UNIQUE INDEX claim_category_live_mileage ON fyniq.claim_category USING btree (organisation_id) WHERE (active AND mileage)
 CREATE UNIQUE INDEX claim_category_live_name ON fyniq.claim_category USING btree (organisation_id, lower(btrim(name))) WHERE active
 CREATE UNIQUE INDEX claim_category_pkey ON fyniq.claim_category USING btree (organisation_id, id)
+CREATE UNIQUE INDEX claim_place_live_name ON fyniq.claim_place USING btree (organisation_id, user_id, lower(btrim(name))) WHERE active
+CREATE UNIQUE INDEX claim_place_pkey ON fyniq.claim_place USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_entry_pkey ON fyniq.close_checklist_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_template_pkey ON fyniq.close_checklist_template USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_template_version_key ON fyniq.close_checklist_template USING btree (organisation_id, version)
@@ -3442,6 +3474,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_sig
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_transfer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_transfer', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.capture_address DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_address', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.claim_category DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('claim_category', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.claim_place DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('claim_place', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.customer_group DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('customer_group', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
@@ -3506,6 +3539,7 @@ CREATE TRIGGER capture_address_no_truncate BEFORE TRUNCATE ON fyniq.capture_addr
 CREATE TRIGGER capture_sender_guard BEFORE DELETE OR UPDATE ON fyniq.capture_sender FOR EACH ROW EXECUTE FUNCTION capture_sender_guard()
 CREATE TRIGGER capture_sender_no_truncate BEFORE TRUNCATE ON fyniq.capture_sender FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER claim_category_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.claim_category FOR EACH ROW EXECUTE FUNCTION claim_category_guard()
+CREATE TRIGGER claim_place_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.claim_place FOR EACH ROW EXECUTE FUNCTION claim_place_guard()
 CREATE TRIGGER close_checklist_entry_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.close_checklist_entry FOR EACH ROW EXECUTE FUNCTION close_checklist_guard()
 CREATE TRIGGER close_checklist_entry_no_truncate BEFORE TRUNCATE ON fyniq.close_checklist_entry FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER close_checklist_template_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.close_checklist_template FOR EACH ROW EXECUTE FUNCTION close_checklist_guard()
@@ -3670,6 +3704,7 @@ bill_payment_plan | tenant_isolation | * | (organisation_id = current_org()) | (
 capture_address | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_sender | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 claim_category | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+claim_place | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 close_checklist_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 close_checklist_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -3781,6 +3816,7 @@ change_installation_connector(p_by uuid, p_change uuid, p_step text, p_id uuid, 
 check_entry_balanced() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b53334884d5e11426b962a38e77aed9
 claim_category_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e3555d3e253fa24e081bd77a62a656f2
 claim_job_slot(p_job text, p_slot timestamp with time zone, p_holder text, p_until timestamp with time zone, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 25c90e46d6e3d1e87666459f6db394db
+claim_place_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b9d945198410ff448d1bc24902010e4d
 claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 57aedc912c161d7d32a66f3e8840bd12
 close_checklist_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f4af92af3952d349375bb5a90970c137
 confirm_super_admin_recovery(p_by uuid, p_for uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 254723da0ff40bc2dc8dd67758ba97c3

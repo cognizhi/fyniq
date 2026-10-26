@@ -1,8 +1,8 @@
 // Package rounding holds Fyniq's named rounding and allocation policies (PRD-001 §10.4). Every
 // rounding in the system goes through one of these functions, called by its name, and "half-up"
 // means half away from zero. The policies the P0 posting source needs are here; the statutory ones
-// (RND-CPF*, RND-SDL) and RND-SHARE and RND-MILEAGE arrive with their P1 sources, as RND-GST-EXCL did
-// with bills (p1-purchases) and RND-GST-INCL with customer deposits (p1-sales).
+// (RND-CPF*, RND-SDL) and RND-SHARE arrive with their P1 sources, as RND-GST-EXCL did with bills (p1-purchases),
+// RND-GST-INCL with customer deposits (p1-sales) and RND-MILEAGE with expense claims (p1-expense-claims).
 package rounding
 
 import (
@@ -30,6 +30,7 @@ const (
 	DiscountName     = "RND-DISCOUNT"
 	GSTInclName      = "RND-GST-INCL"
 	DepositName      = "RND-DEPOSIT"
+	MileageName      = "RND-MILEAGE"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -531,4 +532,28 @@ func AllocProRata(amount money.Money, weights []int64) ([]money.Money, error) {
 		out[i] = money.FromMinor(sign*p, amount.Currency())
 	}
 	return out, nil
+}
+
+// Mileage is RND-MILEAGE (PRD-001 §10.4; FR-AP-16): a trip's amount = round(distance in km, to 0.1 km, half-up) × the
+// rate per km, then rounded to the rate currency's minor units, half-up, per trip. It returns the distance it rounded
+// to, which the trip is claimed for, and the amount; the distance and the rate are more than zero.
+func Mileage(distance money.Quantity, rate money.Money) (money.Quantity, money.Money, error) {
+	if rate.Sign() <= 0 {
+		return money.Quantity{}, money.Money{}, &money.Error{Code: money.CodeRange, Field: "rate",
+			Message: fmt.Sprintf("the rate per km is %s %s", rate, rate.Currency()), Fix: "Set a rate per km above zero"}
+	}
+	km, err := money.ParseQuantity(halfAwayFromZero(distance.Decimal(), 1).Text('f'), "distance")
+	if err != nil {
+		return money.Quantity{}, money.Money{}, err
+	}
+	if km.Sign() <= 0 {
+		return money.Quantity{}, money.Money{}, &money.Error{Code: money.CodeRange, Field: "distance",
+			Message: fmt.Sprintf("the distance is %s km, which rounds to %s km", distance, km), Fix: "Enter the distance driven, at least 0.05 km"}
+	}
+	var product apd.Decimal
+	if _, err := work.Mul(&product, km.Decimal(), rate.Decimal()); err != nil {
+		return money.Quantity{}, money.Money{}, &money.Error{Code: money.CodeRange, Field: "distance", Message: err.Error()}
+	}
+	amount, err := money.FromRounded(halfAwayFromZero(&product, rate.Currency().MinorUnits), rate.Currency())
+	return km, amount, err
 }

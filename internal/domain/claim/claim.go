@@ -30,6 +30,9 @@ const (
 	CodeTooLong  = "CLAIM-06" // a title, merchant, description, attendees or notes longer than the most kept
 	CodeReceipt  = "CLAIM-07" // a receipt without its date or merchant, dated after the claim, or with facts Fyniq cannot read
 	CodeGSTCode  = "CLAIM-08" // a GST code that is not a purchase code of the sg-gst pack
+	// CLAIM-09 to CLAIM-11 are the API's, CLAIM-12 to CLAIM-16 a reimbursement's, CLAIM-17 the API's.
+	CodeMileage     = "CLAIM-18" // a mileage line without its vehicle, places or distance, or one Fyniq cannot read
+	CodeMileageRate = "CLAIM-19" // no rate per km set for the vehicle on the trip's date
 )
 
 // The longest texts a claim keeps.
@@ -40,8 +43,17 @@ const (
 	MaxNotes     = 2000
 )
 
-// LineReceipt is the kind of a receipt line: what was bought, as the receipt shows it.
-const LineReceipt = "receipt"
+// The kinds of line: a receipt, what was bought as the receipt shows it; or a trip in the member's own vehicle (FR-AP-16).
+const (
+	LineReceipt = "receipt"
+	LineMileage = "mileage"
+)
+
+// The vehicles a mileage line is driven in, each with the setting that holds its rate per km.
+var Vehicles = map[string]string{"car": "claims.mileage_rate_car", "motorcycle": "claims.mileage_rate_motorcycle"}
+
+// MaxPlace is the longest place a mileage line keeps: a saved place's address, or one typed.
+const MaxPlace = 300
 
 // Error is a claim command's refusal with a stable code.
 type Error struct {
@@ -62,7 +74,10 @@ type Draft struct {
 	Notes      string
 }
 
-// Line is one line of a claim. A receipt line (Kind LineReceipt, or empty) is: its date, the merchant, its claim category, what it was for, its amount including GST
+// Line is one line of a claim. A mileage line (Kind LineMileage) is a trip: its date, its category (the mileage
+// category), what it was for (Description), where from and to, whether it was a return trip, the vehicle (one of
+// Vehicles) and the distance driven in km, as typed: the whole trip's (UC-EXP-02); its amount is RND-MILEAGE's at the
+// vehicle's rate on its date, with no GST. A receipt line (Kind LineReceipt, or empty) is: its date, the merchant, its claim category, what it was for, its amount including GST
 // and the GST it states, both in its currency, and the GST code. For a receipt in another currency, Rate is the rate
 // as typed (nil takes the cascade's for the receipt's date, ENG-40), StatedGST the GST its tax invoice states in the
 // base currency (ENG-42; nil: none is claimed), and Paid what the claimant paid in the base currency, as their card
@@ -84,6 +99,10 @@ type Line struct {
 	Attendees   string
 	Document    string
 	AddressedTo string
+	From, To    string
+	Return      bool
+	Vehicle     string
+	Distance    money.Quantity
 }
 
 // payload is a claim as a document version stores it: dates as text, amounts with their currency.
@@ -101,9 +120,9 @@ type payloadLine struct {
 	Merchant     string       `json:"merchant,omitempty"`
 	CategoryID   uuid.UUID    `json:"category_id"`
 	Description  string       `json:"description,omitempty"`
-	Amount       money.Money  `json:"amount"`
-	GSTCode      string       `json:"gst_code"`
-	GST          money.Money  `json:"gst"`
+	Amount       *money.Money `json:"amount,omitempty"`
+	GSTCode      string       `json:"gst_code,omitempty"`
+	GST          *money.Money `json:"gst,omitempty"`
 	StatedGST    *money.Money `json:"stated_gst,omitempty"`
 	Paid         *money.Money `json:"paid,omitempty"`
 	FXRate       string       `json:"fx_rate,omitempty"`
@@ -111,6 +130,11 @@ type payloadLine struct {
 	Attendees    string       `json:"attendees,omitempty"`
 	Document     string       `json:"document,omitempty"`
 	AddressedTo  string       `json:"addressed_to,omitempty"`
+	From         string       `json:"from,omitempty"`
+	To           string       `json:"to,omitempty"`
+	Return       bool         `json:"return,omitempty"`
+	Vehicle      string       `json:"vehicle,omitempty"`
+	Distance     string       `json:"distance,omitempty"`
 }
 
 func day(t time.Time) string {
@@ -134,8 +158,16 @@ func Encode(d Draft) ([]byte, error) {
 	p := payload{ClaimantID: d.ClaimantID, Date: day(d.Date), Title: d.Title, Notes: d.Notes, Lines: []payloadLine{}}
 	for i, r := range d.Lines {
 		f := func(name string) string { return fmt.Sprintf("lines[%d].%s", i+1, name) }
+		if r.Kind == LineMileage {
+			pl, err := encodeTrip(r, f)
+			if err != nil {
+				return nil, err
+			}
+			p.Lines = append(p.Lines, pl)
+			continue
+		}
 		if r.Kind != "" && r.Kind != LineReceipt {
-			return nil, &Error{CodeReceipt, fmt.Sprintf("%s: %q is not a kind of line Fyniq reads", f("kind"), r.Kind), "Enter a receipt line"}
+			return nil, &Error{CodeReceipt, fmt.Sprintf("%s: %q is not a kind of line Fyniq reads", f("kind"), r.Kind), "Enter a receipt or a mileage line"}
 		}
 		for _, x := range []struct {
 			field, text string
@@ -157,8 +189,9 @@ func Encode(d Draft) ([]byte, error) {
 			return nil, &Error{CodeReceipt, fmt.Sprintf("%s: a receipt is not an import permit", f("document")),
 				"Choose a tax invoice, a simplified tax invoice, or none; record an import as a bill"}
 		}
+		amount, gst := r.Amount, r.GST
 		pl := payloadLine{Kind: LineReceipt, Date: day(r.Date), Merchant: r.Merchant, CategoryID: r.CategoryID, Description: r.Description,
-			Amount: r.Amount, GSTCode: r.GSTCode, GST: r.GST, StatedGST: r.StatedGST, Paid: r.Paid, Attendees: r.Attendees,
+			Amount: &amount, GSTCode: r.GSTCode, GST: &gst, StatedGST: r.StatedGST, Paid: r.Paid, Attendees: r.Attendees,
 			Document: or(r.Document, bill.DocTaxInvoice, ""), AddressedTo: or(r.AddressedTo, bill.ToCompany, "")}
 		if r.Rate != nil {
 			pl.FXRate, pl.FXRateSource = r.Rate.String(), r.Rate.Source
@@ -203,10 +236,18 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 		}
 	}
 	for _, l := range p.Lines {
-		if l.Kind != LineReceipt {
+		if l.Kind == LineMileage {
+			t, err := readTrip(l)
+			if err != nil {
+				return Draft{}, bad(err.Error())
+			}
+			d.Lines = append(d.Lines, t)
+			continue
+		}
+		if l.Kind != LineReceipt || l.Amount == nil || l.GST == nil {
 			return Draft{}, bad(fmt.Sprintf("a line of kind %q", l.Kind))
 		}
-		r := Line{Kind: LineReceipt, Merchant: l.Merchant, CategoryID: l.CategoryID, Description: l.Description, Amount: l.Amount, GSTCode: l.GSTCode, GST: l.GST,
+		r := Line{Kind: LineReceipt, Merchant: l.Merchant, CategoryID: l.CategoryID, Description: l.Description, Amount: *l.Amount, GSTCode: l.GSTCode, GST: *l.GST,
 			StatedGST: l.StatedGST, Paid: l.Paid, Attendees: l.Attendees, Document: l.Document, AddressedTo: l.AddressedTo}
 		if l.Date != "" {
 			if r.Date, err = time.Parse(time.DateOnly, l.Date); err != nil {
@@ -223,4 +264,39 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 		d.Lines = append(d.Lines, r)
 	}
 	return d, nil
+}
+
+// encodeTrip is a mileage line as a document version stores it; its places and vehicle are checked.
+func encodeTrip(r Line, f func(string) string) (payloadLine, error) {
+	for _, x := range []struct {
+		field, text string
+		most        int
+	}{{"description", r.Description, MaxDescription}, {"from", r.From, MaxPlace}, {"to", r.To, MaxPlace}} {
+		if len(x.text) > x.most {
+			return payloadLine{}, &Error{CodeTooLong, fmt.Sprintf("%s: %d characters; the most is %d", f(x.field), len(x.text), x.most), "Shorten it"}
+		}
+	}
+	if _, ok := Vehicles[r.Vehicle]; !ok {
+		return payloadLine{}, &Error{CodeMileage, fmt.Sprintf("%s: %q is not a vehicle Fyniq has a rate for", f("vehicle"), r.Vehicle), "Choose car or motorcycle"}
+	}
+	return payloadLine{Kind: LineMileage, Date: day(r.Date), CategoryID: r.CategoryID, Description: r.Description, From: r.From, To: r.To,
+		Return: r.Return, Vehicle: r.Vehicle, Distance: r.Distance.String()}, nil
+}
+
+// readTrip reads a mileage line as it was saved.
+func readTrip(l payloadLine) (Line, error) {
+	t := Line{Kind: LineMileage, CategoryID: l.CategoryID, Description: l.Description, From: l.From, To: l.To, Return: l.Return, Vehicle: l.Vehicle}
+	if l.Date != "" {
+		d, err := time.Parse(time.DateOnly, l.Date)
+		if err != nil {
+			return Line{}, fmt.Errorf("the trip's date %q", l.Date)
+		}
+		t.Date = d
+	}
+	q, err := money.ParseQuantity(l.Distance, "distance")
+	if err != nil {
+		return Line{}, fmt.Errorf("the distance %q", l.Distance)
+	}
+	t.Distance = q
+	return t, nil
 }

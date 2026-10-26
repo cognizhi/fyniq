@@ -107,6 +107,8 @@ type UnitOfWork interface {
 	BankMatching() BankMatching
 	// ClaimCategories are the expense policy's categories (FR-AP-15).
 	ClaimCategories() ClaimCategories
+	// ClaimPlaces are the members' saved places for mileage claims (FR-AP-16).
+	ClaimPlaces() ClaimPlaces
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))
@@ -631,7 +633,8 @@ const (
 	CodeBanking  = "STORAGE-BANKING-01"
 	CodeBillPlan = "STORAGE-PLAN-01" // a bill's payment plan never changes: a later one replaces it
 	// CodeClaim: a claim category costs a plain expense or asset account in the base currency and is never deleted; an
-	// expense claim posts only under an approved request its claimant asked for and did not sign (FR-AP-15, FR-AP-17).
+	// expense claim posts only under an approved request its claimant asked for and did not sign; a saved place keeps
+	// its person and is never deleted (FR-AP-15, FR-AP-16, FR-AP-17).
 	CodeClaim          = "STORAGE-CLAIM-01"
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation

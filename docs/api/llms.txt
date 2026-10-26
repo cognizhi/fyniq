@@ -83,6 +83,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bills/{bill_id}/void` (voidBill): Void a posted bill
 - `POST /v1/bills/{bill_id}/void-approval` (requestBillVoid): Ask for approval to void a bill
 - `GET /v1/cash-position` (getCashPosition): Get the cash position
+- `GET /v1/claim-places` (listClaimPlaces): List your saved places
+- `POST /v1/claim-places` (createClaimPlace): Save a place for your trips
+- `PUT /v1/claim-places/{place_id}` (replaceClaimPlace): Change one of your saved places
 - `GET /v1/claim-reimbursements` (listClaimReimbursements): List reimbursements of expense claims
 - `POST /v1/claim-reimbursements` (recordClaimReimbursement): Record a reimbursement of expense claims
 - `GET /v1/claim-reimbursements/{reimbursement_id}` (getClaimReimbursement): Get a reimbursement of expense claims
@@ -144,6 +147,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/document-templates/{template_id}/versions/{number}` (getDocumentTemplateVersion): Read a template version
 - `GET /v1/expense-claims` (listExpenseClaims): List expense claims
 - `POST /v1/expense-claims` (createExpenseClaim): Save a draft expense claim
+- `GET /v1/expense-claims/mileage-log` (getMileageLog): A member's mileage log for a month
 - `GET /v1/expense-claims/owed` (getExpenseClaimsOwed): What the company owes its claimants
 - `GET /v1/expense-claims/{claim_id}` (getExpenseClaim): Get an expense claim
 - `PUT /v1/expense-claims/{claim_id}` (replaceExpenseClaim): Change a draft expense claim

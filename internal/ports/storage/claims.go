@@ -49,3 +49,36 @@ type ClaimCategories interface {
 	List(ctx context.Context) ([]ClaimCategory, error)
 	Get(ctx context.Context, id uuid.UUID) (ClaimCategory, error)
 }
+
+// ClaimPlace is a place a member often drives between, kept for their mileage claims (FR-AP-16): their own, by name and
+// address. A place out of use is kept, as claims made with it name its address.
+type ClaimPlace struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	Name      string
+	Address   string
+	Active    bool
+	CreatedAt time.Time
+	ChangedAt time.Time
+	Version   int
+}
+
+// NewClaimPlace creates a place of a person's; a change to one carries its version (the person is kept).
+type NewClaimPlace struct {
+	UserID  uuid.UUID
+	Name    string
+	Address string
+	Active  bool
+	At      time.Time
+}
+
+// ClaimPlaces are the members' saved places. Every change is audited in its transaction (AUD-01); the database refuses
+// a second live place of a name for one person, a change of its person, and deleting one (CodeClaim).
+type ClaimPlaces interface {
+	Create(ctx context.Context, n NewClaimPlace) (ClaimPlace, error)
+	// Change changes a place at version: CodeVersion when it changed since.
+	Change(ctx context.Context, id uuid.UUID, version int, n NewClaimPlace) (ClaimPlace, error)
+	// List is a person's places, live ones first, by name; Get is one, ports.ErrNotFound for none.
+	List(ctx context.Context, user uuid.UUID) ([]ClaimPlace, error)
+	Get(ctx context.Context, id uuid.UUID) (ClaimPlace, error)
+}

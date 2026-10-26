@@ -15,6 +15,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/rounding"
+	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -40,6 +41,15 @@ type Prepared struct {
 	InputTax   []bill.Decision         // one a line, in order
 	Warnings   []Warning
 	OverLimit  bool
+	Trips      map[int]Trip // a mileage line's trip, by its index in Lines
+}
+
+// Trip is what RND-MILEAGE made of a mileage line (FR-AP-16): the distance it is claimed for, to 0.1 km, the vehicle's
+// rate per km on its date, and its amount.
+type Trip struct {
+	Km     money.Quantity
+	Rate   money.Money
+	Amount money.Money
 }
 
 // Prepare reads one version of a claim for the rule: its claimant, each line's category and the account it costs, its
@@ -78,8 +88,18 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 		return Prepared{}, nil, err
 	}
 	c := ledger.Claim{ID: doc.ID, Version: doc.Version, Date: d.Date, Memo: memo(d)}
+	out.Trips = map[int]Trip{}
+	rates := map[string][]storage.SettingChange{} // the changes of each vehicle's rate, read once
 	for i, l := range d.Lines {
 		f := func(name string) string { return fmt.Sprintf("lines[%d].%s", i+1, name) }
+		if l.Kind == LineMileage {
+			line, err := prepareTrip(ctx, u, d, i, l, base, rates, &out, add)
+			if err != nil {
+				return Prepared{}, nil, err
+			}
+			c.Lines = append(c.Lines, line)
+			continue
+		}
 		cur := l.Amount.Currency()
 		switch {
 		case l.Date.IsZero():
@@ -190,6 +210,102 @@ func describe(l Line) string {
 	if x := strings.TrimSpace(l.Description); x != "" {
 		out = strings.TrimSpace(out + ": " + x)
 	}
+	for len(out) > ledger.MaxDescription { // whole characters only
+		_, size := utf8.DecodeLastRuneInString(out)
+		out = out[:len(out)-size]
+	}
+	return out
+}
+
+// prepareTrip reads mileage line i for the rule (FR-AP-16): its date and the mileage category, its distance, and the
+// rate per km for its vehicle in force on its date (a setting, unset until the organisation sets it); its amount is
+// RND-MILEAGE's, with no GST.
+func prepareTrip(ctx context.Context, u storage.UnitOfWork, d Draft, i int, l Line, base money.Currency, rates map[string][]storage.SettingChange,
+	out *Prepared, add func(code, field, msg, fix string)) (ledger.ClaimLine, error) {
+	f := func(name string) string { return fmt.Sprintf("lines[%d].%s", i+1, name) }
+	none := bill.Decision{Condition: bill.Claimable, Reason: bill.ReasonNoGST, Text: "a mileage line claims no GST (GST Regulations, reg. 27)"}
+	out.InputTax = append(out.InputTax, none)
+	switch {
+	case l.Date.IsZero():
+		add(CodeReceipt, f("date"), "the trip has no date", "Enter the day of the trip")
+	case !d.Date.IsZero() && l.Date.After(d.Date):
+		add(CodeReceipt, f("date"), fmt.Sprintf("the trip is dated %s, after the claim's date %s", day(l.Date), day(d.Date)),
+			"Check the trip's date, or date the claim on or after it")
+	}
+	if strings.TrimSpace(l.From) == "" || strings.TrimSpace(l.To) == "" {
+		add(CodeMileage, f("from"), "the trip does not say where it was from and to", "Enter both places, or pick saved places")
+	}
+	var cat storage.ClaimCategory
+	if l.CategoryID == uuid.Nil {
+		add(CodeCategory, f("category_id"), "the trip has no category", "Choose the mileage category")
+	} else {
+		var err error
+		cat, err = u.ClaimCategories().Get(ctx, l.CategoryID)
+		switch {
+		case errors.Is(err, ports.ErrNotFound):
+			add(CodeCategory, f("category_id"), "the category does not exist in this organisation", "Choose the mileage category")
+		case err != nil:
+			return ledger.ClaimLine{}, err
+		case !cat.Active:
+			add(CodeCategory, f("category_id"), fmt.Sprintf("the category %s is no longer in use", cat.Name), "Choose the mileage category")
+		case !cat.Mileage:
+			add(CodeCategory, f("category_id"), fmt.Sprintf("%s is for receipts, not trips", cat.Name), "Choose the mileage category")
+		}
+	}
+	out.Categories = append(out.Categories, cat)
+	line := ledger.ClaimLine{AccountID: cat.AccountID, Description: describeTrip(l), Amount: money.Zero(base), GST: money.Zero(base), Mileage: true}
+	key, ok := Vehicles[l.Vehicle]
+	if !ok || l.Date.IsZero() {
+		if !ok {
+			add(CodeMileage, f("vehicle"), fmt.Sprintf("%q is not a vehicle Fyniq has a rate for", l.Vehicle), "Choose car or motorcycle")
+		}
+		return line, nil
+	}
+	changes, read := rates[key]
+	if !read {
+		var err error
+		if changes, err = u.Settings().Changes(ctx, key); err != nil {
+			return ledger.ClaimLine{}, err
+		}
+		rates[key] = changes
+	}
+	def, _ := settings.Lookup(key)
+	value := settings.On(def, changes, l.Date).Value
+	if value == "" {
+		add(CodeMileageRate, f("vehicle"), fmt.Sprintf("the organisation has set no rate per km for a %s on %s", l.Vehicle, day(l.Date)),
+			"Ask the owner or the accountant to set it in Settings › Organisation, Mileage rates")
+		return line, nil
+	}
+	rate, err := money.Parse(value, base)
+	if err != nil {
+		return ledger.ClaimLine{}, err
+	}
+	km, amount, err := rounding.Mileage(l.Distance, rate)
+	if err != nil {
+		add(CodeMileage, f("distance"), fmt.Sprintf("the distance is %s km", l.Distance), "Enter the distance driven, at least 0.05 km")
+		return line, nil
+	}
+	out.Trips[i] = Trip{Km: km, Rate: rate, Amount: amount}
+	line.Amount = amount
+	if cat.LineLimit != nil {
+		limit, err := money.ParseStored(string(*cat.LineLimit), base)
+		if over, cmpErr := amount.Cmp(limit); err == nil && cmpErr == nil && over > 0 {
+			out.OverLimit = true
+			out.Warnings = append(out.Warnings, Warning{WarnOverLimit, f("distance"),
+				fmt.Sprintf("%s %s is above the %s category's limit of %s %s a line", amount, base, cat.Name, limit, base),
+				"It can still be claimed: finance approves it too; say why in the claim's notes"})
+		}
+	}
+	return line, nil
+}
+
+// describeTrip is a trip's description in the entry: what it was for, and where from and to.
+func describeTrip(l Line) string {
+	trip := strings.TrimSpace(l.From) + " to " + strings.TrimSpace(l.To)
+	if l.Return {
+		trip += " and back"
+	}
+	out := strings.TrimSpace(strings.TrimSpace(l.Description) + " (" + trip + ")")
 	for len(out) > ledger.MaxDescription { // whole characters only
 		_, size := utf8.DecodeLastRuneInString(out)
 		out = out[:len(out)-size]

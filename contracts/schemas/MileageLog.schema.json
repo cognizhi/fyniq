@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "claimant": {
+      "$ref": "Person.schema.json",
+      "description": "Whose trips."
+    },
+    "month": {
+      "description": "The month, YYYY-MM.",
+      "examples": [
+        "2026-10"
+      ],
+      "type": "string"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "What the trips with a rate come to."
+    },
+    "trips": {
+      "description": "Their trips in the month, on drafts and claims alike, oldest first.",
+      "items": {
+        "$ref": "MileageTrip.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "month",
+    "claimant",
+    "trips",
+    "total"
+  ],
+  "title": "MileageLog",
+  "type": "object"
+}

@@ -81,6 +81,65 @@ func (q *Queries) ClaimCategory(ctx context.Context, id uuid.UUID) (FyniqClaimCa
 	return i, err
 }
 
+const claimPlace = `-- name: ClaimPlace :one
+SELECT organisation_id, id, user_id, name, address, active, created_by, created_at, changed_by, changed_at, version FROM fyniq.claim_place WHERE id = $1
+`
+
+func (q *Queries) ClaimPlace(ctx context.Context, id uuid.UUID) (FyniqClaimPlace, error) {
+	row := q.db.QueryRow(ctx, claimPlace, id)
+	var i FyniqClaimPlace
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Address,
+		&i.Active,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.ChangedBy,
+		&i.ChangedAt,
+		&i.Version,
+	)
+	return i, err
+}
+
+const claimPlaces = `-- name: ClaimPlaces :many
+SELECT organisation_id, id, user_id, name, address, active, created_by, created_at, changed_by, changed_at, version FROM fyniq.claim_place WHERE user_id = $1 ORDER BY active DESC, lower(name), id
+`
+
+func (q *Queries) ClaimPlaces(ctx context.Context, userID uuid.UUID) ([]FyniqClaimPlace, error) {
+	rows, err := q.db.Query(ctx, claimPlaces, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqClaimPlace
+	for rows.Next() {
+		var i FyniqClaimPlace
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.Address,
+			&i.Active,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.ChangedBy,
+			&i.ChangedAt,
+			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertClaimCategory = `-- name: InsertClaimCategory :one
 
 INSERT INTO fyniq.claim_category (name, account_id, mileage, currency, minor_units, line_limit, receipt_above, attendees_above,
@@ -138,6 +197,45 @@ func (q *Queries) InsertClaimCategory(ctx context.Context, arg InsertClaimCatego
 	return i, err
 }
 
+const insertClaimPlace = `-- name: InsertClaimPlace :one
+INSERT INTO fyniq.claim_place (user_id, name, address, created_by, created_at, changed_by, changed_at)
+VALUES ($1, $2, $3, $4, $5, $4, $5)
+RETURNING organisation_id, id, user_id, name, address, active, created_by, created_at, changed_by, changed_at, version
+`
+
+type InsertClaimPlaceParams struct {
+	UserID  uuid.UUID
+	Name    string
+	Address string
+	By      string
+	At      time.Time
+}
+
+func (q *Queries) InsertClaimPlace(ctx context.Context, arg InsertClaimPlaceParams) (FyniqClaimPlace, error) {
+	row := q.db.QueryRow(ctx, insertClaimPlace,
+		arg.UserID,
+		arg.Name,
+		arg.Address,
+		arg.By,
+		arg.At,
+	)
+	var i FyniqClaimPlace
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Address,
+		&i.Active,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.ChangedBy,
+		&i.ChangedAt,
+		&i.Version,
+	)
+	return i, err
+}
+
 const updateClaimCategory = `-- name: UpdateClaimCategory :one
 UPDATE fyniq.claim_category
    SET name = $1, account_id = $2, line_limit = $3::numeric,
@@ -185,6 +283,51 @@ func (q *Queries) UpdateClaimCategory(ctx context.Context, arg UpdateClaimCatego
 		&i.LineLimit,
 		&i.ReceiptAbove,
 		&i.AttendeesAbove,
+		&i.Active,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.ChangedBy,
+		&i.ChangedAt,
+		&i.Version,
+	)
+	return i, err
+}
+
+const updateClaimPlace = `-- name: UpdateClaimPlace :one
+UPDATE fyniq.claim_place
+   SET name = $1, address = $2, active = $3, changed_by = $4, changed_at = $5,
+       version = version + 1
+ WHERE id = $6 AND version = $7
+RETURNING organisation_id, id, user_id, name, address, active, created_by, created_at, changed_by, changed_at, version
+`
+
+type UpdateClaimPlaceParams struct {
+	Name    string
+	Address string
+	Active  bool
+	By      string
+	At      time.Time
+	ID      uuid.UUID
+	Version int32
+}
+
+func (q *Queries) UpdateClaimPlace(ctx context.Context, arg UpdateClaimPlaceParams) (FyniqClaimPlace, error) {
+	row := q.db.QueryRow(ctx, updateClaimPlace,
+		arg.Name,
+		arg.Address,
+		arg.Active,
+		arg.By,
+		arg.At,
+		arg.ID,
+		arg.Version,
+	)
+	var i FyniqClaimPlace
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Address,
 		&i.Active,
 		&i.CreatedBy,
 		&i.CreatedAt,

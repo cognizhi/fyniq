@@ -939,3 +939,75 @@ func TestDepositPartProperties(t *testing.T) {
 		}
 	})
 }
+
+func km(t tb, s string) money.Quantity {
+	t.Helper()
+	q, err := money.ParseQuantity(s, "distance")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return q
+}
+
+// Worked by hand (RND-MILEAGE, PRD-001 §10.4; UC-EXP-02): the distance rounds to 0.1 km half-up, then the amount to the
+// cent half-up. The rates are stand-ins for the tests, not recommended rates: the organisation sets its own.
+// req: RND-MILEAGE
+// req: ledger/money-and-rounding RND-MILEAGE Mileage amount
+func TestMileagePinnedCases(t *testing.T) {
+	for _, c := range []struct {
+		distance, rate string
+		cur            money.Currency
+		km, amount     string
+	}{
+		{"18.4", "0.60", sgd, "18.4", "11.04"},  // UC-EXP-02's trip, as typed
+		{"18.44", "0.60", sgd, "18.4", "11.04"}, // the distance rounds down below the half
+		{"18.45", "0.60", sgd, "18.5", "11.10"}, // and up at the half
+		{"0.05", "0.65", sgd, "0.1", "0.07"},    // 0.065: the amount rounds up at the half cent
+		{"12.345", "0.55", sgd, "12.3", "6.77"}, // 6.765, after the distance rounds first
+		{"10.15", "30", jpy, "10.2", "306"},     // a currency with no minor units
+		{"250", "0.72", sgd, "250", "180.00"},   // a whole distance keeps no decimal
+	} {
+		got, amount, err := Mileage(km(t, c.distance), m(t, c.rate, c.cur))
+		if err != nil || got.String() != c.km || amount.String() != c.amount || amount.Currency() != c.cur {
+			t.Errorf("%s km at %s: %s km, %s %v; want %s km, %s", c.distance, c.rate, got, amount, err, c.km, c.amount)
+		}
+	}
+	for _, c := range []struct{ distance, rate string }{{"0", "0.60"}, {"-1", "0.60"}, {"0.04", "0.60"}, {"10", "0.00"}, {"10", "-0.60"}} {
+		if _, _, err := Mileage(km(t, c.distance), m(t, c.rate, sgd)); err == nil {
+			t.Errorf("%s km at %s: no error", c.distance, c.rate)
+		}
+	}
+}
+
+// Property (RND-MILEAGE): the distance claimed is within 0.05 km of the distance driven, with one decimal, and the amount
+// is within half a cent of it times the rate.
+// req: RND-MILEAGE
+func TestMileageProperties(t *testing.T) {
+	rapid.Check(t, func(rt *rapid.T) {
+		d := km(rt, fmt.Sprintf("%d.%03d", rapid.IntRange(0, 2000).Draw(rt, "km"), rapid.IntRange(50, 999).Draw(rt, "m")))
+		r := m(rt, fmt.Sprintf("0.%02d", rapid.IntRange(1, 99).Draw(rt, "cents")), sgd)
+		got, amount, err := Mileage(d, r)
+		if err != nil {
+			rt.Fatal(err)
+		}
+		var diff, half apd.Decimal
+		if _, err := work.Sub(&diff, got.Decimal(), d.Decimal()); err != nil {
+			rt.Fatal(err)
+		}
+		half.SetFinite(5, -2)
+		if diff.Abs(&diff).Cmp(&half) > 0 || -got.Decimal().Exponent > 1 {
+			rt.Fatalf("%s km claimed for %s km", got, d)
+		}
+		var exact apd.Decimal
+		if _, err := work.Mul(&exact, got.Decimal(), r.Decimal()); err != nil {
+			rt.Fatal(err)
+		}
+		half.SetFinite(5, -3)
+		if _, err := work.Sub(&diff, amount.Decimal(), &exact); err != nil {
+			rt.Fatal(err)
+		}
+		if diff.Abs(&diff).Cmp(&half) > 0 {
+			rt.Fatalf("%s for %s km at %s: %s exactly", amount, got, r, &exact)
+		}
+	})
+}

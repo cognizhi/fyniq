@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "Its amount; absent while its vehicle has no rate per km on its date."
+    },
+    "claim_id": {
+      "description": "The claim it is on.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fd1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "claim_number": {
+      "description": "The claim's number.",
+      "examples": [
+        "CLM-0007"
+      ],
+      "type": "string"
+    },
+    "claimed_km": {
+      "description": "The distance claimed, to 0.1 km; 0 while it has no rate.",
+      "examples": [
+        "18.4"
+      ],
+      "type": "string"
+    },
+    "date": {
+      "description": "The trip's date.",
+      "examples": [
+        "2026-10-24"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "from": {
+      "description": "Where it started.",
+      "examples": [
+        "Office"
+      ],
+      "type": "string"
+    },
+    "purpose": {
+      "description": "What it was for.",
+      "examples": [
+        "Client visit"
+      ],
+      "type": "string"
+    },
+    "return": {
+      "description": "true for a return trip.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "stage": {
+      "description": "Where the claim stands.",
+      "examples": [
+        "approved"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "Where it went.",
+      "examples": [
+        "Acme HQ"
+      ],
+      "type": "string"
+    },
+    "vehicle": {
+      "description": "The vehicle.",
+      "examples": [
+        "car"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "date",
+    "claim_id",
+    "stage",
+    "from",
+    "to",
+    "return",
+    "vehicle",
+    "claimed_km"
+  ],
+  "title": "MileageTrip",
+  "type": "object"
+}

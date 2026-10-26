@@ -80,7 +80,9 @@ everyone's. A difference between a sub-ledger and its account is shown, never hi
 ### D5. Mileage
 
 `RND-MILEAGE` goes into `internal/domain/rounding` with the other named policies: round(distance, 0.1 km, half-up) ×
-rate, then to the cent, half-up, per trip; a return trip doubles the distance before rounding. The rates per vehicle
+rate, then to the cent, half-up, per trip. The distance typed is the whole trip's, as driven, return or not: UC-EXP-02
+claims a typed 18.4 km return trip at 18.4 × the rate. (Superseded: "a return trip doubles the distance before
+rounding". Doubling a one-way distance belongs to the maps service, which stays off.) The rates per vehicle
 type (car, motorcycle) are effective-dated organisation settings (FR-ORG-08), not statutory values; IRAS prescribes no
 per-km rate, so the recommended values are confirmed by the owner or the accountant before a mileage claim can be
 submitted (until then the setting is unset and mileage is refused with a plain message). Saved places are per person

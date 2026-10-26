@@ -21,3 +21,21 @@ SELECT * FROM fyniq.claim_category ORDER BY active DESC, lower(name), id;
 
 -- name: ClaimCategory :one
 SELECT * FROM fyniq.claim_category WHERE id = sqlc.arg(id);
+
+-- name: InsertClaimPlace :one
+INSERT INTO fyniq.claim_place (user_id, name, address, created_by, created_at, changed_by, changed_at)
+VALUES (sqlc.arg(user_id), sqlc.arg(name), sqlc.arg(address), sqlc.arg(by), sqlc.arg(at), sqlc.arg(by), sqlc.arg(at))
+RETURNING *;
+
+-- name: UpdateClaimPlace :one
+UPDATE fyniq.claim_place
+   SET name = sqlc.arg(name), address = sqlc.arg(address), active = sqlc.arg(active), changed_by = sqlc.arg(by), changed_at = sqlc.arg(at),
+       version = version + 1
+ WHERE id = sqlc.arg(id) AND version = sqlc.arg(version)
+RETURNING *;
+
+-- name: ClaimPlaces :many
+SELECT * FROM fyniq.claim_place WHERE user_id = sqlc.arg(user_id) ORDER BY active DESC, lower(name), id;
+
+-- name: ClaimPlace :one
+SELECT * FROM fyniq.claim_place WHERE id = sqlc.arg(id);

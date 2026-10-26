@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AR-05, FR-BNK-16]
+requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-16, FR-AR-05, FR-BNK-16]
 status: draft
 ---
 
@@ -154,6 +154,21 @@ reconciled to it.
 - Anyone who reconciles bank lines can dismiss an alert sooner, with a reason, such as one that
   points to the wrong invoice.
 - A change needs a second approver, as the other bank settings do.
+
+## Mileage rates
+
+A member who drives their own car or motorcycle for the company claims the distance at the
+organisation's **rate per km** for the vehicle. IRAS prescribes no rate per km: it must be
+reasonable, so Fyniq ships these rates **not set**, and a mileage claim waits until the owner or the
+accountant sets the rate for its vehicle.
+
+- **Mileage rate for a car, per km** and **Mileage rate for a motorcycle, per km**: in Singapore
+  dollars, from 0.01 to 5.00.
+- A rate takes effect from a day and is never back-dated: a trip is claimed at the rate in force on
+  its date, so a claim keeps its amount when the rate changes later.
+- The distance is rounded to 0.1 km and the amount to the cent, trip by trip.
+- A mileage line claims no GST.
+- A change needs a second approver, as the other money settings do.
 
 ## Capitalisation threshold
 
