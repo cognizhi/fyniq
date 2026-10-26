@@ -10,6 +10,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
+	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -203,6 +204,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 	}
 	if invoice.IsInvoice(doc) { // a customer's invoice, with the rate and the GST its entry kept (FR-AR-03)
 		want, err := replayInvoice(ctx, u, doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
+	if claim.IsClaim(doc) { // a member's expense claim, with the accounts, rates and input tax its entry kept (FR-AP-07)
+		want, err := replayExpenseClaim(ctx, u, doc, s, e)
 		if err != nil {
 			return err.Error(), nil
 		}

@@ -2,14 +2,15 @@
 
 ## 1. The claim and its posting
 
-- [ ] 1.1 Migrations: the document types `expense_claim`, `claim_reimbursement` and `cash_advance`; claim categories
-  (organisation, name, expense account, limits, rules, mileage flag) with the starter set; saved places per person;
-  RLS, grants and audit triggers; squawk clean; goldens updated.
+- [x] 1.1 Migrations: the document types `expense_claim`, `claim_reimbursement` and `cash_advance`; claim categories
+  (organisation, name, expense account, limits, rules, mileage flag) with the starter set, made with the standard chart;
+  RLS, grants and audit triggers; squawk clean; goldens updated. (Saved places move to 4.1, with the mileage they serve.)
   - Tests: the tenancy and grants goldens; a category on a control or money account refused. `// req: FR-AP-15`
-- [ ] 1.2 `internal/domain/claim`: the draft (receipt and mileage lines, the claimant, the advance it settles), read
-  and validated with every problem at once (plain messages with codes, ENG-23); `expense_claim@1` in the ledger
-  (design D2): expenses and claimable GST in SGD, Cr 2150 or 1250, foreign-currency lines at the rate cascade with the
-  stated SGD and its difference to 7030.
+- [x] 1.2 `internal/domain/claim`: the draft (receipt lines and the claimant; mileage lines arrive with 4.1 and the
+  advance a claim settles with 6.1), read and validated with every problem at once (plain messages with codes, ENG-23);
+  `expense_claim@1` in the ledger (design D2): expenses and claimable GST in SGD, Cr 2150 or 1250, foreign-currency
+  lines at the rate cascade with the stated SGD and its difference to 7030; `journal.Claims` drafts, checks and posts a
+  claim, and the replay reproduces it.
   - Tests: UC-EXP-01's S$27.30 taxi (no GST claimable), a simplified tax invoice with claimable GST, a foreign-currency
     line with and without the SGD paid, a claim settling part of an advance; the entry balances.
     `// req: FR-AP-07`, `// req: ledger/posting-rules Posting an expense claim`,
@@ -35,15 +36,17 @@
 ## 4. Mileage
 
 - [ ] 4.1 `RND-MILEAGE` in `internal/domain/rounding`; the mileage rates as effective-dated settings (unset until the
-  owner or the accountant sets them; mileage refused with a plain message until then); saved places; the monthly
-  mileage log; mileage lines post with no GST.
+  owner or the accountant sets them; mileage refused with a plain message until then); mileage lines in the claim's
+  draft; saved places per person (migration, RLS, grants, audit); the monthly mileage log; mileage lines post with no
+  GST (`expense_claim@1` already refuses GST on a mileage line).
   - Tests: UC-EXP-02's 18.4 km return trip at the car rate on the trip date; rounding at the boundaries; a rate changed
     mid-month applies by trip date. `// req: RND-MILEAGE`, `// req: FR-AP-16`, `// req: ledger/posting-rules Mileage claim`,
     `// req: purchases/expense-claims Mileage claim for a client visit`
 
 ## 5. The expense policy and duplicates
 
-- [ ] 5.1 Claim categories through the API (A to change, design D6); `claims.deadline_days` (60); the checks at
+- [ ] 5.1 Claim categories through the API (A to change, design D6), and the starter set for an organisation that
+  loaded its chart before it (`claim.LoadStarter`); `claims.deadline_days` (60); the checks at
   submission: receipt required ✖, attendees ⚠, above the limit ⚠ with finance's step, past the deadline ⚠ with a
   reason and finance's step; duplicate receipts across people by file hash ✖ until a reason is recorded, look-alikes ⚠.
   - Tests: each breach named on the claim; UC-EXP-04's S$64.80 meal without attendees returned; a receipt claimed by
@@ -51,8 +54,9 @@
 
 ## 6. Cash advances
 
-- [ ] 6.1 `cash_advance@1` and its refund; a claim settling an advance; what is left refunded and matched from the
-  bank; ⚠ on an advance unsettled past the deadline (the C.2 #39 line arrives with `p1-checks`).
+- [ ] 6.1 `cash_advance@1` and its refund; the advance a claim settles in the claim's draft, and the setting
+  `claims.advances_account` (1250); a claim settling an advance (`expense_claim@1` credits it already); what is left
+  refunded and matched from the bank; ⚠ on an advance unsettled past the deadline (the C.2 #39 line arrives with `p1-checks`).
   - Tests: UC-EXP-03: S$800 advanced, S$742.15 claimed in IDR at the rate cascade, S$57.85 refunded and matched; claims
     above the advance reimburse the excess. `// req: ledger/posting-rules Cash advance to an employee`,
     `// req: purchases/expense-claims Cash advance settled by foreign-currency claims`

@@ -322,6 +322,22 @@ capture_sender | decision | text | not null |
 capture_sender | decided_by | text | not null | 
 capture_sender | decided_at | timestamp with time zone | not null | 
 capture_sender | kind | text | not null | 'documents'::text
+claim_category | organisation_id | uuid | not null | current_org()
+claim_category | id | uuid | not null | uuidv7()
+claim_category | name | text | not null | 
+claim_category | account_id | uuid | not null | 
+claim_category | mileage | boolean | not null | false
+claim_category | currency | text | not null | 
+claim_category | minor_units | smallint | not null | 
+claim_category | line_limit | numeric(20,4) | null | 
+claim_category | receipt_above | numeric(20,4) | null | 
+claim_category | attendees_above | numeric(20,4) | null | 
+claim_category | active | boolean | not null | true
+claim_category | created_by | text | not null | 
+claim_category | created_at | timestamp with time zone | not null | 
+claim_category | changed_by | text | not null | 
+claim_category | changed_at | timestamp with time zone | not null | 
+claim_category | version | integer | not null | 1
 close_checklist_entry | organisation_id | uuid | not null | current_org()
 close_checklist_entry | id | uuid | not null | uuidv7()
 close_checklist_entry | period_id | uuid | not null | 
@@ -1727,6 +1743,28 @@ capture_sender | capture_sender_organisation_fkey | FOREIGN KEY (organisation_id
 capture_sender | capture_sender_organisation_id_not_null | NOT NULL organisation_id
 capture_sender | capture_sender_pkey | PRIMARY KEY (organisation_id, id)
 capture_sender | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+claim_category | claim_category_account_fkey | FOREIGN KEY (organisation_id, account_id) REFERENCES account(organisation_id, id)
+claim_category | claim_category_account_id_not_null | NOT NULL account_id
+claim_category | claim_category_active_not_null | NOT NULL active
+claim_category | claim_category_by_form | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (changed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
+claim_category | claim_category_changed_at_not_null | NOT NULL changed_at
+claim_category | claim_category_changed_by_not_null | NOT NULL changed_by
+claim_category | claim_category_created_at_not_null | NOT NULL created_at
+claim_category | claim_category_created_by_not_null | NOT NULL created_by
+claim_category | claim_category_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
+claim_category | claim_category_currency_not_null | NOT NULL currency
+claim_category | claim_category_id_not_null | NOT NULL id
+claim_category | claim_category_limits_scale | CHECK ((((line_limit IS NULL) OR ((line_limit <> 'NaN'::numeric) AND (line_limit > (0)::numeric) AND (line_limit = trunc(line_limit, (minor_units)::integer)))) AND ((receipt_above IS NULL) OR ((receipt_above <> 'NaN'::numeric) AND (receipt_above >= (0)::numeric) AND (receipt_above = trunc(receipt_above, (minor_units)::integer)))) AND ((attendees_above IS NULL) OR ((attendees_above <> 'NaN'::numeric) AND (attendees_above >= (0)::numeric) AND (attendees_above = trunc(attendees_above, (minor_units)::integer))))))
+claim_category | claim_category_mileage_not_null | NOT NULL mileage
+claim_category | claim_category_minor_units_not_null | NOT NULL minor_units
+claim_category | claim_category_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 80)))
+claim_category | claim_category_name_not_null | NOT NULL name
+claim_category | claim_category_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+claim_category | claim_category_organisation_id_not_null | NOT NULL organisation_id
+claim_category | claim_category_pkey | PRIMARY KEY (organisation_id, id)
+claim_category | claim_category_version_not_null | NOT NULL version
+claim_category | claim_category_version_positive | CHECK ((version >= 1))
+claim_category | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 close_checklist_entry | close_checklist_entry_actor_format | CHECK ((written_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 close_checklist_entry | close_checklist_entry_id_not_null | NOT NULL id
 close_checklist_entry | close_checklist_entry_key_format | CHECK ((task_key ~ '^[a-z0-9][a-z0-9-]{0,39}$'::text))
@@ -1833,7 +1871,7 @@ document | document_posted_together | CHECK (((posted_by IS NULL) = (posted_at I
 document | document_reversed_posted | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | document_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'posted'::text, 'reversed'::text])))
 document | document_status_not_null | NOT NULL status
-document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text, 'bank_transaction'::text, 'bank_agreement'::text])))
+document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text, 'bank_transaction'::text, 'bank_agreement'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text])))
 document | document_type_not_null | NOT NULL type
 document | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document_link | document_link_created_at_not_null | NOT NULL created_at
@@ -1905,7 +1943,7 @@ document_sequence | document_sequence_pkey | PRIMARY KEY (organisation_id, id)
 document_sequence | document_sequence_prefix_format | CHECK ((prefix ~ '^[A-Z0-9][A-Z0-9/-]{0,11}$'::text))
 document_sequence | document_sequence_prefix_not_null | NOT NULL prefix
 document_sequence | document_sequence_type_key | UNIQUE (organisation_id, document_type)
-document_sequence | document_sequence_type_known | CHECK ((document_type = ANY (ARRAY['journal'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text])))
+document_sequence | document_sequence_type_known | CHECK ((document_type = ANY (ARRAY['journal'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text])))
 document_sequence | document_sequence_version_not_null | NOT NULL version
 document_sequence | document_sequence_version_positive | CHECK ((version > 0))
 document_sequence | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
@@ -3199,6 +3237,9 @@ CREATE UNIQUE INDEX capture_address_live_owner ON fyniq.capture_address USING bt
 CREATE UNIQUE INDEX capture_address_pkey ON fyniq.capture_address USING btree (organisation_id, id)
 CREATE UNIQUE INDEX capture_name_pkey ON fyniq.capture_name USING btree (local_part)
 CREATE UNIQUE INDEX capture_sender_pkey ON fyniq.capture_sender USING btree (organisation_id, id)
+CREATE UNIQUE INDEX claim_category_live_mileage ON fyniq.claim_category USING btree (organisation_id) WHERE (active AND mileage)
+CREATE UNIQUE INDEX claim_category_live_name ON fyniq.claim_category USING btree (organisation_id, lower(btrim(name))) WHERE active
+CREATE UNIQUE INDEX claim_category_pkey ON fyniq.claim_category USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_entry_pkey ON fyniq.close_checklist_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_template_pkey ON fyniq.close_checklist_template USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_template_version_key ON fyniq.close_checklist_template USING btree (organisation_id, version)
@@ -3398,6 +3439,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_rul
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_signal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_signal', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_transfer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_transfer', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.capture_address DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_address', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.claim_category DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('claim_category', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.customer_group DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('customer_group', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
@@ -3461,6 +3503,7 @@ CREATE TRIGGER capture_address_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.
 CREATE TRIGGER capture_address_no_truncate BEFORE TRUNCATE ON fyniq.capture_address FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER capture_sender_guard BEFORE DELETE OR UPDATE ON fyniq.capture_sender FOR EACH ROW EXECUTE FUNCTION capture_sender_guard()
 CREATE TRIGGER capture_sender_no_truncate BEFORE TRUNCATE ON fyniq.capture_sender FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER claim_category_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.claim_category FOR EACH ROW EXECUTE FUNCTION claim_category_guard()
 CREATE TRIGGER close_checklist_entry_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.close_checklist_entry FOR EACH ROW EXECUTE FUNCTION close_checklist_guard()
 CREATE TRIGGER close_checklist_entry_no_truncate BEFORE TRUNCATE ON fyniq.close_checklist_entry FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER close_checklist_template_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.close_checklist_template FOR EACH ROW EXECUTE FUNCTION close_checklist_guard()
@@ -3624,6 +3667,7 @@ bank_transfer | tenant_isolation | * | (organisation_id = current_org()) | (orga
 bill_payment_plan | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_address | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_sender | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+claim_category | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 close_checklist_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 close_checklist_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -3733,6 +3777,7 @@ capture_route(p_local text) → TABLE(organisation_id uuid, address_id uuid, use
 capture_sender_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d3ca1a62ec41cff9d93981758a2f74c
 change_installation_connector(p_by uuid, p_change uuid, p_step text, p_id uuid, p_version integer, p_state text, p_configuration jsonb, p_position integer, p_test_passed boolean, p_test_reason text, p_tested_at timestamp with time zone, p_manifest_version text, p_manifest_hash text, p_secret_names text[], p_consent jsonb, p_at timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 9b989ec9c61abe049b0de80a90368cbf
 check_entry_balanced() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b53334884d5e11426b962a38e77aed9
+claim_category_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e3555d3e253fa24e081bd77a62a656f2
 claim_job_slot(p_job text, p_slot timestamp with time zone, p_holder text, p_until timestamp with time zone, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 25c90e46d6e3d1e87666459f6db394db
 claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 57aedc912c161d7d32a66f3e8840bd12
 close_checklist_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f4af92af3952d349375bb5a90970c137

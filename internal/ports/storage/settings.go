@@ -75,23 +75,27 @@ type SequenceSettings struct {
 	GapFree    bool
 }
 
-// DefaultSequences are each document type's sequence before it is set up: gap-free, from 1, four digits.
+// DefaultSequences are each document type's sequence before it is set up: gap-free, from 1, four digits; but an expense
+// claim is numbered when its claimant saves it, so it is known by its number while it waits for approval.
 var DefaultSequences = map[DocumentType]SequenceSettings{
-	DocumentJournal:         {Prefix: "JNL-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentBill:            {Prefix: "BILL-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentBillPayment:     {Prefix: "PAY-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentVendorCredit:    {Prefix: "VC-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentSupplierRefund:  {Prefix: "RF-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentPurchaseOrder:   {Prefix: "PO-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentInvoice:         {Prefix: "INV-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentCreditNote:      {Prefix: "CN-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentCustomerReceipt: {Prefix: "RC-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentWriteOff:        {Prefix: "WO-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentCustomerRefund:  {Prefix: "CR-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentCustomerDeposit: {Prefix: "DP-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentQuote:           {Prefix: "QT-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentSalesOrder:      {Prefix: "SO-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentStatement:       {Prefix: "ST-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentJournal:            {Prefix: "JNL-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentBill:               {Prefix: "BILL-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentBillPayment:        {Prefix: "PAY-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentVendorCredit:       {Prefix: "VC-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentSupplierRefund:     {Prefix: "RF-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentPurchaseOrder:      {Prefix: "PO-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentInvoice:            {Prefix: "INV-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentCreditNote:         {Prefix: "CN-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentCustomerReceipt:    {Prefix: "RC-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentWriteOff:           {Prefix: "WO-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentCustomerRefund:     {Prefix: "CR-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentCustomerDeposit:    {Prefix: "DP-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentQuote:              {Prefix: "QT-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentSalesOrder:         {Prefix: "SO-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentStatement:          {Prefix: "ST-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentExpenseClaim:       {Prefix: "CLM-", NextNumber: 1, Digits: 4, GapFree: false},
+	DocumentClaimReimbursement: {Prefix: "RB-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentCashAdvance:        {Prefix: "ADV-", NextNumber: 1, Digits: 4, GapFree: true},
 }
 
 // FormatNumber is a document number as the sequence s prints it: its prefix and the number, zero-padded.

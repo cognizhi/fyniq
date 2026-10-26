@@ -1,0 +1,234 @@
+//go:build local
+
+package postgres_test
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	"github.com/google/uuid"
+
+	"github.com/cognizhi/fyniq/internal/domain/bill"
+	"github.com/cognizhi/fyniq/internal/domain/claim"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/ports/porttest"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
+)
+
+// claimBooks are Books with the claim rule's system accounts, three expense accounts, the starter-like categories, a
+// member who claims and a user who is not a member.
+type claimBooks struct {
+	porttest.Books
+	Payable, Overseas, Meals, Other storage.Account
+	Travel, Dining, Abroad, Mileage storage.ClaimCategory
+	Claimant, Stranger              uuid.UUID
+}
+
+func newClaimBooks(t *testing.T, ctx context.Context, s storage.Store, name string) claimBooks {
+	t.Helper()
+	b := claimBooks{Books: porttest.NewBooks(t, s, name)}
+	for _, x := range []struct {
+		to   *uuid.UUID
+		name string
+	}{{&b.Claimant, "Mei Ling Tan"}, {&b.Stranger, "Not A Member"}} {
+		if err := conn(t, "fyniq_migrator").QueryRow(ctx, "INSERT INTO fyniq.app_user (display_name) VALUES ($1) RETURNING user_id", x.name).
+			Scan(x.to); err != nil {
+			t.Fatal(err)
+		}
+	}
+	now := porttest.Day(10, 1)
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		for _, a := range []struct {
+			to *storage.Account
+			n  storage.NewAccount
+		}{
+			{&b.Payable, storage.NewAccount{Code: "2150", Name: "Expense claims payable", Type: storage.Liability,
+				Role: storage.AccountRole(ledger.RoleExpenseClaimsPayable)}},
+			{new(storage.Account), storage.NewAccount{Code: "2200", Name: "GST control", Type: storage.Liability, Role: storage.AccountRole(ledger.RoleGSTControl)}},
+			{new(storage.Account), storage.NewAccount{Code: "7030", Name: "FX & rounding differences", Type: storage.Expense,
+				Role: storage.AccountRole(ledger.RoleFXRounding)}},
+			{&b.Overseas, storage.NewAccount{Code: "6520", Name: "Overseas travel", Type: storage.Expense}},
+			{&b.Meals, storage.NewAccount{Code: "6530", Name: "Meals & entertainment", Type: storage.Expense}},
+			{&b.Other, storage.NewAccount{Code: "6531", Name: "Staff welfare", Type: storage.Expense}},
+		} {
+			if *a.to, err = u.Accounts().Create(ctx, a.n); err != nil {
+				return err
+			}
+		}
+		for _, c := range []struct {
+			to *storage.ClaimCategory
+			n  storage.NewClaimCategory
+		}{
+			{&b.Travel, storage.NewClaimCategory{Name: "Local travel", AccountID: b.Rent.ID}},
+			{&b.Dining, storage.NewClaimCategory{Name: "Meals & entertainment", AccountID: b.Meals.ID}},
+			{&b.Abroad, storage.NewClaimCategory{Name: "Overseas travel", AccountID: b.Overseas.ID}},
+			{&b.Mileage, storage.NewClaimCategory{Name: "Mileage", AccountID: b.Rent.ID, Mileage: true}},
+		} {
+			c.n.Currency, c.n.Active, c.n.At = "SGD", true, now
+			if *c.to, err = u.ClaimCategories().Create(ctx, c.n); err != nil {
+				return err
+			}
+		}
+		if _, err = u.Members().Add(ctx, b.Claimant); err != nil {
+			return err
+		}
+		if _, err = u.GSTRegistrations().Create(ctx, storage.NewGSTRegistration{RegisteredFrom: now, GSTNumber: "202612345K",
+			ReturnFrequency: "quarterly", QuarterStartMonth: 1, AccountingBasis: "invoice", RecordedAt: now}); err != nil {
+			return err
+		}
+		_, err = u.FXRates().Enter(ctx, storage.NewFXRate{Kind: storage.FXRateDay, Currency: "IDR", On: porttest.Day(10, 23), Rate: "0.0000850",
+			Quote: "0.0000850", QuoteForm: "base-per-unit", Note: "MAS"})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
+// FR-AP-07 and the posting rule "Posting an expense claim" (p1-expense-claims task 1.2): a member's claim is drafted
+// with its number, checked and posted through the posting service in one transaction with its entry. UC-EXP-01's
+// S$27.30 taxi shows no GST; a S$109.00 meal on a simplified tax invoice claims its S$9.00 GST, the organisation being
+// GST-registered; an IDR 1,500,000.00 hotel takes the cascade's rate on its date, S$127.50. The company owes S$263.80
+// on 2150. Every problem comes back at once; a posted claim does not change; the replay reproduces the entry after
+// its category moves to another account.
+// req: FR-AP-07
+// req: ledger/posting-rules Posting an expense claim
+// req: purchases/expense-claims Out-of-pocket receipt claim
+// req: FR-AP-20
+// req: ENG-06
+func TestExpenseClaimsPostThroughThePostingService(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "mei-ling"}})
+	s := store(t, "fyniq_api")
+	b := newClaimBooks(t, ctx, s, "Claims posting Pte Ltd")
+	claims := journal.Claims{Store: s}
+	sgd, idr := money.MustLookup("SGD"), money.MustLookup("IDR")
+	oct24, oct26 := porttest.Day(10, 24), porttest.Day(10, 26) // the simplified-invoice limit is in sg-gst@2026.2 from 23 October
+	taxi := claim.Line{Date: oct24, Merchant: "ComfortDelGro", CategoryID: b.Travel.ID, Description: "Taxi to Acme", Amount: sgdOf(t, "27.30"),
+		GSTCode: "NR", GST: money.Zero(sgd)}
+	meal := claim.Line{Date: oct24, Merchant: "Din Tai Fung", CategoryID: b.Dining.ID, Description: "Lunch with Acme", Amount: sgdOf(t, "109.00"),
+		GSTCode: "TX", GST: sgdOf(t, "9.00"), Document: bill.DocSimplified, Attendees: "Mei Ling Tan; Tan Wei, Acme"}
+	hotel := claim.Line{Date: porttest.Day(10, 23), Merchant: "Hotel Indonesia", CategoryID: b.Abroad.ID, Amount: moneyOf(t, "1500000.00", "IDR"),
+		GSTCode: "OP", GST: money.Zero(idr)}
+	draft := claim.Draft{ClaimantID: b.Claimant, Date: oct26, Title: "Acme visit", Lines: []claim.Line{taxi, meal, hotel}}
+
+	doc, err := claims.Create(ctx, b.Org, draft)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if doc.Number != "CLM-0001" || doc.Status != storage.DocumentDraft {
+		t.Fatalf("a claim is numbered when it is saved: %+v", doc)
+	}
+	c, err := claims.Check(ctx, b.Org, doc.ID)
+	if err != nil || len(c.Problems) > 0 || c.Owed.String() != "263.80" {
+		t.Fatalf("the check: %+v %v", c.Problems, err)
+	}
+	if got := []string{c.Prepared.InputTax[0].Reason, c.Prepared.InputTax[1].Reason}; got[0] != bill.ReasonNoGST || got[1] != bill.ReasonSimplified {
+		t.Errorf("input tax decided as %v", got)
+	}
+	e, err := claims.Post(ctx, b.Org, doc.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := legsOf(t, s, b.Org, e); got != "6100 27.3 SGD = 27.3; 6530 100 SGD = 100; 6520 1500000 IDR = 127.5; 2200 9 SGD = 9; 2150 -263.8 SGD = -263.8" {
+		t.Errorf("the entry: %s", got)
+	}
+	if e.Source.Type != ledger.SourceExpenseClaim || e.RuleVersion != ledger.RuleExpenseClaim || !e.PostingDate.Equal(oct26) {
+		t.Errorf("the entry's source: %+v", e)
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		doc, err = u.Documents().Get(ctx, doc.ID)
+		return err
+	}); err != nil || doc.Number != "CLM-0001" || doc.Status != storage.DocumentPosted {
+		t.Fatalf("the posted claim: %+v %v", doc, err)
+	}
+	if _, err := claims.Post(ctx, b.Org, doc.ID); !claimCode(err, claim.CodeNotDraft) {
+		t.Errorf("posting twice: %v", err)
+	}
+	if _, err := claims.Revise(ctx, b.Org, doc.ID, draft); !claimCode(err, claim.CodeNotDraft) {
+		t.Errorf("revising a posted claim: %v", err)
+	}
+
+	// The category moves to another account: the replay still reproduces what the claim posted (ENG-06).
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.ClaimCategories().Change(ctx, b.Dining.ID, b.Dining.Version, storage.NewClaimCategory{Name: b.Dining.Name, AccountID: b.Other.ID,
+			Active: true, At: oct26})
+		if err != nil {
+			return err
+		}
+		r, err := journal.Replay(ctx, u)
+		if err == nil && len(r.Mismatches) > 0 {
+			t.Errorf("the replay: %+v", r.Mismatches)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// A returned claim is a draft its claimant revises: each version is kept (UC-EXP-04's history).
+	second, err := claims.Create(ctx, b.Org, claim.Draft{ClaimantID: b.Claimant, Date: oct26, Lines: []claim.Line{taxi}})
+	if err != nil || second.Number != "CLM-0002" {
+		t.Fatalf("a second claim: %+v %v", second, err)
+	}
+	if second, err = claims.Revise(ctx, b.Org, second.ID, claim.Draft{ClaimantID: b.Claimant, Date: oct26, Lines: []claim.Line{taxi, meal}}); err != nil ||
+		second.Version != 2 {
+		t.Fatalf("revising a draft: %+v %v", second, err)
+	}
+
+	// Every problem at once (ENG-22): no claimant, a stranger, the mileage category on a receipt, a receipt after the
+	// claim's date with no merchant, a GST code that is not for purchases, an IDR receipt with no rate on its date.
+	late := taxi
+	late.Date, late.Merchant = porttest.Day(10, 28), " "
+	onMileage := taxi
+	onMileage.CategoryID = b.Mileage.ID
+	sales := taxi
+	sales.GSTCode = "SR"
+	noRate := hotel
+	noRate.Date = porttest.Day(10, 24)
+	for _, x := range []struct {
+		what  string
+		d     claim.Draft
+		field string
+		code  string
+	}{
+		{"no claimant", claim.Draft{Date: oct26, Lines: []claim.Line{taxi}}, "claimant_id", claim.CodeClaimant},
+		{"a stranger", claim.Draft{ClaimantID: b.Stranger, Date: oct26, Lines: []claim.Line{taxi}}, "claimant_id", claim.CodeClaimant},
+		{"the mileage category", claim.Draft{ClaimantID: b.Claimant, Date: oct26, Lines: []claim.Line{onMileage}}, "lines[1].category_id", claim.CodeCategory},
+		{"after the claim", claim.Draft{ClaimantID: b.Claimant, Date: oct26, Lines: []claim.Line{late}}, "lines[1].date", claim.CodeReceipt},
+		{"no merchant", claim.Draft{ClaimantID: b.Claimant, Date: oct26, Lines: []claim.Line{late}}, "lines[1].merchant", claim.CodeReceipt},
+		{"a sales code", claim.Draft{ClaimantID: b.Claimant, Date: oct26, Lines: []claim.Line{sales}}, "lines[1].gst_code", claim.CodeGSTCode},
+		{"no rate", claim.Draft{ClaimantID: b.Claimant, Date: oct26, Lines: []claim.Line{noRate}}, "lines[1].fx_rate", "FX-01"},
+		{"no lines", claim.Draft{ClaimantID: b.Claimant, Date: oct26}, "lines", ledger.CodeTooFewLines},
+		{"no date", claim.Draft{ClaimantID: b.Claimant, Lines: []claim.Line{taxi}}, "date", ledger.CodeNoDate},
+	} {
+		d, err := claims.Create(ctx, b.Org, x.d)
+		if err != nil {
+			t.Fatalf("%s: %v", x.what, err)
+		}
+		c, err := claims.Check(ctx, b.Org, d.ID)
+		if err != nil {
+			t.Fatalf("%s: %v", x.what, err)
+		}
+		found := false
+		for _, p := range c.Problems {
+			found = found || p.Field == x.field && p.Code == x.code
+		}
+		if !found {
+			t.Errorf("%s: want %s on %s, got %+v", x.what, x.code, x.field, c.Problems)
+		}
+		if _, err := claims.Post(ctx, b.Org, d.ID); err == nil {
+			t.Errorf("%s: posted", x.what)
+		}
+	}
+	if _, err := claims.Create(ctx, b.Org, claim.Draft{ClaimantID: b.Claimant, Lines: []claim.Line{{Document: "receipt", Amount: sgdOf(t, "1.00"),
+		GST: money.Zero(sgd)}}}); !claimCode(err, claim.CodeReceipt) {
+		t.Errorf("a document Fyniq cannot read: %v", err)
+	}
+}
+
+func claimCode(err error, code string) bool {
+	var ce *claim.Error
+	return errors.As(err, &ce) && ce.Code == code
+}

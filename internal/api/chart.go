@@ -11,6 +11,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
+	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -21,7 +22,8 @@ const CodeChartLoaded = "API-CHART-01"
 
 // ChartLoaded is what loading the standard chart did.
 type ChartLoaded struct {
-	Accounts int `json:"accounts" doc:"How many accounts the chart now holds." example:"86"`
+	Accounts        int `json:"accounts" doc:"How many accounts the chart now holds." example:"86"`
+	ClaimCategories int `json:"claim_categories" doc:"How many starter claim categories the expense policy now holds, each with no limit until the organisation sets one (FR-AP-15)." example:"7"`
 }
 
 type loadChartInput struct {
@@ -44,7 +46,8 @@ func registerChart(a *API) {
 		Description: "Loads the standard Singapore start-up chart into an organisation that has no account yet: 87 accounts with their " +
 			"report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional " +
 			"until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event " +
-			"for each. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
+			"for each, and the expense policy's starter claim categories (local and overseas travel, meals, software, telephone, office supplies and " +
+			"mileage, with no limits: FR-AP-15) with theirs. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, []string{CodeChartLoaded, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, storage.CodeDuplicate, storage.CodeRetry,
 		storage.CodeLockTimeout},
 		func(ctx context.Context, in *loadChartInput) (*loadChartOutput, error) {
@@ -66,7 +69,11 @@ func registerChart(a *API) {
 						return ChartLoaded{}, err
 					}
 				}
-				return ChartLoaded{Accounts: len(accounts)}, nil
+				categories, err := claim.LoadStarter(ctx, u, a.deps.Clock.Now())
+				if err != nil {
+					return ChartLoaded{}, err
+				}
+				return ChartLoaded{Accounts: len(accounts), ClaimCategories: categories}, nil
 			})
 			if err != nil {
 				return nil, err

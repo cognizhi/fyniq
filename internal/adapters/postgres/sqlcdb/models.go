@@ -410,6 +410,25 @@ type FyniqCaptureSender struct {
 	Kind           string
 }
 
+type FyniqClaimCategory struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Name           string
+	AccountID      uuid.UUID
+	Mileage        bool
+	Currency       string
+	MinorUnits     int16
+	LineLimit      *string
+	ReceiptAbove   *string
+	AttendeesAbove *string
+	Active         bool
+	CreatedBy      string
+	CreatedAt      time.Time
+	ChangedBy      string
+	ChangedAt      time.Time
+	Version        int32
+}
+
 type FyniqCloseChecklistEntry struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID

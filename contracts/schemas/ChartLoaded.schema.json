@@ -9,10 +9,19 @@
       ],
       "format": "int64",
       "type": "integer"
+    },
+    "claim_categories": {
+      "description": "How many starter claim categories the expense policy now holds, each with no limit until the organisation sets one (FR-AP-15).",
+      "examples": [
+        7
+      ],
+      "format": "int64",
+      "type": "integer"
     }
   },
   "required": [
-    "accounts"
+    "accounts",
+    "claim_categories"
   ],
   "title": "ChartLoaded",
   "type": "object"
