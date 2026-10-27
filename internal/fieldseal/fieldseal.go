@@ -62,7 +62,7 @@ func (s Sealer) Seal(ctx context.Context, plaintext, aad []byte) ([]byte, error)
 	if _, err := rand.Read(nonce); err != nil {
 		return nil, err
 	}
-	out := append([]byte{version, byte(len(id))}, id...)
+	out := append([]byte{version, byte(len(id))}, id...) // #nosec G115 -- checked above: at most 255
 	out = binary.BigEndian.AppendUint16(out, uint16(len(wrapped))) // #nosec G115 -- checked above
 	out = append(append(out, wrapped...), nonce...)
 	return gcm.Seal(out, nonce, plaintext, aad), nil
