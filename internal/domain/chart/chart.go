@@ -17,7 +17,7 @@ import (
 var standard []byte
 
 // Account is one account of the standard chart: what the organisation's account is created with, and where
-// it came from (workbook, workbook-moved or prd-b5).
+// it came from (workbook, workbook-moved, prd-b5 or prd-151).
 type Account struct {
 	storage.NewAccount
 	Source string

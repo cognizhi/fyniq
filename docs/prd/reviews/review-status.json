@@ -261,6 +261,27 @@
     "nm-fyniq-link",
     "nm-assistant"
    ]
+  },
+  {
+   "id": "accounting",
+   "title": "Accounting estimates and the asset register",
+   "reviewer": "the accountant",
+   "status": "pending",
+   "pr": null,
+   "short": "The asset register's recommended accounts and useful lives await review by the accountant",
+   "message": "Disposals use 7050 and 1160, and the form offers each account's default life, until the accountant confirms them. Check an asset's life before you register it.",
+   "sections": [
+    "PRD-001 §8.2",
+    "§8.9"
+   ],
+   "requirements": [
+    "FR-FA-01",
+    "FR-FA-03",
+    "FR-COA-02"
+   ],
+   "screens": [
+    "fixed-assets"
+   ]
   }
  ]
 }

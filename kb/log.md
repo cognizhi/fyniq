@@ -227,3 +227,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-27] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the disposal account and the disposal clearing account, p1-fixed-assets task 1.2)
 
 ## [2026-10-27] compile | docs/user-guide/fixed-assets.md → accounting.fixed-assets (new: the fixed asset register, p1-fixed-assets task 5.2)
+
+## [2026-10-27] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (rev 0.151: the recommended mileage rates S$0.60 and S$0.25, and 1160 as the disposal clearing account)

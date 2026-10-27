@@ -18,6 +18,16 @@ Source: PRD-001 §8.9 · Priority M · Phase P1
 - **WHEN** an asset is registered from a bill or transaction
 - **THEN** its category, cost, date, useful life, residual value, method and depreciation start are stored
 
+#### Scenario: The account's default useful life is offered (rev 0.151)
+- **WHEN** an asset is registered on an account that has a default useful life (FR-COA-02)
+- **THEN** the form offers that life, and the person may change it
+
+#### Scenario: An asset registered by mistake is voided (rev 0.151)
+- **WHEN** an asset registered by mistake is voided with a reason
+- **THEN** each of its months of depreciation is reversed on its own date (FR-GL-12), the asset leaves the register, and its line can be registered again
+- **AND** the void is refused while a disposal of the asset stands, or while a month to reverse is in a closed period
+- **AND** in Founder mode another person approves it (FM-1) (the owner's decision of 27 Oct 2026)
+
 #### Scenario: Depreciation methods by phase
 - **WHEN** a depreciation method is chosen
 - **THEN** straight-line is available in P1
@@ -62,6 +72,10 @@ Source: PRD-001 §8.9 · Priority M · Phase P1
 #### Scenario: Where the gain or loss goes (rev 0.149)
 - **WHEN** a disposal's gain or loss is posted
 - **THEN** it goes to the account the setting `assets.disposal_account` names, recommended 7050, under dual control [verify in the CoA review] (the owner's decision of 27 Oct 2026)
+
+#### Scenario: The recommended clearing account (rev 0.151)
+- **WHEN** an organisation has not changed `assets.disposal_clearing_account`
+- **THEN** it is 1160 Asset disposal clearing (FR-COA-01) [accountant to confirm], an account with no system role, so the setting may name another
 
 ### Requirement: FR-FA-04 Asset reports and capital allowances
 The system SHALL report NBV, accumulated depreciation and the movement schedule (for the financial statements), and SHALL produce a tax capital allowance schedule (S19, S19A).
