@@ -223,8 +223,68 @@ func TestRegisteringFixedAssets(t *testing.T) {
 	})
 }
 
+// The capitalisation prompt (FR-FA-01; design D5): a posted bill's line on an asset account at or above the threshold
+// (S$1,000.00) and in no asset shows ⚠ ASSET-UNREGISTERED, and the register lists it as not in the register yet; a line
+// below the threshold is listed, not prompted. Registered, it leaves both.
+// req: FR-FA-01
+// req: ledger/fixed-assets Capitalisation threshold prompt
+func TestPurchasesNotInTheRegisterYet(t *testing.T) {
+	e := newEnv(t)
+	accountant := e.as(authz.Accountant)
+	laptop, monitor := e.laptopBill("1200.00", "SGD", ""), e.laptopBill("900.00", "SGD", "")
+	prompted := func(bill string) bool {
+		return hasCheck(e.call(http.MethodGet, "/v1/bills/"+bill, accountant, nil), journal.WarnUnregistered)
+	}
+	if !prompted(laptop) || prompted(monitor) {
+		t.Errorf("the prompt: the S$1,200 laptop %v, the S$900 monitor %v", prompted(laptop), prompted(monitor))
+	}
+	l := e.call(http.MethodGet, "/v1/fixed-assets/unregistered", e.as(authz.Bookkeeper), nil)
+	items, _ := l.Body["items"].([]any)
+	if l.Status != 200 || len(items) != 2 {
+		t.Fatalf("listUnregisteredAssetLines = %d: %s", l.Status, l.Raw)
+	}
+	at := map[string]bool{}
+	for _, x := range items {
+		m := x.(map[string]any)
+		at[m["cost"].(map[string]any)["amount"].(string)] = m["at_threshold"].(bool)
+		if m["line"] != float64(1) || m["type"] != "bill" || m["account_id"] != e.computerEquipment().ID.String() {
+			t.Errorf("a line not in the register: %v", m)
+		}
+	}
+	if !at["1200.00"] || at["900.00"] {
+		t.Errorf("at the threshold: %v", at)
+	}
+	// A page at a time.
+	first := e.call(http.MethodGet, "/v1/fixed-assets/unregistered?page_size=1", accountant, nil)
+	if items, _ := first.Body["items"].([]any); len(items) != 1 || first.str("next_cursor") == "" {
+		t.Fatalf("the first page: %s", first.Raw)
+	}
+	second := e.call(http.MethodGet, "/v1/fixed-assets/unregistered?page_size=1&cursor="+first.str("next_cursor"), accountant, nil)
+	if items, _ := second.Body["items"].([]any); len(items) != 1 || second.str("next_cursor") != "" ||
+		items[0].(map[string]any)["document_id"] == first.Body["items"].([]any)[0].(map[string]any)["document_id"] {
+		t.Errorf("the second page: %s", second.Raw)
+	}
+	if r := e.call(http.MethodPost, "/v1/fixed-assets", accountant, map[string]any{"source": map[string]any{"document_id": laptop, "line": 1},
+		"life_months": 36}); r.Status != http.StatusCreated {
+		t.Fatalf("registerFixedAsset = %d: %s", r.Status, r.Raw)
+	}
+	if prompted(laptop) {
+		t.Errorf("a registered line is still prompted")
+	}
+	one := e.call(http.MethodGet, "/v1/fixed-assets/unregistered?document_id="+monitor, accountant, nil)
+	if items, _ := one.Body["items"].([]any); len(items) != 1 {
+		t.Errorf("the monitor's lines: %s", one.Raw)
+	}
+	if none := e.call(http.MethodGet, "/v1/fixed-assets/unregistered?document_id="+laptop, accountant, nil); len(none.Body["items"].([]any)) != 0 {
+		t.Errorf("the laptop's lines: %s", none.Raw)
+	}
+}
+
 // matrixAssets are the authorisation matrix's rows for the fixed asset register.
 var matrixAssets = map[string]func(e *env, tok string) (response, func() bool){
+	"listUnregisteredAssetLines": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/fixed-assets/unregistered", tok, nil), nil
+	},
 	"listFixedAssets": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/fixed-assets", tok, nil), nil
 	},

@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The asset account it is on.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "at_threshold": {
+      "description": "true when the cost is at or above the capitalisation threshold on its date (assets.capitalisation_threshold): it should be in the register.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "cost": {
+      "$ref": "Money.schema.json",
+      "description": "What its entry put on the account, in the base currency: what the asset would cost."
+    },
+    "date": {
+      "description": "The bill's date, or the bank line's booking date.",
+      "examples": [
+        "2026-10-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "description": {
+      "description": "The line's description.",
+      "examples": [
+        "MacBook Pro 14"
+      ],
+      "type": "string"
+    },
+    "document_id": {
+      "description": "The bill or bank transaction.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "line": {
+      "description": "Its line, or part, from 1: what registerFixedAsset takes as source.line.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "number": {
+      "description": "The bill's number.",
+      "examples": [
+        "BILL-0042"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "description": "bill, or bank_transaction: a categorised bank line.",
+      "enum": [
+        "bill",
+        "bank_transaction"
+      ],
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "document_id",
+    "type",
+    "line",
+    "date",
+    "account_id",
+    "cost",
+    "at_threshold"
+  ],
+  "title": "UnregisteredLine",
+  "type": "object"
+}

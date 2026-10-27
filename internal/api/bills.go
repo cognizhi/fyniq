@@ -659,6 +659,11 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 			}
 		}
 		out.Withholding = withholdingOut(p.Withholding, tax, held)
+		if doc.Status == storage.DocumentPosted { // FR-FA-01: a purchase of an asset, at the threshold, waits for the register
+			if err := unregisteredChecks(ctx, u, doc, &out.Checks); err != nil {
+				return Bill{}, err
+			}
+		}
 	}
 	for _, l := range entryOf(e).Lines {
 		if withChecks {

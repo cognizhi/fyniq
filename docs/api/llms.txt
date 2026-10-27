@@ -178,6 +178,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/expense-claims/{claim_id}/withdraw` (withdrawExpenseClaim): Withdraw a submitted expense claim
 - `GET /v1/fixed-assets` (listFixedAssets): List the fixed asset register
 - `POST /v1/fixed-assets` (registerFixedAsset): Register a fixed asset
+- `GET /v1/fixed-assets/unregistered` (listUnregisteredAssetLines): List purchases not in the register yet
 - `GET /v1/fixed-assets/{asset_id}` (getFixedAsset): Get a fixed asset
 - `POST /v1/fixed-assets/{asset_id}/change` (changeFixedAsset): Change a fixed asset
 - `POST /v1/fixed-assets/{asset_id}/disposals` (disposeFixedAsset): Sell or write off a fixed asset
