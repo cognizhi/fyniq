@@ -215,3 +215,44 @@ def test_pending_claims():
         },
         "2026-04": {},  # 300.00 advanced and refunded
     }
+
+
+# req: QA-ENG-02
+def test_pending_assets():
+    r = _run("assets")
+    assert r["rejected"] == ["AD-0003", "FA-0005"]  # FA-0001 is gone; 6010 is not an asset account
+    assert [(e["document"], e["kind"], e["posting_date"]) for e in r["entries"]] == [
+        ("AD-0001", "post", "2026-04-10"),
+        ("AD-0002", "post", "2026-05-05"),
+        ("FA-0001", "depreciation", "2026-01-31"),
+        ("FA-0002", "depreciation", "2026-01-31"),  # November and December 2025 are in the opening balances
+        ("FA-0004", "depreciation", "2026-01-31"),
+        ("FA-0001", "depreciation", "2026-02-28"),
+        ("FA-0002", "depreciation", "2026-02-28"),
+        ("FA-0004", "depreciation", "2026-02-28"),
+        ("FA-0001", "depreciation", "2026-03-31"),
+        ("FA-0002", "depreciation", "2026-03-31"),
+        ("FA-0003", "depreciation", "2026-03-31"),  # from 1 March
+        ("FA-0004", "depreciation", "2026-03-31"),
+        ("FA-0002", "depreciation", "2026-04-30"),  # FA-0001 disposed of in April
+        ("FA-0003", "depreciation", "2026-04-30"),
+        ("FA-0004", "depreciation", "2026-04-30"),
+        ("FA-0002", "depreciation", "2026-05-31"),  # FA-0004 disposed of in May
+        ("FA-0003", "depreciation", "2026-05-31"),
+    ]
+    # 3,270.00 on SR: GST 270.00; accumulated January to March 300.00; carrying 3,300.00 against 3,000.00 net.
+    assert _lines(r, "AD-0001") == [("1010", "SGD", "3270.00", "3270.00"), ("1500", "SGD", "-3600.00", "-3600.00"),
+                                    ("1590", "SGD", "300.00", "300.00"), ("2200", "SGD", "-270.00", "-270.00"),
+                                    ("7050", "SGD", "300.00", "300.00")]
+    # (2,000.00 - 200.00) ÷ 18 = 100.00 a month, January to April 400.00; carrying 1,600.00 against 1,500.00.
+    assert _lines(r, "AD-0002") == [("1160", "SGD", "1500.00", "1500.00"), ("1510", "SGD", "-2000.00", "-2000.00"),
+                                    ("1590", "SGD", "400.00", "400.00"), ("7050", "SGD", "100.00", "100.00")]
+    assert r["trial_balance"] == {
+        "2026-01": {"1590": "-300.00", "6610": "300.00"},
+        "2026-02": {"1590": "-300.00", "6610": "300.00"},
+        "2026-03": {"1590": "-633.33", "6610": "633.33"},  # 100.00 × 3 + 333.33
+        "2026-04": {"1010": "3270.00", "1500": "-3600.00", "1590": "-233.34", "2200": "-270.00",
+                    "6610": "533.34", "7050": "300.00"},  # 1590: +300.00 cleared, -(100.00 + 333.34 + 100.00)
+        "2026-05": {"1160": "1500.00", "1510": "-2000.00", "1590": "-33.33", "6610": "433.33",
+                    "7050": "100.00"},  # 1590: +400.00 cleared, -(100.00 + 333.33)
+    }

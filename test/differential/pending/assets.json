@@ -1,0 +1,43 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "pending-assets",
+ "base_currency": "SGD",
+ "currencies": {"SGD": 2},
+ "as_of": "2026-05-31",
+ "settings": {
+  "books_start": "2026-01-01",
+  "accounts": {"gst": "2200", "depreciation": "6610", "accumulated_depreciation": "1590", "disposal": "7050",
+               "disposal_clearing": "1160"},
+  "money_accounts": {"1010": "SGD"},
+  "gst": {"registered_from": "2025-01-01", "rates": [{"from": "2024-01-01", "percent": "9"}]}
+ },
+ "accounts": [
+  {"code": "1010", "type": "asset", "group": false, "active": true},
+  {"code": "1160", "type": "asset", "group": false, "active": true},
+  {"code": "1500", "type": "asset", "group": false, "active": true},
+  {"code": "1510", "type": "asset", "group": false, "active": true},
+  {"code": "1590", "type": "asset", "group": false, "active": true},
+  {"code": "2200", "type": "liability", "group": false, "active": true},
+  {"code": "6010", "type": "expense", "group": false, "active": true},
+  {"code": "6610", "type": "expense", "group": false, "active": true},
+  {"code": "7050", "type": "expense", "group": false, "active": true}
+ ],
+ "documents": [
+  {"type": "fixed_asset", "id": "FA-0001", "version": 1, "date": "2026-01-15", "account": "1500", "cost": "3600.00",
+   "life_months": 36},
+  {"type": "fixed_asset", "id": "FA-0002", "version": 1, "date": "2025-11-10", "account": "1510", "cost": "1200.00",
+   "life_months": 12},
+  {"type": "fixed_asset", "id": "FA-0003", "version": 1, "date": "2026-02-01", "account": "1500", "cost": "1000.00",
+   "life_months": 3, "depreciate_from": "2026-03-01"},
+  {"type": "fixed_asset", "id": "FA-0004", "version": 1, "date": "2026-01-20", "account": "1510", "cost": "2000.00",
+   "residual": "200.00", "life_months": 18},
+  {"type": "asset_disposal", "id": "AD-0001", "version": 1, "date": "2026-04-10", "asset": "FA-0001",
+   "proceeds": {"account": "1010", "amount": "3270.00", "gst_code": "SR"}},
+  {"type": "asset_disposal", "id": "AD-0002", "version": 1, "date": "2026-05-05", "asset": "FA-0004",
+   "proceeds": {"account": "1160", "amount": "1500.00"}},
+  {"type": "asset_disposal", "id": "AD-0003", "version": 1, "date": "2026-05-06", "asset": "FA-0001"},
+  {"type": "fixed_asset", "id": "FA-0005", "version": 1, "date": "2026-05-07", "account": "6010", "cost": "500.00",
+   "life_months": 12}
+ ],
+ "reversals": []
+}

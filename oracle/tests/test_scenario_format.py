@@ -64,10 +64,13 @@ P1_EXAMPLES = [json.loads(block) for block in _BLOCKS[2:]]
 
 # req: QA-ENG-02
 def test_the_p1_examples_in_the_readme_are_documents_that_post_in_order():
-    # A later example may settle an earlier one (the payment pays the bill), so they post together.
+    # A later example may settle an earlier one (the payment pays the bill), so they post together. A
+    # registered asset posts no entry of its own, only its depreciation.
     result = Ledger(scenario_from_json(p1_scenario(*P1_EXAMPLES))).result()
     assert result["rejected"] == []
-    assert [e["document"] for e in result["entries"] if e["kind"] == "post"] == [d["id"] for d in P1_EXAMPLES]
+    assert [e["document"] for e in result["entries"] if e["kind"] == "post"] == [
+        d["id"] for d in P1_EXAMPLES if d["type"] != "fixed_asset"]
+    assert any(e["kind"] == "depreciation" for e in result["entries"])
 
 
 # req: QA-ENG-01

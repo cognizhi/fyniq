@@ -68,9 +68,11 @@ P1_ACCOUNTS = [
     {"code": "1021", "type": "asset", "group": False, "active": True},  # USD wallet
     {"code": "1090", "type": "asset", "group": False, "active": False},  # a closed bank account
     {"code": "1100", "type": "asset", "group": False, "active": True},
+    {"code": "1160", "type": "asset", "group": False, "active": True},  # asset disposal clearing
     {"code": "1210", "type": "asset", "group": False, "active": True},
     {"code": "1250", "type": "asset", "group": False, "active": True},  # staff advances
     {"code": "1500", "type": "asset", "group": False, "active": True},  # equipment
+    {"code": "1590", "type": "asset", "group": False, "active": True},  # accumulated depreciation
     {"code": "2010", "type": "liability", "group": False, "active": True},
     {"code": "2150", "type": "liability", "group": False, "active": True},
     {"code": "2200", "type": "liability", "group": False, "active": True},
@@ -86,8 +88,10 @@ P1_ACCOUNTS = [
     {"code": "6010", "type": "expense", "group": False, "active": True},
     {"code": "6110", "type": "expense", "group": False, "active": True},
     {"code": "6460", "type": "expense", "group": False, "active": True},
+    {"code": "6610", "type": "expense", "group": False, "active": True},  # depreciation
     {"code": "6900", "type": "expense", "group": False, "active": True},  # bad debts
     {"code": "7030", "type": "expense", "group": False, "active": True},
+    {"code": "7050", "type": "expense", "group": False, "active": True},  # gain or loss on disposal
 ]
 
 P1_SETTINGS = {
@@ -103,6 +107,10 @@ P1_SETTINGS = {
         "customer_deposits": "2410",
         "claims_payable": "2150",
         "advances": "1250",
+        "depreciation": "6610",
+        "accumulated_depreciation": "1590",
+        "disposal": "7050",
+        "disposal_clearing": "1160",
     },
     "mileage_rates": [{"vehicle": "car", "from": "2026-01-01", "rate": "0.60"},
                       {"vehicle": "motorcycle", "from": "2026-01-01", "rate": "0.25"}],
@@ -247,4 +255,19 @@ def advance(doc_id: str, day: str, amount: str, account: str = "1010", refund_of
                            "amount": amount}
     if refund_of is not None:
         doc["refund_of"] = refund_of
+    return doc
+
+
+def asset(doc_id: str, day: str, cost: str, life: int, account: str = "1500", **more: Any) -> dict:
+    return {"type": "fixed_asset", "id": doc_id, "version": 1, "date": day, "account": account, "cost": cost,
+            "life_months": life, **more}
+
+
+def disposal(doc_id: str, day: str, asset_id: str, account: str | None = None, amount: str | None = None,
+             gst_code: str | None = None) -> dict:
+    doc: dict[str, Any] = {"type": "asset_disposal", "id": doc_id, "version": 1, "date": day, "asset": asset_id}
+    if account is not None:
+        doc["proceeds"] = {"account": account, "amount": amount}
+        if gst_code is not None:
+            doc["proceeds"]["gst_code"] = gst_code
     return doc

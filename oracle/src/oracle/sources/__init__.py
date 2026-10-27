@@ -13,7 +13,7 @@ from typing import Any
 from oracle.book import Posting
 from oracle.rules import Rules
 from oracle.scenario import Source
-from oracle.sources import bank, claims, purchases, sales
+from oracle.sources import assets, bank, claims, purchases, sales
 
 RuleSet = Callable[[Rules, Source, dict[str, Any]], Posting]
 
@@ -32,4 +32,6 @@ RULE_SETS: dict[str, RuleSet] = {
     "expense_claim": claims.expense_claim,
     "claim_reimbursement": claims.claim_reimbursement,
     "cash_advance": claims.cash_advance,
+    "fixed_asset": assets.fixed_asset,
+    "asset_disposal": assets.asset_disposal,
 }

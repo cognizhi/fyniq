@@ -103,6 +103,20 @@
 - [ ] 8.1 `asset_depreciation@1` and `asset_disposal@1` in the independent oracle, written from PRD §10.2 and FR-FA-02
   and FR-FA-03 in a session of its own with the other pending rule sets (the owner's decision of 27 Oct 2026; QA-ENG-01,
   QA-ENG-02), and the differential green.
+  (27 Oct 2026, the oracle session, whose author has not read the engine: the oracle's half is written. A registered
+  asset (`fixed_asset`) schedules `asset_depreciation@1`, Appendix B.4's `ALLOC-EVEN` months on their last days from the
+  later of its start and the books' start (rev 0.150), and `asset_disposal@1` clears its cost and accumulated
+  depreciation with proceeds received (GST on them) or through the disposal clearing account, or none, the gain or loss
+  to the disposal account, ending its months (rev 0.149); in `oracle/src/oracle/sources/assets.py`. Hand-worked tests
+  are in `oracle/tests/test_assets.py`, a 1590 property in `test_p1_properties.py`, and the golden case is
+  `test/differential/pending/assets.json`; the shapes are in `test/differential/README.md`. **Left:** the differential,
+  once 8.2 lets the engine read the shapes; partial disposals and voids of assets are not in the format yet)
+- [ ] 8.2 (engine session) `cmd/scenario-run` reads the `fixed_asset` and `asset_disposal` shapes of `fyniq-scenario@1`
+  with `settings.books_start`, posts the depreciation due by `as_of` through `asset_depreciation@1` and the disposals
+  through `asset_disposal@1`, writing P1 entries in their canonical form (`test/differential/README.md`, "P1 sources");
+  then `test/differential/pending/assets.json` moves to `golden/` and `assets` joins `FYNIQ_DIFFERENTIAL_SOURCES`.
+  Verified by `make test` and `make differential` agreeing to the cent; a disagreement is settled from the PRD ("P1
+  readings"). `// req: QA-ENG-02`
 
 ## Workflow follow-up
 

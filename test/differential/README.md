@@ -162,8 +162,11 @@ A scenario with a P1 document must have `settings` and `as_of`, or it is invalid
 - `settings.accounts` names the system accounts by key (Appendix B.5): `receivable` (1100), `payable`
   (2010), `gst` (2200), `prepayments` (1210), `deferred_revenue` (2400), `fx` (7030), `bank_charges`
   (6460, a setting), `withholding_tax` (2330), `customer_deposits` (2410), `claims_payable` (2150),
-  `advances` (1250). Each named account must be in `accounts`. A document that needs a key the
-  organisation has not set is rejected.
+  `advances` (1250), `depreciation` (6610), `accumulated_depreciation` (1590), `disposal` (7050, a setting)
+  and `disposal_clearing` (1160, a setting). Each named account must be in `accounts`. A document that
+  needs a key the organisation has not set is rejected.
+- `settings.books_start` is the first day of the books: an asset's depreciation posts from the later of
+  its start and this day's month (FR-FA-02).
 - `settings.mileage_rates` lists the rate per km for each vehicle type from each date (FR-AP-16; a
   policy setting under dual control, not a statutory rate): `{"vehicle": "car", "from": "2026-01-01",
   "rate": "0.60"}`.
@@ -207,8 +210,9 @@ how each side splits a leg into lines, a P1 entry is written in its **canonical 
 currency, lines whose sums are both zero left out, sorted by account and then currency. A manual
 journal's entries keep their lines in the journal's order, as before.
 
-Scheduled entries come after every document and reversal, `kind` `release`: one entry per document and
-date, in canonical form, ordered by date, then by the document's place in the scenario.
+Scheduled entries come after every document and reversal, `kind` `release` (a spread's) or
+`depreciation` (an asset's): one entry per document, kind and date, in canonical form, ordered by date,
+then by the document's place in the scenario. A registered asset posts no entry of its own.
 
 ### Bank lines (`bank_transaction`, `bank_transaction@1`) and transfers (`bank_transfer`, `bank_transfer@1`)
 
@@ -354,6 +358,34 @@ reimbursing a claim in another currency gives the rate (the cascade's), the diff
 `refund_of` it is what is left of that advance coming back, at most what is left: Dr the money account,
 Cr 1250.
 
+### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
+
+From Appendix B.4, §10.2, FR-FA-01, FR-FA-02, FR-FA-03 and the rows of rev 0.149, 0.150 and 0.151.
+
+```json
+{"type": "fixed_asset", "id": "FA-0001", "version": 1, "date": "2026-01-15", "account": "1500",
+ "cost": "3600.00", "residual": "0.00", "life_months": 36, "depreciate_from": "2026-02-01"}
+```
+
+An asset in the register (an asset account, its cost and residual in the base currency, its life in
+months, and its start, the month of `depreciate_from` or of its date) posts nothing itself. It schedules
+straight-line depreciation: month k of its life takes the k-th part of `ALLOC-EVEN`(cost − residual,
+life), Dr `depreciation` · Cr `accumulated_depreciation`, dated the month's last day, from the later of its
+start and the books' start, once that day is on or before `as_of`. It is rejected on an account that is
+not an asset, a residual that is not below the cost, or a life of 0 or above 1,200 months.
+
+```json
+{"type": "asset_disposal", "id": "AD-0001", "version": 1, "date": "2026-04-10", "asset": "FA-0001",
+ "proceeds": {"account": "1010", "amount": "3270.00", "gst_code": "SR"}}
+```
+
+A disposal credits the asset's account with its cost and debits `accumulated_depreciation` with its months
+before the disposal's month (the opening balances' included); proceeds into a base-currency money account
+bear GST, `RND-GST-INCL` of the amount, when registered and the code carries it; proceeds on
+`disposal_clearing` (an invoice to the buyer credited it) bear none here; no `proceeds` is a write-off.
+`disposal` takes the gain or loss, whatever balances. No month from the disposal's on depreciates. It is
+rejected for an asset not registered or already disposed of, or dated before the asset.
+
 ### P1 readings
 
 Where PRD-001 leaves a P1 shape open, the oracle reads it as below. The generator does not produce
@@ -372,6 +404,9 @@ difference, which the PRD then settles.
 | A P1 document whose lines but one round to nothing in base (USD 0.01 deposited at 0.0001) | Rejected: an entry has at least two lines | INV-05 (rev 0.24 settles it for a journal's line, not for a P1 entry) | Not generated (rates of at least 0.01) |
 | A claim's line in another currency | Costed as a bill's (its cost in the claim's currency, 2150 at the claim's rate), reimbursed at the cascade's rate with the difference to 7030 | FR-AP-17 ("reimbursed in SGD at the rate cascade, the difference to 7030") | Generated |
 | A claim larger than what is left of its advance | 1250 takes what is left, 2150 the rest | FR-AP-17 ("settled by claims") | Generated |
+| GST on a disposal's proceeds received | `RND-GST-INCL` of the amount received (as for money in, B.1) | §10.2 "Asset disposal" ("GST control if applicable, on proceeds received with the disposal") | Not generated (`pending/assets.json`) |
+| A disposal's accumulated depreciation before the books' start | Cleared with the rest: the opening balances hold it on 1590 | Appendix B.4 ("earlier depreciation is part of opening balances") | Not generated (no books' start) |
+| A partial disposal, and a void of an asset | Not in the format yet | FR-FA-03, FR-FA-01 (rev 0.151) | Not generated |
 | The tolerance of a foreign bill paid in full | 3% of what it owes at its stored rate (its 2010 line) | FR-BNK-08 (rev 0.121: "3% of the document's total at its stored rate") | Not generated (only base-currency bills in full) |
 | The month's differences across sources | Bills' and invoices' differences share the month's cap, in absolute value | FR-BNK-08 ("with the month's earlier differences") | Generated (always within the cap) |
 | An unapplied amount from a base-currency account paying foreign bills | At the rate the payment implies (`RND-RATE` of what it paid ÷ the total) | Rev 0.77 | Not generated |
