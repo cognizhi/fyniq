@@ -1779,15 +1779,17 @@
     "FR-APR-10",
     "FR-APR-05",
     "FR-PAY-10",
-    "FR-AP-19"
+    "FR-AP-19",
+    "FR-AP-22"
    ],
    "purpose": "Build, approve and release a payment batch with dual control, then mark it paid from the bank feed.",
    "content": [
     "Item table: payee, document (bill, claim, pay run), amount, payee bank-details version, holds",
     "Holds explained: IR21 clearance hold, withholding-tax decision pending, payee bank details changed (re-approval required)",
-    "Approval steps; release by a person who did not prepare or approve it; step-up",
-    "Export bank bulk-payment file (GIRO / FAST format) with hash; P2 initiate via bank API",
-    "Evidence: bank confirmation screenshot or file; mark paid when the feed shows the debit"
+    "Approval steps; release after step-up by the Payment releaser: in Founder mode whoever prepared or approved it, never one person alone; in Standard mode a third person (rev 0.154)",
+    "Release posts each payment and makes the DBS IDEAL UFF file (FAST and GIRO, SGD to Singapore accounts) with its hash (rev 0.154); P2 initiate via bank API",
+    "Evidence: bank confirmation screenshot or file; mark paid when the feed shows the debit",
+    "Remittance advice emailed to each supplier when its payment matches the bank statement line (rev 0.154)"
    ],
    "states": [
     "draft",
@@ -4073,20 +4075,23 @@
     "FR-ADM-03",
     "NFR-L10N-01",
     "FR-UX-38",
-    "SEC-35"
+    "SEC-35",
+    "FR-AP-22"
    ],
    "purpose": "Set my own experience: mode, theme, density, formats, shortcuts, reduce motion, and manage my sign-in security.",
    "content": [
     "Experience: Basic or Expert, Plain view or Accountant view, theme (Light, Dark, System, high contrast), density (Comfortable, Compact), Reduce motion",
     "Formats: number and date ('12 Oct 2026'), negative numbers −1,234.56 or (1,234.56)",
     "Keyboard: turn off or remap single-character shortcuts; contextual hints on or off; tips on or off",
+    "Bank account for reimbursements (rev 0.154, FR-AP-22): my own Singapore account, masked with Show number; a change waits for finance's approval, and claims to me wait until then; withdraw it",
     "Security: passkeys and TOTP, recovery codes, linked sign-in identities (Google, Zoho), devices and sessions with revoke",
     "My MCP connections link"
    ],
    "states": [
     "organisation motion Off (my setting has no effect, explained)",
     "recovery codes not saved ⚠",
-    "session revoked"
+    "session revoked",
+    "bank account change waits for approval"
    ]
   },
   {
