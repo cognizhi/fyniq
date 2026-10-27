@@ -65,17 +65,17 @@
 
 ## 5. The screen and the guide
 
-- [ ] 5.1 `fixed-assets` at `/accounting/assets` (Expert; docs/design/screens FixedAssets): the register with cost,
+- [x] 5.1 `fixed-assets` at `/accounting/assets` (Expert; docs/design/screens FixedAssets): the register with cost,
   accumulated depreciation and NBV; an asset's page with its schedule (posted, waiting, projected) and its source;
   register, change, dispose or write off; **Not in the register yet**; the prompt on the bill and bank-line screens;
   help keys and registry entries; component tests with axe. `// req: FR-FA-01`, `// req: FR-FA-02`, `// req: FR-FA-03`
-- [ ] 5.2 The guide page `accounting.fixed-assets` (`docs/user-guide/fixed-assets.md`), compiled into `kb/pages/`,
+- [x] 5.2 The guide page `accounting.fixed-assets` (`docs/user-guide/fixed-assets.md`), compiled into `kb/pages/`,
   `make kb-index` and `make kb-lint` clean; the screen checked in the dev stack against the real API.
   `// req: QA-UI-05`
 
 ## 6. Finish
 
-- [ ] 6.1 The threat model `docs/security/threat-models/fixed-assets.md` (a disposal hiding an asset taken, a
+- [x] 6.1 The threat model `docs/security/threat-models/fixed-assets.md` (a disposal hiding an asset taken, a
   depreciation posted twice or into a closed month, a register that disagrees with the ledger), each abuse case with
   its test; `make check`, `make test`, `make scan` and `make images` pass; mutation on the ledger at least 90%; a
   conventional commit with upgrade notes (name the clearing account before a sale on an invoice; check 7050).

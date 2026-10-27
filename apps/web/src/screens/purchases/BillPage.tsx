@@ -140,16 +140,18 @@ export function check(f: Form, base: string): { draft?: Draft; errors: Errors } 
   };
 }
 
-// Checks lists what stops a draft posting (✖) and what it posts with (⚠).
-function Checks({ checks }: { checks: Check[] }) {
+// Checks lists what stops a draft posting (✖) and what it posts with (⚠); for a posted bill, what to review, such as a
+// line on an asset account not in the fixed asset register yet (ASSET-UNREGISTERED), with the way to register it.
+function Checks({ checks, billId, posted }: { checks: Check[]; billId?: string; posted?: boolean }) {
   const id = useId();
   if (checks.length === 0) return null;
   const errors = checks.filter((c) => c.severity === "error").length;
+  const line = (field?: string) => Number(/^lines\[(\d+)\]/.exec(field ?? "")?.[1] ?? "0") + 1;
   return (
     <section className="fy-card" aria-labelledby={id}>
       <div className="fy-card__head">
         <h2 className="fy-h3" id={id}>
-          {errors > 0 ? (errors === 1 ? "1 thing to fix before it can post" : `${errors} things to fix before it can post`) : "To check before it posts"}
+          {errors > 0 ? (errors === 1 ? "1 thing to fix before it can post" : `${errors} things to fix before it can post`) : posted ? "To review" : "To check before it posts"}
         </h2>
       </div>
       <ul className="fy-list">
@@ -163,6 +165,11 @@ function Checks({ checks }: { checks: Check[] }) {
                 {c.message} <span className="fy-small fy-muted fy-mono">{c.code}</span>
               </span>
               {c.fix && <span className="fy-list__meta whitespace-normal">{c.fix}.</span>}
+              {c.code === "ASSET-UNREGISTERED" && billId && (
+                <Link className="fy-small" to="/accounting/assets" search={{ register: billId, line: String(line(c.field)) }}>
+                  Register it
+                </Link>
+              )}
             </span>
             <span className="fy-sr">{c.severity === "error" ? "Stops it posting" : "Review it"}</span>
           </li>
@@ -638,7 +645,7 @@ export function BillPage() {
           </div>
         </div>
       )}
-      {bill && !form && !editing && <Checks checks={bill.checks ?? []} />}
+      {bill && !form && !editing && <Checks checks={bill.checks ?? []} billId={bill.id} posted={bill.status !== "draft"} />}
       {bill && bill.status !== "draft" && !form && !editing && (
         <PaymentPlanCard
           bill={bill}

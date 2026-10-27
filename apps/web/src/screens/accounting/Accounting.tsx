@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { BookOpen, CalendarRange, ChevronRight, Coins, NotebookPen, Scale, ScrollText, type LucideIcon } from "lucide-react";
+import { BookOpen, CalendarRange, ChevronRight, Coins, NotebookPen, Package, Scale, ScrollText, type LucideIcon } from "lucide-react";
 import { helpText } from "../../i18n";
 import { Icon } from "../../ui";
 
@@ -8,6 +8,7 @@ const pages: { to: string; help: string; icon: LucideIcon }[] = [
   { to: "/accounting/close", help: "accounting.periods", icon: CalendarRange },
   { to: "/accounting/opening-balances", help: "accounting.opening-balances", icon: Scale },
   { to: "/accounting/fx", help: "accounting.currencies", icon: Coins },
+  { to: "/accounting/assets", help: "accounting.fixed-assets", icon: Package },
   { to: "/reports/general-ledger", help: "reports.general-ledger", icon: ScrollText },
   { to: "/accounting/chart-of-accounts", help: "accounting.chart", icon: BookOpen },
 ];
@@ -20,7 +21,7 @@ export function Accounting() {
       <div className="fy-pagehead">
         <div className="fy-pagehead__text">
           <h1 className="fy-h1">Accounting</h1>
-          <p className="fy-secondary">Journals, the periods they post in, and the accounts they post to.</p>
+          <p className="fy-secondary">Journals, the periods they post in, the accounts they post to, and the fixed asset register.</p>
         </div>
       </div>
       <nav className="fy-card" aria-label="Accounting pages">
