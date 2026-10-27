@@ -32,42 +32,28 @@ is rejected (FR-GL-12, rev 0.24: "dated on or after the entry's posting date").
 
 The trial balance is the base-currency total per account per calendar month of the posting date
 (Appendix B: "period = the month of the posting date").
+
+From P1 the ledger also posts the **P1 sources** (bank lines and transfers, ...), each through its
+rule set in :mod:`oracle.sources`, in scenario order with the manual journals. A source's entry is
+written in its canonical form (:func:`oracle.book.canonical`). What a source schedules (a spread's
+releases) posts after every document and reversal, when dated on or before ``as_of`` (ENG-05: up to
+"today", never the future), one entry per document, kind and date.
 """
 
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, localcontext
 from typing import Any
 
 from oracle import money
-from oracle.scenario import RESULT_SCHEMA, Document, Reversal, Scenario, check_result
+from oracle.book import Entry, PostedLine, Rejected, Scheduled, canonical
+from oracle.rules import Rules
+from oracle.scenario import RESULT_SCHEMA, Document, Reversal, Scenario, Source, check_result
+from oracle.sources import RULE_SETS
 
-
-@dataclass(frozen=True)
-class PostedLine:
-    account: str
-    currency: str
-    amount: Decimal
-    base_amount: Decimal
-
-
-@dataclass(frozen=True)
-class Entry:
-    document: str
-    kind: str  # "post" or "reversal"
-    posting_date: date
-    lines: tuple[PostedLine, ...]
-
-
-class Rejected(Exception):
-    """A document or reversal the rules refuse. The reason is for people, never for the result."""
-
-    def __init__(self, reason: str) -> None:
-        super().__init__(reason)
-        self.reason = reason
+__all__ = ["Entry", "Ledger", "PostedLine", "Rejected", "period", "run"]
 
 
 def period(day: date) -> str:
@@ -87,11 +73,18 @@ class Ledger:
         self.post: defaultdict[tuple[str, str], Decimal] = defaultdict(lambda: money.ZERO)
         self._posted: dict[str, Entry] = {}
         self._reversed: set[str] = set()
+        self.rules = Rules(scenario) if scenario.settings is not None else None
+        self.books: dict[str, Any] = {}  # what each posted P1 document left for later ones to read
+        self._scheduled: list[tuple[int, Scheduled]] = []  # (the document's position, the entry)
         with localcontext(money.EXACT):  # an operator that slipped past money.* still cannot round
-            for document in scenario.documents:
-                self._journal(document)
+            for index, document in enumerate(scenario.documents):
+                if isinstance(document, Source):
+                    self._source(index, document)
+                else:
+                    self._journal(document)
             for reversal in scenario.reversals:
                 self._reversal(reversal)
+            self._schedule()
 
     # ------------------------------------------------------------------ posting
     def p(self, account: str, month: str, base_amount: Decimal) -> None:
@@ -179,6 +172,38 @@ class Ledger:
             raise Rejected("unbalanced-currency")
 
         return tuple(posted)
+
+    def _source(self, index: int, document: Source) -> None:
+        assert self.rules is not None  # the scenario reader refuses a source without settings
+        try:
+            posting = RULE_SETS[document.type](self.rules, document, self.books)
+            lines = canonical(posting.lines)
+            if any(ln.base_amount.copy_abs() >= money.AMOUNT_LIMIT for ln in lines):
+                raise Rejected("base-out-of-range")  # §11.3: NUMERIC(20,4)
+        except Rejected as exc:
+            self._reject(document.id, exc.reason)
+            return
+        if not money.total([ln.base_amount for ln in lines]).is_zero() or len(lines) < 2:
+            raise RuntimeError(f"oracle defect: {document.type} {document.id} posts an unbalanced entry {lines}")
+        for effect in posting.effects:
+            effect()
+        self.books[document.id] = posting.facts
+        entry = Entry(document.id, "post", document.date, lines)
+        self._posted[document.id] = entry
+        self._record(entry)
+        self._scheduled.extend((index, scheduled) for scheduled in posting.scheduled)
+
+    def _schedule(self) -> None:
+        """Scheduled entries dated up to ``as_of``, one per (date, document, kind), in that order."""
+        as_of = self.scenario.as_of
+        groups: dict[tuple[date, int, str], list[PostedLine]] = {}
+        for index, scheduled in self._scheduled:
+            if as_of is not None and scheduled.posting_date <= as_of:
+                groups.setdefault((scheduled.posting_date, index, scheduled.kind), []).extend(scheduled.lines)
+        for (day, index, kind), lines in sorted(groups.items()):
+            entry_lines = canonical(lines)
+            if entry_lines:
+                self._record(Entry(self.scenario.documents[index].id, kind, day, entry_lines))
 
     def _reversal(self, reversal: Reversal) -> None:
         key = f"{reversal.document}/reversal"

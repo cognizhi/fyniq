@@ -132,10 +132,13 @@ def test_the_oracle_is_deterministic(data):
 
 # req: QA-ENG-01
 def test_the_generator_is_reproducible_and_covers_its_targets():
-    first = generate(seed=11, count=40)
-    assert first == generate(seed=11, count=40)
+    # Hypothesis also draws on constants in the oracle's own modules (5% of draws), so what a seed
+    # gives changes with the oracle's source and with the modules a process has loaded. The targets
+    # are checked on enough scenarios not to hinge on that.
+    first = generate(seed=11, count=120)
+    assert first == generate(seed=11, count=120)
     assert first != generate(seed=12, count=40)
-    assert [s["name"] for s in first] == [f"gen-11-{i:04d}" for i in range(40)]
+    assert [s["name"] for s in first] == [f"gen-11-{i:04d}" for i in range(120)]
 
     bases = {s["base_currency"] for s in first}
     minors = {minor for s in first for minor in s["currencies"].values()}
