@@ -180,10 +180,12 @@ class Ledger:
             lines = canonical(posting.lines)
             if any(ln.base_amount.copy_abs() >= money.AMOUNT_LIMIT for ln in lines):
                 raise Rejected("base-out-of-range")  # §11.3: NUMERIC(20,4)
+            if len(lines) < 2:  # every other leg rounded to nothing (README, "P1 readings")
+                raise Rejected("entry-rounds-to-one-line")
         except Rejected as exc:
             self._reject(document.id, exc.reason)
             return
-        if not money.total([ln.base_amount for ln in lines]).is_zero() or len(lines) < 2:
+        if not money.total([ln.base_amount for ln in lines]).is_zero():
             raise RuntimeError(f"oracle defect: {document.type} {document.id} posts an unbalanced entry {lines}")
         for effect in posting.effects:
             effect()

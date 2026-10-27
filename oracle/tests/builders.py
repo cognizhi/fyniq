@@ -74,13 +74,17 @@ P1_ACCOUNTS = [
     {"code": "2200", "type": "liability", "group": False, "active": True},
     {"code": "2330", "type": "liability", "group": False, "active": True},
     {"code": "2400", "type": "liability", "group": False, "active": True},
+    {"code": "2410", "type": "liability", "group": False, "active": True},
     {"code": "2999", "type": "liability", "group": False, "active": True},
     {"code": "3010", "type": "equity", "group": False, "active": True, "role": "share-capital"},
     {"code": "4000", "type": "revenue", "group": True, "active": True},
     {"code": "4010", "type": "revenue", "group": False, "active": True},
+    {"code": "4020", "type": "revenue", "group": False, "active": True},
+    {"code": "4095", "type": "revenue", "group": False, "active": True},  # discounts allowed
     {"code": "6010", "type": "expense", "group": False, "active": True},
     {"code": "6110", "type": "expense", "group": False, "active": True},
     {"code": "6460", "type": "expense", "group": False, "active": True},
+    {"code": "6900", "type": "expense", "group": False, "active": True},  # bad debts
     {"code": "7030", "type": "expense", "group": False, "active": True},
 ]
 
@@ -94,6 +98,7 @@ P1_SETTINGS = {
         "fx": "7030",
         "bank_charges": "6460",
         "withholding_tax": "2330",
+        "customer_deposits": "2410",
     },
     "money_accounts": {"1010": "SGD", "1011": "SGD", "1021": "USD", "1090": "SGD"},
     "gst": {"registered_from": "2025-01-01", "rates": [{"from": "2023-01-01", "percent": "8"}, {"from": "2024-01-01", "percent": "9"}]},
@@ -196,4 +201,28 @@ def settlement(kind: str, doc_id: str, day: str, account: str, currency: str, *p
     if rate is not None:
         doc["fx_rate"], doc["fx_rate_source"] = rate, "document"
     doc.update(more)
+    return doc
+
+
+def invoice_line(account: str, amount: str | None = None, gst_code: str = "SR", **more: Any) -> dict:
+    result: dict[str, Any] = {"account": account, "gst_code": gst_code}
+    if amount is not None:
+        result["amount"] = amount
+    result.update(more)
+    return result
+
+
+def invoice(doc_id: str, day: str, currency: str, *lines: dict, rate: str | None = None, kind: str = "invoice",
+            **more: Any) -> dict:
+    return bill(doc_id, day, currency, *lines, rate=rate, kind=kind, **more)
+
+
+def deposit(doc_id: str, day: str, account: str, currency: str, amount: str, kind: str = "part_payment",
+            gst_code: str | None = "SR", rate: str | None = None) -> dict:
+    doc: dict[str, Any] = {"type": "customer_deposit", "id": doc_id, "version": 1, "date": day, "account": account,
+                           "currency": currency, "amount": amount, "kind": kind}
+    if gst_code is not None:
+        doc["gst_code"] = gst_code
+    if rate is not None:
+        doc["fx_rate"], doc["fx_rate_source"] = rate, "document"
     return doc

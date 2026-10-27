@@ -12,8 +12,13 @@ only on a transfer paid from a base-currency account. For purchases: parts recor
 base-currency bills (the 3% of a foreign bill's tolerance is a reading), and no payment of a bill that
 withholds tax (its open amount is what it owes after withholding, which the generator does not track).
 
-The generator keeps what it built so far in a :class:`_Book` (the bills a payment may settle and what
-each has open), so a payment built to post really can.
+For sales: receipts, write-offs and deposits deducted only against invoices that charge no GST (so
+the generator knows what each owes without computing GST), and receipts in full only on base-currency
+invoices.
+
+The generator keeps what it built so far in a :class:`_Book` (the bills and invoices a settlement may
+settle and what each has open, the deposits and what is left of each), so a document built to post
+really can.
 """
 
 from __future__ import annotations
@@ -28,7 +33,7 @@ from oracle import money
 from oracle.scenario import SCENARIO_SCHEMA
 from oracle.strategies import POST, REJECT, Intent
 
-SOURCES = ("bank", "purchases")
+SOURCES = ("bank", "purchases", "sales")
 
 CURRENCIES = {"SGD": 2, "USD": 2, "JPY": 0, "KWD": 3}
 MONEY_ACCOUNTS = {"1010": "SGD", "1011": "SGD", "1021": "USD", "1022": "JPY", "1023": "KWD"}
@@ -41,6 +46,7 @@ SYSTEM = {
     "fx": "7030",
     "bank_charges": "6460",
     "withholding_tax": "2330",
+    "customer_deposits": "2410",
 }
 EXPENSES = ["6010", "6020", "6110", "6460", "7030"]
 REVENUES = ["4010", "4020", "4030"]
@@ -55,15 +61,24 @@ BANK_REJECTED = ["bank-parts-mismatch", "bank-part-on-money", "bank-part-on-cont
 PURCHASES_POSTING = ["bill", "bill", "bill-foreign", "bill-spread", "bill-quantity", "bill-withholding",
                      "vendor-credit", "pay", "pay", "pay-in-full", "pay-from-base", "pay-unapplied"]
 PURCHASES_REJECTED = ["bill-spread-not-expense", "pay-more-than-open", "pay-beyond-tolerance", "pay-unknown-bill"]
-KINDS = {"bank": BANK_POSTING * 3 + BANK_REJECTED, "purchases": PURCHASES_POSTING * 2 + PURCHASES_REJECTED}
-REJECTED_KINDS = frozenset(BANK_REJECTED + PURCHASES_REJECTED)
+SALES_POSTING = ["invoice", "invoice", "invoice-foreign", "invoice-discount", "invoice-spread", "credit-note",
+                 "receipt", "receipt", "receipt-in-full", "receipt-from-base", "deposit", "deposit-security",
+                 "invoice-deducting", "deposit-refund", "write-off"]
+SALES_REJECTED = ["receipt-more-than-open", "invoice-spread-not-revenue", "invoice-deducting-too-much",
+                  "write-off-more-than-open"]
+KINDS = {"bank": BANK_POSTING * 3 + BANK_REJECTED, "purchases": PURCHASES_POSTING * 2 + PURCHASES_REJECTED,
+         "sales": SALES_POSTING * 2 + SALES_REJECTED}
+REJECTED_KINDS = frozenset(BANK_REJECTED + PURCHASES_REJECTED + SALES_REJECTED)
+WALLETS = {"SGD": "1010", "USD": "1021", "JPY": "1022", "KWD": "1023"}
 
 
 class _Book:
-    """What the generator built so far: the bills a payment may settle, with what each has open."""
+    """What the generator built so far: what a settlement may settle and what each has open."""
 
     def __init__(self) -> None:
         self.open: dict[str, tuple[str, Decimal]] = {}  # bill -> (currency, open amount)
+        self.invoices: dict[str, tuple[str, Decimal]] = {}  # invoice charging no GST -> (currency, open)
+        self.deposits: dict[str, tuple[str, Decimal]] = {}  # deposit -> (currency, what is left)
 
 
 def _accounts() -> list[dict[str, Any]]:
@@ -71,7 +86,7 @@ def _accounts() -> list[dict[str, Any]]:
         return {"code": code, "type": kind, "group": False, "active": True}
 
     chart = [account(code, "asset") for code in [*MONEY_ACCOUNTS, "1100", "1210", "1500"]]
-    chart += [account(code, "liability") for code in ["2010", "2050", "2200", "2330", "2400", "2999"]]
+    chart += [account(code, "liability") for code in ["2010", "2050", "2200", "2330", "2400", "2410", "2999"]]
     chart += [account(code, "revenue") for code in REVENUES]
     chart += [account(code, "expense") for code in EXPENSES]
     return chart
@@ -118,8 +133,10 @@ def _split(draw: st.DrawFn, total: Decimal, parts: int, minor: int) -> list[Deci
 
 @st.composite
 def _rate(draw: st.DrawFn) -> str:
+    """A rate from 0.01 to 100 with up to 6 decimals: one unit of any currency is at least a cent."""
     decimals = draw(st.integers(0, 6))
-    return format(Decimal(draw(st.integers(1, 10 ** (decimals + 2)))).scaleb(-decimals, context=money.EXACT), "f")
+    least = max(1, 10 ** (decimals - 2))
+    return format(Decimal(draw(st.integers(least, 10 ** (decimals + 2)))).scaleb(-decimals, context=money.EXACT), "f")
 
 
 @st.composite
@@ -282,6 +299,157 @@ def _payment(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _Book) ->
 
 
 @st.composite
+def _sales_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _Book) -> tuple[dict[str, Any], str]:
+    base = {"id": doc_id, "version": 1, "date": day.isoformat()}
+    if kind in ("deposit", "deposit-security"):
+        currency = draw(st.sampled_from(["SGD", "SGD", "USD"]))
+        amount = draw(_cents(CURRENCIES[currency], 6))
+        if currency != "SGD" and amount < 1:  # a whole unit at least, so its base is at least a cent
+            amount = money.EXACT.add(amount, Decimal(1))
+        doc = {"type": "customer_deposit", **base, "account": WALLETS[currency] if currency != "SGD" else
+               draw(st.sampled_from(["1010", "1011"])), "currency": currency,
+               "amount": _text(amount, CURRENCIES[currency]),
+               "kind": "security" if kind == "deposit-security" else "part_payment"}
+        if kind == "deposit":
+            doc["gst_code"] = draw(st.sampled_from(_CODES_IN))
+        if currency != "SGD":
+            doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
+        book.deposits[doc_id] = (currency, amount)
+        return doc, POST
+    if kind == "deposit-refund":
+        left = [d for d, (_, amount) in sorted(book.deposits.items()) if amount > 0]
+        if not left:
+            return {"type": "deposit_refund", **base, "deposit": "DP-NONE", "account": "1010", "amount": "1.00"}, REJECT
+        target = draw(st.sampled_from(left))
+        currency, amount = book.deposits[target]
+        minor = CURRENCIES[currency]
+        whole = currency != "SGD" or draw(st.booleans()) or amount <= Decimal(1).scaleb(-minor)
+        refund = amount if whole else draw(_split(amount, 2, minor))[0]
+        doc = {"type": "deposit_refund", **base, "deposit": target, "account": WALLETS[currency],
+               "amount": _text(refund, minor)}
+        if currency != "SGD":
+            doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
+        book.deposits[target] = (currency, money.EXACT.subtract(amount, refund))
+        return doc, POST
+    if kind.startswith("receipt"):
+        return draw(_receipt(base, kind, book))
+    if kind.startswith("write-off"):
+        open_ = [i for i, (_, left) in sorted(book.invoices.items()) if left > 0]
+        if not open_:
+            return {"type": "write_off", **base, "invoice": "INV-NONE", "amount": "1.00", "account": "6010"}, REJECT
+        target = draw(st.sampled_from(open_))
+        currency, left = book.invoices[target]
+        minor = CURRENCIES[currency]
+        unit = Decimal(1).scaleb(-minor, context=money.EXACT)
+        if kind == "write-off-more-than-open":
+            amount = money.EXACT.add(left, unit)
+        else:
+            amount = left if draw(st.booleans()) or left <= unit else draw(_split(left, 2, minor))[0]
+            book.invoices[target] = (currency, money.EXACT.subtract(left, amount))
+        doc = {"type": "write_off", **base, "invoice": target, "amount": _text(amount, minor),
+               "account": draw(st.sampled_from(["6010", "7030", "4010"]))}
+        return doc, REJECT if kind in REJECTED_KINDS else POST
+
+    # An invoice or a credit note.
+    currency = draw(st.sampled_from(["USD", "JPY", "KWD"])) if kind == "invoice-foreign" else "SGD"
+    deducting = kind in ("invoice-deducting", "invoice-deducting-too-much")
+    unknown_deposit = False
+    if deducting:
+        usable = [d for d, (_, left) in sorted(book.deposits.items()) if left > 0]
+        if not usable:  # nothing to deduct: a plain invoice, or one naming a deposit that does not exist
+            deducting = False
+            unknown_deposit = kind == "invoice-deducting-too-much"
+            kind = "invoice" if kind == "invoice-deducting" else kind
+        else:
+            source = draw(st.sampled_from(usable))
+            currency, left = book.deposits[source]
+    minor = CURRENCIES[currency]
+    tracked = deducting or kind in ("invoice", "invoice-foreign", "invoice-discount") and draw(st.booleans())
+    codes = ["ZR", "ES", "OS", "NA"] if tracked else _CODES_IN
+    lines, total = [], Decimal(0)
+    for i in range(draw(st.integers(1, 3))):
+        line: dict[str, Any] = {"account": draw(st.sampled_from(REVENUES)), "gst_code": draw(st.sampled_from(codes))}
+        if kind == "invoice-discount":
+            quantity = Decimal(draw(st.integers(1, 999)))
+            price = Decimal(draw(st.integers(1, 10**6))).scaleb(-draw(st.integers(0, 4)), context=money.EXACT)
+            discount = Decimal(draw(st.integers(0, 9999))).scaleb(-2, context=money.EXACT)
+            net = money.rnd_line(quantity, price, minor, discount)
+            if net.is_zero():
+                discount, net = Decimal(0), money.rnd_line(quantity, Decimal(1), minor)
+                price = Decimal(1)
+            line.update(quantity=format(quantity, "f"), unit_price=format(price, "f"), discount=format(discount, "f"))
+        else:
+            net = draw(_cents(minor, 6))
+            line["amount"] = _text(net, minor)
+        if (kind == "invoice-spread" and i == 0) or (kind == "invoice-spread-not-revenue" and i == 0):
+            line["spread_months"] = draw(st.sampled_from([1, 3, 12, 24]))
+            if draw(st.booleans()):
+                line["spread_from"] = (day + timedelta(days=draw(st.integers(-60, 120)))).isoformat()
+            if kind == "invoice-spread-not-revenue":
+                line["account"] = draw(st.sampled_from(EXPENSES + OTHER))
+        lines.append(line)
+        total = money.EXACT.add(total, net)
+    doc = {"type": "credit_note" if kind == "credit-note" else "invoice", **base, "currency": currency, "lines": lines}
+    if currency != "SGD":
+        doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
+    meant = REJECT if kind in REJECTED_KINDS else POST
+    if unknown_deposit:
+        doc["deposits"] = [{"deposit": "DP-NONE", "amount": "1.00"}]
+    if deducting:
+        if kind == "invoice-deducting-too-much":
+            used = money.EXACT.add(left, Decimal(1).scaleb(-minor, context=money.EXACT))
+        else:
+            used = min(left, total) if draw(st.booleans()) else draw(_split(min(left, total), 2, minor))[0] \
+                if min(left, total) > Decimal(1).scaleb(-minor) else min(left, total)
+            book.deposits[source] = (currency, money.EXACT.subtract(left, used))
+            total = money.EXACT.subtract(total, used)
+        doc["deposits"] = [{"deposit": source, "amount": _text(used, minor)}]
+    if tracked and meant == POST:
+        book.invoices[doc_id] = (currency, total)
+    return doc, meant
+
+
+@st.composite
+def _receipt(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book) -> tuple[dict[str, Any], str]:
+    in_full = kind == "receipt-in-full"
+    open_ = [i for i, (cur, left) in sorted(book.invoices.items()) if left > 0 and (cur == "SGD" or not in_full)]
+    doc: dict[str, Any] = {"type": "customer_receipt", **base, "parts": []}
+    if not open_:
+        doc.update(account="1010", currency="SGD", parts=[{"document": "INV-NONE", "amount": "1.00"}])
+        return doc, REJECT
+    target = draw(st.sampled_from(open_))
+    currency, left = book.invoices[target]
+    minor = CURRENCIES[currency]
+    unit = Decimal(1).scaleb(-minor, context=money.EXACT)
+    doc["currency"] = currency
+    if kind == "receipt-more-than-open":
+        doc["parts"] = [{"document": target, "amount": _text(money.EXACT.add(left, unit), minor)}]
+        doc["account"] = WALLETS[currency]
+        if currency != "SGD":
+            doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
+        return doc, REJECT
+    if in_full:
+        units = int(left.scaleb(2, context=money.EXACT))
+        amount = money.EXACT.subtract(left, Decimal(draw(st.integers(0, min(100, units - 1)))).scaleb(-2))
+        doc.update(account="1010", parts=[{"document": target, "amount": _text(amount, 2), "in_full": True}])
+        book.invoices[target] = (currency, Decimal(0))
+        return doc, POST
+    amount = left if draw(st.booleans()) or left <= unit else draw(_split(left, 2, minor))[0]
+    doc["parts"] = [{"document": target, "amount": _text(amount, minor)}]
+    if currency == "SGD":
+        doc["account"] = draw(st.sampled_from(["1010", "1011"]))
+    elif kind == "receipt-from-base":
+        doc["account"], doc["base_amount"] = "1010", _text(draw(_cents()), 2)
+    else:
+        doc["account"] = WALLETS[currency]
+        doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
+    if draw(st.integers(0, 4)) == 0:
+        doc["unapplied"] = _text(draw(_cents(minor, 3)), minor)
+    book.invoices[target] = (currency, money.EXACT.subtract(left, amount))
+    return doc, POST
+
+
+@st.composite
 def p1_scenarios_with_intent(
     draw: st.DrawFn, sources: tuple[str, ...] = SOURCES, name: str = "generated-p1"
 ) -> tuple[dict[str, Any], Intent]:
@@ -295,8 +463,10 @@ def p1_scenarios_with_intent(
         doc_id = f"P1-{i + 1:04d}"
         if kind in KINDS["bank"]:
             document, meant = draw(_bank_document(doc_id, day, kind)), REJECT if kind in REJECTED_KINDS else POST
-        else:
+        elif kind in KINDS["purchases"]:
             document, meant = draw(_purchase_document(doc_id, day, kind, book))
+        else:
+            document, meant = draw(_sales_document(doc_id, day, kind, book))
         documents.append(document)
         intent[doc_id] = meant
     last = max(date.fromisoformat(d["date"]) for d in documents)

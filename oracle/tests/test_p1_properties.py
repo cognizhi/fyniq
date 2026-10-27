@@ -105,6 +105,26 @@ def test_the_ap_sub_ledger_equals_2010_in_each_currency_and_in_base(data):
         assert sum((ln.amount for ln in lines if ln.currency == currency), Decimal(0)) == by_currency.get(currency, 0)
 
 
+# req: INV-07
+@given(p1_scenarios(("sales",)))
+def test_the_ar_sub_ledger_equals_1100_in_each_currency_and_in_base(data):
+    # Open invoices are owed; credit notes and unapplied receipts are credits with the customer.
+    ledger = Ledger(scenario_from_json(data))
+    receivable = data["settings"]["accounts"]["receivable"]
+    by_currency: dict[str, Decimal] = {}
+    base = Decimal(0)
+    for item in ledger.books.values():
+        if not isinstance(item, OpenItem) or item.control != receivable:
+            continue
+        owed = item.type == "invoice"
+        by_currency[item.currency] = by_currency.get(item.currency, Decimal(0)) + (item.open if owed else -item.total)
+        base += item.open_base if owed else -item.carrying
+    lines = [ln for e in ledger.entries for ln in e.lines if ln.account == receivable]
+    assert sum((ln.base_amount for ln in lines), Decimal(0)) == base
+    for currency in {ln.currency for ln in lines} | set(by_currency):
+        assert sum((ln.amount for ln in lines if ln.currency == currency), Decimal(0)) == by_currency.get(currency, 0)
+
+
 # req: QA-ENG-02
 def test_every_source_has_generator_kinds():
-    assert SOURCES == ("bank", "purchases")
+    assert SOURCES == ("bank", "purchases", "sales")
