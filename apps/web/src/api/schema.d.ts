@@ -63,7 +63,7 @@ export interface paths {
         put?: never;
         /**
          * Load the standard chart of accounts
-         * @description Loads the standard Singapore start-up chart into an organisation that has no account yet: 87 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each, and the expense policy's starter claim categories (local and overseas travel, meals, software, telephone, office supplies and mileage, with no limits: FR-AP-15) with theirs. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Loads the standard Singapore start-up chart into an organisation that has no account yet: 88 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each, and the expense policy's starter claim categories (local and overseas travel, meals, software, telephone, office supplies and mileage, with no limits: FR-AP-15) with theirs. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["loadStandardChart"];
         delete?: never;
@@ -6993,6 +6993,12 @@ export interface components {
             type: "asset" | "liability" | "equity" | "revenue" | "expense";
             /**
              * Format: int64
+             * @description The default useful life in whole months the fixed asset register offers for an asset on it (FR-COA-02; PRD-001 rev 0.151); left out when it has none.
+             * @example 36
+             */
+            useful_life_months?: number;
+            /**
+             * Format: int64
              * @description The record's version; it also makes the ETag.
              * @example 1
              */
@@ -7069,6 +7075,12 @@ export interface components {
              * @example true
              */
             revalue?: boolean;
+            /**
+             * Format: int64
+             * @description The default useful life in whole months the fixed asset register offers, on an asset account of the register only (FR-COA-02; COA-11); 0 clears it. Registered assets keep their own lives.
+             * @example 60
+             */
+            useful_life_months?: number;
         };
         AccountDraft: {
             /**
@@ -7151,6 +7163,12 @@ export interface components {
              * @example expense
              */
             type: string;
+            /**
+             * Format: int64
+             * @description The default useful life in whole months that the fixed asset register offers for an asset on it; only on an asset account of the register (report group Property, plant & equipment or Intangible assets; FR-COA-02, rev 0.151; COA-11). 0 or left out: none.
+             * @example 36
+             */
+            useful_life_months?: number;
         };
         AccountLedger: {
             /**
@@ -21614,7 +21632,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active; `COA-10` The account is not revalued at month end. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active; `COA-10` The account is not revalued at month end; `COA-11` The account takes no such default useful life. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -21857,7 +21875,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active; `COA-10` The account is not revalued at month end. */
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active; `COA-10` The account is not revalued at month end; `COA-11` The account takes no such default useful life. */
             422: {
                 headers: {
                     [name: string]: unknown;

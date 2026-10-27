@@ -689,6 +689,7 @@ func TestDocumentNumbers(t *testing.T) {
 // req: FR-COA-01
 // req: FR-COA-02
 // req: FR-AP-15
+// req: ledger/chart-of-accounts Default useful life (rev 0.151)
 func TestStandardChart(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
@@ -759,6 +760,9 @@ func TestStandardChart(t *testing.T) {
 		"6020": {"type": "expense", "payroll_cost": true, "function": "G&A"},
 		"7040": {"type": "revenue", "name": "Unrealised FX gain or loss"},
 		"7050": {"name": "Gain / (loss) on disposal of assets"},
+		"1160": {"type": "asset", "report_group": "Other current assets", "name": "Asset disposal clearing"},
+		"1510": {"useful_life_months": float64(36)},
+		"1520": {"useful_life_months": float64(60)},
 	} {
 		for field, v := range want {
 			if accounts[code][field] != v {
@@ -776,6 +780,19 @@ func TestStandardChart(t *testing.T) {
 		"updateAccount", 422, CodeInvalid)
 	if r := e.call(http.MethodPatch, "/v1/accounts/"+bank["id"].(string), accountant, map[string]any{"revalue": false}, "If-Match", fmt.Sprintf(`"%v"`, bank["version"])); r.Status != 200 || r.Body["revalue"] != false {
 		t.Errorf("unmarking a bank account: %d %s", r.Status, r.Raw)
+	}
+	// A default useful life is for the register's accounts only (rev 0.151): rent refuses one (COA-11), 1520 takes 48 months,
+	// and 0 clears it.
+	if r := e.call(http.MethodPatch, "/v1/accounts/"+rent["id"].(string), accountant, map[string]any{"useful_life_months": 36}, "If-Match", fmt.Sprintf(`"%v"`, rent["version"])); r.Status != 422 || !strings.Contains(r.Raw, "COA-11") {
+		t.Errorf("a life on rent: %d %s", r.Status, r.Raw)
+	}
+	furniture := accounts["1520"]
+	r = e.call(http.MethodPatch, "/v1/accounts/"+furniture["id"].(string), accountant, map[string]any{"useful_life_months": 48}, "If-Match", fmt.Sprintf(`"%v"`, furniture["version"]))
+	if r.Status != 200 || r.Body["useful_life_months"] != float64(48) {
+		t.Errorf("48 months on 1520: %d %s", r.Status, r.Raw)
+	}
+	if c := e.call(http.MethodPatch, "/v1/accounts/"+furniture["id"].(string), accountant, map[string]any{"useful_life_months": 0}, "If-Match", r.Header.Get("ETag")); c.Status != 200 || c.Body["useful_life_months"] != nil {
+		t.Errorf("clearing 1520's life: %d %s", c.Status, c.Raw)
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil), "loadStandardChart", 409, CodeChartLoaded)
 	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", e.as(authz.Accountant), nil), "loadStandardChart", 409, CodeChartLoaded)

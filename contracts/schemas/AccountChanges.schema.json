@@ -103,6 +103,16 @@
         true
       ],
       "type": "boolean"
+    },
+    "useful_life_months": {
+      "description": "The default useful life in whole months the fixed asset register offers, on an asset account of the register only (FR-COA-02; COA-11); 0 clears it. Registered assets keep their own lives.",
+      "examples": [
+        60
+      ],
+      "format": "int64",
+      "maximum": 600,
+      "minimum": 0,
+      "type": "integer"
     }
   },
   "title": "AccountChanges",

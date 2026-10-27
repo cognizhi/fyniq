@@ -338,6 +338,7 @@ type AccountAttributes struct {
 	PayrollCost    bool
 	Guidance       string // shown when someone picks the account
 	Revalue        bool   // its foreign-currency balances are revalued at month end: a monetary item (FR-GL-04)
+	UsefulLife     int    // (rev 0.151) the default useful life in months the asset register offers; 0 for none (FR-COA-02)
 }
 
 // AccountRole marks an account the rules treat specially; empty for most accounts.

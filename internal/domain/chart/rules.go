@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -22,6 +23,7 @@ const (
 	CodeProtected   = "COA-08" // the control or payroll-cost flag changes only with approval
 	CodeSystem      = "COA-09" // a system account stays active
 	CodeRevalue     = "COA-10" // only a monetary asset or liability is revalued at month end
+	CodeUsefulLife  = "COA-11" // a default useful life of 1 to 600 months, only on an asset account of the register
 )
 
 // Problem is one rule that failed.
@@ -73,6 +75,20 @@ func checkRevalue(t storage.AccountType, role storage.AccountRole, revalue bool,
 	}
 }
 
+// checkUsefulLife refuses a default useful life outside 1 to 600 months, or on an account no asset sits on: a heading,
+// or an account outside the asset register's report groups (FR-COA-02, FR-FA-01; rev 0.151).
+func checkUsefulLife(group bool, a storage.AccountAttributes, add func(code, field, message, fix string)) {
+	switch {
+	case a.UsefulLife == 0:
+	case a.UsefulLife < 1 || a.UsefulLife > 600:
+		add(CodeUsefulLife, "useful_life_months", fmt.Sprintf("%d is not a useful life of 1 to 600 months", a.UsefulLife),
+			"Enter whole months from 1 to 600, such as 36, or leave it empty")
+	case group || !slices.Contains(asset.RegisterGroups, a.ReportGroup):
+		add(CodeUsefulLife, "useful_life_months", "only an asset account of the register (Property, plant & equipment or Intangible assets) has a default useful life",
+			"Leave it empty, or give the account one of those report groups first")
+	}
+}
+
 // CheckAccount returns every rule a new account breaks, or nil.
 func CheckAccount(a storage.NewAccount) []Problem {
 	var out []Problem
@@ -88,6 +104,7 @@ func CheckAccount(a storage.NewAccount) []Problem {
 	}
 	checkAttributes(a.Name, a.AccountAttributes, add)
 	checkRevalue(a.Type, a.Role, a.Revalue, add)
+	checkUsefulLife(a.Group, a.AccountAttributes, add)
 	return out
 }
 
@@ -99,6 +116,7 @@ func CheckChange(before storage.Account, c storage.AccountChange) []Problem {
 	add := func(code, field, message, fix string) { out = append(out, Problem{code, field, message, fix}) }
 	checkAttributes(c.Name, c.AccountAttributes, add)
 	checkRevalue(before.Type, before.Role, c.Revalue, add)
+	checkUsefulLife(c.Group, c.AccountAttributes, add)
 	if c.Control != before.Control {
 		add(CodeProtected, "control", "changes only with an approval", "Ask for the change once approvals are available (p1-approval-engine)")
 	}

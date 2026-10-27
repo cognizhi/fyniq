@@ -88,7 +88,7 @@
   (FR-UX-41); the guide sections compiled into `kb/`.
   - Tests: the standard chart loads 88 accounts with 1160; an invoiced sale clears 1160 with no setting changed; a
     car trip with no rate changed is S$0.60 a km. `// req: FR-COA-01`, `// req: FR-FA-03`, `// req: FR-AP-16`
-- [ ] 7.2 The default useful life on an asset account (design D8): the migration, the chart's rules and API, the
+- [x] 7.2 The default useful life on an asset account (design D8): the migration, the chart's rules and API, the
   standard chart's 36/60/36/36, the chart screen's field, and the register's form filling it.
   - Tests: an account outside the register's groups refuses a life (COA-11); the form fills 60 for 1520 and keeps a
     life typed. `// req: FR-COA-02`, `// req: ledger/fixed-assets The account's default useful life is offered`

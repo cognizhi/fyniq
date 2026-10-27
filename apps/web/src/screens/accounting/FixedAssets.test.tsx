@@ -142,6 +142,29 @@ describe("the fixed asset register", () => {
     expect(await screen.findByText("FA-0003 Dell monitor is in the register.")).toBeTruthy();
   });
 
+  // req: ledger/fixed-assets The account's default useful life is offered (rev 0.151)
+  it("offers the asset account's default useful life, and keeps a life typed", async () => {
+    const furniture = { ...accounts.items[0], id: "a1520", code: "1520", name: "Office equipment & furniture", useful_life_months: 60 };
+    answer(register({ "GET /v1/accounts": { status: 200, body: { items: [{ ...accounts.items[0], useful_life_months: 36 }, furniture, ...accounts.items.slice(1)] } } }));
+    renderPage(FixedAssets, { path: "/accounting/assets", session: accountant, organisation, mode: "expert" });
+    fireEvent.click(await screen.findByRole("tab", { name: /Not in the register yet \(1\)/ }));
+    const list = await screen.findByRole("table", { name: "Purchases not in the register" });
+    fireEvent.click(within(list).getByRole("button", { name: "Register" }));
+    let dialog = await screen.findByRole("dialog");
+    const life = () => (within(dialog).getByLabelText("Useful life (months)") as HTMLInputElement).value;
+    expect(life()).toBe("36");
+    expect(within(dialog).getByText(/1510 Computer equipment lasts 36 months by default/)).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Register one bought earlier" }));
+    dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Asset account (its category)"), { target: { value: "a1520" } });
+    expect(life()).toBe("60");
+    fireEvent.change(within(dialog).getByLabelText("Useful life (months)"), { target: { value: "48" } });
+    fireEvent.change(within(dialog).getByLabelText("Asset account (its category)"), { target: { value: "a1510" } });
+    expect(life()).toBe("48");
+  });
+
   it("checks a sale before recording it, then records it", async () => {
     answer(
       register({

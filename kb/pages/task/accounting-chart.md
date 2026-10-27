@@ -4,7 +4,7 @@ type: task
 title: Set up and keep the chart of accounts
 summary: Load the standard Singapore start-up chart, add an account, rename, regroup or deactivate one, and what system accounts are
 sources:
-  - docs/user-guide/chart-of-accounts.md sha256:2ffed5628c201949833da56f8b41372021fe104dd438eaa06bda1733167458b6
+  - docs/user-guide/chart-of-accounts.md sha256:bd81b010b73ce4cfc2059913835c58a1ca3ce5c12466c2e7d1ab502f60bfd866
 data_class: general
 taint: trusted
 status: draft
@@ -39,7 +39,7 @@ aliases:
 ## Start from the standard chart
 
 - A new company starts with no accounts: **Load the standard chart**, and confirm.
-- The standard Singapore start-up chart has 87 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance; it loads only into a chart with no accounts, and can be renamed, regrouped and added to afterwards.
+- The standard Singapore start-up chart has 88 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance; it loads only into a chart with no accounts, and can be renamed, regrouped and added to afterwards.
 
 (src: docs/user-guide/chart-of-accounts.md#start-from-the-standard-chart)
 
@@ -49,6 +49,7 @@ aliases:
 - The pencil next to an account changes its name, group, report group, function, GST code and guidance; **Save the account**.
 - Clearing **Active** stops new postings; its history stays. The control and payroll-cost flags change only with an approval.
 - **Revalued at month end**, ticked on an asset or a liability settled in money (a bank account in another currency, receivables, a director's loan), restates its balances in other currencies each month at the month-end rate ([[accounting.currencies]]); the standard chart ticks the money accounts, accounts receivable and payable, staff and director advances, the director's loan and deferred remuneration; prepayments, deferred revenue and equity, income and expense accounts are never revalued.
+- **Default useful life (months)**, on an asset account of the fixed asset register (report group Property, plant & equipment or Intangible assets), is the life offered when an asset on it is registered ([[accounting.fixed-assets]]): the standard chart sets 36 months for 1510 Computer equipment, 60 for 1520 Office equipment & furniture, 36 for 1530 Renovation & fit-out and 36 for 1540 Software & intangible assets, which the accountant confirms; changing it never changes an asset already registered.
 - **System** accounts, such as accounts receivable, accounts payable and GST control, keep their code, type and role, and stay active.
 - Related: organisation settings ([[settings.organisation]]); contacts, items and their revenue accounts ([[contacts.manage]]).
 
