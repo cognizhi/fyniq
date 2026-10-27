@@ -27,6 +27,25 @@ import (
 // the asset account.
 type FixedAssets struct {
 	Store storage.Store
+	// Clock is the organisation's clock: after registering or changing an asset, its months due by today post at once
+	// (design D3). Nil leaves them to the hourly job.
+	Clock interface{ Now() time.Time }
+}
+
+// depreciateNow posts an asset's months of depreciation due by the organisation's today, after the unit of work that
+// registered or changed it commits. What it cannot post the hourly job assets.depreciation posts, so it never fails
+// the command.
+func (s FixedAssets) depreciateNow(u storage.UnitOfWork, org, id uuid.UUID) {
+	if s.Clock == nil {
+		return
+	}
+	u.AfterCommit(func(ctx context.Context) {
+		day, err := todayIn(ctx, s.Store, org, s.Clock.Now())
+		if err != nil {
+			return
+		}
+		_, _ = Depreciations{Store: s.Store}.Depreciate(ctx, org, id, day)
+	})
 }
 
 // AssetDraft is an asset as registered. A sourced asset names its source's document and line (from 1), and takes its
@@ -301,6 +320,11 @@ func (s FixedAssets) Register(ctx context.Context, u storage.UnitOfWork, d Asset
 	if err := u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted); err != nil {
 		return storage.Document{}, err
 	}
+	org, err := u.Organisation(ctx)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	s.depreciateNow(u, org.ID, doc.ID)
 	return u.Documents().Get(ctx, doc.ID)
 }
 
@@ -447,6 +471,13 @@ func prepareChange(ctx context.Context, u storage.UnitOfWork, doc storage.Docume
 		return CheckedAsset{}, err
 	}
 	probs = append(probs, asset.Check(n, acc, s.Base, start)...)
+	if left, err := n.Cost.Sub(n.Carried); err == nil && !none && n.Residual.Currency() == left.Currency() {
+		if over, _ := n.Residual.Cmp(left); over > 0 {
+			probs = append(probs, ledger.Problem{Code: asset.CodeResidual, Field: "residual",
+				Message: fmt.Sprintf("the residual value %s %s is above what the asset is still worth, %s %s", n.Residual, s.Base, left, s.Base),
+				Fix:     "Enter a residual value of at most its net book value"})
+		}
+	}
 	if n.LifeMonths >= 1 && n.End().Before(n.From) && n.LifeMonths != cur.LifeMonths {
 		probs = append(probs, ledger.Problem{Code: asset.CodeLife, Field: "life_months",
 			Message: fmt.Sprintf("a life of %d months ends in %s, before %s, the first month not posted yet", n.LifeMonths, n.End().Format("January 2006"), n.From.Format("January 2006")),
@@ -494,5 +525,10 @@ func (s FixedAssets) Change(ctx context.Context, u storage.UnitOfWork, id uuid.U
 	if err != nil {
 		return storage.Document{}, err
 	}
+	org, err := u.Organisation(ctx)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	s.depreciateNow(u, org.ID, id)
 	return u.Documents().Edit(ctx, id, b, "")
 }

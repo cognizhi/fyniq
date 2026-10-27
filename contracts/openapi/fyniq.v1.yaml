@@ -9938,7 +9938,7 @@ components:
           $ref: "#/components/schemas/Money"
           description: "Its accumulated depreciation: what the opening balances carried for it and what has posted since."
         checks:
-          description: "Its warnings (⚠): the bill or bank line it came from was voided or edited since."
+          description: "Its warnings (⚠): the bill or bank line it came from was voided or edited since; a month of depreciation waiting for its period."
           items:
             $ref: "#/components/schemas/BillCheck"
           type: array
@@ -9951,6 +9951,11 @@ components:
             - 2026-09
           pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
           type: string
+        depreciation:
+          description: "getFixedAsset and the commands only: its months of depreciation, in order: those posted (and reversed, by a disposal dated before them), and its current version's months to come, waiting when due by the organisation's today, projected after (ENG-05)."
+          items:
+            $ref: "#/components/schemas/FixedAssetMonth"
+          type: array
         end:
           description: "The last month it depreciates: start + life − 1."
           examples:
@@ -10054,6 +10059,7 @@ components:
         - end
         - accumulated_depreciation
         - net_book_value
+        - depreciation
         - checks
       type: object
     FixedAssetChange:
@@ -10148,6 +10154,53 @@ components:
           type: string
       required:
         - life_months
+      type: object
+    FixedAssetMonth:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "Its depreciation, in the base currency: Dr 6610 · Cr 1590."
+        date:
+          description: "The day it posts on: the month's last day."
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+        entry_id:
+          description: Its entry, once posted.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f90
+          format: uuid
+          type: string
+        month:
+          description: The month.
+          examples:
+            - 2026-10
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        status:
+          description: "posted: in the ledger; reversed: posted, then reversed by a disposal dated before it; waiting: due, not posted yet (the hourly job posts it, or its period is not open); projected: in the future, not in the ledger."
+          enum:
+            - posted
+            - reversed
+            - waiting
+            - projected
+          examples:
+            - posted
+          type: string
+        version:
+          description: The asset's version it is of.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - month
+        - date
+        - version
+        - amount
+        - status
       type: object
     FixedAssetOpening:
       additionalProperties: false

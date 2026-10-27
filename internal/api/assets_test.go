@@ -13,11 +13,12 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// computerEquipment gives e's organisation 1510 Computer equipment, an asset account of the register, once, and
-// returns it.
+// computerEquipment gives e's organisation 1510 Computer equipment, an asset account of the register, with 6610
+// Depreciation and 1590 Accumulated depreciation by role, once, and returns 1510.
 func (e *env) computerEquipment() storage.Account {
 	e.t.Helper()
 	var a storage.Account
@@ -26,8 +27,16 @@ func (e *env) computerEquipment() storage.Account {
 		if a, err = u.Accounts().ByCode(ctx, "1510"); err == nil {
 			return nil
 		}
-		a, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1510", Name: "Computer equipment", Type: storage.Asset,
-			AccountAttributes: storage.AccountAttributes{ReportGroup: "Property, plant & equipment"}})
+		if a, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1510", Name: "Computer equipment", Type: storage.Asset,
+			AccountAttributes: storage.AccountAttributes{ReportGroup: "Property, plant & equipment"}}); err != nil {
+			return err
+		}
+		if _, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "6610", Name: "Depreciation", Type: storage.Expense,
+			Role: storage.AccountRole(ledger.RoleDepreciation)}); err != nil {
+			return err
+		}
+		_, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1590", Name: "Accumulated depreciation", Type: storage.Asset,
+			Role: storage.AccountRole(ledger.RoleAccumulatedDepreciation)})
 		return err
 	})
 	return a
@@ -115,6 +124,26 @@ func TestRegisteringFixedAssets(t *testing.T) {
 		t.Errorf("registered: %s", r.Raw)
 	}
 	id, tag := r.str("id"), r.Header.Get("ETag")
+	// Its schedule: 36 months of S$100.00 from October 2026, each on its last day, all in the future on 15 October.
+	months, _ := r.Body["depreciation"].([]any)
+	if len(months) != 36 {
+		t.Fatalf("the schedule: %d months", len(months))
+	}
+	if m := months[0].(map[string]any); m["month"] != "2026-10" || m["date"] != "2026-10-31" || m["status"] != "projected" ||
+		m["amount"].(map[string]any)["amount"] != "100.00" {
+		t.Errorf("October: %v", m)
+	}
+	// On 5 November, October is due: it posted when the job ran, or waits for it.
+	e.clock.Set(time.Date(2026, 11, 5, 4, 0, 0, 0, time.UTC))
+	if _, err := journal.DepreciateDueAll(context.Background(), e.store, e.clock.Now()); err != nil {
+		t.Fatal(err)
+	}
+	g := e.call(http.MethodGet, "/v1/fixed-assets/"+id, accountant, nil)
+	if m := g.Body["depreciation"].([]any)[0].(map[string]any); m["status"] != "posted" || m["entry_id"] == nil ||
+		g.str("accumulated_depreciation", "amount") != "100.00" || g.str("net_book_value", "amount") != "3500.00" || g.str("depreciated_to") != "2026-10" {
+		t.Errorf("after October posted: %s", g.Raw)
+	}
+	e.clock.Set(time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC))
 
 	// A line is registered once; a line on an expense account is not an asset's.
 	e.problemIs(e.call(http.MethodPost, "/v1/fixed-assets", accountant, body), "registerFixedAsset", 422, asset.CodeSource)

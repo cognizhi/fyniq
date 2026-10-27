@@ -30,6 +30,9 @@ import (
 // longer be on the account as the register says.
 const WarnAssetSource = "ASSET-SOURCE-CHANGED"
 
+// WarnDepreciationWaiting is an asset with a month of depreciation due and not posted: the first such month (FR-FA-02).
+const WarnDepreciationWaiting = "ASSET-DEPRECIATION-WAITING"
+
 // AssetCodes are the codes an asset's own checks answer.
 var AssetCodes = []string{asset.CodeSource, asset.CodeAccount, asset.CodeLife, asset.CodeResidual, asset.CodeStart, asset.CodeMethod, asset.CodeOpening,
 	asset.CodeTooLong, asset.CodePosted}
@@ -105,9 +108,20 @@ type FixedAsset struct {
 	NetBookValue            Money             `json:"net_book_value" doc:"Cost less accumulated depreciation."`
 	DepreciatedTo           string            `json:"depreciated_to,omitempty" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The last month whose depreciation has posted." example:"2026-09"`
 	Notes                   string            `json:"notes,omitempty" doc:"Its notes." example:"Serial C02XG0FDH7JY"`
-	Checks                  []BillCheck       `json:"checks" nullable:"false" doc:"Its warnings (⚠): the bill or bank line it came from was voided or edited since."`
+	Depreciation            []FixedAssetMonth `json:"depreciation" nullable:"false" doc:"getFixedAsset and the commands only: its months of depreciation, in order: those posted (and reversed, by a disposal dated before them), and its current version's months to come, waiting when due by the organisation's today, projected after (ENG-05)."`
+	Checks                  []BillCheck       `json:"checks" nullable:"false" doc:"Its warnings (⚠): the bill or bank line it came from was voided or edited since; a month of depreciation waiting for its period."`
 	RecordedBy              *Person           `json:"recorded_by,omitempty" doc:"Who registered it, or saved its latest change."`
 	RecordedAt              *time.Time        `json:"recorded_at,omitempty" doc:"When." example:"2026-03-20T09:30:00Z"`
+}
+
+// FixedAssetMonth is one month of an asset's depreciation.
+type FixedAssetMonth struct {
+	Month   string `json:"month" pattern:"^[0-9]{4}-(0[1-9]|1[0-2])$" doc:"The month." example:"2026-10"`
+	Date    string `json:"date" format:"date" doc:"The day it posts on: the month's last day." example:"2026-10-31"`
+	Version int    `json:"version" doc:"The asset's version it is of." example:"1"`
+	Amount  Money  `json:"amount" doc:"Its depreciation, in the base currency: Dr 6610 · Cr 1590."`
+	Status  string `json:"status" enum:"posted,reversed,waiting,projected" doc:"posted: in the ledger; reversed: posted, then reversed by a disposal dated before it; waiting: due, not posted yet (the hourly job posts it, or its period is not open); projected: in the future, not in the ledger." example:"posted"`
+	EntryID string `json:"entry_id,omitempty" format:"uuid" doc:"Its entry, once posted." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f90"`
 }
 
 // FixedAssetPage is a page of the register, newest purchase first.
@@ -171,7 +185,7 @@ func monthIn(s, field string) (time.Time, *FieldProblem) {
 }
 
 // assetOf is an asset as the API shows it: its figures as they stand with what has posted.
-func (a *API) assetOf(ctx context.Context, u storage.UnitOfWork, base money.Currency, doc storage.Document) (FixedAsset, error) {
+func (a *API) assetOf(ctx context.Context, u storage.UnitOfWork, base money.Currency, doc storage.Document, withDetail bool) (FixedAsset, error) {
 	x, err := asset.Read(doc)
 	if err != nil {
 		return FixedAsset{}, err
@@ -188,7 +202,7 @@ func (a *API) assetOf(ctx context.Context, u storage.UnitOfWork, base money.Curr
 	out := FixedAsset{ID: doc.ID.String(), Number: doc.Number, Status: "in_use", Version: doc.Version, Name: x.Name, AccountID: x.AccountID.String(),
 		PurchasedOn: dateOf(x.PurchasedOn), Cost: moneyOut(x.Cost), Residual: moneyOut(x.Residual), LifeMonths: x.LifeMonths, Method: x.Method,
 		Start: monthText(x.Start), End: monthText(x.End()), AccumulatedDepreciation: moneyOut(acc), NetBookValue: moneyOut(nbv), Notes: x.Notes,
-		Checks: []BillCheck{}, RecordedBy: personOf(doc.PostedBy), RecordedAt: doc.PostedAt}
+		Depreciation: []FixedAssetMonth{}, Checks: []BillCheck{}, RecordedBy: personOf(doc.PostedBy), RecordedAt: doc.PostedAt}
 	if !posted.Last.IsZero() {
 		out.DepreciatedTo = monthText(posted.Last)
 	}
@@ -224,6 +238,30 @@ func (a *API) assetOf(ctx context.Context, u storage.UnitOfWork, base money.Curr
 			out.Checks = append(out.Checks, BillCheck{Severity: "warning", Code: WarnAssetSource, Field: "source",
 				Message: strings.TrimSpace(src.Number+" ") + " was " + what + " after the asset was registered from it, so its cost may no longer be on the account",
 				Fix:     "Check the asset against the bill or bank line; dispose of it if it was never bought"})
+		}
+	}
+	if withDetail {
+		today, err := orgToday(ctx, a, u)
+		if err != nil {
+			return FixedAsset{}, err
+		}
+		months, err := journal.DepreciationStates(ctx, u, doc, today, base)
+		if err != nil {
+			return FixedAsset{}, err
+		}
+		waiting := false
+		for _, m := range months {
+			x := FixedAssetMonth{Month: monthText(m.Month), Date: dateOf(m.Date), Version: m.Version, Amount: moneyOut(m.Amount), Status: m.Status}
+			if m.EntryID != uuid.Nil {
+				x.EntryID = m.EntryID.String()
+			}
+			out.Depreciation = append(out.Depreciation, x)
+			if m.Status == journal.DepreciationWaiting && !waiting { // the first: the months after it wait for it
+				waiting = true
+				out.Checks = append(out.Checks, BillCheck{Severity: "warning", Code: WarnDepreciationWaiting, Field: "depreciation",
+					Message: "the depreciation of " + m.Month.Format("January 2006") + " is due and not posted",
+					Fix:     "Open its period, if it is closed; otherwise the hourly job posts it"})
+			}
 		}
 	}
 	return out, a.name(ctx, u, out.RecordedBy)
@@ -366,7 +404,7 @@ func registerFixedAssets(a *API) {
 						out.Body.NextCursor = encodeCursor(last.PurchasedOn + "|" + last.ID)
 						return nil
 					}
-					x, err := a.assetOf(ctx, u, base, doc)
+					x, err := a.assetOf(ctx, u, base, doc, false)
 					if err != nil {
 						return err
 					}
@@ -408,7 +446,7 @@ func registerFixedAssets(a *API) {
 			if err != nil {
 				return err
 			}
-			x, err = a.assetOf(ctx, u, base, doc)
+			x, err = a.assetOf(ctx, u, base, doc, true)
 			return err
 		})
 		if err != nil {
@@ -425,7 +463,7 @@ func registerFixedAssets(a *API) {
 		if err != nil {
 			return FixedAsset{}, err
 		}
-		return a.assetOf(ctx, u, base, doc)
+		return a.assetOf(ctx, u, base, doc, true)
 	}
 	answer := func(w written[FixedAsset]) *assetOutput {
 		if w.Previewed {

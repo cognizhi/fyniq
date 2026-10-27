@@ -15,7 +15,7 @@
       "description": "Its accumulated depreciation: what the opening balances carried for it and what has posted since."
     },
     "checks": {
-      "description": "Its warnings (⚠): the bill or bank line it came from was voided or edited since.",
+      "description": "Its warnings (⚠): the bill or bank line it came from was voided or edited since; a month of depreciation waiting for its period.",
       "items": {
         "$ref": "BillCheck.schema.json"
       },
@@ -32,6 +32,13 @@
       ],
       "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
       "type": "string"
+    },
+    "depreciation": {
+      "description": "getFixedAsset and the commands only: its months of depreciation, in order: those posted (and reversed, by a disposal dated before them), and its current version's months to come, waiting when due by the organisation's today, projected after (ENG-05).",
+      "items": {
+        "$ref": "FixedAssetMonth.schema.json"
+      },
+      "type": "array"
     },
     "end": {
       "description": "The last month it depreciates: start + life − 1.",
@@ -168,6 +175,7 @@
     "end",
     "accumulated_depreciation",
     "net_book_value",
+    "depreciation",
     "checks"
   ],
   "title": "FixedAsset",

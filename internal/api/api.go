@@ -194,7 +194,7 @@ func New(mux humago.Mux, d Deps) *API {
 		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
 		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store},
 		customerApplications: journal.CustomerCreditApplications{Store: d.Store}, customerRefunds: journal.CustomerRefunds{Store: d.Store},
-		deposits: journal.CustomerDeposits{Store: d.Store}, bank: journal.BankTransactions{Store: d.Store, Clock: d.Clock}, quotes: journal.Quotes{Store: d.Store}, claims: journal.Claims{Store: d.Store}, reimbursements: journal.ClaimReimbursements{Store: d.Store}, advances: journal.CashAdvances{Store: d.Store}, assets: journal.FixedAssets{Store: d.Store}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
+		deposits: journal.CustomerDeposits{Store: d.Store}, bank: journal.BankTransactions{Store: d.Store, Clock: d.Clock}, quotes: journal.Quotes{Store: d.Store}, claims: journal.Claims{Store: d.Store}, reimbursements: journal.ClaimReimbursements{Store: d.Store}, advances: journal.CashAdvances{Store: d.Store}, assets: journal.FixedAssets{Store: d.Store, Clock: d.Clock}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {

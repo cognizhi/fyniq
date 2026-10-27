@@ -128,6 +128,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 		}
 		return strings.Join(ledger.Differences(want, stored), "; "), nil
 	}
+	if e.Source.Type == ledger.SourceAssetDepreciation { // a month of an asset version's depreciation (FR-FA-02)
+		want, err := replayDepreciation(doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
 	if doc.Type == fx.DocumentFXRevaluation { // the month-end revaluation, from what its run recorded (FR-GL-04)
 		r, rs, err := fx.ReadRevaluation(ctx, u, doc)
 		if err != nil {
