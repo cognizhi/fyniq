@@ -125,6 +125,21 @@ def test_the_ar_sub_ledger_equals_1100_in_each_currency_and_in_base(data):
         assert sum((ln.amount for ln in lines if ln.currency == currency), Decimal(0)) == by_currency.get(currency, 0)
 
 
+# req: INV-07
+@given(p1_scenarios(("claims",)))
+def test_open_claims_equal_2150_and_what_is_left_of_advances_equals_1250(data):
+    from oracle.sources.claims import Advance
+
+    ledger = Ledger(scenario_from_json(data))
+    accounts = data["settings"]["accounts"]
+    owed = [i for i in ledger.books.values() if isinstance(i, OpenItem) and i.control == accounts["claims_payable"]]
+    left = [a.left for a in ledger.books.values() if isinstance(a, Advance)]
+    lines = [ln for e in ledger.entries for ln in e.lines]
+    assert sum((ln.base_amount for ln in lines if ln.account == accounts["claims_payable"]), Decimal(0)) == \
+        -sum((i.open_base for i in owed), Decimal(0))
+    assert sum((ln.base_amount for ln in lines if ln.account == accounts["advances"]), Decimal(0)) == sum(left, Decimal(0))
+
+
 # req: QA-ENG-02
 def test_every_source_has_generator_kinds():
-    assert SOURCES == ("bank", "purchases", "sales")
+    assert SOURCES == ("bank", "purchases", "sales", "claims")

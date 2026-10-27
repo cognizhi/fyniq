@@ -69,8 +69,10 @@ P1_ACCOUNTS = [
     {"code": "1090", "type": "asset", "group": False, "active": False},  # a closed bank account
     {"code": "1100", "type": "asset", "group": False, "active": True},
     {"code": "1210", "type": "asset", "group": False, "active": True},
+    {"code": "1250", "type": "asset", "group": False, "active": True},  # staff advances
     {"code": "1500", "type": "asset", "group": False, "active": True},  # equipment
     {"code": "2010", "type": "liability", "group": False, "active": True},
+    {"code": "2150", "type": "liability", "group": False, "active": True},
     {"code": "2200", "type": "liability", "group": False, "active": True},
     {"code": "2330", "type": "liability", "group": False, "active": True},
     {"code": "2400", "type": "liability", "group": False, "active": True},
@@ -99,7 +101,11 @@ P1_SETTINGS = {
         "bank_charges": "6460",
         "withholding_tax": "2330",
         "customer_deposits": "2410",
+        "claims_payable": "2150",
+        "advances": "1250",
     },
+    "mileage_rates": [{"vehicle": "car", "from": "2026-01-01", "rate": "0.60"},
+                      {"vehicle": "motorcycle", "from": "2026-01-01", "rate": "0.25"}],
     "money_accounts": {"1010": "SGD", "1011": "SGD", "1021": "USD", "1090": "SGD"},
     "gst": {"registered_from": "2025-01-01", "rates": [{"from": "2023-01-01", "percent": "8"}, {"from": "2024-01-01", "percent": "9"}]},
 }
@@ -225,4 +231,20 @@ def deposit(doc_id: str, day: str, account: str, currency: str, amount: str, kin
         doc["gst_code"] = gst_code
     if rate is not None:
         doc["fx_rate"], doc["fx_rate_source"] = rate, "document"
+    return doc
+
+
+def claim(doc_id: str, day: str, currency: str, *lines: dict, rate: str | None = None, **more: Any) -> dict:
+    return bill(doc_id, day, currency, *lines, rate=rate, kind="expense_claim", **more)
+
+
+def trip(account: str, distance: str, vehicle: str = "car") -> dict:
+    return {"account": account, "distance": distance, "vehicle": vehicle}
+
+
+def advance(doc_id: str, day: str, amount: str, account: str = "1010", refund_of: str | None = None) -> dict:
+    doc: dict[str, Any] = {"type": "cash_advance", "id": doc_id, "version": 1, "date": day, "account": account,
+                           "amount": amount}
+    if refund_of is not None:
+        doc["refund_of"] = refund_of
     return doc

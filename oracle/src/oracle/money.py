@@ -300,3 +300,10 @@ def rnd_deposit(left_base: Decimal, used: Decimal, left: Decimal, minor_units: i
 def rnd_rate(paid_base: Decimal, amount: Decimal) -> Decimal:
     """``RND-RATE`` (§10.4) of the rate a base-currency payment implies: round(paid ÷ amount, 10)."""
     return round_quotient(paid_base, amount, RATE_DECIMALS)
+
+
+def rnd_mileage(distance_km: Decimal, rate_per_km: Decimal, minor_units: int) -> Decimal:
+    """``RND-MILEAGE`` (§10.4, rev 0.7): round(distance to 0.1 km, half up) × rate, rounded to the cent,
+    half up, per trip. Half up is half away from zero, as everywhere in §10.4."""
+    tenths = round_quotient(distance_km, Decimal(1), 1)
+    return round_quotient(EXACT.multiply(tenths, rate_per_km), Decimal(1), minor_units)
