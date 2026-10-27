@@ -411,6 +411,29 @@ Source: PRD-001 §8.6 · Priority M when GST-registered; else S · Phase P1
 - **THEN** the bill is for what the company paid back, its GST the GST inside that amount, so accounts payable shows what the company owes
 - **AND** the bill shows ⚠ until a file is attached as evidence of the repayment
 
+### Requirement: FR-AP-22 Claimants' bank details
+The system SHALL keep each person's own bank account for reimbursements, a Singapore account entered by the person, sealed (SEC-11) and shown by its last four characters, in force only when someone who holds A on "Payment batches", never the person, approves it (FM-1), with payments to the person frozen until then.
+
+Source: PRD-001 §8.6 · Priority M · Phase P1
+
+#### Scenario: Entered by the person
+- **WHEN** a person enters or changes their bank account for reimbursements
+- **THEN** it is a Singapore account (the bank by its SWIFT/BIC, the number and the name on the account), sealed at the application level and shown by its last four characters
+
+#### Scenario: Approved by another person
+- **WHEN** the change is asked for
+- **THEN** it takes effect only when someone who holds A on "Payment batches", never the person, approves it (FM-1)
+- **AND** payments to the person are frozen until then
+
+#### Scenario: The full number on request
+- **WHEN** someone reveals the full number
+- **THEN** it shows only after step-up, and the reveal is audited
+
+#### Scenario: Nemura holds them when linked
+- **GIVEN** Nemura is linked (FR-PPL)
+- **WHEN** a person's bank account is needed
+- **THEN** Nemura holds it
+
 ### Requirement: FR-AP-21 Supplier contracts and renewals
 The system SHALL keep a register of supplier commitments (software and AI tools, cloud, office, services) with supplier, owner, start and end dates, renewal type, notice deadline, billing frequency, amount and currency, minimum commitment and agreed price changes.
 
