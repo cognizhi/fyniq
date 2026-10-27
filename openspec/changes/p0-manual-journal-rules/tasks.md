@@ -30,9 +30,9 @@
 
 ## 3. Oracle (the oracle session, after group 2 merges)
 
-- [ ] 3.1 Refuse a reversal dated before its document. Hand-worked tests `# req: FR-GL-12`: the day before (refused), the same day and a later month (both post)
-- [ ] 3.2 Refuse a manual journal line to an account whose role is `share-capital`, with tests `# req: INV-13`. The rule list in `oracle/src/oracle/ledger.py` cites ENG-24 and INV-13
-- [ ] 3.3 In `test/differential/README.md`, rename "Choices where PRD-001 is silent" to "Decided in PRD-001 rev 0.24", with each row citing its requirement; update the strategies' docstring to match. Verify with `make oracle-test`
+- [x] 3.1 Refuse a reversal dated before its document. Hand-worked tests `# req: FR-GL-12`: the day before (refused), the same day and a later month (both post) (as built: `reversal-before-entry`; a refused reversal leaves the document unreversed, so a later one still posts)
+- [x] 3.2 Refuse a manual journal line to an account whose role is `share-capital`, with tests `# req: INV-13`. The rule list in `oracle/src/oracle/ledger.py` cites ENG-24 and INV-13 (as built: rule 4's `share-capital-account`, either side of the line; an equity account without the role still posts)
+- [x] 3.3 In `test/differential/README.md`, rename "Choices where PRD-001 is silent" to "Decided in PRD-001 rev 0.24", with each row citing its requirement; update the strategies' docstring to match. Verify with `make oracle-test` (as built: the table gains the share-capital row; `make oracle-test` 120 passed, `make differential` and the Go gate green)
 - [ ] 3.4 Add generator kinds for every shape that was open, each with its intent:
   - a non-zero line whose base amount rounds to 0.00 (posts);
   - a rate on a base-currency line (rejected);

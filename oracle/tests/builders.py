@@ -36,14 +36,19 @@ def journal(doc_id: str, day: str, *lines: dict) -> dict:
 
 
 def scenario(
-    *documents: dict, reversals: tuple = (), base: str = "SGD", currencies: dict | None = None
+    *documents: dict,
+    reversals: tuple = (),
+    base: str = "SGD",
+    currencies: dict | None = None,
+    accounts: list[dict] | None = None,
 ) -> dict[str, Any]:
+    """A scenario with the standard accounts, plus ``accounts`` (more of them) when given."""
     return {
         "schema": "fyniq-scenario@1",
         "name": "hand-worked",
         "base_currency": base,
         "currencies": dict(currencies or CURRENCIES),
-        "accounts": ACCOUNTS,
+        "accounts": ACCOUNTS + list(accounts or []),
         "documents": list(documents),
         "reversals": [{"document": d, "date": day} for d, day in reversals],
     }
