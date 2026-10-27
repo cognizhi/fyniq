@@ -123,7 +123,8 @@
   per member's conflict over the version shown, the reasons kept and the history) and approval-policies
   (`ApprovalPolicies.tsx`: each kind of change with its steps; a change sets 1 to 5 steps, each a quorum narrowed to
   roles or named members, over the policy's ETag; the fixed policy stays fixed). Tests `TeamMode.test.tsx`.
-  **Left:** accountant-review, bank-details-change, payment-batch and personal-approvals with their modules; Founder
+  27 Oct 2026: bank-details-change, with vendors' bank details (`screens/contacts/BankDetails.tsx`; the approval page
+  shows both numbers beside the letter). **Left:** accountant-review, payment-batch and personal-approvals with their modules; Founder
   mode's other controls (FM-4…9) and break-glass on team-mode as they are built; the Inbox's keyboard triage (J/K, A
   opens the confirmation) with p1-app-shell 2.2.)
 - [ ] 5.2 Finish with `make check` and `make test`

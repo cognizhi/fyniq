@@ -12,6 +12,8 @@ import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { Changes, ConfirmDecision, HashLine } from "./Decide";
 import { objectLabel, operationLabel, StatusChip, stepWho, type Approval } from "./words";
+import { EvidencePanel } from "../accounting/JournalEvidence";
+import { CompareNumbers } from "../contacts/BankDetails";
 
 async function getApproval(id: string) {
   const r = await api.GET("/v1/approvals/{approval_id}", { params: { path: { approval_id: id } } });
@@ -172,6 +174,9 @@ export function ApprovalPage() {
               </Link>
             </p>
           )}
+          {a.object_type === "payee_bank_change" && (
+            <p className="fy-small fy-secondary">Compare each number with the vendor's letter in the change's evidence before you approve; payments to the vendor are frozen while it waits.</p>
+          )}
           {a.object_type === "period" && (
             <p className="fy-small">
               <Link to="/accounting/close/$periodId" params={{ periodId: a.object_key }}>
@@ -230,6 +235,13 @@ export function ApprovalPage() {
           <Changes diff={a.diff} />
         </div>
       </section>
+
+      {a.object_type === "payee_bank_change" && (
+        <>
+          <CompareNumbers changeId={a.object_key} envelope={a.envelope} />
+          <EvidencePanel record={{ kind: "bank-change", id: a.object_key, etag: "" }} draft={false} mayAttach={false} onChanged={() => undefined} />
+        </>
+      )}
 
       <section className="fy-card" aria-labelledby="who-title">
         <div className="fy-card__head">

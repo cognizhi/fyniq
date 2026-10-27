@@ -235,3 +235,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-27] compile | docs/user-guide/chart-of-accounts.md, docs/user-guide/fixed-assets.md → accounting.chart, accounting.fixed-assets (rev 0.151: the default useful life on an asset account, offered by the register's form; 88 accounts with 1160)
 
 ## [2026-10-27] compile | docs/user-guide/fixed-assets.md → accounting.fixed-assets (rev 0.151: voiding an asset registered by mistake)
+
+## [2026-10-27] compile | docs/user-guide/contacts-and-items.md → contacts.manage (vendors' bank details: the change, its approval, the freeze, showing the number; FR-CT-03, rev 0.153)
