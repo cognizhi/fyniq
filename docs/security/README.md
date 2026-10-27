@@ -35,6 +35,7 @@ most specific requirement the test proves. The ones in use so far:
 | V6.5.1, V6.7.2 | Multi-factor and cryptographic authentication | passkey challenges: random, bound to the session, used once; answers checked and counters kept |
 | V8.1.1 | Authorisation documentation | the policy table equals Appendix D |
 | V8.2.2 | Object-level authorisation | a record's evidence needs the right to view the record too |
+| V11.2.2, V11.3.2, V11.3.3 | Cryptography: agility, approved modes, authenticated encryption | sealed fields: a fresh AES-256-GCM data key per value, bound to its record, wrapped by a key that names itself in a versioned layout; any change to a sealed value is caught |
 | V14.2.7 | Data retention | retained evidence cannot be deleted or replaced before its retain-until |
 | V16.2.1 | Logging content | evidence events carry the hashes, uploader, source and parent |
 | V8.2.1, V8.2.3, V8.3.1 | Authorisation design and operation level | the policy and the matrix; masked fields |
@@ -51,6 +52,15 @@ most specific requirement the test proves. The ones in use so far:
 Note: PRD-001 Appendix F maps CTL-API-01 to "ASVS V13". In ASVS 5.0, V13 is Configuration and API and
 web service requirements are V4, so that cell probably uses ASVS 4.0's numbering [verify with the PRD
 owner].
+
+## Cryptographic inventory
+
+| What | Algorithm | Key | Where |
+|---|---|---|---|
+| Sealed fields (SEC-11): vendor bank account numbers | AES-256-GCM, a fresh data key per value, bound to its record | Data keys wrapped by the Cloud KMS key `fields` (rotated every 90 days); locally `.data/keys/fields.key` | `internal/fieldseal`, `gcp.KMSFields` |
+| Fingerprints of sealed fields (FR-CT-04, AUD-02) | HMAC-SHA256 within the organisation | The Cloud KMS MAC key `fingerprints`, version pinned; locally `.data/keys/fields.key` | `internal/fieldseal`, `gcp.KMSFields` |
+| Audit anchors (CTL-AUD-02) | ECDSA P-256 (KMS `EC_SIGN_P256_SHA256`); locally Ed25519 | The anchors' KMS key; locally `.data/keys/audit-anchor.ed25519` | `internal/audit`, `gcp.KMS` |
+| Approval envelopes (FR-APR-03) | SHA-256 of RFC 8785 canonical JSON | None: a hash the signature covers | `internal/domain/approval` |
 
 ## Threat models
 

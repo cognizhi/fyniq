@@ -25,6 +25,8 @@ func config() Config {
 	c.Anchors.Bucket = "fyniq-staging-anchors"
 	c.Anchors.KeyVersion = "projects/p/locations/asia-southeast1/keyRings/audit/cryptoKeys/anchor/cryptoKeyVersions/1"
 	c.Job = "projects/p/locations/asia-southeast1/jobs/fyniq-jobs"
+	c.Fields.Key = "projects/p/locations/asia-southeast1/keyRings/platform-staging/cryptoKeys/fields"
+	c.Fields.MACKeyVersion = "projects/p/locations/asia-southeast1/keyRings/platform-staging/cryptoKeys/fingerprints/cryptoKeyVersions/1"
 	return c
 }
 
@@ -51,6 +53,9 @@ func TestTheReleaseBuildWiresGoogleCloud(t *testing.T) {
 	if _, ok := kit.Signer.(*gcp.KMS); !ok {
 		t.Errorf("the signer is %T", kit.Signer)
 	}
+	if kit.Fields == nil {
+		t.Error("the field keys were not wired")
+	}
 	for name, change := range map[string]func(*Config){
 		"no executor queue":                func(c *Config) { delete(c.Tasks, "executor") },
 		"an http handler":                  func(c *Config) { t := c.Tasks["worker"]; t.URL = "http://worker"; c.Tasks["worker"] = t },
@@ -58,6 +63,8 @@ func TestTheReleaseBuildWiresGoogleCloud(t *testing.T) {
 		"the executor trusting the worker": func(c *Config) { c.Invokers["executor"] = c.Invokers["worker"] },
 		"no anchor key version":            func(c *Config) { c.Anchors.KeyVersion = "projects/p/keyRings/audit/cryptoKeys/anchor" },
 		"no job":                           func(c *Config) { c.Job = "" },
+		"a field key with no fingerprint":  func(c *Config) { c.Fields.MACKeyVersion = "" },
+		"a key version as the field key":   func(c *Config) { c.Fields.Key += "/cryptoKeyVersions/1" },
 	} {
 		cfg := config()
 		change(&cfg)

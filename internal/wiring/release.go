@@ -34,6 +34,12 @@ type Config struct {
 		KeyVersion string `json:"key_version"` // the KMS key version that signs them
 	} `json:"anchors"`
 	Job string `json:"job"` // the Cloud Run job that runs the jobs image: projects/…/locations/…/jobs/…
+	// Fields names the KMS keys of the sealed fields (SEC-11): the key that wraps their data keys, and the fingerprint
+	// key's pinned version; optional until the deployment adds them: without them no bank details can be kept.
+	Fields struct {
+		Key           string `json:"key"`             // projects/…/cryptoKeys/…
+		MACKeyVersion string `json:"mac_key_version"` // projects/…/cryptoKeys/…/cryptoKeyVersions/N
+	} `json:"fields"`
 	// Evidence names the unlocked staging bucket and the retention-locked evidence bucket (FR-DOC-13, DR-07);
 	// optional until the ClamAV service arrives: without them, and a scanner, no file can be attached.
 	Evidence struct {
@@ -79,6 +85,9 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		Jobs:   gcp.NewRunJobs(gcp.RunAPI, c.Job, tokens, nil),
 		Blobs:  gcp.NewStorage(gcp.StorageAPI, c.Anchors.Bucket, tokens, nil),
 		Signer: gcp.NewKMS(gcp.KMSAPI, c.Anchors.KeyVersion, tokens, nil),
+	}
+	if c.Fields.Key != "" { // as the api's own account, the only one with a role on the keys
+		kit.Fields = gcp.NewKMSFields(gcp.KMSAPI, c.Fields.Key, c.Fields.MACKeyVersion, tokens, nil)
 	}
 	if c.Evidence.Staging != "" && c.Evidence.Bucket != "" {
 		kit.Staging = gcp.NewStorage(gcp.StorageAPI, c.Evidence.Staging, tokens, nil)
@@ -176,6 +185,12 @@ func (c Config) check() error {
 	}
 	if !strings.Contains(c.Job, "/jobs/") {
 		gaps = append(gaps, "job")
+	}
+	// The field keys come together or not at all: a wrapping key with no pinned fingerprint version (or a key version
+	// where the key belongs) would seal values whose duplicates could never be found.
+	if (c.Fields.Key != "" || c.Fields.MACKeyVersion != "") &&
+		(!strings.Contains(c.Fields.Key, "/cryptoKeys/") || strings.Contains(c.Fields.Key, "/cryptoKeyVersions/") || !strings.Contains(c.Fields.MACKeyVersion, "/cryptoKeyVersions/")) {
+		gaps = append(gaps, "fields")
 	}
 	if len(gaps) > 0 {
 		return fmt.Errorf("FYNIQ_GCP lacks %s", strings.Join(gaps, ", "))

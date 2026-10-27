@@ -222,6 +222,49 @@ func Signer(t *testing.T, s ports.Signer) {
 	}
 }
 
+// Cipher checks a Cipher adapter (SEC-11): two seals of one value differ and neither shows it; a value opens only for
+// its own record, and any change to it is caught; fingerprints are equal for equal values within one scope only.
+func Cipher(t *testing.T, c ports.Cipher) {
+	t.Helper()
+	ctx := context.Background()
+	plain, aad := []byte("0123456789012"), []byte("contact_bank_account:0192f3a4")
+	a, err := c.Seal(ctx, plain, aad)
+	if err != nil {
+		t.Fatalf("Seal: %v", err)
+	}
+	b, err := c.Seal(ctx, plain, aad)
+	if err != nil || bytes.Equal(a, b) || bytes.Contains(a, plain) {
+		t.Fatalf("two seals of one value: %x and %x (%v); want different, neither containing the value", a, b, err)
+	}
+	if got, err := c.Open(ctx, a, aad); err != nil || !bytes.Equal(got, plain) {
+		t.Fatalf("Open = %q, %v; want %q", got, err, plain)
+	}
+	if _, err := c.Open(ctx, a, []byte("contact_bank_account:another")); !errors.Is(err, ports.ErrNotSealed) {
+		t.Fatalf("Open for another record: want ErrNotSealed, got %v", err)
+	}
+	for i := range a {
+		changed := bytes.Clone(a)
+		changed[i] ^= 0x01
+		if got, err := c.Open(ctx, changed, aad); err == nil {
+			t.Fatalf("Open of a value changed at byte %d gave %q; want an error", i, got)
+		}
+	}
+	if _, err := c.Open(ctx, a[:len(a)-1], aad); !errors.Is(err, ports.ErrNotSealed) {
+		t.Fatalf("Open of a cut value: want ErrNotSealed, got %v", err)
+	}
+	f1, err := c.Fingerprint(ctx, []byte("org-1"), plain)
+	if err != nil || len(f1) != 32 {
+		t.Fatalf("Fingerprint = %x, %v; want 32 bytes", f1, err)
+	}
+	f2, _ := c.Fingerprint(ctx, []byte("org-1"), plain)
+	f3, _ := c.Fingerprint(ctx, []byte("org-2"), plain)
+	f4, _ := c.Fingerprint(ctx, []byte("org-1"), []byte("0123456789014"))
+	f5, _ := c.Fingerprint(ctx, []byte("org-10"), []byte("123456789012"))
+	if !bytes.Equal(f1, f2) || bytes.Equal(f1, f3) || bytes.Equal(f1, f4) || bytes.Equal(f1, f5) {
+		t.Fatalf("fingerprints: one value twice %x %x, another scope %x, another value %x, a shifted scope %x", f1, f2, f3, f4, f5)
+	}
+}
+
 // Queue checks a Queue adapter (NFR-PORT-04, One outbox contract for every adapter). build returns
 // the queue and a function that waits until delivered has n tasks for class, returning them.
 func Queue(t *testing.T, build func(t *testing.T) (q ports.Queue, delivered func(class string, n int) []ports.Task)) {
