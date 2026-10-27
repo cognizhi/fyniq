@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,29 +13,25 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
-	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // disposalBooks gives e's organisation, once, what a disposal posts to: 7050 Gain / (loss) on disposal of assets, which
-// the setting names by default, and 1290 Asset disposal clearing, named as the clearing account; and periods to the end
-// of October 2027. It returns 7050 and 1290.
+// the setting names by default, and 1160 Asset disposal clearing, the clearing account the setting recommends (rev 0.151); and periods to the end
+// of October 2027. It returns 7050 and 1160.
 func (e *env) disposalBooks() (gainLoss, clearing storage.Account) {
 	e.t.Helper()
 	e.computerEquipment()
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
 		var err error
 		if gainLoss, err = u.Accounts().ByCode(ctx, "7050"); err == nil {
-			clearing, err = u.Accounts().ByCode(ctx, "1290")
+			clearing, err = u.Accounts().ByCode(ctx, "1160")
 			return err
 		}
 		if gainLoss, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "7050", Name: "Gain / (loss) on disposal of assets", Type: storage.Revenue}); err != nil {
 			return err
 		}
-		if clearing, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1290", Name: "Asset disposal clearing", Type: storage.Asset}); err != nil {
-			return err
-		}
-		if _, err := u.Settings().Record(ctx, asset.ClearingSetting, "", "1290", porttest.Day(10, 1), 1); err != nil {
+		if clearing, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1160", Name: "Asset disposal clearing", Type: storage.Asset}); err != nil {
 			return err
 		}
 		for m := time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC); !m.After(time.Date(2027, 10, 1, 0, 0, 0, 0, time.UTC)); m = m.AddDate(0, 1, 0) {
@@ -62,7 +59,7 @@ func disposalImpact(r response) map[string]string {
 // October 2026 over 36 months, S$100 a month, disposed of on 15 October 2027 after 12 months (S$1,200 accumulated):
 //   - one sold for S$2,000 into the bank: Dr 1590 1,200; Dr the bank 2,000; Cr 1510 3,600; Dr 7050 400, a loss;
 //   - one written off: Dr 1590 1,200; Cr 1510 3,600; Dr 7050 2,400;
-//   - half of one sold on an invoice for S$1,500: Dr 1590 600; Dr 1290 1,500; Cr 1510 1,800; Cr 7050 300, a gain; the
+//   - half of one sold on an invoice for S$1,500: Dr 1590 600; Dr 1160 1,500; Cr 1510 1,800; Cr 7050 300, a gain; the
 //     other half (S$1,800, S$600 depreciated) depreciates on at S$50 a month over its last 24 months;
 //   - one sold for S$2,000 on 10 September 2027, recorded on 15 October after September's month posted: September is
 //     reversed on its own date, so S$1,100 accumulated through August: a loss of S$500.
@@ -153,6 +150,14 @@ func TestDisposingOfFixedAssets(t *testing.T) {
 	}
 	// The invoice's line is the proceeds of one disposal only.
 	e.problemIs(dispose(3, half), "disposeFixedAsset", 422, asset.CodeProceeds)
+	// The clearing account the setting names must be in the chart: from the 15th it names 1999, which is not.
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Settings().Record(ctx, asset.ClearingSetting, "1160", "1999", time.Date(2027, 10, 15, 0, 0, 0, 0, time.UTC), 1)
+		return err
+	})
+	if p := dispose(3, half, "Prefer", "return=preview"); p.problemCode() != asset.CodeProceeds || !strings.Contains(p.Raw, "not set, or not in the chart") {
+		t.Errorf("no clearing account in the chart: %d %s", p.Status, p.Raw)
+	}
 
 	// Recorded late: sold on 10 September, after September's month posted. September is reversed; a loss of S$500.
 	late := dispose(3, map[string]any{"date": "2027-09-10", "proceeds": "money", "money_account_id": bank.ID.String(), "amount": sgd("2000.00")})
@@ -284,4 +289,3 @@ var matrixDisposals = map[string]func(e *env, tok string) (response, func() bool
 		return r, func() bool { return requestsOf(e, approval.ObjectAssetDisposal) == was }
 	},
 }
-

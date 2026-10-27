@@ -5,6 +5,7 @@ import { useEffect, useId, useState } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
+import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { formatAmount } from "../../format/amount";
@@ -240,6 +241,7 @@ export function FixedAssets() {
           </div>
         )}
       </div>
+      <ReviewBanner screen="fixed-assets" />
       {said && (
         <p className="fy-small" role="status">
           {said}

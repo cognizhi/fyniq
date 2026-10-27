@@ -80,9 +80,33 @@
   its test; `make check`, `make test`, `make scan` and `make images` pass; mutation on the ledger at least 90%; a
   conventional commit with upgrade notes (name the clearing account before a sale on an invoice; check 7050).
 
+## 7. The owner's decisions of 27 Oct 2026 (rev 0.151)
+
+- [x] 7.1 PRD rev 0.151 and its specs; 1160 Asset disposal clearing in the standard chart, recommended by
+  `assets.disposal_clearing_account` (design D7); the recommended mileage rates S$0.60 (car) and S$0.25 (motorcycle);
+  the fixed-assets screen in the review register's accountant area, so it shows "Needs additional verification"
+  (FR-UX-41); the guide sections compiled into `kb/`.
+  - Tests: the standard chart loads 88 accounts with 1160; an invoiced sale clears 1160 with no setting changed; a
+    car trip with no rate changed is S$0.60 a km. `// req: FR-COA-01`, `// req: FR-FA-03`, `// req: FR-AP-16`
+- [ ] 7.2 The default useful life on an asset account (design D8): the migration, the chart's rules and API, the
+  standard chart's 36/60/36/36, the chart screen's field, and the register's form filling it.
+  - Tests: an account outside the register's groups refuses a life (COA-11); the form fills 60 for 1520 and keeps a
+    life typed. `// req: FR-COA-02`, `// req: ledger/fixed-assets The account's default useful life is offered`
+- [ ] 7.3 Voiding an asset (design D9): the migration (released, the live-line index, FY235), the command with its
+  refusals, the approval object in Founder mode, the API, the screen's Void, the guide and the threat model.
+  - Tests: a void reverses October and November on their own dates and the line registers again; refused while a
+    disposal stands, with a month in a closed period, and for a second void; FY235 refuses a release of a live asset's
+    source and any delete; Founder mode asks for approval. `// req: FR-FA-01`, `// req: FR-GL-12`, `// req: FM-1`
+
+## 8. The independent oracle
+
+- [ ] 8.1 `asset_depreciation@1` and `asset_disposal@1` in the independent oracle, written from PRD §10.2 and FR-FA-02
+  and FR-FA-03 in a session of its own with the other pending rule sets (the owner's decision of 27 Oct 2026; QA-ENG-01,
+  QA-ENG-02), and the differential green.
+
 ## Workflow follow-up
 
-- The oracle posts `asset_depreciation@1` and `asset_disposal@1` in a session of its own (QA-ENG-01, QA-ENG-02).
-- The accountant confirms the asset accounts' report groups, 7050, and recommended lives per account.
+- The accountant confirms the asset accounts' report groups, 7050, 1160, the default lives and the mileage rates (the
+  review brief of 27 Oct 2026).
 - FR-FA-04 (the movement schedule and the capital allowance schedule) and reducing balance follow in P2; the C.1 #22
   check line with `p1-checks`.

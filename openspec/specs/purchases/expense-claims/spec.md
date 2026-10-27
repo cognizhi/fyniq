@@ -159,6 +159,10 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **THEN** it must be reasonable, as IRAS prescribes no per-km rate
 - **AND** reimbursing business mileage in a private car is not taxable, while private mileage is
 
+#### Scenario: Recommended rates (rev 0.151)
+- **WHEN** an organisation has not changed its mileage rates
+- **THEN** a car is S$0.60 a km and a motorcycle S$0.25 a km (`claims.mileage_rate_car`, `claims.mileage_rate_motorcycle`, under dual control) [verify: benchmarks only; the accountant confirms] (the owner's decision of 27 Oct 2026)
+
 #### Scenario: No input GST on mileage
 - **WHEN** a mileage claim is posted
 - **THEN** it claims no input GST, because there is no tax invoice and GST on motor-car expenses is disallowed (GST Regulations, reg. 27)
