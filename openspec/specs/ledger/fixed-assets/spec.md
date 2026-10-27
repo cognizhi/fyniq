@@ -54,6 +54,15 @@ Source: PRD-001 §8.9 · Priority M · Phase P1
 - **WHEN** part of an asset is disposed of
 - **THEN** that part is removed from the register with its gain or loss, and the rest stays in the register
 
+#### Scenario: Proceeds received or invoiced (rev 0.149)
+- **WHEN** an asset is sold
+- **THEN** its proceeds are money received into a money account, recorded with the disposal and matched by bank import, or a sales invoice to the buyer whose line goes to the disposal clearing account (`assets.disposal_clearing_account`, which the organisation names [proposed]), which the disposal clears
+- **AND** a write-off has no proceeds
+
+#### Scenario: Where the gain or loss goes (rev 0.149)
+- **WHEN** a disposal's gain or loss is posted
+- **THEN** it goes to the account the setting `assets.disposal_account` names, recommended 7050, under dual control [verify in the CoA review] (the owner's decision of 27 Oct 2026)
+
 ### Requirement: FR-FA-04 Asset reports and capital allowances
 The system SHALL report NBV, accumulated depreciation and the movement schedule (for the financial statements), and SHALL produce a tax capital allowance schedule (S19, S19A).
 
