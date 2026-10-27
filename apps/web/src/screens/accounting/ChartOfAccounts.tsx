@@ -12,6 +12,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listAccounts } from "./data";
+import { registerGroups } from "./registerGroups";
 
 type Account = components["schemas"]["Account"];
 type AccountType = Account["type"];
@@ -92,9 +93,10 @@ interface Draft {
   guidance: string;
   active: boolean;
   revalue: boolean;
+  useful_life_months: string;
 }
 
-const blank: Draft = { code: "", name: "", type: "expense", parent_id: "", group: false, report_group: "", cash_flow_line: "", function: "", default_gst_code: "", money_account: false, currency: "", guidance: "", active: true, revalue: false };
+const blank: Draft = { code: "", name: "", type: "expense", parent_id: "", group: false, report_group: "", cash_flow_line: "", function: "", default_gst_code: "", money_account: false, currency: "", guidance: "", active: true, revalue: false, useful_life_months: "" };
 
 function draftOf(a: Account): Draft {
   return {
@@ -112,6 +114,7 @@ function draftOf(a: Account): Draft {
     guidance: a.guidance ?? "",
     active: a.active,
     revalue: a.revalue,
+    useful_life_months: a.useful_life_months ? String(a.useful_life_months) : "",
   };
 }
 
@@ -152,6 +155,8 @@ function AccountForm({ editing, accounts, onClose, onSaved }: { editing: Account
     const errs: typeof errors = {};
     if (isNew && !/^[A-Za-z0-9.-]{1,20}$/.test(d.code.trim())) errs.code = "Give a code of 1 to 20 letters, digits, dots or hyphens, such as 6115.";
     if (!d.name.trim()) errs.name = "Give the account a name.";
+    const life = d.useful_life_months.trim();
+    if (life && (!/^[0-9]{1,3}$/.test(life) || Number(life) < 1 || Number(life) > 600)) errs.useful_life_months = "Enter whole months from 1 to 600, such as 36, or leave it empty.";
     setErrors(errs);
     if (Object.keys(errs).length) return;
     setBusy(true);
@@ -173,6 +178,7 @@ function AccountForm({ editing, accounts, onClose, onSaved }: { editing: Account
         currency: d.money_account ? text(d.currency) : undefined,
         guidance: text(d.guidance),
         revalue: d.revalue || undefined,
+        useful_life_months: life ? Number(life) : undefined,
       };
       const out = await guarded(confirm, () => api.POST("/v1/accounts", { params: { header: { "Idempotency-Key": key } }, body }));
       setBusy(false);
@@ -183,10 +189,11 @@ function AccountForm({ editing, accounts, onClose, onSaved }: { editing: Account
     }
     if (!one.data || !base) return setBusy(false);
     // Only the fields changed go: a field left out keeps its value.
-    const changes: Record<string, string | boolean> = {};
+    const changes: Record<string, string | boolean | number> = {};
     for (const k of ["name", "parent_id", "group", "report_group", "cash_flow_line", "function", "default_gst_code", "guidance", "active", "money_account", "currency", "revalue"] as const) {
       if (d[k] !== base[k]) changes[k] = typeof d[k] === "string" ? (d[k] as string).trim() : d[k];
     }
+    if (life !== base.useful_life_months) changes.useful_life_months = Number(life || "0");
     if (Object.keys(changes).length === 0) {
       setBusy(false);
       return close();
@@ -288,6 +295,8 @@ function AccountForm({ editing, accounts, onClose, onSaved }: { editing: Account
             {field("default_gst_code", "Default GST code", "The GST code a line on it starts with, such as TX.")}
             {d.money_account && field("currency", "Currency", "A bank account's currency, such as SGD.")}
             {field("guidance", "Guidance", "Shown when someone picks the account.", true)}
+            {d.type === "asset" && !d.group && registerGroups.includes(d.report_group.trim()) &&
+              field("useful_life_months", "Default useful life (months)", "Offered when an asset on this account is registered, such as 36; the accountant confirms it. Leave it empty for none.")}
           </div>
           <div className="fy-row fy-row--wrap gap-4">
             <label className="fy-row gap-2">
@@ -347,7 +356,7 @@ function LoadStandard({ open, onClose, onLoaded }: { open: boolean; onClose: () 
       onOpenChange={(o) => !o && onClose()}
       dismissible={!busy}
       title="Load the standard Singapore start-up chart?"
-      description="87 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance. You can rename, regroup and add accounts afterwards. It loads only into a chart with no accounts."
+      description="88 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance. You can rename, regroup and add accounts afterwards. It loads only into a chart with no accounts."
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
@@ -412,7 +421,7 @@ export function ChartOfAccounts() {
         <div className="fy-empty fy-card fy-card--pad">
           <Icon of={BookOpen} size={24} />
           <h2 className="fy-h3">No accounts yet</h2>
-          <p className="fy-secondary">Start from the standard Singapore start-up chart: 87 accounts set up for a company like yours, which you can rename, regroup and add to.</p>
+          <p className="fy-secondary">Start from the standard Singapore start-up chart: 88 accounts set up for a company like yours, which you can rename, regroup and add to.</p>
           {may ? (
             <div className="fy-row fy-row--wrap justify-center gap-2">
               <Button variant="primary" onClick={() => setLoading(true)} title={load.tooltip}>

@@ -22,6 +22,7 @@ account | is_control | boolean | not null | false
 account | is_payroll_cost | boolean | not null | false
 account | guidance | text | null | 
 account | revalue | boolean | not null | false
+account | useful_life_months | smallint | null | 
 accounting_framework | organisation_id | uuid | not null | current_org()
 accounting_framework | id | uuid | not null | uuidv7()
 accounting_framework | version | integer | not null | 
@@ -1263,6 +1264,7 @@ account | account_revalue_not_null | NOT NULL revalue
 account | account_role_known | CHECK ((role = ANY (ARRAY['accounts-receivable'::text, 'accounts-payable'::text, 'gst-control'::text, 'fx-rounding'::text, 'unrealised-fx'::text, 'deferred-revenue'::text, 'prepayments'::text, 'salaries-payable'::text, 'cpf-sdl-payable'::text, 'employer-cpf'::text, 'sdl'::text, 'depreciation'::text, 'accumulated-depreciation'::text, 'suspense'::text, 'retained-earnings'::text, 'expense-claims-payable'::text, 'income-tax-payable'::text, 'income-tax-expense'::text, 'director-loan'::text, 'deferred-remuneration'::text, 'share-capital'::text, 'capital-contribution'::text, 'withholding-tax-payable'::text, 'customer-deposits'::text])))
 account | account_type_known | CHECK ((type = ANY (ARRAY['asset'::text, 'liability'::text, 'equity'::text, 'revenue'::text, 'expense'::text])))
 account | account_type_not_null | NOT NULL type
+account | account_useful_life_months | CHECK (((useful_life_months >= 1) AND (useful_life_months <= 600)))
 account | account_version_not_null | NOT NULL version
 account | account_version_positive | CHECK ((version > 0))
 account | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED

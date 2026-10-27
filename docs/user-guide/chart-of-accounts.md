@@ -26,7 +26,7 @@ A new company starts with no accounts.
 1. Open **Accounting → Chart of accounts**.
 2. Select **Load the standard chart**, then **Load the standard chart** again to confirm.
 
-The standard Singapore start-up chart has 87 accounts, with their report groups, cash-flow lines,
+The standard Singapore start-up chart has 88 accounts, with their report groups, cash-flow lines,
 functions, GST codes, flags and guidance. It loads only into a chart with no accounts. You can
 rename, regroup and add accounts afterwards.
 
@@ -54,6 +54,12 @@ Select the pencil next to an account, change what you need, and select **Save th
   accounts receivable and payable, staff and director advances, the director's loan and deferred
   remuneration. Prepayments, deferred revenue and equity, income and expense accounts are never
   revalued.
+- On an asset account of the fixed asset register (report group Property, plant & equipment or
+  Intangible assets), set its **Default useful life (months)**: registering an asset on it offers
+  that life. The standard chart sets 36 months for 1510 Computer equipment, 60 for 1520 Office
+  equipment & furniture, 36 for 1530 Renovation & fit-out and 36 for 1540 Software & intangible
+  assets; the company's accountant confirms them. Changing it never changes an asset already
+  registered. Leave it empty for none.
 
 ## System accounts
 

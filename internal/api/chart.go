@@ -43,7 +43,7 @@ func registerChart(a *API) {
 	register(a, authz.LoadStandardChart, huma.Operation{
 		OperationID: "loadStandardChart", Method: http.MethodPost, Path: "/v1/accounts:load-standard-chart", Tags: []string{"Chart of accounts"},
 		DefaultStatus: http.StatusCreated, Summary: "Load the standard chart of accounts",
-		Description: "Loads the standard Singapore start-up chart into an organisation that has no account yet: 87 accounts with their " +
+		Description: "Loads the standard Singapore start-up chart into an organisation that has no account yet: 88 accounts with their " +
 			"report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional " +
 			"until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event " +
 			"for each, and the expense policy's starter claim categories (local and overseas travel, meals, software, telephone, office supplies and " +
@@ -106,6 +106,7 @@ type AccountDraft struct {
 	PayrollCost    bool   `json:"payroll_cost,omitempty" doc:"Carries payroll cost." example:"false"`
 	Guidance       string `json:"guidance,omitempty" maxLength:"500" doc:"Shown when someone picks the account." example:"Hot-desk and co-working memberships."`
 	Revalue        bool   `json:"revalue,omitempty" doc:"Revalue its foreign-currency balances at month end: only an asset or a liability settled in money, never prepayments or deferred revenue (FR-GL-04; COA-10)." example:"false"`
+	UsefulLife     int    `json:"useful_life_months,omitempty" minimum:"0" maximum:"600" doc:"The default useful life in whole months that the fixed asset register offers for an asset on it; only on an asset account of the register (report group Property, plant & equipment or Intangible assets; FR-COA-02, rev 0.151; COA-11). 0 or left out: none." example:"36"`
 }
 
 // AccountChanges change an account: a field left out keeps its value. Its code, type and role never change.
@@ -124,6 +125,7 @@ type AccountChanges struct {
 	PayrollCost    *bool   `json:"payroll_cost,omitempty" doc:"Changes only with an approval, like the control flag: refused until then." example:"false"`
 	Guidance       *string `json:"guidance,omitempty" maxLength:"500" doc:"Shown when someone picks the account; \"\" clears it." example:"Office rent and co-working memberships."`
 	Revalue        *bool   `json:"revalue,omitempty" doc:"Revalue its foreign-currency balances at month end: only an asset or a liability settled in money (FR-GL-04; COA-10). Months already revalued keep what they posted." example:"true"`
+	UsefulLife     *int    `json:"useful_life_months,omitempty" minimum:"0" maximum:"600" doc:"The default useful life in whole months the fixed asset register offers, on an asset account of the register only (FR-COA-02; COA-11); 0 clears it. Registered assets keep their own lives." example:"60"`
 }
 
 type createAccountInput struct {
@@ -155,7 +157,7 @@ type accountWriteOutput struct {
 
 // AccountCodes are an account's rules (internal/domain/chart).
 var AccountCodes = []string{chart.CodeAccountCode, chart.CodeText, chart.CodeType, chart.CodeFunction, chart.CodeGSTCode,
-	chart.CodeCurrency, chart.CodeRole, chart.CodeProtected, chart.CodeSystem, chart.CodeRevalue}
+	chart.CodeCurrency, chart.CodeRole, chart.CodeProtected, chart.CodeSystem, chart.CodeRevalue, chart.CodeUsefulLife}
 
 func chartProblems(p []chart.Problem, bad []FieldProblem) error {
 	for _, x := range p {
@@ -186,7 +188,7 @@ func registerAccountEditing(a *API) {
 					Group: b.Group, Role: storage.AccountRole(b.Role), AccountAttributes: storage.AccountAttributes{
 						ReportGroup: strings.TrimSpace(b.ReportGroup), CashFlowLine: strings.TrimSpace(b.CashFlowLine), Function: b.Function,
 						MoneyAccount: b.MoneyAccount, DefaultGSTCode: b.DefaultGSTCode, Currency: b.Currency, Control: b.Control,
-						PayrollCost: b.PayrollCost, Guidance: strings.TrimSpace(b.Guidance), Revalue: b.Revalue}}
+						PayrollCost: b.PayrollCost, Guidance: strings.TrimSpace(b.Guidance), Revalue: b.Revalue, UsefulLife: b.UsefulLife}}
 				var bad []FieldProblem
 				if b.ParentID != "" {
 					id, err := uuid.Parse(b.ParentID)
@@ -259,6 +261,9 @@ func registerAccountEditing(a *API) {
 				flag(&c.Control, b.Control)
 				flag(&c.PayrollCost, b.PayrollCost)
 				flag(&c.Revalue, b.Revalue)
+				if b.UsefulLife != nil {
+					c.UsefulLife = *b.UsefulLife
+				}
 				var bad []FieldProblem
 				if b.ParentID != nil {
 					c.ParentID = nil

@@ -9,6 +9,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"slices"
+	"strconv"
 
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -24,7 +25,7 @@ type Account struct {
 }
 
 var header = []string{"code", "name", "type", "report_group", "cash_flow_line", "function", "money_account", "default_gst_code",
-	"control_account", "payroll_cost", "role", "source", "guidance", "revalue"}
+	"control_account", "payroll_cost", "role", "source", "guidance", "revalue", "useful_life_months"}
 
 var types = []storage.AccountType{storage.Asset, storage.Liability, storage.Equity, storage.Revenue, storage.Expense}
 
@@ -68,6 +69,11 @@ func Standard() ([]Account, error) {
 		}
 		if a.Revalue, err = flag(a.Code, "revalue", f[13]); err != nil {
 			return nil, err
+		}
+		if f[14] != "" {
+			if a.UsefulLife, err = strconv.Atoi(f[14]); err != nil {
+				return nil, fmt.Errorf("standard-chart.csv: account %s: useful_life_months is %q, not a number of months", a.Code, f[14])
+			}
 		}
 		out = append(out, a)
 	}

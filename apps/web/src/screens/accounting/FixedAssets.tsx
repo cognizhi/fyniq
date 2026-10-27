@@ -15,6 +15,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { registerGroups } from "./registerGroups";
 
 // The fixed asset register (FR-FA-01…03; p1-fixed-assets task 5.1; docs/design/screens FixedAssets): the assets with
 // their cost, accumulated depreciation and net book value; an asset's side-peek with its depreciation schedule (posted,
@@ -32,7 +33,14 @@ type Account = components["schemas"]["Account"];
 export const assetKeepers = ["accountant"];
 
 // The report groups of the accounts an asset sits on (its category).
-export const registerGroups = ["Property, plant & equipment", "Intangible assets"];
+export { registerGroups };
+
+// defaultLife is the useful life the form offers for an asset on the account: the account's default in months
+// (FR-COA-02, rev 0.151), or "" when it has none.
+export function defaultLife(accounts: Account[], accountId: string): string {
+  const n = accounts.find((a) => a.id === accountId)?.useful_life_months;
+  return n ? String(n) : "";
+}
 
 const money = (m: Money | undefined | null) => (m ? formatAmount(m.amount) : "—");
 const etagOf = (a: FixedAsset) => `"${a.version}-posted"`;
@@ -647,11 +655,20 @@ const described = (id: string, error?: string, help?: string) => ({
 });
 
 // RegisterDialog registers an asset from a purchase not in the register yet, or one bought before the books start.
+// lifeHelp says where the offered life comes from: the account's default, or none to offer.
+function lifeHelp(accounts: Account[], accountId: string): string {
+  const a = accounts.find((x) => x.id === accountId);
+  if (a?.useful_life_months) return `${a.code} ${a.name} lasts ${a.useful_life_months} months by default; change it if this asset lasts longer or shorter.`;
+  return "Such as 36 for a laptop; the accountant confirms the lives the company uses.";
+}
+
 function RegisterDialog({ line, base, accounts, onClose, onDone }: { line: Unregistered | null; base: string; accounts: Account[]; onClose: () => void; onDone: (a: FixedAsset) => void }) {
   const id = useId();
   const queries = useQueryClient();
   const confirm = useConfirm();
-  const [f, setF] = useState<RegisterForm>({ ...emptyRegister, name: line?.description ?? "", account_id: accounts.length === 1 ? (accounts[0]?.id ?? "") : "" });
+  const first = line?.account_id ?? (accounts.length === 1 ? (accounts[0]?.id ?? "") : "");
+  const [f, setF] = useState<RegisterForm>({ ...emptyRegister, name: line?.description ?? "", account_id: line ? "" : first, life_months: defaultLife(accounts, first) });
+  const [lifeTyped, setLifeTyped] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
@@ -700,7 +717,12 @@ function RegisterDialog({ line, base, accounts, onClose, onDone }: { line: Unreg
         {!line && (
           <>
             <Field id={`${id}-account`} label="Asset account (its category)" error={errors.account_id}>
-              <select className="fy-select" {...described(`${id}-account`, errors.account_id)} value={f.account_id} onChange={set("account_id")}>
+              <select
+                className="fy-select"
+                {...described(`${id}-account`, errors.account_id)}
+                value={f.account_id}
+                onChange={(e) => setF({ ...f, account_id: e.target.value, life_months: lifeTyped ? f.life_months : defaultLife(accounts, e.target.value) })}
+              >
                 <option value="">Choose the account</option>
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -720,8 +742,17 @@ function RegisterDialog({ line, base, accounts, onClose, onDone }: { line: Unreg
             </Field>
           </>
         )}
-        <Field id={`${id}-life`} label="Useful life (months)" error={errors.life_months} help="Such as 36 for a laptop; the accountant confirms the lives the company uses.">
-          <input className="fy-input fy-num" inputMode="numeric" {...described(`${id}-life`, errors.life_months, "help")} value={f.life_months} onChange={set("life_months")} />
+        <Field id={`${id}-life`} label="Useful life (months)" error={errors.life_months} help={lifeHelp(accounts, line?.account_id ?? f.account_id)}>
+          <input
+            className="fy-input fy-num"
+            inputMode="numeric"
+            {...described(`${id}-life`, errors.life_months, "help")}
+            value={f.life_months}
+            onChange={(e) => {
+              setLifeTyped(true);
+              setF({ ...f, life_months: e.target.value });
+            }}
+          />
         </Field>
         <Field id={`${id}-residual`} label={`Residual value (${base}, optional)`} error={errors.residual}>
           <input className="fy-input fy-num" inputMode="decimal" {...described(`${id}-residual`, errors.residual)} value={f.residual} onChange={set("residual")} />

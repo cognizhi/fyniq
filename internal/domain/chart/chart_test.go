@@ -14,6 +14,7 @@ import (
 // code once, every system account B.5 names, and the flags as the PRD reads.
 // req: FR-COA-01
 // req: FR-COA-02
+// req: ledger/chart-of-accounts Default useful life (rev 0.151)
 func TestTheStandardChart(t *testing.T) {
 	accounts, err := Standard()
 	if err != nil {
@@ -60,6 +61,18 @@ func TestTheStandardChart(t *testing.T) {
 	}
 	if byCode["7050"].Source != "workbook-moved" || byCode["7040"].Source != "prd-b5" {
 		t.Errorf("7040 and 7050: %+v / %+v", byCode["7040"], byCode["7050"])
+	}
+
+	// The default useful lives of the register's accounts (rev 0.151) [verify], and none elsewhere; every account meets
+	// the chart's rules.
+	for _, a := range accounts {
+		want := map[string]int{"1510": 36, "1520": 60, "1530": 36, "1540": 36}[a.Code]
+		if a.UsefulLife != want {
+			t.Errorf("account %s: a useful life of %d months; want %d", a.Code, a.UsefulLife, want)
+		}
+		if p := CheckAccount(a.NewAccount); p != nil {
+			t.Errorf("account %s breaks the chart's rules: %v", a.Code, p)
+		}
 	}
 
 	// The flags, exactly.

@@ -80,3 +80,46 @@ func TestOnlyAMonetaryItemIsRevalued(t *testing.T) {
 		t.Errorf("marking prepayments: %v", got)
 	}
 }
+
+// A default useful life is whole months from 1 to 600, on an asset account of the register only: a heading, an expense
+// account or one of another report group refuses it, and changing the report group away from the register needs the
+// life cleared first (rev 0.151).
+// req: FR-COA-02
+// req: ledger/chart-of-accounts Default useful life (rev 0.151)
+func TestOnlyARegisterAccountHasAUsefulLife(t *testing.T) {
+	ppe := storage.AccountAttributes{ReportGroup: "Property, plant & equipment"}
+	life := func(a storage.AccountAttributes, months int) storage.AccountAttributes {
+		a.UsefulLife = months
+		return a
+	}
+	for _, ok := range []storage.NewAccount{
+		{Code: "1520", Name: "Office equipment & furniture", Type: storage.Asset, AccountAttributes: life(ppe, 60)},
+		{Code: "1540", Name: "Software", Type: storage.Asset, AccountAttributes: life(storage.AccountAttributes{ReportGroup: "Intangible assets"}, 1)},
+		{Code: "1530", Name: "Renovation & fit-out", Type: storage.Asset, AccountAttributes: life(ppe, 600)},
+		{Code: "6110", Name: "Rent", Type: storage.Expense},
+	} {
+		if p := CheckAccount(ok); p != nil {
+			t.Errorf("%s with %d months: %v", ok.Code, ok.UsefulLife, p)
+		}
+	}
+	for _, bad := range []storage.NewAccount{
+		{Code: "1520", Name: "Office equipment & furniture", Type: storage.Asset, AccountAttributes: life(ppe, 601)},
+		{Code: "1520", Name: "Office equipment & furniture", Type: storage.Asset, AccountAttributes: life(ppe, -1)},
+		{Code: "1500", Name: "Fixed assets", Type: storage.Asset, Group: true, AccountAttributes: life(ppe, 36)},
+		{Code: "6110", Name: "Rent", Type: storage.Expense, AccountAttributes: life(storage.AccountAttributes{}, 36)},
+		{Code: "1220", Name: "Deposits", Type: storage.Asset, AccountAttributes: life(storage.AccountAttributes{ReportGroup: "Other current assets"}, 36)},
+	} {
+		if got := codes(CheckAccount(bad)); !slices.Equal(got, []string{"COA-11 useful_life_months"}) {
+			t.Errorf("%s with %d months: %v", bad.Code, bad.UsefulLife, got)
+		}
+	}
+	equipment := storage.Account{Code: "1510", Name: "Computer equipment", Type: storage.Asset, Active: true, AccountAttributes: life(ppe, 36)}
+	moved := storage.AccountChange{Name: "Computer equipment", Active: true, AccountAttributes: life(storage.AccountAttributes{ReportGroup: "Other current assets"}, 36)}
+	if got := codes(CheckChange(equipment, moved)); !slices.Equal(got, []string{"COA-11 useful_life_months"}) {
+		t.Errorf("moving 1510 out of the register with its life: %v", got)
+	}
+	moved.UsefulLife = 0
+	if p := CheckChange(equipment, moved); p != nil {
+		t.Errorf("moving 1510 out of the register, its life cleared: %v", p)
+	}
+}

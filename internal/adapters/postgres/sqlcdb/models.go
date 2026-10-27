@@ -12,27 +12,28 @@ import (
 )
 
 type FyniqAccount struct {
-	OrganisationID uuid.UUID
-	ID             uuid.UUID
-	Code           string
-	Name           string
-	Type           string
-	ParentID       *uuid.UUID
-	IsGroup        bool
-	IsActive       bool
-	Version        int32
-	CreatedAt      time.Time
-	Role           *string
-	ReportGroup    *string
-	CashFlowLine   *string
-	Function       *string
-	IsMoneyAccount bool
-	DefaultGstCode *string
-	Currency       *string
-	IsControl      bool
-	IsPayrollCost  bool
-	Guidance       *string
-	Revalue        bool
+	OrganisationID   uuid.UUID
+	ID               uuid.UUID
+	Code             string
+	Name             string
+	Type             string
+	ParentID         *uuid.UUID
+	IsGroup          bool
+	IsActive         bool
+	Version          int32
+	CreatedAt        time.Time
+	Role             *string
+	ReportGroup      *string
+	CashFlowLine     *string
+	Function         *string
+	IsMoneyAccount   bool
+	DefaultGstCode   *string
+	Currency         *string
+	IsControl        bool
+	IsPayrollCost    bool
+	Guidance         *string
+	Revalue          bool
+	UsefulLifeMonths *int16
 }
 
 type FyniqAccountingFramework struct {

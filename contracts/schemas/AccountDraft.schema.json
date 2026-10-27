@@ -118,6 +118,16 @@
         "expense"
       ],
       "type": "string"
+    },
+    "useful_life_months": {
+      "description": "The default useful life in whole months that the fixed asset register offers for an asset on it; only on an asset account of the register (report group Property, plant \u0026 equipment or Intangible assets; FR-COA-02, rev 0.151; COA-11). 0 or left out: none.",
+      "examples": [
+        36
+      ],
+      "format": "int64",
+      "maximum": 600,
+      "minimum": 0,
+      "type": "integer"
     }
   },
   "required": [

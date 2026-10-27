@@ -42,11 +42,11 @@ describe("the chart of accounts", () => {
 
   // req: FR-COA-01
   it("offers the standard chart to an empty chart", async () => {
-    const seen = answer({ "GET /v1/accounts": { status: 200, body: { items: [] } }, "POST /v1/accounts:load-standard-chart": { status: 201, body: { accounts: 87 } } });
+    const seen = answer({ "GET /v1/accounts": { status: 200, body: { items: [] } }, "POST /v1/accounts:load-standard-chart": { status: 201, body: { accounts: 88 } } });
     renderPage(ChartOfAccounts, { path: "/accounting/chart-of-accounts", session: accountant });
     fireEvent.click(await screen.findByRole("button", { name: "Load the standard chart" }));
     fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Load the standard chart" }));
-    expect(await screen.findByText("The standard chart is loaded: 87 accounts.")).toBeTruthy();
+    expect(await screen.findByText("The standard chart is loaded: 88 accounts.")).toBeTruthy();
     expect(seen.find((s) => s.method === "POST")?.headers.get("Idempotency-Key")).toBeTruthy();
   });
 
@@ -114,5 +114,34 @@ describe("the chart of accounts", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Save the account" }));
     await waitFor(() => expect(calls()).toContain("PATCH /v1/accounts/a5"));
     expect(seen.find((s) => s.method === "PATCH")?.body).toEqual({ revalue: true });
+  });
+
+  // req: ledger/chart-of-accounts Default useful life (rev 0.151)
+  it("gives an asset account of the register a default useful life, and offers it on nothing else", async () => {
+    const furniture = acc("a6", "1520", "Office equipment & furniture", { type: "asset", report_group: "Property, plant & equipment", useful_life_months: 60 });
+    const seen = answer({
+      "GET /v1/accounts": { status: 200, body: { items: [office, rent, furniture] } },
+      "GET /v1/accounts/a1": { status: 200, body: rent, headers: { ETag: '"1"' } },
+      "GET /v1/accounts/a6": { status: 200, body: furniture, headers: { ETag: '"1"' } },
+      "PATCH /v1/accounts/a6": { status: 200, body: { ...furniture, useful_life_months: 48, version: 2 } },
+    });
+    renderPage(ChartOfAccounts, { path: "/accounting/chart-of-accounts", session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "Change 6110 Rent" }));
+    let dialog = await screen.findByRole("dialog");
+    await within(dialog).findByLabelText(/Active: takes new postings/);
+    expect(within(dialog).queryByLabelText("Default useful life (months)")).toBeNull();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: "Change 1520 Office equipment & furniture" }));
+    dialog = await screen.findByRole("dialog");
+    const life = (await within(dialog).findByLabelText("Default useful life (months)")) as HTMLInputElement;
+    expect(life.value).toBe("60");
+    fireEvent.change(life, { target: { value: "601" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save the account" }));
+    expect(await within(dialog).findByText(/Enter whole months from 1 to 600/)).toBeTruthy();
+    fireEvent.change(life, { target: { value: "48" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save the account" }));
+    await waitFor(() => expect(calls()).toContain("PATCH /v1/accounts/a6"));
+    expect(seen.find((s) => s.method === "PATCH")?.body).toEqual({ useful_life_months: 48 });
   });
 });

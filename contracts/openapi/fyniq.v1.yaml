@@ -113,6 +113,12 @@ components:
           examples:
             - expense
           type: string
+        useful_life_months:
+          description: The default useful life in whole months the fixed asset register offers for an asset on it (FR-COA-02; PRD-001 rev 0.151); left out when it has none.
+          examples:
+            - 36
+          format: int64
+          type: integer
         version:
           description: The record's version; it also makes the ETag.
           examples:
@@ -210,6 +216,14 @@ components:
           examples:
             - true
           type: boolean
+        useful_life_months:
+          description: The default useful life in whole months the fixed asset register offers, on an asset account of the register only (FR-COA-02; COA-11); 0 clears it. Registered assets keep their own lives.
+          examples:
+            - 60
+          format: int64
+          maximum: 600
+          minimum: 0
+          type: integer
       type: object
     AccountDraft:
       additionalProperties: false
@@ -299,6 +313,14 @@ components:
           examples:
             - expense
           type: string
+        useful_life_months:
+          description: "The default useful life in whole months that the fixed asset register offers for an asset on it; only on an asset account of the register (report group Property, plant & equipment or Intangible assets; FR-COA-02, rev 0.151; COA-11). 0 or left out: none."
+          examples:
+            - 36
+          format: int64
+          maximum: 600
+          minimum: 0
+          type: integer
       required:
         - code
         - name
@@ -21414,7 +21436,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active; `COA-10` The account is not revalued at month end."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active; `COA-10` The account is not revalued at month end; `COA-11` The account takes no such default useful life."
         "429":
           content:
             application/problem+json:
@@ -21481,6 +21503,7 @@ paths:
         - COA-08
         - COA-09
         - COA-10
+        - COA-11
         - STORAGE-ACCOUNT-01
         - STORAGE-ACCOUNT-02
         - STORAGE-DUPLICATE-01
@@ -21727,7 +21750,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active; `COA-10` The account is not revalued at month end."
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active; `COA-10` The account is not revalued at month end; `COA-11` The account takes no such default useful life."
         "428":
           content:
             application/problem+json:
@@ -21800,6 +21823,7 @@ paths:
         - COA-08
         - COA-09
         - COA-10
+        - COA-11
         - STORAGE-ACCOUNT-01
         - STORAGE-ACCOUNT-02
         - STORAGE-LOCK-01
@@ -21811,7 +21835,7 @@ paths:
         right: C
   /v1/accounts:load-standard-chart:
     post:
-      description: "Loads the standard Singapore start-up chart into an organisation that has no account yet: 87 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each, and the expense policy's starter claim categories (local and overseas travel, meals, software, telephone, office supplies and mileage, with no limits: FR-AP-15) with theirs. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      description: "Loads the standard Singapore start-up chart into an organisation that has no account yet: 88 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each, and the expense policy's starter claim categories (local and overseas travel, meals, software, telephone, office supplies and mileage, with no limits: FR-AP-15) with theirs. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
       operationId: loadStandardChart
       parameters:
         - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
