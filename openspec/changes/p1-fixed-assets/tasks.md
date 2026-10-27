@@ -23,14 +23,14 @@
 
 ## 2. Depreciation
 
-- [ ] 2.1 `asset_depreciation@1` in the ledger (Dr 6610 · Cr 1590) and the schedule as a pure function of a version
+- [x] 2.1 `asset_depreciation@1` in the ledger (Dr 6610 · Cr 1590) and the schedule as a pure function of a version
   (design D2, D3): `ALLOC-EVEN` of cost − residual − carried over its months, the end at start + life − 1; the
   database refuses a depreciation entry that names no posted asset at its version; the replay reproduces it (ENG-06).
   - Tests: worked by hand: S$3,600 over 36 months is S$100 a month; S$1,000 over 3 months is 333.33, 333.34, 333.33
     (`ALLOC-EVEN`); an asset started before the books start posts from the books start, its earlier months in the
     opening balances; a change of life after 6 months spreads what is left over the new remaining months.
     `// req: FR-FA-02`, `// req: ledger/posting-rules Depreciation`
-- [ ] 2.2 `journal.Depreciation` and the job `assets.depreciation` (hourly, as `scheduler:assets.depreciation`): every
+- [x] 2.2 `journal.Depreciation` and the job `assets.depreciation` (hourly, as `scheduler:assets.depreciation`): every
   month whose last day has come in the organisation's time zone posts, each in its own transaction; registering or
   changing an asset posts its months due at once; a month with no open period waits, with
   `fixed_asset.depreciation_waiting`; the asset shows each month posted, waiting or projected (ENG-05); PRD FR-AUT-01

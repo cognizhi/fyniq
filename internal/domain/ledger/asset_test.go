@@ -1,7 +1,12 @@
 package ledger
 
 import (
+	"slices"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 // An asset registered from a bill's line costs what the bill's entry put on the line's account for it (FR-FA-01;
@@ -135,5 +140,148 @@ func TestBankPartCost(t *testing.T) {
 	}
 	if l, ok := BankPartCost(in, ie, s, 1); !ok || l.Base.String() != "-1000.00" {
 		t.Errorf("money in: %+v %v", l, ok)
+	}
+}
+
+var (
+	depreciationAcc = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000006610"), Code: "6610", Active: true, Type: "expense", Role: RoleDepreciation}
+	accumulatedAcc  = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000001590"), Code: "1590", Active: true, Type: "asset", Role: RoleAccumulatedDepreciation}
+	laptopID        = uuid.MustParse("0192f1a0-0000-7000-8000-0000000fa001")
+)
+
+// depreciating is the chart depreciation posts against: 6610 and 1590 by role.
+func depreciating() Settings {
+	s := Settings{Base: sgd, Accounts: map[uuid.UUID]Account{}}
+	for _, a := range []Account{depreciationAcc, accumulatedAcc, bank} {
+		s.Accounts[a.ID] = a
+	}
+	return s
+}
+
+// laptopVersion is a S$3,600 laptop's version carrying carried from its first month from to end.
+func laptopVersion(t testing.TB, version int, cost, residual, carried string, from, end time.Time) DepreciableAsset {
+	return DepreciableAsset{ID: laptopID, Version: version, Memo: "FA-0001 MacBook Pro 14", Cost: amt(t, cost, sgd), Residual: amt(t, residual, sgd),
+		Carried: amt(t, carried, sgd), From: from, End: end}
+}
+
+// sum is the total of a schedule's parts.
+func sum(t testing.TB, ds []Depreciation) string {
+	total := amt(t, "0.00", sgd)
+	for _, d := range ds {
+		total, _ = total.Add(d.Amount)
+	}
+	return total.String()
+}
+
+// Worked by hand (B.4, ALLOC-EVEN): S$3,600 over 36 months from March 2026 is S$100.00 a month, the first dated 31 March
+// 2026 and the twelfth 28 February 2027; S$1,000 over 3 months is 333.33, 333.34 and 333.33. An asset bought in March
+// 2025 that the opening balances carry at S$1,200 from January 2026 depreciates the S$2,400 left over its 26 months
+// from January 2026 to February 2028. A change of life to 48 months after 6 months (S$600 posted) spreads the S$3,000
+// left over the 42 months from September 2026 to February 2030. Nothing left, or no month left, has no schedule.
+// req: FR-FA-02
+// req: ledger/posting-rules Depreciation
+// req: ALLOC-EVEN
+func TestDepreciationSchedule(t *testing.T) {
+	ds, err := DepreciationSchedule(laptopVersion(t, 1, "3600.00", "0.00", "0.00", month(t, "2026-03"), month(t, "2029-02")))
+	if err != nil || len(ds) != 36 {
+		t.Fatalf("36 months: %d %v", len(ds), err)
+	}
+	for i, d := range ds {
+		if d.Amount.String() != "100.00" || d.Part != i+1 || d.Of != 36 || d.Version != 1 || d.AssetID != laptopID || d.Memo != "FA-0001 MacBook Pro 14" {
+			t.Errorf("month %d: %+v", i+1, d)
+		}
+	}
+	if !ds[0].Month.Equal(month(t, "2026-03")) || !ds[0].Date.Equal(time.Date(2026, 3, 31, 0, 0, 0, 0, time.UTC)) ||
+		!ds[11].Date.Equal(time.Date(2027, 2, 28, 0, 0, 0, 0, time.UTC)) || !ds[35].Month.Equal(month(t, "2029-02")) {
+		t.Errorf("dates: %v %v %v", ds[0].Date, ds[11].Date, ds[35].Month)
+	}
+	three, err := DepreciationSchedule(laptopVersion(t, 1, "1000.00", "0.00", "0.00", month(t, "2026-10"), month(t, "2026-12")))
+	if err != nil || len(three) != 3 || three[0].Amount.String() != "333.33" || three[1].Amount.String() != "333.34" || three[2].Amount.String() != "333.33" {
+		t.Errorf("S$1,000 over 3 months: %+v %v", three, err)
+	}
+	opening, err := DepreciationSchedule(laptopVersion(t, 1, "3600.00", "0.00", "1200.00", month(t, "2026-01"), month(t, "2028-02")))
+	if err != nil || len(opening) != 26 || sum(t, opening) != "2400.00" || opening[0].Amount.String() != "92.31" {
+		t.Errorf("from the books start: %d %s %v", len(opening), sum(t, opening), err)
+	}
+	changed, err := DepreciationSchedule(laptopVersion(t, 2, "3600.00", "0.00", "600.00", month(t, "2026-09"), month(t, "2030-02")))
+	if err != nil || len(changed) != 42 || sum(t, changed) != "3000.00" || changed[0].Version != 2 || changed[0].Of != 42 {
+		t.Errorf("a longer life after 6 months: %d %s %v", len(changed), sum(t, changed), err)
+	}
+	withResidual, err := DepreciationSchedule(laptopVersion(t, 1, "3600.00", "600.00", "0.00", month(t, "2026-03"), month(t, "2029-02")))
+	if err != nil || sum(t, withResidual) != "3000.00" || withResidual[0].Amount.String() != "83.33" {
+		t.Errorf("a residual of S$600: %s %v", sum(t, withResidual), err)
+	}
+	for name, a := range map[string]DepreciableAsset{
+		"fully depreciated":    laptopVersion(t, 2, "3600.00", "0.00", "3600.00", month(t, "2029-03"), month(t, "2029-02")),
+		"down to its residual": laptopVersion(t, 2, "3600.00", "600.00", "3000.00", month(t, "2028-01"), month(t, "2029-02")),
+		"its life over":        laptopVersion(t, 2, "3600.00", "0.00", "3500.00", month(t, "2029-03"), month(t, "2029-02")),
+	} {
+		if ds, err := DepreciationSchedule(a); err != nil || len(ds) != 0 {
+			t.Errorf("%s: %+v %v", name, ds, err)
+		}
+	}
+	if _, err := DepreciationSchedule(laptopVersion(t, 2, "3600.00", "600.00", "3000.01", month(t, "2028-01"), month(t, "2029-02"))); err == nil {
+		t.Errorf("carrying more than the cost less the residual")
+	}
+	usdLaptop := laptopVersion(t, 1, "3600.00", "0.00", "0.00", month(t, "2026-03"), month(t, "2029-02"))
+	usdLaptop.Residual = amt(t, "0.00", usd)
+	if _, err := DepreciationSchedule(usdLaptop); err == nil {
+		t.Errorf("a residual in another currency")
+	}
+}
+
+// A month's depreciation posts Dr 6610 · Cr 1590 with its part, on the month's last day, under asset_depreciation@1,
+// with the asset and its version as its source; the replay reproduces it (ENG-06). Every refusal comes back together.
+// req: FR-FA-02
+// req: ledger/posting-rules Depreciation
+// req: ENG-06
+// req: ENG-22
+func TestPostDepreciation(t *testing.T) {
+	s := depreciating()
+	ds, err := DepreciationSchedule(laptopVersion(t, 1, "3600.00", "0.00", "0.00", month(t, "2026-03"), month(t, "2029-02")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := PostDepreciation(ds[11], s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := legs(s, e); got != "6610 100.00 SGD = 100.00; 1590 -100.00 SGD = -100.00" {
+		t.Errorf("legs: %s", got)
+	}
+	if !e.PostingDate.Equal(time.Date(2027, 2, 28, 0, 0, 0, 0, time.UTC)) || e.RuleVersion != RuleAssetDepreciation ||
+		e.Source != (Source{SourceAssetDepreciation, laptopID.String(), 1}) || e.PostingIdentity != "asset_depreciation:"+laptopID.String()+":v1:2027-02:asset_depreciation@1" ||
+		e.Memo != "FA-0001 MacBook Pro 14: depreciation for February 2027 (12 of 36)" {
+		t.Errorf("the entry: %+v", e)
+	}
+	again, err := ReplayDepreciation(RuleAssetDepreciation, ds[11], s)
+	if err != nil || legs(s, again) != legs(s, e) || again.PostingIdentity != e.PostingIdentity {
+		t.Errorf("the replay: %+v %v", again, err)
+	}
+	if _, err := ReplayDepreciation("asset_depreciation@9", ds[11], s); !Problems.Has(err.(Problems), CodeUnknownRule) {
+		t.Errorf("an unknown rule version: %v", err)
+	}
+
+	bare := Settings{Base: sgd, Accounts: map[uuid.UUID]Account{}}
+	d := ds[0]
+	d.Date, d.Month, d.Amount, d.Memo = time.Time{}, time.Time{}, amt(t, "0.00", sgd), strings.Repeat("x", MaxMemo)
+	_, err = PostDepreciation(d, bare)
+	probs, _ := err.(Problems)
+	var codes []string
+	for _, p := range probs {
+		codes = append(codes, p.Field+":"+p.Code)
+	}
+	want := []string{"date:" + CodeNoDate, "amount:" + CodeDepreciation, "memo:" + CodeTooLong, "lines:" + CodeSystemRole, "lines:" + CodeSystemRole}
+	if !slices.Equal(codes, want) {
+		t.Errorf("refusals: %v, want %v", codes, want)
+	}
+	f := ds[0]
+	f.Amount = amt(t, "100.00", usd)
+	if _, err := PostDepreciation(f, s); err == nil || !err.(Problems).Has(CodeDepreciation) {
+		t.Errorf("a depreciation in USD: %v", err)
+	}
+	f.Amount = amt(t, "-100.00", sgd)
+	if _, err := PostDepreciation(f, s); err == nil || !err.(Problems).Has(CodeDepreciation) {
+		t.Errorf("a depreciation of less than nothing: %v", err)
 	}
 }

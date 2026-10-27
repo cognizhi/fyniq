@@ -79,6 +79,9 @@ var PlatformSchedules = []Schedule{
 	// Hourly, the releases of categorised bank lines' spreads due by each organisation's own today (FR-GL-03, ENG-05,
 	// Appendix B.1; rev 0.141).
 	{Job: "bank.releases", Every: time.Hour, Offset: 55 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Hourly, the months of depreciation of registered assets due by each organisation's own today (FR-FA-02, ENG-05;
+	// rev 0.150).
+	{Job: "assets.depreciation", Every: time.Hour, Offset: 50 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Weekly on Monday at 02:00 in Singapore (Sunday 18:00 UTC; the epoch was a Thursday), the previous week's sample of
 	// auto-reconciliations into each organisation's weekly review (FR-BNK-14, FM-3; rev 0.142).
 	{Job: "bank.review-sample", Every: 7 * 24 * time.Hour, Offset: 90 * time.Hour, Lease: 30 * time.Minute, Stale: 7*24*time.Hour + 3*time.Hour},

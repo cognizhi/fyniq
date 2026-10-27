@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "Its depreciation, in the base currency: Dr 6610 · Cr 1590."
+    },
+    "date": {
+      "description": "The day it posts on: the month's last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "entry_id": {
+      "description": "Its entry, once posted.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f90"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "month": {
+      "description": "The month.",
+      "examples": [
+        "2026-10"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "status": {
+      "description": "posted: in the ledger; reversed: posted, then reversed by a disposal dated before it; waiting: due, not posted yet (the hourly job posts it, or its period is not open); projected: in the future, not in the ledger.",
+      "enum": [
+        "posted",
+        "reversed",
+        "waiting",
+        "projected"
+      ],
+      "examples": [
+        "posted"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The asset's version it is of.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "month",
+    "date",
+    "version",
+    "amount",
+    "status"
+  ],
+  "title": "FixedAssetMonth",
+  "type": "object"
+}

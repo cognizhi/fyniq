@@ -13616,7 +13616,7 @@ export interface components {
             account_id: string;
             /** @description Its accumulated depreciation: what the opening balances carried for it and what has posted since. */
             accumulated_depreciation: components["schemas"]["Money"];
-            /** @description Its warnings (⚠): the bill or bank line it came from was voided or edited since. */
+            /** @description Its warnings (⚠): the bill or bank line it came from was voided or edited since; a month of depreciation waiting for its period. */
             checks: components["schemas"]["BillCheck"][];
             /** @description What it cost, in the base currency: what is left of it after a partial disposal. */
             cost: components["schemas"]["Money"];
@@ -13625,6 +13625,8 @@ export interface components {
              * @example 2026-09
              */
             depreciated_to?: string;
+            /** @description getFixedAsset and the commands only: its months of depreciation, in order: those posted (and reversed, by a disposal dated before them), and its current version's months to come, waiting when due by the organisation's today, projected after (ENG-05). */
+            depreciation: components["schemas"]["FixedAssetMonth"][];
             /**
              * @description The last month it depreciates: start + life − 1.
              * @example 2029-02
@@ -13772,6 +13774,39 @@ export interface components {
              * @example 2026-03
              */
             start?: string;
+        };
+        FixedAssetMonth: {
+            /** @description Its depreciation, in the base currency: Dr 6610 · Cr 1590. */
+            amount: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description The day it posts on: the month's last day.
+             * @example 2026-10-31
+             */
+            date: string;
+            /**
+             * Format: uuid
+             * @description Its entry, once posted.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f90
+             */
+            entry_id?: string;
+            /**
+             * @description The month.
+             * @example 2026-10
+             */
+            month: string;
+            /**
+             * @description posted: in the ledger; reversed: posted, then reversed by a disposal dated before it; waiting: due, not posted yet (the hourly job posts it, or its period is not open); projected: in the future, not in the ledger.
+             * @example posted
+             * @enum {string}
+             */
+            status: "posted" | "reversed" | "waiting" | "projected";
+            /**
+             * Format: int64
+             * @description The asset's version it is of.
+             * @example 1
+             */
+            version: number;
         };
         FixedAssetOpening: {
             /**

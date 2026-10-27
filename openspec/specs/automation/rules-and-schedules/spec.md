@@ -71,6 +71,11 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **WHEN** the tick runs `bank.signals-expiry`, daily at 03:25 in Singapore
 - **THEN** it expires the incoming-funds signals that no statement line closed within each organisation's `bank.signal_expiry_days` (FR-BNK-16), as `scheduler:bank.signals-expiry`, posting nothing
 
+#### Scenario: Depreciation of the register runs hourly (rev 0.150)
+- **WHEN** the tick runs `assets.depreciation`, hourly at ten to
+- **THEN** it posts each registered asset's months of depreciation due by each organisation's own today, in order (FR-FA-02, ENG-05), as `scheduler:assets.depreciation`
+- **AND** a month with no open period waits with an audit event and holds back the months after it
+
 ### Requirement: FR-AUT-02 Automated postings under a system principal
 Every automated posting SHALL run under a named system principal with its own audit identity, and SHALL respect period locks and approval policies.
 

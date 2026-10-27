@@ -139,6 +139,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := journal.ReleaseBankTransactionsDueAll(ctx, k.Store, clock.Now())
 			return err
 		},
+		"assets.depreciation": func(ctx context.Context) error { // FR-FA-02: each asset's months due by today
+			_, err := journal.DepreciateDueAll(ctx, k.Store, clock.Now())
+			return err
+		},
 		"bank.sync": func(ctx context.Context) error { // FR-BNK-15, FR-BNK-16: the bank-data connectors' pulls
 			return k.BankFeeds(clock).SyncAll(ctx)
 		},
