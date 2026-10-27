@@ -1,0 +1,49 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "pending-claims",
+ "base_currency": "SGD",
+ "currencies": {"SGD": 2, "USD": 2},
+ "as_of": "2026-04-30",
+ "settings": {
+  "accounts": {"gst": "2200", "fx": "7030", "claims_payable": "2150", "advances": "1250"},
+  "money_accounts": {"1010": "SGD", "1011": "SGD"},
+  "gst": {"registered_from": "2025-01-01", "rates": [{"from": "2024-01-01", "percent": "9"}]},
+  "mileage_rates": [{"vehicle": "car", "from": "2026-01-01", "rate": "0.60"},
+                    {"vehicle": "motorcycle", "from": "2026-01-01", "rate": "0.25"}]
+ },
+ "accounts": [
+  {"code": "1010", "type": "asset", "group": false, "active": true},
+  {"code": "1011", "type": "asset", "group": false, "active": true},
+  {"code": "1250", "type": "asset", "group": false, "active": true},
+  {"code": "2150", "type": "liability", "group": false, "active": true},
+  {"code": "2200", "type": "liability", "group": false, "active": true},
+  {"code": "6010", "type": "expense", "group": false, "active": true},
+  {"code": "6110", "type": "expense", "group": false, "active": true},
+  {"code": "7030", "type": "expense", "group": false, "active": true}
+ ],
+ "documents": [
+  {"type": "cash_advance", "id": "ADV-0001", "version": 1, "date": "2026-03-01", "account": "1010", "amount": "500.00"},
+  {"type": "expense_claim", "id": "EC-0001", "version": 1, "date": "2026-03-05", "currency": "SGD", "advance": "ADV-0001",
+   "lines": [{"account": "6010", "amount": "100.00", "gst_code": "TX", "gst": "9.00"},
+             {"account": "6110", "distance": "12.35", "vehicle": "car"}]},
+  {"type": "expense_claim", "id": "EC-0002", "version": 1, "date": "2026-03-06", "currency": "SGD", "advance": "ADV-0001",
+   "lines": [{"account": "6010", "amount": "450.00", "gst_code": "OP"}]},
+  {"type": "expense_claim", "id": "EC-0003", "version": 1, "date": "2026-03-10", "currency": "USD",
+   "fx_rate": "1.35", "fx_rate_source": "document", "lines": [{"account": "6010", "amount": "50.00", "gst_code": "OP"}]},
+  {"type": "expense_claim", "id": "EC-0004", "version": 1, "date": "2026-03-12", "currency": "SGD",
+   "lines": [{"account": "6110", "distance": "7.25", "vehicle": "motorcycle"},
+             {"account": "6110", "distance": "100", "vehicle": "car"}]},
+  {"type": "claim_reimbursement", "id": "RE-0001", "version": 1, "date": "2026-03-31", "account": "1010", "currency": "USD",
+   "fx_rate": "1.33", "fx_rate_source": "document", "parts": [{"document": "EC-0003", "amount": "50.00"}]},
+  {"type": "claim_reimbursement", "id": "RE-0002", "version": 1, "date": "2026-03-31", "account": "1010", "currency": "SGD",
+   "parts": [{"document": "EC-0002", "amount": "66.44"}, {"document": "EC-0004", "amount": "61.83"}]},
+  {"type": "claim_reimbursement", "id": "RE-0003", "version": 1, "date": "2026-04-02", "account": "1010", "currency": "SGD",
+   "parts": [{"document": "EC-0004", "amount": "0.01"}]},
+  {"type": "expense_claim", "id": "EC-0005", "version": 1, "date": "2026-04-03", "currency": "USD",
+   "fx_rate": "1.35", "fx_rate_source": "document", "lines": [{"account": "6110", "distance": "10", "vehicle": "car"}]},
+  {"type": "cash_advance", "id": "ADV-0002", "version": 1, "date": "2026-04-05", "account": "1011", "amount": "300.00"},
+  {"type": "cash_advance", "id": "ADV-0002R", "version": 1, "date": "2026-04-20", "account": "1011", "amount": "300.00",
+   "refund_of": "ADV-0002"}
+ ],
+ "reversals": []
+}

@@ -90,13 +90,17 @@
       "required": ["type"],
       "properties": {"type": {"enum": ["manual_journal", "bank_transaction", "bank_transfer", "bill", "vendor_credit",
                                          "bill_payment", "invoice", "credit_note", "customer_receipt", "customer_deposit",
-                                         "deposit_refund", "write_off"]}},
+                                         "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
+                                         "cash_advance"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "bank_transaction"}}}, "then": {"$ref": "#/$defs/bankTransaction"}},
         {"if": {"properties": {"type": {"const": "bank_transfer"}}}, "then": {"$ref": "#/$defs/bankTransfer"}},
         {"if": {"properties": {"type": {"enum": ["bill", "vendor_credit"]}}}, "then": {"$ref": "#/$defs/bill"}},
-        {"if": {"properties": {"type": {"enum": ["bill_payment", "customer_receipt"]}}}, "then": {"$ref": "#/$defs/settlement"}},
+        {"if": {"properties": {"type": {"enum": ["bill_payment", "customer_receipt", "claim_reimbursement"]}}},
+         "then": {"$ref": "#/$defs/settlement"}},
+        {"if": {"properties": {"type": {"const": "expense_claim"}}}, "then": {"$ref": "#/$defs/expenseClaim"}},
+        {"if": {"properties": {"type": {"const": "cash_advance"}}}, "then": {"$ref": "#/$defs/cashAdvance"}},
         {"if": {"properties": {"type": {"enum": ["invoice", "credit_note"]}}}, "then": {"$ref": "#/$defs/invoice"}},
         {"if": {"properties": {"type": {"const": "customer_deposit"}}}, "then": {"$ref": "#/$defs/customerDeposit"}},
         {"if": {"properties": {"type": {"const": "deposit_refund"}}}, "then": {"$ref": "#/$defs/depositRefund"}},
@@ -113,7 +117,7 @@
           "description": "System accounts by key (Appendix B.5). Each must be in accounts.",
           "type": "object",
           "propertyNames": {"enum": ["receivable", "payable", "gst", "prepayments", "deferred_revenue", "fx", "bank_charges",
-                                     "withholding_tax", "customer_deposits"]},
+                                     "withholding_tax", "customer_deposits", "claims_payable", "advances"]},
           "additionalProperties": {"$ref": "#/$defs/accountCode"}
         },
         "money_accounts": {
@@ -121,6 +125,17 @@
           "type": "object",
           "propertyNames": {"$ref": "#/$defs/accountCode"},
           "additionalProperties": {"$ref": "#/$defs/currencyCode"}
+        },
+        "mileage_rates": {
+          "description": "The rate per km for each vehicle type from each date (FR-AP-16; a policy setting, not a statutory rate).",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["vehicle", "from", "rate"],
+            "properties": {"vehicle": {"type": "string", "minLength": 1}, "from": {"$ref": "#/$defs/date"},
+                           "rate": {"$ref": "#/$defs/plainDecimal"}}
+          }
         },
         "tolerance": {
           "description": "Settlement tolerances (FR-BNK-08, open question 32), in the base currency and percent; each defaults to the PRD's.",
@@ -206,7 +221,7 @@
       "required": ["type", "id", "version", "date", "account", "currency", "parts"],
       "dependentRequired": {"fx_rate": ["fx_rate_source"]},
       "properties": {
-        "type": {"enum": ["bill_payment", "customer_receipt"]},
+        "type": {"enum": ["bill_payment", "customer_receipt", "claim_reimbursement"]},
         "id": {"$ref": "#/$defs/documentId"},
         "version": {"$ref": "#/$defs/version"},
         "date": {"$ref": "#/$defs/date"},
@@ -326,6 +341,59 @@
         "invoice": {"type": "string"},
         "amount": {"description": "In the invoice's currency, at most what is open.", "$ref": "#/$defs/money"},
         "account": {"description": "The reason's account (FR-AR-17).", "type": "string"}
+      }
+    },
+    "expenseClaim": {
+      "description": "An expense claim (expense_claim@1): receipt lines and trips (FR-AP-07, FR-AP-16).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "currency", "lines"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "type": {"const": "expense_claim"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "currency": {"type": "string"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"},
+        "advance": {"description": "The cash advance it settles first (FR-AP-17).", "type": "string"},
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["account"],
+            "properties": {
+              "account": {"type": "string"},
+              "amount": {"$ref": "#/$defs/money"},
+              "quantity": {"type": "string"},
+              "unit_price": {"type": "string"},
+              "gst_code": {"type": "string"},
+              "gst": {"$ref": "#/$defs/money"},
+              "gst_base": {"$ref": "#/$defs/money"},
+              "business_share": {"type": "string"},
+              "distance": {"description": "A trip's distance in km (RND-MILEAGE).", "type": "string"},
+              "vehicle": {"description": "A trip's vehicle type, a key of settings.mileage_rates.", "type": "string"}
+            },
+            "oneOf": [{"required": ["distance", "vehicle"]}, {"required": ["gst_code"]}]
+          }
+        }
+      }
+    },
+    "cashAdvance": {
+      "description": "A cash advance to an employee, or what is left of one coming back (cash_advance@1, FR-AP-17).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "account", "amount"],
+      "properties": {
+        "type": {"const": "cash_advance"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "account": {"description": "A base-currency money account.", "type": "string"},
+        "amount": {"description": "In the base currency.", "$ref": "#/$defs/money"},
+        "refund_of": {"description": "The advance whose remainder comes back.", "type": "string"}
       }
     },
     "bankTransaction": {

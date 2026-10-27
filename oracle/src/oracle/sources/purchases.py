@@ -71,6 +71,30 @@ def line_net(r: Rules, line: Any, currency: str, minor: int, *, discount_allowed
     return net
 
 
+def cost_line(r: Rules, raw: Any, currency: str, minor: int, registered: bool) -> tuple[Decimal, Decimal, Decimal, Decimal]:
+    """A purchase line's net, cost (net plus the GST not claimed), input tax claimed (FR-AP-20, ENG-42,
+    ``RND-GST-SHARE``, in the base currency) and the GST its invoice states."""
+    net = line_net(r, raw, currency, minor, discount_allowed=False)
+    code = r.gst_code(raw["gst_code"])
+    gst = r.amount(raw.get("gst", "0"), currency, zero=True)
+    share = r.percent(raw.get("business_share", "100"))
+    foreign = currency != r.base
+    if not foreign and "gst_base" in raw:
+        raise Rejected("gst-base-on-base-bill")
+    claimable = code in CLAIMABLE and registered and not gst.is_zero()
+    if foreign:
+        stated = r.amount(raw["gst_base"], r.base, zero=True) if "gst_base" in raw else None
+        if claimable and stated is not None:
+            claim = money.rnd_gst_share(stated, share, r.base_minor)
+            kept = money.EXACT.subtract(gst, money.rnd_gst_share(gst, share, minor))
+        else:
+            claim, kept = money.ZERO, gst
+    else:
+        claim = money.rnd_gst_share(gst, share, r.base_minor) if claimable else money.ZERO
+        kept = money.EXACT.subtract(gst, claim)
+    return net, money.EXACT.add(net, kept), claim, gst
+
+
 def _bill_lines(r: Rules, doc: Source, *, credit: bool) -> Posting:
     d = doc.data
     currency = d["currency"]
@@ -85,24 +109,7 @@ def _bill_lines(r: Rules, doc: Source, *, credit: bool) -> Posting:
     nets, gsts = [], []
     for raw in d["lines"]:
         account = r.account(raw["account"])
-        net = line_net(r, raw, currency, minor, discount_allowed=False)
-        code = r.gst_code(raw["gst_code"])
-        gst = r.amount(raw.get("gst", "0"), currency, zero=True)
-        share = r.percent(raw.get("business_share", "100"))
-        if not foreign and "gst_base" in raw:
-            raise Rejected("gst-base-on-base-bill")
-        claimable = code in CLAIMABLE and registered and not gst.is_zero()
-        if foreign:
-            stated = r.amount(raw["gst_base"], r.base, zero=True) if "gst_base" in raw else None
-            if claimable and stated is not None:
-                claim = money.rnd_gst_share(stated, share, r.base_minor)
-                kept = money.EXACT.subtract(gst, money.rnd_gst_share(gst, share, minor))
-            else:
-                claim, kept = money.ZERO, gst
-        else:
-            claim = money.rnd_gst_share(gst, share, r.base_minor) if claimable else money.ZERO
-            kept = money.EXACT.subtract(gst, claim)
-        cost = money.EXACT.add(net, kept)
+        net, cost, claim, gst = cost_line(r, raw, currency, minor, registered)
         cost_base = r.fx(cost, rate)
         if not claim.is_zero():
             lines.append(r.base_line(r.system("gst"), claim))

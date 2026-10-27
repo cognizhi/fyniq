@@ -161,8 +161,12 @@ A scenario with a P1 document must have `settings` and `as_of`, or it is invalid
   ones are the future and never post.
 - `settings.accounts` names the system accounts by key (Appendix B.5): `receivable` (1100), `payable`
   (2010), `gst` (2200), `prepayments` (1210), `deferred_revenue` (2400), `fx` (7030), `bank_charges`
-  (6460, a setting), `withholding_tax` (2330), `customer_deposits` (2410). Each named account must be in
-  `accounts`. A document that needs a key the organisation has not set is rejected.
+  (6460, a setting), `withholding_tax` (2330), `customer_deposits` (2410), `claims_payable` (2150),
+  `advances` (1250). Each named account must be in `accounts`. A document that needs a key the
+  organisation has not set is rejected.
+- `settings.mileage_rates` lists the rate per km for each vehicle type from each date (FR-AP-16; a
+  policy setting under dual control, not a statutory rate): `{"vehicle": "car", "from": "2026-01-01",
+  "rate": "0.60"}`.
 - `settings.tolerance` holds the settlement tolerances of FR-BNK-08 (open question 32), each a plain
   decimal: `base` (S$1.00), `percent` (3), `per_document` (S$50.00) and `per_month` (S$200.00); a key
   left out takes that default.
@@ -328,6 +332,28 @@ stays a credit with the customer. A `write_off` (`invoice`, `amount` at most wha
 reason's) credits 1100 at the invoice's stored rate (all that is left of its line when it takes all that
 is open) and debits the account with that carrying amount, in the base currency.
 
+### Expense claims (`expense_claim`, `expense_claim@1`), reimbursements (`claim_reimbursement`, `claim_reimbursement@1`) and cash advances (`cash_advance`, `cash_advance@1`)
+
+From §10.2, §10.4, FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20 and the rows of rev 0.147, 0.148 and 0.151.
+
+```json
+{"type": "expense_claim", "id": "EC-0001", "version": 1, "date": "2026-03-05", "currency": "SGD",
+ "lines": [{"account": "6010", "amount": "100.00", "gst_code": "TX", "gst": "9.00"},
+           {"account": "6110", "distance": "12.35", "vehicle": "car"}]}
+```
+
+A receipt line is costed as a bill's line (its input tax claimable on TX and IM when registered, its
+`business_share`). A trip (`distance` in km and `vehicle`, never a GST code) costs `RND-MILEAGE` of the
+distance at the vehicle's rate in force on the claim's date, with no GST, and only in a base-currency
+claim. Each line's cost goes to its account at `RND-FX`, the input tax to 2200; what the employee is owed
+goes first to 1250, up to what is left of the `advance` it settles (a base-currency claim), and the rest
+to 2150 at `RND-FX`; 7030 balances. A `claim_reimbursement` is a settlement (the shape of a payment of
+bills) of posted claims on 2150, with no part in full and nothing unapplied; a base-currency account
+reimbursing a claim in another currency gives the rate (the cascade's), the difference to 7030. A
+`cash_advance` (a base-currency money account and an amount) posts Dr 1250, Cr the money account; with
+`refund_of` it is what is left of that advance coming back, at most what is left: Dr the money account,
+Cr 1250.
+
 ### P1 readings
 
 Where PRD-001 leaves a P1 shape open, the oracle reads it as below. The generator does not produce
@@ -344,6 +370,8 @@ difference, which the PRD then settles.
 | A money-out part coded SR, or a money-in part coded TX or IM | GST at the code, whatever the direction | Appendix B.1 | Not generated |
 | Several credit notes linked to one invoice | Each credits at most the invoice's total on its own; they are not added up | FR-AR-04 (INVOICE-15: "credits at most that invoice's total") | Not generated (only standalone credit notes) |
 | A P1 document whose lines but one round to nothing in base (USD 0.01 deposited at 0.0001) | Rejected: an entry has at least two lines | INV-05 (rev 0.24 settles it for a journal's line, not for a P1 entry) | Not generated (rates of at least 0.01) |
+| A claim's line in another currency | Costed as a bill's (its cost in the claim's currency, 2150 at the claim's rate), reimbursed at the cascade's rate with the difference to 7030 | FR-AP-17 ("reimbursed in SGD at the rate cascade, the difference to 7030") | Generated |
+| A claim larger than what is left of its advance | 1250 takes what is left, 2150 the rest | FR-AP-17 ("settled by claims") | Generated |
 | The tolerance of a foreign bill paid in full | 3% of what it owes at its stored rate (its 2010 line) | FR-BNK-08 (rev 0.121: "3% of the document's total at its stored rate") | Not generated (only base-currency bills in full) |
 | The month's differences across sources | Bills' and invoices' differences share the month's cap, in absolute value | FR-BNK-08 ("with the month's earlier differences") | Generated (always within the cap) |
 | An unapplied amount from a base-currency account paying foreign bills | At the rate the payment implies (`RND-RATE` of what it paid ÷ the total) | Rev 0.77 | Not generated |

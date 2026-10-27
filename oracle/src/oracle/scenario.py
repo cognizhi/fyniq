@@ -247,6 +247,11 @@ def _settings(raw: dict[str, Any], accounts: dict[str, Account], currencies: dic
             raise ScenarioError(f"settings/money_accounts/{code}: {currency} is not in currencies")
     for key, value in raw.get("tolerance", {}).items():
         _shape(_PLAIN_DECIMAL, value, f"settings/tolerance/{key}")
+    for i, row in enumerate(raw.get("mileage_rates", [])):
+        _shape(_PLAIN_DECIMAL, row["rate"], f"settings/mileage_rates/{i}/rate")
+    mileage = [(row["vehicle"], row["from"]) for row in raw.get("mileage_rates", [])]
+    if len(set(mileage)) != len(mileage):
+        raise ScenarioError("settings/mileage_rates: two rates for one vehicle start on the same day")
     gst_raw = raw.get("gst", {})
     rates = []
     for i, rate in enumerate(gst_raw.get("rates", [])):

@@ -33,7 +33,7 @@ from oracle import money
 from oracle.scenario import SCENARIO_SCHEMA
 from oracle.strategies import POST, REJECT, Intent
 
-SOURCES = ("bank", "purchases", "sales")
+SOURCES = ("bank", "purchases", "sales", "claims")
 
 CURRENCIES = {"SGD": 2, "USD": 2, "JPY": 0, "KWD": 3}
 MONEY_ACCOUNTS = {"1010": "SGD", "1011": "SGD", "1021": "USD", "1022": "JPY", "1023": "KWD"}
@@ -47,6 +47,8 @@ SYSTEM = {
     "bank_charges": "6460",
     "withholding_tax": "2330",
     "customer_deposits": "2410",
+    "claims_payable": "2150",
+    "advances": "1250",
 }
 EXPENSES = ["6010", "6020", "6110", "6460", "7030"]
 REVENUES = ["4010", "4020", "4030"]
@@ -66,9 +68,13 @@ SALES_POSTING = ["invoice", "invoice", "invoice-foreign", "invoice-discount", "i
                  "invoice-deducting", "deposit-refund", "write-off"]
 SALES_REJECTED = ["receipt-more-than-open", "invoice-spread-not-revenue", "invoice-deducting-too-much",
                   "write-off-more-than-open"]
+CLAIMS_POSTING = ["claim", "claim", "claim-trips", "claim-foreign", "claim-advance", "reimburse", "reimburse",
+                  "advance", "advance-refund"]
+CLAIMS_REJECTED = ["reimburse-more-than-open", "claim-trip-foreign", "advance-refund-too-much"]
 KINDS = {"bank": BANK_POSTING * 3 + BANK_REJECTED, "purchases": PURCHASES_POSTING * 2 + PURCHASES_REJECTED,
-         "sales": SALES_POSTING * 2 + SALES_REJECTED}
-REJECTED_KINDS = frozenset(BANK_REJECTED + PURCHASES_REJECTED + SALES_REJECTED)
+         "sales": SALES_POSTING * 2 + SALES_REJECTED, "claims": CLAIMS_POSTING * 2 + CLAIMS_REJECTED}
+REJECTED_KINDS = frozenset(BANK_REJECTED + PURCHASES_REJECTED + SALES_REJECTED + CLAIMS_REJECTED)
+MILEAGE = {"car": Decimal("0.60"), "motorcycle": Decimal("0.25")}
 WALLETS = {"SGD": "1010", "USD": "1021", "JPY": "1022", "KWD": "1023"}
 
 
@@ -79,14 +85,16 @@ class _Book:
         self.open: dict[str, tuple[str, Decimal]] = {}  # bill -> (currency, open amount)
         self.invoices: dict[str, tuple[str, Decimal]] = {}  # invoice charging no GST -> (currency, open)
         self.deposits: dict[str, tuple[str, Decimal]] = {}  # deposit -> (currency, what is left)
+        self.claims: dict[str, tuple[str, Decimal]] = {}  # claim -> (currency, what is owed)
+        self.advances: dict[str, Decimal] = {}  # advance -> what is left
 
 
 def _accounts() -> list[dict[str, Any]]:
     def account(code: str, kind: str) -> dict[str, Any]:
         return {"code": code, "type": kind, "group": False, "active": True}
 
-    chart = [account(code, "asset") for code in [*MONEY_ACCOUNTS, "1100", "1210", "1500"]]
-    chart += [account(code, "liability") for code in ["2010", "2050", "2200", "2330", "2400", "2410", "2999"]]
+    chart = [account(code, "asset") for code in [*MONEY_ACCOUNTS, "1100", "1210", "1250", "1500"]]
+    chart += [account(code, "liability") for code in ["2010", "2050", "2150", "2200", "2330", "2400", "2410", "2999"]]
     chart += [account(code, "revenue") for code in REVENUES]
     chart += [account(code, "expense") for code in EXPENSES]
     return chart
@@ -106,7 +114,8 @@ def _settings(draw: st.DrawFn) -> dict[str, Any]:
         gst["registered_to"] = (start + timedelta(days=draw(st.integers(0, 300)))).isoformat()
     if draw(st.booleans()):
         gst["per_line"] = draw(st.booleans())
-    return {"accounts": dict(SYSTEM), "money_accounts": dict(MONEY_ACCOUNTS), "gst": gst}
+    mileage = [{"vehicle": vehicle, "from": "2020-01-01", "rate": format(rate, "f")} for vehicle, rate in MILEAGE.items()]
+    return {"accounts": dict(SYSTEM), "money_accounts": dict(MONEY_ACCOUNTS), "gst": gst, "mileage_rates": mileage}
 
 
 @st.composite
@@ -450,6 +459,86 @@ def _receipt(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book) -> t
 
 
 @st.composite
+def _claims_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _Book) -> tuple[dict[str, Any], str]:
+    base = {"id": doc_id, "version": 1, "date": day.isoformat()}
+    if kind == "advance":
+        amount = draw(_cents(2, 4))
+        book.advances[doc_id] = amount
+        return {"type": "cash_advance", **base, "account": draw(st.sampled_from(["1010", "1011"])),
+                "amount": _text(amount, 2)}, POST
+    if kind in ("advance-refund", "advance-refund-too-much"):
+        left = [a for a, amount in sorted(book.advances.items()) if amount > 0]
+        if not left:
+            return {"type": "cash_advance", **base, "account": "1010", "amount": "1.00", "refund_of": "ADV-NONE"}, REJECT
+        target = draw(st.sampled_from(left))
+        amount = book.advances[target]
+        if kind == "advance-refund-too-much":
+            return {"type": "cash_advance", **base, "account": "1010", "amount": _text(amount + Decimal("0.01"), 2),
+                    "refund_of": target}, REJECT
+        refund = amount if draw(st.booleans()) or amount <= Decimal("0.01") else draw(_split(amount, 2, 2))[0]
+        book.advances[target] = money.EXACT.subtract(amount, refund)
+        return {"type": "cash_advance", **base, "account": "1010", "amount": _text(refund, 2), "refund_of": target}, POST
+    if kind.startswith("reimburse"):
+        open_ = [c for c, (_, owed) in sorted(book.claims.items()) if owed > 0]
+        doc: dict[str, Any] = {"type": "claim_reimbursement", **base, "parts": []}
+        if not open_:
+            doc.update(account="1010", currency="SGD", parts=[{"document": "EC-NONE", "amount": "1.00"}])
+            return doc, REJECT
+        target = draw(st.sampled_from(open_))
+        currency, owed = book.claims[target]
+        minor = CURRENCIES[currency]
+        unit = Decimal(1).scaleb(-minor, context=money.EXACT)
+        if kind == "reimburse-more-than-open":
+            amount = money.EXACT.add(owed, unit)
+        else:
+            amount = owed if draw(st.booleans()) or owed <= unit else draw(_split(owed, 2, minor))[0]
+            book.claims[target] = (currency, money.EXACT.subtract(owed, amount))
+        doc.update(account="1010", currency=currency, parts=[{"document": target, "amount": _text(amount, minor)}])
+        if currency != "SGD":
+            doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"  # reimbursed in SGD at the cascade's
+        return doc, REJECT if kind in REJECTED_KINDS else POST
+
+    # A claim.
+    currency = draw(st.sampled_from(["USD", "JPY"])) if kind in ("claim-foreign", "claim-trip-foreign") else "SGD"
+    minor = CURRENCIES[currency]
+    lines, owed = [], Decimal(0)
+    for _ in range(draw(st.integers(1, 3))):
+        if kind in ("claim-trips", "claim-trip-foreign") or (kind == "claim" and draw(st.integers(0, 2)) == 0):
+            vehicle = draw(st.sampled_from(sorted(MILEAGE)))
+            distance = Decimal(draw(st.integers(1, 99999))).scaleb(-draw(st.integers(0, 2)), context=money.EXACT)
+            amount = money.rnd_mileage(distance, MILEAGE[vehicle], 2)
+            if amount.is_zero():
+                distance, amount = Decimal(100), money.rnd_mileage(Decimal(100), MILEAGE[vehicle], 2)
+            lines.append({"account": draw(st.sampled_from(EXPENSES)), "distance": format(distance, "f"), "vehicle": vehicle})
+            owed = money.EXACT.add(owed, amount)
+            continue
+        net = draw(_cents(minor, 4))
+        line: dict[str, Any] = {"account": draw(st.sampled_from(EXPENSES)), "amount": _text(net, minor),
+                                "gst_code": draw(st.sampled_from(_CODES_OUT))}
+        gst = Decimal(0)
+        if line["gst_code"] in ("TX", "IM") and draw(st.booleans()):
+            gst = money.round_quotient(money.EXACT.multiply(net, Decimal(9)), Decimal(100), minor)
+            line["gst"] = _text(gst, minor)
+        lines.append(line)
+        owed = money.EXACT.add(owed, money.EXACT.add(net, gst))
+    doc = {"type": "expense_claim", **base, "currency": currency, "lines": lines}
+    if currency != "SGD":
+        doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
+    if kind == "claim-trip-foreign":
+        return doc, REJECT
+    if kind == "claim-advance":
+        left = [a for a, amount in sorted(book.advances.items()) if amount > 0]
+        if left:
+            target = draw(st.sampled_from(left))
+            doc["advance"] = target
+            taken = min(owed, book.advances[target])
+            book.advances[target] = money.EXACT.subtract(book.advances[target], taken)
+            owed = money.EXACT.subtract(owed, taken)
+    book.claims[doc_id] = (currency, owed)
+    return doc, POST
+
+
+@st.composite
 def p1_scenarios_with_intent(
     draw: st.DrawFn, sources: tuple[str, ...] = SOURCES, name: str = "generated-p1"
 ) -> tuple[dict[str, Any], Intent]:
@@ -465,8 +554,10 @@ def p1_scenarios_with_intent(
             document, meant = draw(_bank_document(doc_id, day, kind)), REJECT if kind in REJECTED_KINDS else POST
         elif kind in KINDS["purchases"]:
             document, meant = draw(_purchase_document(doc_id, day, kind, book))
-        else:
+        elif kind in KINDS["sales"]:
             document, meant = draw(_sales_document(doc_id, day, kind, book))
+        else:
+            document, meant = draw(_claims_document(doc_id, day, kind, book))
         documents.append(document)
         intent[doc_id] = meant
     last = max(date.fromisoformat(d["date"]) for d in documents)
