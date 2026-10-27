@@ -15,7 +15,8 @@ type Evidence =
   | components["schemas"]["BillEvidence"]
   | components["schemas"]["InvoiceEvidence"]
   | components["schemas"]["ClaimEvidence"]
-  | components["schemas"]["CardEvidence"];
+  | components["schemas"]["CardEvidence"]
+  | components["schemas"]["PayeeBankChangeEvidence"];
 type DataClass = "general" | "personal" | "bank";
 
 // Who attaches evidence to a journal: C on "Evidence: add, supersede" and a view of the journal (Appendix D): the Owner,
@@ -28,10 +29,11 @@ export const billAttachers = ["owner", "controller", "accountant", "bookkeeper",
 // Who attaches evidence to an invoice: C on "Evidence: add, supersede" and a view of invoices (Appendix D). The API decides.
 export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeeper", "ar_specialist", "approver", "tax_agent"];
 
-// A record evidence goes on: a journal, a bill or vendor credit, an invoice or credit note, an expense claim, or a
-// completed line of a company card (FR-DOC-05, FR-AP-14, FR-AP-18), at its ETag.
+// A record evidence goes on: a journal, a bill or vendor credit, an invoice or credit note, an expense claim, a
+// completed line of a company card, or a change of a vendor's bank details (FR-DOC-05, FR-AP-14, FR-AP-18, FR-CT-03), at
+// its ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill" | "invoice" | "claim" | "card-line";
+  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change";
   id: string;
   etag: string;
 }
@@ -43,10 +45,12 @@ const kindsOf = {
   invoice: ["purchase order", "contract", "delivery confirmation", "timesheet", "agreement", "screenshot"],
   claim: ["receipt", "tax invoice", "card statement", "boarding pass", "screenshot"],
   "card-line": ["receipt", "tax invoice", "screenshot"],
+  // bank_letter or vendor_confirmation meets a change's required evidence (FR-DOC-06)
+  "bank-change": ["bank_letter", "vendor_confirmation", "call-back record", "email"],
 };
 
 // nouns name each record in the panel's words.
-const nouns = { journal: "journal", bill: "bill", invoice: "invoice", claim: "claim", "card-line": "card line" };
+const nouns = { journal: "journal", bill: "bill", invoice: "invoice", claim: "claim", "card-line": "card line", "bank-change": "change of bank details" };
 
 // Result is an evidence call's answer, whichever record it went to.
 type Result = { data?: Evidence; error?: unknown };
@@ -62,7 +66,9 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
           ? await api.GET("/v1/expense-claims/{claim_id}/evidence", { params: { path: { claim_id: r.id }, query: { page_size: 100 } } })
           : r.kind === "card-line"
             ? await api.GET("/v1/card-lines/{line_id}/evidence", { params: { path: { line_id: r.id }, query: { page_size: 100 } } })
-            : await api.GET("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: r.id }, query: { page_size: 100 } } });
+            : r.kind === "bank-change"
+              ? await api.GET("/v1/bank-changes/{change_id}/evidence", { params: { path: { change_id: r.id }, query: { page_size: 100 } } })
+              : await api.GET("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: r.id }, query: { page_size: 100 } } });
   if (out.error) throw out.error;
   return out.data.items ?? [];
 }
@@ -108,7 +114,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [kind, setKind] = useState("");
+  const firstKind = record.kind === "bank-change" ? "bank_letter" : ""; // what a change's required file usually is
+  const [kind, setKind] = useState(firstKind);
   const [note, setNote] = useState("");
   const [dataClass, setDataClass] = useState<DataClass>("general");
   const [missing, setMissing] = useState<{ file?: boolean; kind?: boolean }>({});
@@ -156,13 +163,15 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
             ? api.POST("/v1/expense-claims/{claim_id}/evidence", { params: { path: { claim_id: record.id }, header }, body, bodySerializer })
             : record.kind === "card-line"
               ? api.POST("/v1/card-lines/{line_id}/evidence", { params: { path: { line_id: record.id }, header }, body, bodySerializer })
-              : api.POST("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: record.id }, header }, body, bodySerializer });
+              : record.kind === "bank-change"
+                ? api.POST("/v1/bank-changes/{change_id}/evidence", { params: { path: { change_id: record.id }, header }, body, bodySerializer })
+                : api.POST("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: record.id }, header }, body, bodySerializer });
     const out = await guarded(confirm, post);
     setBusy(false);
     setFailed("The file was not attached");
     if (!out.data) return setProblem(problemOf(out.error));
     setFile(null);
-    setKind("");
+    setKind(firstKind);
     setNote("");
     setDataClass("general");
     if (input.current) input.current.value = "";
@@ -181,7 +190,9 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
           ? await api.GET("/v1/invoices/{invoice_id}/evidence/{evidence_id}", { params: { path: { invoice_id: record.id, evidence_id: e.id } } })
           : record.kind === "claim"
             ? await api.GET("/v1/expense-claims/{claim_id}/evidence/{evidence_id}", { params: { path: { claim_id: record.id, evidence_id: e.id } } })
-            : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
+            : record.kind === "bank-change"
+              ? await api.GET("/v1/bank-changes/{change_id}/evidence/{evidence_id}", { params: { path: { change_id: record.id, evidence_id: e.id } } })
+              : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
     const header = { "If-Match": etagOf(read.response) };
     const del = (): Promise<Result> =>
       record.kind === "bill"
@@ -190,7 +201,9 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
           ? api.DELETE("/v1/invoices/{invoice_id}/evidence/{evidence_id}", { params: { path: { invoice_id: record.id, evidence_id: e.id }, header } })
           : record.kind === "claim"
             ? api.DELETE("/v1/expense-claims/{claim_id}/evidence/{evidence_id}", { params: { path: { claim_id: record.id, evidence_id: e.id }, header } })
-            : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
+            : record.kind === "bank-change"
+              ? api.DELETE("/v1/bank-changes/{change_id}/evidence/{evidence_id}", { params: { path: { change_id: record.id, evidence_id: e.id }, header } })
+              : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
     const out = read.error ? read : await guarded(confirm, del);
     setBusy(false);
     setFailed("The file was not removed");
@@ -205,7 +218,9 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
         Evidence
       </h2>
       <p className="fy-small fy-muted">
-        {record.kind === "claim"
+        {record.kind === "bank-change"
+          ? "The vendor's letter, or a screenshot of their confirmation through a channel you already knew, is needed before you ask for approval. Files are kept as bank details; once the change is approved they are never deleted."
+          : record.kind === "claim"
           ? draft
             ? "The receipt for each line, pasted, dropped or chosen. Name it on its line. While the claim is a draft, a file can come off again."
             : "The receipts the claim rests on. Once it is approved they are kept, and never deleted, for as long as the records are."
@@ -323,7 +338,7 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
             </datalist>
             {missing.kind && (
               <span className="fy-error" id={`${id}-kind-error`}>
-                {record.kind === "bill" || record.kind === "claim" || record.kind === "card-line" ? "Say what the file is, such as the invoice or a receipt." : record.kind === "invoice" ? "Say what the file is, such as the customer's purchase order." : "Say what the file is, such as a calculation or an invoice."}
+                {record.kind === "bank-change" ? "Say what the file is: bank_letter, or vendor_confirmation for a screenshot of their confirmation." : record.kind === "bill" || record.kind === "claim" || record.kind === "card-line" ? "Say what the file is, such as the invoice or a receipt." : record.kind === "invoice" ? "Say what the file is, such as the customer's purchase order." : "Say what the file is, such as a calculation or an invoice."}
               </span>
             )}
           </div>
@@ -333,18 +348,20 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
             </label>
             <input className="fy-input" id={`${id}-note`} value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} />
           </div>
-          <div className="fy-field">
-            <label className="fy-label" htmlFor={`${id}-class`}>
-              Personal data in it
-            </label>
-            <select className="fy-select" id={`${id}-class`} value={dataClass} onChange={(e) => setDataClass(e.target.value as DataClass)}>
-              {classes.map(([v, label]) => (
-                <option key={v} value={v}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
+          {record.kind !== "bank-change" && (
+            <div className="fy-field">
+              <label className="fy-label" htmlFor={`${id}-class`}>
+                Personal data in it
+              </label>
+              <select className="fy-select" id={`${id}-class`} value={dataClass} onChange={(e) => setDataClass(e.target.value as DataClass)}>
+                {classes.map(([v, label]) => (
+                  <option key={v} value={v}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <Button className="self-start" onClick={() => void add()} disabled={busy} title={attach.tooltip}>
             <Icon of={Paperclip} />
             {attach.label}

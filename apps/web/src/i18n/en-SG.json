@@ -256,6 +256,26 @@
       "label": "Templates",
       "tooltip": "Choose the published templates this contact's documents and emails use, before the default."
     },
+    "contact.bank-details": {
+      "label": "Bank details",
+      "tooltip": "Where payments to this vendor go: one account per currency, changed only with a second person's approval."
+    },
+    "bank-details.change": {
+      "label": "Change bank details",
+      "tooltip": "Prepare a new account for one currency with the vendor's letter. It takes effect only when another person approves it."
+    },
+    "bank-details.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Payments to the vendor freeze until another person approves or rejects it, or you withdraw it. Every founder is told at once."
+    },
+    "bank-details.reveal": {
+      "label": "Show number",
+      "tooltip": "Show the full account number once you confirm it's you. The audit trail records each look."
+    },
+    "bank-change.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the vendor's letter, or a screenshot of their confirmation through a channel you already knew. It is kept as bank details."
+    },
     "item.add": {
       "label": "New item",
       "tooltip": "Add a product or service with its prices; its code never changes."
