@@ -177,9 +177,9 @@ trip's date by default.
 ## Mileage rates
 
 A member who drives their own car or motorcycle for the company claims the distance at the
-organisation's **rate per km** for the vehicle. IRAS prescribes no rate per km: it must be
-reasonable, so Fyniq ships these rates **not set**, and a mileage claim waits until the owner or the
-accountant sets the rate for its vehicle.
+organisation's **rate per km** for the vehicle. IRAS prescribes no rate per km, only a reasonable
+one, so these are the company's own policy: Fyniq recommends **S$0.60** a km for a car and
+**S$0.25** a km for a motorcycle, until the owner or the accountant changes them.
 
 - **Mileage rate for a car, per km** and **Mileage rate for a motorcycle, per km**: in Singapore
   dollars, from 0.01 to 5.00.
@@ -210,8 +210,11 @@ An asset sold on a sales invoice is invoiced to the **disposal clearing account*
 goes to it, and the disposal clears it. The gain or loss then falls in the month of the disposal,
 whatever the invoice's month.
 
-- It starts **not set**: the company's accountant names a balance-sheet account for it, before the
-  first asset is sold on an invoice.
+- It is **1160 Asset disposal clearing** in the standard chart, unless the company's accountant names
+  another balance-sheet account. Its balance should be nil at month end.
+- A chart loaded before 1160 was added to the standard chart does not have it: add 1160 under
+  **Accounting → Chart of accounts**, or name another account here, before the first asset is sold on
+  an invoice.
 - An asset sold for money received into a bank account does not use it: the disposal records the
   money, and bank import matches it.
 - A change needs a second approver.

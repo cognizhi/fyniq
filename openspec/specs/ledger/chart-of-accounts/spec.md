@@ -12,7 +12,12 @@ Source: PRD-001 §8.2 · Priority M · Phase P1
 
 #### Scenario: An organisation loads the standard chart
 - **WHEN** an organisation that has no account yet loads the standard chart
-- **THEN** its chart of accounts holds the standard chart's 87 accounts: the workbook's 83 with every attribute, its disposal account moved to 7050, and 2120, 3300 and 7040 (rev 0.31, provisional until the CoA review), and (rev 0.90) 2330 Withholding tax payable [accountant to confirm the code]
+- **THEN** its chart of accounts holds the standard chart's 87 accounts: the workbook's 83 with every attribute, its disposal account moved to 7050, and 2120, 3300 and 7040 (rev 0.31, provisional until the CoA review), and (rev 0.90) 2330 Withholding tax payable [accountant to confirm the code], and (rev 0.151) 1160 Asset disposal clearing, 88 in all [accountant to confirm the code]
+
+#### Scenario: A chart loaded before 1160 (rev 0.151)
+- **GIVEN** an organisation whose chart was loaded before 1160 Asset disposal clearing joined the standard chart
+- **WHEN** it sells an asset on a sales invoice
+- **THEN** it adds 1160 to its chart, or names another account as the disposal clearing account (FR-FA-03)
 
 #### Scenario: The standard chart loads once
 - **GIVEN** an organisation that has any account
@@ -50,6 +55,13 @@ Source: PRD-001 §8.2 · Priority M · Phase P1
 - **WHEN** an account is marked revalue
 - **THEN** its foreign-currency balances are revalued at month end (FR-GL-04)
 - **AND** only an asset or a liability is marked, never prepayments or deferred revenue (COA-10); the standard chart marks the money accounts, 1100, 2010, 1250, 2500 and 2120
+
+#### Scenario: Default useful life (rev 0.151)
+- **WHEN** an asset account of the register (report group Property, plant & equipment or Intangible assets) has a default useful life, in whole months from 1 to 600
+- **THEN** the register's form offers it for an asset on that account (FR-FA-01), and the person may change it
+- **AND** the standard chart sets 1510 36, 1520 60, 1530 36 and 1540 36 months [verify: common practice; the accountant confirms]
+- **AND** changing it is an ordinary chart change, audited, that never changes a registered asset
+- **AND** an account outside the register's groups has none
 
 ### Requirement: FR-COA-03 Protected system accounts
 **System accounts** SHALL be protected: they cannot be deleted, retyped or, where the engine owns them, posted to manually.

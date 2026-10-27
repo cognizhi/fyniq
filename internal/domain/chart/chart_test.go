@@ -10,7 +10,7 @@ import (
 )
 
 // The standard chart is the workbook's 83 accounts, one moved, B.5's three (PRD-001 rev 0.31) and 2330 withholding tax
-// payable (rev 0.90, FR-AP-19): every
+// payable (rev 0.90, FR-AP-19) and 1160 Asset disposal clearing (rev 0.151, FR-FA-03): every
 // code once, every system account B.5 names, and the flags as the PRD reads.
 // req: FR-COA-01
 // req: FR-COA-02
@@ -19,8 +19,8 @@ func TestTheStandardChart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(accounts) != 87 {
-		t.Fatalf("%d accounts; want 87", len(accounts))
+	if len(accounts) != 88 {
+		t.Fatalf("%d accounts; want 88", len(accounts))
 	}
 	byCode := map[string]Account{}
 	sources := map[string]int{}
@@ -40,7 +40,7 @@ func TestTheStandardChart(t *testing.T) {
 			t.Errorf("account %s's guidance names a workbook sheet: %s", a.Code, a.Guidance)
 		}
 	}
-	if want := map[string]int{"workbook": 82, "workbook-moved": 1, "prd-b5": 4}; !maps.Equal(sources, want) {
+	if want := map[string]int{"workbook": 82, "workbook-moved": 1, "prd-b5": 4, "prd-151": 1}; !maps.Equal(sources, want) {
 		t.Errorf("sources %v; want %v", sources, want)
 	}
 
@@ -53,7 +53,7 @@ func TestTheStandardChart(t *testing.T) {
 		"2120": "Deferred remuneration payable", "1250": "Staff & director advances", "3010": "Share capital - Ordinary",
 		"3020": "Share capital - Preference", "3300": "Capital contribution", "2700": "Convertible notes / SAFE", "6050": "Directors' fees",
 		"7040": "Unrealised FX gain or loss", "7050": "Gain / (loss) on disposal of assets", "1050": "Payment gateway (e.g. Stripe)",
-		"5040": "Payment processing fees", "2020": "Accrued expenses", "2330": "Withholding tax payable"} {
+		"5040": "Payment processing fees", "2020": "Accrued expenses", "2330": "Withholding tax payable", "1160": "Asset disposal clearing"} {
 		if a, ok := byCode[code]; !ok || a.Name != name {
 			t.Errorf("account %s: %q; want %q", code, a.Name, name)
 		}
