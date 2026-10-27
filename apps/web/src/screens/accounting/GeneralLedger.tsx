@@ -7,7 +7,8 @@ import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
 import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
-import { clipboardAmount, formatAmount } from "../../format/amount";
+import { formatAmount } from "../../format/amount";
+import { csvCell } from "../../format/csv";
 import { date, timeZone } from "../../format/date";
 import { sign } from "../../format/decimal";
 import { helpText } from "../../i18n";
@@ -22,13 +23,6 @@ function today(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 }
 
-// csvCell is one cell of the export (FR-UX-20, RPT exports): plain decimals with an ASCII minus, and text that a
-// spreadsheet would read as a formula made inert with a leading apostrophe.
-export function csvCell(v: string, amount = false): string {
-  let s = amount && v ? clipboardAmount(v) : v;
-  if (!amount && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
 
 // csvOf is the report as CSV: one row per line, with each account's opening and closing balance.
 export function csvOf(r: Report): string {

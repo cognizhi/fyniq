@@ -5,7 +5,8 @@ import type { components } from "../../api/schema";
 import { answer, ownerSession, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
-import { csvCell, csvOf, GeneralLedger } from "./GeneralLedger";
+import { csvCell } from "../../format/csv";
+import { csvOf, GeneralLedger } from "./GeneralLedger";
 
 type Account = components["schemas"]["Account"];
 type Report = components["schemas"]["GeneralLedgerReport"];

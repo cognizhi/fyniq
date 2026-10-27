@@ -68,13 +68,7 @@ func gstDay(on string) (time.Time, error) {
 }
 
 func registerGSTCodes(a *API) {
-	register(a, authz.GetPurchaseGSTCodes, huma.Operation{
-		OperationID: "getPurchaseGSTCodes", Method: http.MethodGet, Path: "/v1/purchases/gst-codes", Tags: []string{"Purchases"},
-		Summary: "Get the GST codes for purchases",
-		Description: "The GST codes a bill dated on the day given is read with (FR-AP-02, ENG-31): the organisation's active sg-gst " +
-			"version in force then, else the one this release carries; its standard rate on the day; and each code for purchases " +
-			"with whether its input tax can be claimed. Read-only; no side effects.",
-	}, []string{CodeInvalid}, func(ctx context.Context, in *purchaseGSTCodesInput) (*purchaseGSTCodesOutput, error) {
+	purchaseCodes := func(ctx context.Context, in *purchaseGSTCodesInput) (*purchaseGSTCodesOutput, error) {
 		var on time.Time
 		if in.On != "" {
 			t, err := time.Parse(time.DateOnly, in.On)
@@ -97,7 +91,22 @@ func registerGSTCodes(a *API) {
 			return nil
 		})
 		return &out, err
-	})
+	}
+	register(a, authz.GetPurchaseGSTCodes, huma.Operation{
+		OperationID: "getPurchaseGSTCodes", Method: http.MethodGet, Path: "/v1/purchases/gst-codes", Tags: []string{"Purchases"},
+		Summary: "Get the GST codes for purchases",
+		Description: "The GST codes a bill dated on the day given is read with (FR-AP-02, ENG-31): the organisation's active sg-gst " +
+			"version in force then, else the one this release carries; its standard rate on the day; and each code for purchases " +
+			"with whether its input tax can be claimed. Read-only; no side effects.",
+	}, []string{CodeInvalid}, purchaseCodes)
+	// A claim's receipt takes the same codes (FR-AP-20), read by whoever claims or sees claims.
+	register(a, authz.GetClaimGSTCodes, huma.Operation{
+		OperationID: "getClaimGSTCodes", Method: http.MethodGet, Path: "/v1/expense-claims/gst-codes", Tags: []string{"Expense claims"},
+		Summary: "Get the GST codes for a claim's receipts",
+		Description: "The GST codes a claim's receipt dated on the day given is read with (FR-AP-20, ENG-31), as a bill's are: the " +
+			"organisation's active sg-gst version in force then, else the one this release carries; its standard rate on the day; " +
+			"and each code for purchases with whether its input tax can be claimed. Read-only; no side effects.",
+	}, []string{CodeInvalid}, purchaseCodes)
 
 	register(a, authz.GetSalesGSTCodes, huma.Operation{
 		OperationID: "getSalesGSTCodes", Method: http.MethodGet, Path: "/v1/sales/gst-codes", Tags: []string{"Sales"},

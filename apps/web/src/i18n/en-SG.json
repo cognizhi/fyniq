@@ -1055,6 +1055,86 @@
     "public.download": {
       "label": "Download the PDF",
       "tooltip": "Save the document as the sender issued it, to keep for your records."
+    },
+    "claims.my-claims": {
+      "label": "My claims",
+      "tooltip": "Costs you paid for the company: your claims by stage, what the company still owes you, your company-card lines and your cash advances."
+    },
+    "claims.personal": {
+      "label": "My claims",
+      "tooltip": "Your own claims, card lines and cash advances: all that Fyniq shows when claims are all you do in it."
+    },
+    "claim.new": {
+      "label": "New claim",
+      "tooltip": "Claim back what you paid for the company: add the receipt, what it was for and the amount on it."
+    },
+    "claims.claim": {
+      "label": "Claim",
+      "tooltip": "One of your claims: its receipts, what the expense policy says about it, and where it stands."
+    },
+    "claims.owed": {
+      "label": "What the company owes you",
+      "tooltip": "Your approved claims not yet paid back, in the base currency. Claims waiting for approval are not in it yet."
+    },
+    "claim.save": {
+      "label": "Save draft",
+      "tooltip": "Keep the claim as a draft: nothing is sent for approval, and you can change it."
+    },
+    "claim.submit": {
+      "label": "Submit",
+      "tooltip": "Send the claim for approval, after you confirm it's you. Another person approves it; finance too when a line is above its limit or late."
+    },
+    "claim.withdraw": {
+      "label": "Withdraw",
+      "tooltip": "Take the claim back from approval: it becomes a draft again to change and submit."
+    },
+    "claim.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach a receipt: a photo, a screenshot or a PDF. Fyniq scans it and strips image metadata such as location; then pick it on its line."
+    },
+    "card-line.complete": {
+      "label": "Complete",
+      "tooltip": "Say what a payment with your company card was for: the category of its receipt, or personal spend that you refund."
+    },
+    "card-line.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the receipt for a payment with your company card. It is kept, and never deleted, for as long as the records are."
+    },
+    "claim.new-mileage": {
+      "label": "Mileage trip",
+      "tooltip": "Claim a business trip in your own car or motorcycle: the company pays the distance at its rate per km."
+    },
+    "claims.trips": {
+      "label": "Trips",
+      "tooltip": "The trips in your own vehicle on a draft claim: where from and to, the vehicle and the distance driven."
+    },
+    "claims.mileage-log": {
+      "label": "Mileage",
+      "tooltip": "Your trips in a month, on drafts and claims alike, with the distance claimed and what each comes to."
+    },
+    "claims.export": {
+      "label": "Export history",
+      "tooltip": "Download your claims as a CSV file: each one's number, date, title, stage and amount."
+    },
+    "claims.review": {
+      "label": "Expense claims",
+      "tooltip": "Members' claims: those waiting for your approval, with what the expense policy says about each, and everyone's."
+    },
+    "claims.review-claim": {
+      "label": "Expense claim",
+      "tooltip": "A member's claim: its receipts, what the expense policy says about it, and approving or returning it."
+    },
+    "settings.expense-policy": {
+      "label": "Expense policy",
+      "tooltip": "What members claim for: the categories, the account each costs, its limit a line and when a receipt or who attended is needed."
+    },
+    "expense-policy.add": {
+      "label": "Add a category",
+      "tooltip": "Add a category members claim for, with the account it costs and its limits."
+    },
+    "expense-policy.load-starter": {
+      "label": "Load the starter categories",
+      "tooltip": "Start from Fyniq's categories, each on the standard chart's account: travel, meals, mileage and the rest. Check each one after."
     }
   }
 }

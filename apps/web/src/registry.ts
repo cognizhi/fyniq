@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, Contact, House, Inbox, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, Contact, House, Inbox, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -57,6 +57,14 @@ export const routes = [
   { kind: "route", id: "install", path: "/install", mode: "basic", signedIn: false, help: "installation.setup", guide: "installation.setup" },
   // The customer's view of a quote or invoice through the secure link its email carried (FR-AR-06, FR-AR-16): no sign-in.
   { kind: "route", id: "document-view", path: "/d", mode: "basic", signedIn: false, help: "public.document", guide: "sales.invoices#what-the-customer-sees" },
+  // My claims (FR-AP-14, FR-AP-18, FR-UX-39; p1-expense-claims task 8.1): a member's own claims, card lines and cash
+  // advances; /me is where a person whose rights are personal only lands.
+  { kind: "route", id: "personal", path: "/me", mode: "basic", signedIn: true, help: "claims.personal", guide: "claims.my-claims" },
+  { kind: "route", id: "my-claims", path: "/me/claims", mode: "basic", signedIn: true, help: "claims.my-claims", guide: "claims.my-claims" },
+  { kind: "route", id: "claim-new", path: "/me/claims/new", mode: "basic", signedIn: true, help: "claim.new", guide: "claims.my-claims#claim-a-receipt" },
+  { kind: "route", id: "claim", path: "/me/claims/$claimId", mode: "basic", signedIn: true, help: "claims.claim", guide: "claims.my-claims#submit-a-claim" },
+  { kind: "route", id: "mileage-claim", path: "/me/claims/new/mileage", mode: "basic", signedIn: true, help: "claim.new-mileage", guide: "claims.my-claims#claim-a-trip-in-your-own-vehicle" },
+  { kind: "route", id: "claim-trips", path: "/me/claims/$claimId/mileage", mode: "basic", signedIn: true, help: "claims.trips", guide: "claims.my-claims#claim-a-trip-in-your-own-vehicle" },
   { kind: "route", id: "inbox", path: "/inbox", mode: "basic", signedIn: true, help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
   { kind: "route", id: "approval", path: "/approvals/$approvalId", mode: "basic", signedIn: true, help: "approvals.request", guide: "approvals.decide#approve-or-reject" },
   { kind: "route", id: "review-log", path: "/review-log", mode: "basic", signedIn: true, help: "approvals.review-log", guide: "approvals.decide#review-high-risk-actions" },
@@ -78,6 +86,9 @@ export const routes = [
   { kind: "route", id: "bill-new", path: "/purchases/bills/new", mode: "basic", signedIn: true, help: "bill.new", guide: "purchases.bills#enter-a-bill" },
   { kind: "route", id: "credit-new", path: "/purchases/credits/new", mode: "basic", signedIn: true, help: "credit.new", guide: "purchases.bills#credit-notes" },
   { kind: "route", id: "bill", path: "/purchases/bills/$billId", mode: "basic", signedIn: true, help: "purchases.bill", guide: "purchases.bills#check-and-post-a-bill" },
+  // The approver's queue and a claim opened from it (FR-AP-17, FR-APR-01; p1-expense-claims task 8.2): both modes.
+  { kind: "route", id: "claims-review", path: "/purchases/claims", mode: "basic", signedIn: true, help: "claims.review", guide: "claims.approve-team#approve-or-return-a-claim" },
+  { kind: "route", id: "claim-review", path: "/purchases/claims/$claimId", mode: "basic", signedIn: true, help: "claims.review-claim", guide: "claims.approve-team#approve-or-return-a-claim" },
   { kind: "route", id: "purchase-orders", path: "/purchases/orders", mode: "basic", signedIn: true, help: "purchases.orders", guide: "purchases.orders" },
   { kind: "route", id: "purchase-order-new", path: "/purchases/orders/new", mode: "basic", signedIn: true, help: "order.new", guide: "purchases.orders#raise-an-order" },
   { kind: "route", id: "purchase-order", path: "/purchases/orders/$orderId", mode: "basic", signedIn: true, help: "purchases.order", guide: "purchases.orders#approve-an-order" },
@@ -114,6 +125,7 @@ export const routes = [
   { kind: "route", id: "settings-members", path: "/settings/members", mode: "expert", signedIn: true, help: "settings.members", guide: "settings.members" },
   { kind: "route", id: "settings-team-mode", path: "/settings/team-mode", mode: "expert", signedIn: true, help: "settings.team-mode", guide: "settings.team-mode" },
   { kind: "route", id: "settings-approval-policies", path: "/settings/approval-policies", mode: "expert", signedIn: true, help: "settings.approval-policies", guide: "approvals.policies" },
+  { kind: "route", id: "settings-expense-policy", path: "/settings/expense-policy", mode: "expert", signedIn: true, help: "settings.expense-policy", guide: "claims.approve-team#set-the-expense-policy" },
   { kind: "route", id: "settings-templates", path: "/settings/templates", mode: "basic", signedIn: true, help: "settings.templates", guide: "settings.templates" },
   { kind: "route", id: "settings-notifications", path: "/settings/notifications", mode: "basic", signedIn: true, help: "settings.notifications", guide: "settings.notifications" },
   { kind: "route", id: "settings-announcements", path: "/settings/announcements", mode: "expert", signedIn: true, help: "settings.announcements", guide: "settings.announcements" },
@@ -191,6 +203,17 @@ export const actions = [
   { kind: "action", id: "chart.add", mode: "expert", help: "chart.add", guide: "accounting.chart#add-an-account" },
   { kind: "action", id: "chart.load-standard", mode: "expert", help: "chart.load-standard", guide: "accounting.chart#start-from-the-standard-chart" },
   { kind: "action", id: "bill.save", mode: "basic", help: "bill.save", guide: "purchases.bills#enter-a-bill" },
+  { kind: "action", id: "claims.owed", mode: "basic", help: "claims.owed", guide: "claims.my-claims#follow-your-claims" },
+  { kind: "action", id: "expense-policy.add", mode: "expert", help: "expense-policy.add", guide: "claims.approve-team#set-the-expense-policy" },
+  { kind: "action", id: "expense-policy.load-starter", mode: "expert", help: "expense-policy.load-starter", guide: "claims.approve-team#set-the-expense-policy" },
+  { kind: "action", id: "claims.export", mode: "basic", help: "claims.export", guide: "claims.my-claims#follow-your-claims" },
+  { kind: "action", id: "claims.mileage-log", mode: "basic", help: "claims.mileage-log", guide: "claims.my-claims#claim-a-trip-in-your-own-vehicle" },
+  { kind: "action", id: "claim.save", mode: "basic", help: "claim.save", guide: "claims.my-claims#claim-a-receipt" },
+  { kind: "action", id: "claim.submit", mode: "basic", help: "claim.submit", guide: "claims.my-claims#submit-a-claim" },
+  { kind: "action", id: "claim.withdraw", mode: "basic", help: "claim.withdraw", guide: "claims.my-claims#submit-a-claim" },
+  { kind: "action", id: "claim.attach-evidence", mode: "basic", help: "claim.attach-evidence", guide: "claims.my-claims#attach-the-receipt" },
+  { kind: "action", id: "card-line.complete", mode: "basic", help: "card-line.complete", guide: "claims.my-claims#complete-your-company-card-lines" },
+  { kind: "action", id: "card-line.attach-evidence", mode: "basic", help: "card-line.attach-evidence", guide: "claims.my-claims#complete-your-company-card-lines" },
   { kind: "action", id: "bill.post", mode: "basic", help: "bill.post", guide: "purchases.bills#check-and-post-a-bill" },
   { kind: "action", id: "bill.ask-approval", mode: "basic", help: "bill.ask-approval", guide: "purchases.bills#bills-above-the-self-approval-threshold" },
   { kind: "action", id: "bill.void", mode: "basic", help: "bill.void", guide: "purchases.bills#void-or-edit-a-posted-bill" },
@@ -333,12 +356,14 @@ export const actions = [
 // module adds its item with its first screen; the sidebar holds at most 13 (§7.1).
 export const nav = [
   { kind: "nav", id: "nav.home", route: "/", icon: House, group: "main", roles: "all", bottom: true, mode: "basic", help: "home.overview", guide: "home.overview" },
+  { kind: "nav", id: "nav.my-claims", route: "/me/claims", icon: Wallet, group: "personal", roles: ["employee"], mode: "basic", help: "claims.my-claims", guide: "claims.my-claims" },
   { kind: "nav", id: "nav.inbox", route: "/inbox", icon: Inbox, group: "main", roles: "all", bottom: true, mode: "basic", help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
   { kind: "nav", id: "nav.contacts", route: "/contacts", icon: Contact, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "accountant", "controller", "owner", "auditor", "tax_agent", "dpo"], mode: "basic", help: "contacts.overview", guide: "contacts.manage" },
   { kind: "nav", id: "nav.sales", route: "/sales/invoices", icon: Receipt, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "basic", help: "nav.sales", guide: "sales.invoices" },
   // Accounting is Expert (experience/modes "Basic and Expert navigation"); its first page is the chart.
   { kind: "nav", id: "nav.purchases", route: "/purchases/bills", icon: ReceiptText, group: "main", roles: ["approver", "bookkeeper", "ap_specialist", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "basic", help: "nav.purchases", guide: "purchases.bills" },
   // Banking shows to the roles that may view bank transactions (Appendix D, V or more); the API decides the rest.
+  { kind: "nav", id: "nav.claims-review", route: "/purchases/claims", icon: ReceiptText, group: "main", roles: ["approver", "controller", "accountant", "ap_specialist", "bookkeeper", "owner", "auditor", "tax_agent"], mode: "basic", help: "claims.review", guide: "claims.approve-team#approve-or-return-a-claim" },
   { kind: "nav", id: "nav.banking", route: "/banking", icon: Landmark, group: "main", roles: ["bookkeeper", "accountant", "controller", "owner", "ar_specialist", "ap_specialist", "payment_releaser", "auditor", "tax_agent"], mode: "basic", help: "banking.accounts", guide: "banking.accounts" },
   { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },
   { kind: "nav", id: "nav.settings", route: "/settings", icon: Settings, group: "footer", roles: "all", mode: "basic", help: "settings.overview", guide: "home.overview#settings" },
@@ -356,6 +381,7 @@ export const settingsNav = [
   { kind: "nav", id: "settings.team-mode", route: "/settings/team-mode", icon: ShieldCheck, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.team-mode", guide: "settings.team-mode" },
   { kind: "nav", id: "settings.approval-policies", route: "/settings/approval-policies", icon: Stamp, group: "organisation", roles: ["owner", "administrator", "controller", "accountant", "auditor", "dpo"], mode: "expert", help: "settings.approval-policies", guide: "approvals.policies" },
   { kind: "nav", id: "settings.statutory-packs", route: "/settings/statutory-packs", icon: Scale, group: "organisation", roles: ["owner", "controller", "accountant", "tax_agent", "payroll_administrator", "auditor"], mode: "expert", help: "settings.statutory-packs", guide: "settings.statutory-packs" },
+  { kind: "nav", id: "settings.expense-policy", route: "/settings/expense-policy", icon: Wallet, group: "organisation", roles: ["owner", "administrator", "controller", "approver", "accountant", "auditor"], mode: "expert", help: "settings.expense-policy", guide: "claims.approve-team#set-the-expense-policy" },
   { kind: "nav", id: "settings.templates", route: "/settings/templates", icon: LayoutTemplate, group: "organisation", roles: ["owner", "controller", "accountant", "ar_specialist", "ap_specialist", "auditor"], mode: "basic", help: "settings.templates", guide: "settings.templates" },
   { kind: "nav", id: "settings.integrations", route: "/settings/integrations", icon: Plug, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.integrations", guide: "settings.integrations" },
   { kind: "nav", id: "settings.announcements", route: "/settings/announcements", icon: Megaphone, group: "organisation", roles: ["owner", "administrator", "auditor"], mode: "expert", help: "settings.announcements", guide: "settings.announcements" },

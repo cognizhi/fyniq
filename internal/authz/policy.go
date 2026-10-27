@@ -503,7 +503,9 @@ var (
 	RequestCashAdvanceVoid  = Policy{Operation: "requestCashAdvanceVoid", Capability: PaymentBatches, Need: Create, Unqualified: true}
 	// A company card's lines are completed by its holder from My claims (FR-AP-18, design D9), under the Employee's "C (own)":
 	// the handlers narrow them to the cards the caller holds, and the categories to the expense policy's.
-	ListCardLines        = Policy{Operation: "listCardLines", Capability: ExpenseClaims, Need: Create}
+	ListCardLines = Policy{Operation: "listCardLines", Capability: ExpenseClaims, Need: Create}
+	// A claim's receipts take the GST codes of purchases (FR-AP-20), read by whoever claims or sees claims.
+	GetClaimGSTCodes     = Policy{Operation: "getClaimGSTCodes", Capability: ExpenseClaims, Need: View}
 	CompleteCardLine     = Policy{Operation: "completeCardLine", Capability: ExpenseClaims, Need: Create}
 	AddCardLineEvidence  = Policy{Operation: "addCardLineEvidence", Capability: ExpenseClaims, Need: Create}
 	ListCardLineEvidence = Policy{Operation: "listCardLineEvidence", Capability: ExpenseClaims, Need: Create}
@@ -935,7 +937,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListExpenseClaims, GetExpenseClaim, CreateExpenseClaim, ReplaceExpenseClaim, SubmitExpenseClaim, WithdrawExpenseClaim,
 	ListClaimReimbursements, GetClaimReimbursement, RecordClaimReimbursement, VoidClaimReimbursement, RequestClaimReimbursementVoid, GetExpenseClaimsOwed,
 	ListCashAdvances, GetCashAdvance, RecordCashAdvance, RecordCashAdvanceRefund, VoidCashAdvance, RequestCashAdvanceVoid,
-	ListCardLines, CompleteCardLine, AddCardLineEvidence, ListCardLineEvidence,
+	ListCardLines, CompleteCardLine, AddCardLineEvidence, ListCardLineEvidence, GetClaimGSTCodes,
 	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
 	ListClaimCategories, CreateClaimCategory, ReplaceClaimCategory, LoadStarterClaimCategories,
 	AddExpenseClaimEvidence, ListExpenseClaimEvidence, GetExpenseClaimEvidence, RemoveExpenseClaimEvidence,

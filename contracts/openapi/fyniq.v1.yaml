@@ -47881,6 +47881,105 @@ paths:
       x-fyniq-permission:
         capability: Expense claims
         right: C
+  /v1/expense-claims/gst-codes:
+    get:
+      description: "The GST codes a claim's receipt dated on the day given is read with (FR-AP-20, ENG-31), as a bill's are: the organisation's active sg-gst version in force then, else the one this release carries; its standard rate on the day; and each code for purchases with whether its input tax can be claimed. Read-only; no side effects."
+      operationId: getClaimGSTCodes
+      parameters:
+        - description: The bill's date; left out, the codes of the newest version.
+          explode: false
+          in: query
+          name: "on"
+          schema:
+            description: The bill's date; left out, the codes of the newest version.
+            examples:
+              - "2026-10-14"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseGSTCodes"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get the GST codes for a claim's receipts
+      tags:
+        - Expense claims
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Expense claims
+        right: V
   /v1/expense-claims/mileage-log:
     get:
       description: "The trips of a member's claims in a month, oldest first, each with its places, vehicle, the distance claimed to 0.1 km and its amount at the rate in force on its date (FR-AP-16's monthly mileage log): the caller's own, or another member's for a person who sees everyone's claims. Read-only; no side effects."

@@ -64,6 +64,9 @@ func checkClaim(ctx context.Context, u storage.UnitOfWork, doc storage.Document,
 			if x.Code == ledger.CodeUnknownAccount && probs.Has(claim.CodeCategory) {
 				continue // the line's category could not be read: CLAIM-05 says so, in place of the engine's LEDGER-04
 			}
+			if x.Code == ledger.CodeZeroLine && tripUnpriced(probs, x.Field) {
+				continue // a trip with no rate or distance has no amount yet: CLAIM-18 or CLAIM-19 says why, in place of LEDGER-03
+			}
 			out.Problems = append(out.Problems, x)
 		}
 	} else if err != nil {
@@ -78,6 +81,21 @@ func checkClaim(ctx context.Context, u storage.UnitOfWork, doc storage.Document,
 		}
 	}
 	return out, nil
+}
+
+// tripUnpriced says whether the preparation found why the line of field, such as "lines[2].amount", has no amount: a
+// trip with no rate per km for its vehicle, or one it cannot price.
+func tripUnpriced(probs ledger.Problems, field string) bool {
+	line, _, ok := strings.Cut(field, ".")
+	if !ok {
+		return false
+	}
+	for _, p := range probs {
+		if (p.Code == claim.CodeMileageRate || p.Code == claim.CodeMileage) && strings.HasPrefix(p.Field, line+".") {
+			return true
+		}
+	}
+	return false
 }
 
 func isClaim(doc storage.Document) error {

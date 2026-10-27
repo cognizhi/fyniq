@@ -7012,6 +7012,24 @@ Saves the caller's own claim as a draft (✎) at version 1, numbered from the cl
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `CLAIM-06`, `CLAIM-07`, `CLAIM-09`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `MONEY-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/expense-claims/gst-codes`
+
+**Get the GST codes for a claim's receipts** (`getClaimGSTCodes`)
+
+The GST codes a claim's receipt dated on the day given is read with (FR-AP-20, ENG-31), as a bill's are: the organisation's active sg-gst version in force then, else the one this release carries; its standard rate on the day; and each code for purchases with whether its input tax can be claimed. Read-only; no side effects.
+
+- **Permission:** View on Expense claims
+- **Parameters:**
+  - `on` (query): The bill's date; left out, the codes of the newest version.
+- **Responses:**
+  - `200` OK [`PurchaseGSTCodes`](../../contracts/schemas/PurchaseGSTCodes.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
 ### `GET /v1/expense-claims/mileage-log`
 
 **A member's mileage log for a month** (`getMileageLog`)
