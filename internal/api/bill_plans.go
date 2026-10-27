@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/payables"
+	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -70,11 +71,12 @@ func registerBillPlans(a *API) {
 		Summary: "Plan a bill's payment date",
 		Description: "Plans the date a posted bill is to be paid (FR-AP-13), or unschedules it when planned_on is left out. A plan is " +
 			"kept beside the bill: it posts nothing and changes no version of the bill, and a later plan replaces it (FY175). The " +
-			"bill must have something open, and the date be on or after the bill's (BILL-18). The bills board and the reminders " +
+			"bill must have something open, and the date be on or after the bill's (BILL-18). While a change of the supplier's bank " +
+			"details waits for approval, payments to it are frozen and no date is planned (PAYEE-12; FR-CT-03). The bills board and the reminders " +
 			"read it; recording the payment settles the bill. Side effects: the plan and an audit event on the bill. Needs " +
 			"If-Match with the bill's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, []string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeInvalid, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused,
-		CodeIdempotencyBusy, CodeIdempotencyOld, bill.CodeNotPosted, bill.CodePlan, storage.CodeRetry, storage.CodeLockTimeout},
+		CodeIdempotencyBusy, CodeIdempotencyOld, bill.CodeNotPosted, bill.CodePlan, payee.CodeFrozen, storage.CodeRetry, storage.CodeLockTimeout},
 		func(ctx context.Context, in *billPlanInput) (*billPlanOutput, error) {
 			id, err := parseID("bill_id", in.BillID)
 			if err != nil {
@@ -104,6 +106,13 @@ func registerBillPlans(a *API) {
 				}
 				if err := checkIfMatch(in.IfMatch, billETag(before)); err != nil {
 					return Bill{}, err
+				}
+				if on != nil { // FR-CT-03: no payment is planned to a vendor whose bank details wait for approval
+					if supplier, err := uuid.Parse(before.Supplier.ID); err == nil {
+						if err := payee.Frozen(ctx, u, supplier, a.deps.Clock.Now()); err != nil {
+							return Bill{}, err
+						}
+					}
 				}
 				if _, err := a.bills.PlanPayment(ctx, p.Organisation, id, on); err != nil {
 					return Bill{}, err

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_number": {
+      "description": "The full number, as kept: capital letters and digits. Do not copy it anywhere it would be kept.",
+      "examples": [
+        "0123456789"
+      ],
+      "type": "string"
+    },
+    "change_id": {
+      "description": "The change whose account it is.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5a10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "change_id",
+    "account_number"
+  ],
+  "title": "RevealedPayeeAccount",
+  "type": "object"
+}

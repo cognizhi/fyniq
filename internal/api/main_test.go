@@ -28,6 +28,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/outbox"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 )
 
@@ -108,7 +109,7 @@ func newEnv(t *testing.T) *env {
 	mux := http.NewServeMux()
 	e.api = New(mux, Deps{Store: store, Installation: store, Outbox: &outbox.Dispatcher{Store: store, Queue: e.queue, Clock: e.clock},
 		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test",
-		Staging: e.blobs, Scanner: local.EICARScanner{}, Origin: testOrigin, Renderer: testRenderer(t), Connectors: testConnectors(t, e.clock),
+		Staging: e.blobs, Scanner: local.EICARScanner{}, Fields: testFields(t), Origin: testOrigin, Renderer: testRenderer(t), Connectors: testConnectors(t, e.clock),
 		Mail: MailInfo{Providers: []string{"zeptomail", "resend"}, From: "Fyniq <no-reply@mail.example.com>", Domains: []string{"mail.example.com", "example.org"},
 			CaptureDomain: "in.example.com",
 			Check: func(context.Context) ([]maildns.Result, time.Time) {
@@ -119,6 +120,15 @@ func newEnv(t *testing.T) *env {
 	e.srv = httptest.NewServer(mux)
 	t.Cleanup(e.srv.Close)
 	return e
+}
+
+// testFields are the tests' field keys (SEC-11): local mode's adapter on fixed bytes.
+func testFields(t *testing.T) ports.Cipher {
+	f, err := local.NewFieldKeys(bytes.Repeat([]byte{7}, 64))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return f
 }
 
 // as returns a token for a principal in this environment's organisation holding roles.

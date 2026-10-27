@@ -105,8 +105,10 @@
   supersedes "refused until the approval engine" in FR-ORG-08 and FR-ADM-01. Rev 0.41: pack activation (ENG-32) goes
   through the engine as the object type `statutory_pack` (dependencies: the loaded digest and dates, and whether it is
   activated), approved by A on "Statutory parameters", with its pinned tests run again before the activation is
-  recorded. **Left:** vendor bank details, account merges, the rest of FR-ADM-04 and Owner changes, as those features
-  land.)
+  recorded. 27 Oct 2026 (rev 0.153): vendor bank details go through the engine as `payee_bank_change` with
+  `payee_bank_change.approve`, approved by A on "Vendor bank details" by someone who neither prepared nor asked for the
+  change, in every team mode (FY237). **Left:** account merges, the rest of FR-ADM-04 and Owner changes, as those
+  features land.)
 
 ## 5. Screens
 

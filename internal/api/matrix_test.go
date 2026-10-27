@@ -2368,7 +2368,7 @@ func TestAuthorisationMatrix(t *testing.T) {
 	e := newEnv(t)
 	_, rows := authztest.AppendixD(t)
 	policies := e.api.Policies()
-	for _, rows := range []map[string]func(e *env, tok string) (response, func() bool){matrixBanking, matrixBankLines, matrixBankRules, matrixBankIngest, matrixBankSignals, matrixClaims, matrixReimbursements, matrixMileage, matrixCategories, matrixClaimEvidence, matrixAdvances, matrixCards, matrixAssets, matrixDisposals} {
+	for _, rows := range []map[string]func(e *env, tok string) (response, func() bool){matrixBanking, matrixBankLines, matrixBankRules, matrixBankIngest, matrixBankSignals, matrixClaims, matrixReimbursements, matrixMileage, matrixCategories, matrixClaimEvidence, matrixAdvances, matrixCards, matrixAssets, matrixDisposals, matrixPayee} {
 		for op, call := range rows {
 			matrixCalls[op] = call
 		}

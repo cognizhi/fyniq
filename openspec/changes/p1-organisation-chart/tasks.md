@@ -109,11 +109,19 @@
   their last four digits and a keyed fingerprint; the full number revealed after step-up, audited. First slice: the
   `Cipher` port (SEC-11), `internal/fieldseal`, its local adapter and `gcp.KMSFields` on the KMS keys `fields` and
   `fingerprints` (`infra/gcp/modules/environment/fields.tf`, [live-verify] in the dev cloud). Tests:
-  `TestTheEnvelopeSealsBoundToTheRecord`, `TestFieldKeysConformance`, `TestKMSFieldsConformance`. **Left:** the bank
-  accounts themselves, their approval, the notice and the freeze; the screens.)
+  `TestTheEnvelopeSealsBoundToTheRecord`, `TestFieldKeysConformance`, `TestKMSFieldsConformance`. Second slice (rev
+  0.153): the change as a `payee_bank_change` document with its sealed `payee_bank_account` (migrations 000180, 000181;
+  FY237, FY238), ten operations under "Vendor bank details" and "Evidence", the required letter, the freeze on planning
+  (and ⚠ on recording) a payment, the founders' security notice, approval through the engine by someone who neither
+  prepared nor asked for it (`payee_bank_change.approve`), the reveal. Tests: `TestAChangeOfBankDetailsNeedsASecondPerson`,
+  `TestABankDetailsChangeIsChecked`, `TestAttackBankDetailsChangeOnlyByApproval`, `TestAttackPayeeBankAccountsKeepTheirChange`,
+  `TestAChangesAccountIsChecked`, `TestANumberIsSealedForItsChange`, the matrix's rows. Threat model
+  `docs/security/threat-models/vendor-bank-details.md`. **Left:** the screens (contact record's Bank details tab,
+  bank-details-change); payment batches refusing a vendor whose change waits come with `p1-payments-out`.)
 - [ ] 4.3 Duplicate detection on name, UEN, email and bank account (`// req: FR-CT-04`), and items with prices per currency (`// req: FR-ITM-01`)
   (20 Oct 2026: duplicates on the name (case and spacing aside), the UEN or tax ID and the emails are flagged on every
-  contact read and write, never refused; the bank account joins them with task 4.2. Items, 20 Oct 2026: migration 000027
+  contact read and write, never refused; the bank account joins them with task 4.2 (27 Oct 2026: built, rev 0.153: the
+  same account in force at another vendor is a warning on the change, PAYEE-17). Items, 20 Oct 2026: migration 000027
   adds `fyniq.item` (code, never changed; name, printed description, product or service, unit, revenue account, GST code,
   active flag; mutable at its version, audited, never deleted) and `fyniq.item_price`, one unit price per currency as
   NUMERIC(20,6) (§11.3), never NaN or below zero, replaced with the item and audited with it. `GET`/`POST /v1/items`,

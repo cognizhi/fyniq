@@ -50,6 +50,8 @@ type Deps struct {
 	// FR-DOC-01); without either, no file can be attached.
 	Staging ports.BlobStore
 	Scanner ports.Scanner
+	// Fields seals the most sensitive fields (SEC-11): vendors' bank account numbers. Nil: no bank details can be kept.
+	Fields ports.Cipher
 	// Renderer is the private render service (§12.3, rev 0.96): previews, and a publication's test documents (FR-TPL-03).
 	// Nil: no document previews, and no template with IRAS particulars publishes.
 	Renderer render.Renderer
@@ -271,6 +273,8 @@ func New(mux humago.Mux, d Deps) *API {
 	registerRecurringBills(a)
 	registerRecurringInvoices(a)
 	registerBillEvidence(a)
+	registerPayeeBankDetails(a)
+	registerPayeeBankChangeEvidence(a)
 	registerInvoices(a)
 	registerInvoiceDocuments(a)
 	registerDocumentSends(a)

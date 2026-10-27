@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_name": {
+      "description": "The name on the account, as the bank holds it.",
+      "examples": [
+        "Northwind Analytics Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "account_number_last4": {
+      "description": "The account number's last four characters. The full number is never in a list or a record: revealPayeeBankAccount shows it, after step-up, and the reveal is audited (SEC-11).",
+      "examples": [
+        "6789"
+      ],
+      "type": "string"
+    },
+    "bank_country": {
+      "description": "The bank's country, ISO 3166 two-letter code.",
+      "examples": [
+        "SG"
+      ],
+      "type": "string"
+    },
+    "bic": {
+      "description": "The bank's SWIFT/BIC code.",
+      "examples": [
+        "DBSSSGSG"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "description": "The currency paid into it.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "singapore: a Singapore bank's account, paid by FAST or GIRO; overseas: a bank's account outside Singapore, paid by telegraphic transfer.",
+      "enum": [
+        "singapore",
+        "overseas"
+      ],
+      "examples": [
+        "singapore"
+      ],
+      "type": "string"
+    },
+    "number_kind": {
+      "description": "Whether the number is an IBAN.",
+      "enum": [
+        "account",
+        "iban"
+      ],
+      "examples": [
+        "account"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "kind",
+    "bic",
+    "bank_country",
+    "account_name",
+    "number_kind",
+    "account_number_last4"
+  ],
+  "title": "PayeeAccount",
+  "type": "object"
+}

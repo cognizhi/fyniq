@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_name": {
+      "description": "The name on the account, as the bank holds it.",
+      "examples": [
+        "Northwind Analytics Pte. Ltd."
+      ],
+      "maxLength": 140,
+      "type": "string"
+    },
+    "account_number": {
+      "description": "The full number as the vendor's letter prints it; spaces and hyphens are dropped. A Singapore account: 6 to 17 digits. Overseas: 4 to 34 letters and digits, or an IBAN, whose check digits are checked. Needed to prepare a change; left out when replacing a draft, the number saved before stays (unless the bank changes). Sealed on save, never logged or audited (SEC-11).",
+      "examples": [
+        "0123456789"
+      ],
+      "maxLength": 40,
+      "type": "string"
+    },
+    "bank_country": {
+      "description": "The bank's country, ISO 3166 two-letter code.",
+      "examples": [
+        "SG"
+      ],
+      "maxLength": 2,
+      "minLength": 2,
+      "type": "string"
+    },
+    "bic": {
+      "description": "The bank's SWIFT/BIC code, 8 or 11 characters, whose country is the bank's.",
+      "examples": [
+        "DBSSSGSG"
+      ],
+      "maxLength": 11,
+      "minLength": 8,
+      "type": "string"
+    },
+    "callback_note": {
+      "description": "Who you called back, when, and on which number: one you knew before, never one from the letter (recommended evidence, FR-DOC-06).",
+      "examples": [
+        "Called Jane Tan, Northwind finance, on 6123 4567 from our records, 27 Oct 2026 10:15"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "currency": {
+      "description": "The currency paid into the account: a change is for one currency, and keeps it.",
+      "examples": [
+        "SGD"
+      ],
+      "maxLength": 3,
+      "minLength": 3,
+      "type": "string"
+    },
+    "kind": {
+      "description": "singapore: a Singapore bank (bank_country SG); overseas: a bank outside Singapore.",
+      "enum": [
+        "singapore",
+        "overseas"
+      ],
+      "examples": [
+        "singapore"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "kind",
+    "bic",
+    "bank_country",
+    "account_name"
+  ],
+  "title": "PayeeBankChangeDraft",
+  "type": "object"
+}

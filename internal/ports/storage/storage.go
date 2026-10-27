@@ -111,6 +111,8 @@ type UnitOfWork interface {
 	ClaimPlaces() ClaimPlaces
 	// AssetSources are the bill lines and bank lines registered assets came from (FR-FA-01).
 	AssetSources() AssetSources
+	// PayeeBankAccounts are the account numbers of the changes of vendors' bank details (FR-CT-03).
+	PayeeBankAccounts() PayeeBankAccounts
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))
@@ -480,6 +482,9 @@ const (
 	// DocumentAssetDisposal is the sale or write-off of an asset, or of a share of its cost, posted by asset_disposal@1
 	// (FR-FA-03; design D4).
 	DocumentAssetDisposal DocumentType = "asset_disposal"
+	// DocumentPayeeBankChange is a change of a vendor's bank account in one currency (FR-CT-03; rev 0.152): approved by a
+	// second person, it posts no entry.
+	DocumentPayeeBankChange DocumentType = "payee_bank_change"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -651,7 +656,11 @@ const (
 	CodeClaim = "STORAGE-CLAIM-01"
 	// CodeAsset: an asset comes from one line of a posted bill or bank line that debits an asset account, once, and
 	// keeps it; a month's depreciation names a registered asset at its current version (FR-FA-01, FR-FA-02).
-	CodeAsset          = "STORAGE-ASSET-01"
+	CodeAsset = "STORAGE-ASSET-01"
+	// CodePayee: a vendor's bank account belongs to a draft change of its bank details, comes into force only with the
+	// change approved by a second person, goes out of force only when a later change is, and is never changed or
+	// deleted otherwise (FR-CT-03, SOD-1, FM-1).
+	CodePayee          = "STORAGE-PAYEE-01"
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
 	CodeBanner         = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends
