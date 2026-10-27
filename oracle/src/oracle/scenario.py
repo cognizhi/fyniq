@@ -48,6 +48,7 @@ _CURRENCY = re.compile(r"[A-Z]{3}")
 _ACCOUNT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,31}")
 _DOCUMENT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
 _PERCENT = re.compile(r"(0|[1-9][0-9]{0,2})(\.[0-9]{1,4})?")
+_PLAIN_DECIMAL = re.compile(r"[0-9]{1,12}(\.[0-9]{1,4})?")
 
 # The keys whose string values are dates, wherever they appear in a P1 document or the settings.
 _DATE_KEYS = frozenset({"date", "from", "to", "service_start", "depreciate_from", "registered_from",
@@ -244,6 +245,8 @@ def _settings(raw: dict[str, Any], accounts: dict[str, Account], currencies: dic
             raise ScenarioError(f"settings/money_accounts: {code!r} is not in accounts")
         if currency not in currencies:
             raise ScenarioError(f"settings/money_accounts/{code}: {currency} is not in currencies")
+    for key, value in raw.get("tolerance", {}).items():
+        _shape(_PLAIN_DECIMAL, value, f"settings/tolerance/{key}")
     gst_raw = raw.get("gst", {})
     rates = []
     for i, rate in enumerate(gst_raw.get("rates", [])):

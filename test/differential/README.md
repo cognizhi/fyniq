@@ -161,8 +161,11 @@ A scenario with a P1 document must have `settings` and `as_of`, or it is invalid
   ones are the future and never post.
 - `settings.accounts` names the system accounts by key (Appendix B.5): `receivable` (1100), `payable`
   (2010), `gst` (2200), `prepayments` (1210), `deferred_revenue` (2400), `fx` (7030), `bank_charges`
-  (6460, a setting). Each named account must be in `accounts`. A document that needs a key the
-  organisation has not set is rejected.
+  (6460, a setting), `withholding_tax` (2330). Each named account must be in `accounts`. A document
+  that needs a key the organisation has not set is rejected.
+- `settings.tolerance` holds the settlement tolerances of FR-BNK-08 (open question 32), each a plain
+  decimal: `base` (S$1.00), `percent` (3), `per_document` (S$50.00) and `per_month` (S$200.00); a key
+  left out takes that default.
 - `settings.money_accounts` maps each bank, card, wallet or cash account to the currency it holds
   (FR-BNK-01); each must be in `accounts` and its currency in `currencies`.
 - `settings.gst` holds the registration, `registered_from` and `registered_to` (both inclusive; no
@@ -236,6 +239,52 @@ paid, to `bank_charges`; whatever is left to 7030. It is rejected when a leg is 
 its currency, both legs are one account, an amount is not positive, the fee is not below what was paid,
 or, in one currency, what was paid is not what was received plus the fee.
 
+### Bills (`bill`, `bill@1`), vendor credits (`vendor_credit`, `vendor_credit@1`) and payments of bills (`bill_payment`, `bill_payment@1`)
+
+From §10.2, Appendix B.2, ENG-42, FR-AP-02, FR-AP-03, FR-AP-19, FR-AP-20, FR-GL-03, FR-BNK-08 and the rows
+of rev 0.74 to 0.93.
+
+```json
+{"type": "bill", "id": "BILL-0001", "version": 1, "date": "2026-03-05", "currency": "USD",
+ "fx_rate": "1.34", "fx_rate_source": "document",
+ "lines": [{"account": "6010", "amount": "1000.00", "gst_code": "TX", "gst": "90.00", "gst_base": "121.50"},
+           {"account": "6110", "quantity": "3", "unit_price": "12.345678", "gst_code": "NR",
+            "spread_months": 12, "spread_from": "2026-01-01"}]}
+```
+
+A line's net is its `amount`, or `RND-LINE` of `quantity` × `unit_price` (with `quantity_before`, what
+earlier bills took of a purchase order's line, the part's `RND-LINE` difference). `gst` is the GST the
+tax invoice states in the bill's currency (0 when absent); `gst_base`, on a bill in another currency,
+the GST it states in the base currency (ENG-42); `business_share` the percent claimable (100 when
+absent). A line's GST is claimable when its code is TX or IM and the organisation is registered on the
+bill's date; then 2200 takes `RND-GST-SHARE` of the stated GST (of `gst_base` for a bill in another
+currency, and nothing when it states none) and the rest of the GST stays in the line's cost. The cost,
+net plus the GST not claimed, goes to the line's account at `RND-FX`, or, spread (an expense line, 1 to
+120 months, from the month of `spread_from`, by default the bill's), to 1210 in the base currency,
+released monthly. 2010 takes the total (nets and stated GST) at `RND-FX`, less, with `withholding`
+(`{"percent": "15"}`), the supplier's amount withheld, while 2330 takes `RND-WHT` of the net total in the
+base currency. 7030 takes what balances the entry. A vendor credit posts a bill's legs negated and is
+never spread or withheld. A bill is rejected when it has no lines, a line has both or neither of an
+amount and a quantity, its total is not positive, a spread is not on an expense with a cost, or
+`gst_base` is on a base-currency bill.
+
+```json
+{"type": "bill_payment", "id": "PAY-0001", "version": 1, "date": "2026-03-20", "account": "1021",
+ "currency": "USD", "fx_rate": "1.30", "fx_rate_source": "document",
+ "parts": [{"document": "BILL-0001", "amount": "1090.00"}], "unapplied": "10.00"}
+```
+
+A payment settles posted bills in its currency, at most what each has open (what it owes after
+withholding, less what earlier payments settled): 2010 takes each part at the bill's stored rate, and
+the part that settles what is left of a bill clears all that is left of its 2010 line (the residual).
+A part `in_full` settles all that is open though it pays less, when the difference is within the
+tolerances (above). `unapplied` stays on 2010 as a credit with the supplier, at the payment's rate.
+The money account takes the total at the payment's rate when it holds the bills' currency; a
+base-currency account paying bills in another currency gives what it paid (`base_amount`) or a rate.
+7030 takes what balances the entry (realised FX, the `RND-FX` cents, a difference in full). It is
+rejected when a part names no posted bill, a bill twice or a bill in another currency, a part is above
+what is open, a difference is beyond tolerance, or it settles nothing.
+
 ### P1 readings
 
 Where PRD-001 leaves a P1 shape open, the oracle reads it as below. The generator does not produce
@@ -250,6 +299,10 @@ difference, which the PRD then settles.
 | The cross-currency transfer rule | Each leg at its own rate, the fee to bank charges, the rest to 7030 | Rev 0.140; the accountant has not confirmed it yet | Generated |
 | A release in the document's own month | Dated the document's day (never before the deferral it releases) | FR-GL-03 (rev 0.83: "the bill's date for months before it") | Generated |
 | A money-out part coded SR, or a money-in part coded TX or IM | GST at the code, whatever the direction | Appendix B.1 | Not generated |
+| The tolerance of a foreign bill paid in full | 3% of what it owes at its stored rate (its 2010 line) | FR-BNK-08 (rev 0.121: "3% of the document's total at its stored rate") | Not generated (only base-currency bills in full) |
+| The month's differences across sources | Bills' and invoices' differences share the month's cap, in absolute value | FR-BNK-08 ("with the month's earlier differences") | Generated (always within the cap) |
+| An unapplied amount from a base-currency account paying foreign bills | At the rate the payment implies (`RND-RATE` of what it paid ÷ the total) | Rev 0.77 | Not generated |
+| A bill's lines in another currency | The cost lines in the bill's currency; 2200, 1210 and 7030 in the base currency | Appendix B.2 ("net in document currency"), rev 0.83 | Generated |
 
 ## Commands
 

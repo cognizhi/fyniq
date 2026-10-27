@@ -72,6 +72,7 @@ P1_ACCOUNTS = [
     {"code": "1500", "type": "asset", "group": False, "active": True},  # equipment
     {"code": "2010", "type": "liability", "group": False, "active": True},
     {"code": "2200", "type": "liability", "group": False, "active": True},
+    {"code": "2330", "type": "liability", "group": False, "active": True},
     {"code": "2400", "type": "liability", "group": False, "active": True},
     {"code": "2999", "type": "liability", "group": False, "active": True},
     {"code": "3010", "type": "equity", "group": False, "active": True, "role": "share-capital"},
@@ -92,6 +93,7 @@ P1_SETTINGS = {
         "deferred_revenue": "2400",
         "fx": "7030",
         "bank_charges": "6460",
+        "withholding_tax": "2330",
     },
     "money_accounts": {"1010": "SGD", "1011": "SGD", "1021": "USD", "1090": "SGD"},
     "gst": {"registered_from": "2025-01-01", "rates": [{"from": "2023-01-01", "percent": "8"}, {"from": "2024-01-01", "percent": "9"}]},
@@ -158,4 +160,40 @@ def transfer(doc_id: str, day: str, paying: dict, receiving: dict, fee: str | No
     doc = {"type": "bank_transfer", "id": doc_id, "version": 1, "date": day, "from": paying, "to": receiving}
     if fee is not None:
         doc["fee"] = fee
+    return doc
+
+
+def bill_line(account: str, amount: str | None = None, gst_code: str = "TX", gst: str | None = None, **more: Any) -> dict:
+    result: dict[str, Any] = {"account": account, "gst_code": gst_code}
+    if amount is not None:
+        result["amount"] = amount
+    if gst is not None:
+        result["gst"] = gst
+    result.update(more)
+    return result
+
+
+def bill(doc_id: str, day: str, currency: str, *lines: dict, rate: str | None = None, kind: str = "bill",
+         **more: Any) -> dict:
+    doc: dict[str, Any] = {"type": kind, "id": doc_id, "version": 1, "date": day, "currency": currency,
+                           "lines": list(lines)}
+    if rate is not None:
+        doc["fx_rate"], doc["fx_rate_source"] = rate, "document"
+    doc.update(more)
+    return doc
+
+
+def settlement(kind: str, doc_id: str, day: str, account: str, currency: str, *parts: tuple, rate: str | None = None,
+               **more: Any) -> dict:
+    """``parts``: (document, amount) or (document, amount, in_full)."""
+    doc: dict[str, Any] = {"type": kind, "id": doc_id, "version": 1, "date": day, "account": account,
+                           "currency": currency, "parts": []}
+    for p in parts:
+        item = {"document": p[0], "amount": p[1]}
+        if len(p) > 2:
+            item["in_full"] = p[2]
+        doc["parts"].append(item)
+    if rate is not None:
+        doc["fx_rate"], doc["fx_rate_source"] = rate, "document"
+    doc.update(more)
     return doc

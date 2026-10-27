@@ -13,6 +13,7 @@ from hypothesis import given
 from oracle import money
 from oracle.ledger import Ledger
 from oracle.scenario import parse_json, scenario_from_json
+from oracle.sources.settle import OpenItem
 from oracle.strategies import POST, REJECT
 from oracle.strategies_p1 import SOURCES, p1_scenarios, p1_scenarios_with_intent
 
@@ -82,6 +83,28 @@ def test_p1_scenarios_and_results_survive_a_round_trip_and_are_deterministic(dat
     assert date.fromisoformat(data["as_of"]) >= max(date.fromisoformat(d["date"]) for d in data["documents"])
 
 
+# req: INV-07
+@given(p1_scenarios(("purchases",)))
+def test_the_ap_sub_ledger_equals_2010_in_each_currency_and_in_base(data):
+    # Open bills owe what is left of them; vendor credits and unapplied payments are credits with the
+    # supplier. Their sum, read from the oracle's books, is what 2010's lines add up to.
+    ledger = Ledger(scenario_from_json(data))
+    payable = data["settings"]["accounts"]["payable"]
+    by_currency: dict[str, Decimal] = {}
+    base = Decimal(0)
+    for item in ledger.books.values():
+        if not isinstance(item, OpenItem) or item.control != payable:
+            continue
+        owes = item.type == "bill"
+        amount = -item.open if owes else item.total
+        by_currency[item.currency] = by_currency.get(item.currency, Decimal(0)) + amount
+        base += -item.open_base if owes else item.carrying
+    lines = [ln for e in ledger.entries for ln in e.lines if ln.account == payable]
+    assert sum((ln.base_amount for ln in lines), Decimal(0)) == base
+    for currency in {ln.currency for ln in lines} | set(by_currency):
+        assert sum((ln.amount for ln in lines if ln.currency == currency), Decimal(0)) == by_currency.get(currency, 0)
+
+
 # req: QA-ENG-02
 def test_every_source_has_generator_kinds():
-    assert SOURCES == ("bank",)
+    assert SOURCES == ("bank", "purchases")

@@ -13,11 +13,14 @@ from typing import Any
 from oracle.book import Posting
 from oracle.rules import Rules
 from oracle.scenario import Source
-from oracle.sources import bank
+from oracle.sources import bank, purchases
 
 RuleSet = Callable[[Rules, Source, dict[str, Any]], Posting]
 
 RULE_SETS: dict[str, RuleSet] = {
     "bank_transaction": bank.transaction,
     "bank_transfer": bank.transfer,
+    "bill": purchases.bill,
+    "vendor_credit": purchases.vendor_credit,
+    "bill_payment": purchases.bill_payment,
 }

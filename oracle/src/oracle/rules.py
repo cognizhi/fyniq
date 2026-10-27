@@ -22,6 +22,7 @@ source shares:
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from datetime import date
 from decimal import Decimal
@@ -34,6 +35,10 @@ from oracle.scenario import Account, Scenario
 GST_CODES = frozenset({"SR", "ZR", "ES", "OS", "TX", "IM", "ZP", "BL", "NR", "EP", "OP", "NA"})
 STANDARD_RATED = frozenset({"SR", "TX", "IM"})
 MAX_SPREAD_MONTHS = 120  # FR-GL-03: 1 to 120 months
+QUANTITY_DECIMALS = 6  # ENG-11: quantities and unit prices with up to 6 decimal places
+QUANTITY_LIMIT = Decimal(10) ** 14  # NUMERIC(20,6): at most 14 integer digits
+PERCENT_DECIMALS = 2  # a discount, a business share, a withholding rate: at most two decimals
+_PLAIN = re.compile(r"[0-9]+(?:\.[0-9]+)?")
 
 
 def add_months(first: date, months: int) -> date:
@@ -97,6 +102,24 @@ class Rules:
         if base.copy_abs() >= money.AMOUNT_LIMIT:
             raise Rejected("base-out-of-range")  # ENG-44: never truncated
         return base
+
+    def quantity(self, text: str, *, zero: bool = False) -> Decimal:
+        """A quantity or unit price: plain, positive (or zero when allowed), at most 6 decimals (ENG-11)."""
+        if not _PLAIN.fullmatch(text) or len(text.partition(".")[2]) > QUANTITY_DECIMALS:
+            raise Rejected("bad-quantity")
+        value = Decimal(text)
+        if value >= QUANTITY_LIMIT or (value.is_zero() and not zero):
+            raise Rejected("bad-quantity")
+        return value
+
+    def percent(self, text: str) -> Decimal:
+        """A percentage from 0 to 100 with at most two decimals (a discount, a business share, a rate)."""
+        if not _PLAIN.fullmatch(text) or len(text.partition(".")[2]) > PERCENT_DECIMALS:
+            raise Rejected("bad-percent")
+        value = Decimal(text)
+        if value > money.HUNDRED:
+            raise Rejected("bad-percent")
+        return value
 
     # ---------------------------------------------------------------- accounts
     def account(self, code: str) -> Account:
