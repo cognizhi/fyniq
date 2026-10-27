@@ -20,6 +20,8 @@ type Kit struct {
 	Jobs   ports.JobRunner
 	Blobs  ports.BlobStore
 	Signer ports.Signer
+	// Fields seals the most sensitive fields (SEC-11): vendor bank account numbers. Nil: none can be kept.
+	Fields ports.Cipher
 	// Staging keeps uploads until their record is final; Evidence is the retention-locked store they are
 	// committed to (FR-DOC-13, DR-07). Scanner checks uploads for malware (FR-DOC-01). Any of them nil: no
 	// file can be attached.

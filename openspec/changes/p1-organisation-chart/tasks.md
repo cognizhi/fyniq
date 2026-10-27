@@ -104,6 +104,13 @@
   (20 Oct 2026: waits for `p1-approval-engine` and the notifications. A pending version must freeze payments and reach
   every founder, and neither exists yet; storing bank details with no way to approve them would only hold personal data
   for nothing.)
+  (27 Oct 2026: both exist now. The owner's decisions (PRD-001 rev 0.152): one approved account per currency, Singapore
+  or overseas; until batches, planning a payment date is refused and recording one warns; account numbers sealed with
+  their last four digits and a keyed fingerprint; the full number revealed after step-up, audited. First slice: the
+  `Cipher` port (SEC-11), `internal/fieldseal`, its local adapter and `gcp.KMSFields` on the KMS keys `fields` and
+  `fingerprints` (`infra/gcp/modules/environment/fields.tf`, [live-verify] in the dev cloud). Tests:
+  `TestTheEnvelopeSealsBoundToTheRecord`, `TestFieldKeysConformance`, `TestKMSFieldsConformance`. **Left:** the bank
+  accounts themselves, their approval, the notice and the freeze; the screens.)
 - [ ] 4.3 Duplicate detection on name, UEN, email and bank account (`// req: FR-CT-04`), and items with prices per currency (`// req: FR-ITM-01`)
   (20 Oct 2026: duplicates on the name (case and spacing aside), the UEN or tax ID and the emails are flagged on every
   contact read and write, never refused; the bank account joins them with task 4.2. Items, 20 Oct 2026: migration 000027

@@ -59,6 +59,23 @@ Source: PRD-001 §8.3 · Priority M · Phase P1
 - **WHEN** a vendor's bank details are changed
 - **THEN** the payee name is checked against the bank
 
+#### Scenario: One approved account per currency (rev 0.152)
+- **WHEN** a vendor's bank account is added or changed
+- **THEN** it is a Singapore account (SWIFT/BIC, account number, account name) or an overseas one (SWIFT/BIC, account number or IBAN, account name, the bank's country), with no PayNow proxy
+- **AND** the vendor holds at most one approved account per currency
+
+#### Scenario: The freeze before payment batches (rev 0.152)
+- **GIVEN** a change to a vendor's bank details awaits approval and payment batches do not exist yet
+- **WHEN** someone plans a payment date for one of the vendor's bills, or records a payment already made to the vendor
+- **THEN** planning the date is refused
+- **AND** recording the payment is allowed with a warning
+
+#### Scenario: Account numbers sealed and masked (rev 0.152)
+- **WHEN** a vendor's account number is kept, shown or audited
+- **THEN** it is sealed at the application level (SEC-11), shown with its last four digits only, and audited as its masked value and keyed fingerprint (AUD-02)
+- **AND** a holder of C or A on "Vendor bank details" reveals the full number only after step-up, and the reveal is audited
+- **AND** the approver of a change sees the old and new numbers in full
+
 ### Requirement: FR-CT-04 Duplicate contact detection
 The system SHALL detect duplicate contacts on name, UEN, email and bank account.
 

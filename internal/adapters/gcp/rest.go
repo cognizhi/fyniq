@@ -65,6 +65,9 @@ var errPrecondition = errors.New("precondition failed")
 // errConflict is a 409: the resource exists already, such as a task with the same name.
 var errConflict = errors.New("already exists")
 
+// errInvalid is a 400: the service refused the request's content, such as a ciphertext KMS cannot decrypt.
+var errInvalid = errors.New("refused as invalid")
+
 // rest sends one request to a Google API, with the access token when there is a token source (the
 // local emulators need none), and decodes a JSON answer into out. Errors name the method and the
 // status, never a token or a body.
@@ -106,6 +109,8 @@ func (r *rest) do(ctx context.Context, method, url, contentType string, body io.
 		return errPrecondition
 	case resp.StatusCode == http.StatusConflict:
 		return errConflict
+	case resp.StatusCode == http.StatusBadRequest:
+		return fmt.Errorf("%s: %s: %w", method, resp.Status, errInvalid)
 	case resp.StatusCode < 200 || resp.StatusCode > 299:
 		return fmt.Errorf("%s: %s", method, resp.Status)
 	}

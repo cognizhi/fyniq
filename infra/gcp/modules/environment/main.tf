@@ -154,6 +154,8 @@ locals {
     )
     anchors = var.anchors
     job     = "projects/${var.project}/locations/${local.region}/jobs/jobs"
+    # The field keys (SEC-11, fields.tf): the wrapping key and the fingerprint key's pinned version.
+    fields = { key = google_kms_crypto_key.fields.id, mac_key_version = "${google_kms_crypto_key.fingerprints.id}/cryptoKeyVersions/1" }
     # The private render service (§12.3, rev 0.96): where the api and the worker send documents, the audience of their
     # ID tokens, and the accounts it accepts (render.Client, gcp.CallerTokens).
     render = { url = local.url["render"], audience = local.url["render"], service_accounts = [local.email["api"], local.email["worker"]] }
