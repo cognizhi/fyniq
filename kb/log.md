@@ -225,3 +225,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-26] compile | docs/user-guide/claims-approve-team.md → claims.approve-team-claims (the approver's queue, returning with a comment, and the expense policy screen; p1-expense-claims task 8.2)
 
 ## [2026-10-27] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the disposal account and the disposal clearing account, p1-fixed-assets task 1.2)
+
+## [2026-10-27] compile | docs/user-guide/fixed-assets.md → accounting.fixed-assets (new: the fixed asset register, p1-fixed-assets task 5.2)

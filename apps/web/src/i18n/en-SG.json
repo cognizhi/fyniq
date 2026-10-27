@@ -680,6 +680,34 @@
       "label": "Currencies",
       "tooltip": "Exchange rates into the base currency: the daily feed, your own rates, and the rate a posting in another currency takes."
     },
+    "accounting.fixed-assets": {
+      "label": "Fixed assets",
+      "tooltip": "The assets the company owns and uses for more than a year: their cost, monthly depreciation and net book value, and their sales and write-offs."
+    },
+    "fixed-assets.register": {
+      "label": "Register",
+      "tooltip": "Add the purchase to the register as an asset: its cost is what the line put on the asset account; enter its useful life."
+    },
+    "fixed-assets.register-opening": {
+      "label": "Register one bought earlier",
+      "tooltip": "Add an asset bought before the books start, with the cost and accumulated depreciation the opening balances carry for it."
+    },
+    "fixed-assets.unregistered": {
+      "label": "Not in the register yet",
+      "tooltip": "Purchases on asset accounts that no asset was registered from; one at or above the capitalisation threshold should be registered."
+    },
+    "fixed-assets.change": {
+      "label": "Change",
+      "tooltip": "Rename it, or change its useful life or residual value for the months not posted yet."
+    },
+    "fixed-assets.dispose": {
+      "label": "Sell or write off",
+      "tooltip": "Record its sale or write-off, whole or in part, with the gain or loss to 7050."
+    },
+    "fixed-assets.void": {
+      "label": "Void",
+      "tooltip": "Reverse a disposal recorded by mistake and restore the asset; in Founder mode another person approves it."
+    },
     "fx.find-rate": {
       "label": "Find the rate a posting takes",
       "tooltip": "A posting without a rate of its own takes your rate for its date, else the daily feed's from that day or up to 7 days before, else your monthly rate."

@@ -161,7 +161,7 @@ aliases:
 
 ## Capitalisation threshold
 
-- A purchase of S$1,000 or more is offered as a fixed asset; a smaller one is an expense.
+- A purchase of S$1,000 or more is offered as a fixed asset; a smaller one is an expense. Registering one: [[accounting.fixed-assets]].
 - The company's accountant confirms it by approving the capitalisation threshold policy under **Settings → Accounting framework and policies** ([[settings.accounting]]).
 
 (src: docs/user-guide/organisation-settings.md#capitalisation-threshold)
