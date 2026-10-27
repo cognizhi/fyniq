@@ -509,6 +509,12 @@ var (
 	CompleteCardLine     = Policy{Operation: "completeCardLine", Capability: ExpenseClaims, Need: Create}
 	AddCardLineEvidence  = Policy{Operation: "addCardLineEvidence", Capability: ExpenseClaims, Need: Create}
 	ListCardLineEvidence = Policy{Operation: "listCardLineEvidence", Capability: ExpenseClaims, Need: Create}
+	// The fixed asset register (FR-FA-01…03; p1-fixed-assets design D5), under Appendix D's "Fixed assets" row: read under
+	// V; registered and changed under C (the Accountant), which posts nothing.
+	ListFixedAssets    = Policy{Operation: "listFixedAssets", Capability: FixedAssets, Need: View}
+	GetFixedAsset      = Policy{Operation: "getFixedAsset", Capability: FixedAssets, Need: View}
+	RegisterFixedAsset = Policy{Operation: "registerFixedAsset", Capability: FixedAssets, Need: Create}
+	ChangeFixedAsset   = Policy{Operation: "changeFixedAsset", Capability: FixedAssets, Need: Create}
 	// Invoices (FR-AR-03; p1-sales), as bills: read under V, prepared under C (the Bookkeeper, the AR specialist, the
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
 	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
@@ -938,6 +944,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListClaimReimbursements, GetClaimReimbursement, RecordClaimReimbursement, VoidClaimReimbursement, RequestClaimReimbursementVoid, GetExpenseClaimsOwed,
 	ListCashAdvances, GetCashAdvance, RecordCashAdvance, RecordCashAdvanceRefund, VoidCashAdvance, RequestCashAdvanceVoid,
 	ListCardLines, CompleteCardLine, AddCardLineEvidence, ListCardLineEvidence, GetClaimGSTCodes,
+	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset,
 	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
 	ListClaimCategories, CreateClaimCategory, ReplaceClaimCategory, LoadStarterClaimCategories,
 	AddExpenseClaimEvidence, ListExpenseClaimEvidence, GetExpenseClaimEvidence, RemoveExpenseClaimEvidence,

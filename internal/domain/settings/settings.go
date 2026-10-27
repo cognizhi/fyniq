@@ -66,6 +66,12 @@ var Catalogue = []Definition{
 	{Key: "assets.capitalisation_threshold", Group: "Defaults", Label: "Capitalisation threshold", Kind: AmountSGD, Recommended: "1000.00",
 		Reason: "Purchases of S$1,000 or more each are offered as fixed assets; smaller ones are expensed. The accountant confirms it",
 		Guide:  guide + "capitalisation-threshold", Requirement: "FR-ORG-04", DualControl: true, Min: "0.00", Max: "1000000.00"},
+	{Key: "assets.disposal_account", Group: "Defaults", Label: "Gain or loss on disposal account", Kind: AccountCode, Recommended: "7050",
+		Reason: "When an asset is sold or written off, the difference between what it fetched and what it was still worth goes to 7050 Gain / (loss) on disposal of assets (the owner's decision of 27 Oct 2026; the accountant confirms it)",
+		Guide:  guide + "disposal-account", Requirement: "FR-FA-03", DualControl: true},
+	{Key: "assets.disposal_clearing_account", Group: "Defaults", Label: "Disposal clearing account", Kind: AccountCode, Recommended: "",
+		Reason: "An asset sold on a sales invoice is invoiced to this balance-sheet account, which its disposal clears, so the gain or loss falls in the disposal's month. The accountant names it before the first such sale",
+		Guide:  guide + "disposal-clearing-account", Requirement: "FR-FA-03", DualControl: true},
 	{Key: "bank.auto_cap_line", Group: "Banking", Label: "Auto-reconcile, the largest line", Kind: AmountSGD, Recommended: "500.00",
 		Reason: "Lines of up to S$500 that match exactly one open document, a transfer's other side or an approved rule are reconciled without a click; larger ones wait for a person (the owner's decision of 25 Oct 2026)",
 		Guide:  guide + "auto-reconcile", Requirement: "FR-BNK-14", DualControl: true, Min: "0.00", Max: "1000000.00"},
@@ -184,7 +190,7 @@ var (
 	percent = regexp.MustCompile(`^(0|[1-9][0-9]{0,2})(\.[0-9]{1,2})?$`)
 	// accountCode is the chart's code format (FR-COA-01): the account must also exist when a posting reads it.
 	accountCode = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$`)
-	sgd     = money.MustLookup("SGD")
+	sgd         = money.MustLookup("SGD")
 )
 
 // Normalise reads raw as a value of d, and returns it as stored: "true", "30", "50.00" or "2.5". It refuses

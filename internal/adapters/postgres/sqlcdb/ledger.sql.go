@@ -127,6 +127,33 @@ func (q *Queries) EntryIDsAfter(ctx context.Context, arg EntryIDsAfterParams) ([
 	return items, nil
 }
 
+const entryIDsOfSource = `-- name: EntryIDsOfSource :many
+SELECT id FROM fyniq.journal_entry
+WHERE source_id = $1::text
+ORDER BY ledger_revision
+`
+
+// Every entry naming a source document, reversals included, in revision order: an asset's months of depreciation.
+func (q *Queries) EntryIDsOfSource(ctx context.Context, sourceID string) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, entryIDsOfSource, sourceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getEntry = `-- name: GetEntry :one
 SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
        source_version, rule_version, reverses_entry_id, memo, recorded_at

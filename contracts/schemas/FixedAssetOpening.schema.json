@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The asset account it sits on: one whose report group is Property, plant \u0026 equipment or Intangible assets.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "accumulated_depreciation": {
+      "$ref": "Money.schema.json",
+      "description": "Its accumulated depreciation at the books start, in the base currency, as the opening balances carry it on 1590."
+    },
+    "cost": {
+      "$ref": "Money.schema.json",
+      "description": "What it cost, in the base currency, as the opening balances carry it on its account."
+    },
+    "purchased_on": {
+      "description": "The day it was bought: before the books start.",
+      "examples": [
+        "2025-03-14"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "account_id",
+    "purchased_on",
+    "cost",
+    "accumulated_depreciation"
+  ],
+  "title": "FixedAssetOpening",
+  "type": "object"
+}

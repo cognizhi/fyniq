@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/banktransaction"
@@ -658,6 +659,19 @@ var codeFacts = map[string]struct {
 	CodeAdvanceVoidApproval:       {409, "Voiding needs a second person"},
 	journal.CodeNotYourCard:       {403, "The line is not on a card you hold"},
 	CodeCardNotDone:               {409, "The card line is not completed yet"},
+	asset.CodeNotAsset:            {404, "Not a fixed asset"},
+	asset.CodeBadContent:          {422, "The saved asset cannot be read"},
+	asset.CodeSource:              {422, "The asset cannot come from that line"},
+	asset.CodeAccount:             {422, "Not an asset account of the register"},
+	asset.CodeLife:                {422, "The useful life does not fit"},
+	asset.CodeResidual:            {422, "The residual value does not fit"},
+	asset.CodeStart:               {422, "Depreciation cannot start then"},
+	asset.CodeMethod:              {422, "The depreciation method is not available"},
+	asset.CodeOpening:             {422, "The opening figures do not fit"},
+	asset.CodeTooLong:             {422, "A text of the asset does not fit"},
+	asset.CodePosted:              {409, "Its depreciation has posted already"},
+	asset.CodeDisposed:            {409, "Nothing of the asset is left"},
+	storage.CodeAsset:             {409, "The asset register does not allow that"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -684,6 +698,8 @@ var storageFixes = map[string]string{
 	storage.CodeScheduled: "Issue and send it as a person, or approve the recurring invoice it came from",
 	storage.CodeReminder:  "Read the reminders again: this one was sent or skipped already",
 	storage.CodeStatement: "Make and send a new statement instead",
+
+	storage.CodeAsset: "Register an asset from a line of a posted bill or bank line that put its cost on an asset account, once; a month's depreciation is of a registered asset's current version",
 
 	storage.CodeBanking: "Read the money account or the line again: a source only starts after the current one, a statement and its lines never change, a gap is resolved once, and a line is undone rather than changed",
 

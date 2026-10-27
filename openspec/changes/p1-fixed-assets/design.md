@@ -31,7 +31,8 @@ A registered asset is a `fixed_asset` document (numbered FA-), its content versi
 or a partial disposal, is its next version. Registering it posts nothing: its cost is already on the asset account,
 put there by its source. Its source is one posted bill line or bank-transaction part that debits an asset account, by
 document and line (one asset per source line, which the database guards), and its cost is that line's base amount as
-its entry posted it; or, for an asset bought before the books start, no source and the cost and accumulated
+its entry posted it (bill@1 and bank_transaction@1 write one line for each line or part with a cost, in order, so the
+line's own entry line is found without re-running the rule); or, for an asset bought before the books start, no source and the cost and accumulated
 depreciation the opening balances carry, as at the books start. **Alternatives:** a register table outside the
 documents, as claim categories are: rejected, because depreciation entries need a document as their source for the
 ledger guards and the replay, and documents give versions and history.
@@ -58,7 +59,8 @@ subtracting what was posted: rejected, because the replay of a month would then 
 `depreciation`) · Cr 1590 (`accumulated-depreciation`), in the base currency; its identity is the asset, its version
 and the month, and the database refuses an entry that does not name a posted asset at that version (as FY172 does
 for releases). The job `assets.depreciation` (hourly, as `scheduler:assets.depreciation`) posts every month whose last
-day has come in the organisation's time zone; registering or changing an asset posts its months already due at once.
+day has come in the organisation's time zone, in order: a month waits while an earlier one waits, so a version's
+posted months always run from its first month without a gap; registering or changing an asset posts its months already due at once.
 A month whose period is closed waits, with the audit event `fixed_asset.depreciation_waiting`, and the next run tries
 again; future months show as projections on the asset, never in the ledger (ENG-05). **Alternatives:** one entry a
 month for every asset: rejected, because a disposal or a change of one asset would split it, and its replay would
@@ -73,12 +75,16 @@ when the organisation is GST-registered: `RND-GST-INCL`), a sales invoice's line
 `asset_disposal@1` in the same transaction:
 
 - Dr 1590 with the share's accumulated depreciation through the month before the disposal;
-- Dr the money account, or the clearing account, with the proceeds net of GST; Cr 2200 with the output GST;
+- Dr the money account with the money received (the GST in it included), and Cr 2200 with its output GST; or Dr the
+  clearing account with the invoice line's net (the invoice charged its GST);
 - Cr the asset account with the share of the cost;
 - the difference to `assets.disposal_account` (Dr a loss, Cr a gain).
 
 Every month before the disposal's must be posted first (a disposal is refused while one waits), so the accumulated
-depreciation is the ledger's. A partial disposal makes the asset's next version in the same transaction: the cost,
+depreciation is the ledger's. A disposal recorded late, dated before months already posted (a sale in March recorded
+in April, after March's depreciation posted), reverses those months' entries on their own dates in the same
+transaction, and the version it makes posts them again for what is left; a month in a closed period refuses the
+disposal, saying which. A partial disposal makes the asset's next version in the same transaction: the cost,
 the residual and the carried depreciation reduced by the share, the rest depreciating from the disposal's month. The
 disposal of a money sale is matched by bank import as money recorded by hand (`bank_match_posting`, FY228). A
 disposal is voided by a reversal on its date or later, while no later month of the asset is posted; in Founder mode

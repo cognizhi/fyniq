@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The asset account it sits on: its category.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "accumulated_depreciation": {
+      "$ref": "Money.schema.json",
+      "description": "Its accumulated depreciation: what the opening balances carried for it and what has posted since."
+    },
+    "checks": {
+      "description": "Its warnings (⚠): the bill or bank line it came from was voided or edited since.",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "cost": {
+      "$ref": "Money.schema.json",
+      "description": "What it cost, in the base currency: what is left of it after a partial disposal."
+    },
+    "depreciated_to": {
+      "description": "The last month whose depreciation has posted.",
+      "examples": [
+        "2026-09"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "end": {
+      "description": "The last month it depreciates: start + life − 1.",
+      "examples": [
+        "2029-02"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "id": {
+      "description": "Its ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "life_months": {
+      "description": "Its useful life in months.",
+      "examples": [
+        36
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "method": {
+      "description": "How it depreciates.",
+      "enum": [
+        "straight_line"
+      ],
+      "examples": [
+        "straight_line"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "MacBook Pro 14, Wei Ling"
+      ],
+      "type": "string"
+    },
+    "net_book_value": {
+      "$ref": "Money.schema.json",
+      "description": "Cost less accumulated depreciation."
+    },
+    "notes": {
+      "description": "Its notes.",
+      "examples": [
+        "Serial C02XG0FDH7JY"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number in the register (FR-ORG-04).",
+      "examples": [
+        "FA-0001"
+      ],
+      "type": "string"
+    },
+    "opening_accumulated": {
+      "$ref": "Money.schema.json",
+      "description": "Bought before the books start: the accumulated depreciation the opening balances carry for it."
+    },
+    "purchased_on": {
+      "description": "The day it was bought.",
+      "examples": [
+        "2026-03-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When.",
+      "examples": [
+        "2026-03-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who registered it, or saved its latest change."
+    },
+    "residual": {
+      "$ref": "Money.schema.json",
+      "description": "Its residual value."
+    },
+    "source": {
+      "$ref": "FixedAssetSource.schema.json",
+      "description": "The line it was bought on; absent for one bought before the books start."
+    },
+    "start": {
+      "description": "The month depreciation starts.",
+      "examples": [
+        "2026-03"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "status": {
+      "description": "in_use while it depreciates; fully_depreciated once nothing is left to post; disposed once nothing of it is left.",
+      "enum": [
+        "in_use",
+        "fully_depreciated",
+        "disposed"
+      ],
+      "examples": [
+        "in_use"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The version of its content; it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "version",
+    "name",
+    "account_id",
+    "purchased_on",
+    "cost",
+    "residual",
+    "life_months",
+    "method",
+    "start",
+    "end",
+    "accumulated_depreciation",
+    "net_book_value",
+    "checks"
+  ],
+  "title": "FixedAsset",
+  "type": "object"
+}

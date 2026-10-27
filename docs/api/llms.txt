@@ -172,6 +172,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/expense-claims/{claim_id}/evidence/{evidence_id}` (removeExpenseClaimEvidence): Remove a receipt from your draft claim
 - `POST /v1/expense-claims/{claim_id}/submit` (submitExpenseClaim): Submit an expense claim for approval
 - `POST /v1/expense-claims/{claim_id}/withdraw` (withdrawExpenseClaim): Withdraw a submitted expense claim
+- `GET /v1/fixed-assets` (listFixedAssets): List the fixed asset register
+- `POST /v1/fixed-assets` (registerFixedAsset): Register a fixed asset
+- `GET /v1/fixed-assets/{asset_id}` (getFixedAsset): Get a fixed asset
+- `POST /v1/fixed-assets/{asset_id}/change` (changeFixedAsset): Change a fixed asset
 - `GET /v1/fx/feed` (listFeedRates): List the daily feed's rates
 - `GET /v1/fx/money-accounts` (listForeignMoneyAccounts): List the money accounts' balances in other currencies
 - `GET /v1/fx/rate` (lookupFxRate): Find the rate a posting takes

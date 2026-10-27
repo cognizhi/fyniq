@@ -96,6 +96,8 @@ var DefaultSequences = map[DocumentType]SequenceSettings{
 	DocumentExpenseClaim:       {Prefix: "CLM-", NextNumber: 1, Digits: 4, GapFree: false},
 	DocumentClaimReimbursement: {Prefix: "RB-", NextNumber: 1, Digits: 4, GapFree: true},
 	DocumentCashAdvance:        {Prefix: "ADV-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentFixedAsset:         {Prefix: "FA-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentAssetDisposal:      {Prefix: "DSP-", NextNumber: 1, Digits: 4, GapFree: true},
 }
 
 // FormatNumber is a document number as the sequence s prints it: its prefix and the number, zero-padded.

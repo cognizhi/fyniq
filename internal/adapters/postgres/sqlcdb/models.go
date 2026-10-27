@@ -720,6 +720,16 @@ type FyniqEvidence struct {
 	Version        int32
 }
 
+type FyniqFixedAssetSource struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	AssetID        uuid.UUID
+	SourceID       uuid.UUID
+	SourceVersion  int32
+	Line           int32
+	AccountID      uuid.UUID
+}
+
 type FyniqFxFeedRate struct {
 	BaseCurrency string
 	Currency     string

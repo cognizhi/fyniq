@@ -30,7 +30,9 @@
         "statement",
         "expense_claim",
         "claim_reimbursement",
-        "cash_advance"
+        "cash_advance",
+        "fixed_asset",
+        "asset_disposal"
       ],
       "examples": [
         "journal"

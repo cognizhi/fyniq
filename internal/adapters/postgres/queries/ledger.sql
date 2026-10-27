@@ -53,3 +53,9 @@ SELECT id, ledger_revision FROM fyniq.journal_entry
 WHERE ledger_revision > sqlc.arg(after_revision)
 ORDER BY ledger_revision
 LIMIT sqlc.arg(page_size);
+
+-- name: EntryIDsOfSource :many
+-- Every entry naming a source document, reversals included, in revision order: an asset's months of depreciation.
+SELECT id FROM fyniq.journal_entry
+WHERE source_id = sqlc.arg(source_id)::text
+ORDER BY ledger_revision;

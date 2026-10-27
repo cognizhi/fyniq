@@ -109,6 +109,8 @@ type UnitOfWork interface {
 	ClaimCategories() ClaimCategories
 	// ClaimPlaces are the members' saved places for mileage claims (FR-AP-16).
 	ClaimPlaces() ClaimPlaces
+	// AssetSources are the bill lines and bank lines registered assets came from (FR-FA-01).
+	AssetSources() AssetSources
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))
@@ -232,6 +234,9 @@ type Ledger interface {
 	// AccountLines are an account's lines dated from..to, in posting order, at most limit (FR-GL-11). Only the
 	// balance service reads them (ENG-04).
 	AccountLines(ctx context.Context, account uuid.UUID, from, to time.Time, limit int) ([]AccountLine, error)
+	// OfSource are every entry naming a source document by its ID, reversals included, in revision order, with their
+	// lines: an asset's months of depreciation (FR-FA-02).
+	OfSource(ctx context.Context, sourceID uuid.UUID) ([]Entry, error)
 }
 
 // AccountLine is one posted line of an account, with its entry's provenance (ENG-03) and its source's number.
@@ -467,6 +472,13 @@ const (
 	DocumentClaimReimbursement DocumentType = "claim_reimbursement"
 	// DocumentCashAdvance is money advanced to a person, which their claims settle or they refund (FR-AP-17, UC-EXP-03).
 	DocumentCashAdvance DocumentType = "cash_advance"
+	// DocumentFixedAsset is an asset in the register (FR-FA-01; p1-fixed-assets design D1): its content versioned, a
+	// change of its life or residual, or a partial disposal, its next version. It posts nothing of its own; each month's
+	// depreciation is an entry naming it (asset_depreciation@1).
+	DocumentFixedAsset DocumentType = "fixed_asset"
+	// DocumentAssetDisposal is the sale or write-off of an asset, or of a share of its cost, posted by asset_disposal@1
+	// (FR-FA-03; design D4).
+	DocumentAssetDisposal DocumentType = "asset_disposal"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -635,7 +647,10 @@ const (
 	// CodeClaim: a claim category costs a plain expense or asset account in the base currency and is never deleted; an
 	// expense claim posts only under an approved request its claimant asked for and did not sign; a saved place keeps
 	// its person and is never deleted (FR-AP-15, FR-AP-16, FR-AP-17).
-	CodeClaim          = "STORAGE-CLAIM-01"
+	CodeClaim = "STORAGE-CLAIM-01"
+	// CodeAsset: an asset comes from one line of a posted bill or bank line that debits an asset account, once, and
+	// keeps it; a month's depreciation names a registered asset at its current version (FR-FA-01, FR-FA-02).
+	CodeAsset          = "STORAGE-ASSET-01"
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
 	CodeBanner         = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends
