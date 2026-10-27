@@ -143,6 +143,11 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **THEN** 2400 Deferred revenue takes the line's net in the base currency, and each month's ALLOC-EVEN part is released from 2400 to the line's account (`invoice_release@1`), dated as a bill's releases are
 - **AND** a void or an edit reverses its releases as a bill's, and the database refuses a release that names no issued invoice at its current version (FY172)
 
+#### Scenario: A release never before its document (rev 0.155)
+- **GIVEN** a spread of a bill, an invoice or a bank line
+- **WHEN** its months are released
+- **THEN** each month's release is dated the later of the month's first day and the document's date
+
 ### Requirement: FR-GL-04 FX revaluation
 The system SHALL revalue the open foreign-currency monetary items at month end at the period-end rate, posting the unrealised gain or loss as base-only lines (INV-05) with automatic reversal on day 1 of the next period.
 

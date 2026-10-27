@@ -77,6 +77,16 @@ Source: PRD-001 §8.9 · Priority M · Phase P1
 - **WHEN** an organisation has not changed `assets.disposal_clearing_account`
 - **THEN** it is 1160 Asset disposal clearing (FR-COA-01) [accountant to confirm], an account with no system role, so the setting may name another
 
+#### Scenario: GST on proceeds received with the disposal (rev 0.155)
+- **GIVEN** a disposal with proceeds received into a money account while the organisation is GST-registered
+- **WHEN** it is posted
+- **THEN** 2200 takes `RND-GST-INCL` of the amount received at the proceeds' GST code's rate, the money account the amount received, and the gain or loss is worked on the rest [accountant to confirm]
+- **AND** proceeds billed by an invoice, and a write-off, post no GST on the disposal
+
+#### Scenario: Giving an asset away is not a disposal in P1 (rev 0.155)
+- **WHEN** an asset is given away
+- **THEN** Fyniq posts no disposal for it in P1, since the gift is a deemed supply at its open market value [accountant to confirm]
+
 ### Requirement: FR-FA-04 Asset reports and capital allowances
 The system SHALL report NBV, accumulated depreciation and the movement schedule (for the financial statements), and SHALL produce a tax capital allowance schedule (S19, S19A).
 

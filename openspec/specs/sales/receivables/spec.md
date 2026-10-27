@@ -161,6 +161,12 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **THEN** issuing refuses an invoice that is not issued, of another customer or currency, dated after the credit note, or of a smaller total (INVOICE-15)
 - **AND** it adjusts GST at the rates and the registration in force on that invoice's date; a standalone credit note at those of its own date
 
+#### Scenario: Linked credit notes capped together (rev 0.155)
+- **GIVEN** an invoice with issued, unvoided credit notes linked to it
+- **WHEN** another credit note linked to it is issued
+- **THEN** issuing is refused when the credit notes together would credit more than the invoice's total before any deposit it deducts (INVOICE-15) [accountant to confirm]
+- **AND** this supersedes the cap read per credit note
+
 ### Requirement: FR-AR-05 Tax invoice particulars
 The system SHALL lay out tax invoices to meet the IRAS particulars.
 

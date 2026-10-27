@@ -171,6 +171,12 @@ Source: PRD-001 §8.4 · Priority M · Phase P1
 - **THEN** the difference's carrying amount clears to 7030 on a line of its own when within the tolerances in force (S$1.00; for another currency the greater of S$1.00 and 3%; at most S$50.00 a document and S$200.00 a month), and is refused above them (RECEIPT-11, BILLPAY-12)
 - **AND** the allocation records it, a void negates it, and the close warns when the month's differences exceed a cap lowered since (C.2 #49)
 
+#### Scenario: What the 3% and the month's cap count (rev 0.155)
+- **GIVEN** a part recorded in full on a document in another currency
+- **WHEN** its difference is compared with the tolerances
+- **THEN** the 3% is of what the document owes on its control account at its stored rate, after any tax withheld or deposit deducted [accountant to confirm]
+- **AND** the month's cap adds the absolute value of every difference recorded in full that month, receipts and payments together, so a gain never makes room for a loss
+
 ### Requirement: FR-BNK-09 Transfers between money accounts
 The system SHALL record a transfer between money accounts once, matched on both sides, and SHALL track transfers in transit.
 
