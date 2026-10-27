@@ -109,6 +109,11 @@ Source: PRD-001 §10.7
 - **THEN** `journal_line_base_only` refuses it (FY008) unless its source is `fx_revaluation`, the line's account is marked revalue, the line is in a foreign currency, and every other line is a base-currency line on the unrealised-FX account
 - **AND** the row check accepts a base-only line only in a foreign currency
 
+#### Scenario: A P1 entry that would keep one line (rev 0.155)
+- **GIVEN** a P1 document whose legs, all but one, round to 0.00 in the base currency
+- **WHEN** it is posted
+- **THEN** it is refused (✖), naming the amount and the rate, and nothing posts
+
 ### Requirement: INV-06 Tenant isolation on every row
 Every row SHALL carry its organisation ID and SHALL be visible only through row-level security.
 

@@ -174,7 +174,7 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   `bill_payment@1` and `bill_release@1`, writing P1 entries in their canonical form (`test/differential/README.md`,
   "P1 sources"); then `test/differential/pending/purchases.json` moves to `golden/` and `purchases` joins
   `FYNIQ_DIFFERENTIAL_SOURCES`. Verified by `make test` and `make differential` agreeing to the cent; a
-  disagreement is settled from the PRD ("P1 readings"). `// req: QA-ENG-02`
+  disagreement is settled from the PRD ("P1 readings", decided in PRD-001 rev 0.155). `// req: QA-ENG-02`
 - [x] 10.2 The bills of `p1-multi-currency-fx` task 3.6: revalued one by one
   (23 Oct 2026, PRD-001 rev 0.92: each open bill and supplier credit in a foreign currency against its stored rate, a
   line on 2010 naming it, what 2010 holds beyond them an item of its own, a stale run posting only the change. Test

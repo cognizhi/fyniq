@@ -220,6 +220,15 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **THEN** it is taxable pay, goes through payroll and is reported in the IR8A
 - **AND** non-taxable reimbursements are not reported
 
+#### Scenario: A claim that settles an advance (rev 0.155)
+- **GIVEN** a claim that settles a cash advance
+- **WHEN** it is posted
+- **THEN** 1250 takes what is left of the advance, at most the claim's total, and 2150 owes the rest
+
+#### Scenario: A claim line in another currency (rev 0.155)
+- **WHEN** a claim line is in another currency
+- **THEN** it is costed as a bill's line in the claim's currency, with 2150 at the claim's rate
+
 ### Requirement: FR-AP-18 Company-card spend
 The system SHALL bring company-card lines in by import or feed (FR-AP-08) and let the cardholder attach the receipt, category and project from My claims.
 

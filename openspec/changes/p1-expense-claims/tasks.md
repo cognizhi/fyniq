@@ -126,7 +126,7 @@
   in their canonical form (`test/differential/README.md`, "P1 sources"); then `test/differential/pending/claims.json`
   moves to `golden/` and `claims` joins `FYNIQ_DIFFERENTIAL_SOURCES`.
   - Verified by `make test` and `make differential` agreeing to the cent; a disagreement is settled from the PRD
-    ("P1 readings"). `// req: QA-ENG-02`
+    ("P1 readings", decided in PRD-001 rev 0.155). `// req: QA-ENG-02`
 
 ## 10. Finish
 

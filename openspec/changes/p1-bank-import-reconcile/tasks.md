@@ -125,7 +125,7 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   sources"); then `test/differential/pending/bank.json` moves to `golden/` and `bank` joins
   `FYNIQ_DIFFERENTIAL_SOURCES` in the Makefile's `differential` target.
   - Verified by `make test` and `make differential` agreeing to the cent; a disagreement is settled from the
-    PRD ("P1 readings"), an oracle bug fixed from the PRD and an engine bug handed back as a failing golden
+    PRD ("P1 readings", decided in PRD-001 rev 0.155), an oracle bug fixed from the PRD and an engine bug handed back as a failing golden
     case. `// req: QA-ENG-02`
 
 - [ ] 4.7 Dimensions on a bank transaction's parts and in a rule's action, once FR-DIM is built
@@ -337,5 +337,7 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 ## Workflow follow-up
 
 - `/opsx:verify`, then `/opsx:archive p1-bank-import-reconcile --skip-specs` once every task is done.
-- Before 4.6: the accountant confirms D6's cross-currency transfer rule.
+- ~~Before 4.6: the accountant confirms D6's cross-currency transfer rule.~~ Superseded (28 Oct 2026, PRD-001
+  rev 0.155): D6 is decided on the best current recommendation [accountant to confirm]; the accountant confirms
+  it later through the review register's accounting area (FR-UX-41), and 4.6 does not wait.
 - Before 7.2 is pinned: a redacted sample of Cognizhi's DBS IDEAL daily account report.

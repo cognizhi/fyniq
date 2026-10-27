@@ -116,7 +116,7 @@
   through `asset_disposal@1`, writing P1 entries in their canonical form (`test/differential/README.md`, "P1 sources");
   then `test/differential/pending/assets.json` moves to `golden/` and `assets` joins `FYNIQ_DIFFERENTIAL_SOURCES`.
   Verified by `make test` and `make differential` agreeing to the cent; a disagreement is settled from the PRD ("P1
-  readings"). `// req: QA-ENG-02`
+  readings", decided in PRD-001 rev 0.155). `// req: QA-ENG-02`
 
 ## Workflow follow-up
 
