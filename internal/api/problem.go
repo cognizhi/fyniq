@@ -680,6 +680,9 @@ var codeFacts = map[string]struct {
 	asset.CodeDepreciationDue:     {409, "A month of depreciation before it has not posted"},
 	asset.CodeDisposalVoid:        {409, "The disposal cannot be voided as it stands"},
 	CodeDisposalVoidApproval:      {409, "Voiding needs a second person"},
+	asset.CodeAssetVoid:           {409, "The asset cannot be voided as it stands"},
+	asset.CodeVoided:              {409, "The asset was voided"},
+	CodeAssetVoidApproval:         {409, "Voiding needs a second person"},
 	ledger.CodeDisposal:           {422, "The disposal's accounts or amounts do not fit"},
 }
 

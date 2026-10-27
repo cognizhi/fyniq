@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -282,6 +283,32 @@ func TestPurchasesNotInTheRegisterYet(t *testing.T) {
 
 // matrixAssets are the authorisation matrix's rows for the fixed asset register.
 var matrixAssets = map[string]func(e *env, tok string) (response, func() bool){
+	// A void in Founder mode is asked for, so the row voids in an organisation in Standard mode (rev 0.151).
+	"voidFixedAsset": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org {
+			p.Organisation = s.books.Org
+			tok = s.principal(p)
+		}
+		id, tag := s.registered("1600.00")
+		r := s.call(http.MethodPost, "/v1/fixed-assets/"+id+"/void", tok, map[string]any{"reason": "Matrix test"}, "If-Match", tag)
+		return r, func() bool {
+			return s.call(http.MethodGet, "/v1/fixed-assets/"+id, s.as(authz.Accountant), nil).str("status") == "in_use"
+		}
+	},
+	"requestFixedAssetVoid": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, approval.ObjectFixedAsset)
+		id, tag := e.registered("1600.00")
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/fixed-assets/"+id+"/void-approval", person, map[string]any{"reason": "Matrix test"}, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, approval.ObjectFixedAsset) == was }
+	},
 	"listUnregisteredAssetLines": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/fixed-assets/unregistered", tok, nil), nil
 	},

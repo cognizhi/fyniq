@@ -33,6 +33,8 @@ const (
 	CodeTooLong    = "ASSET-10" // a name or notes longer than the most kept
 	CodePosted     = "ASSET-11" // a change of what posted months depend on, once a month of the asset has posted
 	CodeDisposed   = "ASSET-12" // a change of an asset nothing of which is left
+	CodeAssetVoid  = "ASSET-20" // (rev 0.151) a void refused: a disposal of the asset stands, or a month to reverse is in a period not open
+	CodeVoided     = "ASSET-21" // (rev 0.151) an asset voided: it changes, disposes and voids no more
 )
 
 // The longest texts an asset keeps, and its longest life.

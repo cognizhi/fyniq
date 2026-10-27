@@ -190,6 +190,10 @@ func (s AssetDisposals) prepareDisposal(ctx context.Context, u storage.UnitOfWor
 	if err != nil {
 		return CheckedDisposal{}, err
 	}
+	if doc.Status != storage.DocumentPosted {
+		return CheckedDisposal{}, &asset.Error{Code: asset.CodeVoided, Message: fmt.Sprintf("%s was voided", cmp.Or(doc.Number, "the asset")),
+			Fix: "Register its line again, if it is an asset after all"}
+	}
 	if a.Disposed {
 		return CheckedDisposal{}, &asset.Error{Code: asset.CodeDisposed, Message: fmt.Sprintf("nothing of %s is left: it was disposed of", cmp.Or(doc.Number, "the asset")),
 			Fix: "Void the disposal first, if it was a mistake"}

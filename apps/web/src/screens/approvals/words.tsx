@@ -44,6 +44,7 @@ const operations: Record<Approval["operation"], string> = {
   "claim_reimbursement.void": "Void a reimbursement of expense claims",
   "cash_advance.void": "Void a cash advance or its refund",
   "asset_disposal.void": "Void the sale or write-off of a fixed asset",
+  "fixed_asset.void": "Void a fixed asset registered by mistake",
 };
 
 export function operationLabel(op: string): string {
@@ -79,6 +80,7 @@ const objects: Record<string, string> = {
   claim_reimbursement: "Reimbursement of expense claims",
   cash_advance: "Cash advance",
   asset_disposal: "Disposal of a fixed asset",
+  fixed_asset: "Fixed asset",
 };
 
 export function objectLabel(t: string): string {

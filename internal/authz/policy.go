@@ -524,6 +524,8 @@ var (
 	ListAssetDisposals       = Policy{Operation: "listAssetDisposals", Capability: FixedAssets, Need: View}
 	GetAssetDisposal         = Policy{Operation: "getAssetDisposal", Capability: FixedAssets, Need: View}
 	VoidAssetDisposal        = Policy{Operation: "voidAssetDisposal", Capability: FixedAssets, Need: Post}
+	VoidFixedAsset           = Policy{Operation: "voidFixedAsset", Capability: FixedAssets, Need: Post}
+	RequestFixedAssetVoid    = Policy{Operation: "requestFixedAssetVoid", Capability: FixedAssets, Need: Post}
 	RequestAssetDisposalVoid = Policy{Operation: "requestAssetDisposalVoid", Capability: FixedAssets, Need: Post}
 	// Invoices (FR-AR-03; p1-sales), as bills: read under V, prepared under C (the Bookkeeper, the AR specialist, the
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
@@ -955,7 +957,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListCashAdvances, GetCashAdvance, RecordCashAdvance, RecordCashAdvanceRefund, VoidCashAdvance, RequestCashAdvanceVoid,
 	ListCardLines, CompleteCardLine, AddCardLineEvidence, ListCardLineEvidence, GetClaimGSTCodes,
 	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset, ListUnregisteredAssetLines,
-	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid,
+	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid, VoidFixedAsset, RequestFixedAssetVoid,
 	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
 	ListClaimCategories, CreateClaimCategory, ReplaceClaimCategory, LoadStarterClaimCategories,
 	AddExpenseClaimEvidence, ListExpenseClaimEvidence, GetExpenseClaimEvidence, RemoveExpenseClaimEvidence,

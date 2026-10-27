@@ -395,6 +395,10 @@ func prepareChange(ctx context.Context, u storage.UnitOfWork, doc storage.Docume
 	if err != nil {
 		return CheckedAsset{}, err
 	}
+	if doc.Status != storage.DocumentPosted {
+		return CheckedAsset{}, &asset.Error{Code: asset.CodeVoided, Message: fmt.Sprintf("%s was voided", cmp.Or(doc.Number, "the asset")),
+			Fix: "Register its line again, if it is an asset after all"}
+	}
 	if cur.Disposed {
 		return CheckedAsset{}, &asset.Error{Code: asset.CodeDisposed, Message: fmt.Sprintf("nothing of %s is left: it was disposed of", cmp.Or(doc.Number, "the asset")),
 			Fix: "Void the disposal first, if it was a mistake"}
@@ -531,4 +535,106 @@ func (s FixedAssets) Change(ctx context.Context, u storage.UnitOfWork, id uuid.U
 	}
 	s.depreciateNow(u, org.ID, id)
 	return u.Documents().Edit(ctx, id, b, "")
+}
+
+// openOn says whether day falls in an open period.
+func openOn(periods []storage.Period, day time.Time) bool {
+	for _, p := range periods {
+		if !day.Before(p.StartsOn) && !day.After(p.EndsOn) {
+			return p.Status == storage.PeriodOpen
+		}
+	}
+	return false
+}
+
+// standingDisposal is the number of a posted disposal of the asset, whole or in part, or "" when none stands.
+func standingDisposal(ctx context.Context, u storage.UnitOfWork, id uuid.UUID) (string, error) {
+	f := storage.DocumentFilter{Type: storage.DocumentAssetDisposal, Status: storage.DocumentPosted, Limit: 500}
+	for {
+		docs, err := u.Documents().Page(ctx, f)
+		if err != nil {
+			return "", err
+		}
+		for _, d := range docs {
+			x, err := asset.ReadDisposal(d)
+			if err != nil {
+				return "", err
+			}
+			if x.AssetID == id {
+				return cmp.Or(d.Number, "a disposal"), nil
+			}
+			f.AfterDate, f.AfterID = d.Date, &d.ID
+		}
+		if len(docs) < f.Limit {
+			return "", nil
+		}
+	}
+}
+
+// Void voids an asset registered by mistake in u (FR-FA-01, FR-GL-12; rev 0.151, design D9): each of its months of
+// depreciation that nothing reversed is reversed on its own date, its document is reversed, and its source line is
+// released, so the line can be registered again; the voided asset and its months stay in the history. It is refused
+// for an asset not in the register (ASSET-21), while a disposal of it stands, and while a month to reverse is in a
+// period that is not open (ASSET-20).
+func (s FixedAssets) Void(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, reason string) (storage.Document, error) {
+	doc, err := u.Documents().Lock(ctx, id)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	if _, err := asset.Read(doc); err != nil {
+		return storage.Document{}, err
+	}
+	name := cmp.Or(doc.Number, "the asset")
+	if doc.Status != storage.DocumentPosted {
+		return storage.Document{}, &asset.Error{Code: asset.CodeVoided, Message: fmt.Sprintf("%s is %s, not in the register", name, doc.Status),
+			Fix: "Only an asset in the register is voided"}
+	}
+	number, err := standingDisposal(ctx, u, id)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	if number != "" {
+		return storage.Document{}, &asset.Error{Code: asset.CodeAssetVoid, Message: fmt.Sprintf("disposal %s of %s stands", number, name),
+			Fix: "Void the disposal first, then the asset"}
+	}
+	entries, err := depreciationEntries(ctx, u, id)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	periods, err := u.Periods().List(ctx)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	for _, e := range entries {
+		if !openOn(periods, e.PostingDate) {
+			month := e.PostingDate.Format("January 2006")
+			return storage.Document{}, &asset.Error{Code: asset.CodeAssetVoid,
+				Message: fmt.Sprintf("%s's depreciation for %s is in a period that is not open", name, month),
+				Fix:     fmt.Sprintf("Reopen %s (an approval), then void the asset", month)}
+		}
+	}
+	set, err := loadSettings(ctx, u)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	for _, stored := range entries {
+		original, err := fromStorage(stored, set.Base)
+		if err != nil {
+			return storage.Document{}, err
+		}
+		reversal, err := ledger.Reverse(original, original.PostingDate, reason)
+		if err != nil {
+			return storage.Document{}, err
+		}
+		if _, err := u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+			return storage.Document{}, err
+		}
+	}
+	if err := u.Documents().SetStatus(ctx, id, storage.DocumentReversed); err != nil {
+		return storage.Document{}, err
+	}
+	if err := u.AssetSources().Release(ctx, id); err != nil {
+		return storage.Document{}, err
+	}
+	return u.Documents().Get(ctx, id)
 }

@@ -14,9 +14,11 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -94,7 +96,7 @@ type FixedAssetSource struct {
 type FixedAsset struct {
 	ID                      string            `json:"id" format:"uuid" doc:"Its ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1"`
 	Number                  string            `json:"number,omitempty" doc:"Its number in the register (FR-ORG-04)." example:"FA-0001"`
-	Status                  string            `json:"status" enum:"in_use,fully_depreciated,disposed" doc:"in_use while it depreciates; fully_depreciated once nothing is left to post; disposed once nothing of it is left." example:"in_use"`
+	Status                  string            `json:"status" enum:"in_use,fully_depreciated,disposed,voided" doc:"in_use while it depreciates; fully_depreciated once nothing is left to post; voided once voided as registered by mistake (rev 0.151); disposed once nothing of it is left." example:"in_use"`
 	Version                 int               `json:"version" doc:"The version of its content; it makes the ETag." example:"1"`
 	Name                    string            `json:"name" doc:"Its name." example:"MacBook Pro 14, Wei Ling"`
 	AccountID               string            `json:"account_id" format:"uuid" doc:"The asset account it sits on: its category." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510"`
@@ -140,7 +142,7 @@ type FixedAssetPath struct {
 
 type assetListInput struct {
 	PageQuery
-	Status    string `query:"status" enum:"in_use,fully_depreciated,disposed" doc:"Only the assets in this state." example:"in_use"`
+	Status    string `query:"status" enum:"in_use,fully_depreciated,disposed,voided" doc:"Only the assets in this state; voided lists the assets voided as registered by mistake, which the register leaves out otherwise." example:"in_use"`
 	AccountID string `query:"account_id" format:"uuid" doc:"Only the assets on this account." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510"`
 }
 
@@ -158,6 +160,22 @@ type changeAssetInput struct {
 	IfMatchHeader
 	PreferHeader
 	Body FixedAssetChange
+}
+
+// CodeAssetVoidApproval is a void of an asset that needs a second person in Founder mode (FM-1; rev 0.151).
+const CodeAssetVoidApproval = "ASSET-22"
+
+// AssetVoid voids an asset registered by mistake (FR-FA-01; rev 0.151).
+type AssetVoid struct {
+	Reason string `json:"reason" minLength:"1" maxLength:"500" doc:"Why it is voided, such as registered from the wrong line; the audit trail and each reversing entry record it (FR-GL-12)." example:"Registered from the wrong bill line"`
+}
+
+type voidAssetInput struct {
+	FixedAssetPath
+	KeyHeader
+	IfMatchHeader
+	PreferHeader
+	Body AssetVoid
 }
 
 type assetOutput struct {
@@ -211,6 +229,8 @@ func (a *API) assetOf(ctx context.Context, u storage.UnitOfWork, base money.Curr
 	}
 	left, _ := nbv.Sub(x.Residual)
 	switch {
+	case doc.Status == storage.DocumentReversed:
+		out.Status = "voided"
 	case x.Disposed:
 		out.Status = "disposed"
 	case left.Sign() <= 0 || x.From.After(x.End()):
@@ -233,7 +253,7 @@ func (a *API) assetOf(ctx context.Context, u storage.UnitOfWork, base money.Curr
 			return FixedAsset{}, err
 		}
 		out.Source = &FixedAssetSource{DocumentID: src.ID.String(), Type: string(src.Type), Number: src.Number, Version: x.Source.Version, Line: x.Source.Line}
-		if src.Status != storage.DocumentPosted || src.Version != x.Source.Version {
+		if out.Status != "voided" && (src.Status != storage.DocumentPosted || src.Version != x.Source.Version) {
 			what := "edited"
 			if src.Status != storage.DocumentPosted {
 				what = "voided"
@@ -254,6 +274,9 @@ func (a *API) assetOf(ctx context.Context, u storage.UnitOfWork, base money.Curr
 		}
 		waiting := false
 		for _, m := range months {
+			if out.Status == "voided" && m.Status != journal.DepreciationPosted && m.Status != journal.DepreciationReversed {
+				continue // a voided asset's schedule is what posted, and its reversal
+			}
 			x := FixedAssetMonth{Month: monthText(m.Month), Date: dateOf(m.Date), Version: m.Version, Amount: moneyOut(m.Amount), Status: m.Status}
 			if m.EntryID != uuid.Nil {
 				x.EntryID = m.EntryID.String()
@@ -444,7 +467,11 @@ func registerFixedAssets(a *API) {
 				return err
 			}
 			for {
-				docs, err := u.Documents().Page(ctx, storage.DocumentFilter{Type: storage.DocumentFixedAsset, Status: storage.DocumentPosted,
+				status := storage.DocumentPosted
+				if in.Status == "voided" {
+					status = storage.DocumentReversed
+				}
+				docs, err := u.Documents().Page(ctx, storage.DocumentFilter{Type: storage.DocumentFixedAsset, Status: status,
 					AfterDate: afterDate, AfterID: afterID, Limit: 500})
 				if err != nil {
 					return err
@@ -644,7 +671,7 @@ func registerFixedAssets(a *API) {
 			"cost and opening accumulated depreciation. Posts nothing. Side effects: the new version, audit events. Every problem comes " +
 			"back together. Needs If-Match with the asset's ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing " +
 			"and shows the asset as it would be.",
-	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, asset.CodeNotAsset, asset.CodeBadContent, asset.CodeDisposed}, writeCodes...),
+	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, asset.CodeNotAsset, asset.CodeBadContent, asset.CodeDisposed, asset.CodeVoided}, writeCodes...),
 		func(ctx context.Context, in *changeAssetInput) (*assetOutput, error) {
 			id, err := parseID("asset_id", in.AssetID)
 			if err != nil {
@@ -678,4 +705,146 @@ func registerFixedAssets(a *API) {
 			}
 			return answer(w), nil
 		})
+
+	// Voiding an asset registered by mistake (FR-FA-01, FR-GL-12, FM-1; rev 0.151, design D9).
+	lockedAsset := func(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, ifMatch string) (storage.Document, error) {
+		doc, err := u.Documents().Get(ctx, id)
+		if err != nil {
+			return storage.Document{}, err
+		}
+		if !asset.IsAsset(doc) {
+			return storage.Document{}, ports.ErrNotFound
+		}
+		if doc.Status != storage.DocumentPosted {
+			return storage.Document{}, &asset.Error{Code: asset.CodeVoided, Message: fmt.Sprintf("%s is %s, not in the register", cmp.Or(doc.Number, "the asset"), doc.Status),
+				Fix: "Only an asset in the register is voided"}
+		}
+		return doc, checkIfMatch(ifMatch, assetETag(doc))
+	}
+	voidCodes := append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
+		CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeAssetVoidApproval, team.CodeAction, storage.CodeAsset}, append(postingCodes(), AssetVoidCodes()...)...)
+	register(a, authz.VoidFixedAsset, huma.Operation{
+		OperationID: "voidFixedAsset", Method: http.MethodPost, Path: "/v1/fixed-assets/{asset_id}/void", Tags: []string{"Fixed assets"},
+		Summary: "Void a fixed asset registered by mistake",
+		Description: "Voids an asset registered by mistake, with a reason (FR-FA-01, FR-GL-12; PRD-001 rev 0.151): each of its months of " +
+			"depreciation is reversed on its own date, it leaves the register (listed with status=voided), and its bill or bank line can be " +
+			"registered again. Refused (ASSET-20) while a disposal of it stands, or while a month to reverse is in a period that is not " +
+			"open; and (ASSET-21) once voided. In Founder mode voiding needs a second person (FM-1): it is refused (ASSET-22), and " +
+			"requestFixedAssetVoid asks for the approval. Side effects: the reversing entries, the asset's status, its line released, audit " +
+			"events with the reason. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview writes nothing.",
+	}, voidCodes, func(ctx context.Context, in *voidAssetInput) (*assetOutput, error) {
+		id, err := parseID("asset_id", in.AssetID)
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(in.IfMatch) == "" {
+			return nil, checkIfMatch(in.IfMatch, "")
+		}
+		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (FixedAsset, error) {
+			if _, err := lockedAsset(ctx, u, id, in.IfMatch); err != nil {
+				return FixedAsset{}, err
+			}
+			mode, _, _, err := teamModeOf(ctx, u)
+			if err != nil {
+				return FixedAsset{}, err
+			}
+			if mode == team.Founder {
+				return FixedAsset{}, problem(CodeAssetVoidApproval, "In Founder mode, voiding an asset needs a second person (FM-1).",
+					"Ask for another person's approval to void it")
+			}
+			doc, err := a.assets.Void(storage.WithReason(ctx, in.Body.Reason), u, id, in.Body.Reason)
+			if err != nil {
+				return FixedAsset{}, err
+			}
+			return shown(ctx, u, doc)
+		})
+		if err != nil {
+			return nil, err
+		}
+		if w.Previewed {
+			return &assetOutput{Status: w.Status, Applied: applied(w), Body: w.Body}, nil
+		}
+		return &assetOutput{Status: w.Status, ETag: etag(w.Body.Version, string(storage.DocumentReversed)), Replayed: replayedHeader(w.Replayed), Body: w.Body}, nil
+	})
+
+	requestCodes := append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
+		CodeSessionRequired, CodeStepUpRequired, approval.CodePending, storage.CodeApproval, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid,
+		storage.CodeRetry, storage.CodeLockTimeout}, AssetVoidCodes()...)
+	register(a, authz.RequestFixedAssetVoid, huma.Operation{
+		OperationID: "requestFixedAssetVoid", Method: http.MethodPost, Path: "/v1/fixed-assets/{asset_id}/void-approval",
+		Tags: []string{"Fixed assets"}, Summary: "Ask for approval to void a fixed asset", DefaultStatus: http.StatusAccepted,
+		Description: "Asks for another person's approval to void an asset registered by mistake (FM-1; PRD-001 rev 0.151): the answer is 202 " +
+			"with an approval request, which a person who holds A on \"Fixed assets\" (the Controller) and did not ask approves, stepped up; " +
+			"on the approval it is voided as voidFixedAsset does. Needs a person signed in who passed step-up, and If-Match with its ETag. " +
+			"Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.",
+	}, requestCodes, func(ctx context.Context, in *voidAssetInput) (*billRequestOutput, error) {
+		id, err := parseID("asset_id", in.AssetID)
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(in.IfMatch) == "" {
+			return nil, checkIfMatch(in.IfMatch, "")
+		}
+		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (Approval, error) {
+			doc, err := lockedAsset(ctx, u, id, in.IfMatch)
+			if err != nil {
+				return Approval{}, err
+			}
+			x, err := asset.Read(doc)
+			if err != nil {
+				return Approval{}, err
+			}
+			return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectFixedAsset, ObjectKey: id.String(), Operation: approval.OpFixedAssetVoid,
+				Summary: fmt.Sprintf("Void %s %s, cost %s %s, registered by mistake", doc.Number, x.Name, x.Cost.String(), x.Cost.Currency().Code),
+				Execute: map[string]any{"asset_id": id.String(), "reason": in.Body.Reason},
+				Diff:    []ApprovalDiff{{Field: "status", Before: "in the register", After: "voided"}, {Field: "reason", After: in.Body.Reason}}})
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &billRequestOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
+	})
+}
+
+// AssetVoidCodes are the codes a void of an asset, or its approval, may answer (rev 0.151).
+func AssetVoidCodes() []string {
+	return []string{asset.CodeNotAsset, asset.CodeBadContent, asset.CodeAssetVoid, asset.CodeVoided}
+}
+
+// assetDependencies are what an asset's void envelope binds (FR-APR-05): its version and status, its cost and the
+// depreciation the void reverses.
+func (a *API) assetDependencies(ctx context.Context, u storage.UnitOfWork, key string) (int, map[string]any, error) {
+	id, err := uuid.Parse(key)
+	if err != nil {
+		return 0, nil, err
+	}
+	doc, err := u.Documents().Get(ctx, id)
+	if err != nil {
+		return 0, nil, err
+	}
+	x, err := asset.Read(doc)
+	if err != nil {
+		return 0, nil, err
+	}
+	posted, err := journal.PostedOf(ctx, u, id, x.Cost.Currency())
+	if err != nil {
+		return 0, nil, err
+	}
+	acc := x.Carried
+	if t, ok := posted.Total[doc.Version]; ok {
+		acc, _ = acc.Add(t)
+	}
+	return doc.Version, map[string]any{"status": string(doc.Status), "cost": x.Cost.String() + " " + x.Cost.Currency().Code,
+		"accumulated": acc.String() + " " + acc.Currency().Code}, nil
+}
+
+// executeAssetVoid voids the asset as asked, on the approval.
+func (a *API) executeAssetVoid(ctx context.Context, u storage.UnitOfWork, r storage.ApprovalRequest, s stored) error {
+	id, err := uuid.Parse(r.ObjectKey)
+	if err != nil {
+		return err
+	}
+	reason := fmt.Sprint(s.Execute["reason"])
+	_, err = a.assets.Void(storage.WithReason(ctx, reason), u, id, reason)
+	return err
 }

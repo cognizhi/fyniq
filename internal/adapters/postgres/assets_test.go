@@ -4,6 +4,7 @@ package postgres_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -19,7 +20,8 @@ import (
 // FR-FA-01 and QA-ENG-05 (p1-fixed-assets task 1.1): the database keeps an asset's source to one line of a posted bill
 // or bank line, on the line's own asset account, which its entry debits, once (FY235, fixed_asset_source_line_once);
 // it refuses a second asset on a line, a line of another account, a line of a draft or voided bill, an account outside
-// the register's groups, and any change or deletion of a source.
+// the register's groups, and any change or deletion of a source but its release by its asset's void (rev 0.151), after
+// which the line registers again, once.
 // req: FR-FA-01
 // req: QA-ENG-05
 // asvs: V2.2.1
@@ -144,6 +146,60 @@ func TestAssetSourcesKeepTheirLine(t *testing.T) {
 		of, err := u.AssetSources().Of(ctx, first.ID)
 		if len(got) != 1 || len(all) != 1 || got[0] != of || of.Line != 1 || of.AccountID != equipment.ID || of.SourceVersion != 1 {
 			t.Errorf("sources: %+v %+v %+v", got, all, of)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// (rev 0.151, design D9) A live asset's source is released only by its void: the API's role releasing it straight,
+	// or the owner of the table, is refused.
+	release := func(role string) error {
+		return asOrg(ctx, conn(t, role), b.Org, func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, "UPDATE fyniq.fixed_asset_source SET released = true WHERE asset_id = $1", first.ID)
+			return err
+		})
+	}
+	wantState(t, "the API releases a live asset's source", release("fyniq_api"), "FY235")
+	wantState(t, "the owner releases a live asset's source", release("fyniq"), "FY235")
+	// Voided, the asset's source is released and its line registers again, once more only.
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := assets.Void(storage.WithReason(ctx, "Registered twice"), u, first.ID, "Registered twice")
+		return err
+	}); err != nil {
+		t.Fatalf("void: %v", err)
+	}
+	again, err := register(laptop.ID, 1)
+	if err != nil {
+		t.Fatalf("the line freed, registered again: %v", err)
+	}
+	if _, err := register(laptop.ID, 1); err == nil || !strings.Contains(err.Error(), "in the register already") { // the command's ASSET-03
+		t.Errorf("a second live asset on the line: %v", err)
+	}
+	if err := add(storage.AssetSource{SourceID: laptop.ID, SourceVersion: 1, Line: 1, AccountID: equipment.ID}); storage.CodeOf(err) != storage.CodeDuplicate {
+		t.Errorf("a second live source on the line, straight at the store: %v", err)
+	}
+	// A released source stays released, keeps its line and never goes.
+	for what, sql := range map[string]string{
+		"live again":     "UPDATE fyniq.fixed_asset_source SET released = false WHERE asset_id = $1",
+		"another line":   "UPDATE fyniq.fixed_asset_source SET line = 2 WHERE asset_id = $1",
+		"deleted":        "DELETE FROM fyniq.fixed_asset_source WHERE asset_id = $1",
+		"released again": "UPDATE fyniq.fixed_asset_source SET released = true WHERE asset_id = $1",
+	} {
+		err := asOrg(ctx, conn(t, "fyniq"), b.Org, func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, sql, first.ID)
+			return err
+		})
+		wantState(t, "the owner makes a released source "+what, err, "FY235")
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		of, err := u.AssetSources().Of(ctx, first.ID)
+		if err != nil {
+			return err
+		}
+		live, err := u.AssetSources().OfDocument(ctx, laptop.ID)
+		if !of.Released || len(live) != 1 || live[0].AssetID != again.ID {
+			t.Errorf("after the void: %+v, live %+v", of, live)
 		}
 		return err
 	}); err != nil {

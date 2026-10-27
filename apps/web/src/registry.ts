@@ -212,6 +212,8 @@ export const actions = [
   { kind: "action", id: "fixed-assets.change", mode: "expert", help: "fixed-assets.change", guide: "accounting.fixed-assets#change-an-asset" },
   { kind: "action", id: "fixed-assets.dispose", mode: "expert", help: "fixed-assets.dispose", guide: "accounting.fixed-assets#sell-or-write-off-an-asset" },
   { kind: "action", id: "fixed-assets.void", mode: "expert", help: "fixed-assets.void", guide: "accounting.fixed-assets#void-a-disposal" },
+  { kind: "action", id: "fixed-assets.void-asset", mode: "expert", help: "fixed-assets.void-asset", guide: "accounting.fixed-assets#void-an-asset-registered-by-mistake" },
+  { kind: "action", id: "fixed-assets.voided", mode: "expert", help: "fixed-assets.voided", guide: "accounting.fixed-assets#void-an-asset-registered-by-mistake" },
   { kind: "action", id: "expense-policy.load-starter", mode: "expert", help: "expense-policy.load-starter", guide: "claims.approve-team#set-the-expense-policy" },
   { kind: "action", id: "claims.export", mode: "basic", help: "claims.export", guide: "claims.my-claims#follow-your-claims" },
   { kind: "action", id: "claims.mileage-log", mode: "basic", help: "claims.mileage-log", guide: "claims.my-claims#claim-a-trip-in-your-own-vehicle" },

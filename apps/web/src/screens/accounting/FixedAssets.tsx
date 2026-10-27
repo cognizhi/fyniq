@@ -60,6 +60,13 @@ export function StatusChip({ asset }: { asset: FixedAsset }) {
           Disposed
         </span>
       );
+    case "voided":
+      return (
+        <span className="fy-chip fy-chip--neutral">
+          <Icon of={Undo2} />
+          Voided
+        </span>
+      );
     case "fully_depreciated":
       return (
         <span className="fy-chip fy-chip--neutral">
@@ -191,14 +198,24 @@ export function FixedAssets() {
   const base = organisation?.base_currency ?? "SGD";
   const search = useSearch({ strict: false }) as { register?: string; line?: string };
   const may = (session.roles ?? []).some((r) => assetKeepers.includes(r));
-  const [tab, setTab] = useState<"register" | "unregistered">("register");
+  const [tab, setTab] = useState<"register" | "unregistered" | "voided">("register");
   const [selected, setSelected] = useState<string | null>(null);
+  const choose = (t: typeof tab) => (setTab(t), setSelected(null));
   const [registering, setRegistering] = useState<Unregistered | "opening" | null>(null);
   const [said, setSaid] = useState("");
   const assets = useQuery({
     queryKey: ["fixed-assets"],
     queryFn: async () => {
       const { data, error } = await api.GET("/v1/fixed-assets", { params: { query: { page_size: 500 } } });
+      if (error) throw error;
+      return data.items ?? [];
+    },
+  });
+  const voided = useQuery({
+    queryKey: ["fixed-assets", "voided"],
+    enabled: tab === "voided",
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/fixed-assets", { params: { query: { page_size: 500, status: "voided" } } });
       if (error) throw error;
       return data.items ?? [];
     },
@@ -257,11 +274,14 @@ export function FixedAssets() {
       )}
       {assets.isError && <Refusal problem={problemOf(assets.error)} title="The register could not be listed" />}
       <div className="fy-tabs" role="tablist" aria-label="Register views">
-        <button type="button" role="tab" aria-selected={tab === "register"} onClick={() => setTab("register")}>
+        <button type="button" role="tab" aria-selected={tab === "register"} onClick={() => choose("register")}>
           Register
         </button>
-        <button type="button" role="tab" aria-selected={tab === "unregistered"} onClick={() => setTab("unregistered")} title={helpText("fixed-assets.unregistered").tooltip}>
+        <button type="button" role="tab" aria-selected={tab === "unregistered"} onClick={() => choose("unregistered")} title={helpText("fixed-assets.unregistered").tooltip}>
           Not in the register yet{waiting.length > 0 ? ` (${waiting.length})` : ""}
+        </button>
+        <button type="button" role="tab" aria-selected={tab === "voided"} onClick={() => choose("voided")} title={helpText("fixed-assets.voided").tooltip}>
+          {helpText("fixed-assets.voided").label}
         </button>
       </div>
       {tab === "register" && assets.data && items.length === 0 && (
@@ -340,6 +360,54 @@ export function FixedAssets() {
           </div>
           {selected && <AssetPeek id={selected} may={may} base={base} accounts={codes} onSaid={setSaid} />}
         </div>
+      )}
+      {tab === "voided" && (
+        <section className="fy-stack fy-stack--2" aria-label="Voided assets">
+          {voided.isError && <Refusal problem={problemOf(voided.error)} title="The voided assets could not be listed" />}
+          {voided.data && voided.data.length === 0 && <p className="fy-secondary">No asset has been voided. An asset registered by mistake is voided from its panel, and listed here after.</p>}
+          {(voided.data ?? []).length > 0 && (
+            <div className="fy-split">
+              <div className="fy-tablewrap">
+                <table className="fy-table fy-table--cards fy-table--compact" aria-label="Voided assets">
+                  <thead>
+                    <tr>
+                      <th scope="col">Asset</th>
+                      <th scope="col">Category</th>
+                      <th scope="col">Bought</th>
+                      <th scope="col" className="fy-num">
+                        Cost
+                      </th>
+                      <th scope="col">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(voided.data ?? []).map((a) => (
+                      <tr key={a.id} aria-selected={selected === a.id}>
+                        <td data-card="title">
+                          <button type="button" className="cursor-pointer border-0 bg-transparent p-0 text-start font-[inherit] text-[var(--link)] underline-offset-2 hover:underline" onClick={() => setSelected(a.id)}>
+                            {a.name}
+                          </button>
+                          <span className="fy-small fy-muted block fy-mono">{a.number}</span>
+                        </td>
+                        <td data-card="meta" className="fy-mono">
+                          {codes.get(a.account_id)?.code ?? ""}
+                        </td>
+                        <td data-card="meta">{date(a.purchased_on)}</td>
+                        <td data-card="amount" className="fy-num">
+                          {money(a.cost)}
+                        </td>
+                        <td data-card="status">
+                          <StatusChip asset={a} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {selected && <AssetPeek id={selected} may={may} base={base} accounts={codes} onSaid={setSaid} />}
+            </div>
+          )}
+        </section>
       )}
       {tab === "unregistered" && (
         <section className="fy-stack fy-stack--2" aria-label="Not in the register yet">
@@ -456,7 +524,7 @@ function MonthStatus({ status }: { status: string }) {
 // AssetPeek is an asset's side-peek: its figures, source, checks, depreciation schedule and disposals.
 function AssetPeek({ id, may, base, accounts, onSaid }: { id: string; may: boolean; base: string; accounts: Map<string, Account>; onSaid: (s: string) => void }) {
   const heading = useId();
-  const [dialog, setDialog] = useState<"change" | "dispose" | Disposal | null>(null);
+  const [dialog, setDialog] = useState<"change" | "dispose" | "void" | Disposal | null>(null);
   const asset = useQuery({
     queryKey: ["fixed-assets", id],
     queryFn: async () => {
@@ -607,7 +675,7 @@ function AssetPeek({ id, may, base, accounts, onSaid }: { id: string; may: boole
           </>
         )}
       </div>
-      {may && a.status !== "disposed" && (
+      {may && a.status !== "disposed" && a.status !== "voided" && (
         <div className="fy-card__foot fy-row fy-row--wrap">
           <Button size="sm" variant="secondary" onClick={() => setDialog("dispose")} title={helpText("fixed-assets.dispose").tooltip}>
             <Icon of={Archive} />
@@ -617,11 +685,16 @@ function AssetPeek({ id, may, base, accounts, onSaid }: { id: string; may: boole
             <Icon of={Pencil} />
             {helpText("fixed-assets.change").label}
           </Button>
+          <Button size="sm" variant="ghost" onClick={() => setDialog("void")} title={helpText("fixed-assets.void-asset").tooltip}>
+            <Icon of={Undo2} />
+            {helpText("fixed-assets.void-asset").label}
+          </Button>
         </div>
       )}
       {dialog === "change" && <ChangeDialog asset={a} base={base} onClose={() => setDialog(null)} onDone={(s) => (setDialog(null), onSaid(s))} />}
       {dialog === "dispose" && <DisposeDialog asset={a} base={base} onClose={() => setDialog(null)} onDone={(s) => (setDialog(null), onSaid(s))} />}
       {dialog && typeof dialog === "object" && <VoidDialog disposal={dialog} onClose={() => setDialog(null)} onDone={(s) => (setDialog(null), onSaid(s))} />}
+      {dialog === "void" && <VoidAssetDialog asset={a} onClose={() => setDialog(null)} onDone={(s) => (setDialog(null), onSaid(s))} />}
     </aside>
   );
 }
@@ -1075,6 +1148,66 @@ function VoidDialog({ disposal, onClose, onDone }: { disposal: Disposal; onClose
         <Field id={`${id}-date`} label="Voided on">
           <input className="fy-input" type="date" id={`${id}-date`} value={day} onChange={(e) => setDay(e.target.value)} />
         </Field>
+        <Field id={`${id}-reason`} label="Why">
+          <input className="fy-input" id={`${id}-reason`} value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
+        </Field>
+      </div>
+    </Dialog>
+  );
+}
+
+// VoidAssetDialog voids an asset registered by mistake (FR-FA-01, rev 0.151): its depreciation is reversed month by month
+// and its line can be registered again; in Founder mode another person approves it (ASSET-22).
+function VoidAssetDialog({ asset, onClose, onDone }: { asset: FixedAsset; onClose: () => void; onDone: (s: string) => void }) {
+  const id = useId();
+  const queries = useQueryClient();
+  const confirm = useConfirm();
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const [key] = useState(newKey);
+
+  const save = async () => {
+    if (!reason.trim()) return setProblem({ code: "API-INPUT-01", title: "Say why it is voided", detail: "The audit trail and each reversing entry keep the reason." } as ApiProblem);
+    setBusy(true);
+    setProblem(null);
+    const params = { path: { asset_id: asset.id }, header: { "If-Match": `"${asset.version}-posted"`, "Idempotency-Key": key } };
+    const body = { reason: reason.trim() };
+    const out = await guarded(confirm, () => api.POST("/v1/fixed-assets/{asset_id}/void", { params, body }));
+    if (!out.data && problemOf(out.error).code === "ASSET-22") {
+      const asked = await guarded(confirm, () => api.POST("/v1/fixed-assets/{asset_id}/void-approval", { params: { ...params, header: { ...params.header, "Idempotency-Key": newKey() } }, body }));
+      setBusy(false);
+      if (!asked.data) return setProblem(problemOf(asked.error));
+      return onDone(`Voiding ${asset.number} waits for another person's approval.`);
+    }
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    await queries.invalidateQueries({ queryKey: ["fixed-assets"] });
+    onDone(`${asset.number} is voided: its depreciation is reversed, and its line can be registered again.`);
+  };
+
+  return (
+    <Dialog
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title={`Void ${asset.number} ${asset.name}`}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={() => void save()} disabled={busy}>
+            {busy ? "Voiding…" : "Void the asset"}
+          </Button>
+        </>
+      }
+    >
+      <div className="fy-stack fy-stack--3">
+        {problem && <Refusal problem={problem} title="The asset was not voided" />}
+        <p className="fy-small fy-secondary">
+          For an asset registered by mistake: each month of its depreciation is reversed on its own date, it leaves the register, and its {asset.source ? "line" : "opening figures"} can be
+          registered again. An asset that was really sold or scrapped is disposed of instead.
+        </p>
         <Field id={`${id}-reason`} label="Why">
           <input className="fy-input" id={`${id}-reason`} value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
         </Field>
