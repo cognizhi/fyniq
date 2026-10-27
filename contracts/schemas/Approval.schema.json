@@ -101,7 +101,8 @@
         "bank_rule",
         "expense_claim",
         "claim_reimbursement",
-        "cash_advance"
+        "cash_advance",
+        "asset_disposal"
       ],
       "examples": [
         "organisation_setting"
@@ -145,7 +146,8 @@
         "bank_rule.auto_apply",
         "expense_claim.post",
         "claim_reimbursement.void",
-        "cash_advance.void"
+        "cash_advance.void",
+        "asset_disposal.void"
       ],
       "examples": [
         "organisation_setting.change"

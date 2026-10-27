@@ -285,3 +285,144 @@ func TestPostDepreciation(t *testing.T) {
 		t.Errorf("a depreciation of less than nothing: %v", err)
 	}
 }
+
+var (
+	equipmentAcc = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000001510"), Code: "1510", Active: true, Type: "asset"}
+	disposalAcc  = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000007050"), Code: "7050", Active: true, Type: "revenue"}
+	clearingAcc  = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000001290"), Code: "1290", Active: true, Type: "asset"}
+	disposalID   = uuid.MustParse("0192f1a0-0000-7000-8000-0000000d5001")
+)
+
+// disposing is the chart a disposal posts against: the depreciation accounts, 1510, 7050, a clearing account, a bank
+// and 2200.
+func disposing() Settings {
+	s := depreciating()
+	for _, a := range []Account{equipmentAcc, disposalAcc, clearingAcc, gstControl, bankMoney(), group, closed} {
+		s.Accounts[a.ID] = a
+	}
+	return s
+}
+
+// bankMoney is the bank as a money account.
+func bankMoney() Account {
+	b := bank
+	b.Money = true
+	return b
+}
+
+// laptopDisposal is the disposal of cost of the laptop with its accumulated depreciation, for nothing.
+func laptopDisposal(t testing.TB, cost, accumulated string) AssetDisposal {
+	return AssetDisposal{ID: disposalID, Version: 1, Date: day, Memo: "DSP-0001 FA-0001 MacBook Pro 14", AssetAccountID: equipmentAcc.ID,
+		Cost: amt(t, cost, sgd), Accumulated: amt(t, accumulated, sgd), DisposalAccountID: disposalAcc.ID, Gross: amt(t, "0.00", sgd), InvoiceNet: amt(t, "0.00", sgd)}
+}
+
+// Worked by hand (FR-FA-03; §10.2 "Asset disposal"; rev 0.149): a S$3,600 laptop after 12 months (S$1,200 accumulated)
+//   - sold for S$2,000 into the bank: Dr 1590 1,200; Dr bank 2,000; Cr 1510 3,600; Dr 7050 400, a loss;
+//   - sold for S$2,180 with GST at 9%, the organisation registered: GST = 2,180 × 0.09 ÷ 1.09 = 180.00, so Dr bank
+//     2,180; Cr 2200 180; and the same loss of 400 on the S$2,000 net;
+//   - written off: Dr 1590 1,200; Cr 1510 3,600; Dr 7050 2,400;
+//   - half of it sold on an invoice for S$1,500: Dr 1590 600; Dr the clearing account 1,500; Cr 1510 1,800; Cr 7050
+//     300, a gain;
+//   - sold for its net book value, S$2,400: no gain or loss line.
+//
+// req: FR-FA-03
+// req: ledger/posting-rules Asset disposal
+// req: ledger/posting-rules Proceeds through a sales invoice (rev 0.149)
+// req: ledger/fixed-assets Proceeds received or invoiced (rev 0.149)
+// req: ledger/fixed-assets Where the gain or loss goes (rev 0.149)
+// req: RND-GST-INCL
+func TestPostAssetDisposal(t *testing.T) {
+	s := disposing()
+	bankID, clearing := bank.ID, clearingAcc.ID
+	sold := func(gross, rate string) AssetDisposal {
+		d := laptopDisposal(t, "3600.00", "1200.00")
+		d.MoneyAccountID, d.Gross, d.GSTRate = &bankID, amt(t, gross, sgd), rate
+		return d
+	}
+	half := laptopDisposal(t, "1800.00", "600.00")
+	half.ClearingAccountID, half.InvoiceNet = &clearing, amt(t, "1500.00", sgd)
+	for _, c := range []struct {
+		name string
+		d    AssetDisposal
+		want string
+	}{
+		{"sold for S$2,000", sold("2000.00", ""), "1590 1200.00 SGD = 1200.00; 1010 2000.00 SGD = 2000.00; 1510 -3600.00 SGD = -3600.00; 7050 400.00 SGD = 400.00"},
+		{"sold with GST", sold("2180.00", "0.09"),
+			"1590 1200.00 SGD = 1200.00; 1010 2180.00 SGD = 2180.00; 2200 -180.00 SGD = -180.00; 1510 -3600.00 SGD = -3600.00; 7050 400.00 SGD = 400.00"},
+		{"written off", laptopDisposal(t, "3600.00", "1200.00"), "1590 1200.00 SGD = 1200.00; 1510 -3600.00 SGD = -3600.00; 7050 2400.00 SGD = 2400.00"},
+		{"half on an invoice", half, "1590 600.00 SGD = 600.00; 1290 1500.00 SGD = 1500.00; 1510 -1800.00 SGD = -1800.00; 7050 -300.00 SGD = -300.00"},
+		{"at its net book value", sold("2400.00", ""), "1590 1200.00 SGD = 1200.00; 1010 2400.00 SGD = 2400.00; 1510 -3600.00 SGD = -3600.00"},
+		{"zero-rated", sold("2000.00", "0"), "1590 1200.00 SGD = 1200.00; 1010 2000.00 SGD = 2000.00; 1510 -3600.00 SGD = -3600.00; 7050 400.00 SGD = 400.00"},
+		{"nothing depreciated yet", laptopDisposal(t, "3600.00", "0.00"), "1510 -3600.00 SGD = -3600.00; 7050 3600.00 SGD = 3600.00"},
+	} {
+		e, err := PostAssetDisposal(c.d, s)
+		if err != nil || legs(s, e) != c.want {
+			t.Errorf("%s: %s %v", c.name, legs(s, e), err)
+			continue
+		}
+		if e.RuleVersion != RuleAssetDisposal || e.Source != (Source{SourceAssetDisposal, disposalID.String(), 1}) || !e.PostingDate.Equal(day) ||
+			e.PostingIdentity != AssetDisposalIdentity(disposalID, 1, RuleAssetDisposal) || e.Memo != c.d.Memo {
+			t.Errorf("%s: the entry's identity %+v", c.name, e)
+		}
+		again, err := ReplayAssetDisposal(RuleAssetDisposal, c.d, s)
+		if err != nil || legs(s, again) != c.want {
+			t.Errorf("%s: the replay %s %v", c.name, legs(s, again), err)
+		}
+	}
+	if _, err := ReplayAssetDisposal("asset_disposal@9", half, s); err == nil || !err.(Problems).Has(CodeUnknownRule) {
+		t.Errorf("an unknown rule version: %v", err)
+	}
+}
+
+// Every refusal of the disposal rule comes back together, with its field (ENG-22).
+// req: FR-FA-03
+// req: ENG-22
+// req: QA-RPT-02
+func TestPostAssetDisposalRefuses(t *testing.T) {
+	s := disposing()
+	bankID, clearing, grouped, shut := bank.ID, clearingAcc.ID, group.ID, closed.ID
+	in := func(f func(*AssetDisposal)) AssetDisposal {
+		d := laptopDisposal(t, "3600.00", "1200.00")
+		f(&d)
+		return d
+	}
+	bare := Settings{Base: sgd, Accounts: map[uuid.UUID]Account{equipmentAcc.ID: equipmentAcc, disposalAcc.ID: disposalAcc, bank.ID: bankMoney()}}
+	for name, c := range map[string]struct {
+		d    AssetDisposal
+		s    Settings
+		want []string
+	}{
+		"no date, a long memo": {in(func(d *AssetDisposal) { d.Date, d.Memo = time.Time{}, strings.Repeat("x", MaxMemo+1) }), s,
+			[]string{"date:" + CodeNoDate, "memo:" + CodeTooLong}},
+		"unknown and unusable accounts": {in(func(d *AssetDisposal) { d.AssetAccountID, d.DisposalAccountID = uuid.New(), grouped }), s,
+			[]string{"asset_account:" + CodeUnknownAccount, "disposal_account:" + CodeGroupAccount}},
+		"an inactive disposal account": {in(func(d *AssetDisposal) { d.DisposalAccountID = shut }), s, []string{"disposal_account:" + CodeInactiveAccount}},
+		"a cost of nothing, less than nothing accumulated": {in(func(d *AssetDisposal) { d.Cost, d.Accumulated = amt(t, "0.00", sgd), amt(t, "-1.00", sgd) }), s,
+			[]string{"cost:" + CodeDisposal, "accumulated:" + CodeDisposal}},
+		"more accumulated than the cost": {in(func(d *AssetDisposal) { d.Accumulated = amt(t, "3600.01", sgd) }), s, []string{"accumulated:" + CodeDisposal}},
+		"a cost in USD":                  {in(func(d *AssetDisposal) { d.Cost = amt(t, "3600.00", usd) }), s, []string{"cost:" + CodeDisposal}},
+		"no 1590":                        {laptopDisposal(t, "3600.00", "1200.00"), bare, []string{"lines:" + CodeSystemRole}},
+		"both proceeds": {in(func(d *AssetDisposal) { d.MoneyAccountID, d.ClearingAccountID = &bankID, &clearing }), s,
+			[]string{"proceeds:" + CodeDisposal}},
+		"money into an account that holds none, of nothing": {in(func(d *AssetDisposal) { d.MoneyAccountID = &clearing }), s,
+			[]string{"money_account_id:" + CodeNotMoneyAccount, "proceeds:" + CodeDisposal}},
+		"a GST rate that is not one": {in(func(d *AssetDisposal) { d.MoneyAccountID, d.Gross, d.GSTRate = &bankID, amt(t, "100.00", sgd), "nine" }), s,
+			[]string{"gst_code:" + CodeGSTRate}},
+		"no 2200 for the output tax": {in(func(d *AssetDisposal) {
+			d.MoneyAccountID, d.Gross, d.GSTRate, d.Accumulated = &bankID, amt(t, "109.00", sgd), "0.09", amt(t, "0.00", sgd)
+		}), bare,
+			[]string{"lines:" + CodeSystemRole}},
+		"an unknown clearing account, of nothing": {in(func(d *AssetDisposal) { u := uuid.New(); d.ClearingAccountID = &u }), s,
+			[]string{"clearing_account:" + CodeUnknownAccount, "proceeds:" + CodeDisposal}},
+	} {
+		_, err := PostAssetDisposal(c.d, c.s)
+		probs, _ := err.(Problems)
+		var got []string
+		for _, p := range probs {
+			got = append(got, p.Field+":"+p.Code)
+		}
+		if !slices.Equal(got, c.want) {
+			t.Errorf("%s: %v, want %v", name, got, c.want)
+		}
+	}
+}

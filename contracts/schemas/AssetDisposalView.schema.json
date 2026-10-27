@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accumulated_depreciation": {
+      "$ref": "Money.schema.json",
+      "description": "That cost's accumulated depreciation through the month before, taken off 1590."
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "money: what came in, GST included."
+    },
+    "approval_asked": {
+      "description": "The pending request to void it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "asset_id": {
+      "description": "The asset.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "asset_name": {
+      "description": "The asset's name when it was disposed of.",
+      "examples": [
+        "MacBook Pro 14, Wei Ling"
+      ],
+      "type": "string"
+    },
+    "asset_number": {
+      "description": "The asset's number.",
+      "examples": [
+        "FA-0001"
+      ],
+      "type": "string"
+    },
+    "checks": {
+      "description": "Its warnings (⚠): the invoice of its proceeds was voided after it.",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "cost": {
+      "$ref": "Money.schema.json",
+      "description": "The cost it took off the asset account."
+    },
+    "date": {
+      "description": "The day it was sold or written off.",
+      "examples": [
+        "2027-03-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "gain_or_loss": {
+      "$ref": "Money.schema.json",
+      "description": "Net proceeds less net book value: a gain above zero, a loss below, posted to the disposal account."
+    },
+    "gst_code": {
+      "description": "money: its GST code.",
+      "examples": [
+        "SR"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "Its ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6fa1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "invoice_id": {
+      "description": "invoice: the invoice.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "invoice_line": {
+      "description": "invoice: its line.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "invoice_number": {
+      "description": "invoice: its number.",
+      "examples": [
+        "INV-0042"
+      ],
+      "type": "string"
+    },
+    "ledger_impact": {
+      "description": "getAssetDisposal and the commands only: the lines its entry wrote: debits positive.",
+      "items": {
+        "$ref": "EntryLine.schema.json"
+      },
+      "type": "array"
+    },
+    "money_account_id": {
+      "description": "money: the account it came into.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "net_book_value": {
+      "$ref": "Money.schema.json",
+      "description": "Cost less accumulated depreciation: what the asset was still worth."
+    },
+    "net_proceeds": {
+      "$ref": "Money.schema.json",
+      "description": "What it fetched, net of GST: zero for a write-off."
+    },
+    "notes": {
+      "description": "Its notes.",
+      "examples": [
+        "Sold to a staff member"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number (FR-ORG-04).",
+      "examples": [
+        "DSP-0001"
+      ],
+      "type": "string"
+    },
+    "proceeds": {
+      "description": "How it was paid for, or none for a write-off.",
+      "enum": [
+        "money",
+        "invoice",
+        "none"
+      ],
+      "examples": [
+        "money"
+      ],
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When.",
+      "examples": [
+        "2027-03-15T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who recorded it."
+    },
+    "status": {
+      "description": "posted once recorded; reversed by a void.",
+      "enum": [
+        "posted",
+        "reversed"
+      ],
+      "examples": [
+        "posted"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The version of its content; with the status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "whole": {
+      "description": "true when the whole asset went; false for a part of its cost.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "version",
+    "asset_id",
+    "asset_name",
+    "date",
+    "whole",
+    "cost",
+    "accumulated_depreciation",
+    "net_book_value",
+    "proceeds",
+    "net_proceeds",
+    "gain_or_loss",
+    "checks",
+    "ledger_impact"
+  ],
+  "title": "AssetDisposalView",
+  "type": "object"
+}

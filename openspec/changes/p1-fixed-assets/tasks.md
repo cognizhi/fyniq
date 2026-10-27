@@ -40,7 +40,7 @@
 
 ## 3. Disposals
 
-- [ ] 3.1 `asset_disposal@1` (design D4): the share's accumulated depreciation off 1590, its cost off the asset
+- [x] 3.1 `asset_disposal@1` (design D4): the share's accumulated depreciation off 1590, its cost off the asset
   account, the proceeds from a money account (with output GST when GST-registered, `RND-GST-INCL`) or a sales
   invoice's line on the clearing account, the gain or loss to `assets.disposal_account`; refused while a month before
   it waits; a partial disposal makes the asset's next version; bank import matches a money sale; the replay reproduces
@@ -49,7 +49,7 @@
     a write-off of the same is a loss of S$2,400; half of it sold on an invoice for S$1,500 clears the clearing account
     and gains S$300, and the other half depreciates on; the entry balances. `// req: FR-FA-03`,
     `// req: ledger/posting-rules Asset disposal`, `// req: ledger/fixed-assets Proceeds received or invoiced (rev 0.149)`
-- [ ] 3.2 The API: dispose, list and read disposals, void (while no later month posted; in Founder mode on the
+- [x] 3.2 The API: dispose, list and read disposals, void (while no later month posted; in Founder mode on the
   Controller's approval, FM-1), with the matrix rows.
   - Tests: a void restores the asset's previous version; a void in Founder mode is asked for and approved by another.
     `// req: FR-FA-03`, `// req: FM-1`

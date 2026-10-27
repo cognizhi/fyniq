@@ -103,9 +103,10 @@ const (
 // publishing a document template (rev 0.95); issuing an invoice above the threshold, and voiding or editing one (p1-sales);
 // a step of an organisation connector's lifecycle (p1-connector-framework, FR-INT-26); a bank rule's auto-apply
 // (p1-bank-import-reconcile, FR-BNK-14); posting an expense claim (p1-expense-claims, FR-AP-17), and voiding a
-// reimbursement of claims (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148).
+// reimbursement of claims (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148); voiding a disposal of a fixed asset
+// (FR-FA-03, p1-fixed-assets).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
-	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches}
+	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -515,6 +516,13 @@ var (
 	GetFixedAsset      = Policy{Operation: "getFixedAsset", Capability: FixedAssets, Need: View}
 	RegisterFixedAsset = Policy{Operation: "registerFixedAsset", Capability: FixedAssets, Need: Create}
 	ChangeFixedAsset   = Policy{Operation: "changeFixedAsset", Capability: FixedAssets, Need: Create}
+	// Disposals (FR-FA-03; design D4, D5): posted under P (the Accountant), read under V; a void is posting, in Founder mode
+	// asked for and approved by another person who holds A on "Fixed assets" (the Controller, FM-1).
+	DisposeFixedAsset        = Policy{Operation: "disposeFixedAsset", Capability: FixedAssets, Need: Post}
+	ListAssetDisposals       = Policy{Operation: "listAssetDisposals", Capability: FixedAssets, Need: View}
+	GetAssetDisposal         = Policy{Operation: "getAssetDisposal", Capability: FixedAssets, Need: View}
+	VoidAssetDisposal        = Policy{Operation: "voidAssetDisposal", Capability: FixedAssets, Need: Post}
+	RequestAssetDisposalVoid = Policy{Operation: "requestAssetDisposalVoid", Capability: FixedAssets, Need: Post}
 	// Invoices (FR-AR-03; p1-sales), as bills: read under V, prepared under C (the Bookkeeper, the AR specialist, the
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
 	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
@@ -945,6 +953,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListCashAdvances, GetCashAdvance, RecordCashAdvance, RecordCashAdvanceRefund, VoidCashAdvance, RequestCashAdvanceVoid,
 	ListCardLines, CompleteCardLine, AddCardLineEvidence, ListCardLineEvidence, GetClaimGSTCodes,
 	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset,
+	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid,
 	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
 	ListClaimCategories, CreateClaimCategory, ReplaceClaimCategory, LoadStarterClaimCategories,
 	AddExpenseClaimEvidence, ListExpenseClaimEvidence, GetExpenseClaimEvidence, RemoveExpenseClaimEvidence,

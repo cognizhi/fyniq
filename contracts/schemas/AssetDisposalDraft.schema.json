@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "money: what came in, in the base currency, GST included."
+    },
+    "cost": {
+      "$ref": "Money.schema.json",
+      "description": "A partial disposal: the part of the asset's cost disposed of, in the base currency, above zero and below the cost; its accumulated depreciation and residual value go with it pro rata (ALLOC-PRORATA). Leave it out to dispose of the whole asset."
+    },
+    "date": {
+      "description": "The day the asset was sold or written off: on or after its purchase, and not after today.",
+      "examples": [
+        "2027-03-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "gst_code": {
+      "description": "money, when the organisation is GST-registered on the date: the sale's GST code for supplies, usually SR.",
+      "examples": [
+        "SR"
+      ],
+      "maxLength": 10,
+      "type": "string"
+    },
+    "invoice_id": {
+      "description": "invoice: the issued invoice to the buyer.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "invoice_line": {
+      "description": "invoice: its line for the asset, from 1, on the disposal clearing account.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "maximum": 200,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "money_account_id": {
+      "description": "money: the bank, cash or wallet account it came into: an active money account in the base currency.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "notes": {
+      "description": "Notes kept with it: who bought it, why it was written off.",
+      "examples": [
+        "Sold to a staff member"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "proceeds": {
+      "description": "money: received into a money account, recorded here and matched by bank import; invoice: an issued sales invoice to the buyer whose line is on the disposal clearing account; none: a write-off.",
+      "enum": [
+        "money",
+        "invoice",
+        "none"
+      ],
+      "examples": [
+        "money"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "date",
+    "proceeds"
+  ],
+  "title": "AssetDisposalDraft",
+  "type": "object"
+}
