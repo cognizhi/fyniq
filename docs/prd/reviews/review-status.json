@@ -282,6 +282,37 @@
    "screens": [
     "fixed-assets"
    ]
+  },
+  {
+   "id": "posting",
+   "title": "Posting rules decided without an accountant",
+   "reviewer": "the accountant",
+   "status": "pending",
+   "pr": null,
+   "short": "Posting rules decided without an accountant await review by the accountant",
+   "message": "Foreign bank lines, transfers across currencies, settlement tolerances, linked credit notes and GST on disposal proceeds follow our best current reading. Check the entry before you rely on it or file it.",
+   "sections": [
+    "PRD-001 §8.4",
+    "§8.5",
+    "§8.9",
+    "§10.2",
+    "Appendix B.1"
+   ],
+   "requirements": [
+    "FR-BNK-06",
+    "FR-BNK-08",
+    "FR-BNK-09",
+    "FR-AR-04",
+    "FR-FA-03"
+   ],
+   "screens": [
+    "categorise-basic",
+    "categorise-expert",
+    "bank-account",
+    "record-payment",
+    "invoice-record",
+    "fixed-assets"
+   ]
   }
  ]
 }
