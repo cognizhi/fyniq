@@ -182,6 +182,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/fixed-assets/{asset_id}` (getFixedAsset): Get a fixed asset
 - `POST /v1/fixed-assets/{asset_id}/change` (changeFixedAsset): Change a fixed asset
 - `POST /v1/fixed-assets/{asset_id}/disposals` (disposeFixedAsset): Sell or write off a fixed asset
+- `POST /v1/fixed-assets/{asset_id}/void` (voidFixedAsset): Void a fixed asset registered by mistake
+- `POST /v1/fixed-assets/{asset_id}/void-approval` (requestFixedAssetVoid): Ask for approval to void a fixed asset
 - `GET /v1/fx/feed` (listFeedRates): List the daily feed's rates
 - `GET /v1/fx/money-accounts` (listForeignMoneyAccounts): List the money accounts' balances in other currencies
 - `GET /v1/fx/rate` (lookupFxRate): Find the rate a posting takes

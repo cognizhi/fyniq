@@ -729,6 +729,7 @@ type FyniqFixedAssetSource struct {
 	SourceVersion  int32
 	Line           int32
 	AccountID      uuid.UUID
+	Released       bool
 }
 
 type FyniqFxFeedRate struct {

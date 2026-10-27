@@ -134,6 +134,7 @@ fyniq_api       UPDATE    evidence (removed_at, state, version)
 fyniq_api       EXECUTE   finish_job_slot()
 fyniq_api       INSERT    fixed_asset_source (account_id, asset_id, line, source_id, source_version)
 fyniq_api       SELECT    fixed_asset_source
+fyniq_api       UPDATE    fixed_asset_source (released)
 fyniq_api       SELECT    fx_feed_rates
 fyniq_api       INSERT    fx_rate (currency, entered_at, entered_by, kind, note, on_date, quote, quote_form, rate)
 fyniq_api       SELECT    fx_rate

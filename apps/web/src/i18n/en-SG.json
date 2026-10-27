@@ -708,6 +708,14 @@
       "label": "Void",
       "tooltip": "Reverse a disposal recorded by mistake and restore the asset; in Founder mode another person approves it."
     },
+    "fixed-assets.void-asset": {
+      "label": "Void the asset",
+      "tooltip": "Undo an asset registered by mistake: its depreciation is reversed and its line can be registered again; in Founder mode another person approves it."
+    },
+    "fixed-assets.voided": {
+      "label": "Voided",
+      "tooltip": "Assets voided as registered by mistake: their depreciation reversed, their lines free to register again."
+    },
     "fx.find-rate": {
       "label": "Find the rate a posting takes",
       "tooltip": "A posting without a rate of its own takes your rate for its date, else the daily feed's from that day or up to 7 days before, else your monthly rate."

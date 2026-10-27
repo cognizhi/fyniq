@@ -4,6 +4,7 @@ package postgres_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -129,7 +130,7 @@ func TestTheRegisterAgreesWithItsAccounts(t *testing.T) {
 	}
 
 	// Registered, the laptop leaves the list; a manual journal to 1590 is named.
-	register(second)
+	secondAsset := register(second)
 	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
 		_, err := u.Ledger().Append(ctx, storage.NewEntry{PostingDate: porttest.Day(10, 30), PostingIdentity: "manual_journal:" + uuid.NewString() + ":v1:journal@1",
 			RuleVersion: "journal@1", Memo: "Top-up", Source: storage.Source{Type: ledger.SourceManualJournal, ID: uuid.NewString(), Version: 1},
@@ -171,5 +172,24 @@ func TestTheRegisterAgreesWithItsAccounts(t *testing.T) {
 	}
 	if r := nov["1590"]; r.Reconciliation.Unexplained() {
 		t.Errorf("1590 on 30 November: %+v", r)
+	}
+
+	// (rev 0.151) The S$1,200.00 laptop voided as registered by mistake: its October is reversed, its line is not in the
+	// register again, and the register still agrees with 1510 and 1590.
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := assets.Void(storage.WithReason(ctx, "Registered by mistake"), u, secondAsset.ID, "Registered by mistake")
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	nov = at("2026-11-30")
+	if r := nov["1510"]; r.Reconciliation.Unexplained() || r.Reconciliation.Base.Control.String() != "2100.00" {
+		t.Errorf("1510 after the void: %+v", r)
+	}
+	if r := nov["1590"]; r.Reconciliation.Unexplained() {
+		t.Errorf("1590 after the void: %+v", r)
+	}
+	if c := checks(); !strings.Contains(c["assets-unregistered"].Detail, "BILL-0002 line 1 (1200.00)") {
+		t.Errorf("the voided laptop's line at the close: %+v", c["assets-unregistered"])
 	}
 }

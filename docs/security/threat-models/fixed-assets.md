@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | The asset register, monthly depreciation by the scheduler, disposals and write-offs, the register against its accounts at the close: FR-FA-01, FR-FA-02, FR-FA-03, INV-07, FR-AUT-01, FR-AUT-02, FR-GL-12, FM-1 (PRD-001 rev 0.149 and 0.150; p1-fixed-assets design D1…D7) |
+| Feature and requirement IDs | The asset register, monthly depreciation by the scheduler, disposals and write-offs, the register against its accounts at the close, (rev 0.151) voiding an asset registered by mistake: FR-FA-01, FR-FA-02, FR-FA-03, INV-07, FR-AUT-01, FR-AUT-02, FR-GL-12, FM-1 (PRD-001 rev 0.149 to 0.151; p1-fixed-assets design D1…D9) |
 | Author, reviewer, date | Claude Code for the founders, 27 Oct 2026; second review at sign-off (waived before production, AGENTS.md) |
 | Data and its class | Assets' names, costs, lives and residual values, their months of depreciation, and their disposals' proceeds, buyers' invoices and money accounts (confidential). An asset's name may name the person who uses it. No bank account numbers, payee bank details or secrets |
-| Who acts | The Accountant, who registers and changes assets (C) and disposes of them (P) on Appendix D's "Fixed assets"; the Controller, who approves a disposal's void in Founder mode (A, FM-1); the Owner, the Bookkeeper, the Auditor and the Tax agent, who read (V); the platform job `assets.depreciation` as `scheduler:assets.depreciation` with the worker's database role `fyniq_worker`; the API's role `fyniq_api` |
+| Who acts | The Accountant, who registers and changes assets (C), and disposes of them and voids them (P) on Appendix D's "Fixed assets"; the Controller, who approves a disposal's or an asset's void in Founder mode (A, FM-1); the Owner, the Bookkeeper, the Auditor and the Tax agent, who read (V); the platform job `assets.depreciation` as `scheduler:assets.depreciation` with the worker's database role `fyniq_worker`; the API's role `fyniq_api` |
 
 ## 1. What we are building
 
@@ -15,8 +15,9 @@ Registering posts nothing. Each month, once its last day has come, the scheduler
 (`asset_depreciation@1`, Dr 6610 · Cr 1590) as its own entry, per asset, version and month. A disposal sells or writes
 off the asset, whole or in part (`asset_disposal@1`): the share's accumulated depreciation off 1590, its cost off the asset
 account, the proceeds in a money account (with output GST) or on the disposal clearing account through a sales invoice,
-and the gain or loss to `assets.disposal_account`. A void reverses a disposal and restores the asset. At the close the
-register is reconciled with each asset account and 1590.
+and the gain or loss to `assets.disposal_account`. A void reverses a disposal and restores the asset. (rev 0.151) An asset
+registered by mistake is voided: its months of depreciation are reversed on their own dates, it leaves the register, and
+its source line is released to register again. At the close the register is reconciled with each asset account and 1590.
 
 Trust boundaries: **person ↔ API** (the Appendix D row, step-up, Founder mode's second person for a void); **API ↔
 database** (`fyniq_api`, RLS per organisation, `fixed_asset_source_guard`, `journal_entry_asset_depreciation`, the ledger
@@ -38,12 +39,13 @@ organisation's today).
 | T9 | person ↔ API | Information disclosure: another organisation's assets read; a person outside the row reads the register | Assets and who uses them disclosed | Low |
 | T10 | person ↔ API | Spoofing: the AI or an integration registers, changes or disposes of an asset | A posting no person stands behind | Low |
 | T11 | person ↔ API | Tampering: a retried request registers an asset or records a disposal twice | Two assets, or two disposals' entries | Medium |
+| T12 | person ↔ API | Repudiation and tampering (rev 0.151): an asset taken or sold is voided as "registered by mistake", so it vanishes with no loss shown; or a void frees a line that is then registered twice | An asset gone with nobody accountable; depreciation of one cost twice | Medium |
 
 ## 3. What we do about it
 
 | Threat | Control | Test that proves it (`// req:` and `// asvs:`) |
 |---|---|---|
-| T1 | `fixed_asset_source` holds one asset per source line (`fixed_asset_source_line_once`), only a line of a posted bill or bank line at its current version, on that line's own account as the version saved it, an active account of the register that its entry, not reversed, debits; a source never changes or goes, for any role (FY235). The asset's cost is what the line's entry put on the account | `TestAssetSourcesKeepTheirLine` (`// req: QA-ENG-05`, `// asvs: V2.2.1`), `TestRegisteringFixedAssets` |
+| T1 | `fixed_asset_source` holds one live asset per source line (`fixed_asset_source_line_live`, rev 0.151; before it `fixed_asset_source_line_once`), only a line of a posted bill or bank line at its current version, on that line's own account as the version saved it, an active account of the register that its entry, not reversed, debits; a source never goes, and changes only to be released by its asset's void, for any role (FY235). The asset's cost is what the line's entry put on the account | `TestAssetSourcesKeepTheirLine` (`// req: QA-ENG-05`, `// asvs: V2.2.1`), `TestRegisteringFixedAssets` |
 | T2 | A month's posting identity is the asset, its version and the month: the database refuses a second; each month posts in its own transaction with the asset locked, after checking it has not posted; registering and the job share the same command | `TestTheSchedulerDepreciatesTheRegister` (a run twice posts once; `// asvs: V2.3.1`) |
 | T3 | The period guard refuses a posting in a closed period (INV-03); a month with no open period waits with an audit event and holds back the months after it; only a month whose last day has come in the organisation's time zone is posted | `TestTheSchedulerDepreciatesTheRegister` (`// req: ENG-05`, `// req: FR-AUT-01`) |
 | T4 | `journal_entry_asset_depreciation` refuses a month that does not name a registered asset at its current version (FY236), for every role; the replay re-runs each month from its version | `TestTheSchedulerDepreciatesTheRegister` (`// req: QA-ENG-05`) |
@@ -54,13 +56,15 @@ organisation's today).
 | T9 | `fixed_asset_source` is under FORCE RLS; the documents and entries are per organisation; every operation needs a right on "Fixed assets" | `TestTenantKeysIndexesAndForeignKeys`, `TestAuthorisationMatrix` (`// asvs: V8.2.2`) |
 | T10 | The AI holds no right on "Fixed assets" (Appendix D) and no write tool (§9.6); registering, changing and disposing need a person signed in | `TestAuthorisationMatrix` |
 | T11 | Every command takes an Idempotency-Key, and a change or disposal If-Match with the asset's ETag: a retry gets the saved answer and writes nothing; a line registered once is refused again | The API conventions' idempotency tests, `TestRegisteringFixedAssets` |
+| T12 | Voiding needs P on "Fixed assets" and a reason, which the audit trail and each reversing entry keep; in Founder mode another person who holds A approves it (ASSET-22, FM-1), its envelope bound to the asset's version, status, cost and accumulated depreciation (FR-APR-05). It is refused while a disposal stands or a month to reverse is in a closed period (ASSET-20). The voided asset stays listed under Voided with its reversed months; its line shows again as not in the register, ⚠ at the close until registered or explained. Only the database's release, in the void's transaction, frees a line, and one live asset per line stays unique (FY235) | `TestVoidingAFixedAsset`, `TestAFounderVoidsAnAssetWithTheOthersApproval` (`// req: FM-1`), `TestAssetSourcesKeepTheirLine` (`// asvs: V2.2.1`), `TestTheRegisterAgreesWithItsAccounts` (`// req: INV-07`) |
 
 ## 4. What remains
 
 - The independent oracle does not post `asset_depreciation@1` or `asset_disposal@1` yet (a session of its own); until it
   does, the hand-worked tests and the replay are the second check.
-- An asset registered from the wrong line cannot be removed from the register; its bill is corrected, and the asset shows
-  ⚠ until it is disposed of. A removal while nothing has posted is a candidate for a later change.
+- (rev 0.151) A void cannot tell a real mistake from an asset taken: the reason, the approval in Founder mode, the voided
+  list and the close's ⚠ on the line freed make it visible, and the weekly review should look at voids. A voided asset's
+  months in a closed period wait for the period to reopen (an approval) rather than reversing into another month.
 - A bill voided or edited after its asset was registered is not refused; the asset and the close show it (T7).
-- The accountant confirms the asset accounts' report groups, 7050, and recommended lives per account; the disposal
-  clearing account is unset until the accountant names it.
+- The accountant confirms the asset accounts' report groups, 7050, 1160 as the disposal clearing account and the
+  default lives per account (rev 0.151; the review area "Accounting estimates and the asset register").

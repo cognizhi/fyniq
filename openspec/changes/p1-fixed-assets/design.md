@@ -139,10 +139,13 @@ A void, with a reason, reverses each of the asset's months of depreciation that 
 not released. FY235 lets a source change only from live to released, in the transaction that reversed its asset, and
 never lets it go; the release is audited with the asset (AUD-01). So the line shows again under **Not in the register
 yet** and can be registered again, while the voided asset and its reversed months stay in the history. A void is
-refused while a disposal of the asset stands (ASSET-20: void the disposal first) or while a month to reverse is in a
-closed period (ASSET-21: reopen it first), and refused for an asset not posted. In Founder mode it is the approval
-object `fixed_asset` with `fixed_asset.void`, approved by another person who holds A on "Fixed assets" (FM-1), its
-envelope bound to the asset's version (FR-APR-05), as a disposal's void is. **Alternatives:** removal only while
+refused while a disposal of the asset stands (void the disposal first) or while a month to reverse is in a period that
+is not open (reopen it first), both ASSET-20, and for an asset voided already (ASSET-21), which also changes and disposes
+no more. A fixed asset's document is reversed with no entry of its version reversed, only every month of its
+depreciation, of any version, reversed (`document_reversed_posted`). In Founder mode it is the approval
+object `fixed_asset` with `fixed_asset.void` (ASSET-22 asks for it), approved by another person who holds A on "Fixed
+assets" (FM-1), its envelope bound to the asset's version, status, cost and accumulated depreciation (FR-APR-05), as a
+disposal's void is. **Alternatives:** removal only while
 nothing has posted (a late registration posts its due months at once, so it rarely helps) and no removal in P1 (a
 mistaken asset distorts depreciation and the register for good).
 

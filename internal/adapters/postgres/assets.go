@@ -16,7 +16,8 @@ func (u *unitOfWork) AssetSources() storage.AssetSources { return assetSources{u
 type assetSources struct{ u *unitOfWork }
 
 func toAssetSource(r sqlcdb.FyniqFixedAssetSource) storage.AssetSource {
-	return storage.AssetSource{AssetID: r.AssetID, SourceID: r.SourceID, SourceVersion: int(r.SourceVersion), Line: int(r.Line), AccountID: r.AccountID}
+	return storage.AssetSource{AssetID: r.AssetID, SourceID: r.SourceID, SourceVersion: int(r.SourceVersion), Line: int(r.Line), AccountID: r.AccountID,
+		Released: r.Released}
 }
 
 func (r assetSources) Add(ctx context.Context, s storage.AssetSource) error {
@@ -51,6 +52,14 @@ func (r assetSources) OfDocument(ctx context.Context, sourceID uuid.UUID) ([]sto
 		out[i] = toAssetSource(x)
 	}
 	return out, nil
+}
+
+func (r assetSources) Release(ctx context.Context, assetID uuid.UUID) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	_, err := r.u.q.ReleaseAssetSource(ctx, assetID)
+	return mapError(err)
 }
 
 func (r assetSources) List(ctx context.Context) ([]storage.AssetSource, error) {

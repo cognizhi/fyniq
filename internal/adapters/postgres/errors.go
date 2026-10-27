@@ -317,6 +317,7 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"evidence_staging_key":                      {storage.CodeDuplicate, "that staged file is attached already"},
 	"opening_balance_pkey":                      {storage.CodeDuplicate, "the organisation has its opening balances already: save a new version of them"},
 	"fixed_asset_source_line_once":              {storage.CodeDuplicate, "the line is in the asset register already: open the asset registered from it"},
+	"fixed_asset_source_line_live":              {storage.CodeDuplicate, "the line is in the asset register already: open the asset registered from it, or void that asset first"},
 	"fixed_asset_source_asset_once":             {storage.CodeDuplicate, "the asset has its source already: an asset comes from one line"},
 	"evidence_lengths":                          {storage.CodeInvalid, "a text of the evidence is empty or too long"},
 	"evidence_media_type_known":                 {storage.CodeInvalid, "the file's type is not one Fyniq accepts"},

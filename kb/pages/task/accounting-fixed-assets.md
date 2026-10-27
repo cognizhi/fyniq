@@ -4,7 +4,7 @@ type: task
 title: Keep the fixed asset register
 summary: How an Accountant registers assets from purchases or opening balances, how depreciation posts monthly, and how to sell, write off or void
 sources:
-  - docs/user-guide/fixed-assets.md sha256:115412e3348dbdb75d80ece1f5f81a8015a84c049a57b3be9af8c5e933b08f41
+  - docs/user-guide/fixed-assets.md sha256:674c2c5cc59b90577b72635976083c828934d61f18878c23e365b40d28dc0066
 data_class: general
 taint: trusted
 status: draft
@@ -77,6 +77,14 @@ aliases:
 - It is voided only before the asset changes again, or, after a part was sold, before what was left depreciates again.
 
 (src: docs/user-guide/fixed-assets.md#void-a-disposal)
+
+## Void an asset registered by mistake
+
+- **Void the asset**, with a reason, is for an asset registered from the wrong line or that was never an asset: each month of its depreciation that posted is reversed on its own date, it leaves the register for **Voided**, and its line shows again under **Not in the register yet**.
+- It waits while a disposal of the asset stands (void the disposal first) or while a month to reverse is in a closed period (reopen it first); in Founder mode another person approves it ([[approvals.decide]]).
+- An asset sold, scrapped or lost is not voided but sold or written off, so its gain or loss shows.
+
+(src: docs/user-guide/fixed-assets.md#void-an-asset-registered-by-mistake)
 
 ## At the close
 

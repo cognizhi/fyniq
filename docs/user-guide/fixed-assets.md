@@ -89,6 +89,21 @@ it was, depreciating again from the disposal's month. In Founder mode another pe
 void. A disposal is voided only before the asset changes again, or, after a part was sold, before
 what was left depreciates again.
 
+## Void an asset registered by mistake
+
+An asset registered from the wrong line, or something that was never an asset, is voided from its
+panel with **Void the asset** and a reason.
+
+- Each month of its depreciation that posted is reversed on its own date, so those months are as
+  they were before it was registered.
+- It leaves the register and is listed under **Voided**, with its months and their reversals.
+- Its bill or bank line shows again under **Not in the register yet**, to register as it should be.
+- A void waits while a disposal of the asset stands: void the disposal first. It waits too while a
+  month to reverse is in a closed period: reopen that period first.
+- In Founder mode another person approves the void.
+- An asset that was sold, scrapped or lost is not voided: choose **Sell or write off**, so its gain
+  or loss shows.
+
 ## The register at the close
 
 When a month closes, the register is checked against its accounts: each asset account against the

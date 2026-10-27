@@ -208,6 +208,49 @@ describe("the fixed asset register", () => {
     expect(seen.find((s) => s.path === "/v1/asset-disposals/d1/void-approval")?.body).toMatchObject({ reason: "Not sold after all" });
   });
 
+  // req: ledger/fixed-assets An asset registered by mistake is voided (rev 0.151)
+  it("voids an asset registered by mistake, and lists it under Voided; in Founder mode another person approves", async () => {
+    const voided = asset({ status: "voided", accumulated_depreciation: sgd("0.00"), net_book_value: sgd("3600.00") });
+    answer(
+      register({
+        "POST /v1/fixed-assets/fa1/void": { status: 200, body: voided },
+        "GET /v1/fixed-assets": (_: unknown, req: Request) =>
+          new URL(req.url).searchParams.get("status") === "voided" ? { status: 200, body: { items: [voided] } } : { status: 200, body: { items: [asset()] } },
+      }),
+    );
+    renderPage(FixedAssets, { path: "/accounting/assets", session: accountant, organisation, mode: "expert" });
+    fireEvent.click(within(await screen.findByRole("table", { name: "Assets" })).getByRole("button", { name: "MacBook Pro 14" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Void the asset" }));
+    let dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Void the asset" }));
+    expect(await within(dialog).findByText(/The asset was not voided/)).toBeTruthy();
+    fireEvent.change(within(dialog).getByLabelText("Why"), { target: { value: "Registered from the wrong line" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Void the asset" }));
+    expect(await screen.findByText("FA-0001 is voided: its depreciation is reversed, and its line can be registered again.")).toBeTruthy();
+    const sent = seen.find((s) => s.method === "POST" && s.path === "/v1/fixed-assets/fa1/void");
+    expect(sent?.body).toEqual({ reason: "Registered from the wrong line" });
+    expect(sent?.headers.get("If-Match")).toBe('"1-posted"');
+    fireEvent.click(screen.getByRole("tab", { name: "Voided" }));
+    const list = await screen.findByRole("table", { name: "Voided assets" });
+    expect(within(list).getByText("Voided")).toBeTruthy();
+    await noViolations(document.body);
+
+    answer(
+      register({
+        "POST /v1/fixed-assets/fa1/void": problem(409, "ASSET-22", "In Founder mode, voiding an asset needs a second person (FM-1)."),
+        "POST /v1/fixed-assets/fa1/void-approval": { status: 202, body: { id: "r1" } },
+      }),
+    );
+    renderPage(FixedAssets, { path: "/accounting/assets", session: accountant, organisation, mode: "expert" });
+    fireEvent.click(within((await screen.findAllByRole("table", { name: "Assets" }))[0]!).getByRole("button", { name: "MacBook Pro 14" }));
+    fireEvent.click((await screen.findAllByRole("button", { name: "Void the asset" }))[0]!);
+    dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Why"), { target: { value: "Not an asset" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Void the asset" }));
+    expect(await screen.findByText("Voiding FA-0001 waits for another person's approval.")).toBeTruthy();
+    expect(seen.find((s) => s.path === "/v1/fixed-assets/fa1/void-approval")?.body).toEqual({ reason: "Not an asset" });
+  });
+
   it("offers nothing to change to a Bookkeeper, who reads the register", async () => {
     answer(register());
     renderPage(FixedAssets, { path: "/accounting/assets", session: { ...ownerSession, roles: ["bookkeeper"] } as Session, organisation, mode: "expert" });

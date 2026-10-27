@@ -7287,7 +7287,7 @@ The register's assets, newest purchase first, a page at a time, narrowed by stat
 - **Parameters:**
   - `page_size` (query): How many items per page, up to 500.
   - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
-  - `status` (query): Only the assets in this state.
+  - `status` (query): Only the assets in this state; voided lists the assets voided as registered by mistake, which the register leaves out otherwise.
   - `account_id` (query): Only the assets on this account.
 - **Responses:**
   - `200` OK [`FixedAssetPage`](../../contracts/schemas/FixedAssetPage.schema.json)
@@ -7384,7 +7384,7 @@ Saves the asset's next version with what is sent (FR-FA-01, FR-FA-02): its name 
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `ASSET-01` Not a fixed asset.
-  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ASSET-11` Its depreciation has posted already; `ASSET-12` Nothing of the asset is left; `STORAGE-ASSET-01` The asset register does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ASSET-11` Its depreciation has posted already; `ASSET-12` Nothing of the asset is left; `ASSET-21` The asset was voided; `STORAGE-ASSET-01` The asset register does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
@@ -7393,7 +7393,7 @@ Saves the asset's next version with what is sent (FR-FA-01, FR-FA-02): its name 
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `ASSET-01`, `ASSET-02`, `ASSET-03`, `ASSET-04`, `ASSET-05`, `ASSET-06`, `ASSET-07`, `ASSET-08`, `ASSET-09`, `ASSET-10`, `ASSET-11`, `ASSET-12`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `STORAGE-ASSET-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `ASSET-01`, `ASSET-02`, `ASSET-03`, `ASSET-04`, `ASSET-05`, `ASSET-06`, `ASSET-07`, `ASSET-08`, `ASSET-09`, `ASSET-10`, `ASSET-11`, `ASSET-12`, `ASSET-21`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `STORAGE-ASSET-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/fixed-assets/{asset_id}/disposals`
 
@@ -7415,7 +7415,7 @@ Records the sale or write-off of an asset, or of a part of its cost, and posts i
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `TEAM-04` Your roles conflict for this action.
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `ASSET-01` Not a fixed asset; `JOURNAL-01` Not a manual journal.
-  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ASSET-12` Nothing of the asset is left; `ASSET-17` A month of depreciation before it has not posted; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ASSET-12` Nothing of the asset is left; `ASSET-17` A month of depreciation before it has not posted; `ASSET-21` The asset was voided; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
@@ -7424,7 +7424,68 @@ Records the sale or write-off of an asset, or of a part of its cost, and posts i
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `ASSET-01`, `ASSET-02`, `ASSET-10`, `ASSET-12`, `ASSET-14`, `ASSET-15`, `ASSET-16`, `ASSET-17`, `FX-01`, `JOURNAL-01`, `JOURNAL-04`, `JOURNAL-11`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `LEDGER-22`, `LEDGER-25`, `LEDGER-32`, `LEDGER-40`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `STORAGE-DOC-02`, `STORAGE-DUPLICATE-01`, `STORAGE-INV-01`, `STORAGE-INV-02`, `STORAGE-INV-03`, `STORAGE-INV-04`, `STORAGE-INV-05`, `STORAGE-INV-13`, `STORAGE-LOCK-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`, `TEAM-04`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `ASSET-01`, `ASSET-02`, `ASSET-10`, `ASSET-12`, `ASSET-14`, `ASSET-15`, `ASSET-16`, `ASSET-17`, `ASSET-21`, `FX-01`, `JOURNAL-01`, `JOURNAL-04`, `JOURNAL-11`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `LEDGER-22`, `LEDGER-25`, `LEDGER-32`, `LEDGER-40`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `STORAGE-DOC-02`, `STORAGE-DUPLICATE-01`, `STORAGE-INV-01`, `STORAGE-INV-02`, `STORAGE-INV-03`, `STORAGE-INV-04`, `STORAGE-INV-05`, `STORAGE-INV-13`, `STORAGE-LOCK-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`, `TEAM-04`
+
+### `POST /v1/fixed-assets/{asset_id}/void`
+
+**Void a fixed asset registered by mistake** (`voidFixedAsset`)
+
+Voids an asset registered by mistake, with a reason (FR-FA-01, FR-GL-12; PRD-001 rev 0.151): each of its months of depreciation is reversed on its own date, it leaves the register (listed with status=voided), and its bill or bank line can be registered again. Refused (ASSET-20) while a disposal of it stands, or while a month to reverse is in a period that is not open; and (ASSET-21) once voided. In Founder mode voiding needs a second person (FM-1): it is refused (ASSET-22), and requestFixedAssetVoid asks for the approval. Side effects: the reversing entries, the asset's status, its line released, audit events with the reason. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview writes nothing.
+
+- **Permission:** Post on Fixed assets
+- **Parameters:**
+  - `asset_id` (path, required): The asset's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AssetVoid`](../../contracts/schemas/AssetVoid.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`FixedAsset`](../../contracts/schemas/FixedAsset.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `TEAM-04` Your roles conflict for this action.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `ASSET-01` Not a fixed asset; `JOURNAL-01` Not a manual journal.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ASSET-20` The asset cannot be voided as it stands; `ASSET-21` The asset was voided; `ASSET-22` Voiding needs a second person; `STORAGE-ASSET-01` The asset register does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `ASSET-02` The saved asset cannot be read; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `ASSET-01`, `ASSET-02`, `ASSET-20`, `ASSET-21`, `ASSET-22`, `FX-01`, `JOURNAL-01`, `JOURNAL-04`, `JOURNAL-11`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `STORAGE-ASSET-01`, `STORAGE-DOC-02`, `STORAGE-DUPLICATE-01`, `STORAGE-INV-01`, `STORAGE-INV-02`, `STORAGE-INV-03`, `STORAGE-INV-04`, `STORAGE-INV-05`, `STORAGE-INV-13`, `STORAGE-LOCK-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`, `TEAM-04`
+
+### `POST /v1/fixed-assets/{asset_id}/void-approval`
+
+**Ask for approval to void a fixed asset** (`requestFixedAssetVoid`)
+
+Asks for another person's approval to void an asset registered by mistake (FM-1; PRD-001 rev 0.151): the answer is 202 with an approval request, which a person who holds A on "Fixed assets" (the Controller) and did not ask approves, stepped up; on the approval it is voided as voidFixedAsset does. Needs a person signed in who passed step-up, and If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+
+- **Permission:** Post on Fixed assets
+- **Parameters:**
+  - `asset_id` (path, required): The asset's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AssetVoid`](../../contracts/schemas/AssetVoid.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `ASSET-01` Not a fixed asset.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `ASSET-20` The asset cannot be voided as it stands; `ASSET-21` The asset was voided; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `ASSET-02` The saved asset cannot be read.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `ASSET-01`, `ASSET-02`, `ASSET-20`, `ASSET-21`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ## Periods
 

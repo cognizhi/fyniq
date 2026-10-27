@@ -40,7 +40,7 @@ const CodeDisposalVoidApproval = "ASSET-19"
 const WarnDisposalInvoice = "ASSET-INVOICE-VOIDED"
 
 // DisposalCodes are the codes a disposal's own checks and its rule answer.
-var DisposalCodes = []string{asset.CodeDisposalDate, asset.CodeDisposalShare, asset.CodeProceeds, asset.CodeDepreciationDue, asset.CodeDisposed,
+var DisposalCodes = []string{asset.CodeDisposalDate, asset.CodeDisposalShare, asset.CodeProceeds, asset.CodeDepreciationDue, asset.CodeDisposed, asset.CodeVoided,
 	asset.CodeTooLong, ledger.CodeDisposal, ledger.CodeNotMoneyAccount, ledger.CodeUnknownAccount, ledger.CodeGroupAccount, ledger.CodeInactiveAccount,
 	ledger.CodeSystemRole, ledger.CodeGSTRate, ledger.CodeNoDate}
 

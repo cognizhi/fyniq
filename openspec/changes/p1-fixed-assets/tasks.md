@@ -92,7 +92,7 @@
   standard chart's 36/60/36/36, the chart screen's field, and the register's form filling it.
   - Tests: an account outside the register's groups refuses a life (COA-11); the form fills 60 for 1520 and keeps a
     life typed. `// req: FR-COA-02`, `// req: ledger/fixed-assets The account's default useful life is offered`
-- [ ] 7.3 Voiding an asset (design D9): the migration (released, the live-line index, FY235), the command with its
+- [x] 7.3 Voiding an asset (design D9): the migration (released, the live-line index, FY235), the command with its
   refusals, the approval object in Founder mode, the API, the screen's Void, the guide and the threat model.
   - Tests: a void reverses October and November on their own dates and the line registers again; refused while a
     disposal stands, with a month in a closed period, and for a second void; FY235 refuses a release of a live asset's
