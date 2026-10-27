@@ -239,4 +239,21 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 - [ ] 9.1 The invoice, receipt, credit, deposit, write-off and spread rules in the independent oracle, with scenario
   shapes and differential tests: an oracle session (QA-ENG-01), never a build session
+  (27 Oct 2026, the oracle session, whose author has not read the engine: the oracle's half is written.
+  `invoice@1` (`RND-LINE` with a discount, `RND-GST-EXCL` per subtotal or per line on the base nets, ENG-42's
+  customer total and its 7030 cents, spreads to 2400, deposits deducted under `RND-DEPOSIT`), `credit_note@1`
+  (standalone or linked, GST at the linked invoice's date), `customer_receipt@1` (the settlement of
+  `p1-purchases`, mirrored on 1100, with tolerances and customer credits), `customer_deposit@1`,
+  `deposit_refund@1`, `write_off@1` and the releases are in `oracle/src/oracle/sources/sales.py`. Hand-worked tests
+  are in `oracle/tests/test_sales.py` (G4-022, G4-038, the deposits' shares), INV-07's AR property is in
+  `test_p1_properties.py`, and the golden case is `test/differential/pending/sales.json`; the shapes are in
+  `test/differential/README.md`. **Left:** the differential, once 9.3 lets the engine read the shapes; applying
+  customer credits (`customer_credit_application@1`) and refunds of credits (`customer_refund@1`) are not in the
+  format yet)
+- [ ] 9.3 (engine session) `cmd/scenario-run` reads the `invoice`, `credit_note`, `customer_receipt`,
+  `customer_deposit`, `deposit_refund` and `write_off` shapes of `fyniq-scenario@1` and posts them through their
+  rule sets and `invoice_release@1`, writing P1 entries in their canonical form (`test/differential/README.md`,
+  "P1 sources"); then `test/differential/pending/sales.json` moves to `golden/` and `sales` joins
+  `FYNIQ_DIFFERENTIAL_SOURCES`. Verified by `make test` and `make differential` agreeing to the cent; a
+  disagreement is settled from the PRD ("P1 readings"). `// req: QA-ENG-02`
 - [ ] 9.2 Finish with `make check` and `make test`

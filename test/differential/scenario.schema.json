@@ -89,13 +89,18 @@
       "type": "object",
       "required": ["type"],
       "properties": {"type": {"enum": ["manual_journal", "bank_transaction", "bank_transfer", "bill", "vendor_credit",
-                                         "bill_payment"]}},
+                                         "bill_payment", "invoice", "credit_note", "customer_receipt", "customer_deposit",
+                                         "deposit_refund", "write_off"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "bank_transaction"}}}, "then": {"$ref": "#/$defs/bankTransaction"}},
         {"if": {"properties": {"type": {"const": "bank_transfer"}}}, "then": {"$ref": "#/$defs/bankTransfer"}},
         {"if": {"properties": {"type": {"enum": ["bill", "vendor_credit"]}}}, "then": {"$ref": "#/$defs/bill"}},
-        {"if": {"properties": {"type": {"enum": ["bill_payment"]}}}, "then": {"$ref": "#/$defs/settlement"}}
+        {"if": {"properties": {"type": {"enum": ["bill_payment", "customer_receipt"]}}}, "then": {"$ref": "#/$defs/settlement"}},
+        {"if": {"properties": {"type": {"enum": ["invoice", "credit_note"]}}}, "then": {"$ref": "#/$defs/invoice"}},
+        {"if": {"properties": {"type": {"const": "customer_deposit"}}}, "then": {"$ref": "#/$defs/customerDeposit"}},
+        {"if": {"properties": {"type": {"const": "deposit_refund"}}}, "then": {"$ref": "#/$defs/depositRefund"}},
+        {"if": {"properties": {"type": {"const": "write_off"}}}, "then": {"$ref": "#/$defs/writeOff"}}
       ]
     },
     "settings": {
@@ -108,7 +113,7 @@
           "description": "System accounts by key (Appendix B.5). Each must be in accounts.",
           "type": "object",
           "propertyNames": {"enum": ["receivable", "payable", "gst", "prepayments", "deferred_revenue", "fx", "bank_charges",
-                                     "withholding_tax"]},
+                                     "withholding_tax", "customer_deposits"]},
           "additionalProperties": {"$ref": "#/$defs/accountCode"}
         },
         "money_accounts": {
@@ -201,7 +206,7 @@
       "required": ["type", "id", "version", "date", "account", "currency", "parts"],
       "dependentRequired": {"fx_rate": ["fx_rate_source"]},
       "properties": {
-        "type": {"enum": ["bill_payment"]},
+        "type": {"enum": ["bill_payment", "customer_receipt"]},
         "id": {"$ref": "#/$defs/documentId"},
         "version": {"$ref": "#/$defs/version"},
         "date": {"$ref": "#/$defs/date"},
@@ -224,6 +229,103 @@
             }
           }
         }
+      }
+    },
+    "invoiceLine": {
+      "description": "An invoice's or credit note's line: a net amount, or quantity × unit price less a discount (RND-LINE), and its GST code.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["account", "gst_code"],
+      "properties": {
+        "account": {"type": "string"},
+        "amount": {"description": "The net, in the invoice's currency.", "$ref": "#/$defs/money"},
+        "quantity": {"type": "string"},
+        "unit_price": {"type": "string"},
+        "discount": {"description": "A percentage, 0 to 100 with at most two decimals (rev 0.116).", "type": "string"},
+        "gst_code": {"type": "string"},
+        "spread_months": {"type": "integer", "minimum": 0},
+        "spread_from": {"description": "The day its service starts; the invoice's when absent.", "$ref": "#/$defs/date"}
+      }
+    },
+    "invoice": {
+      "description": "An invoice (invoice@1) or a credit note (credit_note@1, an invoice's legs negated).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "currency", "lines"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "type": {"enum": ["invoice", "credit_note"]},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "currency": {"type": "string"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"},
+        "lines": {"type": "array", "items": {"$ref": "#/$defs/invoiceLine"}},
+        "invoice": {"description": "A credit note's: the invoice it credits (FR-AR-04).", "type": "string"},
+        "deposits": {
+          "description": "An invoice's: the customer deposits it deducts and how much of each (FR-AR-09, rev 0.127).",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["deposit", "amount"],
+            "properties": {"deposit": {"type": "string"}, "amount": {"$ref": "#/$defs/money"}}
+          }
+        }
+      }
+    },
+    "customerDeposit": {
+      "description": "A customer deposit received (customer_deposit@1, rev 0.126).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "account", "currency", "amount", "kind"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "type": {"const": "customer_deposit"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "account": {"description": "The money account it came into.", "type": "string"},
+        "currency": {"type": "string"},
+        "amount": {"description": "The gross received.", "$ref": "#/$defs/money"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"},
+        "kind": {"enum": ["part_payment", "security"]},
+        "gst_code": {"description": "A part payment's; a security deposit names none.", "type": "string"}
+      }
+    },
+    "depositRefund": {
+      "description": "A refund of what is left of a customer deposit (deposit_refund@1, rev 0.128).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "deposit", "account", "amount"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "type": {"const": "deposit_refund"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "deposit": {"type": "string"},
+        "account": {"description": "The money account it left, in the deposit's currency.", "type": "string"},
+        "amount": {"description": "In the deposit's currency.", "$ref": "#/$defs/money"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"}
+      }
+    },
+    "writeOff": {
+      "description": "A write-off of an invoice's amount to the reason's account (write_off@1, rev 0.122).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "invoice", "amount", "account"],
+      "properties": {
+        "type": {"const": "write_off"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "invoice": {"type": "string"},
+        "amount": {"description": "In the invoice's currency, at most what is open.", "$ref": "#/$defs/money"},
+        "account": {"description": "The reason's account (FR-AR-17).", "type": "string"}
       }
     },
     "bankTransaction": {

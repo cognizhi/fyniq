@@ -28,6 +28,7 @@ month's earlier differences, at most S$200.00 a month (the defaults of open ques
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
@@ -52,6 +53,8 @@ class OpenItem:
     carrying: Decimal  # its control line's base amount, positive
     settled: Decimal = money.ZERO
     settled_base: Decimal = money.ZERO
+    date: date | None = None  # an invoice's, for a credit note linked to it
+    gross: Decimal | None = None  # an invoice's total before the deposits it deducts
 
     @property
     def open(self) -> Decimal:

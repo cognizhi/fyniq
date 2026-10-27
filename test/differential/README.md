@@ -161,8 +161,8 @@ A scenario with a P1 document must have `settings` and `as_of`, or it is invalid
   ones are the future and never post.
 - `settings.accounts` names the system accounts by key (Appendix B.5): `receivable` (1100), `payable`
   (2010), `gst` (2200), `prepayments` (1210), `deferred_revenue` (2400), `fx` (7030), `bank_charges`
-  (6460, a setting), `withholding_tax` (2330). Each named account must be in `accounts`. A document
-  that needs a key the organisation has not set is rejected.
+  (6460, a setting), `withholding_tax` (2330), `customer_deposits` (2410). Each named account must be in
+  `accounts`. A document that needs a key the organisation has not set is rejected.
 - `settings.tolerance` holds the settlement tolerances of FR-BNK-08 (open question 32), each a plain
   decimal: `base` (S$1.00), `percent` (3), `per_document` (S$50.00) and `per_month` (S$200.00); a key
   left out takes that default.
@@ -285,6 +285,49 @@ base-currency account paying bills in another currency gives what it paid (`base
 rejected when a part names no posted bill, a bill twice or a bill in another currency, a part is above
 what is open, a difference is beyond tolerance, or it settles nothing.
 
+### Invoices (`invoice`, `invoice@1`), credit notes (`credit_note`, `credit_note@1`), receipts (`customer_receipt`, `customer_receipt@1`), deposits (`customer_deposit`, `customer_deposit@1`; `deposit_refund`, `deposit_refund@1`) and write-offs (`write_off`, `write_off@1`)
+
+From §10.2, Appendix B.2, ENG-42, FR-AR-03, FR-AR-04, FR-AR-09, FR-AR-17, FR-AR-18, FR-GL-03 and the rows of
+rev 0.116 to 0.128.
+
+```json
+{"type": "customer_deposit", "id": "DP-0001", "version": 1, "date": "2026-03-01", "account": "1010",
+ "currency": "SGD", "amount": "1090.00", "kind": "part_payment", "gst_code": "SR"}
+```
+
+A deposit puts its gross on the money account (in its currency) at `RND-FX`; a `part_payment` bears GST,
+`RND-GST-INCL` of the gross in base when registered and the code carries it, to 2200; 2410 takes the
+rest. A `security` deposit names no GST code. A `deposit_refund` (`deposit`, `account`, `amount` in the
+deposit's currency, a rate when foreign) pays back at most what is left: 2410 its base part less its GST
+part (`RND-DEPOSIT`), 2200 the GST part, the money account what left it, 7030 the realised FX.
+
+```json
+{"type": "invoice", "id": "INV-0001", "version": 1, "date": "2026-03-31", "currency": "SGD",
+ "lines": [{"account": "4010", "amount": "2000.00", "gst_code": "SR"},
+           {"account": "4020", "quantity": "3", "unit_price": "10.00", "discount": "12.5", "gst_code": "ZR",
+            "spread_months": 12}],
+ "deposits": [{"deposit": "DP-0001", "amount": "1090.00"}]}
+```
+
+A line's net is its `amount`, or `RND-LINE` of `quantity` × `unit_price` less a `discount` (0 to 100,
+two decimals). Each net goes to its account at `RND-FX`, or, spread (a revenue line), to 2400 in the base
+currency, released monthly from the month of `spread_from` (the invoice's by default). When registered on
+its date, 2200 takes `RND-GST-EXCL` of the base nets per GST code (per subtotal, or per line as
+`settings.gst.per_line` says). 1100 takes the customer's total, the nets and `RND-GST-EXCL` of them in the
+invoice's currency, at `RND-FX`, less what the deposits take; 7030 what balances. Each deposit it deducts
+(posted, in its currency, at most what is left of it, together at most its total) takes, under
+`RND-DEPOSIT`, its part of the deposit's base amount and of the GST the deposit bore: 2410 takes the base
+part less the GST part, and the output GST line is reduced by the GST part. A credit note posts an
+invoice's legs negated; it is never spread and deducts no deposit; with `invoice` it names the invoice
+it credits (in its currency, dated on or before it, at most its total) and takes GST at that invoice's
+date.
+
+A `customer_receipt` is a settlement (the shape of a payment of bills) of posted invoices on 1100,
+mirrored: 1100 is credited, the money account debited, a part in full is a loss on 7030, and `unapplied`
+stays a credit with the customer. A `write_off` (`invoice`, `amount` at most what is open, `account` the
+reason's) credits 1100 at the invoice's stored rate (all that is left of its line when it takes all that
+is open) and debits the account with that carrying amount, in the base currency.
+
 ### P1 readings
 
 Where PRD-001 leaves a P1 shape open, the oracle reads it as below. The generator does not produce
@@ -299,6 +342,8 @@ difference, which the PRD then settles.
 | The cross-currency transfer rule | Each leg at its own rate, the fee to bank charges, the rest to 7030 | Rev 0.140; the accountant has not confirmed it yet | Generated |
 | A release in the document's own month | Dated the document's day (never before the deferral it releases) | FR-GL-03 (rev 0.83: "the bill's date for months before it") | Generated |
 | A money-out part coded SR, or a money-in part coded TX or IM | GST at the code, whatever the direction | Appendix B.1 | Not generated |
+| Several credit notes linked to one invoice | Each credits at most the invoice's total on its own; they are not added up | FR-AR-04 (INVOICE-15: "credits at most that invoice's total") | Not generated (only standalone credit notes) |
+| A P1 document whose lines but one round to nothing in base (USD 0.01 deposited at 0.0001) | Rejected: an entry has at least two lines | INV-05 (rev 0.24 settles it for a journal's line, not for a P1 entry) | Not generated (rates of at least 0.01) |
 | The tolerance of a foreign bill paid in full | 3% of what it owes at its stored rate (its 2010 line) | FR-BNK-08 (rev 0.121: "3% of the document's total at its stored rate") | Not generated (only base-currency bills in full) |
 | The month's differences across sources | Bills' and invoices' differences share the month's cap, in absolute value | FR-BNK-08 ("with the month's earlier differences") | Generated (always within the cap) |
 | An unapplied amount from a base-currency account paying foreign bills | At the rate the payment implies (`RND-RATE` of what it paid ÷ the total) | Rev 0.77 | Not generated |
