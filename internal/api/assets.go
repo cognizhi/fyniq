@@ -1,8 +1,11 @@
 package api
 
 import (
+	"cmp"
 	"context"
+	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -365,6 +368,55 @@ func assetChangeOf(in FixedAssetChange) (journal.AssetChange, error) {
 	return c, nil
 }
 
+// unregisteredChecks add ⚠ ASSET-UNREGISTERED to a posted bill's or bank line's checks for each line on an asset account
+// at or above the capitalisation threshold that no asset was registered from (FR-FA-01; design D5).
+func unregisteredChecks(ctx context.Context, u storage.UnitOfWork, doc storage.Document, checks *[]BillCheck) error {
+	set, err := journal.LoadSettings(ctx, u)
+	if err != nil {
+		return err
+	}
+	lines, at, err := journal.UnregisteredOf(ctx, u, doc, set)
+	if err != nil {
+		return err
+	}
+	for i, l := range lines {
+		if !at[i] {
+			continue
+		}
+		*checks = append(*checks, BillCheck{Severity: "warning", Code: journal.WarnUnregistered, Field: fmt.Sprintf("lines[%d]", l.Line-1),
+			Message: fmt.Sprintf("line %d puts %s %s on an asset account, at or above the capitalisation threshold, and is in no asset of the register", l.Line, l.Cost, set.Base),
+			Fix:     "Register it in Accounting › Fixed assets, so it depreciates"})
+	}
+	return nil
+}
+
+// UnregisteredLine is a line of a posted bill or categorised bank line on an asset account that no asset was registered
+// from.
+type UnregisteredLine struct {
+	DocumentID  string `json:"document_id" format:"uuid" doc:"The bill or bank transaction." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"`
+	Type        string `json:"type" enum:"bill,bank_transaction" doc:"bill, or bank_transaction: a categorised bank line." example:"bill"`
+	Number      string `json:"number,omitempty" doc:"The bill's number." example:"BILL-0042"`
+	Line        int    `json:"line" doc:"Its line, or part, from 1: what registerFixedAsset takes as source.line." example:"1"`
+	Date        string `json:"date" format:"date" doc:"The bill's date, or the bank line's booking date." example:"2026-10-14"`
+	AccountID   string `json:"account_id" format:"uuid" doc:"The asset account it is on." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510"`
+	Description string `json:"description,omitempty" doc:"The line's description." example:"MacBook Pro 14"`
+	Cost        Money  `json:"cost" doc:"What its entry put on the account, in the base currency: what the asset would cost."`
+	AtThreshold bool   `json:"at_threshold" doc:"true when the cost is at or above the capitalisation threshold on its date (assets.capitalisation_threshold): it should be in the register." example:"true"`
+}
+
+// UnregisteredPage is the lines not in the register yet, newest first.
+type UnregisteredPage struct {
+	Items      []UnregisteredLine `json:"items" nullable:"false"`
+	NextCursor string             `json:"next_cursor,omitempty" doc:"Pass it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjIwMjYtMTAtMTR8MDE5MnwxIn0"`
+}
+
+type unregisteredInput struct {
+	PageQuery
+	DocumentID string `query:"document_id" format:"uuid" doc:"Only the lines of this bill or bank transaction." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"`
+}
+
+type unregisteredOutput struct{ Body UnregisteredPage }
+
 func registerFixedAssets(a *API) {
 	readCodes := []string{CodeNotFound, asset.CodeNotAsset, asset.CodeBadContent}
 
@@ -453,6 +505,84 @@ func registerFixedAssets(a *API) {
 			return nil, err
 		}
 		return &assetReadOutput{ETag: assetETag(doc), Body: x}, nil
+	})
+
+	register(a, authz.ListUnregisteredAssetLines, huma.Operation{
+		OperationID: "listUnregisteredAssetLines", Method: http.MethodGet, Path: "/v1/fixed-assets/unregistered", Tags: []string{"Fixed assets"},
+		Summary: "List purchases not in the register yet",
+		Description: "The lines of posted bills and categorised bank lines that put a cost on an asset account and that no asset was " +
+			"registered from, newest first, a page at a time, or those of one document (FR-FA-01; design D5): each with its cost in the base currency and " +
+			"whether it is at or above the capitalisation threshold. Register one with registerFixedAsset, naming its document and " +
+			"line. Read-only; no side effects.",
+	}, []string{CodeCursor, CodeInvalid, CodeNotFound}, func(ctx context.Context, in *unregisteredInput) (*unregisteredOutput, error) {
+		after, err := decodeCursor(in.Cursor)
+		if err != nil {
+			return nil, err
+		}
+		p, _ := authn.From(ctx)
+		out := unregisteredOutput{Body: UnregisteredPage{Items: []UnregisteredLine{}}}
+		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			set, err := journal.LoadSettings(ctx, u)
+			if err != nil {
+				return err
+			}
+			var docs []storage.Document
+			if in.DocumentID != "" {
+				id, err := parseID("document_id", in.DocumentID)
+				if err != nil {
+					return err
+				}
+				doc, err := u.Documents().Get(ctx, id)
+				if err != nil {
+					return err
+				}
+				docs = []storage.Document{doc}
+			} else {
+				lines, err := journal.UnregisteredLines(ctx, u, set, time.Date(9999, 12, 31, 0, 0, 0, 0, time.UTC))
+				if err != nil {
+					return err
+				}
+				seen := map[uuid.UUID]bool{}
+				for _, l := range lines {
+					if !seen[l.DocumentID] {
+						seen[l.DocumentID] = true
+						doc, err := u.Documents().Get(ctx, l.DocumentID)
+						if err != nil {
+							return err
+						}
+						docs = append(docs, doc)
+					}
+				}
+			}
+			for _, doc := range docs {
+				lines, at, err := journal.UnregisteredOf(ctx, u, doc, set)
+				if err != nil {
+					return err
+				}
+				for i, l := range lines {
+					out.Body.Items = append(out.Body.Items, UnregisteredLine{DocumentID: l.DocumentID.String(), Type: string(l.Type), Number: l.Number, Line: l.Line,
+						Date: dateOf(l.Date), AccountID: l.AccountID.String(), Description: l.Description, Cost: moneyOut(l.Cost), AtThreshold: at[i]})
+				}
+			}
+			// Newest first, then by document and line: the order the cursor walks.
+			key := func(x UnregisteredLine) string { return fmt.Sprintf("%s|%s|%05d", x.Date, x.DocumentID, x.Line) }
+			slices.SortStableFunc(out.Body.Items, func(x, y UnregisteredLine) int {
+				return cmp.Or(strings.Compare(y.Date, x.Date), strings.Compare(x.DocumentID, y.DocumentID), cmp.Compare(x.Line, y.Line))
+			})
+			if after != "" {
+				i := slices.IndexFunc(out.Body.Items, func(x UnregisteredLine) bool { return key(x) == after })
+				if i < 0 {
+					return problem(CodeCursor, "The cursor names no line of this list.", "Start again from the first page.")
+				}
+				out.Body.Items = out.Body.Items[i+1:]
+			}
+			if len(out.Body.Items) > in.PageSize {
+				out.Body.Items = out.Body.Items[:in.PageSize]
+				out.Body.NextCursor = encodeCursor(key(out.Body.Items[in.PageSize-1]))
+			}
+			return nil
+		})
+		return &out, err
 	})
 
 	writeCodes := append([]string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid,

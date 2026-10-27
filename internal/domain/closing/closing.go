@@ -7,6 +7,7 @@ package closing
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -213,6 +214,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		return nil, err
 	}
 	out = append(out, receivables...)
+	assets, err := assetChecks(ctx, u, p)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, assets...)
 	deposits, err := depositsChecks(ctx, u, cur, p)
 	if err != nil {
 		return nil, err
@@ -345,6 +351,53 @@ func payablesChecks(ctx context.Context, u storage.UnitOfWork, cur money.Currenc
 	if len(held) > 0 {
 		out = append(out, Check{"payables-unsupported", Warning, "Accounts payable holds amounts no bill supports",
 			fmt.Sprintf("%s holds %s: support them with the suppliers' statements, or enter the bills", ap.Code, strings.Join(held, ", "))})
+	}
+	return out, nil
+}
+
+// assetChecks reconcile the fixed asset register with its accounts at the period's end (INV-07; p1-fixed-assets design
+// D6): ✖ when an asset account or 1590 differs from the register by anything no source explains, which is a fault (a
+// purchase registered from a bill since voided, a disposal or a month of depreciation that disagrees with its asset); ⚠
+// when one holds amounts from manual journals, or lines of bills and bank lines no asset was registered from; ✔
+// otherwise. Nothing is said when the register and its accounts are empty.
+func assetChecks(ctx context.Context, u storage.UnitOfWork, p storage.Period) ([]Check, error) {
+	rs, err := journal.RegisterAt(ctx, u, p.EndsOn)
+	if err != nil || len(rs) == 0 {
+		return nil, err
+	}
+	var faults, journals, lines []string
+	for _, r := range rs {
+		b := r.Reconciliation.Base
+		if !b.Unexplained.IsZero() {
+			faults = append(faults, fmt.Sprintf("%s says %s and the register %s", r.Account.Code, b.Control, b.SubLedger))
+		}
+		for _, e := range b.Explained {
+			if !e.Amount.IsZero() {
+				what := e.SourceType
+				if w, ok := explainedWords[e.SourceType]; ok {
+					what = w
+				}
+				journals = append(journals, fmt.Sprintf("%s holds %s from %s", r.Account.Code, e.Amount, what))
+			}
+		}
+		for _, l := range r.Unregistered {
+			lines = append(lines, fmt.Sprintf("%s line %d (%s)", cmp.Or(l.Number, string(l.Type)), l.Line, l.Cost))
+		}
+	}
+	var out []Check
+	if len(faults) > 0 {
+		out = append(out, Check{"assets", Failed, "The fixed asset register does not agree with its accounts",
+			strings.Join(faults, "; ") + ": a posting and its asset disagree; report it, never adjust it by journal"})
+	} else {
+		out = append(out, Check{"assets", OK, "The fixed asset register agrees with its accounts", ""})
+	}
+	if len(journals) > 0 {
+		out = append(out, Check{"assets-unsupported", Warning, "Asset accounts hold amounts no asset supports",
+			strings.Join(journals, ", ") + ": register the assets, or have the accountant check the journals"})
+	}
+	if len(lines) > 0 {
+		out = append(out, Check{"assets-unregistered", Warning, "Purchases on asset accounts are not in the register",
+			strings.Join(lines, ", ") + ": register each in Accounting › Fixed assets, so it depreciates"})
 	}
 	return out, nil
 }

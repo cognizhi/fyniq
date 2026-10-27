@@ -516,6 +516,8 @@ var (
 	GetFixedAsset      = Policy{Operation: "getFixedAsset", Capability: FixedAssets, Need: View}
 	RegisterFixedAsset = Policy{Operation: "registerFixedAsset", Capability: FixedAssets, Need: Create}
 	ChangeFixedAsset   = Policy{Operation: "changeFixedAsset", Capability: FixedAssets, Need: Create}
+	// The purchases on asset accounts not in the register yet (FR-FA-01; design D5), read under V.
+	ListUnregisteredAssetLines = Policy{Operation: "listUnregisteredAssetLines", Capability: FixedAssets, Need: View}
 	// Disposals (FR-FA-03; design D4, D5): posted under P (the Accountant), read under V; a void is posting, in Founder mode
 	// asked for and approved by another person who holds A on "Fixed assets" (the Controller, FM-1).
 	DisposeFixedAsset        = Policy{Operation: "disposeFixedAsset", Capability: FixedAssets, Need: Post}
@@ -952,7 +954,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListClaimReimbursements, GetClaimReimbursement, RecordClaimReimbursement, VoidClaimReimbursement, RequestClaimReimbursementVoid, GetExpenseClaimsOwed,
 	ListCashAdvances, GetCashAdvance, RecordCashAdvance, RecordCashAdvanceRefund, VoidCashAdvance, RequestCashAdvanceVoid,
 	ListCardLines, CompleteCardLine, AddCardLineEvidence, ListCardLineEvidence, GetClaimGSTCodes,
-	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset,
+	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset, ListUnregisteredAssetLines,
 	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid,
 	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
 	ListClaimCategories, CreateClaimCategory, ReplaceClaimCategory, LoadStarterClaimCategories,

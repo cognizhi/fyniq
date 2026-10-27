@@ -7325,6 +7325,27 @@ Adds an asset to the register (FR-FA-01): from the line of a posted bill, or the
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `ASSET-03`, `ASSET-04`, `ASSET-05`, `ASSET-06`, `ASSET-07`, `ASSET-08`, `ASSET-09`, `ASSET-10`, `ASSET-11`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `STORAGE-ASSET-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/fixed-assets/unregistered`
+
+**List purchases not in the register yet** (`listUnregisteredAssetLines`)
+
+The lines of posted bills and categorised bank lines that put a cost on an asset account and that no asset was registered from, newest first, a page at a time, or those of one document (FR-FA-01; design D5): each with its cost in the base currency and whether it is at or above the capitalisation threshold. Register one with registerFixedAsset, naming its document and line. Read-only; no side effects.
+
+- **Permission:** View on Fixed assets
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `document_id` (query): Only the lines of this bill or bank transaction.
+- **Responses:**
+  - `200` OK [`UnregisteredPage`](../../contracts/schemas/UnregisteredPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
 ### `GET /v1/fixed-assets/{asset_id}`
 
 **Get a fixed asset** (`getFixedAsset`)

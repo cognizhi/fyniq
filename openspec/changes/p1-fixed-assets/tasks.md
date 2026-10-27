@@ -56,7 +56,7 @@
 
 ## 4. The register against the ledger and the prompt
 
-- [ ] 4.1 The register reconciled with the asset accounts and 1590 as at a day, through the balance service, shown at
+- [x] 4.1 The register reconciled with the asset accounts and 1590 as at a day, through the balance service, shown at
   the close (design D6, INV-07); bills and categorised bank lines on an asset account at or above the capitalisation
   threshold, and not registered, show ⚠ `ASSET-UNREGISTERED`, and the register lists them.
   - Tests: the register equals the accounts after a purchase, a month's depreciation and a disposal; a manual journal
