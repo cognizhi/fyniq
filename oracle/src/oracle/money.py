@@ -17,6 +17,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from decimal import (
+    ROUND_DOWN,
     ROUND_HALF_UP,
     Clamped,
     Context,
@@ -234,3 +235,68 @@ def alloc_even(amount: Decimal, periods: int, minor_units: int) -> list[Decimal]
         parts.append(EXACT.subtract(cumulative, before))
         before = cumulative
     return parts
+
+
+def _percent_of(value: Decimal, percent: Decimal, minor_units: int) -> Decimal:
+    return round_quotient(EXACT.multiply(value, percent), HUNDRED, minor_units)
+
+
+def rnd_line(
+    quantity: Decimal, unit_price: Decimal, minor_units: int, discount: Decimal = ZERO
+) -> Decimal:
+    """``RND-LINE`` (§10.4, rev 0.87 and 0.116): round(quantity × unit price × (100 − discount) ÷ 100).
+
+    Computed exactly, then rounded once, half away from zero, to the currency's minor units, so a
+    discount is never rounded apart from its line.
+    """
+    gross = EXACT.multiply(quantity, unit_price)
+    return round_quotient(EXACT.multiply(gross, EXACT.subtract(HUNDRED, discount)), HUNDRED, minor_units)
+
+
+def rnd_line_part(
+    quantity_before: Decimal, quantity: Decimal, unit_price: Decimal, minor_units: int
+) -> Decimal:
+    """``RND-LINE`` of a part of a line billed after others (rev 0.87): RND-LINE of everything taken
+    so far, this part included, less RND-LINE of what was taken before, so the parts add up exactly."""
+    taken = EXACT.add(quantity_before, quantity)
+    return EXACT.subtract(rnd_line(taken, unit_price, minor_units), rnd_line(quantity_before, unit_price, minor_units))
+
+
+def rnd_gst_share(gst: Decimal, share: Decimal, minor_units: int) -> Decimal:
+    """``RND-GST-SHARE`` (§10.4, rev 0.89): the input tax claimed of a line's GST for its business
+    share = round(GST × share ÷ 100), half away from zero; 100 claims it whole and 0 claims none."""
+    return _percent_of(gst, share, minor_units)
+
+
+def rnd_wht(gross_base: Decimal, percent: Decimal, minor_units: int) -> Decimal:
+    """``RND-WHT`` (§10.4, rev 0.90): withholding tax in the base currency = round(⌊gross⌋ × rate ÷
+    100), where gross is the payment before GST in the base currency and ⌊⌋ rounds it down to the
+    dollar (toward zero, as IRAS's form states it for an amount paid)."""
+    whole = gross_base.to_integral_value(rounding=ROUND_DOWN)
+    return _percent_of(whole, percent, minor_units)
+
+
+def rnd_withheld(gross: Decimal, percent: Decimal, minor_units: int) -> Decimal:
+    """The supplier's own amount withheld on a bill in another currency (rev 0.90, ``RND-WHT``):
+    round(gross × rate ÷ 100, its minor units), half away from zero."""
+    return _percent_of(gross, percent, minor_units)
+
+
+def rnd_discount(total: Decimal, percent: Decimal, minor_units: int) -> Decimal:
+    """``RND-DISCOUNT`` (§10.4, rev 0.93): an early-payment discount = round(total × percent ÷ 100),
+    half away from zero, to the currency's minor units."""
+    return _percent_of(total, percent, minor_units)
+
+
+def rnd_deposit(left_base: Decimal, used: Decimal, left: Decimal, minor_units: int) -> Decimal:
+    """``RND-DEPOSIT`` (§10.4, rev 0.127): the part of what is left of a deposit's base amount (or of
+    its GST) that a use takes = round(left_base × used ÷ left), half away from zero; a use of all
+    that is left takes all that is left."""
+    if used == left:
+        return left_base
+    return round_quotient(EXACT.multiply(left_base, used), left, minor_units)
+
+
+def rnd_rate(paid_base: Decimal, amount: Decimal) -> Decimal:
+    """``RND-RATE`` (§10.4) of the rate a base-currency payment implies: round(paid ÷ amount, 10)."""
+    return round_quotient(paid_base, amount, RATE_DECIMALS)

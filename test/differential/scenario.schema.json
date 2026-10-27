@@ -88,11 +88,14 @@
       "description": "One document; its type picks its shape.",
       "type": "object",
       "required": ["type"],
-      "properties": {"type": {"enum": ["manual_journal", "bank_transaction", "bank_transfer"]}},
+      "properties": {"type": {"enum": ["manual_journal", "bank_transaction", "bank_transfer", "bill", "vendor_credit",
+                                         "bill_payment"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "bank_transaction"}}}, "then": {"$ref": "#/$defs/bankTransaction"}},
-        {"if": {"properties": {"type": {"const": "bank_transfer"}}}, "then": {"$ref": "#/$defs/bankTransfer"}}
+        {"if": {"properties": {"type": {"const": "bank_transfer"}}}, "then": {"$ref": "#/$defs/bankTransfer"}},
+        {"if": {"properties": {"type": {"enum": ["bill", "vendor_credit"]}}}, "then": {"$ref": "#/$defs/bill"}},
+        {"if": {"properties": {"type": {"enum": ["bill_payment"]}}}, "then": {"$ref": "#/$defs/settlement"}}
       ]
     },
     "settings": {
@@ -104,7 +107,8 @@
         "accounts": {
           "description": "System accounts by key (Appendix B.5). Each must be in accounts.",
           "type": "object",
-          "propertyNames": {"enum": ["receivable", "payable", "gst", "prepayments", "deferred_revenue", "fx", "bank_charges"]},
+          "propertyNames": {"enum": ["receivable", "payable", "gst", "prepayments", "deferred_revenue", "fx", "bank_charges",
+                                     "withholding_tax"]},
           "additionalProperties": {"$ref": "#/$defs/accountCode"}
         },
         "money_accounts": {
@@ -112,6 +116,17 @@
           "type": "object",
           "propertyNames": {"$ref": "#/$defs/accountCode"},
           "additionalProperties": {"$ref": "#/$defs/currencyCode"}
+        },
+        "tolerance": {
+          "description": "Settlement tolerances (FR-BNK-08, open question 32), in the base currency and percent; each defaults to the PRD's.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "base": {"$ref": "#/$defs/plainDecimal"},
+            "percent": {"$ref": "#/$defs/plainDecimal"},
+            "per_document": {"$ref": "#/$defs/plainDecimal"},
+            "per_month": {"$ref": "#/$defs/plainDecimal"}
+          }
         },
         "gst": {
           "description": "GST registration (from, to inclusive) and the standard rate from each date (the sg-gst pack, ENG-31).",
@@ -130,6 +145,82 @@
                 "required": ["from", "percent"],
                 "properties": {"from": {"$ref": "#/$defs/date"}, "percent": {"$ref": "#/$defs/percent"}}
               }
+            }
+          }
+        }
+      }
+    },
+    "plainDecimal": {"type": "string", "pattern": "^[0-9]{1,12}(\\.[0-9]{1,4})?$"},
+    "billLine": {
+      "description": "A bill's or vendor credit's line: a net amount, or quantity × unit price (RND-LINE), its GST code and the GST its tax invoice states.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["account", "gst_code"],
+      "properties": {
+        "account": {"type": "string"},
+        "amount": {"description": "The net, in the bill's currency.", "$ref": "#/$defs/money"},
+        "quantity": {"type": "string"},
+        "unit_price": {"type": "string"},
+        "quantity_before": {"description": "What earlier bills took of a purchase order's line (RND-LINE, rev 0.87).", "type": "string"},
+        "gst_code": {"type": "string"},
+        "gst": {"description": "The GST the tax invoice states, in the bill's currency; 0 when absent.", "$ref": "#/$defs/money"},
+        "gst_base": {"description": "A foreign bill's line: the GST its tax invoice states in the base currency (ENG-42).", "$ref": "#/$defs/money"},
+        "business_share": {"description": "The percent of the GST claimable (FR-AP-20, RND-GST-SHARE); 100 when absent.", "type": "string"},
+        "spread_months": {"type": "integer", "minimum": 0},
+        "spread_from": {"description": "The day its service starts; its month is the first release's. The bill's when absent.", "$ref": "#/$defs/date"}
+      }
+    },
+    "bill": {
+      "description": "A bill (bill@1) or a vendor credit (vendor_credit@1, the bill's legs negated).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "currency", "lines"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "type": {"enum": ["bill", "vendor_credit"]},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "currency": {"type": "string"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"},
+        "lines": {"type": "array", "items": {"$ref": "#/$defs/billLine"}},
+        "withholding": {
+          "description": "Tax withheld from a non-resident supplier (FR-AP-19, RND-WHT): the tax agent's rate.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["percent"],
+          "properties": {"percent": {"type": "string"}}
+        }
+      }
+    },
+    "settlement": {
+      "description": "Money that settles posted documents (bill_payment@1, ...): its parts, and what it keeps unapplied.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "account", "currency", "parts"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "type": {"enum": ["bill_payment"]},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "account": {"description": "The money account, in the documents' currency or the base currency.", "type": "string"},
+        "currency": {"description": "The documents' currency.", "type": "string"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"},
+        "base_amount": {"description": "What a base-currency account paid or received for documents in another currency.", "$ref": "#/$defs/money"},
+        "unapplied": {"description": "What it paid beyond the parts, kept as a credit (FR-AR-18).", "$ref": "#/$defs/money"},
+        "parts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["document", "amount"],
+            "properties": {
+              "document": {"type": "string"},
+              "amount": {"description": "What it pays of the document, in its currency.", "$ref": "#/$defs/money"},
+              "in_full": {"description": "Settle all that is open though it pays less, within tolerance (rev 0.121).", "type": "boolean"}
             }
           }
         }

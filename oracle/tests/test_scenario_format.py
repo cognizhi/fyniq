@@ -63,10 +63,11 @@ P1_EXAMPLES = [json.loads(block) for block in _BLOCKS[2:]]
 
 
 # req: QA-ENG-02
-@pytest.mark.parametrize("document", P1_EXAMPLES, ids=lambda d: d["type"])
-def test_each_p1_example_in_the_readme_is_a_document_that_posts(document):
-    result = Ledger(scenario_from_json(p1_scenario(document))).result()
-    assert result["rejected"] == [] and [e["document"] for e in result["entries"]][:1] == [document["id"]]
+def test_the_p1_examples_in_the_readme_are_documents_that_post_in_order():
+    # A later example may settle an earlier one (the payment pays the bill), so they post together.
+    result = Ledger(scenario_from_json(p1_scenario(*P1_EXAMPLES))).result()
+    assert result["rejected"] == []
+    assert [e["document"] for e in result["entries"] if e["kind"] == "post"] == [d["id"] for d in P1_EXAMPLES]
 
 
 # req: QA-ENG-01

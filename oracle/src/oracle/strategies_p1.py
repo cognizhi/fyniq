@@ -8,7 +8,12 @@ As for manual journals, each document is built to an *intent* (``post`` or ``rej
 expected figure. Only shapes whose rule PRD-001 settles are generated; the readings the PRD leaves
 open (README, "P1 readings") are covered by the pending golden cases instead. For bank lines that
 means: lines in the base currency (the currency of a foreign line's parts is a reading), and fees
-only on a transfer paid from a base-currency account.
+only on a transfer paid from a base-currency account. For purchases: parts recorded in full only on
+base-currency bills (the 3% of a foreign bill's tolerance is a reading), and no payment of a bill that
+withholds tax (its open amount is what it owes after withholding, which the generator does not track).
+
+The generator keeps what it built so far in a :class:`_Book` (the bills a payment may settle and what
+each has open), so a payment built to post really can.
 """
 
 from __future__ import annotations
@@ -23,7 +28,7 @@ from oracle import money
 from oracle.scenario import SCENARIO_SCHEMA
 from oracle.strategies import POST, REJECT, Intent
 
-SOURCES = ("bank",)
+SOURCES = ("bank", "purchases")
 
 CURRENCIES = {"SGD": 2, "USD": 2, "JPY": 0, "KWD": 3}
 MONEY_ACCOUNTS = {"1010": "SGD", "1011": "SGD", "1021": "USD", "1022": "JPY", "1023": "KWD"}
@@ -35,6 +40,7 @@ SYSTEM = {
     "deferred_revenue": "2400",
     "fx": "7030",
     "bank_charges": "6460",
+    "withholding_tax": "2330",
 }
 EXPENSES = ["6010", "6020", "6110", "6460", "7030"]
 REVENUES = ["4010", "4020", "4030"]
@@ -46,7 +52,18 @@ _CODES_OUT = ["TX", "TX", "IM", "ZP", "BL", "NR", "EP", "OP", "NA"]
 BANK_POSTING = ["bank-line", "bank-line", "bank-split", "bank-spread", "transfer-same", "transfer-cross"]
 BANK_REJECTED = ["bank-parts-mismatch", "bank-part-on-money", "bank-part-on-control", "bank-spread-not-p-and-l",
                  "transfer-unbalanced", "transfer-missing-rate"]
-KINDS = {"bank": BANK_POSTING * 3 + BANK_REJECTED}
+PURCHASES_POSTING = ["bill", "bill", "bill-foreign", "bill-spread", "bill-quantity", "bill-withholding",
+                     "vendor-credit", "pay", "pay", "pay-in-full", "pay-from-base", "pay-unapplied"]
+PURCHASES_REJECTED = ["bill-spread-not-expense", "pay-more-than-open", "pay-beyond-tolerance", "pay-unknown-bill"]
+KINDS = {"bank": BANK_POSTING * 3 + BANK_REJECTED, "purchases": PURCHASES_POSTING * 2 + PURCHASES_REJECTED}
+REJECTED_KINDS = frozenset(BANK_REJECTED + PURCHASES_REJECTED)
+
+
+class _Book:
+    """What the generator built so far: the bills a payment may settle, with what each has open."""
+
+    def __init__(self) -> None:
+        self.open: dict[str, tuple[str, Decimal]] = {}  # bill -> (currency, open amount)
 
 
 def _accounts() -> list[dict[str, Any]]:
@@ -54,7 +71,7 @@ def _accounts() -> list[dict[str, Any]]:
         return {"code": code, "type": kind, "group": False, "active": True}
 
     chart = [account(code, "asset") for code in [*MONEY_ACCOUNTS, "1100", "1210", "1500"]]
-    chart += [account(code, "liability") for code in ["2010", "2050", "2200", "2400", "2999"]]
+    chart += [account(code, "liability") for code in ["2010", "2050", "2200", "2330", "2400", "2999"]]
     chart += [account(code, "revenue") for code in REVENUES]
     chart += [account(code, "expense") for code in EXPENSES]
     return chart
@@ -168,17 +185,120 @@ def _transfer(draw: st.DrawFn, doc_id: str, day: date, kind: str) -> dict[str, A
 
 
 @st.composite
+def _purchase_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _Book) -> tuple[dict[str, Any], str]:
+    """A bill, vendor credit or payment, and its intent."""
+    if kind.startswith("pay"):
+        return draw(_payment(doc_id, day, kind, book))
+    currency = draw(st.sampled_from(["USD", "JPY", "KWD"])) if kind == "bill-foreign" else "SGD"
+    minor = CURRENCIES[currency]
+    lines, total = [], Decimal(0)
+    for i in range(draw(st.integers(1, 4))):
+        line: dict[str, Any] = {"account": draw(st.sampled_from(EXPENSES + ["1500"])),
+                                "gst_code": draw(st.sampled_from(_CODES_OUT))}
+        if kind == "bill-quantity":
+            quantity = Decimal(draw(st.integers(1, 10**4))).scaleb(-draw(st.integers(0, 3)), context=money.EXACT)
+            price = Decimal(draw(st.integers(1, 10**8))).scaleb(-draw(st.integers(0, 6)), context=money.EXACT)
+            net = money.rnd_line(quantity, price, minor)
+            if net.is_zero():
+                quantity, net = Decimal(100), money.rnd_line(Decimal(100), price, minor)
+            if net.is_zero():
+                price = Decimal(1)
+                net = money.rnd_line(quantity, price, minor)
+            line["quantity"], line["unit_price"] = format(quantity, "f"), format(price, "f")
+        else:
+            net = draw(_cents(minor, 6))
+            line["amount"] = _text(net, minor)
+        gst = Decimal(0)
+        if line["gst_code"] in ("TX", "IM") and draw(st.integers(0, 3)) > 0:
+            gst = money.round_quotient(money.EXACT.multiply(net, Decimal(9)), Decimal(100), minor)
+            line["gst"] = _text(gst, minor)
+            if currency != "SGD" and draw(st.booleans()):
+                line["gst_base"] = _text(draw(_cents(2, 5)), 2)
+        if draw(st.integers(0, 4)) == 0:
+            line["business_share"] = draw(st.sampled_from(["0", "50", "60", "33.33", "100"]))
+        if kind == "bill-spread" and i == 0:
+            line["account"] = draw(st.sampled_from(EXPENSES))
+            line["spread_months"] = draw(st.sampled_from([1, 3, 6, 12, 24, 120]))
+            if draw(st.booleans()):
+                line["spread_from"] = (day - timedelta(days=draw(st.integers(-90, 200)))).isoformat()
+        if kind == "bill-spread-not-expense" and i == 0:
+            line["account"], line["spread_months"] = draw(st.sampled_from(["1500", "2050"])), 12
+        lines.append(line)
+        total = money.EXACT.add(total, money.EXACT.add(net, gst))
+    doc: dict[str, Any] = {"type": "vendor_credit" if kind == "vendor-credit" else "bill", "id": doc_id, "version": 1,
+                           "date": day.isoformat(), "currency": currency, "lines": lines}
+    if currency != "SGD":
+        doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
+    if kind == "bill-withholding":
+        doc["withholding"] = {"percent": draw(st.sampled_from(["10", "15", "17", "24"]))}
+    elif kind in ("bill", "bill-foreign", "bill-spread", "bill-quantity"):
+        book.open[doc_id] = (currency, total)
+    return doc, REJECT if kind in REJECTED_KINDS else POST
+
+
+@st.composite
+def _payment(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _Book) -> tuple[dict[str, Any], str]:
+    least = Decimal("2.02") if kind == "pay-beyond-tolerance" else Decimal(0)
+    payable = [b for b, (cur, left) in sorted(book.open.items()) if left > least and
+               (cur == "SGD" or kind not in ("pay-in-full", "pay-beyond-tolerance"))]
+    doc: dict[str, Any] = {"type": "bill_payment", "id": doc_id, "version": 1, "date": day.isoformat(), "parts": []}
+    if kind == "pay-unknown-bill" or not payable:
+        doc.update(account="1010", currency="SGD", parts=[{"document": "BILL-NONE", "amount": "1.00"}])
+        return doc, REJECT
+    target = draw(st.sampled_from(payable))
+    currency, left = book.open[target]
+    minor = CURRENCIES[currency]
+    unit = Decimal(1).scaleb(-minor, context=money.EXACT)
+    if kind == "pay-more-than-open":
+        doc.update(account="1010" if currency == "SGD" else {"USD": "1021", "JPY": "1022", "KWD": "1023"}[currency],
+                   currency=currency, parts=[{"document": target, "amount": _text(money.EXACT.add(left, unit), minor)}])
+        if currency != "SGD":
+            doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
+        return doc, REJECT
+    if kind in ("pay-in-full", "pay-beyond-tolerance"):
+        units = int(left.scaleb(2, context=money.EXACT))
+        cents = draw(st.integers(0, min(100, units - 1))) if kind == "pay-in-full" else \
+            draw(st.integers(101, min(5000, units - 1)))
+        amount = money.EXACT.subtract(left, Decimal(cents).scaleb(-2, context=money.EXACT))
+        doc.update(account="1010", currency="SGD", parts=[{"document": target, "amount": _text(amount, 2), "in_full": True}])
+        if kind == "pay-in-full":
+            book.open[target] = (currency, Decimal(0))
+            return doc, POST
+        return doc, REJECT
+    amount = left if draw(st.booleans()) else draw(_split(left, 2, minor))[0] if left > unit else left
+    doc["currency"] = currency
+    doc["parts"] = [{"document": target, "amount": _text(amount, minor)}]
+    if currency == "SGD":
+        doc["account"] = draw(st.sampled_from(["1010", "1011"]))
+    elif kind == "pay-from-base":
+        doc["account"], doc["base_amount"] = "1010", _text(draw(_cents()), 2)
+    else:
+        doc["account"] = {"USD": "1021", "JPY": "1022", "KWD": "1023"}[currency]
+        doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
+    if kind == "pay-unapplied":
+        doc["unapplied"] = _text(draw(_cents(minor, 3)), minor)
+    book.open[target] = (currency, money.EXACT.subtract(left, amount))
+    return doc, POST
+
+
+@st.composite
 def p1_scenarios_with_intent(
     draw: st.DrawFn, sources: tuple[str, ...] = SOURCES, name: str = "generated-p1"
 ) -> tuple[dict[str, Any], Intent]:
     """A scenario of P1 documents from ``sources`` (with SGD as the base) and each one's intent."""
     kinds = [kind for source in sources for kind in KINDS[source]]
     documents, intent = [], {}
-    for i in range(draw(st.integers(1, 8))):
+    book = _Book()
+    days = sorted(draw(st.lists(_DATES, min_size=1, max_size=10)))
+    for i, day in enumerate(days):
         kind = draw(st.sampled_from(kinds))
         doc_id = f"P1-{i + 1:04d}"
-        documents.append(draw(_bank_document(doc_id, draw(_DATES), kind)))
-        intent[doc_id] = REJECT if kind in BANK_REJECTED else POST
+        if kind in KINDS["bank"]:
+            document, meant = draw(_bank_document(doc_id, day, kind)), REJECT if kind in REJECTED_KINDS else POST
+        else:
+            document, meant = draw(_purchase_document(doc_id, day, kind, book))
+        documents.append(document)
+        intent[doc_id] = meant
     last = max(date.fromisoformat(d["date"]) for d in documents)
     scenario = {
         "schema": SCENARIO_SCHEMA,
