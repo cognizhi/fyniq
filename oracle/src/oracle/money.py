@@ -6,12 +6,16 @@ Written from PRD-001 §10.3 (ENG-10, ENG-11, ENG-44), §10.4 and §11.3 ("Money 
   operation names its context. ``EXACT`` traps any rounding, so arithmetic is either exact or
   raises; ``FloatOperation`` is trapped too, so mixing in a binary floating-point number raises.
 * The only place a value is rounded is a named §10.4 policy below. P0 posts manual journals, which
-  need one: ``RND-FX``.
+  need one: ``RND-FX``. The P1 sources add the others, each under its policy name.
+* A policy that divides (``RND-GST-INCL``, ``ALLOC-EVEN``, ...) rounds the exact quotient once
+  through :func:`round_quotient`, which works on the integers behind the decimals, so a quotient that
+  does not terminate (100 × 9 ÷ 109) is still rounded exactly.
 """
 
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from decimal import (
     ROUND_HALF_UP,
     Clamped,
@@ -60,6 +64,7 @@ _HALF_AWAY_FROM_ZERO = Context(
 """The context of a named rounding policy: it may round (Inexact, Rounded), half away from zero."""
 
 ZERO = Decimal(0)
+HUNDRED = Decimal(100)
 
 AMOUNT_INTEGER_DIGITS = 16
 """Amounts are NUMERIC(20,4): at most 16 integer digits (§11.3)."""
@@ -160,3 +165,55 @@ def fmt(value: Decimal, minor_units: int) -> str:
     if value.is_zero():
         value = value.copy_abs()
     return format(value, "f")
+
+
+def round_quotient(numerator: Decimal, denominator: Decimal, minor_units: int) -> Decimal:
+    """numerator ÷ denominator, rounded once to ``minor_units`` decimals, half away from zero.
+
+    Exact for every input: both decimals are read as integer ratios, so the comparison with half a
+    unit is made on integers, never on a rounded intermediate quotient.
+    """
+    if denominator.is_zero():
+        raise ZeroDivisionError("round_quotient: zero denominator")
+    pn, qn = numerator.as_integer_ratio()
+    pd, qd = denominator.as_integer_ratio()
+    num, den = pn * qd * 10**minor_units, qn * pd
+    negative = (num < 0) != (den < 0)
+    q, r = divmod(abs(num), abs(den))
+    if 2 * r >= abs(den):  # half a unit or more: away from zero
+        q += 1
+    return Decimal(-q if negative else q).scaleb(-minor_units, context=EXACT)
+
+
+def rnd_gst_incl(gross: Decimal, percent: Decimal, minor_units: int) -> Decimal:
+    """``RND-GST-INCL`` (§10.4): GST in a GST-inclusive amount = round(gross × rate ÷ (1 + rate)).
+
+    With the rate as a percentage p, gross × (p/100) ÷ (1 + p/100) = gross × p ÷ (100 + p); rounded
+    once, half away from zero, to ``minor_units`` (the base currency's, rev 0.126). Net = gross − GST.
+    """
+    return round_quotient(EXACT.multiply(gross, percent), EXACT.add(HUNDRED, percent), minor_units)
+
+
+def rnd_gst_excl(
+    lines: Iterable[tuple[str, Decimal]], percent: Decimal, minor_units: int, per_line: bool = False
+) -> dict[str, Decimal]:
+    """``RND-GST-EXCL`` (§10.4): GST on a document's net amounts, by GST code.
+
+    ``lines`` are (GST code, net) for the lines whose code carries GST at ``percent``. By default the
+    GST is computed **per subtotal**: each code's nets are summed and round(subtotal × rate) taken
+    once. With ``per_line`` (an organisation setting, applied consistently) each line's GST is
+    rounded and the code's GST is their sum. Half away from zero, to ``minor_units``. The result
+    keeps the codes in the order they first appear.
+    """
+    result: dict[str, Decimal] = {}
+    if per_line:
+        for code, net in lines:
+            gst = round_quotient(EXACT.multiply(net, percent), HUNDRED, minor_units)
+            result[code] = EXACT.add(result.get(code, ZERO), gst)
+        return result
+    subtotals: dict[str, Decimal] = {}
+    for code, net in lines:
+        subtotals[code] = EXACT.add(subtotals.get(code, ZERO), net)
+    for code, subtotal in subtotals.items():
+        result[code] = round_quotient(EXACT.multiply(subtotal, percent), HUNDRED, minor_units)
+    return result
