@@ -232,6 +232,35 @@ Source: PRD-001 §8.4 · Priority S · Phase P1 (file) / P2 (API)
 - **WHEN** the feed shows the debit for a batch
 - **THEN** the batch is marked paid
 
+#### Scenario: The DBS file first (rev 0.154)
+- **WHEN** an approved batch is released
+- **THEN** its file is DBS IDEAL's Universal File Format (UFF) for FAST and GIRO, written from DBS's own specification, each field [verify] with a test upload to IDEAL
+
+#### Scenario: SGD to Singapore accounts (rev 0.154)
+- **WHEN** a payment is added to a batch
+- **THEN** it pays SGD from an SGD money account to a Singapore bank account by FAST or GIRO
+- **AND** overseas and foreign-currency payments stay recorded by hand
+
+#### Scenario: Bills and expense claims (rev 0.154)
+- **WHEN** a batch is built
+- **THEN** it takes approved bills, with their planned dates (FR-AP-13), and approved expense claims (FR-AP-07)
+- **AND** salaries join with the payroll link
+
+#### Scenario: Posted on release, matched later (rev 0.154)
+- **WHEN** a batch is released
+- **THEN** each payment posts as recording one by hand does (Dr 2010 or 2150 · Cr the money account) on the batch's payment date
+- **AND** bank import matches it, and a payment the bank rejects is voided
+
+#### Scenario: Who releases (rev 0.154)
+- **GIVEN** Founder mode
+- **WHEN** one founder prepared a batch and another approved it (FM-1)
+- **THEN** either of them releases it after step-up, holding the Payment releaser role, and never one person alone
+- **AND** in Standard mode the releaser is a third person (SOD-2)
+
+#### Scenario: Remittance advice on the match (rev 0.154)
+- **WHEN** a batch's payment to a supplier is matched to its bank statement line
+- **THEN** remittance advice is emailed to the supplier's remittance address
+
 ### Requirement: FR-BNK-13 Daily cash position
 The system SHALL show the daily cash position across accounts and currencies at the latest rates.
 
