@@ -106,6 +106,8 @@ describe("a vendor's bank details", () => {
     const draft = await screen.findByRole("dialog", { name: "Change of bank details" });
     expect(await within(draft).findByText("no bank letter or vendor's confirmation is attached")).toBeTruthy();
     expect((within(draft).getByRole("button", { name: "Ask for approval" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(draft).getByLabelText("SWIFT/BIC code") as HTMLInputElement).value).toBe("DBSSSGSG");
+    expect((within(draft).getByLabelText("Account number") as HTMLInputElement).value).toBe("");
     const created = seen.find((s) => s.method === "POST" && s.path === "/v1/bank-changes")!;
     expect(created.body).toMatchObject({ contact_id: "v1", currency: "SGD", kind: "singapore", bic: "DBSSSGSG", bank_country: "SG", account_number: "998-877-665544" });
     expect(created.headers.get("Idempotency-Key")).toBeTruthy();

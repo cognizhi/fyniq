@@ -165,7 +165,9 @@ function ChangeEditor({ contact, change, onClose, onDone }: { contact: Contact; 
     setFailed("The change was not saved");
     if (!out.data) return setProblem(problemOf(out.error));
     setSaved({ change: out.data, etag: etagOf(out.response) || `"${out.data.version}-draft"` });
-    setD({ ...d, account_number: "" });
+    // The form shows what was saved, as the API kept it (the code in capitals, the name trimmed); never the number.
+    const kept = out.data.account;
+    setD({ ...d, currency: kept.currency, kind: kept.kind, bic: kept.bic, bank_country: kept.bank_country, account_name: kept.account_name, account_number: "" });
     await queries.invalidateQueries({ queryKey: ["bank-details", contact.id] });
   };
 
@@ -233,7 +235,7 @@ function ChangeEditor({ contact, change, onClose, onDone }: { contact: Contact; 
               One account per currency. Another currency is another change.
             </span>
           </div>
-          <fieldset className="fy-field">
+          <fieldset className="fy-field m-0 min-w-0 border-0 p-0">
             <legend className="fy-label">Bank</legend>
             <div className="fy-row fy-row--wrap gap-3">
               {(Object.keys(kinds) as (keyof typeof kinds)[]).map((k) => (
