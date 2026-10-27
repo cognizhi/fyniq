@@ -672,6 +672,14 @@ var codeFacts = map[string]struct {
 	asset.CodePosted:              {409, "Its depreciation has posted already"},
 	asset.CodeDisposed:            {409, "Nothing of the asset is left"},
 	storage.CodeAsset:             {409, "The asset register does not allow that"},
+	asset.CodeNotDisposal:         {404, "Not a disposal of a fixed asset"},
+	asset.CodeDisposalDate:        {422, "The disposal cannot be dated then"},
+	asset.CodeDisposalShare:       {422, "The share of the cost does not fit"},
+	asset.CodeProceeds:            {422, "The proceeds cannot be recorded that way"},
+	asset.CodeDepreciationDue:     {409, "A month of depreciation before it has not posted"},
+	asset.CodeDisposalVoid:        {409, "The disposal cannot be voided as it stands"},
+	CodeDisposalVoidApproval:      {409, "Voiding needs a second person"},
+	ledger.CodeDisposal:           {422, "The disposal's accounts or amounts do not fit"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -831,6 +839,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		cne *connector.Error
 		bke *banking.Error
 		cle *claim.Error
+		ase *asset.Error
 		bte *banktransaction.Error
 		bfe *bankfile.Error
 		pe  *period.Error
@@ -888,6 +897,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(bfe.Code, sentence(bfe.Error()[len(bfe.Code)+2:]), sentence(bfe.Fix))
 	case errors.As(err, &cle):
 		return problem(cle.Code, sentence(cle.Message), sentence(cle.Fix))
+	case errors.As(err, &ase):
+		return problem(ase.Code, sentence(ase.Message), sentence(ase.Fix))
 	case errors.As(err, &bke):
 		return problem(bke.Code, sentence(bke.Message), sentence(bke.Fix))
 	case errors.As(err, &bte):

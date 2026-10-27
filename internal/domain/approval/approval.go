@@ -79,6 +79,9 @@ const (
 	// ObjectCashAdvance is a cash advance to a member, or its refund, recorded by hand, to void (FR-AP-17, FR-GL-12,
 	// FM-1): a second person who holds A on "Payment batches" approves it (rev 0.148); its key is its id.
 	ObjectCashAdvance = "cash_advance"
+	// ObjectAssetDisposal is the disposal of a fixed asset, to void (FR-FA-03, FR-GL-12, FM-1): a second person who holds
+	// A on "Fixed assets" (the Controller) approves it; its key is its id.
+	ObjectAssetDisposal = "asset_disposal"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -131,6 +134,8 @@ const (
 	OpReimbursementVoid = "claim_reimbursement.void"
 	// OpCashAdvanceVoid voids a cash advance or its refund.
 	OpCashAdvanceVoid = "cash_advance.void"
+	// OpAssetDisposalVoid voids the disposal of a fixed asset, restoring the asset.
+	OpAssetDisposalVoid = "asset_disposal.void"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -147,6 +152,7 @@ var Operations = map[string]string{
 	OpConnectorChange: ObjectConnector, OpRuleAutoApply: ObjectBankRule, OpClaimPost: ObjectClaim,
 	OpReimbursementVoid: ObjectReimbursement,
 	OpCashAdvanceVoid:   ObjectCashAdvance,
+	OpAssetDisposalVoid: ObjectAssetDisposal,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -207,6 +213,8 @@ var Dependencies = map[string][]string{
 	ObjectReimbursement: {"status", "paid"},
 	// the advance's status, and its amount in the base currency
 	ObjectCashAdvance: {"status", "amount"},
+	// the disposal's status, the asset's version it made, and the cost it took off the asset in the base currency
+	ObjectAssetDisposal: {"status", "asset_version", "cost"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -240,6 +248,7 @@ var Rows = map[string]string{
 	ObjectClaim:               "Expense claims",
 	ObjectReimbursement:       "Payment batches",
 	ObjectCashAdvance:         "Payment batches",
+	ObjectAssetDisposal:       "Fixed assets",
 }
 
 // The limits of a policy.
@@ -302,6 +311,7 @@ var Policies = map[string]Policy{
 	ObjectClaim:               {ObjectType: ObjectClaim, Version: "founder/expense_claim@2026-10-26.1", Steps: []Step{{Quorum: 1}}},
 	ObjectReimbursement:       {ObjectType: ObjectReimbursement, Version: "founder/claim_reimbursement@2026-10-26.1", Steps: []Step{{Quorum: 1}}},
 	ObjectCashAdvance:         {ObjectType: ObjectCashAdvance, Version: "founder/cash_advance@2026-10-26.1", Steps: []Step{{Quorum: 1}}},
+	ObjectAssetDisposal:       {ObjectType: ObjectAssetDisposal, Version: "founder/asset_disposal@2026-10-27.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

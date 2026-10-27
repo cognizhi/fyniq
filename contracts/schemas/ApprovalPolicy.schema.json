@@ -53,7 +53,8 @@
         "bank_rule",
         "expense_claim",
         "claim_reimbursement",
-        "cash_advance"
+        "cash_advance",
+        "asset_disposal"
       ],
       "examples": [
         "organisation_setting"

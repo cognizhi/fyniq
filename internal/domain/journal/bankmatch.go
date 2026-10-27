@@ -376,9 +376,10 @@ func (s BankTransactions) Unmatch(ctx context.Context, org, lineID uuid.UUID, re
 }
 
 // recordedTypes are the documents recorded by hand that move money through a money account: in for money in, out for
-// money out. A cash advance is both: an advance goes out, its refund comes in; the amount's sign tells which.
+// money out. A cash advance is both: an advance goes out, its refund comes in; the amount's sign tells which. A
+// disposal's money comes in: a sale's proceeds (FR-FA-03).
 var recordedTypes = map[bool][]storage.DocumentType{
-	true:  {storage.DocumentCustomerReceipt, storage.DocumentCustomerDeposit, storage.DocumentSupplierRefund, storage.DocumentCashAdvance},
+	true:  {storage.DocumentCustomerReceipt, storage.DocumentCustomerDeposit, storage.DocumentSupplierRefund, storage.DocumentCashAdvance, storage.DocumentAssetDisposal},
 	false: {storage.DocumentBillPayment, storage.DocumentCustomerRefund, storage.DocumentClaimReimbursement, storage.DocumentCashAdvance},
 }
 
@@ -472,6 +473,8 @@ func moves(ctx context.Context, u storage.UnitOfWork, doc storage.Document, line
 		identities = []string{ledger.ClaimReimbursementIdentity(doc.ID, doc.Version, ledger.RuleClaimReimbursement)}
 	case storage.DocumentCashAdvance: // money advanced to a member, or its refund: the amount's sign tells which (FR-AP-17)
 		identities = []string{ledger.CashAdvanceIdentity(doc.ID, doc.Version, ledger.RuleCashAdvance)}
+	case storage.DocumentAssetDisposal: // a sale's money received (FR-FA-03)
+		identities = []string{ledger.AssetDisposalIdentity(doc.ID, doc.Version, ledger.RuleAssetDisposal)}
 	}
 	var e storage.Entry
 	found := false

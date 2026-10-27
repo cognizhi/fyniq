@@ -30,6 +30,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/approvals/{approval_id}/challenge` (challengeApproval): Start signing a request with a passkey
 - `POST /v1/approvals/{approval_id}/reject` (rejectApproval): Reject a request
 - `POST /v1/approvals/{approval_id}/withdraw` (withdrawApproval): Withdraw your request
+- `GET /v1/asset-disposals` (listAssetDisposals): List disposals of fixed assets
+- `GET /v1/asset-disposals/{disposal_id}` (getAssetDisposal): Get a disposal of a fixed asset
+- `POST /v1/asset-disposals/{disposal_id}/void` (voidAssetDisposal): Void a disposal of a fixed asset
+- `POST /v1/asset-disposals/{disposal_id}/void-approval` (requestAssetDisposalVoid): Ask for approval to void a disposal of a fixed asset
 - `GET /v1/auto-reconciliations` (listAutoReconciliations): List what the system reconciled
 - `POST /v1/bank-imports` (importBankStatements): Import bank statements
 - `GET /v1/bank-lines` (listBankLines): List bank lines
@@ -176,6 +180,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/fixed-assets` (registerFixedAsset): Register a fixed asset
 - `GET /v1/fixed-assets/{asset_id}` (getFixedAsset): Get a fixed asset
 - `POST /v1/fixed-assets/{asset_id}/change` (changeFixedAsset): Change a fixed asset
+- `POST /v1/fixed-assets/{asset_id}/disposals` (disposeFixedAsset): Sell or write off a fixed asset
 - `GET /v1/fx/feed` (listFeedRates): List the daily feed's rates
 - `GET /v1/fx/money-accounts` (listForeignMoneyAccounts): List the money accounts' balances in other currencies
 - `GET /v1/fx/rate` (lookupFxRate): Find the rate a posting takes

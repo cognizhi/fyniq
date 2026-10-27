@@ -84,7 +84,9 @@ Every month before the disposal's must be posted first (a disposal is refused wh
 depreciation is the ledger's. A disposal recorded late, dated before months already posted (a sale in March recorded
 in April, after March's depreciation posted), reverses those months' entries on their own dates in the same
 transaction, and the version it makes posts them again for what is left; a month in a closed period refuses the
-disposal, saying which. A partial disposal makes the asset's next version in the same transaction: the cost,
+disposal, saying which. Recording one first posts the asset's months already due, as the scheduler would, so a month
+that ended within the hour does not refuse it. A disposal keeps the accounts, GST rate and invoice amount it posted
+with, so its replay never reads a setting changed later. A partial disposal makes the asset's next version in the same transaction: the cost,
 the residual and the carried depreciation reduced by the share, the rest depreciating from the disposal's month. The
 disposal of a money sale is matched by bank import as money recorded by hand (`bank_match_posting`, FY228). A
 disposal is voided by a reversal on its date or later, while no later month of the asset is posted; in Founder mode

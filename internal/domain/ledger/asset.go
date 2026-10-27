@@ -239,3 +239,170 @@ func BankPartCost(t BankTransaction, e Entry, s Settings, part int) (Line, bool)
 	}
 	return Line{}, false
 }
+
+// The disposal's source type and rule version (FR-FA-03; posting rule "Asset disposal", §10.2; rev 0.149).
+const (
+	SourceAssetDisposal = "asset_disposal"
+	RuleAssetDisposal   = "asset_disposal@1"
+)
+
+// CodeDisposal is a disposal the rule refuses: amounts not in the base currency or out of range, or accounts it cannot
+// post to.
+const CodeDisposal = "LEDGER-40"
+
+// AssetDisposalIdentity is the posting identity of a disposal version under a rule version (§11.4).
+func AssetDisposalIdentity(id uuid.UUID, version int, rule string) string {
+	return identity(SourceAssetDisposal, id, version, rule)
+}
+
+// AssetDisposal is one disposal as the rule reads it (design D4): the disposal and its version, its date and memo, the
+// asset account and the share of the asset's cost it takes off it, that share's accumulated depreciation through the
+// month before, and its proceeds: money received into a money account (Gross, the GST in it at GSTRate, "" when it
+// bears none), or an issued invoice's line on the clearing account (InvoiceNet), or none for a write-off; and the
+// account the gain or loss goes to. All amounts are in the base currency.
+type AssetDisposal struct {
+	ID                uuid.UUID
+	Version           int
+	Date              time.Time
+	Memo              string
+	AssetAccountID    uuid.UUID
+	Cost              money.Money
+	Accumulated       money.Money
+	MoneyAccountID    *uuid.UUID
+	Gross             money.Money
+	GSTRate           string
+	ClearingAccountID *uuid.UUID
+	InvoiceNet        money.Money
+	DisposalAccountID uuid.UUID
+}
+
+// PostAssetDisposal turns a disposal into its entry (asset_disposal@1; §10.2 "Asset disposal"), in the base currency on
+// its date:
+//   - Dr 1590 Accumulated depreciation with the share's accumulated depreciation;
+//   - Dr the money account with the money received, and Cr 2200 GST control with its output GST (RND-GST-INCL); or Dr
+//     the clearing account with the invoice line's net, the invoice having charged its GST;
+//   - Cr the asset account with the share of the cost;
+//   - the difference to the disposal account: Dr a loss, Cr a gain.
+//
+// Every rule is checked first and every failure returned together (ENG-22).
+func PostAssetDisposal(d AssetDisposal, s Settings) (Entry, error) {
+	var probs Problems
+	add := func(code, field, msg, fix string) { probs = append(probs, Problem{code, field, msg, fix}) }
+	if d.Date.IsZero() {
+		add(CodeNoDate, "date", "the disposal has no date", "Enter the day the asset was sold or written off")
+	}
+	if len(d.Memo) > MaxMemo {
+		add(CodeTooLong, "memo", fmt.Sprintf("the memo has %d characters; the most is %d", len(d.Memo), MaxMemo), "Shorten the asset's name")
+	}
+	account := func(field string, id uuid.UUID, money bool, what, fix string) {
+		a, ok := s.Accounts[id]
+		switch {
+		case !ok:
+			add(CodeUnknownAccount, field, "the "+what+" does not exist in this organisation", fix)
+		case a.Group:
+			add(CodeGroupAccount, field, fmt.Sprintf("account %s is a group heading", a.Code), "Choose an account under it")
+		case !a.Active:
+			add(CodeInactiveAccount, field, fmt.Sprintf("account %s is inactive", a.Code), "Reactivate it, or choose another account")
+		case money && (!a.Money || a.Currency != "" && a.Currency != s.Base.Code):
+			add(CodeNotMoneyAccount, field, fmt.Sprintf("account %s is not a money account in %s", a.Code, s.Base), "Choose the bank, cash or wallet account the money came into")
+		}
+	}
+	account("asset_account", d.AssetAccountID, false, "asset's account", "Register the asset on an asset account")
+	account("disposal_account", d.DisposalAccountID, false, "disposal account", "Set the disposal account (assets.disposal_account) to an account of the chart, such as 7050")
+	amount := func(field string, m money.Money, positive bool) bool {
+		switch {
+		case m.Currency() != s.Base:
+			add(CodeDisposal, field, fmt.Sprintf("the %s is in %s, not the base currency %s", field, m.Currency(), s.Base), "Enter it in the base currency")
+		case positive && m.Sign() <= 0, !positive && m.Sign() < 0:
+			add(CodeDisposal, field, fmt.Sprintf("the %s is %s %s", field, m, m.Currency()), "Enter an amount above zero")
+		default:
+			return true
+		}
+		return false
+	}
+	costOK := amount("cost", d.Cost, true)
+	if amount("accumulated", d.Accumulated, false) && costOK {
+		if over, _ := d.Accumulated.Cmp(d.Cost); over > 0 {
+			add(CodeDisposal, "accumulated", fmt.Sprintf("the accumulated depreciation %s is more than the cost %s", d.Accumulated, d.Cost),
+				"Dispose of an asset with its own accumulated depreciation")
+		}
+	}
+	accumulated, hasAccumulated := s.byRole(RoleAccumulatedDepreciation)
+	if !hasAccumulated && d.Accumulated.Sign() > 0 {
+		add(CodeSystemRole, "lines", "the chart has no accumulated depreciation account", "Load the standard chart's 1590 Accumulated depreciation, or give an asset account the role")
+	}
+	gst := money.Zero(s.Base)
+	gstControl, hasGST := s.byRole(RoleGSTControl)
+	switch {
+	case d.MoneyAccountID != nil && d.ClearingAccountID != nil:
+		add(CodeDisposal, "proceeds", "the disposal has both money received and an invoice", "Record the proceeds once: as money received, or on the invoice")
+	case d.MoneyAccountID != nil:
+		account("money_account_id", *d.MoneyAccountID, true, "money account", "Choose the bank, cash or wallet account the money came into")
+		if amount("proceeds", d.Gross, true) && d.GSTRate != "" {
+			var err error
+			if gst, err = rounding.GSTIncl(d.Gross, d.GSTRate); err != nil {
+				add(CodeGSTRate, "gst_code", err.Error(), "Choose the GST code again: its rate comes from the sg-gst pack")
+			}
+			if !gst.IsZero() && !hasGST {
+				add(CodeSystemRole, "lines", "the chart has no GST control account for the output tax", "Load the standard chart's 2200 GST control, or give a liability account the role")
+			}
+		}
+	case d.ClearingAccountID != nil:
+		account("clearing_account", *d.ClearingAccountID, false, "disposal clearing account", "Set the disposal clearing account (assets.disposal_clearing_account) to an account of the chart")
+		amount("proceeds", d.InvoiceNet, true)
+	}
+	if len(probs) > 0 {
+		return Entry{}, probs
+	}
+	id := money.Identity(s.Base)
+	line := func(acc uuid.UUID, m money.Money, desc string) Line {
+		return Line{AccountID: acc, Amount: m, Rate: id, Base: m, Description: desc}
+	}
+	var lines []Line
+	diff := d.Cost.Neg() // what the disposal account takes: debits positive
+	if d.Accumulated.Sign() > 0 {
+		lines = append(lines, line(accumulated.ID, d.Accumulated, "Accumulated depreciation"))
+		diff, _ = diff.Add(d.Accumulated)
+	}
+	switch {
+	case d.MoneyAccountID != nil:
+		lines = append(lines, line(*d.MoneyAccountID, d.Gross, "Proceeds"))
+		net, _ := d.Gross.Sub(gst)
+		diff, _ = diff.Add(net)
+		if !gst.IsZero() {
+			lines = append(lines, line(gstControl.ID, gst.Neg(), "Output tax"))
+		}
+	case d.ClearingAccountID != nil:
+		lines = append(lines, line(*d.ClearingAccountID, d.InvoiceNet, "Proceeds invoiced"))
+		diff, _ = diff.Add(d.InvoiceNet)
+	}
+	lines = append(lines, line(d.AssetAccountID, d.Cost.Neg(), "Cost"))
+	switch diff.Sign() {
+	case 1:
+		lines = append(lines, line(d.DisposalAccountID, diff.Neg(), "Gain on disposal"))
+	case -1:
+		lines = append(lines, line(d.DisposalAccountID, diff.Neg(), "Loss on disposal"))
+	}
+	y, m, day := d.Date.Date()
+	return Entry{
+		PostingDate:     time.Date(y, m, day, 0, 0, 0, 0, time.UTC),
+		Source:          Source{Type: SourceAssetDisposal, ID: d.ID.String(), Version: d.Version},
+		RuleVersion:     RuleAssetDisposal,
+		PostingIdentity: AssetDisposalIdentity(d.ID, d.Version, RuleAssetDisposal),
+		Memo:            d.Memo,
+		Lines:           lines,
+	}, nil
+}
+
+// AssetDisposalRules are every disposal rule version the engine has posted with, by name.
+var AssetDisposalRules = map[string]func(d AssetDisposal, s Settings) (Entry, error){RuleAssetDisposal: PostAssetDisposal}
+
+// ReplayAssetDisposal re-runs the rule version that posted a disposal's entry over the same disposal (ENG-06).
+func ReplayAssetDisposal(rule string, d AssetDisposal, s Settings) (Entry, error) {
+	f, ok := AssetDisposalRules[rule]
+	if !ok {
+		return Entry{}, Problems{{CodeUnknownRule, "rule_version", fmt.Sprintf("the engine has no rule version %s", rule),
+			"Restore the rule version: an old version is never removed while an entry names it (ENG-06)"}}
+	}
+	return f(d, s)
+}
