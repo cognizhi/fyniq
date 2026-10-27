@@ -186,7 +186,7 @@ LATER = {
 BY_ID = {i: c for c, ids in LATER.items() for i in ids.split()}
 # P1 rows that belong to another change than their capability's default
 BY_ID.update({
-    "FR-BNK-12": "p1-payments-out", "FR-DOC-12": "p1-document-capture", "FR-AP-04": "p1-document-capture",
+    "FR-BNK-12": "p1-payments-out", "FR-AP-22": "p1-payments-out", "FR-DOC-12": "p1-document-capture", "FR-AP-04": "p1-document-capture",
     "FR-AP-12": "p1-document-capture", "FR-GL-04": "p1-multi-currency-fx", "FR-GL-05": "p1-multi-currency-fx",
     "FR-CTL-03": "p1-audit-explorer", "FR-CTL-04": "p1-approval-engine", "FR-CTL-06": "p1-checks",
     "FR-INT-03": "p1-mcp-first-party", "FR-INT-20": "p1-connector-framework", "FR-INT-21": "p1-templates-email",
