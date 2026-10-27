@@ -12,7 +12,8 @@ only on a transfer paid from a base-currency account. For purchases: parts recor
 base-currency bills (the 3% of a foreign bill's tolerance is a reading), and no payment of a bill that
 withholds tax (its open amount is what it owes after withholding, which the generator does not track).
 
-For sales: receipts, write-offs and deposits deducted only against invoices that charge no GST (so
+For assets: no GST on a disposal's proceeds (whether the amount received includes it is a reading) and
+no books' start (the opening balances' share of 1590 is not in a scenario). For sales: receipts, write-offs and deposits deducted only against invoices that charge no GST (so
 the generator knows what each owes without computing GST), and receipts in full only on base-currency
 invoices.
 
@@ -33,7 +34,7 @@ from oracle import money
 from oracle.scenario import SCENARIO_SCHEMA
 from oracle.strategies import POST, REJECT, Intent
 
-SOURCES = ("bank", "purchases", "sales", "claims")
+SOURCES = ("bank", "purchases", "sales", "claims", "assets")
 
 CURRENCIES = {"SGD": 2, "USD": 2, "JPY": 0, "KWD": 3}
 MONEY_ACCOUNTS = {"1010": "SGD", "1011": "SGD", "1021": "USD", "1022": "JPY", "1023": "KWD"}
@@ -49,6 +50,10 @@ SYSTEM = {
     "customer_deposits": "2410",
     "claims_payable": "2150",
     "advances": "1250",
+    "depreciation": "6610",
+    "accumulated_depreciation": "1590",
+    "disposal": "7050",
+    "disposal_clearing": "1160",
 }
 EXPENSES = ["6010", "6020", "6110", "6460", "7030"]
 REVENUES = ["4010", "4020", "4030"]
@@ -71,9 +76,13 @@ SALES_REJECTED = ["receipt-more-than-open", "invoice-spread-not-revenue", "invoi
 CLAIMS_POSTING = ["claim", "claim", "claim-trips", "claim-foreign", "claim-advance", "reimburse", "reimburse",
                   "advance", "advance-refund"]
 CLAIMS_REJECTED = ["reimburse-more-than-open", "claim-trip-foreign", "advance-refund-too-much"]
+ASSETS_POSTING = ["asset", "asset", "asset-residual", "asset-later-start", "dispose-money", "dispose-clearing",
+                  "dispose-write-off"]
+ASSETS_REJECTED = ["dispose-unknown", "dispose-twice", "asset-on-expense"]
 KINDS = {"bank": BANK_POSTING * 3 + BANK_REJECTED, "purchases": PURCHASES_POSTING * 2 + PURCHASES_REJECTED,
-         "sales": SALES_POSTING * 2 + SALES_REJECTED, "claims": CLAIMS_POSTING * 2 + CLAIMS_REJECTED}
-REJECTED_KINDS = frozenset(BANK_REJECTED + PURCHASES_REJECTED + SALES_REJECTED + CLAIMS_REJECTED)
+         "sales": SALES_POSTING * 2 + SALES_REJECTED, "claims": CLAIMS_POSTING * 2 + CLAIMS_REJECTED,
+         "assets": ASSETS_POSTING * 2 + ASSETS_REJECTED}
+REJECTED_KINDS = frozenset(BANK_REJECTED + PURCHASES_REJECTED + SALES_REJECTED + CLAIMS_REJECTED + ASSETS_REJECTED)
 MILEAGE = {"car": Decimal("0.60"), "motorcycle": Decimal("0.25")}
 WALLETS = {"SGD": "1010", "USD": "1021", "JPY": "1022", "KWD": "1023"}
 
@@ -87,16 +96,17 @@ class _Book:
         self.deposits: dict[str, tuple[str, Decimal]] = {}  # deposit -> (currency, what is left)
         self.claims: dict[str, tuple[str, Decimal]] = {}  # claim -> (currency, what is owed)
         self.advances: dict[str, Decimal] = {}  # advance -> what is left
+        self.assets: dict[str, bool] = {}  # registered asset -> disposed
 
 
 def _accounts() -> list[dict[str, Any]]:
     def account(code: str, kind: str) -> dict[str, Any]:
         return {"code": code, "type": kind, "group": False, "active": True}
 
-    chart = [account(code, "asset") for code in [*MONEY_ACCOUNTS, "1100", "1210", "1250", "1500"]]
+    chart = [account(code, "asset") for code in [*MONEY_ACCOUNTS, "1100", "1160", "1210", "1250", "1500", "1510", "1590"]]
     chart += [account(code, "liability") for code in ["2010", "2050", "2150", "2200", "2330", "2400", "2410", "2999"]]
     chart += [account(code, "revenue") for code in REVENUES]
-    chart += [account(code, "expense") for code in EXPENSES]
+    chart += [account(code, "expense") for code in [*EXPENSES, "6610", "7050"]]
     return chart
 
 
@@ -539,6 +549,41 @@ def _claims_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _
 
 
 @st.composite
+def _assets_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _Book) -> tuple[dict[str, Any], str]:
+    base = {"id": doc_id, "version": 1, "date": day.isoformat()}
+    if kind.startswith("dispose"):
+        live = [a for a, disposed in sorted(book.assets.items()) if not disposed]
+        gone = [a for a, disposed in sorted(book.assets.items()) if disposed]
+        doc: dict[str, Any] = {"type": "asset_disposal", **base}
+        if kind == "dispose-unknown" or (kind == "dispose-twice" and not gone) or not live and kind != "dispose-twice":
+            doc["asset"] = "FA-NONE"
+            return doc, REJECT
+        if kind == "dispose-twice":
+            doc["asset"] = draw(st.sampled_from(gone))
+            return doc, REJECT
+        doc["asset"] = target = draw(st.sampled_from(live))
+        book.assets[target] = True
+        amount = _text(draw(_cents(2, 6)), 2)
+        if kind == "dispose-money":
+            doc["proceeds"] = {"account": draw(st.sampled_from(["1010", "1011"])), "amount": amount}
+        elif kind == "dispose-clearing":
+            doc["proceeds"] = {"account": "1160", "amount": amount}
+        return doc, POST
+    cost = draw(_cents(2, 6))
+    doc = {"type": "fixed_asset", **base, "account": draw(st.sampled_from(["1500", "1510"])),
+           "cost": _text(cost, 2), "life_months": draw(st.sampled_from([1, 3, 12, 36, 60, 120]))}
+    if kind == "asset-residual" and cost > Decimal("0.01"):
+        doc["residual"] = _text(draw(_split(cost, 2, 2))[0], 2)
+    if kind == "asset-later-start":
+        doc["depreciate_from"] = (day + timedelta(days=draw(st.integers(0, 120)))).isoformat()
+    if kind == "asset-on-expense":
+        doc["account"] = draw(st.sampled_from(EXPENSES))
+        return doc, REJECT
+    book.assets[doc_id] = False
+    return doc, POST
+
+
+@st.composite
 def p1_scenarios_with_intent(
     draw: st.DrawFn, sources: tuple[str, ...] = SOURCES, name: str = "generated-p1"
 ) -> tuple[dict[str, Any], Intent]:
@@ -556,8 +601,10 @@ def p1_scenarios_with_intent(
             document, meant = draw(_purchase_document(doc_id, day, kind, book))
         elif kind in KINDS["sales"]:
             document, meant = draw(_sales_document(doc_id, day, kind, book))
-        else:
+        elif kind in KINDS["claims"]:
             document, meant = draw(_claims_document(doc_id, day, kind, book))
+        else:
+            document, meant = draw(_assets_document(doc_id, day, kind, book))
         documents.append(document)
         intent[doc_id] = meant
     last = max(date.fromisoformat(d["date"]) for d in documents)

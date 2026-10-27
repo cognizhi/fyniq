@@ -35,9 +35,10 @@ The trial balance is the base-currency total per account per calendar month of t
 
 From P1 the ledger also posts the **P1 sources** (bank lines and transfers, ...), each through its
 rule set in :mod:`oracle.sources`, in scenario order with the manual journals. A source's entry is
-written in its canonical form (:func:`oracle.book.canonical`). What a source schedules (a spread's
-releases) posts after every document and reversal, when dated on or before ``as_of`` (ENG-05: up to
-"today", never the future), one entry per document, kind and date.
+written in its canonical form (:func:`oracle.book.canonical`); a registered asset posts none. What a
+source schedules (a spread's releases, an asset's depreciation) posts after every document and
+reversal, when dated on or before ``as_of`` (ENG-05: up to "today", never the future), one entry per
+document, kind and date; a later document may end a schedule (a disposal ends its asset's).
 """
 
 from __future__ import annotations
@@ -75,7 +76,9 @@ class Ledger:
         self._reversed: set[str] = set()
         self.rules = Rules(scenario) if scenario.settings is not None else None
         self.books: dict[str, Any] = {}  # what each posted P1 document left for later ones to read
-        self._scheduled: list[tuple[int, Scheduled]] = []  # (the document's position, the entry)
+        # (the document's position, its scheduled entries): the list is read when the schedules post,
+        # so a later document (an asset's disposal) can still end it.
+        self._scheduled: list[tuple[int, list[Scheduled]]] = []
         with localcontext(money.EXACT):  # an operator that slipped past money.* still cannot round
             for index, document in enumerate(scenario.documents):
                 if isinstance(document, Source):
@@ -180,7 +183,7 @@ class Ledger:
             lines = canonical(posting.lines)
             if any(ln.base_amount.copy_abs() >= money.AMOUNT_LIMIT for ln in lines):
                 raise Rejected("base-out-of-range")  # §11.3: NUMERIC(20,4)
-            if len(lines) < 2:  # every other leg rounded to nothing (README, "P1 readings")
+            if posting.lines and len(lines) < 2:  # every other leg rounded to nothing (README, "P1 readings")
                 raise Rejected("entry-rounds-to-one-line")
         except Rejected as exc:
             self._reject(document.id, exc.reason)
@@ -190,18 +193,20 @@ class Ledger:
         for effect in posting.effects:
             effect()
         self.books[document.id] = posting.facts
-        entry = Entry(document.id, "post", document.date, lines)
-        self._posted[document.id] = entry
-        self._record(entry)
-        self._scheduled.extend((index, scheduled) for scheduled in posting.scheduled)
+        if posting.lines:  # a registered asset posts nothing itself, only its schedule
+            entry = Entry(document.id, "post", document.date, lines)
+            self._posted[document.id] = entry
+            self._record(entry)
+        self._scheduled.append((index, posting.scheduled))
 
     def _schedule(self) -> None:
         """Scheduled entries dated up to ``as_of``, one per (date, document, kind), in that order."""
         as_of = self.scenario.as_of
         groups: dict[tuple[date, int, str], list[PostedLine]] = {}
-        for index, scheduled in self._scheduled:
-            if as_of is not None and scheduled.posting_date <= as_of:
-                groups.setdefault((scheduled.posting_date, index, scheduled.kind), []).extend(scheduled.lines)
+        for index, items in self._scheduled:
+            for scheduled in items:
+                if as_of is not None and scheduled.posting_date <= as_of:
+                    groups.setdefault((scheduled.posting_date, index, scheduled.kind), []).extend(scheduled.lines)
         for (day, index, kind), lines in sorted(groups.items()):
             entry_lines = canonical(lines)
             if entry_lines:

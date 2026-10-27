@@ -140,6 +140,28 @@ def test_open_claims_equal_2150_and_what_is_left_of_advances_equals_1250(data):
     assert sum((ln.base_amount for ln in lines if ln.account == accounts["advances"]), Decimal(0)) == sum(left, Decimal(0))
 
 
+# req: INV-07
+@given(p1_scenarios(("assets",)))
+def test_1590_holds_the_depreciation_of_the_assets_still_in_the_register(data):
+    # A disposal clears what its asset's months put on 1590, so 1590 is minus what the live assets posted;
+    # no asset depreciates beyond its cost less residual, nor in or after the month it was disposed of.
+    from oracle.sources.assets import Asset
+
+    ledger = Ledger(scenario_from_json(data))
+    accumulated = data["settings"]["accounts"]["accumulated_depreciation"]
+    posted: dict[str, Decimal] = {}
+    for entry in ledger.entries:
+        if entry.kind == "depreciation":
+            posted[entry.document] = posted.get(entry.document, Decimal(0)) - sum(
+                (ln.base_amount for ln in entry.lines if ln.account == accumulated), Decimal(0))
+    live = {doc_id: a for doc_id, a in ledger.books.items() if isinstance(a, Asset) and not a.disposed}
+    balance = sum((ln.base_amount for e in ledger.entries for ln in e.lines if ln.account == accumulated), Decimal(0))
+    assert balance == -sum((posted.get(doc_id, Decimal(0)) for doc_id in live), Decimal(0))
+    for doc_id, total in posted.items():
+        asset = ledger.books[doc_id]
+        assert total <= sum((part for _, part in asset.months), Decimal(0))
+
+
 # req: QA-ENG-02
 def test_every_source_has_generator_kinds():
-    assert SOURCES == ("bank", "purchases", "sales", "claims")
+    assert SOURCES == ("bank", "purchases", "sales", "claims", "assets")

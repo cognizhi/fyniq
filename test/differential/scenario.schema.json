@@ -91,7 +91,7 @@
       "properties": {"type": {"enum": ["manual_journal", "bank_transaction", "bank_transfer", "bill", "vendor_credit",
                                          "bill_payment", "invoice", "credit_note", "customer_receipt", "customer_deposit",
                                          "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
-                                         "cash_advance"]}},
+                                         "cash_advance", "fixed_asset", "asset_disposal"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "bank_transaction"}}}, "then": {"$ref": "#/$defs/bankTransaction"}},
@@ -101,6 +101,8 @@
          "then": {"$ref": "#/$defs/settlement"}},
         {"if": {"properties": {"type": {"const": "expense_claim"}}}, "then": {"$ref": "#/$defs/expenseClaim"}},
         {"if": {"properties": {"type": {"const": "cash_advance"}}}, "then": {"$ref": "#/$defs/cashAdvance"}},
+        {"if": {"properties": {"type": {"const": "fixed_asset"}}}, "then": {"$ref": "#/$defs/fixedAsset"}},
+        {"if": {"properties": {"type": {"const": "asset_disposal"}}}, "then": {"$ref": "#/$defs/assetDisposal"}},
         {"if": {"properties": {"type": {"enum": ["invoice", "credit_note"]}}}, "then": {"$ref": "#/$defs/invoice"}},
         {"if": {"properties": {"type": {"const": "customer_deposit"}}}, "then": {"$ref": "#/$defs/customerDeposit"}},
         {"if": {"properties": {"type": {"const": "deposit_refund"}}}, "then": {"$ref": "#/$defs/depositRefund"}},
@@ -117,7 +119,8 @@
           "description": "System accounts by key (Appendix B.5). Each must be in accounts.",
           "type": "object",
           "propertyNames": {"enum": ["receivable", "payable", "gst", "prepayments", "deferred_revenue", "fx", "bank_charges",
-                                     "withholding_tax", "customer_deposits", "claims_payable", "advances"]},
+                                     "withholding_tax", "customer_deposits", "claims_payable", "advances",
+                                     "depreciation", "accumulated_depreciation", "disposal", "disposal_clearing"]},
           "additionalProperties": {"$ref": "#/$defs/accountCode"}
         },
         "money_accounts": {
@@ -394,6 +397,43 @@
         "account": {"description": "A base-currency money account.", "type": "string"},
         "amount": {"description": "In the base currency.", "$ref": "#/$defs/money"},
         "refund_of": {"description": "The advance whose remainder comes back.", "type": "string"}
+      }
+    },
+    "fixedAsset": {
+      "description": "An asset in the register (FR-FA-01): it posts nothing and schedules asset_depreciation@1 (Appendix B.4).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "account", "cost", "life_months"],
+      "properties": {
+        "type": {"const": "fixed_asset"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The purchase date.", "$ref": "#/$defs/date"},
+        "account": {"description": "The asset's cost account.", "type": "string"},
+        "cost": {"description": "In the base currency.", "$ref": "#/$defs/money"},
+        "residual": {"description": "In the base currency; 0 when absent.", "$ref": "#/$defs/money"},
+        "life_months": {"type": "integer", "minimum": 0},
+        "depreciate_from": {"description": "Its month is the first of depreciation; the purchase month when absent.", "$ref": "#/$defs/date"}
+      }
+    },
+    "assetDisposal": {
+      "description": "A disposal or write-off of a registered asset (asset_disposal@1, FR-FA-03).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "asset"],
+      "properties": {
+        "type": {"const": "asset_disposal"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "asset": {"type": "string"},
+        "proceeds": {
+          "description": "Money received into a base-currency money account, or an invoice's line on the disposal clearing account; none for a write-off.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["account", "amount"],
+          "properties": {"account": {"type": "string"}, "amount": {"$ref": "#/$defs/money"}, "gst_code": {"type": "string"}}
+        }
       }
     },
     "bankTransaction": {
