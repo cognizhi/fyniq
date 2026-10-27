@@ -9,7 +9,7 @@
     "schema": {"const": "fyniq-scenario-result@1"},
     "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"},
     "entries": {
-      "description": "Every posted entry: the documents in scenario order, then the reversals in scenario order.",
+      "description": "Every posted entry: the documents in scenario order, then the reversals in scenario order, then the scheduled entries (releases, depreciation) by date, document and kind.",
       "type": "array",
       "items": {
         "type": "object",
@@ -17,10 +17,10 @@
         "required": ["document", "kind", "posting_date", "lines"],
         "properties": {
           "document": {"type": "string"},
-          "kind": {"enum": ["post", "reversal"]},
+          "kind": {"enum": ["post", "reversal", "release", "depreciation"]},
           "posting_date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
           "lines": {
-            "description": "In the document's line order.",
+            "description": "A manual journal's in the document's line order; every other source's in its canonical form (README, P1 entries).",
             "type": "array",
             "minItems": 2,
             "items": {

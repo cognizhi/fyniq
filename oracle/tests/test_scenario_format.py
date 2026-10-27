@@ -3,10 +3,11 @@
 import copy
 import json
 import re
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
-from builders import journal, line, scenario
+from builders import bank_line, journal, line, p1_scenario, part, scenario
 from hypothesis import given
 from jsonschema import Draft202012Validator
 
@@ -52,9 +53,20 @@ def test_the_schema_patterns_suit_re2_and_ecma_262(name):
 
 # req: QA-ENG-01
 def test_the_readme_example_result_is_what_the_oracle_writes():
-    # The README's result was written by hand from its scenario; the oracle must match it.
-    assert len(_BLOCKS) == 2
+    # The README's result was written by hand from its scenario; the oracle must match it. The blocks
+    # after them are the P1 sources' example documents.
+    assert len(_BLOCKS) == 2 + len(P1_EXAMPLES)
     assert Ledger(scenario_from_json(EXAMPLE)).result() == EXAMPLE_RESULT
+
+
+P1_EXAMPLES = [json.loads(block) for block in _BLOCKS[2:]]
+
+
+# req: QA-ENG-02
+@pytest.mark.parametrize("document", P1_EXAMPLES, ids=lambda d: d["type"])
+def test_each_p1_example_in_the_readme_is_a_document_that_posts(document):
+    result = Ledger(scenario_from_json(p1_scenario(document))).result()
+    assert result["rejected"] == [] and [e["document"] for e in result["entries"]][:1] == [document["id"]]
 
 
 # req: QA-ENG-01
@@ -151,3 +163,51 @@ def test_scenarios_and_results_survive_a_round_trip_through_json(data):
 def test_the_builders_make_valid_scenarios():
     doc = journal("J-1", "2026-01-01", line("1010", "SGD", "1.00"), line("4010", "SGD", "-1.00"))
     assert scenario_from_json(scenario(doc)).documents[0].id == "J-1"
+
+
+# ---------------------------------------------------------------------------- P1 sources
+P1 = p1_scenario(bank_line("BT-1", "2026-03-05", "1010", "SGD", "-10.00", part("6010", "-10.00")), as_of="2026-03-31")
+
+
+def _p1(change):
+    data = copy.deepcopy(P1)
+    change(data)
+    return data
+
+
+# req: QA-ENG-02
+def test_a_p1_scenario_reads_its_settings_and_as_of():
+    parsed = scenario_from_json(P1)
+    assert parsed.as_of.isoformat() == "2026-03-31"
+    assert parsed.settings.accounts["gst"] == "2200"
+    assert parsed.settings.money_accounts["1021"] == "USD"
+    assert [r.percent for r in parsed.settings.gst.rates] == [Decimal("8"), Decimal("9")]
+    assert parsed.documents[0].type == "bank_transaction"
+    assert scenario_from_json(parse_json(json.dumps(P1))) == parsed
+
+
+# req: QA-ENG-02
+@pytest.mark.parametrize(
+    ("change", "match"),
+    [
+        (lambda d: d.pop("settings"), "needs settings"),
+        (lambda d: d.pop("as_of"), "needs as_of"),
+        (lambda d: d.update(as_of="2026-03-04"), "as_of"),
+        (lambda d: d.update(reversals=[{"document": "BT-1", "date": "2026-03-06"}]), "a reversal names a manual journal"),
+        (lambda d: d["settings"]["accounts"].update(gst="2201"), "settings/accounts/gst"),
+        (lambda d: d["settings"]["accounts"].update(suspense="2999"), "settings"),
+        (lambda d: d["settings"]["money_accounts"].update({"1010": "XAU"}), "settings/money_accounts/1010"),
+        (lambda d: d["settings"]["money_accounts"].update({"1999": "SGD"}), "settings/money_accounts"),
+        (lambda d: d["settings"]["gst"]["rates"].append({"from": "2024-01-01", "percent": "7"}), "same day"),
+        (lambda d: d["settings"]["gst"]["rates"][0].update(percent="9%"), "percent"),
+        (lambda d: d["settings"]["gst"]["rates"][0].update(percent="9\n"), "percent"),
+        (lambda d: d["settings"]["gst"].update(registered_from="2025-02-29"), "calendar date"),
+        (lambda d: d["documents"][0].update(date="2026-02-30"), "calendar date"),
+        (lambda d: d["documents"][0]["parts"][0].update(spread_months="12"), "spread_months"),
+        (lambda d: d["documents"][0].update(lines=[]), "lines"),
+        (lambda d: d["documents"][0].update(fx_rate="1.5"), "fx_rate_source"),
+        (lambda d: d["documents"][0].update(type="bank_transfer"), "documents"),
+    ],
+)
+def test_a_p1_scenario_that_breaks_the_format_is_refused_whole(change, match):
+    _invalid(_p1(change), match)

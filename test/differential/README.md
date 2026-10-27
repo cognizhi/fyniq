@@ -9,6 +9,8 @@ folder holds the contract between them (OpenSpec change `p0-python-oracle-differ
 | `scenario.schema.json` | `fyniq-scenario@1`: what both sides read |
 | `result.schema.json` | `fyniq-scenario-result@1`: what both sides write |
 | this README | The rules a JSON Schema cannot state, and how to compare two results |
+| `golden/` | The golden scenarios the Go gate posts through both sides |
+| `pending/` | Golden scenarios of P1 sources, waiting for `cmd/scenario-run` to read them |
 
 Both schemas are JSON Schema draft 2020-12 with RE2- and ECMA-262-compatible patterns, so a Go
 validator and Python's `jsonschema` accept the same documents. The oracle checks its input against
@@ -55,14 +57,16 @@ There are two kinds of failure, and they must not be confused:
 runner should fail the same way). The input is not a `fyniq-scenario@1` document:
 
 - it breaks `scenario.schema.json` (a missing or extra key, a wrong type, a JSON number where a string
-  is required, a document type other than `manual_journal`, more than 4 minor units, an ID with `/`,
+  is required, a document type the format does not know, more than 4 minor units, an ID with `/`,
   an account role other than `share-capital`, or an `fx_rate` without its `fx_rate_source`);
 - a name, ID, account code or currency code does not match its pattern as a whole string (Python's
   `re` lets `$` match before a final newline, so the oracle checks `"JNL-0001\n"` again; RE2 refuses it);
 - a JSON object repeats a key, or the JSON holds `NaN` or `Infinity`;
 - `base_currency` is not a key of `currencies`;
 - two accounts share a code, or two documents share an ID;
-- a date is not a real calendar date (`2026-02-30`).
+- a date is not a real calendar date (`2026-02-30`);
+- a P1 rule of the format is broken (section "P1 sources" below: no `settings` or `as_of`, an `as_of`
+  before a date in the scenario, a reversal of a P1 document, a settings account not in `accounts`).
 
 **A document is rejected** (it is listed in `rejected`, and none of its lines posts). A journal posts
 only when it meets every rule:
@@ -137,13 +141,125 @@ differential run reaches them only through golden cases.
 | `version` | Read but not used (P0 posts version 1 of each journal) | ENG-03 (an entry names its document's version) | Always 1 |
 | `fx_rate_source` values | Any non-empty string; not used in the result | ENG-03, ENG-40 (a rate typed on the document has the source "document") | Always `"document"` |
 
+## P1 sources (pending: `cmd/scenario-run` does not read them yet)
+
+From P1 a scenario may hold documents of other sources beside manual journals, each posted by its
+rule set (PRD-001 §10.2, Appendix B; the oracle's `oracle/src/oracle/sources/`). The format grows
+additively, still `fyniq-scenario@1`: a scenario of manual journals only is unchanged, and so is its
+result. **The engine's `cmd/scenario-run` does not read these shapes yet**, so the Go gate and
+`make differential` do not compare them: their golden cases wait in [`pending/`](pending/README.md)
+with their figures worked out by hand, and `make differential` draws them only for the sources named
+in `FYNIQ_DIFFERENTIAL_SOURCES`. Teaching `cmd/scenario-run` each source is an engine-session task in
+its OpenSpec change.
+
+### Settings and `as_of`
+
+A scenario with a P1 document must have `settings` and `as_of`, or it is invalid:
+
+- `as_of` is the organisation's business date ("today", ENG-05). It is on or after every document's
+  and reversal's date. Scheduled entries (a spread's releases) post when dated on or before it; later
+  ones are the future and never post.
+- `settings.accounts` names the system accounts by key (Appendix B.5): `receivable` (1100), `payable`
+  (2010), `gst` (2200), `prepayments` (1210), `deferred_revenue` (2400), `fx` (7030), `bank_charges`
+  (6460, a setting). Each named account must be in `accounts`. A document that needs a key the
+  organisation has not set is rejected.
+- `settings.money_accounts` maps each bank, card, wallet or cash account to the currency it holds
+  (FR-BNK-01); each must be in `accounts` and its currency in `currencies`.
+- `settings.gst` holds the registration, `registered_from` and `registered_to` (both inclusive; no
+  `registered_from` means never registered), `per_line` for `RND-GST-EXCL` per line instead of per
+  subtotal, and `rates`, the standard rate as a percentage from each date (the sg-gst pack, ENG-31).
+  A rate is in force from its date until the next one's.
+
+A reversal names a manual journal: a reversal of a P1 document (a void) is not in the format yet, so it
+makes the scenario invalid.
+
+### The rules every P1 source shares
+
+A P1 document is rejected whole (it posts nothing) when any of these fails, besides its own rules:
+
+1. Amounts and rates meet the input boundary, as rule 1 of a manual journal (ENG-44); an amount is
+   non-zero unless its source says otherwise.
+2. An amount not in the base currency has `fx_rate` and its source (the rate cascade's result,
+   ENG-40); a base-currency amount has neither.
+3. Every account a line posts to exists, is active, is not a group account (INV-04) and is not a
+   share-capital account (INV-13: only the register of share issues posts there, rev 0.49).
+4. A GST code is one of Appendix B.6's twelve. GST is charged when the organisation is registered on
+   the document's date (its tax point) and the code is standard-rated (SR, TX, IM), at the rate in force
+   then (a registered date with no rate in force rejects the document); otherwise it is 0.
+5. A spread is 1 to 120 months (FR-GL-03); its deferral account takes the whole amount when the
+   document posts, and each month's `ALLOC-EVEN` part is released to the category, dated the first day
+   of its month or, for a month that starts before the document, the document's date. A month whose
+   part is zero releases nothing.
+6. Every base amount fits NUMERIC(20,4).
+
+### P1 entries
+
+A P1 document posts at most one entry, `kind` `post`, on its date. To keep the comparison independent of
+how each side splits a leg into lines, a P1 entry is written in its **canonical form**: one line per
+(account, currency), whose amount and base amount are the sums of that account's lines in that
+currency, lines whose sums are both zero left out, sorted by account and then currency. A manual
+journal's entries keep their lines in the journal's order, as before.
+
+Scheduled entries come after every document and reversal, `kind` `release`: one entry per document and
+date, in canonical form, ordered by date, then by the document's place in the scenario.
+
+### Bank lines (`bank_transaction`, `bank_transaction@1`) and transfers (`bank_transfer`, `bank_transfer@1`)
+
+From Appendix B.1, §10.2 and PRD-001 rev 0.140 and 0.141.
+
+```json
+{"type": "bank_transaction", "id": "BT-0001", "version": 1, "date": "2026-03-05",
+ "account": "1021", "currency": "USD", "amount": "-100.01", "fx_rate": "1.3335", "fx_rate_source": "document",
+ "parts": [{"account": "6010", "amount": "-50.00", "gst_code": "OP"},
+           {"account": "6110", "amount": "-50.01", "gst_code": "OP", "spread_months": 12}]}
+```
+
+A line posts: the money account its signed gross (money in positive) at `RND-FX`; per part, 2200 −GST,
+GST = `RND-GST-INCL` of the part's `RND-FX` base amount, and the part's account (or, spread, 1210 for
+money out and 2400 for money in) the rest, −(base − GST), as a base-currency line; 7030 the cent `RND-FX`
+leaves between the parts and the line. Spreads release from the posting month. It is rejected when the
+account is not a money account in the line's currency, it has no parts, a part is zero or of the other
+direction, the parts do not add up to the line, a part is on a money account (a transfer, FR-BNK-09)
+or on the receivable or payable account (a match, FR-BNK-07), or a spread is not on an expense
+(money out) or a revenue (money in) account.
+
+```json
+{"type": "bank_transfer", "id": "TR-0002", "version": 1, "date": "2026-04-03",
+ "from": {"account": "1010", "currency": "SGD", "amount": "1000.00"},
+ "to": {"account": "1021", "currency": "USD", "amount": "738.00", "fx_rate": "1.3485", "fx_rate_source": "document"},
+ "fee": "4.50"}
+```
+
+A transfer posts once: the receiving account what it received and the paying account what it paid,
+each leg at its own currency's rate (`RND-FX`); a `fee`, in the paying currency and part of what was
+paid, to `bank_charges`; whatever is left to 7030. It is rejected when a leg is not a money account in
+its currency, both legs are one account, an amount is not positive, the fee is not below what was paid,
+or, in one currency, what was paid is not what was received plus the fee.
+
+### P1 readings
+
+Where PRD-001 leaves a P1 shape open, the oracle reads it as below. The generator does not produce
+these shapes; the pending golden cases do, so the first comparison with the engine shows any
+difference, which the PRD then settles.
+
+| Shape | Oracle | Requirement | Generated |
+|---|---|---|---|
+| The currency of a foreign bank line's parts | The part's account and 2200 take base-currency lines ("the rest" of the base amount) | Rev 0.141 | Not generated (`pending/bank.json`) |
+| GST on a foreign bank line | `RND-GST-INCL` of the part's base amount | Rev 0.141 ("of its signed gross in the base currency") | Not generated (`pending/bank.json`) |
+| The currency of a transfer's fee | The paying leg's | Rev 0.140 | Only base-currency fees |
+| The cross-currency transfer rule | Each leg at its own rate, the fee to bank charges, the rest to 7030 | Rev 0.140; the accountant has not confirmed it yet | Generated |
+| A release in the document's own month | Dated the document's day (never before the deferral it releases) | FR-GL-03 (rev 0.83: "the bill's date for months before it") | Generated |
+| A money-out part coded SR, or a money-in part coded TX or IM | GST at the code, whatever the direction | Appendix B.1 | Not generated |
+
 ## Commands
 
 The comparison itself (QA-ENG-02): `make test` runs `TestTheEngineAgreesWithTheOracle`
 (`internal/differential`), which posts every golden scenario and 60 generated with a fixed seed
 through both implementations; `make differential` lets Hypothesis search 1,000 more
 (`FYNIQ_DIFFERENTIAL_EXAMPLES`) and saves the smallest disagreeing scenario as
-`golden/shrunk-<hash>.json`, to be committed as a golden case once the cause is fixed. The engine's
+`golden/shrunk-<hash>.json`, to be committed as a golden case once the cause is fixed. It draws P1
+scenarios too for the sources in `FYNIQ_DIFFERENTIAL_SOURCES` (comma-separated: `bank`), once
+`cmd/scenario-run` reads them. The engine's
 side reads scenarios with the same schemas (`schemas.go` embeds them) and runs as `cmd/scenario-run`.
 
 ```bash
@@ -152,4 +268,5 @@ uv run --project oracle python -m oracle generate --seed <n> --count <n> --out <
 ```
 
 The same seed gives the same scenarios with the same Hypothesis version (pinned in
-`oracle/uv.lock`).
+`oracle/uv.lock`) and the same oracle source: Hypothesis also draws on constants it finds in the
+oracle's own modules, so a change to the oracle changes what a seed generates.

@@ -217,3 +217,20 @@ def rnd_gst_excl(
     for code, subtotal in subtotals.items():
         result[code] = round_quotient(EXACT.multiply(subtotal, percent), HUNDRED, minor_units)
     return result
+
+
+def alloc_even(amount: Decimal, periods: int, minor_units: int) -> list[Decimal]:
+    """``ALLOC-EVEN`` (§10.4, rev 0.8): ``amount`` split into ``periods`` by cumulative rounding.
+
+    Period k = round(amount × k ÷ n) − round(amount × (k − 1) ÷ n), each rounded half away from zero
+    to the minor unit, so the parts sum exactly to the whole and a negative amount is the mirror image.
+    """
+    if periods < 1:
+        raise ValueError("alloc_even: at least one period")
+    parts: list[Decimal] = []
+    before = ZERO.scaleb(-minor_units)
+    for k in range(1, periods + 1):
+        cumulative = round_quotient(EXACT.multiply(amount, Decimal(k)), Decimal(periods), minor_units)
+        parts.append(EXACT.subtract(cumulative, before))
+        before = cumulative
+    return parts
