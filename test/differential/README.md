@@ -388,27 +388,32 @@ rejected for an asset not registered or already disposed of, or dated before the
 
 ### P1 readings
 
-Where PRD-001 leaves a P1 shape open, the oracle reads it as below. The generator does not produce
-these shapes; the pending golden cases do, so the first comparison with the engine shows any
-difference, which the PRD then settles.
+PRD-001 rev 0.155 decided the P1 shapes the PRD had left open, on the best current recommendation
+and the official guidance, because no accountant is available yet. A decision marked [accountant to
+confirm] stands until the accountant reviews it; the pages that use it show "Needs additional
+verification" meanwhile (FR-UX-41, the review register's accounting area). The oracle follows each
+decision. Where the generator does not produce a shape, the pending golden cases do, so the first
+comparison with the engine shows any difference, and the decision settles it.
 
 | Shape | Oracle | Requirement | Generated |
 |---|---|---|---|
-| The currency of a foreign bank line's parts | The part's account and 2200 take base-currency lines ("the rest" of the base amount) | Rev 0.141 | Not generated (`pending/bank.json`) |
-| GST on a foreign bank line | `RND-GST-INCL` of the part's base amount | Rev 0.141 ("of its signed gross in the base currency") | Not generated (`pending/bank.json`) |
-| The currency of a transfer's fee | The paying leg's | Rev 0.140 | Only base-currency fees |
-| The cross-currency transfer rule | Each leg at its own rate, the fee to bank charges, the rest to 7030 | Rev 0.140; the accountant has not confirmed it yet | Generated |
-| A release in the document's own month | Dated the document's day (never before the deferral it releases) | FR-GL-03 (rev 0.83: "the bill's date for months before it") | Generated |
-| A money-out part coded SR, or a money-in part coded TX or IM | GST at the code, whatever the direction | Appendix B.1 | Not generated |
-| Several credit notes linked to one invoice | Each credits at most the invoice's total on its own; they are not added up | FR-AR-04 (INVOICE-15: "credits at most that invoice's total") | Not generated (only standalone credit notes) |
-| A P1 document whose lines but one round to nothing in base (USD 0.01 deposited at 0.0001) | Rejected: an entry has at least two lines | INV-05 (rev 0.24 settles it for a journal's line, not for a P1 entry) | Not generated (rates of at least 0.01) |
-| A claim's line in another currency | Costed as a bill's (its cost in the claim's currency, 2150 at the claim's rate), reimbursed at the cascade's rate with the difference to 7030 | FR-AP-17 ("reimbursed in SGD at the rate cascade, the difference to 7030") | Generated |
-| A claim larger than what is left of its advance | 1250 takes what is left, 2150 the rest | FR-AP-17 ("settled by claims") | Generated |
-| GST on a disposal's proceeds received | `RND-GST-INCL` of the amount received (as for money in, B.1) | §10.2 "Asset disposal" ("GST control if applicable, on proceeds received with the disposal") | Not generated (`pending/assets.json`) |
+| The currency of a foreign bank line's parts | The part's account and 2200 take base-currency lines ("the rest" of the base amount) | Rev 0.155, Appendix B.1 [accountant to confirm] | Not generated (`pending/bank.json`) |
+| GST on a foreign bank line | `RND-GST-INCL` of the part's base amount | Rev 0.141 ("of its signed gross in the base currency"); rev 0.155, Appendix B.1 [accountant to confirm] | Not generated (`pending/bank.json`) |
+| The currency of a transfer's fee | The paying leg's | Rev 0.155, §10.2 [accountant to confirm] | Only base-currency fees |
+| The cross-currency transfer rule | Each leg at its own rate, the fee to bank charges, the rest to 7030 | Rev 0.140; rev 0.155, §10.2 (SFRS(I) 1-21) [accountant to confirm] | Generated |
+| A release in the document's own month | Dated the document's day (never before the deferral it releases) | Rev 0.155, FR-GL-03 | Generated |
+| A money-out part coded SR, or a money-in part coded TX or IM | GST at the code, whatever the direction | Rev 0.155, Appendix B.1 (a refund) [accountant to confirm] | Not generated |
+| Several credit notes linked to one invoice | Together they credit at most the invoice's total before the deposits it deducts | Rev 0.155, FR-AR-04 (INVOICE-15), superseding the cap per credit note [accountant to confirm] | Not generated (`pending/sales.json`) |
+| A P1 document whose lines but one round to nothing in base (USD 0.01 deposited at 0.0001) | Rejected: an entry has at least two lines | Rev 0.155, INV-05 | Not generated (rates of at least 0.01) |
+| A claim's line in another currency | Costed as a bill's (its cost in the claim's currency, 2150 at the claim's rate), reimbursed at the cascade's rate with the difference to 7030 | Rev 0.155, FR-AP-17 | Generated |
+| A claim larger than what is left of its advance | 1250 takes what is left, 2150 the rest | Rev 0.155, FR-AP-17 | Generated |
+| GST on a disposal's proceeds received | `RND-GST-INCL` of the amount received (as for money in, B.1) | Rev 0.155, FR-FA-03 (IRAS: "based on the consideration received") [accountant to confirm] | Not generated (`pending/assets.json`) |
 | A disposal's accumulated depreciation before the books' start | Cleared with the rest: the opening balances hold it on 1590 | Appendix B.4 ("earlier depreciation is part of opening balances") | Not generated (no books' start) |
 | A partial disposal, and a void of an asset | Not in the format yet | FR-FA-03, FR-FA-01 (rev 0.151) | Not generated |
-| The tolerance of a foreign bill paid in full | 3% of what it owes at its stored rate (its 2010 line) | FR-BNK-08 (rev 0.121: "3% of the document's total at its stored rate") | Not generated (only base-currency bills in full) |
-| The month's differences across sources | Bills' and invoices' differences share the month's cap, in absolute value | FR-BNK-08 ("with the month's earlier differences") | Generated (always within the cap) |
+| Giving an asset away | Not in the format: a deemed supply at its open market value, which Fyniq does not post in P1 | Rev 0.155, FR-FA-03 [accountant to confirm] | Not generated |
+| A foreign bank line's part on an account marked revalue | Still open: the format has no revalue flag, so the oracle posts it as any part, in the base currency | Rev 0.155, Appendix B.1 (not yet decided) | Not generated |
+| The tolerance of a foreign bill paid in full | 3% of what it owes at its stored rate (its 2010 line) | Rev 0.155, FR-BNK-08 [accountant to confirm] | Not generated (only base-currency bills in full) |
+| The month's differences across sources | Bills' and invoices' differences share the month's cap, in absolute value | Rev 0.155, FR-BNK-08 [accountant to confirm] | Generated (always within the cap) |
 | An unapplied amount from a base-currency account paying foreign bills | At the rate the payment implies (`RND-RATE` of what it paid ÷ the total) | Rev 0.77 | Not generated |
 | A bill's lines in another currency | The cost lines in the bill's currency; 2200, 1210 and 7030 in the base currency | Appendix B.2 ("net in document currency"), rev 0.83 | Generated |
 
