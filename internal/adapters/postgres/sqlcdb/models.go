@@ -1197,6 +1197,19 @@ type FyniqOutbox struct {
 	UpdatedAt      time.Time
 }
 
+type FyniqPayeeBankAccount struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	ChangeID          uuid.UUID
+	ChangeVersion     int32
+	ContactID         uuid.UUID
+	Currency          string
+	NumberSealed      []byte
+	NumberLast4       string
+	NumberFingerprint []byte
+	State             string
+}
+
 type FyniqPeriod struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

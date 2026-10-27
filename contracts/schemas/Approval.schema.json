@@ -103,7 +103,8 @@
         "claim_reimbursement",
         "cash_advance",
         "asset_disposal",
-        "fixed_asset"
+        "fixed_asset",
+        "payee_bank_change"
       ],
       "examples": [
         "organisation_setting"
@@ -149,7 +150,8 @@
         "claim_reimbursement.void",
         "cash_advance.void",
         "asset_disposal.void",
-        "fixed_asset.void"
+        "fixed_asset.void",
+        "payee_bank_change.approve"
       ],
       "examples": [
         "organisation_setting.change"

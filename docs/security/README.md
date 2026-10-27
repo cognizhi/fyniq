@@ -36,6 +36,7 @@ most specific requirement the test proves. The ones in use so far:
 | V8.1.1 | Authorisation documentation | the policy table equals Appendix D |
 | V8.2.2 | Object-level authorisation | a record's evidence needs the right to view the record too |
 | V11.2.2, V11.3.2, V11.3.3 | Cryptography: agility, approved modes, authenticated encryption | sealed fields: a fresh AES-256-GCM data key per value, bound to its record, wrapped by a key that names itself in a versioned layout; any change to a sealed value is caught |
+| V14.2.4 | Sensitive data protection | vendors' account numbers sealed, never in a response, log or audit event but by their last four characters, revealed after step-up and audited, masked for a masked view |
 | V14.2.7 | Data retention | retained evidence cannot be deleted or replaced before its retain-until |
 | V16.2.1 | Logging content | evidence events carry the hashes, uploader, source and parent |
 | V8.2.1, V8.2.3, V8.3.1 | Authorisation design and operation level | the policy and the matrix; masked fields |

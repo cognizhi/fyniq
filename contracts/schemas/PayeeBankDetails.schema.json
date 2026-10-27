@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "changes": {
+      "description": "Every change, newest first.",
+      "items": {
+        "$ref": "PayeeBankChange.schema.json"
+      },
+      "type": "array"
+    },
+    "contact_id": {
+      "description": "The vendor.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "in_force": {
+      "description": "The approved change in force for each currency, by currency.",
+      "items": {
+        "$ref": "PayeeBankChange.schema.json"
+      },
+      "type": "array"
+    },
+    "payments_frozen": {
+      "description": "A change waits for approval: no payment date can be planned for the vendor's bills, and a payment recorded is flagged (FR-CT-03).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "contact_id",
+    "payments_frozen",
+    "in_force",
+    "changes"
+  ],
+  "title": "PayeeBankDetails",
+  "type": "object"
+}

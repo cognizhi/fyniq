@@ -85,6 +85,10 @@ const (
 	// ObjectFixedAsset is a fixed asset registered by mistake, to void (FR-FA-01, FR-GL-12, FM-1; rev 0.151): a second
 	// person who holds A on "Fixed assets" (the Controller) approves it; its key is its id.
 	ObjectFixedAsset = "fixed_asset"
+	// ObjectPayeeBankChange is a change of a vendor's bank account in one currency (FR-CT-03, SOD-1, FM-1; rev 0.152): a
+	// second person who holds A on "Vendor bank details", neither its preparer nor its requester, approves it, in every
+	// team mode; its key is its id.
+	ObjectPayeeBankChange = "payee_bank_change"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -141,6 +145,8 @@ const (
 	OpAssetDisposalVoid = "asset_disposal.void"
 	// OpFixedAssetVoid voids a fixed asset registered by mistake, reversing its depreciation and freeing its line.
 	OpFixedAssetVoid = "fixed_asset.void"
+	// OpPayeeBankChange puts a change of a vendor's bank account in force, retiring the account it replaces.
+	OpPayeeBankChange = "payee_bank_change.approve"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -159,6 +165,7 @@ var Operations = map[string]string{
 	OpCashAdvanceVoid:   ObjectCashAdvance,
 	OpAssetDisposalVoid: ObjectAssetDisposal,
 	OpFixedAssetVoid:    ObjectFixedAsset,
+	OpPayeeBankChange:   ObjectPayeeBankChange,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -223,6 +230,8 @@ var Dependencies = map[string][]string{
 	ObjectAssetDisposal: {"status", "asset_version", "cost"},
 	// the asset's status, and its cost and accumulated depreciation in the base currency: what the void reverses
 	ObjectFixedAsset: {"status", "cost", "accumulated"},
+	// the change's version and status, and the change whose account is in force for its vendor and currency: what it replaces
+	ObjectPayeeBankChange: {"status", "replaces"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -258,6 +267,7 @@ var Rows = map[string]string{
 	ObjectCashAdvance:         "Payment batches",
 	ObjectAssetDisposal:       "Fixed assets",
 	ObjectFixedAsset:          "Fixed assets",
+	ObjectPayeeBankChange:     "Vendor bank details",
 }
 
 // The limits of a policy.
@@ -322,6 +332,7 @@ var Policies = map[string]Policy{
 	ObjectCashAdvance:         {ObjectType: ObjectCashAdvance, Version: "founder/cash_advance@2026-10-26.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAssetDisposal:       {ObjectType: ObjectAssetDisposal, Version: "founder/asset_disposal@2026-10-27.1", Steps: []Step{{Quorum: 1}}},
 	ObjectFixedAsset:          {ObjectType: ObjectFixedAsset, Version: "founder/fixed_asset@2026-10-27.1", Steps: []Step{{Quorum: 1}}},
+	ObjectPayeeBankChange:     {ObjectType: ObjectPayeeBankChange, Version: "founder/payee_bank_change@2026-10-27.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).
