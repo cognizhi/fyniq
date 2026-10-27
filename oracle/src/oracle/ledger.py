@@ -9,13 +9,15 @@ exact decimals. The workbook rounded through binary floats (``r2``); here every 
 
 P0 posts one source: the **manual journal** (§10.2, "Journal: as entered, balanced only"), and
 corrects posted history only by **reversal** (FR-GL-12, INV-02). A journal posts when it meets every
-rule below; otherwise it is rejected whole and posts no line (ENG-21 ✖):
+rule of ENG-24 (PRD-001 rev 0.24) below; otherwise it is rejected whole and posts no line (ENG-21 ✖):
 
 1. Every amount and rate meets the input precision boundary (ENG-44, ENG-11, §11.3), and every
    currency is one of the scenario's currencies.
 2. At least two lines.
 3. No line is zero.
-4. Every line posts to an existing, active, non-group (postable) account (INV-04).
+4. Every line posts to an existing, active, non-group (postable) account (INV-04), and never to a
+   share-capital account (INV-13: share capital changes only through the register of share issues
+   or opening balances, so a manual journal line to one is refused).
 5. Every line not in the base currency has a rate (ENG-13); a line in the base currency has neither a
    rate nor its source (ENG-03). A rate always comes with its source (ENG-40): the scenario format
    requires it, so a rate without one makes the scenario invalid, not the journal rejected.
@@ -25,7 +27,8 @@ rule below; otherwise it is rejected whole and posts no line (ENG-21 ✖):
 
 A reversal posts the negation of every line of the document's posted entry, on the reversal's date
 (FR-GL-12). The base amounts are negated as stored, never re-converted (ENG-14). A reversal of an
-unknown or rejected document, or of a document already reversed, is rejected.
+unknown or rejected document, of a document already reversed, or dated before the entry it reverses
+is rejected (FR-GL-12, rev 0.24: "dated on or after the entry's posting date").
 
 The trial balance is the base-currency total per account per calendar month of the posting date
 (Appendix B: "period = the month of the posting date").
@@ -148,6 +151,8 @@ class Ledger:
                 raise Rejected("group-account")
             if not account.active:
                 raise Rejected("inactive-account")
+            if account.role == "share-capital":  # INV-13
+                raise Rejected("share-capital-account")
 
         # Rule 5 (ENG-13, ENG-03), then RND-FX for every line not in the base currency.
         posted: list[PostedLine] = []
@@ -183,6 +188,9 @@ class Ledger:
             return
         if reversal.document in self._reversed:
             self._reject(key, "already-reversed")
+            return
+        if reversal.date < original.posting_date:  # FR-GL-12: on or after the entry's posting date
+            self._reject(key, "reversal-before-entry")
             return
         self._reversed.add(reversal.document)
         lines = tuple(

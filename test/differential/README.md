@@ -118,21 +118,24 @@ the original entry as stored (amount and base amount; never re-converted, ENG-14
   that month. The oracle leaves out accounts whose total is zero and keeps a month in which every
   account nets to zero (`{}`). **A comparator reads a missing account, or a missing month, as zero.**
 
-## Choices where PRD-001 is silent
+## Decided in PRD-001 rev 0.24
 
-The oracle makes these choices. The generator does **not** produce the ambiguous shapes (marked
-"not generated"), so a differential run does not hinge on them until the PRD settles them.
+These shapes were open until PRD-001 rev 0.24 decided them (ENG-24, the manual journal's validity
+rules, and the rows each cites below); both sides follow the decision. The generator does not yet
+produce those marked "not generated" (task 3.4 of `p0-manual-journal-rules` adds them), so a
+differential run reaches them only through golden cases.
 
-| Shape | Oracle | Generated |
-|---|---|---|
-| A rate (or rate source) on a base-currency line | Rejected (the format says they are present only for other currencies) | Not generated |
-| A non-zero foreign line whose base amount rounds to zero (JPY 1 × 0.001) | Posts; the base amount is `0.00` (rule 3 is about the line's own currency) | Not generated |
-| A computed base amount of 17 or more integer digits | Rejected (it does not fit NUMERIC(20,4)) | Not generated |
-| A reversal dated before its document | Posts on its own date (every period is open) | Not generated |
-| An amount written with trailing zeros beyond the minor units (`"12345.0"` for JPY) | Rejected (ENG-44 counts the decimal places as written) | Generated |
-| A single-currency foreign journal that balances in its currency but not in base after `RND-FX` | Rejected (a manual journal has no rounding line) | Generated |
-| `version` | Read but not used (P0 posts version 1 of each journal) | Always 1 |
-| `fx_rate_source` values | Any non-empty string; not used in the result | Always `"document"` |
+| Shape | Both sides | Requirement | Generated |
+|---|---|---|---|
+| A rate (or rate source) on a base-currency line | Rejected | ENG-03 (a rate entered on a base-currency line is refused); ENG-24 rule 5 | Not generated |
+| A non-zero foreign line whose base amount rounds to zero (JPY 1 × 0.001) | Posts; the base amount is `0.00` | ENG-24 rule 3; INV-05 | Not generated |
+| A computed base amount of 17 or more integer digits | Rejected (it does not fit NUMERIC(20,4)), never truncated | ENG-44; ENG-24 rule 6 | Not generated |
+| A reversal dated before its document | Rejected; the document is not reversed, so a later reversal still posts | FR-GL-12 ("dated on or after the entry's posting date") | Not generated |
+| A line to an account with the role `share-capital` | Rejected | INV-13; ENG-24 ("the invariants of §10.7 apply as well") | Not generated |
+| An amount written with trailing zeros beyond the minor units (`"12345.0"` for JPY) | Rejected | ENG-44 (decimal places counted as written) | Generated |
+| A single-currency foreign journal that balances in its currency but not in base after `RND-FX` | Rejected (a manual journal has no rounding line) | ENG-24 rule 7 ("the engine never adds, drops or changes a line") | Generated |
+| `version` | Read but not used (P0 posts version 1 of each journal) | ENG-03 (an entry names its document's version) | Always 1 |
+| `fx_rate_source` values | Any non-empty string; not used in the result | ENG-03, ENG-40 (a rate typed on the document has the source "document") | Always `"document"` |
 
 ## Commands
 

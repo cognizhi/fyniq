@@ -151,8 +151,8 @@ def test_the_generator_is_reproducible_and_covers_its_targets():
 
 # req: QA-ENG-01
 @given(scenarios())
-def test_the_generator_never_produces_a_shape_the_prd_leaves_open(data):
-    # test/differential/README.md, "Choices where PRD-001 is silent": these are not generated.
+def test_the_generator_does_not_yet_produce_the_shapes_rev_0_24_decided(data):
+    # test/differential/README.md, "Decided in PRD-001 rev 0.24": the shapes marked "not generated".
     base = data["base_currency"]
     dates = {doc["id"]: doc["date"] for doc in data["documents"]}
     for doc in data["documents"]:
@@ -165,6 +165,7 @@ def test_the_generator_never_produces_a_shape_the_prd_leaves_open(data):
     for reversal in data["reversals"]:
         if reversal["document"] in dates:
             assert reversal["date"] >= dates[reversal["document"]]
+    assert all("role" not in account for account in data["accounts"])
     ledger = Ledger(scenario_from_json(data))
     assert "base-out-of-range" not in {reason for _, reason in ledger.reasons}
     for entry in ledger.entries:
