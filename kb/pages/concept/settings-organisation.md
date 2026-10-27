@@ -2,16 +2,16 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings and recommended values: features, terms, GST, tolerances, banking, claim deadline, mileage rates, thresholds, email-in, retention
+summary: Company-wide settings and recommended values: features, terms, GST, tolerances, banking, claims, mileage, thresholds, asset disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:d28371323fb0fb23d9e50f45681c7c0a705d851954f0547a18ff5cff8b6328d1
+  - docs/user-guide/organisation-settings.md sha256:3f25c5cb0ac69d8bd925870237e43993cbafcd4e4a37ef47608631d11b8b2e7f
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-26
+compiled_at: 2026-10-27
 aliases:
   - feature switches
   - default settings
@@ -39,6 +39,9 @@ aliases:
   - late claim
   - mileage rate
   - rate per km
+  - disposal account
+  - gain or loss on disposal
+  - disposal clearing account
 ---
 
 # Organisation settings and their recommended values
@@ -162,6 +165,21 @@ aliases:
 - The company's accountant confirms it by approving the capitalisation threshold policy under **Settings → Accounting framework and policies** ([[settings.accounting]]).
 
 (src: docs/user-guide/organisation-settings.md#capitalisation-threshold)
+
+## Disposal account
+
+- When an asset is sold or written off, the difference between what it fetched and what it was still worth is a gain or a loss; it goes to the **disposal account**: 7050 Gain / (loss) on disposal of assets in the standard chart.
+- Choose another account by its code, such as separate accounts the accountant prefers; a change needs a second approver.
+
+(src: docs/user-guide/organisation-settings.md#disposal-account)
+
+## Disposal clearing account
+
+- An asset sold on a sales invoice is invoiced to the **disposal clearing account**: the invoice's line goes to it, and the disposal clears it, so the gain or loss falls in the month of the disposal, whatever the invoice's month.
+- It starts **not set**: the accountant names a balance-sheet account for it before the first asset is sold on an invoice.
+- An asset sold for money received into a bank account does not use it: the disposal records the money, and bank import matches it. A change needs a second approver.
+
+(src: docs/user-guide/organisation-settings.md#disposal-clearing-account)
 
 ## Accounting sign-off
 

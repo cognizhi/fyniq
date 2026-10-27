@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "life_months": {
+      "description": "Its useful life in months.",
+      "examples": [
+        36
+      ],
+      "format": "int64",
+      "maximum": 600,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "method": {
+      "description": "How it depreciates: straight-line, cost less residual evenly over its life (reducing balance follows in P2).",
+      "enum": [
+        "straight_line"
+      ],
+      "examples": [
+        "straight_line"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "What it is called in the register; a line's description when left out.",
+      "examples": [
+        "MacBook Pro 14, Wei Ling"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "notes": {
+      "description": "Notes kept with it: its serial number, where it is.",
+      "examples": [
+        "Serial C02XG0FDH7JY"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "opening": {
+      "$ref": "FixedAssetOpening.schema.json",
+      "description": "An asset bought before the books start, with its opening figures. Send this or source."
+    },
+    "residual": {
+      "$ref": "Money.schema.json",
+      "description": "What it is worth at the end of its life, in the base currency; zero when left out."
+    },
+    "source": {
+      "$ref": "FixedAssetSourceRef.schema.json",
+      "description": "The line it was bought on; its account, purchase date and cost come from that line as its entry posted it. Send this or opening."
+    },
+    "start": {
+      "description": "The month depreciation starts: the purchase month when left out, or a later one when it went into use later.",
+      "examples": [
+        "2026-03"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "life_months"
+  ],
+  "title": "FixedAssetDraft",
+  "type": "object"
+}

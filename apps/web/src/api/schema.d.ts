@@ -2672,6 +2672,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/fixed-assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the fixed asset register
+         * @description The register's assets, newest purchase first, a page at a time, narrowed by state or account (FR-FA-01): each with its category (the asset account it sits on), cost, residual value, life, start, accumulated depreciation and net book value as its depreciation has posted, and ⚠ when the bill or bank line it came from was voided or edited since. Read-only; no side effects.
+         */
+        get: operations["listFixedAssets"];
+        put?: never;
+        /**
+         * Register a fixed asset
+         * @description Adds an asset to the register (FR-FA-01): from the line of a posted bill, or the part of a categorised bank line, that put its cost on an asset account (one whose report group is Property, plant & equipment or Intangible assets), its cost being what that line's entry put there in the base currency; or, bought before the books start, with the cost and accumulated depreciation the opening balances carry for it, its depreciation posting from the books start (FR-FA-02). A line is registered once. Registering posts nothing: the cost is already on the account. Side effects: the asset, its number (FA-), audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing and shows the asset.
+         */
+        post: operations["registerFixedAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/fixed-assets/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a fixed asset
+         * @description Returns an asset of the register with its ETag: its category, source line or opening figures, cost, residual value, life, start and end months, accumulated depreciation and net book value as its depreciation has posted. Read-only; no side effects.
+         */
+        get: operations["getFixedAsset"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/fixed-assets/{asset_id}/change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change a fixed asset
+         * @description Saves the asset's next version with what is sent (FR-FA-01, FR-FA-02): its name and notes; a new residual value or useful life, which apply to the months not posted yet, what has posted being carried into the version; and, only while none of its depreciation has posted, its start month and, for an asset bought before the books start, its purchase date, cost and opening accumulated depreciation. Posts nothing. Side effects: the new version, audit events. Every problem comes back together. Needs If-Match with the asset's ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing and shows the asset as it would be.
+         */
+        post: operations["changeFixedAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/fx/feed": {
         parameters: {
             query?: never;
@@ -13543,6 +13607,243 @@ export interface components {
             periods: components["schemas"]["Period"][];
             year: components["schemas"]["FinancialYear"];
         };
+        FixedAsset: {
+            /**
+             * Format: uuid
+             * @description The asset account it sits on: its category.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510
+             */
+            account_id: string;
+            /** @description Its accumulated depreciation: what the opening balances carried for it and what has posted since. */
+            accumulated_depreciation: components["schemas"]["Money"];
+            /** @description Its warnings (⚠): the bill or bank line it came from was voided or edited since. */
+            checks: components["schemas"]["BillCheck"][];
+            /** @description What it cost, in the base currency: what is left of it after a partial disposal. */
+            cost: components["schemas"]["Money"];
+            /**
+             * @description The last month whose depreciation has posted.
+             * @example 2026-09
+             */
+            depreciated_to?: string;
+            /**
+             * @description The last month it depreciates: start + life − 1.
+             * @example 2029-02
+             */
+            end: string;
+            /**
+             * Format: uuid
+             * @description Its ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description Its useful life in months.
+             * @example 36
+             */
+            life_months: number;
+            /**
+             * @description How it depreciates.
+             * @example straight_line
+             * @enum {string}
+             */
+            method: "straight_line";
+            /**
+             * @description Its name.
+             * @example MacBook Pro 14, Wei Ling
+             */
+            name: string;
+            /** @description Cost less accumulated depreciation. */
+            net_book_value: components["schemas"]["Money"];
+            /**
+             * @description Its notes.
+             * @example Serial C02XG0FDH7JY
+             */
+            notes?: string;
+            /**
+             * @description Its number in the register (FR-ORG-04).
+             * @example FA-0001
+             */
+            number?: string;
+            /** @description Bought before the books start: the accumulated depreciation the opening balances carry for it. */
+            opening_accumulated?: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description The day it was bought.
+             * @example 2026-03-14
+             */
+            purchased_on: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-03-20T09:30:00Z
+             */
+            recorded_at?: string;
+            /** @description Who registered it, or saved its latest change. */
+            recorded_by?: components["schemas"]["Person"];
+            /** @description Its residual value. */
+            residual: components["schemas"]["Money"];
+            /** @description The line it was bought on; absent for one bought before the books start. */
+            source?: components["schemas"]["FixedAssetSource"];
+            /**
+             * @description The month depreciation starts.
+             * @example 2026-03
+             */
+            start: string;
+            /**
+             * @description in_use while it depreciates; fully_depreciated once nothing is left to post; disposed once nothing of it is left.
+             * @example in_use
+             * @enum {string}
+             */
+            status: "in_use" | "fully_depreciated" | "disposed";
+            /**
+             * Format: int64
+             * @description The version of its content; it makes the ETag.
+             * @example 1
+             */
+            version: number;
+        };
+        FixedAssetChange: {
+            /** @description An asset bought before the books start: its opening accumulated depreciation, only while none of its depreciation has posted. */
+            accumulated_depreciation?: components["schemas"]["Money"];
+            /** @description An asset bought before the books start: its cost, only while none of its depreciation has posted. */
+            cost?: components["schemas"]["Money"];
+            /**
+             * Format: int64
+             * @description A new useful life in months, from its start: it applies to the months not posted yet, and ends in or after the first of them.
+             * @example 48
+             */
+            life_months?: number;
+            /**
+             * @description Its name in the register.
+             * @example MacBook Pro 14, Arjun
+             */
+            name?: string;
+            /**
+             * @description Its notes.
+             * @example Moved to Arjun, 1 Nov 2026
+             */
+            notes?: string;
+            /**
+             * Format: date
+             * @description An asset bought before the books start: its purchase date, only while none of its depreciation has posted.
+             * @example 2025-03-14
+             */
+            purchased_on?: string;
+            /** @description A new residual value: it applies to the months not posted yet. */
+            residual?: components["schemas"]["Money"];
+            /**
+             * @description A new start month: only while none of its depreciation has posted.
+             * @example 2026-04
+             */
+            start?: string;
+        };
+        FixedAssetDraft: {
+            /**
+             * Format: int64
+             * @description Its useful life in months.
+             * @example 36
+             */
+            life_months: number;
+            /**
+             * @description How it depreciates: straight-line, cost less residual evenly over its life (reducing balance follows in P2).
+             * @example straight_line
+             * @enum {string}
+             */
+            method?: "straight_line";
+            /**
+             * @description What it is called in the register; a line's description when left out.
+             * @example MacBook Pro 14, Wei Ling
+             */
+            name?: string;
+            /**
+             * @description Notes kept with it: its serial number, where it is.
+             * @example Serial C02XG0FDH7JY
+             */
+            notes?: string;
+            /** @description An asset bought before the books start, with its opening figures. Send this or source. */
+            opening?: components["schemas"]["FixedAssetOpening"];
+            /** @description What it is worth at the end of its life, in the base currency; zero when left out. */
+            residual?: components["schemas"]["Money"];
+            /** @description The line it was bought on; its account, purchase date and cost come from that line as its entry posted it. Send this or opening. */
+            source?: components["schemas"]["FixedAssetSourceRef"];
+            /**
+             * @description The month depreciation starts: the purchase month when left out, or a later one when it went into use later.
+             * @example 2026-03
+             */
+            start?: string;
+        };
+        FixedAssetOpening: {
+            /**
+             * Format: uuid
+             * @description The asset account it sits on: one whose report group is Property, plant & equipment or Intangible assets.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510
+             */
+            account_id: string;
+            /** @description Its accumulated depreciation at the books start, in the base currency, as the opening balances carry it on 1590. */
+            accumulated_depreciation: components["schemas"]["Money"];
+            /** @description What it cost, in the base currency, as the opening balances carry it on its account. */
+            cost: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description The day it was bought: before the books start.
+             * @example 2025-03-14
+             */
+            purchased_on: string;
+        };
+        FixedAssetPage: {
+            items: components["schemas"]["FixedAsset"][];
+            /**
+             * @description Pass it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjIwMjYtMDMtMTR8MDE5MiJ9
+             */
+            next_cursor?: string;
+        };
+        FixedAssetSource: {
+            /**
+             * Format: uuid
+             * @description The bill or bank transaction.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
+             */
+            document_id: string;
+            /**
+             * Format: int64
+             * @description Its line, or part, from 1.
+             * @example 1
+             */
+            line: number;
+            /**
+             * @description The bill's number.
+             * @example BILL-0042
+             */
+            number?: string;
+            /**
+             * @description bill, or bank_transaction: a categorised bank line.
+             * @example bill
+             * @enum {string}
+             */
+            type: "bill" | "bank_transaction";
+            /**
+             * Format: int64
+             * @description The version of it that posted the cost.
+             * @example 1
+             */
+            version: number;
+        };
+        FixedAssetSourceRef: {
+            /**
+             * Format: uuid
+             * @description The posted bill or categorised bank line (bank transaction) that bought it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
+             */
+            document_id: string;
+            /**
+             * Format: int64
+             * @description The bill's line, or the bank line's part, from 1: one that put a cost on an asset account.
+             * @example 1
+             */
+            line: number;
+        };
         ForeignMoneyAccount: {
             /**
              * Format: uuid
@@ -18827,7 +19128,7 @@ export interface components {
              * @example journal
              * @enum {string}
              */
-            document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance";
+            document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "fixed_asset" | "asset_disposal";
             /**
              * @description The number the next document takes, as printed.
              * @example JNL-0042
@@ -41809,6 +42110,500 @@ export interface operations {
             };
         };
     };
+    listFixedAssets: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only the assets in this state. */
+                status?: "in_use" | "fully_depreciated" | "disposed";
+                /** @description Only the assets on this account. */
+                account_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FixedAssetPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `ASSET-01` Not a fixed asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid; `ASSET-02` The saved asset cannot be read. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    registerFixedAsset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FixedAssetDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FixedAsset"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FixedAsset"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ASSET-11` Its depreciation has posted already; `STORAGE-ASSET-01` The asset register does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `ASSET-03` The asset cannot come from that line; `ASSET-04` Not an asset account of the register; `ASSET-05` The useful life does not fit; `ASSET-06` The residual value does not fit; `ASSET-07` Depreciation cannot start then; `ASSET-08` The depreciation method is not available; `ASSET-09` The opening figures do not fit; `ASSET-10` A text of the asset does not fit; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getFixedAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The asset's ID. */
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FixedAsset"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `ASSET-01` Not a fixed asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `ASSET-02` The saved asset cannot be read. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    changeFixedAsset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The asset's ID. */
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FixedAssetChange"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FixedAsset"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `ASSET-01` Not a fixed asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ASSET-11` Its depreciation has posted already; `ASSET-12` Nothing of the asset is left; `STORAGE-ASSET-01` The asset register does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `ASSET-02` The saved asset cannot be read; `ASSET-03` The asset cannot come from that line; `ASSET-04` Not an asset account of the register; `ASSET-05` The useful life does not fit; `ASSET-06` The residual value does not fit; `ASSET-07` Depreciation cannot start then; `ASSET-08` The depreciation method is not available; `ASSET-09` The opening figures do not fit; `ASSET-10` A text of the asset does not fit; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listFeedRates: {
         parameters: {
             query: {
@@ -57826,7 +58621,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description The document type. */
-                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance";
+                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "fixed_asset" | "asset_disposal";
             };
             cookie?: never;
         };
@@ -57910,7 +58705,7 @@ export interface operations {
             };
             path: {
                 /** @description The document type. */
-                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance";
+                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "fixed_asset" | "asset_disposal";
             };
             cookie?: never;
         };

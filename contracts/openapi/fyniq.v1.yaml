@@ -9925,6 +9925,333 @@ components:
         - year
         - periods
       type: object
+    FixedAsset:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: "The asset account it sits on: its category."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510
+          format: uuid
+          type: string
+        accumulated_depreciation:
+          $ref: "#/components/schemas/Money"
+          description: "Its accumulated depreciation: what the opening balances carried for it and what has posted since."
+        checks:
+          description: "Its warnings (⚠): the bill or bank line it came from was voided or edited since."
+          items:
+            $ref: "#/components/schemas/BillCheck"
+          type: array
+        cost:
+          $ref: "#/components/schemas/Money"
+          description: "What it cost, in the base currency: what is left of it after a partial disposal."
+        depreciated_to:
+          description: The last month whose depreciation has posted.
+          examples:
+            - 2026-09
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        end:
+          description: "The last month it depreciates: start + life − 1."
+          examples:
+            - 2029-02
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        id:
+          description: Its ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1
+          format: uuid
+          type: string
+        life_months:
+          description: Its useful life in months.
+          examples:
+            - 36
+          format: int64
+          type: integer
+        method:
+          description: How it depreciates.
+          enum:
+            - straight_line
+          examples:
+            - straight_line
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - MacBook Pro 14, Wei Ling
+          type: string
+        net_book_value:
+          $ref: "#/components/schemas/Money"
+          description: Cost less accumulated depreciation.
+        notes:
+          description: Its notes.
+          examples:
+            - Serial C02XG0FDH7JY
+          type: string
+        number:
+          description: Its number in the register (FR-ORG-04).
+          examples:
+            - FA-0001
+          type: string
+        opening_accumulated:
+          $ref: "#/components/schemas/Money"
+          description: "Bought before the books start: the accumulated depreciation the opening balances carry for it."
+        purchased_on:
+          description: The day it was bought.
+          examples:
+            - "2026-03-14"
+          format: date
+          type: string
+        recorded_at:
+          description: When.
+          examples:
+            - "2026-03-20T09:30:00Z"
+          format: date-time
+          type: string
+        recorded_by:
+          $ref: "#/components/schemas/Person"
+          description: Who registered it, or saved its latest change.
+        residual:
+          $ref: "#/components/schemas/Money"
+          description: Its residual value.
+        source:
+          $ref: "#/components/schemas/FixedAssetSource"
+          description: The line it was bought on; absent for one bought before the books start.
+        start:
+          description: The month depreciation starts.
+          examples:
+            - 2026-03
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        status:
+          description: in_use while it depreciates; fully_depreciated once nothing is left to post; disposed once nothing of it is left.
+          enum:
+            - in_use
+            - fully_depreciated
+            - disposed
+          examples:
+            - in_use
+          type: string
+        version:
+          description: The version of its content; it makes the ETag.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - status
+        - version
+        - name
+        - account_id
+        - purchased_on
+        - cost
+        - residual
+        - life_months
+        - method
+        - start
+        - end
+        - accumulated_depreciation
+        - net_book_value
+        - checks
+      type: object
+    FixedAssetChange:
+      additionalProperties: false
+      properties:
+        accumulated_depreciation:
+          $ref: "#/components/schemas/Money"
+          description: "An asset bought before the books start: its opening accumulated depreciation, only while none of its depreciation has posted."
+        cost:
+          $ref: "#/components/schemas/Money"
+          description: "An asset bought before the books start: its cost, only while none of its depreciation has posted."
+        life_months:
+          description: "A new useful life in months, from its start: it applies to the months not posted yet, and ends in or after the first of them."
+          examples:
+            - 48
+          format: int64
+          maximum: 600
+          minimum: 1
+          type: integer
+        name:
+          description: Its name in the register.
+          examples:
+            - MacBook Pro 14, Arjun
+          maxLength: 200
+          type: string
+        notes:
+          description: Its notes.
+          examples:
+            - Moved to Arjun, 1 Nov 2026
+          maxLength: 2000
+          type: string
+        purchased_on:
+          description: "An asset bought before the books start: its purchase date, only while none of its depreciation has posted."
+          examples:
+            - "2025-03-14"
+          format: date
+          type: string
+        residual:
+          $ref: "#/components/schemas/Money"
+          description: "A new residual value: it applies to the months not posted yet."
+        start:
+          description: "A new start month: only while none of its depreciation has posted."
+          examples:
+            - 2026-04
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+      type: object
+    FixedAssetDraft:
+      additionalProperties: false
+      properties:
+        life_months:
+          description: Its useful life in months.
+          examples:
+            - 36
+          format: int64
+          maximum: 600
+          minimum: 1
+          type: integer
+        method:
+          description: "How it depreciates: straight-line, cost less residual evenly over its life (reducing balance follows in P2)."
+          enum:
+            - straight_line
+          examples:
+            - straight_line
+          type: string
+        name:
+          description: What it is called in the register; a line's description when left out.
+          examples:
+            - MacBook Pro 14, Wei Ling
+          maxLength: 200
+          type: string
+        notes:
+          description: "Notes kept with it: its serial number, where it is."
+          examples:
+            - Serial C02XG0FDH7JY
+          maxLength: 2000
+          type: string
+        opening:
+          $ref: "#/components/schemas/FixedAssetOpening"
+          description: An asset bought before the books start, with its opening figures. Send this or source.
+        residual:
+          $ref: "#/components/schemas/Money"
+          description: What it is worth at the end of its life, in the base currency; zero when left out.
+        source:
+          $ref: "#/components/schemas/FixedAssetSourceRef"
+          description: The line it was bought on; its account, purchase date and cost come from that line as its entry posted it. Send this or opening.
+        start:
+          description: "The month depreciation starts: the purchase month when left out, or a later one when it went into use later."
+          examples:
+            - 2026-03
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+      required:
+        - life_months
+      type: object
+    FixedAssetOpening:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: "The asset account it sits on: one whose report group is Property, plant & equipment or Intangible assets."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510
+          format: uuid
+          type: string
+        accumulated_depreciation:
+          $ref: "#/components/schemas/Money"
+          description: Its accumulated depreciation at the books start, in the base currency, as the opening balances carry it on 1590.
+        cost:
+          $ref: "#/components/schemas/Money"
+          description: What it cost, in the base currency, as the opening balances carry it on its account.
+        purchased_on:
+          description: "The day it was bought: before the books start."
+          examples:
+            - "2025-03-14"
+          format: date
+          type: string
+      required:
+        - account_id
+        - purchased_on
+        - cost
+        - accumulated_depreciation
+      type: object
+    FixedAssetPage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/FixedAsset"
+          type: array
+        next_cursor:
+          description: Pass it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjIwMjYtMDMtMTR8MDE5MiJ9
+          type: string
+      required:
+        - items
+      type: object
+    FixedAssetSource:
+      additionalProperties: false
+      properties:
+        document_id:
+          description: The bill or bank transaction.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
+          format: uuid
+          type: string
+        line:
+          description: Its line, or part, from 1.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        number:
+          description: The bill's number.
+          examples:
+            - BILL-0042
+          type: string
+        type:
+          description: "bill, or bank_transaction: a categorised bank line."
+          enum:
+            - bill
+            - bank_transaction
+          examples:
+            - bill
+          type: string
+        version:
+          description: The version of it that posted the cost.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - document_id
+        - type
+        - version
+        - line
+      type: object
+    FixedAssetSourceRef:
+      additionalProperties: false
+      properties:
+        document_id:
+          description: The posted bill or categorised bank line (bank transaction) that bought it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
+          format: uuid
+          type: string
+        line:
+          description: "The bill's line, or the bank line's part, from 1: one that put a cost on an asset account."
+          examples:
+            - 1
+          format: int64
+          maximum: 10000
+          minimum: 1
+          type: integer
+      required:
+        - document_id
+        - line
+      type: object
     ForeignMoneyAccount:
       additionalProperties: false
       properties:
@@ -17570,6 +17897,8 @@ components:
             - expense_claim
             - claim_reimbursement
             - cash_advance
+            - fixed_asset
+            - asset_disposal
           examples:
             - journal
           type: string
@@ -49704,6 +50033,695 @@ paths:
       x-fyniq-permission:
         capability: Expense claims
         right: C
+  /v1/fixed-assets:
+    get:
+      description: "The register's assets, newest purchase first, a page at a time, narrowed by state or account (FR-FA-01): each with its category (the asset account it sits on), cost, residual value, life, start, accumulated depreciation and net book value as its depreciation has posted, and ⚠ when the bill or bank line it came from was voided or edited since. Read-only; no side effects."
+      operationId: listFixedAssets
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only the assets in this state.
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: Only the assets in this state.
+            enum:
+              - in_use
+              - fully_depreciated
+              - disposed
+            examples:
+              - in_use
+            type: string
+        - description: Only the assets on this account.
+          explode: false
+          in: query
+          name: account_id
+          schema:
+            description: Only the assets on this account.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c1510
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FixedAssetPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `ASSET-01` Not a fixed asset."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid; `ASSET-02` The saved asset cannot be read."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the fixed asset register
+      tags:
+        - Fixed assets
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - ASSET-01
+        - ASSET-02
+      x-fyniq-permission:
+        capability: Fixed assets
+        right: V
+    post:
+      description: "Adds an asset to the register (FR-FA-01): from the line of a posted bill, or the part of a categorised bank line, that put its cost on an asset account (one whose report group is Property, plant & equipment or Intangible assets), its cost being what that line's entry put there in the base currency; or, bought before the books start, with the cost and accumulated depreciation the opening balances carry for it, its depreciation posting from the books start (FR-FA-02). A line is registered once. Registering posts nothing: the cost is already on the account. Side effects: the asset, its number (FA-), audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing and shows the asset."
+      operationId: registerFixedAsset
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FixedAssetDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FixedAsset"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FixedAsset"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: Its version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ASSET-11` Its depreciation has posted already; `STORAGE-ASSET-01` The asset register does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `ASSET-03` The asset cannot come from that line; `ASSET-04` Not an asset account of the register; `ASSET-05` The useful life does not fit; `ASSET-06` The residual value does not fit; `ASSET-07` Depreciation cannot start then; `ASSET-08` The depreciation method is not available; `ASSET-09` The opening figures do not fit; `ASSET-10` A text of the asset does not fit; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Register a fixed asset
+      tags:
+        - Fixed assets
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - ASSET-03
+        - ASSET-04
+        - ASSET-05
+        - ASSET-06
+        - ASSET-07
+        - ASSET-08
+        - ASSET-09
+        - ASSET-10
+        - ASSET-11
+        - MONEY-01
+        - MONEY-02
+        - MONEY-03
+        - MONEY-04
+        - STORAGE-ASSET-01
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Fixed assets
+        right: C
+  /v1/fixed-assets/{asset_id}:
+    get:
+      description: "Returns an asset of the register with its ETag: its category, source line or opening figures, cost, residual value, life, start and end months, accumulated depreciation and net book value as its depreciation has posted. Read-only; no side effects."
+      operationId: getFixedAsset
+      parameters:
+        - description: The asset's ID.
+          in: path
+          name: asset_id
+          required: true
+          schema:
+            description: The asset's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FixedAsset"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: Its version and status, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `ASSET-01` Not a fixed asset."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `ASSET-02` The saved asset cannot be read."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get a fixed asset
+      tags:
+        - Fixed assets
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - ASSET-01
+        - ASSET-02
+      x-fyniq-permission:
+        capability: Fixed assets
+        right: V
+  /v1/fixed-assets/{asset_id}/change:
+    post:
+      description: "Saves the asset's next version with what is sent (FR-FA-01, FR-FA-02): its name and notes; a new residual value or useful life, which apply to the months not posted yet, what has posted being carried into the version; and, only while none of its depreciation has posted, its start month and, for an asset bought before the books start, its purchase date, cost and opening accumulated depreciation. Posts nothing. Side effects: the new version, audit events. Every problem comes back together. Needs If-Match with the asset's ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing and shows the asset as it would be."
+      operationId: changeFixedAsset
+      parameters:
+        - description: The asset's ID.
+          in: path
+          name: asset_id
+          required: true
+          schema:
+            description: The asset's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FixedAssetChange"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FixedAsset"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: Its version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `ASSET-01` Not a fixed asset."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ASSET-11` Its depreciation has posted already; `ASSET-12` Nothing of the asset is left; `STORAGE-ASSET-01` The asset register does not allow that; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `ASSET-02` The saved asset cannot be read; `ASSET-03` The asset cannot come from that line; `ASSET-04` Not an asset account of the register; `ASSET-05` The useful life does not fit; `ASSET-06` The residual value does not fit; `ASSET-07` Depreciation cannot start then; `ASSET-08` The depreciation method is not available; `ASSET-09` The opening figures do not fit; `ASSET-10` A text of the asset does not fit; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change a fixed asset
+      tags:
+        - Fixed assets
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - ASSET-01
+        - ASSET-02
+        - ASSET-03
+        - ASSET-04
+        - ASSET-05
+        - ASSET-06
+        - ASSET-07
+        - ASSET-08
+        - ASSET-09
+        - ASSET-10
+        - ASSET-11
+        - ASSET-12
+        - MONEY-01
+        - MONEY-02
+        - MONEY-03
+        - MONEY-04
+        - STORAGE-ASSET-01
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Fixed assets
+        right: C
   /v1/fx/feed:
     get:
       description: "The daily rate feed's rates into the organisation's base currency between two dates, at most 366 days apart (FR-GL-05; PRD-001 rev 0.70): the same for every organisation, each as published, with its RND-RATE rate. The feed publishes business days only. Locally the feed is a directory of rates files; MAS's rates arrive at the cloud gate. A page at a time. Read-only; no side effects."
@@ -71461,6 +72479,8 @@ paths:
               - expense_claim
               - claim_reimbursement
               - cash_advance
+              - fixed_asset
+              - asset_disposal
             examples:
               - journal
             type: string
@@ -71581,6 +72601,8 @@ paths:
               - expense_claim
               - claim_reimbursement
               - cash_advance
+              - fixed_asset
+              - asset_disposal
             examples:
               - journal
             type: string
@@ -89258,6 +90280,8 @@ tags:
     name: Banking
   - description: "Members' claims for what they spent for the company: drafted and submitted by the claimant, approved by someone else, posted to 2150 Expense claims payable (FR-AP-07, FR-AP-14, FR-AP-17)."
     name: Expense claims
+  - description: "The fixed asset register: assets registered from the bill or bank lines that bought them, or from the opening balances, their monthly depreciation, and their disposals (FR-FA-01, FR-FA-02, FR-FA-03)."
+    name: Fixed assets
   - description: "Accounting periods and financial years: a posting's period is the month of its date (FR-ORG-02, FR-GL-08)."
     name: Periods
   - description: "Rates into the base currency: the daily feed, the organisation's own rates for a day and its monthly table, and the cascade a posting takes its rate from (FR-GL-05, ENG-40)."

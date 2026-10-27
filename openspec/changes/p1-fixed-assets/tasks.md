@@ -2,19 +2,20 @@
 
 ## 1. The register
 
-- [ ] 1.1 Migrations: the document types `fixed_asset` (FA-) and `asset_disposal`; the asset's source guard (one asset
+- [x] 1.1 Migrations: the document types `fixed_asset` (FA-) and `asset_disposal`; the asset's source guard (one asset
   per posted bill line or bank-transaction part on an asset account); the approval object `asset_disposal.void`;
   `bank_match_posting` accepts `asset_disposal`; widened checks NOT VALID and validated after; squawk clean; goldens
   updated (design D1, D4, D7).
   - Tests: a second asset on one source line refused; an asset on a line of another account refused (QA-ENG-05).
     `// req: FR-FA-01`
-- [ ] 1.2 `internal/domain/asset`: the asset's content by version (design D2: cost, residual, life in months, method,
+- [x] 1.2 `internal/domain/asset`: the asset's content by version (design D2: cost, residual, life in months, method,
   start, carried, from; its source or its opening figures), read and checked with every problem at once (ENG-23); the
   category as the asset account (design D1); the settings `assets.disposal_account` (7050) and
   `assets.disposal_clearing_account` (unset), with their guide sections compiled into `kb/`.
-  - Tests: a life of zero, a residual above the cost, a start after the purchase month's end refused; an opening asset
-    carries its opening accumulated depreciation from the books start. `// req: FR-FA-01`
-- [ ] 1.3 The API: register (from a source line, or an opening asset), list, read and change an asset (a change is the
+  - Tests: a life of zero, a residual above the cost, a start before the purchase month refused (B.4: the start is the
+    purchase month or a later depreciate-from month); an opening asset carries its opening accumulated depreciation
+    from the books start. `// req: FR-FA-01`
+- [x] 1.3 The API: register (from a source line, or an opening asset), list, read and change an asset (a change is the
   next version, applied to the months not yet posted), under Appendix D's "Fixed assets" (C/P; V to read), with the
   matrix rows (QA-SEC-03); `make openapi` first.
   - Tests: an asset registered from a bill line takes the line's base cost; from a foreign-currency bill, its RND-FX

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "description": "The posted bill or categorised bank line (bank transaction) that bought it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "line": {
+      "description": "The bill's line, or the bank line's part, from 1: one that put a cost on an asset account.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "maximum": 10000,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "document_id",
+    "line"
+  ],
+  "title": "FixedAssetSourceRef",
+  "type": "object"
+}

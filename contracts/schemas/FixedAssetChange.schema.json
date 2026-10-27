@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accumulated_depreciation": {
+      "$ref": "Money.schema.json",
+      "description": "An asset bought before the books start: its opening accumulated depreciation, only while none of its depreciation has posted."
+    },
+    "cost": {
+      "$ref": "Money.schema.json",
+      "description": "An asset bought before the books start: its cost, only while none of its depreciation has posted."
+    },
+    "life_months": {
+      "description": "A new useful life in months, from its start: it applies to the months not posted yet, and ends in or after the first of them.",
+      "examples": [
+        48
+      ],
+      "format": "int64",
+      "maximum": 600,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "name": {
+      "description": "Its name in the register.",
+      "examples": [
+        "MacBook Pro 14, Arjun"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "notes": {
+      "description": "Its notes.",
+      "examples": [
+        "Moved to Arjun, 1 Nov 2026"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "purchased_on": {
+      "description": "An asset bought before the books start: its purchase date, only while none of its depreciation has posted.",
+      "examples": [
+        "2025-03-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "residual": {
+      "$ref": "Money.schema.json",
+      "description": "A new residual value: it applies to the months not posted yet."
+    },
+    "start": {
+      "description": "A new start month: only while none of its depreciation has posted.",
+      "examples": [
+        "2026-04"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    }
+  },
+  "title": "FixedAssetChange",
+  "type": "object"
+}

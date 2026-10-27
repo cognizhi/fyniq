@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16]
+requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03]
 status: draft
 ---
 
@@ -194,6 +194,27 @@ accountant sets the rate for its vehicle.
 - A purchase of S$1,000 or more is offered as a fixed asset; a smaller one is an expense.
 - The company's accountant confirms the threshold, by approving the capitalisation threshold policy under
   **Settings → Accounting framework and policies**.
+
+## Disposal account
+
+When an asset is sold or written off, the difference between what it fetched and what it was still
+worth is a gain or a loss. It goes to the **disposal account**: 7050 Gain / (loss) on disposal of
+assets in the standard chart.
+
+- Choose another account by its code, such as separate accounts your accountant prefers.
+- A change needs a second approver, as the other accounting settings do.
+
+## Disposal clearing account
+
+An asset sold on a sales invoice is invoiced to the **disposal clearing account**: the invoice's line
+goes to it, and the disposal clears it. The gain or loss then falls in the month of the disposal,
+whatever the invoice's month.
+
+- It starts **not set**: the company's accountant names a balance-sheet account for it, before the
+  first asset is sold on an invoice.
+- An asset sold for money received into a bank account does not use it: the disposal records the
+  money, and bank import matches it.
+- A change needs a second approver.
 
 ## Accounting sign-off
 
