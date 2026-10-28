@@ -243,9 +243,14 @@ Source: PRD-001 §8.4 · Priority S · Phase P1 (file) / P2 (API)
 - **THEN** it gives a payment list (CSV) with each payment's payee, bank and account, amount, payment date and the batch's reference
 - **AND** the list is sealed with its SHA-256 and downloaded only after step-up, each download audited, as a bank file would be
 
-#### Scenario: The bank's file once the bank is chosen (rev 0.156)
-- **WHEN** the bank is chosen
-- **THEN** its bulk-payment file replaces the list, written from the bank's own specification (for DBS, "DBS UFF Version 2.2"), each field [verify] with a test upload
+#### Scenario: The file is a setting of the money account (rev 0.157)
+- **WHEN** a batch is released
+- **THEN** it gives the file its money account is set to: the payment list (the default), Wise's batch payment file or DBS IDEAL's UFF ("DBS UFF Version 2.2"), each written from the provider's own specification and [verify] with a real upload
+- **AND** a bank's file is offered only for an account at that bank, and changing the setting is audited and changes no file already released
+
+#### Scenario: Airwallex pays through its API (rev 0.157)
+- **WHEN** a batch pays from an Airwallex account
+- **THEN** it gives the payment list until Airwallex's payout API is built (P2), because Airwallex's new batches must be the .xlsx downloaded from the account
 
 #### Scenario: SGD to Singapore accounts (rev 0.154)
 - **WHEN** a payment is added to a batch
