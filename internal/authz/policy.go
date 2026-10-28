@@ -567,6 +567,14 @@ var (
 	RemoveMyBankChangeEvidence     = Policy{Operation: "removeMyBankChangeEvidence", Capability: Evidence, Need: Create, Parent: ExpenseClaims}
 	ListClaimantBankChangeEvidence = Policy{Operation: "listClaimantBankChangeEvidence", Capability: Evidence, Need: View, Parent: PaymentBatches}
 	GetClaimantBankChangeEvidence  = Policy{Operation: "getClaimantBankChangeEvidence", Capability: Evidence, Need: View, Parent: PaymentBatches}
+	// Payment batches (FR-BNK-12; rev 0.154; p1-payments-out design D10), under Appendix D's "Payment batches" row: read under
+	// V; prepared and changed under C (the Accountant, the AP specialist); the Payroll administrator's "C (salaries)" waits for
+	// salaries in batches (p1-payroll-link).
+	ListPaymentBatches        = Policy{Operation: "listPaymentBatches", Capability: PaymentBatches, Need: View, Unqualified: true}
+	GetPaymentBatch           = Policy{Operation: "getPaymentBatch", Capability: PaymentBatches, Need: View, Unqualified: true}
+	GetPaymentBatchSuggestion = Policy{Operation: "getPaymentBatchSuggestion", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	CreatePaymentBatch        = Policy{Operation: "createPaymentBatch", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	ReplacePaymentBatch       = Policy{Operation: "replacePaymentBatch", Capability: PaymentBatches, Need: Create, Unqualified: true}
 	// Invoices (FR-AR-03; p1-sales), as bills: read under V, prepared under C (the Bookkeeper, the AR specialist, the
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
 	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
@@ -1000,6 +1008,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid, VoidFixedAsset, RequestFixedAssetVoid,
 	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
+	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
 	GetMyBankDetails, CreateMyBankChange, GetMyBankChange, ReplaceMyBankChange, RequestMyBankChangeApproval, WithdrawMyBankChange, RevealMyBankAccount,
 	GetClaimantBankChange, RevealClaimantBankAccount, AddMyBankChangeEvidence, ListMyBankChangeEvidence, GetMyBankChangeEvidence,
 	RemoveMyBankChangeEvidence, ListClaimantBankChangeEvidence, GetClaimantBankChangeEvidence,

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account": {
+      "$ref": "PayeeAccount.schema.json",
+      "description": "The payee's account in force it pays into, by its last four characters; absent when they have none."
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What it pays: the sum of its items, in SGD."
+    },
+    "items": {
+      "description": "The payee's bills or claims it pays, as the batch lists them.",
+      "items": {
+        "$ref": "PaymentBatchItem.schema.json"
+      },
+      "type": "array"
+    },
+    "payee": {
+      "$ref": "PaymentBatchPayee.schema.json",
+      "description": "Whom it pays."
+    },
+    "payments_frozen": {
+      "description": "A change of the payee's bank account waits for approval: the payment is held (PAYEE-12).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "payee",
+    "payments_frozen",
+    "amount",
+    "items"
+  ],
+  "title": "PaymentBatchPayment",
+  "type": "object"
+}

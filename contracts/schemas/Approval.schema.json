@@ -105,7 +105,8 @@
         "asset_disposal",
         "fixed_asset",
         "payee_bank_change",
-        "claimant_bank_change"
+        "claimant_bank_change",
+        "payment_batch"
       ],
       "examples": [
         "organisation_setting"
@@ -153,7 +154,9 @@
         "asset_disposal.void",
         "fixed_asset.void",
         "payee_bank_change.approve",
-        "claimant_bank_change.approve"
+        "claimant_bank_change.approve",
+        "payment_batch.approve",
+        "payment_batch.reapprove"
       ],
       "examples": [
         "organisation_setting.change"

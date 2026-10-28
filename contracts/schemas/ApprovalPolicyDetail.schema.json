@@ -67,7 +67,8 @@
         "asset_disposal",
         "fixed_asset",
         "payee_bank_change",
-        "claimant_bank_change"
+        "claimant_bank_change",
+        "payment_batch"
       ],
       "examples": [
         "organisation_setting"

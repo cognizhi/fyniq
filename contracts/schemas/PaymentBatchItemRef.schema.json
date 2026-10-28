@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "description": "The bill or claim.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "A posted bill, or an approved expense claim.",
+      "enum": [
+        "bill",
+        "claim"
+      ],
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "document_id"
+  ],
+  "title": "PaymentBatchItemRef",
+  "type": "object"
+}

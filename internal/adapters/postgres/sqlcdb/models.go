@@ -1211,6 +1211,32 @@ type FyniqPayeeBankAccount struct {
 	MemberUserID      *uuid.UUID
 }
 
+type FyniqPaymentBatchPayment struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ReleaseID      uuid.UUID
+	PaymentID      uuid.UUID
+}
+
+type FyniqPaymentBatchRelease struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	BatchID        uuid.UUID
+	BatchVersion   int32
+	ApprovalID     uuid.UUID
+	ReleasedBy     uuid.UUID
+	ReleasedAt     time.Time
+	Writer         string
+	FileName       string
+	MediaType      string
+	FileSealed     []byte
+	FileSha256     []byte
+	Payments       int32
+	Currency       string
+	MinorUnits     int16
+	Total          string
+}
+
 type FyniqPeriod struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

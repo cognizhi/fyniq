@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "payment_date": {
+      "description": "The payment date asked for.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "suggested": {
+      "description": "Every posted SGD bill with something open planned on or before the date, then every approved claim with something owed, none in an approved batch; at most the 500 items a batch holds, oldest first.",
+      "items": {
+        "$ref": "PaymentBatchItemRef.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "payment_date",
+    "suggested"
+  ],
+  "title": "PaymentBatchSuggestion",
+  "type": "object"
+}

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The bills and claims it pays, each whole, for what is open on it; at most 500.",
+      "items": {
+        "$ref": "PaymentBatchItemRef.schema.json"
+      },
+      "maxItems": 500,
+      "type": "array"
+    },
+    "method": {
+      "description": "FAST or GIRO.",
+      "enum": [
+        "fast",
+        "giro"
+      ],
+      "examples": [
+        "fast"
+      ],
+      "type": "string"
+    },
+    "money_account_id": {
+      "description": "The SGD bank account it is paid from.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "notes": {
+      "description": "Its notes.",
+      "examples": [
+        "End of October suppliers and claims"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "payment_date": {
+      "description": "The day the bank pays it.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "money_account_id",
+    "payment_date",
+    "method",
+    "items"
+  ],
+  "title": "PaymentBatchDraft",
+  "type": "object"
+}

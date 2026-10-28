@@ -43,6 +43,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/organisation"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/domain/payee"
+	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
 	"github.com/cognizhi/fyniq/internal/domain/quote"
@@ -704,7 +705,25 @@ var codeFacts = map[string]struct {
 	payee.CodePerson:              {422, "Not an account for reimbursements"},
 	payee.CodeMember:              {422, "Not an active member"},
 	payee.CodeOwnOnly:             {403, "Only another person approves your bank account"},
+	paymentbatch.CodeNotBatch:     {404, "Not a payment batch"},
+	paymentbatch.CodeBadDraft:     {422, "The saved batch cannot be read"},
+	paymentbatch.CodeAccount:      {422, "Not an open SGD bank account"},
+	paymentbatch.CodeDate:         {422, "The payment date is not a date"},
+	paymentbatch.CodeMethod:       {422, "Not FAST or GIRO"},
+	paymentbatch.CodeEmpty:        {422, "The batch pays nothing"},
+	paymentbatch.CodeTwice:        {422, "An item is in the batch twice"},
+	paymentbatch.CodeItem:         {422, "Not a posted bill or an approved claim"},
+	paymentbatch.CodeCurrency:     {422, "The bill is not in SGD"},
+	paymentbatch.CodeNothingOpen:  {422, "Nothing is open on the item"},
+	paymentbatch.CodeInAnother:    {409, "The item is in another approved batch"},
+	paymentbatch.CodeNoAccount:    {422, "The payee has no approved account"},
+	paymentbatch.CodeWithholding:  {409, "The bill waits for withholding"},
+	paymentbatch.CodeNotDraft:     {409, "The batch is approved already"},
+	paymentbatch.CodeTooMany:      {422, "Too many items for one batch"},
+	paymentbatch.CodeTooLong:      {422, "The notes are too long"},
 	storage.CodePayee:             {409, "Bank details do not change that way"},
+	storage.CodeBatch:             {409, "A payment batch does not change that way"},
+	storage.CodeBatchHeld:         {409, "The item is paid by an approved payment batch"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -732,7 +751,9 @@ var storageFixes = map[string]string{
 	storage.CodeReminder:  "Read the reminders again: this one was sent or skipped already",
 	storage.CodeStatement: "Make and send a new statement instead",
 
-	storage.CodePayee: "Prepare a change of the bank details and ask for approval: a second person, who neither prepared nor asked for it, approves it, which puts its account in force",
+	storage.CodePayee:     "Prepare a change of the bank details and ask for approval: a second person, who neither prepared nor asked for it, approves it, which puts its account in force",
+	storage.CodeBatch:     "A batch is approved by a second person, released once, and never changed after; a payment the bank rejects is voided on its own",
+	storage.CodeBatchHeld: "Release the approved batch that holds it, or cancel the batch first and then record the payment",
 
 	storage.CodeAsset: "Register an asset from a line of a posted bill or bank line that put its cost on an asset account, once; a month's depreciation is of a registered asset's current version",
 
