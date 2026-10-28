@@ -118,6 +118,26 @@ func TestTheLayoutFollowsTheTemplate(t *testing.T) {
 		t.Errorf("a simplified tax invoice requires %v", Required(doctemplate.Invoice, d))
 	}
 
+	// The footer leaves out a part whose fields are all empty: an organisation with no UEN shows its name alone, not a
+	// dangling "· UEN"; text without a field always stays.
+	d = Sample(doctemplate.Invoice)
+	if l, _ = Build(doctemplate.Invoice, doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice), d); find(l, "footer").Body != "Example Analytics Pte Ltd · UEN 202400001A" {
+		t.Errorf("the footer with a UEN: %q", find(l, "footer").Body)
+	}
+	delete(d.Fields, "organisation.uen")
+	if l, _ = Build(doctemplate.Invoice, doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice), d); find(l, "footer").Body != "Example Analytics Pte Ltd" {
+		t.Errorf("the footer without a UEN: %q", find(l, "footer").Body)
+	}
+	thanks := doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice)
+	for i := range thanks.Blocks {
+		if thanks.Blocks[i].Kind == doctemplate.BlockFooter {
+			thanks.Blocks[i].Texts[doctemplate.TextBody] = "Thank you · UEN {{organisation.uen}} · {{organisation.email}}"
+		}
+	}
+	if l, _ = Build(doctemplate.Invoice, thanks, d); find(l, "footer").Body != "Thank you · accounts@example.com" {
+		t.Errorf("a footer of text and fields: %q", find(l, "footer").Body)
+	}
+
 	// A purchase order is addressed to its supplier, whose details carry no customer particular.
 	l, _ = Build(doctemplate.PurchaseOrder, doctemplate.Default(doctemplate.KindDocument, doctemplate.PurchaseOrder), Sample(doctemplate.PurchaseOrder))
 	if r := find(l, "recipient"); r.Label != "Supplier" || r.Items[0] != (Item{Text: "Cloud Tools Pte Ltd"}) || Required(doctemplate.PurchaseOrder, Sample(doctemplate.PurchaseOrder)) != nil {
