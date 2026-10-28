@@ -2113,7 +2113,7 @@ email_message | email_message_lengths | CHECK ((((length(recipient) >= 3) AND (l
 email_message | email_message_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 email_message | email_message_organisation_id_not_null | NOT NULL organisation_id
 email_message | email_message_pkey | PRIMARY KEY (organisation_id, id)
-email_message | email_message_purpose_known | CHECK ((purpose = ANY (ARRAY['test'::text, 'sign_in_alert'::text, 'notification'::text, 'digest'::text, 'invoice'::text, 'quote'::text, 'reminder'::text, 'statement'::text])))
+email_message | email_message_purpose_known | CHECK ((purpose = ANY (ARRAY['test'::text, 'sign_in_alert'::text, 'notification'::text, 'digest'::text, 'invoice'::text, 'quote'::text, 'reminder'::text, 'statement'::text, 'remittance'::text])))
 email_message | email_message_purpose_not_null | NOT NULL purpose
 email_message | email_message_recipient_not_null | NOT NULL recipient
 email_message | email_message_scheduled_send | TRIGGER DEFERRABLE INITIALLY DEFERRED
@@ -3998,7 +3998,7 @@ document_link_route(p_hash text) → TABLE(organisation_id uuid, link_id uuid) |
 document_link_token_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b39187a31e2fab3a93259dce0e8ed0aa
 document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6d6e33fbb741d2091b6653922fdd9230
 document_reversed_unmatched() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 571459b9e3412b69dae28471ae2ae096
-document_send_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 001124514ccefea52a5f5516acd28e9c
+document_send_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c5e8cf759ed24db83f888a0284df37c4
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
 document_template_choice_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fa7935baf02928c3f94dd5979982c7e6
 document_template_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 460a8f1bd5f4af96698ac00b70b265c4
