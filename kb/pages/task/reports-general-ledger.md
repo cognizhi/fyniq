@@ -40,7 +40,7 @@ aliases:
 - Choose an account and select **Add**, up to 20 accounts; set **From** and **To** (by default the first day of this month to today).
 - Each account shows its opening balance, its lines, and its closing balance with the debits and credits.
 - At most 5,000 lines of one account show at once; for more, choose a shorter range.
-- Related: the journals behind the lines ([[accounting.journals]]); the periods they post in ([[accounting.periods]]).
+- Related: the journals behind the lines ([[accounting.journals]]); the periods they post in ([[accounting.periods]]); the statements whose figures open it ([[reports.statements]]).
 
 (src: docs/user-guide/general-ledger.md#read-the-general-ledger) (src: docs/user-guide/general-ledger.md#related)
 

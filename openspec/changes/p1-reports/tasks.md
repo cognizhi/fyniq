@@ -51,14 +51,31 @@
 
 - [ ] 2.1 Design check: `Reports.html`, `FinancialStatement.html` and `ExportDialog.html` against what the API
   gives. Update a fragment where the build differs, and republish the canvas (fyniq-openspec Recipe C).
-- [ ] 2.2 `reports-index`: Basic's curated set with a line each, and Expert's full list, the accountant exports among
+  (28 Oct 2026, part: the statements' route is `/reports/statements/:kind` in the inventory. The build leaves out,
+  for their tasks or changes: the budget and variance columns (`p1-planning`), the expenses by function view (an API
+  option, later), Ask about this (wave 6), Print and Export (task 3), favourites and saved reports (P2). The fragments
+  still show them as designed; nothing to republish. **Left:** `ExportDialog.html` with task 3.5.)
+- [x] 2.2 `reports-index`: Basic's curated set with a line each, and Expert's full list, the accountant exports among
   them.
-- [ ] 2.3 `financial-statement`: the toolbar (period, comparison, columns, as at), the statement with its groups and
+  (28 Oct 2026: Reports (`/reports`, a new nav item for the roles that read every account): the essentials (the P&L,
+  balance sheet and cash flow with this month's net profit, equity and cash), the other reports where they live (who
+  owes us, whom we owe; in Expert the trial balance, general ledger and schedules), and Find a report. The accountant
+  exports join with task 3.4; cash and runway with `p1-dashboard-kpis`. Test: `statements.test.tsx`.)
+- [x] 2.3 `financial-statement`: the toolbar (period, comparison, columns, as at), the statement with its groups and
   totals, and every figure opening its general ledger lines (D8, FR-UX-04). Basic shows plain words under each section;
   Expert adds codes, variances and functions. The checks are shown, the framework title is shown, and the FR-UX-41
   banner shows through the review register.
   - Tests: Vitest with axe on every state; mode parity (QA-UI-04).
-- [ ] 2.4 Help keys, and the guide pages `reports.statements` and `reports.index`, compiled into `kb/`.
+  (28 Oct 2026: `/reports/statements/:kind` with a tab per statement (the trial balance in Expert); the period presets
+  from the books' periods (this month, last month, year to date, this and last financial year, or any months);
+  Compare with and A column per month in Expert; the month-not-closed note; failed checks as alerts; Restated
+  presentation; the cash flow's non-cash list; the revision footnote. Each account's figure and each group's total opens
+  the general ledger, which now reads its accounts and dates from the link. Basic shows the current column with plain
+  words under the sections; Expert adds codes, comparatives and % of revenue. Tests: `statements.test.tsx`, including
+  mode parity, and `GeneralLedger.test.tsx`. The FR-UX-41 banner shows once the review register lists the page (6.1).)
+- [x] 2.4 Help keys, and the guide pages `reports.statements` and `reports.index`, compiled into `kb/`.
+  (28 Oct 2026: one guide page, `financial-statements.md` → kb `reports.statements`, which the reports index's route
+  uses too; help keys `reports.index`, `reports.statement` and the sections' plain words `statement.*`.)
 
 ## 3. Exports (FR-RPT-05, FR-RPT-09, FR-RPT-10)
 

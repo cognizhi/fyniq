@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useSearch } from "@tanstack/react-router";
 import { Download, Plus, ScrollText, X } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
@@ -175,10 +175,12 @@ function Ledger({ a, from, to, currency }: { a: AccountLedger; from: string; to:
 // export of larger ranges arrive with p1-reports.
 export function GeneralLedger() {
   const id = useId();
+  // A statement's figure opens it with its accounts and run (FR-UX-04).
+  const search = useSearch({ strict: false }) as { account_id?: string[] | string; from?: string; to?: string };
   const first = `${today().slice(0, 8)}01`;
-  const [from, setFrom] = useState(first);
-  const [to, setTo] = useState(today);
-  const [chosen, setChosen] = useState<string[]>([]);
+  const [from, setFrom] = useState(search.from ?? first);
+  const [to, setTo] = useState(search.to ?? today);
+  const [chosen, setChosen] = useState<string[]>(() => (search.account_id === undefined ? [] : ([] as string[]).concat(search.account_id).slice(0, 20)));
   const [adding, setAdding] = useState("");
   const accounts = useQuery({ queryKey: ["accounts"], queryFn: listAccounts });
   const report = useQuery({

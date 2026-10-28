@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, Contact, House, Inbox, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, ChartColumn, Contact, House, Inbox, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -116,6 +116,8 @@ export const routes = [
   { kind: "route", id: "periods", path: "/accounting/close", mode: "expert", signedIn: true, help: "accounting.periods", guide: "accounting.periods" },
   { kind: "route", id: "opening-balances", path: "/accounting/opening-balances", mode: "expert", signedIn: true, help: "accounting.opening-balances", guide: "accounting.opening-balances" },
   { kind: "route", id: "period-close", path: "/accounting/close/$periodId", mode: "expert", signedIn: true, help: "accounting.period-close", guide: "accounting.periods#close-a-month" },
+  { kind: "route", id: "reports", path: "/reports", mode: "basic", signedIn: true, help: "reports.index", guide: "reports.statements" },
+  { kind: "route", id: "financial-statement", path: "/reports/statements/$kind", mode: "basic", signedIn: true, help: "reports.statement", guide: "reports.statements" },
   { kind: "route", id: "general-ledger", path: "/reports/general-ledger", mode: "expert", signedIn: true, help: "reports.general-ledger", guide: "reports.general-ledger" },
   { kind: "route", id: "chart-of-accounts", path: "/accounting/chart-of-accounts", mode: "expert", signedIn: true, help: "accounting.chart", guide: "accounting.chart" },
   { kind: "route", id: "currencies", path: "/accounting/fx", mode: "expert", signedIn: true, help: "accounting.currencies", guide: "accounting.currencies" },
@@ -394,6 +396,8 @@ export const nav = [
   // Banking shows to the roles that may view bank transactions (Appendix D, V or more); the API decides the rest.
   { kind: "nav", id: "nav.claims-review", route: "/purchases/claims", icon: ReceiptText, group: "main", roles: ["approver", "controller", "accountant", "ap_specialist", "bookkeeper", "owner", "auditor", "tax_agent"], mode: "basic", help: "claims.review", guide: "claims.approve-team#approve-or-return-a-claim" },
   { kind: "nav", id: "nav.banking", route: "/banking", icon: Landmark, group: "main", roles: ["bookkeeper", "accountant", "controller", "owner", "ar_specialist", "ap_specialist", "payment_releaser", "auditor", "tax_agent"], mode: "basic", help: "banking.accounts", guide: "banking.accounts" },
+  // Reports show to the roles that read every account (Appendix D "Reports, dashboards", V without a qualifier).
+  { kind: "nav", id: "nav.reports", route: "/reports", icon: ChartColumn, group: "main", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "auditor", "tax_agent", "dpo"], mode: "basic", help: "reports.index", guide: "reports.statements" },
   { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },
   { kind: "nav", id: "nav.settings", route: "/settings", icon: Settings, group: "footer", roles: "all", mode: "basic", help: "settings.overview", guide: "home.overview#settings" },
 ] as const satisfies readonly NavFeature[];
