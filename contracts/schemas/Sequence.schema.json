@@ -32,7 +32,8 @@
         "claim_reimbursement",
         "cash_advance",
         "fixed_asset",
-        "asset_disposal"
+        "asset_disposal",
+        "payment_batch"
       ],
       "examples": [
         "journal"

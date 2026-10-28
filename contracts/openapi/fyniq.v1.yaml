@@ -19115,6 +19115,7 @@ components:
             - cash_advance
             - fixed_asset
             - asset_disposal
+            - payment_batch
           examples:
             - journal
           type: string
@@ -79510,6 +79511,7 @@ paths:
               - cash_advance
               - fixed_asset
               - asset_disposal
+              - payment_batch
             examples:
               - journal
             type: string
@@ -79632,6 +79634,7 @@ paths:
               - cash_advance
               - fixed_asset
               - asset_disposal
+              - payment_batch
             examples:
               - journal
             type: string

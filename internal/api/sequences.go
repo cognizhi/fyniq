@@ -18,7 +18,7 @@ import (
 
 // Sequence is a document type's number sequence.
 type Sequence struct {
-	DocumentType string `json:"document_type" enum:"journal,bill,bill_payment,vendor_credit,supplier_refund,purchase_order,invoice,credit_note,customer_receipt,write_off,customer_refund,customer_deposit,quote,sales_order,statement,expense_claim,claim_reimbursement,cash_advance,fixed_asset,asset_disposal" doc:"The documents it numbers." example:"journal"`
+	DocumentType string `json:"document_type" enum:"journal,bill,bill_payment,vendor_credit,supplier_refund,purchase_order,invoice,credit_note,customer_receipt,write_off,customer_refund,customer_deposit,quote,sales_order,statement,expense_claim,claim_reimbursement,cash_advance,fixed_asset,asset_disposal,payment_batch" doc:"The documents it numbers." example:"journal"`
 	Prefix       string `json:"prefix" doc:"What every number starts with." example:"JNL-"`
 	NextNumber   int64  `json:"next_number" doc:"The number the next document takes." example:"42"`
 	Digits       int    `json:"digits" doc:"The number is padded with zeros to this many digits." example:"4"`
@@ -43,7 +43,7 @@ type SequencePage struct {
 
 // SequencePath names a document type's sequence.
 type SequencePath struct {
-	DocumentType string `path:"document_type" enum:"journal,bill,bill_payment,vendor_credit,supplier_refund,purchase_order,invoice,credit_note,customer_receipt,write_off,customer_refund,customer_deposit,quote,sales_order,statement,expense_claim,claim_reimbursement,cash_advance,fixed_asset,asset_disposal" doc:"The document type." example:"journal"`
+	DocumentType string `path:"document_type" enum:"journal,bill,bill_payment,vendor_credit,supplier_refund,purchase_order,invoice,credit_note,customer_receipt,write_off,customer_refund,customer_deposit,quote,sales_order,statement,expense_claim,claim_reimbursement,cash_advance,fixed_asset,asset_disposal,payment_batch" doc:"The document type." example:"journal"`
 }
 
 type sequenceListInput struct {
