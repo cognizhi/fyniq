@@ -1202,12 +1202,13 @@ type FyniqPayeeBankAccount struct {
 	ID                uuid.UUID
 	ChangeID          uuid.UUID
 	ChangeVersion     int32
-	ContactID         uuid.UUID
+	ContactID         *uuid.UUID
 	Currency          string
 	NumberSealed      []byte
 	NumberLast4       string
 	NumberFingerprint []byte
 	State             string
+	MemberUserID      *uuid.UUID
 }
 
 type FyniqPeriod struct {

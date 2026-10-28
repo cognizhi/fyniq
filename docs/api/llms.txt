@@ -118,6 +118,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/claim-reimbursements/{reimbursement_id}` (getClaimReimbursement): Get a reimbursement of expense claims
 - `POST /v1/claim-reimbursements/{reimbursement_id}/void` (voidClaimReimbursement): Void a reimbursement of expense claims
 - `POST /v1/claim-reimbursements/{reimbursement_id}/void-approval` (requestClaimReimbursementVoid): Ask for approval to void a reimbursement of expense claims
+- `GET /v1/claimant-bank-changes/{change_id}` (getClaimantBankChange): Get a change of a person's bank account
+- `GET /v1/claimant-bank-changes/{change_id}/evidence` (listClaimantBankChangeEvidence): List a change of a person's bank account's evidence
+- `GET /v1/claimant-bank-changes/{change_id}/evidence/{evidence_id}` (getClaimantBankChangeEvidence): Get a change of a person's bank account's evidence file
+- `POST /v1/claimant-bank-changes/{change_id}/reveal` (revealClaimantBankAccount): Reveal a person's account's full number
 - `GET /v1/close-checklist-template` (getCloseChecklistTemplate): Get the close checklist template
 - `PUT /v1/close-checklist-template` (replaceCloseChecklistTemplate): Change the close checklist template
 - `GET /v1/connector-catalogue` (listConnectorCatalogue): List the connectors of this release
@@ -251,6 +255,17 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/journals/{journal_id}/reverse` (reverseJournal): Reverse a posted journal
 - `POST /v1/journals/{journal_id}/reverse-approval` (requestJournalReversal): Ask for approval to reverse a journal
 - `POST /v1/journals:bulk` (bulkCreateJournals): Save up to 250 draft journals
+- `POST /v1/me/bank-changes` (createMyBankChange): Prepare a change of your bank account for reimbursements
+- `GET /v1/me/bank-changes/{change_id}` (getMyBankChange): Get a change of your bank account
+- `PUT /v1/me/bank-changes/{change_id}` (replaceMyBankChange): Change a draft change of your bank account
+- `POST /v1/me/bank-changes/{change_id}/approval` (requestMyBankChangeApproval): Ask for approval of a change of your bank account
+- `GET /v1/me/bank-changes/{change_id}/evidence` (listMyBankChangeEvidence): List a change of your bank account's evidence
+- `POST /v1/me/bank-changes/{change_id}/evidence` (addMyBankChangeEvidence): Attach evidence to a change of your bank account
+- `GET /v1/me/bank-changes/{change_id}/evidence/{evidence_id}` (getMyBankChangeEvidence): Get a change of your bank account's evidence file
+- `DELETE /v1/me/bank-changes/{change_id}/evidence/{evidence_id}` (removeMyBankChangeEvidence): Remove evidence from a draft change of your bank account
+- `POST /v1/me/bank-changes/{change_id}/reveal` (revealMyBankAccount): Reveal your account's full number
+- `POST /v1/me/bank-changes/{change_id}/withdraw` (withdrawMyBankChange): Withdraw a change of your bank account from approval
+- `GET /v1/me/bank-details` (getMyBankDetails): Get your bank account for reimbursements
 - `GET /v1/members` (listMembers): List the members
 - `POST /v1/members` (acceptMemberInvitation): Join an organisation with an invitation
 - `GET /v1/members/invitations` (listMemberInvitations): List the pending invitations

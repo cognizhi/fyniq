@@ -207,7 +207,7 @@ fyniq_api       SELECT    organisation_setting
 fyniq_api       INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_api       SELECT    outbox
 fyniq_api       UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
-fyniq_api       INSERT    payee_bank_account (change_id, change_version, contact_id, currency, number_fingerprint, number_last4, number_sealed)
+fyniq_api       INSERT    payee_bank_account (change_id, change_version, contact_id, currency, member_user_id, number_fingerprint, number_last4, number_sealed)
 fyniq_api       SELECT    payee_bank_account
 fyniq_api       UPDATE    payee_bank_account (state)
 fyniq_api       INSERT    period (ends_on, starts_on)

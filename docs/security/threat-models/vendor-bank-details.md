@@ -62,5 +62,27 @@ Trust boundaries:
 - The payee name check against the bank (P2) waits for a bank API.
 - A recorded payment while a change waits is only flagged: the money already left the bank. The weekly review should
   look at such payments.
-- Employees' bank details for reimbursements arrive with payroll (`p1-payroll-link`) and will reuse the same sealing.
+- ~~Employees' bank details for reimbursements arrive with payroll (`p1-payroll-link`) and will reuse the same sealing.~~
+  People's own bank accounts for reimbursements arrived with `p1-payments-out` (rev 0.154): section 5.
 - The KMS adapter is proved against the staging key ring at the cloud gate ([live-verify]).
+
+## 5. People's own bank accounts for reimbursements (FR-AP-22; rev 0.154; `p1-payments-out` task 1)
+
+A person keeps their own account for reimbursements: a Singapore bank's account in SGD, entered by the person under My
+profile with a screenshot of their banking app or their statement's header, sealed and fingerprinted as a vendor's is
+(under its own binding, so neither opens as the other), and approved by someone who holds A on "Payment batches"
+(the Controller; in Founder mode, the other founder), never the person. While a change waits, payments to the person
+wait. The person's operations are under `/v1/me` (Appendix D's "Expense claims", C own); the approver reads the change,
+its files and the number under "Payment batches".
+
+| # | Threat (STRIDE) | Control | Test that proves it |
+|---|---|---|---|
+| P1 | Elevation: a person approves their own account, so one person sends their reimbursements anywhere | The requester never signs (FY101); the person and whoever saved the change never sign (PAYEE-21); the database posts a person's change only under an approved request that neither the requester, the preparer nor the person signed (FY237), in every team mode | `TestAPersonsBankAccountNeedsAnotherPerson` (every role; `// req: FM-1`), `TestAttackPersonsBankAccountOnlyByApproval` (`// req: QA-ENG-05`, `// asvs: V8.2.2`) |
+| P2 | Tampering: someone in finance changes another person's account to their own | Only the person prepares, asks for and reveals their own: another person's change is not found through `/v1/me`; the approver can read but not change it | `TestAPersonsBankAccountNeedsAnotherPerson` (`// asvs: V8.2.3`), `TestAuthorisationMatrix` |
+| P3 | Tampering: a vendor's account entered as a person's, or one account shared by two payees, so money meant for one reaches another | The fingerprint is compared across every payee's account in force: the same account at a vendor or another person is a warning on the change, naming the vendor (PAYEE-17, FR-CT-04) | `TestAPersonsBankAccountIsChecked` (`// req: FR-CT-04`) |
+| P4 | Information disclosure: a person's number read by someone without need | Sealed (SEC-11) under the person's own binding; the full number only through `revealMyBankAccount` (the person, stepped up) or `revealClaimantBankAccount` (A on "Payment batches", stepped up), each audited by its last four characters; never in a response, log or audit event otherwise | `TestAPersonsBankAccountNeedsAnotherPerson` (`// asvs: V14.2.4`), `TestANumberIsSealedForItsChange` (`// asvs: V11.3.3`) |
+| P5 | Tampering: a reimbursement paid to an account while its change waits | A reimbursement recorded by hand while a change waits is flagged ⚠ (PAYEE-12): the money already left; payment batches will hold the person's claims | `TestAPersonsBankAccountNeedsAnotherPerson` |
+| P6 | Tampering: an overseas or foreign-currency account, or one for someone who is not a member | Refused as entered (PAYEE-19, PAYEE-20) and by the database: a person's account is a Singapore account of an active member (FY238) | `TestAPersonsAccountIsSingaporeInSGD`, `TestAttackPersonsBankAccountOnlyByApproval` |
+
+What remains for people's accounts: when Nemura is linked it holds them (FR-PPL), and payment batches hold a person's
+claims while their change waits (`p1-payments-out` task 2.2).

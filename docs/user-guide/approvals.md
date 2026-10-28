@@ -3,7 +3,7 @@ key: approvals.decide
 title: Approve a change
 mode: basic
 roles: [owner, admin, controller, accountant, auditor, dpo]
-requirements: [FM-1, FM-2, FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-APR-10, FM-3]
+requirements: [FM-1, FM-2, FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-APR-10, FM-3, FR-AP-22]
 ---
 
 # Approve a change
@@ -46,6 +46,20 @@ your device's signature with the approval, so anyone checking later can verify i
 Some changes need more than one approval, in steps ([Choose who approves a change](approval-policies.md)).
 The request shows each step and the approvals it has. The change is made with the last approval.
 You approve a request once, and only at a step that names you or one of your roles.
+
+## Approve a person's bank account
+
+A person's bank account for reimbursements changes only when someone who approves payments, such as
+the Controller, approves it; never the person themselves.
+
+1. Open the request from **Inbox → To approve**. It names the person, the bank and the last four
+   digits.
+2. Open the screenshot of their banking app, or their statement's header, under **Evidence**.
+3. Select **Show number** under **Compare with the person's screenshot**, and check the number and
+   the name match it. Fyniq asks you to confirm it's you first, and records that you looked.
+4. Approve it, or reject it with the reason.
+
+While it waits, payments to the person wait too.
 
 ## Withdraw your request
 

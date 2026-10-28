@@ -98,6 +98,29 @@ describe("an approval request", () => {
     await noViolations(document.body);
   });
 
+  // req: FR-AP-22
+  // req: FR-APR-02
+  // req: purchases/payables Approved by another person
+  it("lets the approver of a person's bank account show the number beside the person's screenshot", async () => {
+    const change: Approval = { ...request, object_type: "claimant_bank_change", object_key: "pc1", operation: "claimant_bank_change.approve",
+      summary: "Change Tan Ah Kow's bank account for reimbursements to DBSSSGSG ••••5544 (Tan Ah Kow)",
+      envelope: JSON.stringify({ dependencies: { replaces: "", status: "draft" } }),
+      diff: [{ field: "SGD account for reimbursements", before: "", after: "DBSSSGSG ••••5544 (Tan Ah Kow)" }] };
+    detail({
+      "GET /v1/claimant-bank-changes/pc1/evidence": { status: 200, body: { items: [] } },
+      "POST /v1/claimant-bank-changes/pc1/reveal": { status: 200, body: { change_id: "pc1", account_number: "998877665544" } },
+    }, change);
+    renderPage(ApprovalPage, { path: "/approvals/a-1", route: "/approvals/$approvalId" });
+    expect(await screen.findByText(/Bank account for reimbursements · Change a person's bank account/)).toBeTruthy();
+    const compare = await screen.findByRole("region", { name: "Compare with the person's screenshot" });
+    expect(within(compare).queryByRole("button", { name: /The account number it replaces/ })).toBeNull();
+    fireEvent.click(within(compare).getByRole("button", { name: "Show number: The new account number" }));
+    expect(await within(compare).findByText("998877665544")).toBeTruthy();
+    expect(await screen.findByText(/The person's screenshot of their banking app/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Attach" })).toBeNull();
+    await noViolations(document.body);
+  });
+
   // req: FR-UX-03
   it("approves only through the confirmation, signing with a passkey over the version shown", async () => {
     const credentials = authenticator();

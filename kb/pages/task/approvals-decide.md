@@ -2,16 +2,16 @@
 key: approvals.decide
 type: task
 title: Ask for, approve or reject a change that needs a second approver
-summary: Which changes wait for a second person, approving or rejecting in steps from the Inbox, withdrawing your request, and why one becomes void or expires
+summary: Which changes wait for a second person, approving in steps from the Inbox, a person's bank account, withdrawing a request, and why one becomes void
 sources:
-  - docs/user-guide/approvals.md sha256:b65f7a53303c3c41ec1150b8ddb8a2d26269329834f7ea43dfe5094734aad316
+  - docs/user-guide/approvals.md sha256:261ee0dbf2fffaaaa8ae693e384a2ae5260b2c0f2fc49cc13d0a273ce81814a8
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-21
+compiled_at: 2026-10-28
 aliases:
   - review log
   - weekly review
@@ -25,6 +25,8 @@ aliases:
   - inbox
   - weekly review
   - review log
+  - approve a bank account
+  - person's bank account
 ---
 
 # Ask for, approve or reject a change that needs a second approver
@@ -59,6 +61,16 @@ aliases:
 - You approve a request once, and only at a step that names you or one of your roles.
 
 (src: docs/user-guide/approvals.md#approve-or-reject)
+
+## Approve a person's bank account
+
+- A person's bank account for reimbursements changes only when someone who approves payments, such as the Controller, approves it; never the person themselves ([[preferences.security]]).
+- Open the request from **Inbox → To approve**: it names the person, the bank and the last four digits.
+- Open the screenshot of their banking app, or their statement's header, under **Evidence**.
+- **Show number** under **Compare with the person's screenshot** shows the number after confirming it's you, and is recorded; check the number and the name match the screenshot.
+- Approve it, or reject it with the reason; while it waits, payments to the person wait too.
+
+(src: docs/user-guide/approvals.md#approve-a-persons-bank-account)
 
 ## Withdraw your request
 

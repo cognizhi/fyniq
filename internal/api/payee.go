@@ -206,8 +206,11 @@ func (a *API) payeeChangeOf(ctx context.Context, u storage.UnitOfWork, doc stora
 	}
 	out.InForce = own.State == storage.AccountInForce
 	if doc.Status == storage.DocumentDraft {
-		contactID, _ := uuid.Parse(s.ContactID)
-		cur, err := payee.InForce(ctx, u, contactID, s.Currency)
+		who, err := s.Payee()
+		if err != nil {
+			return PayeeBankChange{}, err
+		}
+		cur, err := payee.InForceFor(ctx, u, who, s.Currency)
 		if err != nil {
 			return PayeeBankChange{}, err
 		}
@@ -543,7 +546,8 @@ func accountWords(x PayeeAccount) string {
 	return fmt.Sprintf("%s ••••%s (%s)", x.BIC, x.NumberLast4, x.AccountName)
 }
 
-// payeeDependencies are a change's version and status, and the change in force for its vendor and currency.
+// payeeDependencies are a change's version and status, and the change in force for its payee and currency: a vendor's
+// change or a person's.
 func (a *API) payeeDependencies(ctx context.Context, u storage.UnitOfWork, key string) (int, map[string]any, error) {
 	id, err := uuid.Parse(key)
 	if err != nil {
@@ -557,8 +561,11 @@ func (a *API) payeeDependencies(ctx context.Context, u storage.UnitOfWork, key s
 	if err != nil {
 		return 0, nil, err
 	}
-	contactID, _ := uuid.Parse(s.ContactID)
-	cur, err := payee.InForce(ctx, u, contactID, s.Currency)
+	who, err := s.Payee()
+	if err != nil {
+		return 0, nil, err
+	}
+	cur, err := payee.InForceFor(ctx, u, who, s.Currency)
 	if err != nil {
 		return 0, nil, err
 	}

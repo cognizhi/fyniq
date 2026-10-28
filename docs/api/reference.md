@@ -2759,7 +2759,7 @@ Plans the date a posted bill is to be paid (FR-AP-13), or unschedules it when pl
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
-  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BILL-03` The bill is not posted; `PAYEE-12` Payments to the vendor are frozen; `STORAGE-LOCK-01` Another change is in progress.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BILL-03` The bill is not posted; `PAYEE-12` Payments to the payee are frozen; `STORAGE-LOCK-01` Another change is in progress.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
@@ -6964,6 +6964,46 @@ Asks for another person's approval to void a reimbursement (FM-1): the answer is
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `CLAIM-03`, `CLAIM-12`, `CLAIM-15`, `CLAIM-16`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/claimant-bank-changes/{change_id}`
+
+**Get a change of a person's bank account** (`getClaimantBankChange`)
+
+Returns a change of a person's own bank account for reimbursements, for whoever approves it or pays the person (FR-AP-22): its status, the account it puts in force and the one it would replace (last four characters only), and for a draft or waiting change what stops it being approved and its warnings, such as the same account in force for another payee (FR-CT-04). Read-only; no side effects.
+
+- **Permission:** View on Payment batches
+- **Parameters:**
+  - `change_id` (path, required): The change's ID.
+- **Responses:**
+  - `200` OK [`ClaimantBankChange`](../../contracts/schemas/ClaimantBankChange.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PAYEE-02` The saved change cannot be read.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-02`
+
+### `POST /v1/claimant-bank-changes/{change_id}/reveal`
+
+**Reveal a person's account's full number** (`revealClaimantBankAccount`)
+
+Shows the full number of a change of a person's bank account at its current version, for the approver comparing it with the person's screenshot or statement (FR-AP-22): a person who holds A on "Payment batches", signed in and stepped up in the last 5 minutes. Side effects: an audit event of the reveal, naming the account by its last four characters (SEC-11, AUD-02). Never cached: ask again each time.
+
+- **Permission:** Approve on Payment batches. For the approver comparing the number with the person's evidence; the caller must have stepped up in the last 5 minutes.
+- **Parameters:**
+  - `change_id` (path, required): The change's ID.
+- **Responses:**
+  - `200` OK [`RevealedPayeeAccount`](../../contracts/schemas/RevealedPayeeAccount.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-15`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/expense-claims`
 
 **List expense claims** (`listExpenseClaims`)
@@ -7171,6 +7211,171 @@ Withdraws the caller's own submitted claim from approval: its request becomes vo
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-02`, `CLAIM-01`, `CLAIM-03`, `CLAIM-09`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `POST /v1/me/bank-changes`
+
+**Prepare a change of your bank account for reimbursements** (`createMyBankChange`)
+
+Saves a draft change of your own bank account for reimbursements (FR-AP-22; PRD-001 rev 0.154): a Singapore bank's account in SGD, with the full number, which is sealed (SEC-11) and kept with its last four characters and a keyed fingerprint. Nothing changes until the change is asked for and someone who holds A on "Payment batches", never you, approves it: attach a screenshot of your banking app or your statement's header (evidence type bank_app_screenshot or bank_statement) and ask with requestMyBankChangeApproval. Side effects: the change, its sealed number and their audit events, which carry the last four characters and the fingerprint only (AUD-02). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Expense claims
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ClaimantBankChangeDraft`](../../contracts/schemas/ClaimantBankChangeDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ClaimantBankChange`](../../contracts/schemas/ClaimantBankChange.schema.json)
+  - `201` Created [`ClaimantBankChange`](../../contracts/schemas/ClaimantBankChange.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `404` Not Found: `PAYEE-01` Not a change of bank details.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PAYEE-10` The change is approved already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYEE-01` Bank details do not change that way.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYEE-02` The saved change cannot be read; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-19` Not an account for reimbursements; `PAYEE-20` Not an active member.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `PAYEE-01`, `PAYEE-02`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-10`, `PAYEE-15`, `PAYEE-19`, `PAYEE-20`, `PAYEE-21`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/me/bank-changes/{change_id}`
+
+**Get a change of your bank account** (`getMyBankChange`)
+
+Returns a change of your own bank account with its status, the account it puts in force and the one it would replace (last four characters only), and for a draft or waiting change what stops it being asked for or approved, with its ETag (FR-AP-22). Another person's change is not found. Read-only; no side effects.
+
+- **Permission:** Create on Expense claims
+- **Parameters:**
+  - `change_id` (path, required): The change's ID.
+- **Responses:**
+  - `200` OK [`ClaimantBankChange`](../../contracts/schemas/ClaimantBankChange.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PAYEE-02` The saved change cannot be read.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-02`, `PAYEE-21`
+
+### `PUT /v1/me/bank-changes/{change_id}`
+
+**Change a draft change of your bank account** (`replaceMyBankChange`)
+
+Saves a draft change's new content as its next version (FR-AP-22). Left out, the account number stays as saved, unless the bank changes, which needs the number again. Saving voids an approval it waits for: ask again. An approved change never changes: prepare another. Side effects: the new version, its sealed number and their audit events. Needs If-Match with the change's ETag. Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Expense claims
+- **Parameters:**
+  - `change_id` (path, required): The change's ID.
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ClaimantBankChangeDraft`](../../contracts/schemas/ClaimantBankChangeDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ClaimantBankChange`](../../contracts/schemas/ClaimantBankChange.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
+  - `409` Conflict: `PAYEE-10` The change is approved already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYEE-01` Bank details do not change that way.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PAYEE-02` The saved change cannot be read; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-19` Not an account for reimbursements; `PAYEE-20` Not an active member.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-02`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-10`, `PAYEE-15`, `PAYEE-19`, `PAYEE-20`, `PAYEE-21`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/me/bank-changes/{change_id}/approval`
+
+**Ask for approval of a change of your bank account** (`requestMyBankChangeApproval`)
+
+Asks for approval of a draft change of your own bank account at the version read (FR-AP-22, FM-1), in every team mode. Refused while no screenshot of your banking app or statement header is attached (PAYEE-11), while another change of yours waits (PAYEE-13), or when the account is the one in force (PAYEE-14). From now until the change is approved, rejected, withdrawn or expires, payments to you are frozen (PAYEE-12). The answer is 202 with the approval request, which a person who holds A on "Payment batches", is not you and passed step-up approves; the approval puts the account in force and retires the one it replaces (the database checks both, FY237). Asking needs you signed in and stepped up, and If-Match with the change's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+
+- **Permission:** Create on Expense claims
+- **Parameters:**
+  - `change_id` (path, required): The change's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYEE-01` Bank details do not change that way.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYEE-02` The saved change cannot be read; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-11` The account's evidence is not attached; `PAYEE-14` That is the account in force already; `PAYEE-19` Not an account for reimbursements; `PAYEE-20` Not an active member.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `PAYEE-01`, `PAYEE-02`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-10`, `PAYEE-11`, `PAYEE-13`, `PAYEE-14`, `PAYEE-15`, `PAYEE-19`, `PAYEE-20`, `PAYEE-21`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-PAYEE-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/me/bank-changes/{change_id}/reveal`
+
+**Reveal your account's full number** (`revealMyBankAccount`)
+
+Shows the full number of a change of your own bank account at its current version, to check it (FR-AP-22): you signed in and stepped up in the last 5 minutes. Another person's change is not found. Side effects: an audit event of the reveal, naming the account by its last four characters (SEC-11, AUD-02). Never cached: ask again each time.
+
+- **Permission:** Create on Expense claims. Your own account only; you must have stepped up in the last 5 minutes.
+- **Parameters:**
+  - `change_id` (path, required): The change's ID.
+- **Responses:**
+  - `200` OK [`RevealedPayeeAccount`](../../contracts/schemas/RevealedPayeeAccount.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-15`, `PAYEE-21`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/me/bank-changes/{change_id}/withdraw`
+
+**Withdraw a change of your bank account from approval** (`withdrawMyBankChange`)
+
+Withdraws your own change waiting for approval (FR-AP-22): its request becomes void with the reason "withdrawn by its requester", any approvals it had are voided, and the change is a draft again; your account in force stays as it was, and payments to you are no longer held. A person reaches their change's request only this way, never through the approvals, as a claimant does their claim's. Another person's change is not found. Needs If-Match with the change's ETag. Side effects: the request void and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Expense claims
+- **Parameters:**
+  - `change_id` (path, required): The change's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ClaimantBankChange`](../../contracts/schemas/ClaimantBankChange.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-02` The request was decided already; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYEE-02` The saved change cannot be read.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-02`, `PAYEE-01`, `PAYEE-02`, `PAYEE-21`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/me/bank-details`
+
+**Get your bank account for reimbursements** (`getMyBankDetails`)
+
+Your own bank account for reimbursements in force, if any, and every change of it, newest first, with whether payments to you are frozen because a change waits for approval (FR-AP-22; PRD-001 rev 0.154). The number shows its last four characters only (SEC-11). Read-only; no side effects.
+
+- **Permission:** Create on Expense claims
+- **Responses:**
+  - `200` OK [`ClaimantBankDetails`](../../contracts/schemas/ClaimantBankDetails.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PAYEE-21`
 
 ## Fixed assets
 
@@ -8178,7 +8383,7 @@ Asks for a second person's approval of a draft change at the version read (FR-CT
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYEE-01` Bank details do not change that way.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
-  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYEE-02` The saved change cannot be read; `PAYEE-03` Not an active vendor; `PAYEE-04` The currency does not fit; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-09` The call-back note is too long; `PAYEE-11` The vendor's letter is not attached; `PAYEE-14` That is the account in force already.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYEE-02` The saved change cannot be read; `PAYEE-03` Not an active vendor; `PAYEE-04` The currency does not fit; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-09` The call-back note is too long; `PAYEE-11` The account's evidence is not attached; `PAYEE-14` That is the account in force already.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
@@ -8906,7 +9111,7 @@ Signs the request's current step and, once every step of its policy has its quor
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
-  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APPLY-02` The saved application cannot be read; `APPLY-07` The void is dated before the application; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `CLAIM-16` The void is dated before the reimbursement; `CLAIM-18` A trip is incomplete; `CLAIM-19` No rate per km is set for the vehicle; `CLAIM-24` The line needs its receipt; `CLAIM-25` The claim does not say why it is late; `CLAIM-26` The receipt is on another record; `CLAIM-27` The receipt file is not on the claim; `CLAIM-32` The claim cannot settle that advance; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `DEPOSIT-02` The saved deposit cannot be read; `DEPOSIT-07` The void is dated before the deposit; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PAYEE-02` The saved change cannot be read; `PAYEE-03` Not an active vendor; `PAYEE-04` The currency does not fit; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-09` The call-back note is too long; `PAYEE-11` The vendor's letter is not attached; `PAYEE-14` That is the account in force already; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APPLY-02` The saved application cannot be read; `APPLY-07` The void is dated before the application; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `CLAIM-16` The void is dated before the reimbursement; `CLAIM-18` A trip is incomplete; `CLAIM-19` No rate per km is set for the vehicle; `CLAIM-24` The line needs its receipt; `CLAIM-25` The claim does not say why it is late; `CLAIM-26` The receipt is on another record; `CLAIM-27` The receipt file is not on the claim; `CLAIM-32` The claim cannot settle that advance; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `DEPOSIT-02` The saved deposit cannot be read; `DEPOSIT-07` The void is dated before the deposit; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PAYEE-02` The saved change cannot be read; `PAYEE-03` Not an active vendor; `PAYEE-04` The currency does not fit; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-09` The call-back note is too long; `PAYEE-11` The account's evidence is not attached; `PAYEE-14` That is the account in force already; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
@@ -9357,6 +9562,47 @@ Attaches a file, such as the receipt pasted or dropped, to what completing a lin
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `CLAIM-09`, `CLAIM-35`, `DOC-01`, `DOC-02`, `DOC-03`, `DOC-04`, `DOC-05`, `DOC-06`, `DOC-07`, `DOC-08`, `DOC-09`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/claimant-bank-changes/{change_id}/evidence`
+
+**List a change of a person's bank account's evidence** (`listClaimantBankChangeEvidence`)
+
+The files attached to a change of a person's bank account for reimbursements, for its approver to compare with the number (FR-AP-22, FR-DOC-05): oldest first, removed ones included, a page at a time. Read-only; no side effects.
+
+- **Permission:** View on Evidence: add, supersede (rev 0.3)
+- **Parameters:**
+  - `change_id` (path, required): The change's ID.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`PayeeBankChangeEvidencePage`](../../contracts/schemas/PayeeBankChangeEvidencePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`
+
+### `GET /v1/claimant-bank-changes/{change_id}/evidence/{evidence_id}`
+
+**Get a change of a person's bank account's evidence file** (`getClaimantBankChangeEvidence`)
+
+Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.
+
+- **Permission:** View on Evidence: add, supersede (rev 0.3)
+- **Parameters:**
+  - `change_id` (path, required): The change's ID.
+  - `evidence_id` (path, required): The file's ID.
+- **Responses:**
+  - `200` OK [`PayeeBankChangeEvidence`](../../contracts/schemas/PayeeBankChangeEvidence.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`
+
 ### `GET /v1/expense-claims/{claim_id}/evidence`
 
 **List a claim's receipts** (`listExpenseClaimEvidence`)
@@ -9647,6 +9893,103 @@ Takes a file off a draft journal (FR-DOC-07). Once the journal is posted its evi
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `JOURNAL-01`, `STORAGE-EVIDENCE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/me/bank-changes/{change_id}/evidence`
+
+**List a change of your bank account's evidence** (`listMyBankChangeEvidence`)
+
+The files attached to a change of your own bank account, oldest first, removed ones included, a page at a time (FR-DOC-05). Another person's change is not found. Read-only; no side effects.
+
+- **Permission:** View on Evidence: add, supersede (rev 0.3)
+- **Parameters:**
+  - `change_id` (path, required): The change's ID.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`PayeeBankChangeEvidencePage`](../../contracts/schemas/PayeeBankChangeEvidencePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-21`
+
+### `POST /v1/me/bank-changes/{change_id}/evidence`
+
+**Attach evidence to a change of your bank account** (`addMyBankChangeEvidence`)
+
+Attaches a file to a change of your own bank account for reimbursements (FR-AP-22, FR-DOC-05, FR-DOC-06; PRD-001 rev 0.154), as multipart/form-data: a screenshot of your banking app (evidence type bank_app_screenshot) or your statement's header (bank_statement), showing your name and the account number, one of which the change needs before it is asked for. Its data class is bank, whatever is sent (FR-DOC-09). The file's type is decided from its content; it is scanned for malware and its image metadata is stripped before it is stored (FR-DOC-08). Side effects: the file in the staging store, its evidence row and its audit event (FR-DOC-07). While the change is a draft the file can be removed; once approved it is append-only (FR-DOC-13). Another person's change is not found. Needs If-Match with the change's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing. AI and MCP clients cannot upload.
+
+- **Permission:** Create on Evidence: add, supersede (rev 0.3)
+- **Parameters:**
+  - `change_id` (path, required): The change's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PayeeBankChangeEvidence`](../../contracts/schemas/PayeeBankChangeEvidence.schema.json)
+  - `201` Created [`PayeeBankChangeEvidence`](../../contracts/schemas/PayeeBankChangeEvidence.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `DOC-01`, `DOC-02`, `DOC-03`, `DOC-04`, `DOC-05`, `DOC-06`, `DOC-07`, `DOC-08`, `DOC-09`, `PAYEE-01`, `PAYEE-21`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/me/bank-changes/{change_id}/evidence/{evidence_id}`
+
+**Get a change of your bank account's evidence file** (`getMyBankChangeEvidence`)
+
+Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.
+
+- **Permission:** View on Evidence: add, supersede (rev 0.3)
+- **Parameters:**
+  - `change_id` (path, required): The change's ID.
+  - `evidence_id` (path, required): The file's ID.
+- **Responses:**
+  - `200` OK [`PayeeBankChangeEvidence`](../../contracts/schemas/PayeeBankChangeEvidence.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-21`
+
+### `DELETE /v1/me/bank-changes/{change_id}/evidence/{evidence_id}`
+
+**Remove evidence from a draft change of your bank account** (`removeMyBankChangeEvidence`)
+
+Takes a file off a draft change of your own bank account (FR-DOC-07). Once it is approved its evidence is append-only, and the database refuses. The row stays, marked removed, for the audit trail. Side effects: the removal and its audit event. Needs If-Match with the file's ETag. Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Evidence: add, supersede (rev 0.3)
+- **Parameters:**
+  - `change_id` (path, required): The change's ID.
+  - `evidence_id` (path, required): The file's ID.
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PayeeBankChangeEvidence`](../../contracts/schemas/PayeeBankChangeEvidence.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PAYEE-01` Not a change of bank details.
+  - `409` Conflict: `STORAGE-EVIDENCE-01` Evidence is append-only once its record is final; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-21`, `STORAGE-EVIDENCE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
 ## Notifications
 

@@ -46,6 +46,7 @@ const operations: Record<Approval["operation"], string> = {
   "asset_disposal.void": "Void the sale or write-off of a fixed asset",
   "fixed_asset.void": "Void a fixed asset registered by mistake",
   "payee_bank_change.approve": "Change a supplier's bank details",
+  "claimant_bank_change.approve": "Change a person's bank account for reimbursements",
 };
 
 export function operationLabel(op: string): string {
@@ -83,6 +84,7 @@ const objects: Record<string, string> = {
   asset_disposal: "Disposal of a fixed asset",
   fixed_asset: "Fixed asset",
   payee_bank_change: "Supplier's bank details",
+  claimant_bank_change: "Bank account for reimbursements",
 };
 
 export function objectLabel(t: string): string {

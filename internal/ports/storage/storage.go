@@ -485,6 +485,10 @@ const (
 	// DocumentPayeeBankChange is a change of a vendor's bank account in one currency (FR-CT-03; rev 0.152): approved by a
 	// second person, it posts no entry.
 	DocumentPayeeBankChange DocumentType = "payee_bank_change"
+	// DocumentClaimantBankChange is a change of a person's own bank account for reimbursements (FR-AP-22; rev 0.154):
+	// prepared by the person, approved by someone who holds A on "Payment batches", never the person, whose approval
+	// posts it with no entry; its account is kept as a vendor's is.
+	DocumentClaimantBankChange DocumentType = "claimant_bank_change"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).

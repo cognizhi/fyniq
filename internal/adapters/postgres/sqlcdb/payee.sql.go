@@ -12,16 +12,18 @@ import (
 )
 
 const insertPayeeBankAccount = `-- name: InsertPayeeBankAccount :one
-INSERT INTO fyniq.payee_bank_account (change_id, change_version, contact_id, currency, number_sealed, number_last4, number_fingerprint)
+INSERT INTO fyniq.payee_bank_account (change_id, change_version, contact_id, member_user_id, currency, number_sealed, number_last4,
+                                      number_fingerprint)
 VALUES ($1, $2, $3, $4, $5,
-        $6, $7)
-RETURNING organisation_id, id, change_id, change_version, contact_id, currency, number_sealed, number_last4, number_fingerprint, state
+        $6, $7, $8)
+RETURNING organisation_id, id, change_id, change_version, contact_id, currency, number_sealed, number_last4, number_fingerprint, state, member_user_id
 `
 
 type InsertPayeeBankAccountParams struct {
 	ChangeID          uuid.UUID
 	ChangeVersion     int32
-	ContactID         uuid.UUID
+	ContactID         *uuid.UUID
+	MemberUserID      *uuid.UUID
 	Currency          string
 	NumberSealed      []byte
 	NumberLast4       string
@@ -33,6 +35,7 @@ func (q *Queries) InsertPayeeBankAccount(ctx context.Context, arg InsertPayeeBan
 		arg.ChangeID,
 		arg.ChangeVersion,
 		arg.ContactID,
+		arg.MemberUserID,
 		arg.Currency,
 		arg.NumberSealed,
 		arg.NumberLast4,
@@ -50,6 +53,7 @@ func (q *Queries) InsertPayeeBankAccount(ctx context.Context, arg InsertPayeeBan
 		&i.NumberLast4,
 		&i.NumberFingerprint,
 		&i.State,
+		&i.MemberUserID,
 	)
 	return i, err
 }
@@ -72,7 +76,7 @@ func (q *Queries) MovePayeeBankAccount(ctx context.Context, arg MovePayeeBankAcc
 }
 
 const payeeBankAccountOfChange = `-- name: PayeeBankAccountOfChange :one
-SELECT organisation_id, id, change_id, change_version, contact_id, currency, number_sealed, number_last4, number_fingerprint, state FROM fyniq.payee_bank_account WHERE change_id = $1 AND change_version = $2
+SELECT organisation_id, id, change_id, change_version, contact_id, currency, number_sealed, number_last4, number_fingerprint, state, member_user_id FROM fyniq.payee_bank_account WHERE change_id = $1 AND change_version = $2
 `
 
 type PayeeBankAccountOfChangeParams struct {
@@ -94,18 +98,19 @@ func (q *Queries) PayeeBankAccountOfChange(ctx context.Context, arg PayeeBankAcc
 		&i.NumberLast4,
 		&i.NumberFingerprint,
 		&i.State,
+		&i.MemberUserID,
 	)
 	return i, err
 }
 
 const payeeBankAccountsOfContact = `-- name: PayeeBankAccountsOfContact :many
-SELECT a.organisation_id, a.id, a.change_id, a.change_version, a.contact_id, a.currency, a.number_sealed, a.number_last4, a.number_fingerprint, a.state FROM fyniq.payee_bank_account a
+SELECT a.organisation_id, a.id, a.change_id, a.change_version, a.contact_id, a.currency, a.number_sealed, a.number_last4, a.number_fingerprint, a.state, a.member_user_id FROM fyniq.payee_bank_account a
 JOIN fyniq.document d ON d.organisation_id = a.organisation_id AND d.id = a.change_id AND d.current_version = a.change_version
 WHERE a.contact_id = $1
 ORDER BY a.change_id DESC
 `
 
-func (q *Queries) PayeeBankAccountsOfContact(ctx context.Context, contactID uuid.UUID) ([]FyniqPayeeBankAccount, error) {
+func (q *Queries) PayeeBankAccountsOfContact(ctx context.Context, contactID *uuid.UUID) ([]FyniqPayeeBankAccount, error) {
 	rows, err := q.db.Query(ctx, payeeBankAccountsOfContact, contactID)
 	if err != nil {
 		return nil, err
@@ -125,6 +130,46 @@ func (q *Queries) PayeeBankAccountsOfContact(ctx context.Context, contactID uuid
 			&i.NumberLast4,
 			&i.NumberFingerprint,
 			&i.State,
+			&i.MemberUserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const payeeBankAccountsOfMember = `-- name: PayeeBankAccountsOfMember :many
+SELECT a.organisation_id, a.id, a.change_id, a.change_version, a.contact_id, a.currency, a.number_sealed, a.number_last4, a.number_fingerprint, a.state, a.member_user_id FROM fyniq.payee_bank_account a
+JOIN fyniq.document d ON d.organisation_id = a.organisation_id AND d.id = a.change_id AND d.current_version = a.change_version
+WHERE a.member_user_id = $1
+ORDER BY a.change_id DESC
+`
+
+func (q *Queries) PayeeBankAccountsOfMember(ctx context.Context, memberUserID *uuid.UUID) ([]FyniqPayeeBankAccount, error) {
+	rows, err := q.db.Query(ctx, payeeBankAccountsOfMember, memberUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqPayeeBankAccount
+	for rows.Next() {
+		var i FyniqPayeeBankAccount
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.ChangeID,
+			&i.ChangeVersion,
+			&i.ContactID,
+			&i.Currency,
+			&i.NumberSealed,
+			&i.NumberLast4,
+			&i.NumberFingerprint,
+			&i.State,
+			&i.MemberUserID,
 		); err != nil {
 			return nil, err
 		}
@@ -137,7 +182,7 @@ func (q *Queries) PayeeBankAccountsOfContact(ctx context.Context, contactID uuid
 }
 
 const payeeBankAccountsWithFingerprint = `-- name: PayeeBankAccountsWithFingerprint :many
-SELECT organisation_id, id, change_id, change_version, contact_id, currency, number_sealed, number_last4, number_fingerprint, state FROM fyniq.payee_bank_account WHERE number_fingerprint = $1 AND state = 'in_force' ORDER BY contact_id, currency
+SELECT organisation_id, id, change_id, change_version, contact_id, currency, number_sealed, number_last4, number_fingerprint, state, member_user_id FROM fyniq.payee_bank_account WHERE number_fingerprint = $1 AND state = 'in_force' ORDER BY contact_id, member_user_id, currency
 `
 
 func (q *Queries) PayeeBankAccountsWithFingerprint(ctx context.Context, numberFingerprint []byte) ([]FyniqPayeeBankAccount, error) {
@@ -160,6 +205,7 @@ func (q *Queries) PayeeBankAccountsWithFingerprint(ctx context.Context, numberFi
 			&i.NumberLast4,
 			&i.NumberFingerprint,
 			&i.State,
+			&i.MemberUserID,
 		); err != nil {
 			return nil, err
 		}

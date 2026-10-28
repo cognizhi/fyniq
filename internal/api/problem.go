@@ -695,12 +695,15 @@ var codeFacts = map[string]struct {
 	payee.CodeName:                {422, "The account name does not fit"},
 	payee.CodeTooLong:             {422, "The call-back note is too long"},
 	payee.CodeNotDraft:            {409, "The change is approved already"},
-	payee.CodeEvidence:            {422, "The vendor's letter is not attached"},
-	payee.CodeFrozen:              {409, "Payments to the vendor are frozen"},
+	payee.CodeEvidence:            {422, "The account's evidence is not attached"},
+	payee.CodeFrozen:              {409, "Payments to the payee are frozen"},
 	payee.CodeWaiting:             {409, "Another change of that currency waits"},
 	payee.CodeUnchanged:           {422, "That is the account in force already"},
 	payee.CodeNoKeys:              {503, "Bank details cannot be kept here"},
 	payee.CodeOwnChange:           {403, "You prepared it, so another person approves it"},
+	payee.CodePerson:              {422, "Not an account for reimbursements"},
+	payee.CodeMember:              {422, "Not an active member"},
+	payee.CodeOwnOnly:             {403, "Only another person approves your bank account"},
 	storage.CodePayee:             {409, "Bank details do not change that way"},
 }
 
