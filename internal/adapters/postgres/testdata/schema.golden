@@ -2116,6 +2116,7 @@ email_message | email_message_pkey | PRIMARY KEY (organisation_id, id)
 email_message | email_message_purpose_known | CHECK ((purpose = ANY (ARRAY['test'::text, 'sign_in_alert'::text, 'notification'::text, 'digest'::text, 'invoice'::text, 'quote'::text, 'reminder'::text, 'statement'::text, 'remittance'::text])))
 email_message | email_message_purpose_not_null | NOT NULL purpose
 email_message | email_message_recipient_not_null | NOT NULL recipient
+email_message | email_message_remittance_send | TRIGGER DEFERRABLE INITIALLY DEFERRED
 email_message | email_message_scheduled_send | TRIGGER DEFERRABLE INITIALLY DEFERRED
 email_message | email_message_status_known | CHECK ((status = ANY (ARRAY['queued'::text, 'accepted'::text, 'failed'::text, 'unknown'::text])))
 email_message | email_message_status_not_null | NOT NULL status
@@ -3555,6 +3556,7 @@ CREATE UNIQUE INDEX withholding_decision_pkey ON fyniq.withholding_decision USIN
 CREATE CONSTRAINT TRIGGER claimant_bank_change_approved AFTER INSERT OR UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.type = 'claimant_bank_change'::text) AND (new.status = 'posted'::text))) EXECUTE FUNCTION payee_bank_change_approved()
 CREATE CONSTRAINT TRIGGER document_edit_posted AFTER UPDATE OF current_version ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.status = 'posted'::text) AND (new.current_version <> old.current_version))) EXECUTE FUNCTION document_edit_posted()
 CREATE CONSTRAINT TRIGGER document_reversed_posted AFTER UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.status = 'posted'::text) AND (new.status = 'reversed'::text))) EXECUTE FUNCTION document_reversed_posted()
+CREATE CONSTRAINT TRIGGER email_message_remittance_send AFTER INSERT ON fyniq.email_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((CURRENT_USER = 'fyniq_worker'::name) AND (new.purpose = 'remittance'::text))) EXECUTE FUNCTION remittance_email_sent()
 CREATE CONSTRAINT TRIGGER email_message_scheduled_send AFTER INSERT ON fyniq.email_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((CURRENT_USER = 'fyniq_worker'::name) AND (new.purpose = 'invoice'::text))) EXECUTE FUNCTION scheduled_invoice_email_sent()
 CREATE CONSTRAINT TRIGGER expense_claim_approved AFTER INSERT OR UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.type = 'expense_claim'::text) AND (new.status = 'posted'::text))) EXECUTE FUNCTION expense_claim_approved()
 CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
@@ -4006,7 +4008,7 @@ document_version_created_by() → trigger | security invoker | v | search_path=p
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
 email_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 990580601ef047ba0fb748308b38b333
 email_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 12e39d103400a6decfc3214b644ff795
-email_message_worker_purposes() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b74c6f8bd279f7dffded753362b616f4
+email_message_worker_purposes() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b6a284761fd3d84057f1716d568cfe8c
 email_sender_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 08f185782be71d4ec32e6b14d2daf500
 email_suppression_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 03e389c71cad64117c3be6fa82077158
 end_session(p_hash bytea, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a61ce7a9958c9572e2522c12f9abb45a
@@ -4089,6 +4091,8 @@ recover_super_admin(p_recovery_hash bytea, p_confirmation_hash bytea, p_issuer t
 recurring_bill_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78176a4c51f0d011b1ad10b5635a8e7
 recurring_invoice_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2276687a770939a7a49195de610ec237
 recurring_journal_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4998ee7053cefac747e643b32d1a0311
+remittance_allowed(p_payment uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 71486c98f030e272cb2b831b924e47d1
+remittance_email_sent() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f9c42f700a81ca6d6d0fd3fc96e9ba53
 request_installation_change(p_by uuid, p_connector_id uuid, p_connector text, p_step text, p_summary text, p_change jsonb, p_envelope text, p_hash bytea, p_mfa_at timestamp with time zone, p_at timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 081e531ac2fa6d7a04725c2968ee4893
 require_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88b80585540483298b0397296b364b9d
 require_grant_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 10dc33c6231fa48667c6b95ffe2a04c4
@@ -4101,7 +4105,7 @@ role_assignment_voids() → trigger | security invoker | v | search_path=pg_cata
 sales_reminder_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cbd827bdca43d21c794de23c30d61fd7
 scheduled_invoice_email_sent() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7b1f59fc29d82c1dc9f6f4ae5afc9272
 scheduled_issue_allowed(p_document uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 574b7af4c2dbb0a7e81f6dedebde4a8b
-scheduled_issue_fence() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8ca30857a9c2738a89bf97cef6f90708
+scheduled_issue_fence() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d0eccfd19b4bbc648b384f4b3cb9c1aa
 session_for(p_hash bytea, p_now timestamp with time zone, p_idle interval, OUT issuer text, OUT subject text, OUT provider text, OUT user_id uuid, OUT organisation_id uuid, OUT roles text[], OUT step_up_at timestamp with time zone, OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1fa557346732ac0de88a7a7d9407fedc
 session_step_up(p_challenge uuid, p_session bytea, p_credential uuid, p_sign_count bigint, p_backup_state boolean, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 557b605544981a727167d857731ab8f9
 session_step_up_method(p_hash bytea) → text | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 69b01e01a7b355f060b2e48248d0d248
