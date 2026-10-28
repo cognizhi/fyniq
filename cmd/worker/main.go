@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/remitmail"
+	"github.com/cognizhi/fyniq/internal/reportexport"
 	"github.com/cognizhi/fyniq/internal/tokens"
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
@@ -50,6 +51,7 @@ func main() {
 		// FR-INT-21: send queued mail once, through the email connectors enabled when each send starts, or the deployment's
 		// providers until the first-start bootstrap has installed them (rev 0.139); none enabled: the message waits.
 		kinds[remitmail.Kind] = kit.Remittances(deps.Clock).Work() // FR-BNK-12: a batch's supplier payment matched, its remittance advice sent
+		kinds[reportexport.Kind] = kit.Exports(deps.Clock).Work() // FR-RPT-09: an accountant export prepared in the background
 		kinds[email.Kind] = email.WorkFrom(kit.EmailProviders(kit.Runtime(deps.Clock)), kit.Store, kit.Mail.From, deps.Clock, files)
 		if kit.Staging != nil && kit.Scanner != nil { // FR-INT-22: fetch, decide and keep received mail
 			fetcher := kit.Fetcher(deps.Clock)

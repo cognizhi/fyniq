@@ -375,6 +375,7 @@ export const actions = [
   { kind: "action", id: "fx.revalue", mode: "expert", help: "fx.revalue", guide: "accounting.currencies#revalue-a-month" },
   { kind: "action", id: "ledger.export", mode: "expert", help: "ledger.export", guide: "reports.general-ledger#export-it" },
   { kind: "action", id: "statement.export", mode: "basic", help: "statement.export", guide: "reports.statements#export-a-statement" },
+  { kind: "action", id: "reports.accountant-exports", mode: "expert", help: "reports.accountant-exports", guide: "reports.statements#accountant-exports" },
   { kind: "action", id: "mode", mode: "basic", help: "shell.mode", guide: "preferences.security#basic-and-expert-mode" },
   { kind: "action", id: "step-up", mode: "basic", help: "session.step-up", guide: "auth.sign-in#confirm-its-you-with-a-passkey" },
   { kind: "action", id: "sign-in-again", mode: "basic", help: "session.sign-in-again", guide: "auth.sign-in#confirm-its-you-with-a-passkey" },

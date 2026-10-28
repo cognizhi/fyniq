@@ -92,19 +92,35 @@
   `TestFinancialStatementsThroughTheAPI`, the matrix row.)
 - [ ] 3.2 The PDF through the render service: a Typst statement template, titled with the framework, with the revision
   in the footer. `// req: FR-RPT-05`
-- [ ] 3.3 Background exports on the outbox:
+- [x] 3.3 Background exports on the outbox:
   - an export record and its file in the blob store;
   - a link valid 24 hours (a setting), re-checked at each download, and a 60-second storage URL;
   - an audit event for every export, with its filters and row count;
   - the requester notified;
   - a migration with RLS.
   - Tests: a revoked right blocks the download; the link expires; the attack tests on the export rows. `// req: FR-RPT-09`
-- [ ] 3.4 The accountant exports: the GL, TB, journals, the fixed asset schedule, and AR and AP detail (GST detail comes
+  (28 Oct 2026: migration 000191's `report_export` (RLS forced, audited on every change, FY243: the API only asks, the
+  worker only moves pending to ready or failed and ready to expired, nothing deletes). `internal/reportexport`
+  prepares an export on the worker (`reports.export`), keeps the file in the staging store under
+  `exports/<org>/<export>/` with its SHA-256 and revision, and notifies the requester (`reports.export_ready`); the
+  hourly `reports.expire` deletes the files past their 24 hours. The API: `requestReportExport` (202),
+  `listReportExports`, `getReportExport` and `getReportExportFile`. The file is the requester's only (REPORT-07),
+  REPORT-05 while it is not ready, REPORT-06 once expired, rights checked again at each download, and the download is
+  audited. Locally the file comes back in base64; `[live-verify]` the cloud's redirect to a storage URL valid 60
+  seconds waits for the GCS adapter's signed URLs. Tests: `TestAnAccountantExportIsPreparedInTheBackground` (on the
+  worker's role, with the database's refusals), `TestAccountantExportsThroughTheAPI`, the matrix rows.)
+- [x] 3.4 The accountant exports: the GL, TB, journals, the fixed asset schedule, and AR and AP detail (GST detail comes
   with `p1-gst`). `// req: FR-RPT-10`
+  (28 Oct 2026: each a sheet with its totals; the trial balance and the journal entries read at the revision; a range
+  too long for the general ledger, across a year's start, or a day the books have no period for fails with why. In
+  Expert, Reports has **Accountant exports**: choose, prepare, see each export's state, and download.
+  `statements.test.tsx`. Help key `reports.accountant-exports`; the guide's "Accountant exports".)
 - [ ] 3.5 `export-dialog` as designed: format, options, background progress, and the expired and blocked states.
   (28 Oct 2026, part: the statement page's **Export to Excel** and **Export CSV** download the file at the revision
   shown, and a refusal says why; help key `statement.export`, the guide's "Export a statement". **Left:** the dialog
   itself, with the PDF and the background exports (3.2, 3.3).)
+  (28 Oct 2026, more: the accountant exports' background progress, ready and expired states, and why one failed, on
+  the reports index. **Left:** the PDF option, with 3.2.)
 
 ## 4. Management reports (FR-RPT-03)
 

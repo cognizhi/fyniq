@@ -64,6 +64,22 @@ numbers, not text, and nothing in the file becomes a formula. The file's figures
 same ledger revision as the screen's. Each export is recorded in the audit trail, with what was
 exported and its filters.
 
+## Accountant exports
+
+In Expert mode, **Reports** also has the **Accountant exports**: the general ledger and the journal
+entries over a range of days, and the trial balance, the fixed asset schedule, and the receivables
+and payables in detail at a day, as Excel or CSV.
+
+1. Choose the report, its days and the format, and select **Prepare the export**.
+2. It is prepared in the background; the list below says when it is ready, and a notification
+   tells you.
+3. Select **Download**. Only the person who asked for an export can download it, for 24 hours;
+   then it expires and its file is deleted. Ask again for a fresh one.
+
+An export that cannot be made says why, such as a general ledger range that crosses the start of a
+financial year: export each year apart. Each export and each download is recorded in the audit
+trail.
+
 ## The same figures again
 
 Every statement is read at one ledger revision, shown at the bottom. Asked again at that revision,

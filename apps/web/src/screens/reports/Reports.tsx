@@ -8,6 +8,7 @@ import { formatAmount } from "../../format/amount";
 import { month } from "../../format/date";
 import { Icon } from "../../ui";
 import { listPeriods } from "../accounting/data";
+import { AccountantExports } from "./AccountantExports";
 import { runOf, statementNames } from "./Statement";
 
 type Statement = components["schemas"]["FinancialStatement"];
@@ -77,7 +78,7 @@ function Essential({ kind, icon, line, run }: (typeof essentials)[number] & { ru
 
 // Reports is the reports index (docs/design/screens Reports; FR-RPT-03, FR-RPT-10): Basic's essentials with this
 // month's headline figure, and the other reports where they live. Saved reports, favourites and the report builder are
-// P2; the management reports and accountant exports join with their tasks.
+// P2; the management reports join with their task. In Expert, the accountant exports run in the background.
 export function Reports() {
   const id = useId();
   const [find, setFind] = useState("");
@@ -138,6 +139,7 @@ export function Reports() {
         </nav>
       )}
       {shown.length === 0 && others.length === 0 && <p className="fy-secondary">No report matches “{find}”.</p>}
+      <AccountantExports />
     </div>
   );
 }
