@@ -103,6 +103,30 @@ def test_a_linked_credit_note_adjusts_gst_at_its_invoices_rate():
     assert ledger.reasons == [("CN-2", "credit-above-invoice")]  # 108.01 above the invoice's 108.00
 
 
+# req: FR-AR-04
+def test_the_credit_notes_linked_to_an_invoice_credit_at_most_its_total_together():
+    # PRD-001 rev 0.155: 109.00 invoiced (100.00 + 9.00 GST). 54.50 + 54.50 credit it in full; 0.01
+    # more is refused, though alone it is far below the total (the cap per credit note it supersedes).
+    # A standalone credit note is not linked, so it does not count.
+    def credit(doc_id, day, net, linked=True):
+        return invoice(doc_id, day, "SGD", invoice_line("4010", net), kind="credit_note",
+                       **({"invoice": "INV-1"} if linked else {}))
+
+    result, ledger = p1_post(
+        invoice("INV-1", "2026-03-02", "SGD", invoice_line("4010", "100.00")),
+        credit("CN-1", "2026-03-03", "50.00"),  # 50.00 + 4.50 = 54.50
+        credit("CN-2", "2026-03-04", "50.00", linked=False),
+        credit("CN-3", "2026-03-05", "50.00"),  # 109.00 together: the total, so it issues
+        credit("CN-4", "2026-03-06", "0.01"),  # 0.01 + 0.00 GST: 109.01 together
+    )
+    assert ledger.reasons == [("CN-4", "credit-above-invoice")]
+    assert lines_of(result, "CN-3") == [
+        ("1100", "SGD", "-54.50", "-54.50"),
+        ("2200", "SGD", "4.50", "4.50"),
+        ("4010", "SGD", "50.00", "50.00"),
+    ]
+
+
 G4_038 = invoice("INV-1", "2026-03-01", "USD", invoice_line("4010", "10000.00", "ZR"), rate="1.35")
 
 

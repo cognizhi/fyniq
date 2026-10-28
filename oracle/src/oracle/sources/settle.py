@@ -55,6 +55,7 @@ class OpenItem:
     settled_base: Decimal = money.ZERO
     date: date | None = None  # an invoice's, for a credit note linked to it
     gross: Decimal | None = None  # an invoice's total before the deposits it deducts
+    credited: Decimal = money.ZERO  # what the credit notes linked to an invoice credit (rev 0.155)
 
     @property
     def open(self) -> Decimal:

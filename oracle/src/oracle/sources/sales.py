@@ -26,7 +26,8 @@ invoice's rate, and the conversion's cents).
 
 **A credit note** posts the legs of an invoice of the same content, negated (rev 0.123); never spread,
 it deducts no deposit. Linked to an invoice (``invoice``), it adjusts GST at the rate and registration
-of that invoice's date, credits at most its total and is in its currency, dated on or after it.
+of that invoice's date and is in its currency, dated on or after it; the credit notes linked to one
+invoice credit at most its total together (rev 0.155, INVOICE-15).
 
 **A customer receipt** settles posted invoices on 1100 (:mod:`oracle.sources.settle`, rev 0.120 and
 0.121). **A customer deposit** (rev 0.126) is money in: the money account takes the gross at ``RND-FX``;
@@ -174,8 +175,16 @@ def invoice(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
 
 def credit_note(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     posting = _invoice_lines(r, doc, books, credit=True)
-    if "invoice" in doc.data and posting.facts.gross > books[doc.data["invoice"]].gross:
-        raise Rejected("credit-above-invoice")  # INVOICE-15
+    if "invoice" in doc.data:
+        linked = books[doc.data["invoice"]]
+        credited = money.EXACT.add(linked.credited, posting.facts.gross)
+        if credited > linked.gross:
+            raise Rejected("credit-above-invoice")  # INVOICE-15: the linked credit notes together (rev 0.155)
+
+        def credit() -> None:
+            linked.credited = credited
+
+        posting.effects.append(credit)
     posting.lines = [
         r.line(ln.account, ln.currency, money.negate(ln.amount), money.negate(ln.base_amount)) for ln in posting.lines
     ]

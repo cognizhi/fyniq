@@ -134,7 +134,9 @@ def test_pending_purchases():
 # req: QA-ENG-02
 def test_pending_sales():
     r = _run("sales")
-    assert r["rejected"] == ["RC-0003", "INV-0006"]  # USD 11.00 of 10.95 open; a spread on an expense
+    # CN-0003's 0.01 takes INV-0001's credit notes to 32.87 of its 32.86 (rev 0.155); USD 11.00 of 10.95
+    # open; a spread on an expense.
+    assert r["rejected"] == ["CN-0003", "RC-0003", "INV-0006"]
     assert [(e["document"], e["kind"], e["posting_date"]) for e in r["entries"]] == [
         ("DP-0001", "post", "2026-03-01"),
         ("INV-0005", "post", "2026-03-01"),
@@ -145,6 +147,7 @@ def test_pending_sales():
         ("INV-0004", "post", "2026-03-31"),
         ("CN-0001", "post", "2026-04-01"),
         ("RC-0002", "post", "2026-04-02"),
+        ("CN-0002", "post", "2026-04-03"),
         ("RF-0001", "post", "2026-04-10"),
         ("WO-0001", "post", "2026-04-30"),
         ("INV-0003", "release", "2026-03-15"),
@@ -162,6 +165,10 @@ def test_pending_sales():
     # 545.00 of the 990.00 left: its base 545.00 and GST 81.74 × 545 ÷ 990 = 44.998... -> 45.00.
     assert _lines(r, "RF-0001") == [("1010", "SGD", "-545.00", "-545.00"), ("2200", "SGD", "45.00", "45.00"),
                                     ("2410", "SGD", "500.00", "500.00")]
+    # INV-0001's 32.86 (30.15 + 2.71 GST per subtotal) less CN-0001's 10.95 leaves 21.91 to credit:
+    # 20.10 + 1.81 (1.809) uses all of it.
+    assert _lines(r, "CN-0002") == [("1100", "SGD", "-21.91", "-21.91"), ("2200", "SGD", "1.81", "1.81"),
+                                    ("4010", "SGD", "20.10", "20.10")]
     # The USD 290.00 left, carried at 13,500.00 - 13,108.50 = 391.50, written off to 7030.
     assert _lines(r, "WO-0001") == [("1100", "USD", "-290.00", "-391.50"), ("7030", "SGD", "391.50", "391.50")]
     assert r["trial_balance"] == {
@@ -178,11 +185,11 @@ def test_pending_sales():
         },
         "2026-04": {
             "1010": "-512.64",  # 32.36 - 545.00
-            "1100": "-435.31",  # -10.95 - 32.86 - 391.50
-            "2200": "45.90",  # 0.90 + 45.00
+            "1100": "-457.22",  # -10.95 - 32.86 - 21.91 - 391.50
+            "2200": "47.71",  # 0.90 + 1.81 + 45.00
             "2400": "100.00",
             "2410": "500.00",
-            "4010": "-89.95",  # 10.05 - April's 100.00
+            "4010": "-69.85",  # 10.05 + 20.10 - April's 100.00
             "7030": "392.00",  # 0.50 + 391.50
         },
     }
