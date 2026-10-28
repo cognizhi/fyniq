@@ -154,13 +154,21 @@
   figure (light: worst adjacent ΔE 9.1 protan, 19.6 normal; dark 8.4 and 19.3). Contrast under 3:1 is a warning, read
   through the table view and labels (D7, corrected). `--self-test` plants four palettes, a grey slot, a red beside a
   green, two close blues and a pale yellow, and each must fail for its reason.)
-- [ ] 5.2 The `Chart` component on ECharts, loaded on demand:
+- [x] 5.2 The `Chart` component on ECharts, loaded on demand:
   - the form by the data's job, and one y-axis;
   - fixed entity colours, with Other past 8 series;
   - status colours only with an icon and a label;
   - tooltips, a legend and direct labels;
   - a table view, and PNG and data export.
   - Tests: Vitest with axe, and the table view's figures equal the chart's. `// req: FR-VIZ-01` to `// req: FR-VIZ-08`
+  (29 Oct 2026: `apps/web/src/components/chart`, ECharts 6.1.0 (Apache-2.0, with zrender, BSD-3-Clause) imported on
+  demand from its own module, canvas so a chart downloads as PNG. `chartOption` is pure: one value axis, the colours by
+  each entity's fixed slot, Other past eight added up exactly, a legend from two series and the lines named up to four,
+  values on a single series' bars up to twelve, tooltips of the exact figures with names escaped. The component reads
+  its colours from the tokens where it is drawn, redraws on a theme or motion change, moves the tooltip with the arrow
+  keys, and has a table view, a text summary and PNG and CSV downloads. Tests: `chart.test.tsx` with axe, the table's
+  figures read back equal to the plotted ones. MASTER.md §10 names it the one way to draw a chart. Status colours:
+  the component takes none (FR-VIZ-05 is the chips'.))
 - [ ] 5.3 First uses: the P&L's monthly trend and the top expenses.
 
 ## 6. Finish
