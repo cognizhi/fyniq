@@ -150,6 +150,8 @@ test("someone signed in without an account joins by invitation and keeps their c
   const seen = await api(page, {
     "GET /v1/setup": { status: 200, body: { done: true } },
     "GET /v1/session": { status: 200, body: newIdentity },
+    // A Super admin's code is no company's invitation: the company's endpoint refuses it first.
+    "POST /v1/members": { status: 409, body: { code: "API-SUPERADMIN-01", status: 409 } },
     "POST /v1/super-admins": ({ invitation_code }: any) =>
       invitation_code === "INVIT-ABCDE-FGHIJ-KLMNO-PQRST"
         ? { status: 201, body: { user_id: "u-2", recovery_codes: codes } }
@@ -165,6 +167,7 @@ test("someone signed in without an account joins by invitation and keeps their c
   await page.getByRole("button", { name: "Accept the invitation" }).click();
   await expect(page.getByRole("list", { name: "Recovery codes" }).getByRole("listitem")).toHaveCount(10);
   expect(seen.filter((r) => r.path === "/v1/super-admins")).toHaveLength(2);
+  expect(seen.filter((r) => r.path === "/v1/members")).toHaveLength(2);
 });
 
 test("home sends someone signed in without an account to the invitation", async ({ page }) => {
