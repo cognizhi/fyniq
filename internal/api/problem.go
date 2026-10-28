@@ -196,6 +196,7 @@ var codeFacts = map[string]struct {
 	storage.CodeReportExport:      {409, "An export changes only from pending to ready or failed, and from ready to expired"},
 	CodeExportExpired:             {410, "The export has expired"},
 	CodeExportNotYours:            {403, "Another person's export"},
+	CodeReportRender:              {503, "The PDF could not be made now"},
 	closing.CodeStale:             {409, "The checks are stale"},
 	closing.CodeOrder:             {409, "An earlier period is open"},
 	closing.CodeNotClean:          {409, "The checks refused the close"},

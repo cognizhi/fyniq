@@ -135,7 +135,22 @@ func TestFinancialStatementsThroughTheAPI(t *testing.T) {
 	if err != nil || xlsx.str("file_name") != "balance-sheet-2026-10.xlsx" || len(z.File) != 7 {
 		t.Errorf("the balance sheet as a workbook: %v %s", err, xlsx.str("file_name"))
 	}
-	if trail := auditTrail(t, e); strings.Count(trail, `"action":"report.exported"`) != 2 || !strings.Contains(trail, csv.str("sha256")) {
+	// The P&L to print (FR-RPT-05): a PDF from the render service, archival and accessible. Without a render service it is
+	// REPORT-08, and nothing is recorded as exported.
+	pdf := e.call(http.MethodGet, "/v1/reports/statements/pl/export?from=2026-10&to=2026-10&format=pdf", e.as(authz.Controller), nil)
+	printed, _ := base64.StdEncoding.DecodeString(pdf.str("content_base64"))
+	if pdf.Status != 200 || pdf.str("file_name") != "profit-and-loss-2026-10.pdf" || pdf.str("media_type") != "application/pdf" ||
+		!bytes.HasPrefix(printed, []byte("%PDF-")) || !bytes.Contains(printed, []byte("<pdfuaid:part>1</pdfuaid:part>")) || int64(pdf.Body["ledger_revision"].(float64)) != revision {
+		t.Errorf("the P&L as a PDF: %d %.300s", pdf.Status, pdf.Raw)
+	}
+	e.api.deps.Renderer = nil
+	if none := e.call(http.MethodGet, "/v1/reports/statements/pl/export?from=2026-10&to=2026-10&format=pdf", e.as(authz.Controller), nil); none.Status != 503 ||
+		none.str("code") != CodeReportRender {
+		t.Errorf("a PDF with no render service: %d %s", none.Status, none.Raw)
+	}
+	e.api.deps.Renderer = testRenderer(t)
+	if trail := auditTrail(t, e); strings.Count(trail, `"action":"report.exported"`) != 3 || !strings.Contains(trail, csv.str("sha256")) ||
+		!strings.Contains(trail, pdf.str("sha256")) {
 		t.Errorf("the exports' audit events: %s", trail)
 	}
 

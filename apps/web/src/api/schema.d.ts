@@ -6789,7 +6789,7 @@ export interface paths {
         };
         /**
          * Export a financial statement
-         * @description The statement getFinancialStatement gives for the same parameters, as a file (FR-RPT-05): CSV, the statement's rows with amounts as plain decimals and an ASCII minus; or XLSX, a workbook with the statement, totals in bold, and a data tab of every account's figure in every column, amounts as number cells. No text in either becomes a formula. Returned in base64 with its SHA-256 and the ledger revision its figures are read at (FR-RPT-08). Side effects: an audit event of the export with what was exported, its filters, rows and hash (FR-RPT-09). Never cached.
+         * @description The statement getFinancialStatement gives for the same parameters, as a file (FR-RPT-05): CSV, the statement's rows with amounts as plain decimals and an ASCII minus; XLSX, a workbook with the statement, totals in bold, and a data tab of every account's figure in every column, amounts as number cells; or PDF, the statement to print from the render service, archival and accessible, with the organisation's name, the statements' title and the revision on every page. No text in any becomes a formula. Returned in base64 with its SHA-256 and the ledger revision its figures are read at (FR-RPT-08). A PDF the render service cannot make now is REPORT-08. Side effects: an audit event of the export with what was exported, its filters, rows and hash (FR-RPT-09). Never cached.
          */
         get: operations["exportFinancialStatement"];
         put?: never;
@@ -74926,8 +74926,8 @@ export interface operations {
                 columns?: "total" | "month";
                 /** @description Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands. */
                 as_at_revision?: number;
-                /** @description csv: the statement's rows, plain decimals with an ASCII minus; xlsx: a workbook with the statement and a data tab of every figure, amounts as number cells. */
-                format?: "csv" | "xlsx";
+                /** @description csv: the statement's rows, plain decimals with an ASCII minus; xlsx: a workbook with the statement and a data tab of every figure, amounts as number cells; pdf: the statement to print, archival (PDF/A-2a) and accessible (PDF/UA-1), with the revision on every page. */
+                format?: "csv" | "xlsx" | "pdf";
             };
             header?: never;
             path: {
@@ -74995,6 +74995,15 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `REPORT-08` The PDF could not be made now. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -115,31 +115,57 @@ describe("a financial statement", () => {
 // req: FR-RPT-05
 // req: FR-RPT-09
 describe("exporting a statement", () => {
-  it("downloads the file the server wrote, at the revision shown, and says when it cannot", async () => {
-    const file = { export_id: "x1", file_name: "profit-and-loss-2026-10.xlsx", media_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", sha256: "ab", size_bytes: 3, rows: 1, ledger_revision: 42, content_base64: btoa("abc") };
+  it("opens the export dialog, downloads the format chosen at the revision shown, says when it cannot, and asks again for an expired export; axe finds nothing", async () => {
+    const file = { export_id: "x1", file_name: "profit-and-loss-2026-10.pdf", media_type: "application/pdf", sha256: "ab", size_bytes: 3, rows: 1, ledger_revision: 42, content_base64: btoa("abc") };
+    const expired = { id: "x9", report: "general_ledger", format: "xlsx", from: "2026-10-01", to: "2026-10-31", status: "expired", requested_at: "2026-10-30T09:00:00Z" };
+    const exports = { status: 200, body: { items: [expired] } };
     answer({
       "GET /v1/periods": { status: 200, body: { items: periods } },
       "GET /v1/reports/statements/pl": { status: 200, body: pl },
       "GET /v1/reports/statements/pl/export": { status: 200, body: file },
+      "GET /v1/report-exports": exports,
     });
     const create = vi.fn(() => "blob:x");
     Object.assign(URL, { createObjectURL: create, revokeObjectURL: vi.fn() });
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     renderPage(FinancialStatement, { path: "/reports/statements/pl", route: "/reports/statements/$kind", session: accountant });
-    fireEvent.click(await screen.findByRole("button", { name: "Export to Excel" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Export" }));
+    const dialog = await screen.findByRole("dialog", { name: "Export the profit and loss" });
+    expect(within(dialog).getByText(/Exports what is on screen: 1 Oct 2026 to 31 Oct 2026, read at ledger revision 42/)).toBeTruthy();
+    const formats = within(dialog).getByRole("radiogroup", { name: "Format" });
+    expect(within(formats).getByRole("radio", { name: /Excel/ }).getAttribute("aria-checked")).toBe("true");
+    await within(dialog).findByRole("list", { name: "My exports" });
+    await noViolations(document.body);
+
+    // The arrow keys move between the formats; the PDF downloads the file the server wrote.
+    fireEvent.keyDown(within(formats).getByRole("radio", { name: /Excel/ }), { key: "ArrowRight" });
+    expect(within(formats).getByRole("radio", { name: /PDF/ }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Export PDF" }));
     await vi.waitFor(() => expect(click).toHaveBeenCalled());
     const q = seen.find((s) => s.path === "/v1/reports/statements/pl/export")!.query;
-    expect(q).toContain("format=xlsx");
+    expect(q).toContain("format=pdf");
     expect(q).toContain("as_at_revision=42");
     expect(create).toHaveBeenCalled();
+    await vi.waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 
+    // A PDF the render service cannot make now says so, in the dialog.
     answer({
       "GET /v1/periods": { status: 200, body: { items: periods } },
       "GET /v1/reports/statements/pl": { status: 200, body: pl },
-      "GET /v1/reports/statements/pl/export": { status: 422, body: { code: "REPORT-04", title: "A revision later than the ledger", status: 422, detail: "as_at_revision is later than the ledger's revision" } },
+      "GET /v1/reports/statements/pl/export": { status: 503, body: { code: "REPORT-08", title: "The PDF could not be made now", status: 503, detail: "The render service is busy.", fix: "Try again in a moment" } },
+      "GET /v1/report-exports": exports,
+      "POST /v1/report-exports": { status: 202, body: { ...expired, id: "x10", status: "pending" } },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Export CSV" }));
-    expect(await screen.findByText("The profit and loss could not be exported")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Export" }));
+    const again = await screen.findByRole("dialog", { name: "Export the profit and loss" });
+    fireEvent.click(within(again).getByRole("radio", { name: /PDF/ }));
+    fireEvent.click(within(again).getByRole("button", { name: "Export PDF" }));
+    expect(await within(again).findByText("The profit and loss could not be exported")).toBeTruthy();
+
+    // An expired export asks again for the same report.
+    fireEvent.click(await within(again).findByRole("button", { name: "Ask again for General ledger" }));
+    await vi.waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/report-exports")).toBe(true));
+    expect(seen.find((x) => x.method === "POST" && x.path === "/v1/report-exports")!.body).toEqual({ report: "general_ledger", from: "2026-10-01", to: "2026-10-31", format: "xlsx" });
   });
 });
 
