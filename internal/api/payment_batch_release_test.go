@@ -114,7 +114,7 @@ func TestAPaymentBatchIsApprovedThenReleased(t *testing.T) {
 		"releasePaymentBatch", 403, CodeForbidden)
 	rel := e.call(http.MethodPost, "/v1/payment-batches/"+id+"/release", releaser, nil, "If-Match", g.Header.Get("ETag"))
 	if rel.Status != http.StatusOK || rel.str("status") != "released" || rel.str("release", "writer") != "payment-list@1" ||
-		len(rel.Body["release"].(map[string]any)["payment_ids"].([]any)) != 2 {
+		len(rel.Body["release"].(map[string]any)["payments"].([]any)) != 2 {
 		t.Fatalf("releasing = %d: %s", rel.Status, rel.Raw)
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/payment-batches/"+id+"/release", releaser, nil, "If-Match", rel.Header.Get("ETag")),
@@ -122,7 +122,7 @@ func TestAPaymentBatchIsApprovedThenReleased(t *testing.T) {
 	if l := e.call(http.MethodGet, "/v1/review-log", weiling, nil); !strings.Contains(l.Raw, storage.ReviewReleaseConflict) || !strings.Contains(l.Raw, "SOD-2") {
 		t.Errorf("the release by its preparer is not logged: %s", l.Raw)
 	}
-	pay := e.call(http.MethodGet, "/v1/bill-payments/"+rel.Body["release"].(map[string]any)["payment_ids"].([]any)[0].(string), ahkow, nil)
+	pay := e.call(http.MethodGet, "/v1/bill-payments/"+rel.Body["release"].(map[string]any)["payments"].([]any)[0].(map[string]any)["payment_id"].(string), ahkow, nil)
 	if pay.Status != http.StatusOK || pay.str("date") != "2026-10-31" || !strings.Contains(pay.Raw, `"amount":"327.00"`) || pay.str("reference") != g.str("number") {
 		t.Errorf("the bill payment the release posted: %s", pay.Raw)
 	}

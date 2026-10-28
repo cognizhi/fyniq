@@ -60,7 +60,12 @@ type PaymentBatchRelease struct {
 	Writer     string   `json:"writer" doc:"The file's format and version: payment-list@1 is the payment list keyed into the bank (rev 0.156)." example:"payment-list@1"`
 	FileName   string   `json:"file_name" doc:"The file's name." example:"PB-0003-payment-list.csv"`
 	SHA256     string   `json:"sha256" doc:"The SHA-256 of the file as written, in hexadecimal: a downloaded copy can be checked against it." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
-	Payments   []string `json:"payment_ids" nullable:"false" doc:"The bill payments and reimbursements it posted, one per payee." example:"[\"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10\"]"`
+	Payments   []PaymentBatchPosted `json:"payments" nullable:"false" doc:"The bill payments and reimbursements it posted, one per payee, in the file's order."`
+}
+
+// PaymentBatchPosted is a payment a release posted.
+type PaymentBatchPosted struct {
+	PaymentID string `json:"payment_id" format:"uuid" doc:"The bill payment or reimbursement." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10"`
 }
 
 // PaymentBatchFile is a released batch's file: its content in base64. It holds full account numbers.
@@ -471,9 +476,9 @@ func (a *API) releaseOf(ctx context.Context, u storage.UnitOfWork, id uuid.UUID)
 		return nil, err
 	}
 	out := &PaymentBatchRelease{ReleasedBy: who, ReleasedAt: rel.ReleasedAt.UTC().Format(time.RFC3339), ApprovalID: rel.ApprovalID.String(), Writer: rel.Writer,
-		FileName: rel.FileName, SHA256: hex.EncodeToString(rel.SHA256), Payments: []string{}}
+		FileName: rel.FileName, SHA256: hex.EncodeToString(rel.SHA256), Payments: []PaymentBatchPosted{}}
 	for _, x := range ids {
-		out.Payments = append(out.Payments, x.String())
+		out.Payments = append(out.Payments, PaymentBatchPosted{PaymentID: x.String()})
 	}
 	return out, nil
 }

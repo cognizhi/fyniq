@@ -18542,6 +18542,14 @@ export interface components {
              */
             payments_frozen: boolean;
         };
+        PaymentBatchPosted: {
+            /**
+             * Format: uuid
+             * @description The bill payment or reimbursement.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10
+             */
+            payment_id: string;
+        };
         PaymentBatchRelease: {
             /**
              * Format: uuid
@@ -18554,13 +18562,8 @@ export interface components {
              * @example PB-0003-payment-list.csv
              */
             file_name: string;
-            /**
-             * @description The bill payments and reimbursements it posted, one per payee.
-             * @example [
-             *       "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10"
-             *     ]
-             */
-            payment_ids: string[];
+            /** @description The bill payments and reimbursements it posted, one per payee, in the file's order. */
+            payments: components["schemas"]["PaymentBatchPosted"][];
             /**
              * Format: date-time
              * @description When it was released.

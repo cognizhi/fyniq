@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "payment_id": {
+      "description": "The bill payment or reimbursement.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "payment_id"
+  ],
+  "title": "PaymentBatchPosted",
+  "type": "object"
+}

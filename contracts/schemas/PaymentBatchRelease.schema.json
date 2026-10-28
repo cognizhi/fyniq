@@ -17,15 +17,10 @@
       ],
       "type": "string"
     },
-    "payment_ids": {
-      "description": "The bill payments and reimbursements it posted, one per payee.",
-      "examples": [
-        [
-          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10"
-        ]
-      ],
+    "payments": {
+      "description": "The bill payments and reimbursements it posted, one per payee, in the file's order.",
       "items": {
-        "type": "string"
+        "$ref": "PaymentBatchPosted.schema.json"
       },
       "type": "array"
     },
@@ -63,7 +58,7 @@
     "writer",
     "file_name",
     "sha256",
-    "payment_ids"
+    "payments"
   ],
   "title": "PaymentBatchRelease",
   "type": "object"
