@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
@@ -19,10 +20,12 @@ import (
 	"github.com/cognizhi/fyniq/internal/render"
 )
 
-// remittances is the worker's remittance sender over e.
+// remittances is the worker's remittance sender over e, on the worker's own database role as cmd/worker runs it, so
+// the fences on what the worker may write hold here too.
 func (e *env) remittances() remitmail.Sender {
 	r := testRenderer(e.t)
-	return remitmail.Sender{Store: e.store, Staging: e.blobs, Outbox: outbox.Dispatcher{Store: e.store, Queue: e.queue, Clock: e.clock},
+	w := workerStore(e.t)
+	return remitmail.Sender{Store: w, Staging: e.blobs, Outbox: outbox.Dispatcher{Store: w, Queue: e.queue, Clock: e.clock},
 		Render: func(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time) (render.Response, error) {
 			return r.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: created, Check: true})
 		}}
@@ -33,6 +36,7 @@ func (e *env) remittances() remitmail.Sender {
 func (e *env) runRemittances() int {
 	e.t.Helper()
 	n := 0
+	sender := e.remittances()
 	for {
 		kind, row := nextWorkRow(e.t, e)
 		if kind == "" {
@@ -40,7 +44,7 @@ func (e *env) runRemittances() int {
 		}
 		if kind == remitmail.Kind {
 			n++
-			if err := e.remittances().Work()(context.Background(), e.books.Org, row); err != nil {
+			if err := sender.Work()(context.Background(), e.books.Org, row); err != nil {
 				e.t.Fatalf("the remittance job: %v", err)
 			}
 		}
@@ -84,10 +88,13 @@ func paymentOf(t *testing.T, b response, payee string) map[string]any {
 // When bank import matches a batch's supplier payment to its statement line, the supplier is sent its remittance advice
 // (FR-BNK-12, design D8): the rendered PDF kept as the payment's evidence and emailed to its remittance address, once,
 // however often the match is undone and done again. A supplier with no remittance address is warned of before release
-// and sent nothing; a claimant's reimbursement sends nothing. The batch is paid when every payment is matched.
+// and sent nothing; a claimant's reimbursement sends nothing. The batch is paid when every payment is matched. The job
+// runs on the worker's own database role, which writes advice for no other payment.
 // req: FR-BNK-12
 // req: FR-AP-13
 // req: banking/bank-transactions Remittance advice on the match (rev 0.154)
+// req: QA-ENG-05
+// asvs: V8.2.2
 func TestRemittanceAdviceIsSentWhenTheBatchPaymentMatches(t *testing.T) {
 	e := newEnv(t)
 	accountant := e.as(authz.Accountant)
@@ -144,6 +151,49 @@ func TestRemittanceAdviceIsSentWhenTheBatchPaymentMatches(t *testing.T) {
 	})
 	if len(sent) != 1 || sent[0].Recipient != "payments@northwind.example" {
 		t.Fatalf("the sends of Northwind's payment: %+v", sent)
+	}
+
+	// The worker's fence (FY201, FY202; migration 000189): it keeps advice and records a send only for a batch payment
+	// matched to the bank, not the quiet supplier's (released, unmatched) nor a payment recorded by hand, and queues
+	// remittance email only with such a send.
+	hand := e.call(http.MethodPost, "/v1/bill-payments", accountant, e.payment(e.billOf(northwind, "1.00", "0.09"), "1.09"))
+	if hand.Status != http.StatusCreated {
+		t.Fatalf("paying a bill by hand = %d: %s", hand.Status, hand.Raw)
+	}
+	asWorker := func(stmt string) error {
+		ctx := context.Background()
+		c, err := pgx.Connect(ctx, db.URL("fyniq_worker"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer c.Close(ctx)
+		tx, err := c.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = tx.Rollback(ctx) }()
+		if _, err := tx.Exec(ctx, "SELECT set_config('app.org_id', $1, true)", e.books.Org.String()); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tx.Exec(ctx, stmt); err != nil {
+			return err
+		}
+		return tx.Commit(ctx)
+	}
+	for _, p := range []string{paymentOf(t, g, "Quiet Supplier Pte Ltd")["payment_id"].(string), hand.str("payment", "id")} {
+		for _, stmt := range []string{
+			"INSERT INTO fyniq.evidence (document_id, evidence_type, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class, staging_key, uploaded_by) " +
+				"VALUES ('" + p + "', 'Remittance advice as sent', 'x.pdf', 'application/pdf', 1, repeat('ab', 32), repeat('ab', 32), 'generated', 'general', 'staging/x', '" + remitmail.Actor.String() + "')",
+			"INSERT INTO fyniq.document_send (document_id, document_version, evidence_id, message_id, recipient, sent_by, template_source, template_hash, pdf_sha256) " +
+				"VALUES ('" + p + "', 1, '" + uuid.NewString() + "', '" + uuid.NewString() + "', 'victim@example.com', '" + remitmail.Actor.String() + "', 'default', repeat('ab', 32), repeat('ab', 32))",
+		} {
+			if err := asWorker(stmt); err == nil || !strings.Contains(err.Error(), "FY201") {
+				t.Errorf("the worker: %s: %v", stmt, err)
+			}
+		}
+	}
+	if err := asWorker("INSERT INTO fyniq.email_message (purpose, recipient, subject) VALUES ('remittance', 'victim@example.com', 'Paid')"); err == nil || !strings.Contains(err.Error(), "FY202") {
+		t.Errorf("the worker queued remittance email no send carries: %v", err)
 	}
 
 	// Undone and done again: no second advice.
