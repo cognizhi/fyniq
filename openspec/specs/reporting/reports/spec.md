@@ -27,6 +27,11 @@ Source: PRD-001 §8.12 · Priority M · Phase P1
 - **WHEN** the financial statements are listed
 - **THEN** the trial balance is one of them, for any period
 
+#### Scenario: The layout from the chart's attributes (rev 0.159)
+- **WHEN** the statements are produced
+- **THEN** the P&L runs from revenue by report group through cost of sales (function COGS), gross profit, operating expenses without depreciation and amortisation, EBITDA, depreciation and amortisation, operating profit, other income and finance costs, profit before tax and income tax to net profit
+- **AND** the balance sheet groups current and non-current items by report group with borrowings apart, and the indirect cash flow ties to the money accounts with non-cash transactions listed apart [accountant to confirm]
+
 ### Requirement: FR-RPT-02 Periods, comparatives and columns
 Reports SHALL run for any period, with comparatives and with columns by month or by dimension.
 
@@ -156,6 +161,11 @@ Source: PRD-001 §8.12 · Priority M · Phase P1
 #### Scenario: Identical bytes come from the stored file
 - **WHEN** identical bytes of an issued report are needed
 - **THEN** they come from the stored issued file (FR-DOC-04), not from a re-run
+
+#### Scenario: Re-runs before the chart keeps its history (rev 0.159)
+- **WHEN** a report is re-run as at a revision before the chart keeps its history
+- **THEN** its figures are that revision's exactly, shown with today's account names and groups
+- **AND** it is labelled "restated presentation" when the chart changed after the revision, and an issued pack's original names come from its stored file (FR-DOC-04)
 
 #### Scenario: G4-051 Back-dated posting during report generation
 - **GIVEN** a back-dated posting transaction starts before a P&L is generated and commits after it
