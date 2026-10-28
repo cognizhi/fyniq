@@ -68,7 +68,7 @@ func (r reportExports) Mine(ctx context.Context, requestedBy string, limit int) 
 	if err := r.u.check(); err != nil {
 		return nil, err
 	}
-	rows, err := r.u.q.ReportExportsOf(ctx, sqlcdb.ReportExportsOfParams{RequestedBy: requestedBy, PageSize: int32(limit)})
+	rows, err := r.u.q.ReportExportsOf(ctx, sqlcdb.ReportExportsOfParams{RequestedBy: requestedBy, PageSize: int32(min(max(limit, 1), 1000))}) // #nosec G115 -- 1 to 1,000
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -110,7 +110,7 @@ func (r reportExports) Expiring(ctx context.Context, now time.Time, limit int) (
 	if err := r.u.check(); err != nil {
 		return nil, err
 	}
-	rows, err := r.u.q.ExpiringReportExports(ctx, sqlcdb.ExpiringReportExportsParams{Now: &now, PageSize: int32(limit)})
+	rows, err := r.u.q.ExpiringReportExports(ctx, sqlcdb.ExpiringReportExportsParams{Now: &now, PageSize: int32(min(max(limit, 1), 1000))}) // #nosec G115 -- 1 to 1,000
 	if err != nil {
 		return nil, mapError(err)
 	}
