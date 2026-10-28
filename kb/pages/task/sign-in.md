@@ -1,23 +1,25 @@
 ---
 key: auth.sign-in
 type: task
-title: Sign in to Fyniq, confirm it's you with a passkey, or join as the second Super admin
-summary: Signing in with a second factor, passkeys, your devices and sign-in emails, when a session ends, joining as the second Super admin, and errors
+title: Sign in to Fyniq, confirm it's you with a passkey, or join with an invitation
+summary: Signing in with a second factor, passkeys, your devices, when a session ends, joining a company or as the second Super admin by invitation, and errors
 sources:
-  - docs/user-guide/sign-in.md sha256:0b156c107b8bd77d5758bda0d3501c04c72abeec6c1e8bbfe16ff01726a1b07a
+  - docs/user-guide/sign-in.md sha256:246fe91eb85a49b70bbc93f6111c3ce2ea9d7f0a6850ecd308566afc464d7f67
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-20
+compiled_at: 2026-10-28
 aliases:
   - log in
   - login
   - signed out
   - session expired
   - invitation code
+  - join a company
+  - accept an invitation
   - passkey
   - two-factor
   - 2FA
@@ -29,7 +31,7 @@ aliases:
   - sign-in email
 ---
 
-# Sign in to Fyniq, confirm it's you with a passkey, or join as the second Super admin
+# Sign in to Fyniq, confirm it's you with a passkey, or join with an invitation
 
 ## How sign-in works
 
@@ -67,6 +69,13 @@ aliases:
 
 (src: docs/user-guide/sign-in.md#your-devices)
 
+## Joining a company with an invitation
+
+- A person invited to a company signs in, sees **Joining by invitation**, enters the **Invitation code** and **Your name**, and selects **Accept the invitation**.
+- They join the company with the roles its invitation gives them, and Fyniq opens; making the invitation: [[members.invite]].
+
+(src: docs/user-guide/sign-in.md#join-a-company-with-an-invitation) (src: docs/user-guide/sign-in.md#before-you-start)
+
 ## Joining as the second Super admin
 
 - The person needs the invitation code the first Super admin gave them, and an account at a listed provider.
@@ -82,7 +91,7 @@ aliases:
 - AUTH-SIGNIN-02: the sign-in took longer than 10 minutes or began in another browser; sign in again in one browser.
 - AUTH-SIGNIN-03: the provider's answer did not pass Fyniq's checks; sign in again, and tell the Super admin if it repeats.
 - AUTH-SIGNIN-04: the sign-in service did not answer; try again in a moment.
-- An invitation code that is not valid, used or expired: ask the Super admin for a new invitation.
+- An invitation code that is not valid, used or expired: ask whoever invited you for a new invitation.
 - API-AUTHZ-07, a second factor is required: sign in again with the authenticator app, or confirm with a passkey.
 - API-PASSKEY-02, no passkey: sign in again with the authenticator app, then add a passkey.
 - API-PASSKEY-01, the passkey's answer was refused: try again on this site with a passkey added here, confirming with fingerprint, face or PIN.

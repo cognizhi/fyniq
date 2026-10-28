@@ -247,3 +247,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-28] compile | docs/user-guide/banking.md → banking.categorise (a match to money already recorded covers a payment batch's release; hashes refreshed on the other banking pages)
 
 ## [2026-10-28] compile | docs/user-guide/payment-batches.md → purchases.payment-batches (Remittance not sent, when sending the advice gave up)
+
+## [2026-10-28] compile | docs/user-guide/sign-in.md → auth.sign-in (joining a company with an invitation from the sign-in page)

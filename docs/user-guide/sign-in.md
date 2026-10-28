@@ -23,7 +23,7 @@ Fyniq takes you back to the page you were on.
 ## Before you start
 
 - You need an account at one of the providers the **Sign in to Fyniq** page lists.
-- Joining as the second Super admin? Have the invitation code the first Super admin gave you.
+- Joining a company, or joining as the second Super admin? Have the invitation code you were given.
 
 ## Steps
 
@@ -58,6 +58,12 @@ provider and from which browser. If it was not you, end that session.
    its next request.
 3. To end every session but this one, select **Sign out everywhere else**.
 
+## Join a company with an invitation
+
+1. Sign in as above. Fyniq shows **Joining by invitation**, because you have no account yet.
+2. Enter the **Invitation code** and **Your name**, then select **Accept the invitation**.
+3. You join the company with the roles its invitation gives you, and Fyniq opens.
+
 ## Join as the second Super admin
 
 1. Sign in as above. Fyniq shows **Joining by invitation**, because you have no account yet.
@@ -75,7 +81,7 @@ An invitation works once, within 7 days.
 | Sign-in failed (AUTH-SIGNIN-02): the sign-in took longer than 10 minutes, or began in another browser | Sign in again, from start to finish in the same browser |
 | Sign-in failed (AUTH-SIGNIN-03): the provider's answer did not pass Fyniq's checks | Sign in again. If it keeps happening, tell the Super admin |
 | Sign-in failed (AUTH-SIGNIN-04): the sign-in service did not answer | Try again in a moment |
-| That invitation code is not valid, was used already or has expired | Ask the Super admin for a new invitation |
+| That invitation code is not valid, was used already or has expired | Ask whoever invited you for a new invitation |
 | A second factor is required (API-AUTHZ-07) | Sign in again with your authenticator app, or confirm it's you with a passkey |
 | You have no passkey (API-PASSKEY-02) | Sign in again with your authenticator app, then add a passkey |
 | The passkey's answer was refused (API-PASSKEY-01) | Try again on this site, with a passkey you added here, and confirm with your fingerprint, face or PIN |
