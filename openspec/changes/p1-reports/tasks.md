@@ -8,7 +8,7 @@
     figures. `// req: FR-RPT-08`, `// req: ENG-46`
   (28 Oct 2026: migration 000190's `fyniq.balances_at(period, revision)`; `Balances.ForPeriodAt`; `balance.At`,
   `TrialAt` and `PositionAt`. Tests: `TestTheStatementsLaidOutFromTheChart`, `TestFinancialStatementsThroughTheAPI`.)
-- [ ] 1.2 `internal/domain/statement`: the P&L, balance sheet, indirect cash flow and trial balance laid out from the
+- [x] 1.2 `internal/domain/financials`: the P&L, balance sheet, indirect cash flow and trial balance laid out from the
   chart (D2) for a run of months, with the prior period, the prior year, and columns by month (D1).
   - Its checks (D3): the balance sheet balances; every account in one statement; the cash flow ties to the money
     accounts; equity reconciles.
@@ -20,7 +20,14 @@
   chart, with the prior period, the prior year, or a column per month; the checks `balances` and `placed` (INV-10).
   Test: `TestTheStatementsLaidOutFromTheChart`, worked by hand. **Left:** the cash flow and the movement in equity
   (INV-11), and the oracle's statement totals.)
-- [ ] 1.3 The API: the statement for its kind, period, comparison, columns and revision, with its checks, framework
+  (28 Oct 2026, the rest: the indirect cash flow (`flows.go`). Each entry is operating, investing (a capital-expenditure
+  line) or financing (borrowings or equity), and its cash is what it put on the cash accounts. The operating
+  reconciliation equals its entries' cash exactly: profit, depreciation, the P&L of investing and financing entries,
+  and the working-capital lines. Non-cash investing and financing entries are listed apart, and the opening balances
+  open the run. The checks are `ties` (CF_Chk) and `placed`; the balance sheet gains the movement in equity over its
+  run with the check `equity` (BS_EqChk). Worked by hand on a small chart with every section, not on the sample
+  company: the sample's statements join the oracle's task 1.5.)
+- [x] 1.3 The API: the statement for its kind, period, comparison, columns and revision, with its checks, framework
   title (FR-ORG-10), revision, parameters and platform version, and "restated presentation" when the chart changed after
   the revision. Permissions per D9. `make openapi` first.
   - Tests: through the API, the matrix rows, and a board-pack reader refused the trial balance. `// req: FR-RPT-08`
@@ -28,9 +35,17 @@
   `columns` and `as_at_revision`; REPORT-03 and REPORT-04; the year's title, management statements without the
   financial years set; `restated_presentation` from the accounts' `changed_at` (migration 000190). A qualified reader
   is refused until the board pack (D9). **Left:** the cash flow.)
-- [ ] 1.4 The close's `statements` check (D3). `// req: INV-10`, `// req: INV-11`
+  (28 Oct 2026, the rest: `cf`, the balance sheet's run for the movement in equity, and `non_cash`. Test:
+  `TestFinancialStatementsThroughTheAPI`.)
+- [x] 1.4 The close's `statements` check (D3). `// req: INV-10`, `// req: INV-11`
   (28 Oct 2026, part: ⚠ when an account with a balance sits in no section of the month's balance sheet; the close's
   guide and kb page say so. **Left:** the cash flow's tie to the money accounts and equity's movement, with 1.2.)
+  (28 Oct 2026, the rest: ✖ `statements-ties` and `statements-equity`, which a sound ledger never shows; ⚠
+  `statements-cash` for an account in no line of the cash flow.)
+
+- [ ] 1.5 (oracle session) The statements' totals in the independent oracle, on the sample company: the P&L, the
+  balance sheet, the cash flow and the movement in equity, written from rev 0.159's layout, never from the engine
+  (QA-ENG-01). `// req: QA-ENG-02`
 
 ## 2. The screens
 

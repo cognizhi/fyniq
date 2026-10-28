@@ -10,7 +10,7 @@
       "type": "string"
     },
     "key": {
-      "description": "balances: debits equal credits in every column; placed: every balance-sheet account with figures sits in a section.",
+      "description": "balances: debits equal credits in every column; placed: every account with figures sits in a section or a line; equity: the balance sheet's movement in equity reconciles; ties: the cash flow ties to the cash accounts.",
       "examples": [
         "balances"
       ],

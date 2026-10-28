@@ -138,10 +138,12 @@ func rendered(s financials.Statement) string {
 // The balance sheet at 31 October: the bank 10,000 − 500 − 2,400 + 20 + 1,000 = 8,120.00 and receivables 5,000.00
 // (13,120.00); equipment 2,400.00 less 100.00 (2,300.00); total assets 15,420.00. Payables 1,000.00 and tax 200.00
 // (1,200.00); the director's loan 1,030.00; total liabilities 2,230.00. Share capital 10,000.00 and the profit to date
-// 3,190.00: 13,190.00. Liabilities and equity 15,420.00, which balances.
+// 3,190.00: 13,190.00. Liabilities and equity 15,420.00, which balances; equity moved from the opening 10,000.00 by the
+// profit.
 // req: FR-RPT-01
 // req: FR-RPT-02
 // req: INV-10
+// req: INV-11
 func TestTheStatementsLaidOutFromTheChart(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "accountant"}})
 	s := store(t, "fyniq_api")
@@ -184,12 +186,38 @@ borrowings [1030.00] | 2500 [1030.00]
 total_liabilities [2230.00]
 equity [13190.00] | 3010 [10000.00] | Profit for the year to date [3190.00]
 liabilities_and_equity [15420.00]
+equity_movement [13190.00] | Equity at the start [10000.00] | Profit for the period [3190.00] | Shares issued [0.00] | Other movements [0.00]
 `
 	if got := rendered(bs); got != want {
 		t.Errorf("31 October's balance sheet:\n%s\nwant\n%s", got, want)
 	}
-	if len(bs.Checks) != 2 || !bs.Checks[0].OK || !bs.Checks[1].OK {
+	if len(bs.Checks) != 3 || !bs.Checks[0].OK || !bs.Checks[1].OK || !bs.Checks[2].OK {
 		t.Errorf("its checks: %+v", bs.Checks)
+	}
+
+	// October's cash flow, indirect (INV-11): operating is the profit, depreciation and the interest accrued to the
+	// director's loan added back, less the receivables and plus the payables and tax not yet paid: -480.00, which is
+	// what the advertising and the interest moved (-500.00 + 20.00). The laptop is investing; the loan financing. The
+	// cash goes from the opening 10,000.00 to 8,120.00, and the interest accrued is a transaction that moved no money.
+	cf := b.lay(t, s, financials.CashFlow, 0, 0, financials.NoComparison, 0)
+	want = `operating [-480.00] | Net profit [3190.00] | Depreciation and amortisation [100.00] | Profit and loss of investing and financing [30.00] | Change in receivables [-5000.00] | Change in payables & accruals [1000.00] | Change in tax liabilities [200.00]
+net_operating [-480.00]
+investing [-2400.00] | Paid for property, plant and equipment [-2400.00]
+net_investing [-2400.00]
+financing [1000.00] | Borrowings [1000.00]
+net_financing [1000.00]
+net_change [-1880.00]
+cash_at_start [10000.00]
+cash_at_end [8120.00]
+`
+	if got := rendered(cf); got != want {
+		t.Errorf("October's cash flow:\n%s\nwant\n%s", got, want)
+	}
+	if len(cf.Checks) != 2 || !cf.Checks[0].OK || !cf.Checks[1].OK {
+		t.Errorf("its checks: %+v", cf.Checks)
+	}
+	if len(cf.NonCash) != 1 || cf.NonCash[0].Amount.String() != "30.00" || !cf.NonCash[0].Date.Equal(porttest.Day(10, 31)) {
+		t.Errorf("its non-cash transactions: %+v", cf.NonCash)
 	}
 
 	// November, against October: sales of 3,000.00, hosting of 800.00, depreciation of 100.00.
@@ -237,6 +265,10 @@ liabilities_and_equity [15420.00]
 	if c := closeChecks(t, ctx, s, b.Org, b.Nov.ID)["statements"]; c.Severity != closing.Warning || c.Title != "Accounts are missing from the balance sheet" ||
 		!strings.HasPrefix(c.Detail, "1999 Unsorted: ") {
 		t.Errorf("November's close: %+v", c)
+	}
+	if cf := b.lay(t, s, financials.CashFlow, 1, 1, financials.NoComparison, 0); !cf.Checks[0].OK || cf.Checks[1].OK ||
+		!strings.HasPrefix(cf.Checks[1].Detail, "1999 Unsorted: ") {
+		t.Errorf("November's cash flow with an account in no line: %+v", cf.Checks)
 	}
 	tb := b.lay(t, s, financials.TrialBalance, 1, 1, financials.NoComparison, 0)
 	if last := tb.Blocks[len(tb.Blocks)-1]; last.Key != financials.KeyTotal || !last.Totals[0].IsZero() || !tb.Checks[0].OK {

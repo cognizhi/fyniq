@@ -10,7 +10,7 @@
       "type": "array"
     },
     "key": {
-      "description": "The block: for the P\u0026L revenue, cost_of_sales, gross_profit, operating_expenses, ebitda, depreciation_amortisation, operating_profit, other_income, finance_and_other, profit_before_tax, income_tax, net_profit; for the balance sheet current_assets, non_current_assets, total_assets, current_liabilities, borrowings, total_liabilities, equity, liabilities_and_equity; for the trial balance asset, liability, equity, revenue, expense and total.",
+      "description": "The block: for the P\u0026L revenue, cost_of_sales, gross_profit, operating_expenses, ebitda, depreciation_amortisation, operating_profit, other_income, finance_and_other, profit_before_tax, income_tax, net_profit; for the balance sheet current_assets, non_current_assets, total_assets, current_liabilities, borrowings, total_liabilities, equity, liabilities_and_equity, equity_movement; for the cash flow operating, net_operating, investing, net_investing, financing, net_financing, net_change, cash_at_start, cash_at_end; for the trial balance asset, liability, equity, revenue, expense and total.",
       "examples": [
         "gross_profit"
       ],

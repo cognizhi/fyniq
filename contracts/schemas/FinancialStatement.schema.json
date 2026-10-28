@@ -17,7 +17,7 @@
       "type": "array"
     },
     "checks": {
-      "description": "Its checks (INV-10): the balance sheet and trial balance balance, and every balance-sheet account sits in a section.",
+      "description": "Its checks: the balance sheet and trial balance balance, and every balance-sheet account sits in a section (INV-10); the movement in equity reconciles, and the cash flow ties to the cash accounts with every account in a line (INV-11).",
       "items": {
         "$ref": "FinancialCheck.schema.json"
       },
@@ -46,10 +46,11 @@
       "type": "string"
     },
     "kind": {
-      "description": "pl: the profit and loss; bs: the balance sheet; tb: the trial balance.",
+      "description": "pl: the profit and loss; bs: the balance sheet; cf: the cash flow; tb: the trial balance.",
       "enum": [
         "pl",
         "bs",
+        "cf",
         "tb"
       ],
       "examples": [
@@ -64,6 +65,13 @@
       ],
       "format": "int64",
       "type": "integer"
+    },
+    "non_cash": {
+      "description": "The cash flow only: the run's investing and financing transactions that moved no money, such as a cost a director paid personally or a conversion to shares, left out of its figures and listed apart.",
+      "items": {
+        "$ref": "FinancialNonCash.schema.json"
+      },
+      "type": "array"
     },
     "platform_version": {
       "description": "The platform version that laid it out (REL-05).",
@@ -110,7 +118,8 @@
     "platform_version",
     "columns",
     "blocks",
-    "checks"
+    "checks",
+    "non_cash"
   ],
   "title": "FinancialStatement",
   "type": "object"
