@@ -147,6 +147,14 @@
       ],
       "type": "string"
     },
+    "useful_life_months": {
+      "description": "The default useful life in whole months the fixed asset register offers for an asset on it (FR-COA-02; PRD-001 rev 0.151); left out when it has none.",
+      "examples": [
+        36
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
     "version": {
       "description": "The record's version; it also makes the ETag.",
       "examples": [

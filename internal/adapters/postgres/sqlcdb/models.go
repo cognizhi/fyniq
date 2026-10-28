@@ -12,27 +12,28 @@ import (
 )
 
 type FyniqAccount struct {
-	OrganisationID uuid.UUID
-	ID             uuid.UUID
-	Code           string
-	Name           string
-	Type           string
-	ParentID       *uuid.UUID
-	IsGroup        bool
-	IsActive       bool
-	Version        int32
-	CreatedAt      time.Time
-	Role           *string
-	ReportGroup    *string
-	CashFlowLine   *string
-	Function       *string
-	IsMoneyAccount bool
-	DefaultGstCode *string
-	Currency       *string
-	IsControl      bool
-	IsPayrollCost  bool
-	Guidance       *string
-	Revalue        bool
+	OrganisationID   uuid.UUID
+	ID               uuid.UUID
+	Code             string
+	Name             string
+	Type             string
+	ParentID         *uuid.UUID
+	IsGroup          bool
+	IsActive         bool
+	Version          int32
+	CreatedAt        time.Time
+	Role             *string
+	ReportGroup      *string
+	CashFlowLine     *string
+	Function         *string
+	IsMoneyAccount   bool
+	DefaultGstCode   *string
+	Currency         *string
+	IsControl        bool
+	IsPayrollCost    bool
+	Guidance         *string
+	Revalue          bool
+	UsefulLifeMonths *int16
 }
 
 type FyniqAccountingFramework struct {
@@ -728,6 +729,7 @@ type FyniqFixedAssetSource struct {
 	SourceVersion  int32
 	Line           int32
 	AccountID      uuid.UUID
+	Released       bool
 }
 
 type FyniqFxFeedRate struct {
@@ -1193,6 +1195,19 @@ type FyniqOutbox struct {
 	LastError      *string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+}
+
+type FyniqPayeeBankAccount struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	ChangeID          uuid.UUID
+	ChangeVersion     int32
+	ContactID         uuid.UUID
+	Currency          string
+	NumberSealed      []byte
+	NumberLast4       string
+	NumberFingerprint []byte
+	State             string
 }
 
 type FyniqPeriod struct {

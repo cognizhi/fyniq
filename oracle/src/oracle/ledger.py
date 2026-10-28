@@ -9,13 +9,15 @@ exact decimals. The workbook rounded through binary floats (``r2``); here every 
 
 P0 posts one source: the **manual journal** (§10.2, "Journal: as entered, balanced only"), and
 corrects posted history only by **reversal** (FR-GL-12, INV-02). A journal posts when it meets every
-rule below; otherwise it is rejected whole and posts no line (ENG-21 ✖):
+rule of ENG-24 (PRD-001 rev 0.24) below; otherwise it is rejected whole and posts no line (ENG-21 ✖):
 
 1. Every amount and rate meets the input precision boundary (ENG-44, ENG-11, §11.3), and every
    currency is one of the scenario's currencies.
 2. At least two lines.
 3. No line is zero.
-4. Every line posts to an existing, active, non-group (postable) account (INV-04).
+4. Every line posts to an existing, active, non-group (postable) account (INV-04), and never to a
+   share-capital account (INV-13: share capital changes only through the register of share issues
+   or opening balances, so a manual journal line to one is refused).
 5. Every line not in the base currency has a rate (ENG-13); a line in the base currency has neither a
    rate nor its source (ENG-03). A rate always comes with its source (ENG-40): the scenario format
    requires it, so a rate without one makes the scenario invalid, not the journal rejected.
@@ -25,46 +27,34 @@ rule below; otherwise it is rejected whole and posts no line (ENG-21 ✖):
 
 A reversal posts the negation of every line of the document's posted entry, on the reversal's date
 (FR-GL-12). The base amounts are negated as stored, never re-converted (ENG-14). A reversal of an
-unknown or rejected document, or of a document already reversed, is rejected.
+unknown or rejected document, of a document already reversed, or dated before the entry it reverses
+is rejected (FR-GL-12, rev 0.24: "dated on or after the entry's posting date").
 
 The trial balance is the base-currency total per account per calendar month of the posting date
 (Appendix B: "period = the month of the posting date").
+
+From P1 the ledger also posts the **P1 sources** (bank lines and transfers, ...), each through its
+rule set in :mod:`oracle.sources`, in scenario order with the manual journals. A source's entry is
+written in its canonical form (:func:`oracle.book.canonical`); a registered asset posts none. What a
+source schedules (a spread's releases, an asset's depreciation) posts after every document and
+reversal, when dated on or before ``as_of`` (ENG-05: up to "today", never the future), one entry per
+document, kind and date; a later document may end a schedule (a disposal ends its asset's).
 """
 
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, localcontext
 from typing import Any
 
 from oracle import money
-from oracle.scenario import RESULT_SCHEMA, Document, Reversal, Scenario, check_result
+from oracle.book import Entry, PostedLine, Rejected, Scheduled, canonical
+from oracle.rules import Rules
+from oracle.scenario import RESULT_SCHEMA, Document, Reversal, Scenario, Source, check_result
+from oracle.sources import RULE_SETS
 
-
-@dataclass(frozen=True)
-class PostedLine:
-    account: str
-    currency: str
-    amount: Decimal
-    base_amount: Decimal
-
-
-@dataclass(frozen=True)
-class Entry:
-    document: str
-    kind: str  # "post" or "reversal"
-    posting_date: date
-    lines: tuple[PostedLine, ...]
-
-
-class Rejected(Exception):
-    """A document or reversal the rules refuse. The reason is for people, never for the result."""
-
-    def __init__(self, reason: str) -> None:
-        super().__init__(reason)
-        self.reason = reason
+__all__ = ["Entry", "Ledger", "PostedLine", "Rejected", "period", "run"]
 
 
 def period(day: date) -> str:
@@ -84,11 +74,20 @@ class Ledger:
         self.post: defaultdict[tuple[str, str], Decimal] = defaultdict(lambda: money.ZERO)
         self._posted: dict[str, Entry] = {}
         self._reversed: set[str] = set()
+        self.rules = Rules(scenario) if scenario.settings is not None else None
+        self.books: dict[str, Any] = {}  # what each posted P1 document left for later ones to read
+        # (the document's position, its scheduled entries): the list is read when the schedules post,
+        # so a later document (an asset's disposal) can still end it.
+        self._scheduled: list[tuple[int, list[Scheduled]]] = []
         with localcontext(money.EXACT):  # an operator that slipped past money.* still cannot round
-            for document in scenario.documents:
-                self._journal(document)
+            for index, document in enumerate(scenario.documents):
+                if isinstance(document, Source):
+                    self._source(index, document)
+                else:
+                    self._journal(document)
             for reversal in scenario.reversals:
                 self._reversal(reversal)
+            self._schedule()
 
     # ------------------------------------------------------------------ posting
     def p(self, account: str, month: str, base_amount: Decimal) -> None:
@@ -148,6 +147,8 @@ class Ledger:
                 raise Rejected("group-account")
             if not account.active:
                 raise Rejected("inactive-account")
+            if account.role == "share-capital":  # INV-13
+                raise Rejected("share-capital-account")
 
         # Rule 5 (ENG-13, ENG-03), then RND-FX for every line not in the base currency.
         posted: list[PostedLine] = []
@@ -175,6 +176,42 @@ class Ledger:
 
         return tuple(posted)
 
+    def _source(self, index: int, document: Source) -> None:
+        assert self.rules is not None  # the scenario reader refuses a source without settings
+        try:
+            posting = RULE_SETS[document.type](self.rules, document, self.books)
+            lines = canonical(posting.lines)
+            if any(ln.base_amount.copy_abs() >= money.AMOUNT_LIMIT for ln in lines):
+                raise Rejected("base-out-of-range")  # §11.3: NUMERIC(20,4)
+            if posting.lines and len(lines) < 2:  # every other leg rounded to nothing (README, "P1 readings")
+                raise Rejected("entry-rounds-to-one-line")
+        except Rejected as exc:
+            self._reject(document.id, exc.reason)
+            return
+        if not money.total([ln.base_amount for ln in lines]).is_zero():
+            raise RuntimeError(f"oracle defect: {document.type} {document.id} posts an unbalanced entry {lines}")
+        for effect in posting.effects:
+            effect()
+        self.books[document.id] = posting.facts
+        if posting.lines:  # a registered asset posts nothing itself, only its schedule
+            entry = Entry(document.id, "post", document.date, lines)
+            self._posted[document.id] = entry
+            self._record(entry)
+        self._scheduled.append((index, posting.scheduled))
+
+    def _schedule(self) -> None:
+        """Scheduled entries dated up to ``as_of``, one per (date, document, kind), in that order."""
+        as_of = self.scenario.as_of
+        groups: dict[tuple[date, int, str], list[PostedLine]] = {}
+        for index, items in self._scheduled:
+            for scheduled in items:
+                if as_of is not None and scheduled.posting_date <= as_of:
+                    groups.setdefault((scheduled.posting_date, index, scheduled.kind), []).extend(scheduled.lines)
+        for (day, index, kind), lines in sorted(groups.items()):
+            entry_lines = canonical(lines)
+            if entry_lines:
+                self._record(Entry(self.scenario.documents[index].id, kind, day, entry_lines))
+
     def _reversal(self, reversal: Reversal) -> None:
         key = f"{reversal.document}/reversal"
         original = self._posted.get(reversal.document)
@@ -183,6 +220,9 @@ class Ledger:
             return
         if reversal.document in self._reversed:
             self._reject(key, "already-reversed")
+            return
+        if reversal.date < original.posting_date:  # FR-GL-12: on or after the entry's posting date
+            self._reject(key, "reversal-before-entry")
             return
         self._reversed.add(reversal.document)
         lines = tuple(

@@ -140,11 +140,12 @@
       "type": "string"
     },
     "status": {
-      "description": "in_use while it depreciates; fully_depreciated once nothing is left to post; disposed once nothing of it is left.",
+      "description": "in_use while it depreciates; fully_depreciated once nothing is left to post; voided once voided as registered by mistake (rev 0.151); disposed once nothing of it is left.",
       "enum": [
         "in_use",
         "fully_depreciated",
-        "disposed"
+        "disposed",
+        "voided"
       ],
       "examples": [
         "in_use"

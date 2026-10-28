@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Copy, LayoutTemplate, Package, Pencil, Plus, Search, TriangleAlert, UserRound } from "lucide-react";
+import { Copy, Landmark, LayoutTemplate, Package, Pencil, Plus, Search, TriangleAlert, UserRound } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -11,6 +11,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { allTemplates, customerTypes, supplierTypes, typeNames, type DocType, type Kind } from "../settings/templateWords";
+import { BankDetails, bankReaders } from "./BankDetails";
 
 type Contact = components["schemas"]["Contact"];
 type Duplicate = components["schemas"]["PossibleDuplicate"];
@@ -463,11 +464,14 @@ export function Contacts() {
   const [inactive, setInactive] = useState(false);
   const [editing, setEditing] = useState<Contact | "new" | null>(null);
   const [templating, setTemplating] = useState<Contact | null>(null);
+  const [banking, setBanking] = useState<Contact | null>(null);
   const [status, setStatus] = useState("");
   const findId = useId();
   const may = (session.roles ?? []).some((r) => contactEditors.includes(r));
   const add = helpText("contact.add");
   const templates = helpText("contact.templates");
+  const bank = helpText("contact.bank-details");
+  const mayBank = (session.roles ?? []).some((r) => bankReaders.includes(r));
   const all = q.data ?? [];
   const needle = find.trim().toLowerCase();
   const shown = all
@@ -567,6 +571,11 @@ export function Contacts() {
                     </span>
                   )}
                   {!c.active && <span className="fy-chip fy-chip--neutral">Inactive</span>}
+                  {mayBank && c.vendor && (
+                    <Button variant="ghost" size="sm" onClick={() => setBanking(c)} aria-label={`${bank.label}: ${c.legal_name}`} title={bank.tooltip}>
+                      <Icon of={Landmark} />
+                    </Button>
+                  )}
                   {may && (
                     <Button variant="ghost" size="sm" onClick={() => setTemplating(c)} aria-label={`Templates for ${c.legal_name}`} title={templates.tooltip}>
                       <Icon of={LayoutTemplate} />
@@ -585,6 +594,10 @@ export function Contacts() {
       )}
       <ContactForm editing={editing} onClose={() => setEditing(null)} onSaved={setStatus} />
       <ContactTemplates contact={templating} onClose={() => setTemplating(null)} onSaved={setStatus} />
+      <BankDetails contact={banking} onClose={() => setBanking(null)} onChanged={(what) => {
+        setBanking(null);
+        setStatus(what);
+      }} />
     </div>
   );
 }

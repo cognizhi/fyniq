@@ -85,6 +85,17 @@ Source: PRD-001 §10.2
 - **AND** a fee the provider reports goes to the bank charges account, an organisation setting that is 6460 by default
 - **AND** the rest of the difference goes to 7030 (the owner's decision of 25 Oct 2026; the accountant confirms before the oracle session)
 
+#### Scenario: The cross-currency rule decided (rev 0.155)
+- **GIVEN** a transfer between money accounts in different currencies
+- **WHEN** it is posted
+- **THEN** the rule of rev 0.140 applies without waiting for the accountant [accountant to confirm]
+- **AND** a reported fee is in the paying leg's currency, at that leg's rate, and the rest of the difference is the exchange difference on settlement (SFRS(I) 1-21)
+
+#### Scenario: A transfer in one currency (rev 0.155)
+- **GIVEN** a transfer between two money accounts in the same currency
+- **WHEN** it is posted
+- **THEN** what was paid equals what was received plus the fee
+
 ### Requirement: Posting an invoice
 A posted invoice SHALL debit AR 1100 with the total and credit revenue, or deferred revenue 2400 when spread, with the net and the GST control with the GST.
 
@@ -413,6 +424,18 @@ Source: PRD-001 §B.1
 - **WHEN** it is posted
 - **THEN** it clears AR or AP
 - **AND** a difference within tolerance goes to 7030
+
+#### Scenario: A line in another currency (rev 0.155)
+- **GIVEN** a bank line in a currency other than the base currency
+- **WHEN** it is posted
+- **THEN** only the money account takes a line in that currency
+- **AND** each part's account, 2200 and a spread's deferral account take base-currency lines: the part's base amount is `RND-FX` of its amount at the line's rate, its GST `RND-GST-INCL` of that base amount and its account the rest [accountant to confirm]
+- **AND** the cent `RND-FX` leaves between the parts and the line goes to 7030
+
+#### Scenario: A refund's GST follows its code (rev 0.155)
+- **GIVEN** a money-out part coded SR, or a money-in part coded TX or IM
+- **WHEN** it is posted
+- **THEN** its GST is taken at its code and signed as the line is, so it reduces output tax or input tax [accountant to confirm]
 
 ### Requirement: Settlement tolerances
 Settlement tolerances SHALL be organisation settings, defaulting to the workbook's, and SHALL apply only to the residual left after realised FX (FR-BNK-08), never above the caps per document and per month.

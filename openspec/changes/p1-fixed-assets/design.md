@@ -116,6 +116,39 @@ catalogue, with their guide sections. No new port (ADR-T8): the documents, ledge
 banking ports carry it; the migration adds the document types, the asset's source guard, the depreciation guard, the
 approval object and the bank-match kind. The job is a platform job of the tick (ADR-T7).
 
+(rev 0.151, the owner's decision of 27 Oct 2026) The standard chart gains 1160 Asset disposal clearing (Other current
+assets), and `assets.disposal_clearing_account` recommends it. It carries no system role: the disposal finds the
+clearing account through the setting, as built, so a role would only duplicate it; FR-COA-04 already keeps an account
+with postings from being deleted, and an inactive or missing one refuses an invoiced sale with ASSET-16 and its fix.
+
+### D8. A default useful life on the asset account (rev 0.151)
+
+Each account of the register's report groups may carry a default useful life in whole months (1 to 600), an
+attribute of the chart (FR-COA-02) beside the revalue flag: `account.useful_life_months`, null for none, checked
+1 to 600 by the database and refused by the chart's rules on an account outside the register's groups. The standard
+chart sets 1510 36, 1520 60, 1530 36 and 1540 36 [verify: the accountant confirms]. The register's form fills the life
+from the account chosen (the line's account, or the account of an asset bought earlier) while the person has not
+typed one; a change of the account's life never touches a registered asset, whose life is its own. **Alternatives:**
+one organisation setting for every asset (wrong for furniture and fit-out) and no prefill (inconsistent lives).
+
+### D9. Voiding an asset registered by mistake (rev 0.151)
+
+A void, with a reason, reverses each of the asset's months of depreciation that nothing reversed, on its own date
+(FR-GL-12), sets the asset's document to reversed, and releases its source: `fixed_asset_source` gains `released`
+(false until the void), and one asset per line becomes one **live** asset per line, a unique index on the line where
+not released. FY235 lets a source change only from live to released, in the transaction that reversed its asset, and
+never lets it go; the release is audited with the asset (AUD-01). So the line shows again under **Not in the register
+yet** and can be registered again, while the voided asset and its reversed months stay in the history. A void is
+refused while a disposal of the asset stands (void the disposal first) or while a month to reverse is in a period that
+is not open (reopen it first), both ASSET-20, and for an asset voided already (ASSET-21), which also changes and disposes
+no more. A fixed asset's document is reversed with no entry of its version reversed, only every month of its
+depreciation, of any version, reversed (`document_reversed_posted`). In Founder mode it is the approval
+object `fixed_asset` with `fixed_asset.void` (ASSET-22 asks for it), approved by another person who holds A on "Fixed
+assets" (FM-1), its envelope bound to the asset's version, status, cost and accumulated depreciation (FR-APR-05), as a
+disposal's void is. **Alternatives:** removal only while
+nothing has posted (a late registration posts its due months at once, so it rarely helps) and no removal in P1 (a
+mistaken asset distorts depreciation and the register for good).
+
 ## Risks / Trade-offs
 
 - [The opening accumulated depreciation typed for an old asset differs from what the opening balances put on 1590] →
@@ -136,5 +169,5 @@ removed; its documents and entries stay, as all posted history does.
 
 ## Open Questions
 
-- Recommended useful lives per asset account (the accountant), to prefill the form; until then the person enters the
-  life.
+- (Resolved, rev 0.151) Recommended useful lives per asset account: the default life on the account (D8), 36, 60, 36
+  and 36 months for 1510 to 1540, until the accountant confirms them.

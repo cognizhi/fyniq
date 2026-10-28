@@ -98,6 +98,37 @@ func TestEICARScanner(t *testing.T) {
 	porttest.Scanner(t, EICARScanner{})
 }
 
+// Local mode's field keys pass the Cipher suite, are kept in a file only its owner reads, and open what they sealed
+// after a restart.
+// req: NFR-PORT-04
+// req: SEC-11
+// asvs: V11.3.2, V11.3.3
+func TestFieldKeysConformance(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "keys", "fields.key")
+	a, err := LoadOrCreateFieldKeys(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	porttest.Cipher(t, a)
+	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("the key file is %v, %v; want mode 0600", info.Mode(), err)
+	}
+	sealed, err := a.Seal(context.Background(), []byte("12345678"), []byte("r"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := LoadOrCreateFieldKeys(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := b.Open(context.Background(), sealed, []byte("r")); err != nil || string(got) != "12345678" {
+		t.Fatalf("after reloading the keys: %q, %v", got, err)
+	}
+	if _, err := NewFieldKeys(make([]byte, 32)); err == nil {
+		t.Error("32 bytes of field keys were accepted")
+	}
+}
+
 // req: NFR-PORT-04
 // req: CTL-AUD-02
 func TestSignerConformance(t *testing.T) {

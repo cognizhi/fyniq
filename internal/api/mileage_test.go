@@ -13,7 +13,6 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
-	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -64,7 +63,7 @@ func trip(category, date, vehicle, km string) map[string]any {
 
 // FR-AP-16 and RND-MILEAGE (p1-expense-claims task 4.1; UC-EXP-02): a trip in the claimant's own car is claimed at the
 // organisation's rate per km for a car in force on its date, the distance rounded to 0.1 km and the amount to the cent,
-// with no GST; until the rate is set, a trip is refused with a plain message. A rate changed mid-month applies by trip
+// with no GST; the recommended S$0.60 applies until the organisation changes it (rev 0.151). A rate changed mid-month applies by trip
 // date. Each month's trips are the member's mileage log; their saved places are their own.
 // req: FR-AP-16
 // req: RND-MILEAGE
@@ -78,22 +77,20 @@ func TestMileageIsClaimedAtTheRate(t *testing.T) {
 	weiling := c.as(c.weiling, authz.Owner, authz.Controller)
 	mei := c.as(c.mei, authz.Employee)
 
-	// No rate for a car yet: the trip waits, and says why.
+	// No rate changed: a car is at the recommended S$0.60 a km (rev 0.151), so 18.4 km is S$11.04.
 	r := e.call(http.MethodPost, "/v1/expense-claims", ahkow, map[string]any{"date": "2026-10-24", "lines": []any{trip(mileage, "2026-10-14", "car", "18.4")}})
 	if r.Status != 201 {
 		t.Fatalf("drafting: %d %s", r.Status, r.Raw)
 	}
 	path := "/v1/expense-claims/" + r.str("id")
 	g := e.call(http.MethodGet, path, ahkow, nil)
-	if !strings.Contains(g.Raw, `"code":"CLAIM-19"`) || !strings.Contains(g.Raw, "the organisation has set no rate per km for a car on 2026-10-14") ||
-		strings.Contains(g.Raw, ledger.CodeZeroLine) { // the reason, not also the engine's "the line's amount is zero" (found in the dev stack)
-		t.Fatalf("a trip with no rate: %s", g.Raw)
+	if l, _ := g.Body["lines"].([]any); len(l) != 1 || l[0].(map[string]any)["rate"].(map[string]any)["amount"] != "0.60" ||
+		l[0].(map[string]any)["amount"].(map[string]any)["amount"] != "11.04" {
+		t.Fatalf("a trip at the recommended rate: %s", g.Raw)
 	}
-	e.problemIs(e.call(http.MethodPost, path+"/submit", ahkow, nil, "If-Match", r.Header.Get("ETag")), "submitExpenseClaim", 422, claim.CodeMileageRate)
 
-	// S$0.60 from 1 October, S$0.70 from 20 October (stand-ins: the organisation sets its own): 18.4 km on the 14th
-	// is S$11.04; 10.04 km on the 22nd rounds to 10.0 km, S$7.00.
-	e.mileageRate("car", "0.60", porttest.Day(10, 1))
+	// The organisation changes it to S$0.70 from 20 October: 18.4 km on the 14th stays S$11.04; 10.04 km on the 22nd
+	// rounds to 10.0 km, S$7.00.
 	e.mileageRate("car", "0.70", porttest.Day(10, 20))
 	draft := map[string]any{"date": "2026-10-24", "lines": []any{trip(mileage, "2026-10-14", "car", "18.4"), trip(mileage, "2026-10-22", "car", "10.04")}}
 	fixed := e.call(http.MethodPut, path, ahkow, draft, "If-Match", g.Header.Get("ETag"))
@@ -107,8 +104,8 @@ func TestMileageIsClaimedAtTheRate(t *testing.T) {
 		t.Errorf("the trips: %s", fixed.Raw)
 	}
 	bike := e.call(http.MethodPost, "/v1/expense-claims", ahkow, map[string]any{"date": "2026-10-24", "lines": []any{trip(mileage, "2026-10-14", "motorcycle", "5")}})
-	if g := e.call(http.MethodGet, "/v1/expense-claims/"+bike.str("id"), ahkow, nil); !strings.Contains(g.Raw, "no rate per km for a motorcycle") {
-		t.Errorf("a motorcycle with no rate: %s", g.Raw)
+	if g := e.call(http.MethodGet, "/v1/expense-claims/"+bike.str("id"), ahkow, nil); g.str("total", "amount") != "1.25" { // the recommended S$0.25 a km
+		t.Errorf("a motorcycle at the recommended rate: %s", g.Raw)
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/expense-claims", ahkow, map[string]any{"lines": []any{trip(mileage, "2026-10-14", "bicycle", "5")}}),
 		"createExpenseClaim", 422, CodeInvalid)
@@ -127,10 +124,10 @@ func TestMileageIsClaimedAtTheRate(t *testing.T) {
 		t.Errorf("the entry: %v %s", legs, done.Raw)
 	}
 
-	// October's mileage log: the two trips approved and the motorcycle's still a draft with no rate, S$18.04; another
+	// October's mileage log: the two trips approved and the motorcycle's still a draft at S$1.25, S$19.29; another
 	// Employee does not see it, finance does.
 	log := e.call(http.MethodGet, "/v1/expense-claims/mileage-log?month=2026-10", ahkow, nil)
-	if log.Status != 200 || len(log.Body["trips"].([]any)) != 3 || log.str("total", "amount") != "18.04" || log.str("claimant", "name") != "Ah Kow" {
+	if log.Status != 200 || len(log.Body["trips"].([]any)) != 3 || log.str("total", "amount") != "19.29" || log.str("claimant", "name") != "Ah Kow" {
 		t.Errorf("his log: %d %s", log.Status, log.Raw)
 	}
 	e.problemIs(e.call(http.MethodGet, "/v1/expense-claims/mileage-log?month=2026-10&claimant_id="+c.ahkow, mei, nil), "getMileageLog", 404, CodeNotFound)

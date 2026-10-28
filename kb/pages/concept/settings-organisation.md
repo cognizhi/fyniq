@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings and recommended values: features, terms, GST, tolerances, banking, claims, mileage, thresholds, asset disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:3f25c5cb0ac69d8bd925870237e43993cbafcd4e4a37ef47608631d11b8b2e7f
+  - docs/user-guide/organisation-settings.md sha256:bc52cfc799753a29127849306376be31384a468972add2b7c735c795484f9eea
 data_class: general
 taint: trusted
 status: draft
@@ -152,7 +152,7 @@ aliases:
 ## Mileage rates
 
 - A member who drives their own car or motorcycle for the company claims the distance at the organisation's **rate per km** for the vehicle.
-- IRAS prescribes no rate per km; it must be reasonable, so both rates ship **not set**, and a mileage claim waits until the owner or the accountant sets its vehicle's rate.
+- IRAS prescribes no rate per km, only a reasonable one, so the rates are the company's own policy: recommended **S$0.60** a km for a car and **S$0.25** a km for a motorcycle, until the owner or the accountant changes them.
 - Each rate is in Singapore dollars, from 0.01 to 5.00, and takes effect from a day, never back-dated: a trip is claimed at the rate in force on its date.
 - The distance is rounded to 0.1 km and the amount to the cent, trip by trip; a mileage line claims no GST.
 - A change needs a second approver, as the other money settings do.
@@ -176,7 +176,8 @@ aliases:
 ## Disposal clearing account
 
 - An asset sold on a sales invoice is invoiced to the **disposal clearing account**: the invoice's line goes to it, and the disposal clears it, so the gain or loss falls in the month of the disposal, whatever the invoice's month.
-- It starts **not set**: the accountant names a balance-sheet account for it before the first asset is sold on an invoice.
+- It is **1160 Asset disposal clearing** in the standard chart unless the accountant names another balance-sheet account; its balance should be nil at month end.
+- A chart loaded before 1160 joined the standard chart lacks it: add 1160 under **Accounting → Chart of accounts**, or name another account, before the first asset is sold on an invoice.
 - An asset sold for money received into a bank account does not use it: the disposal records the money, and bank import matches it. A change needs a second approver.
 
 (src: docs/user-guide/organisation-settings.md#disposal-clearing-account)

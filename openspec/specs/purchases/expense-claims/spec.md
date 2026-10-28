@@ -159,6 +159,10 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **THEN** it must be reasonable, as IRAS prescribes no per-km rate
 - **AND** reimbursing business mileage in a private car is not taxable, while private mileage is
 
+#### Scenario: Recommended rates (rev 0.151)
+- **WHEN** an organisation has not changed its mileage rates
+- **THEN** a car is S$0.60 a km and a motorcycle S$0.25 a km (`claims.mileage_rate_car`, `claims.mileage_rate_motorcycle`, under dual control) [verify: benchmarks only; the accountant confirms] (the owner's decision of 27 Oct 2026)
+
 #### Scenario: No input GST on mileage
 - **WHEN** a mileage claim is posted
 - **THEN** it claims no input GST, because there is no tax invoice and GST on motor-car expenses is disallowed (GST Regulations, reg. 27)
@@ -215,6 +219,15 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **WHEN** an employee receives a fixed allowance
 - **THEN** it is taxable pay, goes through payroll and is reported in the IR8A
 - **AND** non-taxable reimbursements are not reported
+
+#### Scenario: A claim that settles an advance (rev 0.155)
+- **GIVEN** a claim that settles a cash advance
+- **WHEN** it is posted
+- **THEN** 1250 takes what is left of the advance, at most the claim's total, and 2150 owes the rest
+
+#### Scenario: A claim line in another currency (rev 0.155)
+- **WHEN** a claim line is in another currency
+- **THEN** it is costed as a bill's line in the claim's currency, with 2150 at the claim's rate
 
 ### Requirement: FR-AP-18 Company-card spend
 The system SHALL bring company-card lines in by import or feed (FR-AP-08) and let the cardholder attach the receipt, category and project from My claims.

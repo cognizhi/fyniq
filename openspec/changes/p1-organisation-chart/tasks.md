@@ -100,13 +100,33 @@
   rev 0.33). `GET`/`POST /v1/contacts`, `GET`/`PATCH /v1/contacts/{contact_id}`. **Left:** the live balances, the
   financial-year totals, the ageing and the timeline (FR-CT-02): P0's ledger lines carry no contact, so they come with
   the sales and purchase documents that post to one.)
-- [ ] 4.2 Vendor bank details as versioned high-risk data. A pending version freezes payments and notifies every founder through the outbox; values are masked in logs. Test `// req: FR-CT-03`; approval waits for `p1-approval-engine`, and until then the change is refused, never applied
+- [x] 4.2 Vendor bank details as versioned high-risk data. A pending version freezes payments and notifies every founder through the outbox; values are masked in logs. Test `// req: FR-CT-03`; approval waits for `p1-approval-engine`, and until then the change is refused, never applied
   (20 Oct 2026: waits for `p1-approval-engine` and the notifications. A pending version must freeze payments and reach
   every founder, and neither exists yet; storing bank details with no way to approve them would only hold personal data
   for nothing.)
+  (27 Oct 2026: both exist now. The owner's decisions (PRD-001 rev 0.152): one approved account per currency, Singapore
+  or overseas; until batches, planning a payment date is refused and recording one warns; account numbers sealed with
+  their last four digits and a keyed fingerprint; the full number revealed after step-up, audited. First slice: the
+  `Cipher` port (SEC-11), `internal/fieldseal`, its local adapter and `gcp.KMSFields` on the KMS keys `fields` and
+  `fingerprints` (`infra/gcp/modules/environment/fields.tf`, [live-verify] in the dev cloud). Tests:
+  `TestTheEnvelopeSealsBoundToTheRecord`, `TestFieldKeysConformance`, `TestKMSFieldsConformance`. Second slice (rev
+  0.153): the change as a `payee_bank_change` document with its sealed `payee_bank_account` (migrations 000180, 000181;
+  FY237, FY238), ten operations under "Vendor bank details" and "Evidence", the required letter, the freeze on planning
+  (and ⚠ on recording) a payment, the founders' security notice, approval through the engine by someone who neither
+  prepared nor asked for it (`payee_bank_change.approve`), the reveal. Tests: `TestAChangeOfBankDetailsNeedsASecondPerson`,
+  `TestABankDetailsChangeIsChecked`, `TestAttackBankDetailsChangeOnlyByApproval`, `TestAttackPayeeBankAccountsKeepTheirChange`,
+  `TestAChangesAccountIsChecked`, `TestANumberIsSealedForItsChange`, the matrix's rows. Threat model
+  `docs/security/threat-models/vendor-bank-details.md`. Third slice: the screens. Contacts gives each vendor its
+  **Bank details** (the accounts in force, masked, with **Show number**; the changes and the freeze), the change's editor
+  with its evidence and **Ask for approval** (`screens/contacts/BankDetails.tsx`), and the approval page shows both
+  numbers beside the letter (`CompareNumbers`). Guide `contacts-and-items.md` (Bank details, Change a supplier's bank
+  details, See the full number), compiled into `contacts.manage`. Tests `bankDetails.test.tsx`, `approvals.test.tsx`.
+  Not built: the contacts list's chip for a vendor whose change waits (the record page arrives with FR-CT-02); payment
+  batches refusing a vendor whose change waits come with `p1-payments-out`.)
 - [ ] 4.3 Duplicate detection on name, UEN, email and bank account (`// req: FR-CT-04`), and items with prices per currency (`// req: FR-ITM-01`)
   (20 Oct 2026: duplicates on the name (case and spacing aside), the UEN or tax ID and the emails are flagged on every
-  contact read and write, never refused; the bank account joins them with task 4.2. Items, 20 Oct 2026: migration 000027
+  contact read and write, never refused; the bank account joins them with task 4.2 (27 Oct 2026: built, rev 0.153: the
+  same account in force at another vendor is a warning on the change, PAYEE-17). Items, 20 Oct 2026: migration 000027
   adds `fyniq.item` (code, never changed; name, printed description, product or service, unit, revenue account, GST code,
   active flag; mutable at its version, audited, never deleted) and `fyniq.item_price`, one unit price per currency as
   NUMERIC(20,6) (§11.3), never NaN or below zero, replaced with the item and audited with it. `GET`/`POST /v1/items`,

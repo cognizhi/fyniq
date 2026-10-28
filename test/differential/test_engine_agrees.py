@@ -5,6 +5,10 @@ Hypothesis searches the oracle's scenario strategies for one on which the Go eng
 finds one, it shrinks it to the smallest disagreeing scenario, which is saved as a new golden case in
 test/differential/golden/ and fails the run (task 3.1). Harness code: it calls only the oracle's
 public entry points and the engine's command line.
+
+It draws manual-journal scenarios, and also the P1 sources named in FYNIQ_DIFFERENTIAL_SOURCES
+(comma-separated, e.g. "bank"): an engine session names a source there once cmd/scenario-run reads
+its shapes (README, "P1 sources").
 """
 
 import hashlib
@@ -16,14 +20,23 @@ from decimal import Decimal
 from pathlib import Path
 
 from hypothesis import HealthCheck, find, settings
+from hypothesis import strategies as st
 from hypothesis.errors import NoSuchExample
 
 from oracle.ledger import Ledger
 from oracle.scenario import ScenarioError, scenario_from_json
 from oracle.strategies import scenarios
+from oracle.strategies_p1 import p1_scenarios
 
 GOLDEN = Path(__file__).parent / "golden"
 EXAMPLES = int(os.environ.get("FYNIQ_DIFFERENTIAL_EXAMPLES", "1000"))
+SOURCES = tuple(s.strip() for s in os.environ.get("FYNIQ_DIFFERENTIAL_SOURCES", "").split(",") if s.strip())
+
+
+def strategy() -> st.SearchStrategy[dict]:
+    if not SOURCES:
+        return scenarios("differential")
+    return st.one_of(scenarios("differential"), p1_scenarios(SOURCES, "differential"))
 
 
 def engine(scenario: dict) -> dict:
@@ -81,7 +94,7 @@ def difference(e: dict, o: dict) -> str | None:
 def test_the_engine_and_the_oracle_agree() -> None:  # req: QA-ENG-02
     try:
         bad = find(
-            scenarios("differential"),
+            strategy(),
             lambda s: difference(engine(s), oracle(s)) is not None,
             settings=settings(max_examples=EXAMPLES, deadline=None, database=None,
                               suppress_health_check=list(HealthCheck)),

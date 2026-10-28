@@ -3,9 +3,9 @@
 fyniq_ai        USAGE     schema fyniq
 fyniq_api       EXECUTE   accept_member_invitation()
 fyniq_api       EXECUTE   accept_super_admin_invitation()
-fyniq_api       INSERT    account (cash_flow_line, code, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, revalue, role, type)
+fyniq_api       INSERT    account (cash_flow_line, code, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, revalue, role, type, useful_life_months)
 fyniq_api       SELECT    account
-fyniq_api       UPDATE    account (cash_flow_line, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, revalue, version)
+fyniq_api       UPDATE    account (cash_flow_line, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, revalue, useful_life_months, version)
 fyniq_api       INSERT    accounting_framework (edition, framework, from_on, version, written_by)
 fyniq_api       SELECT    accounting_framework
 fyniq_api       UPDATE    accounting_framework (confirmed_at, confirmed_by)
@@ -134,6 +134,7 @@ fyniq_api       UPDATE    evidence (removed_at, state, version)
 fyniq_api       EXECUTE   finish_job_slot()
 fyniq_api       INSERT    fixed_asset_source (account_id, asset_id, line, source_id, source_version)
 fyniq_api       SELECT    fixed_asset_source
+fyniq_api       UPDATE    fixed_asset_source (released)
 fyniq_api       SELECT    fx_feed_rates
 fyniq_api       INSERT    fx_rate (currency, entered_at, entered_by, kind, note, on_date, quote, quote_form, rate)
 fyniq_api       SELECT    fx_rate
@@ -206,6 +207,9 @@ fyniq_api       SELECT    organisation_setting
 fyniq_api       INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_api       SELECT    outbox
 fyniq_api       UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
+fyniq_api       INSERT    payee_bank_account (change_id, change_version, contact_id, currency, number_fingerprint, number_last4, number_sealed)
+fyniq_api       SELECT    payee_bank_account
+fyniq_api       UPDATE    payee_bank_account (state)
 fyniq_api       INSERT    period (ends_on, starts_on)
 fyniq_api       SELECT    period
 fyniq_api       UPDATE    period (status, version)
@@ -435,6 +439,7 @@ fyniq_readonly  SELECT    organisation_connector
 fyniq_readonly  SELECT    organisation_connector_secret
 fyniq_readonly  SELECT    organisation_setting
 fyniq_readonly  SELECT    outbox
+fyniq_readonly  SELECT    payee_bank_account
 fyniq_readonly  SELECT    period
 fyniq_readonly  SELECT    period_close
 fyniq_readonly  SELECT    period_close_check
@@ -586,6 +591,7 @@ fyniq_worker    SELECT    organisation_setting
 fyniq_worker    INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_worker    SELECT    outbox
 fyniq_worker    UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
+fyniq_worker    SELECT    payee_bank_account
 fyniq_worker    SELECT    period
 fyniq_worker    SELECT    period_close
 fyniq_worker    SELECT    period_close_check

@@ -2,6 +2,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "checks": {
+      "description": "recordBillPayment only: the warnings it was recorded with (⚠), such as a payment to a supplier whose bank details wait for approval (PAYEE-12).",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "entry": {
       "$ref": "Entry.schema.json",
       "description": "The entry the command posted: the payment's entry, or its reversing entry."

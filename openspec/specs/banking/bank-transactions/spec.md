@@ -171,6 +171,12 @@ Source: PRD-001 §8.4 · Priority M · Phase P1
 - **THEN** the difference's carrying amount clears to 7030 on a line of its own when within the tolerances in force (S$1.00; for another currency the greater of S$1.00 and 3%; at most S$50.00 a document and S$200.00 a month), and is refused above them (RECEIPT-11, BILLPAY-12)
 - **AND** the allocation records it, a void negates it, and the close warns when the month's differences exceed a cap lowered since (C.2 #49)
 
+#### Scenario: What the 3% and the month's cap count (rev 0.155)
+- **GIVEN** a part recorded in full on a document in another currency
+- **WHEN** its difference is compared with the tolerances
+- **THEN** the 3% is of what the document owes on its control account at its stored rate, after any tax withheld or deposit deducted [accountant to confirm]
+- **AND** the month's cap adds the absolute value of every difference recorded in full that month, receipts and payments together, so a gain never makes room for a loss
+
 ### Requirement: FR-BNK-09 Transfers between money accounts
 The system SHALL record a transfer between money accounts once, matched on both sides, and SHALL track transfers in transit.
 
@@ -231,6 +237,35 @@ Source: PRD-001 §8.4 · Priority S · Phase P1 (file) / P2 (API)
 #### Scenario: Marked paid from the feed
 - **WHEN** the feed shows the debit for a batch
 - **THEN** the batch is marked paid
+
+#### Scenario: The DBS file first (rev 0.154)
+- **WHEN** an approved batch is released
+- **THEN** its file is DBS IDEAL's Universal File Format (UFF) for FAST and GIRO, written from DBS's own specification, each field [verify] with a test upload to IDEAL
+
+#### Scenario: SGD to Singapore accounts (rev 0.154)
+- **WHEN** a payment is added to a batch
+- **THEN** it pays SGD from an SGD money account to a Singapore bank account by FAST or GIRO
+- **AND** overseas and foreign-currency payments stay recorded by hand
+
+#### Scenario: Bills and expense claims (rev 0.154)
+- **WHEN** a batch is built
+- **THEN** it takes approved bills, with their planned dates (FR-AP-13), and approved expense claims (FR-AP-07)
+- **AND** salaries join with the payroll link
+
+#### Scenario: Posted on release, matched later (rev 0.154)
+- **WHEN** a batch is released
+- **THEN** each payment posts as recording one by hand does (Dr 2010 or 2150 · Cr the money account) on the batch's payment date
+- **AND** bank import matches it, and a payment the bank rejects is voided
+
+#### Scenario: Who releases (rev 0.154)
+- **GIVEN** Founder mode
+- **WHEN** one founder prepared a batch and another approved it (FM-1)
+- **THEN** either of them releases it after step-up, holding the Payment releaser role, and never one person alone
+- **AND** in Standard mode the releaser is a third person (SOD-2)
+
+#### Scenario: Remittance advice on the match (rev 0.154)
+- **WHEN** a batch's payment to a supplier is matched to its bank statement line
+- **THEN** remittance advice is emailed to the supplier's remittance address
 
 ### Requirement: FR-BNK-13 Daily cash position
 The system SHALL show the daily cash position across accounts and currencies at the latest rates.

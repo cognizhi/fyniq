@@ -158,6 +158,23 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 - [ ] 10.1 The bill, credit, payment and spread rules in the independent oracle, with scenario shapes and
   golden cases (an oracle session, QA-ENG-01; a build session never reads or edits `oracle/`)
+  (27 Oct 2026, the oracle session, whose author has not read the engine: the oracle's half is written.
+  `bill@1` (`RND-LINE` and a purchase order's later part, the stated GST and ENG-42's `gst_base`,
+  `RND-GST-SHARE`, `RND-WHT`, spreads to 1210 from the service month), `vendor_credit@1`, `bill_payment@1`
+  (each part at the bill's stored rate, the residual, a part in full within the FR-BNK-08 tolerances and
+  caps, unapplied credits, a base-currency account paying foreign bills) and the releases are in
+  `oracle/src/oracle/sources/purchases.py` and `settle.py`, with `RND-DISCOUNT` in the policies.
+  Hand-worked tests are in `oracle/tests/test_purchases.py` (G4-023, G4-024, rev 0.77's payment), INV-07's
+  AP property is in `test_p1_properties.py`, and the golden case is `test/differential/pending/purchases.json`;
+  the shapes are in `test/differential/README.md`. **Left:** the differential, once 10.4 lets the engine
+  read the shapes; applying supplier credits (`credit_application@1`) and refunds (`supplier_refund@1`) are
+  not in the format yet)
+- [ ] 10.4 (engine session) `cmd/scenario-run` reads the `bill`, `vendor_credit` and `bill_payment` shapes of
+  `fyniq-scenario@1` with `settings.tolerance` and posts them through `bill@1`, `vendor_credit@1`,
+  `bill_payment@1` and `bill_release@1`, writing P1 entries in their canonical form (`test/differential/README.md`,
+  "P1 sources"); then `test/differential/pending/purchases.json` moves to `golden/` and `purchases` joins
+  `FYNIQ_DIFFERENTIAL_SOURCES`. Verified by `make test` and `make differential` agreeing to the cent; a
+  disagreement is settled from the PRD ("P1 readings", decided in PRD-001 rev 0.155). `// req: QA-ENG-02`
 - [x] 10.2 The bills of `p1-multi-currency-fx` task 3.6: revalued one by one
   (23 Oct 2026, PRD-001 rev 0.92: each open bill and supplier credit in a foreign currency against its stored rate, a
   line on 2010 naming it, what 2010 holds beyond them an item of its own, a stale run posting only the change. Test

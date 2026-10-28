@@ -142,6 +142,29 @@ describe("the fixed asset register", () => {
     expect(await screen.findByText("FA-0003 Dell monitor is in the register.")).toBeTruthy();
   });
 
+  // req: ledger/fixed-assets The account's default useful life is offered (rev 0.151)
+  it("offers the asset account's default useful life, and keeps a life typed", async () => {
+    const furniture = { ...accounts.items[0], id: "a1520", code: "1520", name: "Office equipment & furniture", useful_life_months: 60 };
+    answer(register({ "GET /v1/accounts": { status: 200, body: { items: [{ ...accounts.items[0], useful_life_months: 36 }, furniture, ...accounts.items.slice(1)] } } }));
+    renderPage(FixedAssets, { path: "/accounting/assets", session: accountant, organisation, mode: "expert" });
+    fireEvent.click(await screen.findByRole("tab", { name: /Not in the register yet \(1\)/ }));
+    const list = await screen.findByRole("table", { name: "Purchases not in the register" });
+    fireEvent.click(within(list).getByRole("button", { name: "Register" }));
+    let dialog = await screen.findByRole("dialog");
+    const life = () => (within(dialog).getByLabelText("Useful life (months)") as HTMLInputElement).value;
+    expect(life()).toBe("36");
+    expect(within(dialog).getByText(/1510 Computer equipment lasts 36 months by default/)).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Register one bought earlier" }));
+    dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Asset account (its category)"), { target: { value: "a1520" } });
+    expect(life()).toBe("60");
+    fireEvent.change(within(dialog).getByLabelText("Useful life (months)"), { target: { value: "48" } });
+    fireEvent.change(within(dialog).getByLabelText("Asset account (its category)"), { target: { value: "a1510" } });
+    expect(life()).toBe("48");
+  });
+
   it("checks a sale before recording it, then records it", async () => {
     answer(
       register({
@@ -183,6 +206,49 @@ describe("the fixed asset register", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Void" }));
     expect(await screen.findByText("Voiding DSP-0001 waits for another person's approval.")).toBeTruthy();
     expect(seen.find((s) => s.path === "/v1/asset-disposals/d1/void-approval")?.body).toMatchObject({ reason: "Not sold after all" });
+  });
+
+  // req: ledger/fixed-assets An asset registered by mistake is voided (rev 0.151)
+  it("voids an asset registered by mistake, and lists it under Voided; in Founder mode another person approves", async () => {
+    const voided = asset({ status: "voided", accumulated_depreciation: sgd("0.00"), net_book_value: sgd("3600.00") });
+    answer(
+      register({
+        "POST /v1/fixed-assets/fa1/void": { status: 200, body: voided },
+        "GET /v1/fixed-assets": (_: unknown, req: Request) =>
+          new URL(req.url).searchParams.get("status") === "voided" ? { status: 200, body: { items: [voided] } } : { status: 200, body: { items: [asset()] } },
+      }),
+    );
+    renderPage(FixedAssets, { path: "/accounting/assets", session: accountant, organisation, mode: "expert" });
+    fireEvent.click(within(await screen.findByRole("table", { name: "Assets" })).getByRole("button", { name: "MacBook Pro 14" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Void the asset" }));
+    let dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Void the asset" }));
+    expect(await within(dialog).findByText(/The asset was not voided/)).toBeTruthy();
+    fireEvent.change(within(dialog).getByLabelText("Why"), { target: { value: "Registered from the wrong line" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Void the asset" }));
+    expect(await screen.findByText("FA-0001 is voided: its depreciation is reversed, and its line can be registered again.")).toBeTruthy();
+    const sent = seen.find((s) => s.method === "POST" && s.path === "/v1/fixed-assets/fa1/void");
+    expect(sent?.body).toEqual({ reason: "Registered from the wrong line" });
+    expect(sent?.headers.get("If-Match")).toBe('"1-posted"');
+    fireEvent.click(screen.getByRole("tab", { name: "Voided" }));
+    const list = await screen.findByRole("table", { name: "Voided assets" });
+    expect(within(list).getByText("Voided")).toBeTruthy();
+    await noViolations(document.body);
+
+    answer(
+      register({
+        "POST /v1/fixed-assets/fa1/void": problem(409, "ASSET-22", "In Founder mode, voiding an asset needs a second person (FM-1)."),
+        "POST /v1/fixed-assets/fa1/void-approval": { status: 202, body: { id: "r1" } },
+      }),
+    );
+    renderPage(FixedAssets, { path: "/accounting/assets", session: accountant, organisation, mode: "expert" });
+    fireEvent.click(within((await screen.findAllByRole("table", { name: "Assets" }))[0]!).getByRole("button", { name: "MacBook Pro 14" }));
+    fireEvent.click((await screen.findAllByRole("button", { name: "Void the asset" }))[0]!);
+    dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Why"), { target: { value: "Not an asset" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Void the asset" }));
+    expect(await screen.findByText("Voiding FA-0001 waits for another person's approval.")).toBeTruthy();
+    expect(seen.find((s) => s.path === "/v1/fixed-assets/fa1/void-approval")?.body).toEqual({ reason: "Not an asset" });
   });
 
   it("offers nothing to change to a Bookkeeper, who reads the register", async () => {

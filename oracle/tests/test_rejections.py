@@ -246,3 +246,70 @@ def test_rejections_are_listed_in_order_and_do_not_stop_later_documents():
         "2026-01": {"1010": "10.00", "4010": "-10.00"},
         "2026-02": {"1010": "-10.00", "4010": "10.00"},
     }
+
+
+# req: FR-GL-12
+def test_a_reversal_dated_the_day_before_its_entry_is_rejected():
+    # GOOD posts on 5 Jan; a reversal on 4 Jan is refused and posts nothing. The document is not
+    # counted as reversed, so a reversal on a later day still posts.
+    result, ledger = post(GOOD, reversals=(("JNL-0001", "2026-01-04"), ("JNL-0001", "2026-01-05")))
+    assert result["rejected"] == ["JNL-0001/reversal"]
+    assert ledger.reasons == [("JNL-0001/reversal", "reversal-before-entry")]
+    assert [(e["kind"], e["posting_date"]) for e in result["entries"]] == [
+        ("post", "2026-01-05"),
+        ("reversal", "2026-01-05"),
+    ]
+    assert result["trial_balance"] == {"2026-01": {}}
+
+
+# req: FR-GL-12
+def test_a_reversal_on_the_entrys_own_day_posts():
+    result, _ = post(GOOD, reversals=(("JNL-0001", "2026-01-05"),))
+    assert result["rejected"] == []
+    assert [(e["kind"], e["posting_date"]) for e in result["entries"]] == [
+        ("post", "2026-01-05"),
+        ("reversal", "2026-01-05"),
+    ]
+
+
+# req: FR-GL-12
+def test_a_reversal_in_a_later_month_posts_in_that_month():
+    # 10.00 Dr 1010 / Cr 4010 in January, negated in March.
+    result, _ = post(GOOD, reversals=(("JNL-0001", "2026-03-02"),))
+    assert result["rejected"] == []
+    assert result["trial_balance"] == {
+        "2026-01": {"1010": "10.00", "4010": "-10.00"},
+        "2026-03": {"1010": "-10.00", "4010": "10.00"},
+    }
+
+
+SHARE_CAPITAL = [{"code": "3010", "type": "equity", "group": False, "active": True, "role": "share-capital"}]
+
+
+# req: INV-13
+@pytest.mark.parametrize("amount", ["-1000.00", "1000.00"])
+def test_a_manual_journal_line_to_share_capital_is_rejected(amount):
+    # Either side: share capital changes only through the register of share issues (INV-13).
+    other = "1010" if amount.startswith("-") else "6010"
+    _refused(
+        journal(
+            "JNL-0001",
+            "2026-01-05",
+            line("3010", "SGD", amount),
+            line(other, "SGD", amount[1:] if amount.startswith("-") else "-" + amount),
+        ),
+        "share-capital-account",
+        accounts=SHARE_CAPITAL,
+    )
+
+
+# req: INV-13
+def test_an_equity_account_without_the_role_takes_a_manual_journal():
+    # 3100 Retained earnings is equity but not share capital: the journal posts.
+    retained = [{"code": "3100", "type": "equity", "group": False, "active": True}]
+    result, _ = post(
+        journal("JNL-0001", "2026-01-05", line("3100", "SGD", "-50.00"), line("1010", "SGD", "50.00")),
+        accounts=retained,
+    )
+    assert result["rejected"] == []
+    assert result["trial_balance"] == {"2026-01": {"1010": "50.00", "3100": "-50.00"}}

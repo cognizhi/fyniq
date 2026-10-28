@@ -48,6 +48,10 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	if err != nil {
 		return nil, err
 	}
+	fields, err := local.LoadOrCreateFieldKeys(filepath.Join(data, "keys", "fields.key"))
+	if err != nil {
+		return nil, err
+	}
 	secrets, err := local.NewSecretFiles(filepath.Join(data, "secrets"))
 	if err != nil {
 		return nil, err
@@ -70,6 +74,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		Jobs:   local.HTTPJobs{URL: worker, Tokens: tokens},
 		Blobs:  blobs,
 		Signer: signer,
+		Fields: fields,
 		// Local mode keeps staging and committed evidence under their own prefixes of the same directory, which
 		// enforces retention in code, and scans with clamd when FYNIQ_CLAMD_ADDR names one (the stack's scanner
 		// profile), else with the EICAR fake (SEC-24).

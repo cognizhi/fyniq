@@ -104,9 +104,9 @@ const (
 // a step of an organisation connector's lifecycle (p1-connector-framework, FR-INT-26); a bank rule's auto-apply
 // (p1-bank-import-reconcile, FR-BNK-14); posting an expense claim (p1-expense-claims, FR-AP-17), and voiding a
 // reimbursement of claims (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148); voiding a disposal of a fixed asset
-// (FR-FA-03, p1-fixed-assets).
+// (FR-FA-03, p1-fixed-assets); a change of a vendor's bank details (FR-CT-03, rev 0.153).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
-	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets}
+	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -524,7 +524,26 @@ var (
 	ListAssetDisposals       = Policy{Operation: "listAssetDisposals", Capability: FixedAssets, Need: View}
 	GetAssetDisposal         = Policy{Operation: "getAssetDisposal", Capability: FixedAssets, Need: View}
 	VoidAssetDisposal        = Policy{Operation: "voidAssetDisposal", Capability: FixedAssets, Need: Post}
+	VoidFixedAsset           = Policy{Operation: "voidFixedAsset", Capability: FixedAssets, Need: Post}
+	RequestFixedAssetVoid    = Policy{Operation: "requestFixedAssetVoid", Capability: FixedAssets, Need: Post}
 	RequestAssetDisposalVoid = Policy{Operation: "requestAssetDisposalVoid", Capability: FixedAssets, Need: Post}
+	// Vendor bank details (FR-CT-03; PRD-001 rev 0.152): read under V, which the Auditor and the Tax agent hold masked (M),
+	// and the account numbers show their last four characters to everyone; prepared and asked for under C (the
+	// Accountant, the AP specialist); approved through the approval engine by another person who holds A (the Owner, the
+	// Controller). Revealing a full number needs V unmasked (C or A) and step-up; a masked view (M) gets it masked.
+	GetPayeeBankDetails            = Policy{Operation: "getPayeeBankDetails", Capability: VendorBankDetails, Need: View}
+	GetPayeeBankChange             = Policy{Operation: "getPayeeBankChange", Capability: VendorBankDetails, Need: View}
+	CreatePayeeBankChange          = Policy{Operation: "createPayeeBankChange", Capability: VendorBankDetails, Need: Create}
+	ReplacePayeeBankChange         = Policy{Operation: "replacePayeeBankChange", Capability: VendorBankDetails, Need: Create}
+	RequestPayeeBankChangeApproval = Policy{Operation: "requestPayeeBankChangeApproval", Capability: VendorBankDetails, Need: Create}
+	RevealPayeeBankAccount         = Policy{Operation: "revealPayeeBankAccount", Capability: VendorBankDetails, Need: View,
+		MaskedFields: []string{"account_number"}, Note: "The caller must have stepped up in the last 5 minutes; a masked view gets the number masked, unopened."}
+	// A change's files (FR-DOC-05, FR-DOC-06): the vendor's letter and the call-back evidence, under the Evidence row and
+	// the vendor bank details they are about; a masked view of the bank details reaches none of them.
+	AddPayeeBankChangeEvidence    = Policy{Operation: "addPayeeBankChangeEvidence", Capability: Evidence, Need: Create, Parent: VendorBankDetails}
+	ListPayeeBankChangeEvidence   = Policy{Operation: "listPayeeBankChangeEvidence", Capability: Evidence, Need: View, Parent: VendorBankDetails}
+	GetPayeeBankChangeEvidence    = Policy{Operation: "getPayeeBankChangeEvidence", Capability: Evidence, Need: View, Parent: VendorBankDetails}
+	RemovePayeeBankChangeEvidence = Policy{Operation: "removePayeeBankChangeEvidence", Capability: Evidence, Need: Create, Parent: VendorBankDetails}
 	// Invoices (FR-AR-03; p1-sales), as bills: read under V, prepared under C (the Bookkeeper, the AR specialist, the
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
 	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
@@ -955,7 +974,9 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListCashAdvances, GetCashAdvance, RecordCashAdvance, RecordCashAdvanceRefund, VoidCashAdvance, RequestCashAdvanceVoid,
 	ListCardLines, CompleteCardLine, AddCardLineEvidence, ListCardLineEvidence, GetClaimGSTCodes,
 	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset, ListUnregisteredAssetLines,
-	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid,
+	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid, VoidFixedAsset, RequestFixedAssetVoid,
+	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,
+	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
 	ListClaimCategories, CreateClaimCategory, ReplaceClaimCategory, LoadStarterClaimCategories,
 	AddExpenseClaimEvidence, ListExpenseClaimEvidence, GetExpenseClaimEvidence, RemoveExpenseClaimEvidence,

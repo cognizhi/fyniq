@@ -76,6 +76,28 @@ describe("an approval request", () => {
     expect(screen.getByRole("link", { name: "Open the journal and its lines" }).getAttribute("href")).toBe("/accounting/journals/j-7");
   });
 
+  // req: FR-CT-03
+  // req: FR-APR-02
+  it("lets the approver of a change of bank details show the new number and the one it replaces, beside the letter", async () => {
+    const change: Approval = { ...request, object_type: "payee_bank_change", object_key: "ch1", operation: "payee_bank_change.approve",
+      summary: "Change Northwind Analytics Pte Ltd's SGD bank account to DBSSSGSG ••••5544 (Northwind Analytics Pte Ltd)",
+      envelope: JSON.stringify({ dependencies: { replaces: "ch0", status: "draft" } }),
+      diff: [{ field: "SGD account", before: "DBSSSGSG ••••6789 (Northwind)", after: "DBSSSGSG ••••5544 (Northwind)" }] };
+    detail({
+      "GET /v1/bank-changes/ch1/evidence": { status: 200, body: { items: [] } },
+      "POST /v1/bank-changes/ch1/reveal": { status: 200, body: { change_id: "ch1", account_number: "998877665544" } },
+      "POST /v1/bank-changes/ch0/reveal": { status: 200, body: { change_id: "ch0", account_number: "0123456789" } },
+    }, change);
+    renderPage(ApprovalPage, { path: "/approvals/a-1", route: "/approvals/$approvalId" });
+    const compare = await screen.findByRole("region", { name: "Compare with the vendor's letter" });
+    fireEvent.click(within(compare).getByRole("button", { name: "Show number: The new account number" }));
+    fireEvent.click(within(compare).getByRole("button", { name: "Show number: The account number it replaces" }));
+    expect(await within(compare).findByText("998877665544")).toBeTruthy();
+    expect(await within(compare).findByText("0123456789")).toBeTruthy();
+    expect(await screen.findByText(/The vendor's letter, or a screenshot of their confirmation/)).toBeTruthy();
+    await noViolations(document.body);
+  });
+
   // req: FR-UX-03
   it("approves only through the confirmation, signing with a passkey over the version shown", async () => {
     const credentials = authenticator();

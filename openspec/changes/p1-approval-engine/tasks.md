@@ -105,8 +105,10 @@
   supersedes "refused until the approval engine" in FR-ORG-08 and FR-ADM-01. Rev 0.41: pack activation (ENG-32) goes
   through the engine as the object type `statutory_pack` (dependencies: the loaded digest and dates, and whether it is
   activated), approved by A on "Statutory parameters", with its pinned tests run again before the activation is
-  recorded. **Left:** vendor bank details, account merges, the rest of FR-ADM-04 and Owner changes, as those features
-  land.)
+  recorded. 27 Oct 2026 (rev 0.153): vendor bank details go through the engine as `payee_bank_change` with
+  `payee_bank_change.approve`, approved by A on "Vendor bank details" by someone who neither prepared nor asked for the
+  change, in every team mode (FY237). **Left:** account merges, the rest of FR-ADM-04 and Owner changes, as those
+  features land.)
 
 ## 5. Screens
 
@@ -121,7 +123,8 @@
   per member's conflict over the version shown, the reasons kept and the history) and approval-policies
   (`ApprovalPolicies.tsx`: each kind of change with its steps; a change sets 1 to 5 steps, each a quorum narrowed to
   roles or named members, over the policy's ETag; the fixed policy stays fixed). Tests `TeamMode.test.tsx`.
-  **Left:** accountant-review, bank-details-change, payment-batch and personal-approvals with their modules; Founder
+  27 Oct 2026: bank-details-change, with vendors' bank details (`screens/contacts/BankDetails.tsx`; the approval page
+  shows both numbers beside the letter). **Left:** accountant-review, payment-batch and personal-approvals with their modules; Founder
   mode's other controls (FM-4…9) and break-glass on team-mode as they are built; the Inbox's keyboard triage (J/K, A
   opens the confirmation) with p1-app-shell 2.2.)
 - [ ] 5.2 Finish with `make check` and `make test`

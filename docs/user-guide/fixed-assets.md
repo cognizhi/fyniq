@@ -31,8 +31,9 @@ cost on an asset account.
    ⚠ **At or above** when its cost is at or above the capitalisation threshold (S$1,000 unless
    changed in Settings → Organisation).
 2. Choose **Register** on the line.
-3. Enter its useful life in months, such as 36 for a laptop, and its residual value if it will be
-   worth something at the end. Its cost is what the line put on the account, in Singapore dollars,
+3. Check its useful life in months: the form offers the asset account's default life, such as 36
+   for 1510 Computer equipment, and you change it if this asset lasts longer or shorter. Enter its
+   residual value if it will be worth something at the end. Its cost is what the line put on the account, in Singapore dollars,
    whatever the bill's currency.
 4. Depreciation starts in the month it was bought; choose a later month if it went into use later.
 
@@ -73,7 +74,8 @@ Choose **Sell or write off**, then:
   depreciation goes with it in proportion, and the rest depreciates on.
 - **The proceeds.** Money received into a bank, cash or wallet account, with its GST code when the
   company is GST-registered (usually SR); the bank line is matched to it later. Or a sales invoice
-  to the buyer, whose line is on the disposal clearing account. Or none, for a write-off.
+  to the buyer, whose line is on the disposal clearing account (1160 Asset disposal clearing in the
+  standard chart). Or none, for a write-off.
 
 **Check** shows the gain or loss and the entry before anything is saved; **Record** posts it. The
 gain or loss goes to the disposal account, 7050 Gain / (loss) on disposal of assets. Every month of
@@ -86,6 +88,21 @@ A disposal recorded by mistake is voided, with a reason: its entry is reversed a
 it was, depreciating again from the disposal's month. In Founder mode another person approves the
 void. A disposal is voided only before the asset changes again, or, after a part was sold, before
 what was left depreciates again.
+
+## Void an asset registered by mistake
+
+An asset registered from the wrong line, or something that was never an asset, is voided from its
+panel with **Void the asset** and a reason.
+
+- Each month of its depreciation that posted is reversed on its own date, so those months are as
+  they were before it was registered.
+- It leaves the register and is listed under **Voided**, with its months and their reversals.
+- Its bill or bank line shows again under **Not in the register yet**, to register as it should be.
+- A void waits while a disposal of the asset stands: void the disposal first. It waits too while a
+  month to reverse is in a closed period: reopen that period first.
+- In Founder mode another person approves the void.
+- An asset that was sold, scrapped or lost is not voided: choose **Sell or write off**, so its gain
+  or loss shows.
 
 ## The register at the close
 

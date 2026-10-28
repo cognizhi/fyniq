@@ -22,6 +22,7 @@ account | is_control | boolean | not null | false
 account | is_payroll_cost | boolean | not null | false
 account | guidance | text | null | 
 account | revalue | boolean | not null | false
+account | useful_life_months | smallint | null | 
 accounting_framework | organisation_id | uuid | not null | current_org()
 accounting_framework | id | uuid | not null | uuidv7()
 accounting_framework | version | integer | not null | 
@@ -564,6 +565,7 @@ fixed_asset_source | source_id | uuid | not null |
 fixed_asset_source | source_version | integer | not null | 
 fixed_asset_source | line | integer | not null | 
 fixed_asset_source | account_id | uuid | not null | 
+fixed_asset_source | released | boolean | not null | false
 fx_feed_rate | base_currency | text | not null | 
 fx_feed_rate | currency | text | not null | 
 fx_feed_rate | on_date | date | not null | 
@@ -927,6 +929,16 @@ outbox | deadline_at | timestamp with time zone | null |
 outbox | last_error | text | null | 
 outbox | created_at | timestamp with time zone | not null | now()
 outbox | updated_at | timestamp with time zone | not null | now()
+payee_bank_account | organisation_id | uuid | not null | current_org()
+payee_bank_account | id | uuid | not null | uuidv7()
+payee_bank_account | change_id | uuid | not null | 
+payee_bank_account | change_version | integer | not null | 
+payee_bank_account | contact_id | uuid | not null | 
+payee_bank_account | currency | text | not null | 
+payee_bank_account | number_sealed | bytea | not null | 
+payee_bank_account | number_last4 | text | not null | 
+payee_bank_account | number_fingerprint | bytea | not null | 
+payee_bank_account | state | text | not null | 'kept'::text
 period | organisation_id | uuid | not null | current_org()
 period | id | uuid | not null | uuidv7()
 period | starts_on | date | not null | 
@@ -1263,6 +1275,7 @@ account | account_revalue_not_null | NOT NULL revalue
 account | account_role_known | CHECK ((role = ANY (ARRAY['accounts-receivable'::text, 'accounts-payable'::text, 'gst-control'::text, 'fx-rounding'::text, 'unrealised-fx'::text, 'deferred-revenue'::text, 'prepayments'::text, 'salaries-payable'::text, 'cpf-sdl-payable'::text, 'employer-cpf'::text, 'sdl'::text, 'depreciation'::text, 'accumulated-depreciation'::text, 'suspense'::text, 'retained-earnings'::text, 'expense-claims-payable'::text, 'income-tax-payable'::text, 'income-tax-expense'::text, 'director-loan'::text, 'deferred-remuneration'::text, 'share-capital'::text, 'capital-contribution'::text, 'withholding-tax-payable'::text, 'customer-deposits'::text])))
 account | account_type_known | CHECK ((type = ANY (ARRAY['asset'::text, 'liability'::text, 'equity'::text, 'revenue'::text, 'expense'::text])))
 account | account_type_not_null | NOT NULL type
+account | account_useful_life_months | CHECK (((useful_life_months >= 1) AND (useful_life_months <= 600)))
 account | account_version_not_null | NOT NULL version
 account | account_version_positive | CHECK ((version > 0))
 account | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
@@ -1375,7 +1388,7 @@ approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
 approval_policy | approval_policy_id_not_null | NOT NULL id
-approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text, 'connector'::text, 'bank_rule'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'asset_disposal'::text])))
+approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text, 'connector'::text, 'bank_rule'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'asset_disposal'::text, 'fixed_asset'::text, 'payee_bank_change'::text])))
 approval_policy | approval_policy_object_type_not_null | NOT NULL object_type
 approval_policy | approval_policy_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 approval_policy | approval_policy_organisation_id_not_null | NOT NULL organisation_id
@@ -1403,7 +1416,7 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK ((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK ((((((((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))) OR ((object_type = 'bank_rule'::text) AND (operation = 'bank_rule.auto_apply'::text))) OR ((object_type = 'expense_claim'::text) AND (operation = 'expense_claim.post'::text))) OR ((object_type = 'claim_reimbursement'::text) AND (operation = 'claim_reimbursement.void'::text))) OR ((object_type = 'cash_advance'::text) AND (operation = 'cash_advance.void'::text))) OR ((object_type = 'asset_disposal'::text) AND (operation = 'asset_disposal.void'::text))))
+approval_request | approval_request_object_known | CHECK ((((((((((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))) OR ((object_type = 'bank_rule'::text) AND (operation = 'bank_rule.auto_apply'::text))) OR ((object_type = 'expense_claim'::text) AND (operation = 'expense_claim.post'::text))) OR ((object_type = 'claim_reimbursement'::text) AND (operation = 'claim_reimbursement.void'::text))) OR ((object_type = 'cash_advance'::text) AND (operation = 'cash_advance.void'::text))) OR ((object_type = 'asset_disposal'::text) AND (operation = 'asset_disposal.void'::text))) OR ((object_type = 'fixed_asset'::text) AND (operation = 'fixed_asset.void'::text))) OR ((object_type = 'payee_bank_change'::text) AND (operation = 'payee_bank_change.approve'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -1909,9 +1922,10 @@ document | document_posted_together | CHECK (((posted_by IS NULL) = (posted_at I
 document | document_reversed_posted | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | document_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'posted'::text, 'reversed'::text])))
 document | document_status_not_null | NOT NULL status
-document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text, 'bank_transaction'::text, 'bank_agreement'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'fixed_asset'::text, 'asset_disposal'::text])))
+document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text, 'statement'::text, 'bank_transaction'::text, 'bank_agreement'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'fixed_asset'::text, 'asset_disposal'::text, 'payee_bank_change'::text])))
 document | document_type_not_null | NOT NULL type
 document | expense_claim_approved | TRIGGER DEFERRABLE INITIALLY DEFERRED
+document | payee_bank_change_approved | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document_link | document_link_created_at_not_null | NOT NULL created_at
 document_link | document_link_created_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
@@ -2146,10 +2160,10 @@ fixed_asset_source | fixed_asset_source_asset_id_not_null | NOT NULL asset_id
 fixed_asset_source | fixed_asset_source_asset_once | UNIQUE (organisation_id, asset_id)
 fixed_asset_source | fixed_asset_source_id_not_null | NOT NULL id
 fixed_asset_source | fixed_asset_source_line_not_null | NOT NULL line
-fixed_asset_source | fixed_asset_source_line_once | UNIQUE (organisation_id, source_id, line)
 fixed_asset_source | fixed_asset_source_line_positive | CHECK (((line >= 1) AND (line <= 10000)))
 fixed_asset_source | fixed_asset_source_organisation_id_not_null | NOT NULL organisation_id
 fixed_asset_source | fixed_asset_source_pkey | PRIMARY KEY (organisation_id, id)
+fixed_asset_source | fixed_asset_source_released_not_null | NOT NULL released
 fixed_asset_source | fixed_asset_source_source_id_not_null | NOT NULL source_id
 fixed_asset_source | fixed_asset_source_source_version_not_null | NOT NULL source_version
 fixed_asset_source | fixed_asset_source_version_fkey | FOREIGN KEY (organisation_id, source_id, source_version) REFERENCES document_version(organisation_id, document_id, version)
@@ -2682,6 +2696,26 @@ outbox | outbox_task_name_length | CHECK ((length(task_name) <= 500))
 outbox | outbox_updated_at_not_null | NOT NULL updated_at
 outbox | outbox_worker_class_known | CHECK ((worker_class = ANY (ARRAY['worker'::text, 'executor'::text, 'jobs'::text])))
 outbox | outbox_worker_class_not_null | NOT NULL worker_class
+payee_bank_account | payee_bank_account_change_id_not_null | NOT NULL change_id
+payee_bank_account | payee_bank_account_change_version_not_null | NOT NULL change_version
+payee_bank_account | payee_bank_account_contact_fkey | FOREIGN KEY (organisation_id, contact_id) REFERENCES contact(organisation_id, id)
+payee_bank_account | payee_bank_account_contact_id_not_null | NOT NULL contact_id
+payee_bank_account | payee_bank_account_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+payee_bank_account | payee_bank_account_currency_not_null | NOT NULL currency
+payee_bank_account | payee_bank_account_fingerprint_length | CHECK ((octet_length(number_fingerprint) = 32))
+payee_bank_account | payee_bank_account_id_not_null | NOT NULL id
+payee_bank_account | payee_bank_account_last4_format | CHECK ((number_last4 ~ '^[0-9A-Z]{1,4}$'::text))
+payee_bank_account | payee_bank_account_number_fingerprint_not_null | NOT NULL number_fingerprint
+payee_bank_account | payee_bank_account_number_last4_not_null | NOT NULL number_last4
+payee_bank_account | payee_bank_account_number_sealed_not_null | NOT NULL number_sealed
+payee_bank_account | payee_bank_account_organisation_id_not_null | NOT NULL organisation_id
+payee_bank_account | payee_bank_account_pkey | PRIMARY KEY (organisation_id, id)
+payee_bank_account | payee_bank_account_sealed_length | CHECK (((octet_length(number_sealed) >= 40) AND (octet_length(number_sealed) <= 2048)))
+payee_bank_account | payee_bank_account_state_known | CHECK ((state = ANY (ARRAY['kept'::text, 'in_force'::text, 'retired'::text])))
+payee_bank_account | payee_bank_account_state_not_null | NOT NULL state
+payee_bank_account | payee_bank_account_version_fkey | FOREIGN KEY (organisation_id, change_id, change_version) REFERENCES document_version(organisation_id, document_id, version)
+payee_bank_account | payee_bank_account_version_once | UNIQUE (organisation_id, change_id, change_version)
+payee_bank_account | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 period | period_closed_revision | CHECK (((status = 'closed'::text) = (closed_revision IS NOT NULL)))
 period | period_closed_revision_not_negative | CHECK ((closed_revision >= 0))
 period | period_created_at_not_null | NOT NULL created_at
@@ -3234,6 +3268,7 @@ CREATE INDEX notification_event_pending ON fyniq.notification_event USING btree 
 CREATE INDEX notification_inbox ON fyniq.notification USING btree (organisation_id, user_id, created_at DESC) WHERE (archived_at IS NULL)
 CREATE INDEX notification_preference_latest ON fyniq.notification_preference USING btree (organisation_id, user_id, type, set_at)
 CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, state, deadline_at)
+CREATE INDEX payee_bank_account_fingerprint ON fyniq.payee_bank_account USING btree (organisation_id, number_fingerprint) WHERE (state = 'in_force'::text)
 CREATE INDEX period_close_check_period ON fyniq.period_close_check USING btree (organisation_id, period_id, checked_at)
 CREATE INDEX period_close_period ON fyniq.period_close USING btree (organisation_id, period_id, attested_at)
 CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, daterange(starts_on, ends_on, '[]'::text))
@@ -3336,7 +3371,7 @@ CREATE UNIQUE INDEX email_suppression_pkey ON fyniq.email_suppression USING btre
 CREATE UNIQUE INDEX evidence_pkey ON fyniq.evidence USING btree (organisation_id, id)
 CREATE UNIQUE INDEX evidence_staging_key ON fyniq.evidence USING btree (organisation_id, staging_key)
 CREATE UNIQUE INDEX fixed_asset_source_asset_once ON fyniq.fixed_asset_source USING btree (organisation_id, asset_id)
-CREATE UNIQUE INDEX fixed_asset_source_line_once ON fyniq.fixed_asset_source USING btree (organisation_id, source_id, line)
+CREATE UNIQUE INDEX fixed_asset_source_line_live ON fyniq.fixed_asset_source USING btree (organisation_id, source_id, line) WHERE (NOT released)
 CREATE UNIQUE INDEX fixed_asset_source_pkey ON fyniq.fixed_asset_source USING btree (organisation_id, id)
 CREATE UNIQUE INDEX fx_feed_rate_pkey ON fyniq.fx_feed_rate USING btree (base_currency, currency, on_date)
 CREATE UNIQUE INDEX fx_rate_day_current ON fyniq.fx_rate USING btree (organisation_id, currency, on_date) WHERE ((kind = 'day'::text) AND (withdrawn_at IS NULL))
@@ -3391,6 +3426,9 @@ CREATE UNIQUE INDEX organisation_setting_pkey ON fyniq.organisation_setting USIN
 CREATE UNIQUE INDEX organisation_setting_version_key ON fyniq.organisation_setting USING btree (organisation_id, key, version)
 CREATE UNIQUE INDEX outbox_business_key ON fyniq.outbox USING btree (organisation_id, kind, business_key)
 CREATE UNIQUE INDEX outbox_pkey ON fyniq.outbox USING btree (organisation_id, id)
+CREATE UNIQUE INDEX payee_bank_account_in_force ON fyniq.payee_bank_account USING btree (organisation_id, contact_id, currency) WHERE (state = 'in_force'::text)
+CREATE UNIQUE INDEX payee_bank_account_pkey ON fyniq.payee_bank_account USING btree (organisation_id, id)
+CREATE UNIQUE INDEX payee_bank_account_version_once ON fyniq.payee_bank_account USING btree (organisation_id, change_id, change_version)
 CREATE UNIQUE INDEX period_close_check_pkey ON fyniq.period_close_check USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_close_pkey ON fyniq.period_close USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id)
@@ -3450,6 +3488,7 @@ CREATE CONSTRAINT TRIGGER expense_claim_approved AFTER INSERT OR UPDATE OF statu
 CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER journal_line_balanced AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER journal_line_base_only AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.amount = (0)::numeric) AND (new.base_amount <> (0)::numeric))) EXECUTE FUNCTION journal_line_base_only()
+CREATE CONSTRAINT TRIGGER payee_bank_change_approved AFTER INSERT OR UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.type = 'payee_bank_change'::text) AND (new.status = 'posted'::text))) EXECUTE FUNCTION payee_bank_change_approved()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('allocation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
@@ -3466,7 +3505,6 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_template_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'message_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_sender', 'id')
-CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.fixed_asset_source DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'asset_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.money_account_source DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('money_account', 'money_account_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.notification_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('notification_event', 'id')
@@ -3514,6 +3552,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.email_suppression DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_suppression', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.evidence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('evidence', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fixed_asset_source DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'asset_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fx_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('fx_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'message_id')
@@ -3523,6 +3562,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.member_i
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.money_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('money_account', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation', 'organisation_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation_connector DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_connector', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.payee_bank_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'change_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_bill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'id')
@@ -3671,6 +3711,8 @@ CREATE TRIGGER organisation_setting_voids AFTER INSERT ON fyniq.organisation_set
 CREATE TRIGGER outbox_guard BEFORE UPDATE ON fyniq.outbox FOR EACH ROW EXECUTE FUNCTION outbox_guard()
 CREATE TRIGGER outbox_no_delete BEFORE DELETE ON fyniq.outbox FOR EACH ROW EXECUTE FUNCTION outbox_no_delete()
 CREATE TRIGGER outbox_no_truncate BEFORE TRUNCATE ON fyniq.outbox FOR EACH STATEMENT EXECUTE FUNCTION outbox_no_delete()
+CREATE TRIGGER payee_bank_account_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.payee_bank_account FOR EACH ROW EXECUTE FUNCTION payee_bank_account_guard()
+CREATE TRIGGER payee_bank_account_no_truncate BEFORE TRUNCATE ON fyniq.payee_bank_account FOR EACH STATEMENT EXECUTE FUNCTION payee_bank_account_guard()
 CREATE TRIGGER period_close_check_no_truncate BEFORE TRUNCATE ON fyniq.period_close_check FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER period_close_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_close FOR EACH ROW EXECUTE FUNCTION period_close_guard()
 CREATE TRIGGER period_close_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_close_check FOR EACH ROW EXECUTE FUNCTION period_close_guard()
@@ -3782,6 +3824,7 @@ organisation_connector | tenant_isolation | * | (organisation_id = current_org()
 organisation_connector_secret | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 organisation_setting | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 outbox | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+payee_bank_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close_check | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -3871,7 +3914,7 @@ document_guard() → trigger | security invoker | v | search_path=pg_catalog, fy
 document_link_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88e84bdb34f498a2ef91479f46bfcd43
 document_link_route(p_hash text) → TABLE(organisation_id uuid, link_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 97397fe0fb679efd098ac3a2a47a0ab0
 document_link_token_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b39187a31e2fab3a93259dce0e8ed0aa
-document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 56ad4fb277adc4b38925f1feaad66b74
+document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8f3528a7f4b494d504e8339ee56924af
 document_reversed_unmatched() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 571459b9e3412b69dae28471ae2ae096
 document_send_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 001124514ccefea52a5f5516acd28e9c
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
@@ -3892,7 +3935,7 @@ evidence_never_deleted() → trigger | security invoker | v | search_path=pg_cat
 expense_claim_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 74b4c1fe18dd61114499b7cd5e6b38d5
 expire_installation_changes(p_at timestamp with time zone) → SETOF uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0b005ff86bcc342e932239c43728b24d
 finish_job_slot(p_job text, p_slot timestamp with time zone, p_ok boolean, p_detail text, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ad4500fb0fd68beae2aba5eb5653db8b
-fixed_asset_source_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 22ec20e0359e51d7ddff839df65fd2bd
+fixed_asset_source_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 154a56921c740a1b8caa49c0e3ce0472
 fx_feed_rate_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 849c4b9702a2ace8fe0e241dba3da8ef
 fx_rate_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df1d5890f30041246e4b0ce50b864488
 hold_outbox(p_id uuid, p_holder text, p_until timestamp with time zone, p_why text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 590d733ae64933f87f3efe15a90efd08
@@ -3945,6 +3988,8 @@ organisation_setting_guard() → trigger | security invoker | v | search_path=pg
 organisation_setting_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0ab583b33ece447fa48c299fcc23d967
 outbox_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 58b04bc5d8e9853cd11acce22f3b6723
 outbox_no_delete() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1366cfa8290e64e2804d4cb992c01d1f
+payee_bank_account_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1ad1dfd382c32947da3e0317c2f78cad
+payee_bank_change_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 34c912476ac221007dd1d883f77b46ef
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bd7af6699cf1474f70577dbea9a60dc6
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470

@@ -36,6 +36,15 @@ Source: PRD-001 §13.2 · Priority M · Phase P1
 - **WHEN** one of these fields is shown in the UI, written to a log or placed in AI context
 - **THEN** it is masked by default
 
+#### Scenario: The data key is fresh and the record bound (rev 0.152)
+- **WHEN** a field is sealed
+- **THEN** it is encrypted with a fresh AES-256-GCM data key wrapped by the Cloud KMS key, bound to its record so a copy in another record does not open
+- **AND** a value sealed before the wrapping key rotated still opens
+
+#### Scenario: Fingerprints without the value (rev 0.152)
+- **WHEN** equal sealed values must be found, or a change proved in the audit trail
+- **THEN** a keyed HMAC-SHA256 fingerprint within the organisation is compared, under a pinned key version, and the value is never decrypted for it
+
 ### Requirement: SEC-12 Secrets in Secret Manager only
 Secrets SHALL be kept only in Secret Manager, SHALL be rotated, and SHALL never be in code, images or logs.
 

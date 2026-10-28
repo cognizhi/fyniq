@@ -64,7 +64,9 @@
         "expense_claim",
         "claim_reimbursement",
         "cash_advance",
-        "asset_disposal"
+        "asset_disposal",
+        "fixed_asset",
+        "payee_bank_change"
       ],
       "examples": [
         "organisation_setting"

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "fyniq-scenario@1",
-  "description": "A differential-test scenario that the Go engine (cmd/scenario-run) and the Python oracle (oracle/) both read (QA-ENG-02, task 2.1). The schema fixes the structure; the content of journal lines (amounts, rates, currency codes, accounts, balance) is checked by the posting rules, which reject the document rather than the scenario. README.md beside this file states the rules a schema cannot express. Patterns are RE2- and ECMA-262-compatible so validators in both languages agree.",
+  "description": "A differential-test scenario that the Go engine (cmd/scenario-run) and the Python oracle (oracle/) both read (QA-ENG-02, task 2.1). The schema fixes the structure; the content of journal lines and P1 documents (amounts, rates, currency codes, accounts, balance) is checked by the posting rules, which reject the document rather than the scenario. README.md beside this file states the rules a schema cannot express. Patterns are RE2- and ECMA-262-compatible so validators in both languages agree.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "name", "base_currency", "currencies", "accounts", "documents", "reversals"],
@@ -42,10 +42,15 @@
         }
       }
     },
+    "as_of": {
+      "description": "The organisation's business date, 'today' (ENG-05): scheduled entries (releases) dated on or before it post. Required, and on or after every date in the scenario, when a document is not a manual journal.",
+      "$ref": "#/$defs/date"
+    },
+    "settings": {"$ref": "#/$defs/settings"},
     "documents": {
       "description": "Posted in array order. IDs are unique.",
       "type": "array",
-      "items": {"$ref": "#/$defs/manualJournal"}
+      "items": {"$ref": "#/$defs/document"}
     },
     "reversals": {
       "description": "Applied in array order, after every document.",
@@ -55,7 +60,7 @@
         "additionalProperties": false,
         "required": ["document", "date"],
         "properties": {
-          "document": {"description": "The ID of the document whose posted entry is reversed.", "type": "string"},
+          "document": {"description": "The ID of the manual journal whose posted entry is reversed.", "type": "string"},
           "date": {"$ref": "#/$defs/date"}
         }
       }
@@ -69,17 +74,435 @@
       "type": "string",
       "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
     },
+    "documentId": {
+      "description": "Unique in the scenario. No '/', which the result uses for '<id>/reversal'.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    },
+    "version": {"description": "Read but not used: every document posts its version 1.", "type": "integer", "minimum": 1},
+    "money": {"description": "A decimal string, checked by the posting rules (ENG-44): a bad one rejects its document.", "type": "string"},
+    "percent": {"description": "A percentage, e.g. \"9\" for 9%.", "type": "string", "pattern": "^(0|[1-9][0-9]{0,2})(\\.[0-9]{1,4})?$"},
+    "rate": {"description": "Base per unit of the amount's currency (ENG-11). Only for amounts not in the base currency, and always with fx_rate_source.", "type": "string"},
+    "rateSource": {"description": "Where the rate came from (ENG-40), e.g. \"document\". Only with fx_rate.", "type": "string", "minLength": 1},
+    "document": {
+      "description": "One document; its type picks its shape.",
+      "type": "object",
+      "required": ["type"],
+      "properties": {"type": {"enum": ["manual_journal", "bank_transaction", "bank_transfer", "bill", "vendor_credit",
+                                         "bill_payment", "invoice", "credit_note", "customer_receipt", "customer_deposit",
+                                         "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
+                                         "cash_advance", "fixed_asset", "asset_disposal"]}},
+      "allOf": [
+        {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
+        {"if": {"properties": {"type": {"const": "bank_transaction"}}}, "then": {"$ref": "#/$defs/bankTransaction"}},
+        {"if": {"properties": {"type": {"const": "bank_transfer"}}}, "then": {"$ref": "#/$defs/bankTransfer"}},
+        {"if": {"properties": {"type": {"enum": ["bill", "vendor_credit"]}}}, "then": {"$ref": "#/$defs/bill"}},
+        {"if": {"properties": {"type": {"enum": ["bill_payment", "customer_receipt", "claim_reimbursement"]}}},
+         "then": {"$ref": "#/$defs/settlement"}},
+        {"if": {"properties": {"type": {"const": "expense_claim"}}}, "then": {"$ref": "#/$defs/expenseClaim"}},
+        {"if": {"properties": {"type": {"const": "cash_advance"}}}, "then": {"$ref": "#/$defs/cashAdvance"}},
+        {"if": {"properties": {"type": {"const": "fixed_asset"}}}, "then": {"$ref": "#/$defs/fixedAsset"}},
+        {"if": {"properties": {"type": {"const": "asset_disposal"}}}, "then": {"$ref": "#/$defs/assetDisposal"}},
+        {"if": {"properties": {"type": {"enum": ["invoice", "credit_note"]}}}, "then": {"$ref": "#/$defs/invoice"}},
+        {"if": {"properties": {"type": {"const": "customer_deposit"}}}, "then": {"$ref": "#/$defs/customerDeposit"}},
+        {"if": {"properties": {"type": {"const": "deposit_refund"}}}, "then": {"$ref": "#/$defs/depositRefund"}},
+        {"if": {"properties": {"type": {"const": "write_off"}}}, "then": {"$ref": "#/$defs/writeOff"}}
+      ]
+    },
+    "settings": {
+      "description": "The organisation's settings the P1 rule sets read (README, Settings).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "books_start": {"description": "The first day of the books (FR-FA-02).", "$ref": "#/$defs/date"},
+        "accounts": {
+          "description": "System accounts by key (Appendix B.5). Each must be in accounts.",
+          "type": "object",
+          "propertyNames": {"enum": ["receivable", "payable", "gst", "prepayments", "deferred_revenue", "fx", "bank_charges",
+                                     "withholding_tax", "customer_deposits", "claims_payable", "advances",
+                                     "depreciation", "accumulated_depreciation", "disposal", "disposal_clearing"]},
+          "additionalProperties": {"$ref": "#/$defs/accountCode"}
+        },
+        "money_accounts": {
+          "description": "Bank, card, wallet and cash accounts (FR-BNK-01) -> the currency each holds.",
+          "type": "object",
+          "propertyNames": {"$ref": "#/$defs/accountCode"},
+          "additionalProperties": {"$ref": "#/$defs/currencyCode"}
+        },
+        "mileage_rates": {
+          "description": "The rate per km for each vehicle type from each date (FR-AP-16; a policy setting, not a statutory rate).",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["vehicle", "from", "rate"],
+            "properties": {"vehicle": {"type": "string", "minLength": 1}, "from": {"$ref": "#/$defs/date"},
+                           "rate": {"$ref": "#/$defs/plainDecimal"}}
+          }
+        },
+        "tolerance": {
+          "description": "Settlement tolerances (FR-BNK-08, open question 32), in the base currency and percent; each defaults to the PRD's.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "base": {"$ref": "#/$defs/plainDecimal"},
+            "percent": {"$ref": "#/$defs/plainDecimal"},
+            "per_document": {"$ref": "#/$defs/plainDecimal"},
+            "per_month": {"$ref": "#/$defs/plainDecimal"}
+          }
+        },
+        "gst": {
+          "description": "GST registration (from, to inclusive) and the standard rate from each date (the sg-gst pack, ENG-31).",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rates"],
+          "properties": {
+            "registered_from": {"$ref": "#/$defs/date"},
+            "registered_to": {"$ref": "#/$defs/date"},
+            "per_line": {"description": "RND-GST-EXCL per line instead of per subtotal.", "type": "boolean"},
+            "rates": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["from", "percent"],
+                "properties": {"from": {"$ref": "#/$defs/date"}, "percent": {"$ref": "#/$defs/percent"}}
+              }
+            }
+          }
+        }
+      }
+    },
+    "plainDecimal": {"type": "string", "pattern": "^[0-9]{1,12}(\\.[0-9]{1,4})?$"},
+    "billLine": {
+      "description": "A bill's or vendor credit's line: a net amount, or quantity × unit price (RND-LINE), its GST code and the GST its tax invoice states.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["account", "gst_code"],
+      "properties": {
+        "account": {"type": "string"},
+        "amount": {"description": "The net, in the bill's currency.", "$ref": "#/$defs/money"},
+        "quantity": {"type": "string"},
+        "unit_price": {"type": "string"},
+        "quantity_before": {"description": "What earlier bills took of a purchase order's line (RND-LINE, rev 0.87).", "type": "string"},
+        "gst_code": {"type": "string"},
+        "gst": {"description": "The GST the tax invoice states, in the bill's currency; 0 when absent.", "$ref": "#/$defs/money"},
+        "gst_base": {"description": "A foreign bill's line: the GST its tax invoice states in the base currency (ENG-42).", "$ref": "#/$defs/money"},
+        "business_share": {"description": "The percent of the GST claimable (FR-AP-20, RND-GST-SHARE); 100 when absent.", "type": "string"},
+        "spread_months": {"type": "integer", "minimum": 0},
+        "spread_from": {"description": "The day its service starts; its month is the first release's. The bill's when absent.", "$ref": "#/$defs/date"}
+      }
+    },
+    "bill": {
+      "description": "A bill (bill@1) or a vendor credit (vendor_credit@1, the bill's legs negated).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "currency", "lines"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "type": {"enum": ["bill", "vendor_credit"]},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "currency": {"type": "string"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"},
+        "lines": {"type": "array", "items": {"$ref": "#/$defs/billLine"}},
+        "withholding": {
+          "description": "Tax withheld from a non-resident supplier (FR-AP-19, RND-WHT): the tax agent's rate.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["percent"],
+          "properties": {"percent": {"type": "string"}}
+        }
+      }
+    },
+    "settlement": {
+      "description": "Money that settles posted documents (bill_payment@1, ...): its parts, and what it keeps unapplied.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "account", "currency", "parts"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "type": {"enum": ["bill_payment", "customer_receipt", "claim_reimbursement"]},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "account": {"description": "The money account, in the documents' currency or the base currency.", "type": "string"},
+        "currency": {"description": "The documents' currency.", "type": "string"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"},
+        "base_amount": {"description": "What a base-currency account paid or received for documents in another currency.", "$ref": "#/$defs/money"},
+        "unapplied": {"description": "What it paid beyond the parts, kept as a credit (FR-AR-18).", "$ref": "#/$defs/money"},
+        "parts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["document", "amount"],
+            "properties": {
+              "document": {"type": "string"},
+              "amount": {"description": "What it pays of the document, in its currency.", "$ref": "#/$defs/money"},
+              "in_full": {"description": "Settle all that is open though it pays less, within tolerance (rev 0.121).", "type": "boolean"}
+            }
+          }
+        }
+      }
+    },
+    "invoiceLine": {
+      "description": "An invoice's or credit note's line: a net amount, or quantity × unit price less a discount (RND-LINE), and its GST code.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["account", "gst_code"],
+      "properties": {
+        "account": {"type": "string"},
+        "amount": {"description": "The net, in the invoice's currency.", "$ref": "#/$defs/money"},
+        "quantity": {"type": "string"},
+        "unit_price": {"type": "string"},
+        "discount": {"description": "A percentage, 0 to 100 with at most two decimals (rev 0.116).", "type": "string"},
+        "gst_code": {"type": "string"},
+        "spread_months": {"type": "integer", "minimum": 0},
+        "spread_from": {"description": "The day its service starts; the invoice's when absent.", "$ref": "#/$defs/date"}
+      }
+    },
+    "invoice": {
+      "description": "An invoice (invoice@1) or a credit note (credit_note@1, an invoice's legs negated).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "currency", "lines"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "type": {"enum": ["invoice", "credit_note"]},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "currency": {"type": "string"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"},
+        "lines": {"type": "array", "items": {"$ref": "#/$defs/invoiceLine"}},
+        "invoice": {"description": "A credit note's: the invoice it credits (FR-AR-04).", "type": "string"},
+        "deposits": {
+          "description": "An invoice's: the customer deposits it deducts and how much of each (FR-AR-09, rev 0.127).",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["deposit", "amount"],
+            "properties": {"deposit": {"type": "string"}, "amount": {"$ref": "#/$defs/money"}}
+          }
+        }
+      }
+    },
+    "customerDeposit": {
+      "description": "A customer deposit received (customer_deposit@1, rev 0.126).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "account", "currency", "amount", "kind"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "type": {"const": "customer_deposit"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "account": {"description": "The money account it came into.", "type": "string"},
+        "currency": {"type": "string"},
+        "amount": {"description": "The gross received.", "$ref": "#/$defs/money"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"},
+        "kind": {"enum": ["part_payment", "security"]},
+        "gst_code": {"description": "A part payment's; a security deposit names none.", "type": "string"}
+      }
+    },
+    "depositRefund": {
+      "description": "A refund of what is left of a customer deposit (deposit_refund@1, rev 0.128).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "deposit", "account", "amount"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "type": {"const": "deposit_refund"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "deposit": {"type": "string"},
+        "account": {"description": "The money account it left, in the deposit's currency.", "type": "string"},
+        "amount": {"description": "In the deposit's currency.", "$ref": "#/$defs/money"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"}
+      }
+    },
+    "writeOff": {
+      "description": "A write-off of an invoice's amount to the reason's account (write_off@1, rev 0.122).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "invoice", "amount", "account"],
+      "properties": {
+        "type": {"const": "write_off"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "invoice": {"type": "string"},
+        "amount": {"description": "In the invoice's currency, at most what is open.", "$ref": "#/$defs/money"},
+        "account": {"description": "The reason's account (FR-AR-17).", "type": "string"}
+      }
+    },
+    "expenseClaim": {
+      "description": "An expense claim (expense_claim@1): receipt lines and trips (FR-AP-07, FR-AP-16).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "currency", "lines"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "type": {"const": "expense_claim"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "currency": {"type": "string"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"},
+        "advance": {"description": "The cash advance it settles first (FR-AP-17).", "type": "string"},
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["account"],
+            "properties": {
+              "account": {"type": "string"},
+              "amount": {"$ref": "#/$defs/money"},
+              "quantity": {"type": "string"},
+              "unit_price": {"type": "string"},
+              "gst_code": {"type": "string"},
+              "gst": {"$ref": "#/$defs/money"},
+              "gst_base": {"$ref": "#/$defs/money"},
+              "business_share": {"type": "string"},
+              "distance": {"description": "A trip's distance in km (RND-MILEAGE).", "type": "string"},
+              "vehicle": {"description": "A trip's vehicle type, a key of settings.mileage_rates.", "type": "string"}
+            },
+            "oneOf": [{"required": ["distance", "vehicle"]}, {"required": ["gst_code"]}]
+          }
+        }
+      }
+    },
+    "cashAdvance": {
+      "description": "A cash advance to an employee, or what is left of one coming back (cash_advance@1, FR-AP-17).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "account", "amount"],
+      "properties": {
+        "type": {"const": "cash_advance"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "account": {"description": "A base-currency money account.", "type": "string"},
+        "amount": {"description": "In the base currency.", "$ref": "#/$defs/money"},
+        "refund_of": {"description": "The advance whose remainder comes back.", "type": "string"}
+      }
+    },
+    "fixedAsset": {
+      "description": "An asset in the register (FR-FA-01): it posts nothing and schedules asset_depreciation@1 (Appendix B.4).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "account", "cost", "life_months"],
+      "properties": {
+        "type": {"const": "fixed_asset"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The purchase date.", "$ref": "#/$defs/date"},
+        "account": {"description": "The asset's cost account.", "type": "string"},
+        "cost": {"description": "In the base currency.", "$ref": "#/$defs/money"},
+        "residual": {"description": "In the base currency; 0 when absent.", "$ref": "#/$defs/money"},
+        "life_months": {"type": "integer", "minimum": 0},
+        "depreciate_from": {"description": "Its month is the first of depreciation; the purchase month when absent.", "$ref": "#/$defs/date"}
+      }
+    },
+    "assetDisposal": {
+      "description": "A disposal or write-off of a registered asset (asset_disposal@1, FR-FA-03).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "asset"],
+      "properties": {
+        "type": {"const": "asset_disposal"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "asset": {"type": "string"},
+        "proceeds": {
+          "description": "Money received into a base-currency money account, or an invoice's line on the disposal clearing account; none for a write-off.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["account", "amount"],
+          "properties": {"account": {"type": "string"}, "amount": {"$ref": "#/$defs/money"}, "gst_code": {"type": "string"}}
+        }
+      }
+    },
+    "bankTransaction": {
+      "description": "A bank, card or cash line categorised into parts (bank_transaction@1, Appendix B.1).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "account", "currency", "amount", "parts"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "type": {"const": "bank_transaction"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "account": {"description": "The money account.", "type": "string"},
+        "currency": {"type": "string"},
+        "amount": {"description": "Signed gross: money in positive, money out negative.", "$ref": "#/$defs/money"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"},
+        "parts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["account", "amount", "gst_code"],
+            "properties": {
+              "account": {"type": "string"},
+              "amount": {"description": "Signed as the line, in its currency; the parts add up to the line.", "$ref": "#/$defs/money"},
+              "gst_code": {"type": "string"},
+              "spread_months": {"type": "integer", "minimum": 0}
+            }
+          }
+        }
+      }
+    },
+    "transferLeg": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["account", "currency", "amount"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
+      "properties": {
+        "account": {"description": "A money account.", "type": "string"},
+        "currency": {"type": "string"},
+        "amount": {"description": "What left (from) or arrived (to); positive.", "$ref": "#/$defs/money"},
+        "fx_rate": {"$ref": "#/$defs/rate"},
+        "fx_rate_source": {"$ref": "#/$defs/rateSource"}
+      }
+    },
+    "bankTransfer": {
+      "description": "A transfer between money accounts (bank_transfer@1, §10.2).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "from", "to"],
+      "properties": {
+        "type": {"const": "bank_transfer"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"$ref": "#/$defs/date"},
+        "from": {"$ref": "#/$defs/transferLeg"},
+        "to": {"$ref": "#/$defs/transferLeg"},
+        "fee": {"description": "A fee the provider reports, in the paying currency, part of what was paid.", "$ref": "#/$defs/money"}
+      }
+    },
     "manualJournal": {
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "id", "version", "date", "memo", "lines"],
       "properties": {
         "type": {"const": "manual_journal"},
-        "id": {
-          "description": "Unique in the scenario. No '/', which the result uses for '<id>/reversal'.",
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
-        },
+        "id": {"$ref": "#/$defs/documentId"},
         "version": {"type": "integer", "minimum": 1},
         "date": {"$ref": "#/$defs/date"},
         "memo": {"type": "string"},

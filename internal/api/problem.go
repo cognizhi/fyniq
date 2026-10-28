@@ -42,6 +42,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/organisation"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
+	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
 	"github.com/cognizhi/fyniq/internal/domain/quote"
@@ -294,6 +295,7 @@ var codeFacts = map[string]struct {
 	chart.CodeProtected:           {422, "Changes only with an approval"},
 	chart.CodeSystem:              {422, "A system account stays active"},
 	chart.CodeRevalue:             {422, "The account is not revalued at month end"},
+	chart.CodeUsefulLife:          {422, "The account takes no such default useful life"},
 	storage.CodeAccountFixed:      {409, "The account cannot change that way"},
 	storage.CodeMembership:        {409, "The membership or role cannot change that way"},
 	storage.CodeAccountTree:       {409, "The account cannot sit there"},
@@ -679,7 +681,27 @@ var codeFacts = map[string]struct {
 	asset.CodeDepreciationDue:     {409, "A month of depreciation before it has not posted"},
 	asset.CodeDisposalVoid:        {409, "The disposal cannot be voided as it stands"},
 	CodeDisposalVoidApproval:      {409, "Voiding needs a second person"},
+	asset.CodeAssetVoid:           {409, "The asset cannot be voided as it stands"},
+	asset.CodeVoided:              {409, "The asset was voided"},
+	CodeAssetVoidApproval:         {409, "Voiding needs a second person"},
 	ledger.CodeDisposal:           {422, "The disposal's accounts or amounts do not fit"},
+	payee.CodeNotChange:           {404, "Not a change of bank details"},
+	payee.CodeBadDraft:            {422, "The saved change cannot be read"},
+	payee.CodeVendor:              {422, "Not an active vendor"},
+	payee.CodeCurrency:            {422, "The currency does not fit"},
+	payee.CodeBIC:                 {422, "Not a SWIFT/BIC code"},
+	payee.CodeCountry:             {422, "The bank's country does not fit"},
+	payee.CodeNumber:              {422, "Not an account number the bank takes"},
+	payee.CodeName:                {422, "The account name does not fit"},
+	payee.CodeTooLong:             {422, "The call-back note is too long"},
+	payee.CodeNotDraft:            {409, "The change is approved already"},
+	payee.CodeEvidence:            {422, "The vendor's letter is not attached"},
+	payee.CodeFrozen:              {409, "Payments to the vendor are frozen"},
+	payee.CodeWaiting:             {409, "Another change of that currency waits"},
+	payee.CodeUnchanged:           {422, "That is the account in force already"},
+	payee.CodeNoKeys:              {503, "Bank details cannot be kept here"},
+	payee.CodeOwnChange:           {403, "You prepared it, so another person approves it"},
+	storage.CodePayee:             {409, "Bank details do not change that way"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -706,6 +728,8 @@ var storageFixes = map[string]string{
 	storage.CodeScheduled: "Issue and send it as a person, or approve the recurring invoice it came from",
 	storage.CodeReminder:  "Read the reminders again: this one was sent or skipped already",
 	storage.CodeStatement: "Make and send a new statement instead",
+
+	storage.CodePayee: "Prepare a change of the bank details and ask for approval: a second person, who neither prepared nor asked for it, approves it, which puts its account in force",
 
 	storage.CodeAsset: "Register an asset from a line of a posted bill or bank line that put its cost on an asset account, once; a month's depreciation is of a registered asset's current version",
 
@@ -840,6 +864,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		bke *banking.Error
 		cle *claim.Error
 		ase *asset.Error
+		pye *payee.Error
+		pyp payee.Problems
 		bte *banktransaction.Error
 		bfe *bankfile.Error
 		pe  *period.Error
@@ -899,6 +925,10 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(cle.Code, sentence(cle.Message), sentence(cle.Fix))
 	case errors.As(err, &ase):
 		return problem(ase.Code, sentence(ase.Message), sentence(ase.Fix))
+	case errors.As(err, &pye):
+		return problem(pye.Code, sentence(pye.Message), sentence(pye.Fix))
+	case errors.As(err, &pyp) && len(pyp) > 0:
+		return payeeProblems(pyp).(*Problem)
 	case errors.As(err, &bke):
 		return problem(bke.Code, sentence(bke.Message), sentence(bke.Fix))
 	case errors.As(err, &bte):

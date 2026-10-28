@@ -226,6 +226,29 @@ run "the_data_is_encrypted_and_recoverable" {
   }
 }
 
+# The field keys (SEC-11): the wrapping key rotates, the fingerprint key is HMAC-SHA256 with its version pinned in the
+# wiring, and only the api may use either.
+run "the_sensitive_fields_are_sealed_by_the_api_only" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition     = google_kms_crypto_key.fields.purpose == "ENCRYPT_DECRYPT" && google_kms_crypto_key.fields.rotation_period == "7776000s"
+    error_message = "the wrapping key encrypts and rotates every 90 days"
+  }
+  assert {
+    condition     = google_kms_crypto_key.fingerprints.purpose == "MAC" && google_kms_crypto_key.fingerprints.version_template[0].algorithm == "HMAC_SHA256"
+    error_message = "the fingerprint key is an HMAC-SHA256 key"
+  }
+  assert {
+    condition     = google_kms_crypto_key_iam_member.fields.member == "serviceAccount:run-api@fyniq-staging.iam.gserviceaccount.com" && google_kms_crypto_key_iam_member.fingerprints.member == google_kms_crypto_key_iam_member.fields.member && google_kms_crypto_key_iam_member.fingerprints.role == "roles/cloudkms.signer"
+    error_message = "only the api seals and fingerprints"
+  }
+  assert {
+    condition     = endswith(jsondecode(output.gcp_config).fields.mac_key_version, "/cryptoKeyVersions/1")
+    error_message = "the services read the fingerprint key's pinned version"
+  }
+}
+
 # No human holds a standing role: every grant here is to a service account (or allUsers for the public
 # services), and elevation goes through Privileged Access Manager with another person's approval.
 run "no_standing_human_access" {

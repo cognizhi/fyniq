@@ -12,7 +12,7 @@ import (
 )
 
 const assetSource = `-- name: AssetSource :one
-SELECT organisation_id, id, asset_id, source_id, source_version, line, account_id FROM fyniq.fixed_asset_source WHERE asset_id = $1
+SELECT organisation_id, id, asset_id, source_id, source_version, line, account_id, released FROM fyniq.fixed_asset_source WHERE asset_id = $1
 `
 
 func (q *Queries) AssetSource(ctx context.Context, assetID uuid.UUID) (FyniqFixedAssetSource, error) {
@@ -26,12 +26,13 @@ func (q *Queries) AssetSource(ctx context.Context, assetID uuid.UUID) (FyniqFixe
 		&i.SourceVersion,
 		&i.Line,
 		&i.AccountID,
+		&i.Released,
 	)
 	return i, err
 }
 
 const assetSources = `-- name: AssetSources :many
-SELECT organisation_id, id, asset_id, source_id, source_version, line, account_id FROM fyniq.fixed_asset_source ORDER BY source_id, line
+SELECT organisation_id, id, asset_id, source_id, source_version, line, account_id, released FROM fyniq.fixed_asset_source WHERE NOT released ORDER BY source_id, line
 `
 
 func (q *Queries) AssetSources(ctx context.Context) ([]FyniqFixedAssetSource, error) {
@@ -51,6 +52,7 @@ func (q *Queries) AssetSources(ctx context.Context) ([]FyniqFixedAssetSource, er
 			&i.SourceVersion,
 			&i.Line,
 			&i.AccountID,
+			&i.Released,
 		); err != nil {
 			return nil, err
 		}
@@ -63,7 +65,7 @@ func (q *Queries) AssetSources(ctx context.Context) ([]FyniqFixedAssetSource, er
 }
 
 const assetSourcesOfDocument = `-- name: AssetSourcesOfDocument :many
-SELECT organisation_id, id, asset_id, source_id, source_version, line, account_id FROM fyniq.fixed_asset_source WHERE source_id = $1 ORDER BY line
+SELECT organisation_id, id, asset_id, source_id, source_version, line, account_id, released FROM fyniq.fixed_asset_source WHERE source_id = $1 AND NOT released ORDER BY line
 `
 
 func (q *Queries) AssetSourcesOfDocument(ctx context.Context, sourceID uuid.UUID) ([]FyniqFixedAssetSource, error) {
@@ -83,6 +85,7 @@ func (q *Queries) AssetSourcesOfDocument(ctx context.Context, sourceID uuid.UUID
 			&i.SourceVersion,
 			&i.Line,
 			&i.AccountID,
+			&i.Released,
 		); err != nil {
 			return nil, err
 		}
@@ -116,4 +119,16 @@ func (q *Queries) InsertAssetSource(ctx context.Context, arg InsertAssetSourcePa
 		arg.AccountID,
 	)
 	return err
+}
+
+const releaseAssetSource = `-- name: ReleaseAssetSource :execrows
+UPDATE fyniq.fixed_asset_source SET released = true WHERE asset_id = $1 AND NOT released
+`
+
+func (q *Queries) ReleaseAssetSource(ctx context.Context, assetID uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, releaseAssetSource, assetID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

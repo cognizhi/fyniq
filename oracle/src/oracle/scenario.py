@@ -9,6 +9,11 @@ A problem with the scenario's *structure* (the schema, duplicate keys or IDs, an
 base currency missing from ``currencies``) is a :class:`ScenarioError`: the scenario is not valid
 input and nothing is computed. A problem with a *document's content* (an amount, a rate, a currency
 code, an account, the balance) is not an error here: the ledger rejects that document.
+
+Manual journals are read into :class:`Document`; every other document type (the P1 sources) into
+:class:`Source`, which keeps its JSON object for its rule set to read. A scenario with a P1 source
+needs ``settings`` and an ``as_of`` date on or after every document and reversal (README, "P1
+sources").
 """
 
 from __future__ import annotations
@@ -20,6 +25,7 @@ from datetime import date
 from decimal import Decimal
 from functools import cache
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 from jsonschema import Draft202012Validator
@@ -41,6 +47,12 @@ _NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,99}")
 _CURRENCY = re.compile(r"[A-Z]{3}")
 _ACCOUNT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,31}")
 _DOCUMENT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
+_PERCENT = re.compile(r"(0|[1-9][0-9]{0,2})(\.[0-9]{1,4})?")
+_PLAIN_DECIMAL = re.compile(r"[0-9]{1,12}(\.[0-9]{1,4})?")
+
+# The keys whose string values are dates, wherever they appear in a P1 document or the settings.
+_DATE_KEYS = frozenset({"date", "from", "to", "service_start", "depreciate_from", "registered_from",
+                        "registered_to", "books_start"})
 
 
 class ScenarioError(ValueError):
@@ -77,9 +89,47 @@ class Document:
 
 
 @dataclass(frozen=True)
+class Source:
+    """A document of a P1 source (a bank line, a bill, ...). Its rule set reads ``data``, the JSON."""
+
+    type: str
+    id: str
+    version: int
+    date: date
+    data: MappingProxyType[str, Any]
+
+
+@dataclass(frozen=True)
 class Reversal:
     document: str
     date: date
+
+
+@dataclass(frozen=True)
+class GSTRate:
+    start: date
+    percent: Decimal
+
+
+@dataclass(frozen=True)
+class GSTSettings:
+    """GST registration and the standard rate in force over time (the sg-gst pack's role, ENG-31)."""
+
+    registered_from: date | None = None
+    registered_to: date | None = None
+    per_line: bool = False
+    rates: tuple[GSTRate, ...] = ()
+
+
+@dataclass(frozen=True)
+class Settings:
+    """The organisation's settings the P1 rule sets read (README, "Settings")."""
+
+    accounts: MappingProxyType[str, str]
+    money_accounts: MappingProxyType[str, str]
+    gst: GSTSettings
+    books_start: date | None
+    data: MappingProxyType[str, Any]
 
 
 @dataclass(frozen=True)
@@ -88,8 +138,10 @@ class Scenario:
     base_currency: str
     currencies: dict[str, int]
     accounts: dict[str, Account]
-    documents: tuple[Document, ...]
+    documents: tuple[Document | Source, ...]
     reversals: tuple[Reversal, ...]
+    as_of: date | None = None
+    settings: Settings | None = None
 
 
 @cache
@@ -156,6 +208,69 @@ def _shape(pattern: re.Pattern[str], text: str, where: str) -> None:
         raise ScenarioError(f"{where}: {text!r} does not match the schema's pattern")
 
 
+def _frozen(value: Any) -> Any:
+    """A read-only copy of a JSON value, so a parsed scenario cannot be changed by its readers."""
+    if isinstance(value, dict):
+        return MappingProxyType({k: _frozen(v) for k, v in value.items()})
+    if isinstance(value, list):
+        return tuple(_frozen(v) for v in value)
+    return value
+
+
+def _dates_in(value: Any, where: str) -> None:
+    """Every date anywhere in a P1 document or the settings must be a real calendar date."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key in _DATE_KEYS and isinstance(item, str):
+                _date(item, f"{where}/{key}")
+            else:
+                _dates_in(item, f"{where}/{key}")
+    elif isinstance(value, list):
+        for i, item in enumerate(value):
+            _dates_in(item, f"{where}/{i}")
+
+
+def _settings(raw: dict[str, Any], accounts: dict[str, Account], currencies: dict[str, int]) -> Settings:
+    _dates_in(raw, "settings")
+    named = dict(raw.get("accounts", {}))
+    for key, code in named.items():
+        _shape(_ACCOUNT, code, f"settings/accounts/{key}")
+        if code not in accounts:
+            raise ScenarioError(f"settings/accounts/{key}: {code!r} is not in accounts")
+    money_accounts = dict(raw.get("money_accounts", {}))
+    for code, currency in money_accounts.items():
+        _shape(_ACCOUNT, code, "settings/money_accounts")
+        _shape(_CURRENCY, currency, f"settings/money_accounts/{code}")
+        if code not in accounts:
+            raise ScenarioError(f"settings/money_accounts: {code!r} is not in accounts")
+        if currency not in currencies:
+            raise ScenarioError(f"settings/money_accounts/{code}: {currency} is not in currencies")
+    for key, value in raw.get("tolerance", {}).items():
+        _shape(_PLAIN_DECIMAL, value, f"settings/tolerance/{key}")
+    for i, row in enumerate(raw.get("mileage_rates", [])):
+        _shape(_PLAIN_DECIMAL, row["rate"], f"settings/mileage_rates/{i}/rate")
+    mileage = [(row["vehicle"], row["from"]) for row in raw.get("mileage_rates", [])]
+    if len(set(mileage)) != len(mileage):
+        raise ScenarioError("settings/mileage_rates: two rates for one vehicle start on the same day")
+    gst_raw = raw.get("gst", {})
+    rates = []
+    for i, rate in enumerate(gst_raw.get("rates", [])):
+        _shape(_PERCENT, rate["percent"], f"settings/gst/rates/{i}/percent")
+        rates.append(GSTRate(date.fromisoformat(rate["from"]), Decimal(rate["percent"])))
+    if len({r.start for r in rates}) != len(rates):
+        raise ScenarioError("settings/gst/rates: two rates start on the same day")
+    gst = GSTSettings(
+        registered_from=date.fromisoformat(gst_raw["registered_from"]) if "registered_from" in gst_raw else None,
+        registered_to=date.fromisoformat(gst_raw["registered_to"]) if "registered_to" in gst_raw else None,
+        per_line=gst_raw.get("per_line", False),
+        rates=tuple(sorted(rates, key=lambda r: r.start)),
+    )
+    books_start = date.fromisoformat(raw["books_start"]) if "books_start" in raw else None
+    return Settings(
+        MappingProxyType(named), MappingProxyType(money_accounts), gst, books_start, _frozen(raw)
+    )
+
+
 def scenario_from_json(data: Any) -> Scenario:
     """Check ``data`` against ``scenario.schema.json`` and the rules beside it; build a Scenario."""
     problem = _schema_error("scenario.schema.json", data)
@@ -177,13 +292,18 @@ def scenario_from_json(data: Any) -> Scenario:
             raise ScenarioError(f"accounts/{i}: the code {raw['code']!r} appears twice")
         accounts[raw["code"]] = Account(raw["code"], raw["type"], raw["group"], raw["active"], raw.get("role"))
 
-    documents: list[Document] = []
+    documents: list[Document | Source] = []
     seen: set[str] = set()
     for i, raw in enumerate(data["documents"]):
         _shape(_DOCUMENT_ID, raw["id"], f"documents/{i}/id")
         if raw["id"] in seen:
             raise ScenarioError(f"documents/{i}: the id {raw['id']!r} appears twice")
         seen.add(raw["id"])
+        if raw["type"] != "manual_journal":
+            _dates_in(raw, f"documents/{i}")
+            documents.append(Source(raw["type"], raw["id"], raw["version"], date.fromisoformat(raw["date"]),
+                                    _frozen(raw)))
+            continue
         lines = tuple(
             Line(
                 account=ln["account"],
@@ -202,7 +322,27 @@ def scenario_from_json(data: Any) -> Scenario:
         Reversal(raw["document"], _date(raw["date"], f"reversals/{i}/date"))
         for i, raw in enumerate(data["reversals"])
     )
-    return Scenario(data["name"], base, currencies, accounts, tuple(documents), reversals)
+
+    as_of = _date(data["as_of"], "as_of") if "as_of" in data else None
+    settings = _settings(data["settings"], accounts, currencies) if "settings" in data else None
+    sources = [d for d in documents if isinstance(d, Source)]
+    if sources:
+        # README, "P1 sources": the rule sets read the settings, and "today" (ENG-05) is as_of.
+        if settings is None:
+            raise ScenarioError(f"documents: {sources[0].id} is a {sources[0].type}, which needs settings")
+        if as_of is None:
+            raise ScenarioError(f"documents: {sources[0].id} is a {sources[0].type}, which needs as_of")
+        for item in (*documents, *reversals):
+            if item.date > as_of:
+                raise ScenarioError(f"as_of: {as_of} is before {item.date.isoformat()}, a date in the scenario")
+        types = {d.id: d.type for d in sources}
+        for i, reversal in enumerate(reversals):
+            if reversal.document in types:
+                raise ScenarioError(
+                    f"reversals/{i}: {reversal.document} is a {types[reversal.document]}; a reversal names a "
+                    "manual journal (voids of P1 documents are not in the format yet)"
+                )
+    return Scenario(data["name"], base, currencies, accounts, tuple(documents), reversals, as_of, settings)
 
 
 def load_scenario(path: str | Path) -> Scenario:

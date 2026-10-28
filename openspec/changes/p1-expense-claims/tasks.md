@@ -114,6 +114,19 @@
 - [ ] 9.1 `expense_claim@1`, `claim_reimbursement@1`, `cash_advance@1` and `RND-MILEAGE` in the independent oracle,
   with scenario shapes and golden cases, in a session of its own (never from a build session).
   - Verified by `make oracle-test` and `make differential` agreeing to the cent. `// req: QA-ENG-01`, `// req: QA-ENG-02`
+  - 27 Oct 2026, the oracle session (its author has not read the engine): the oracle's half is written. `expense_claim@1`
+    (receipt lines costed as a bill's, trips under `RND-MILEAGE` at the vehicle's rate in force with no GST, 1250 first
+    for an advance it settles, then 2150), `claim_reimbursement@1` (the settlement on 2150, a foreign claim reimbursed in
+    SGD at the cascade's rate) and `cash_advance@1` (paid and refunded) are in `oracle/src/oracle/sources/claims.py`.
+    Hand-worked tests are in `oracle/tests/test_claims.py`, an INV-07 property for 2150 and 1250 in
+    `test_p1_properties.py`, and the golden case is `test/differential/pending/claims.json`; the shapes are in
+    `test/differential/README.md`. **Left:** the differential, once 9.2 lets the engine read the shapes.
+- [ ] 9.2 (engine session) `cmd/scenario-run` reads the `expense_claim`, `claim_reimbursement` and `cash_advance`
+  shapes of `fyniq-scenario@1` with `settings.mileage_rates` and posts them through their rule sets, writing P1 entries
+  in their canonical form (`test/differential/README.md`, "P1 sources"); then `test/differential/pending/claims.json`
+  moves to `golden/` and `claims` joins `FYNIQ_DIFFERENTIAL_SOURCES`.
+  - Verified by `make test` and `make differential` agreeing to the cent; a disagreement is settled from the PRD
+    ("P1 readings", decided in PRD-001 rev 0.155). `// req: QA-ENG-02`
 
 ## 10. Finish
 

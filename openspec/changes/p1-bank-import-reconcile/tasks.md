@@ -110,6 +110,23 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   from a build session).
   - Verified by `make oracle-test` and `make differential` agreeing to the cent. `// req: QA-ENG-01`,
     `// req: QA-ENG-02`
+  - 27 Oct 2026, the oracle session (its author has not read the engine): the oracle's half is written.
+    `bank_transaction@1` (parts, `RND-GST-INCL`, the `RND-FX` cent to 7030, spreads from the posting month
+    under `ALLOC-EVEN`, released up to `as_of`) and `bank_transfer@1` (one currency, and across currencies
+    with D6's rule as decided on 25 Oct 2026, the accountant's confirmation still to come) are in
+    `oracle/src/oracle/sources/bank.py`. The scenario shapes, `settings`, `as_of` and the canonical form of
+    a P1 entry are in `test/differential/README.md` ("P1 sources", with the readings the PRD leaves open).
+    Hand-worked tests are in `oracle/tests/test_bank.py`, the generator kinds in `strategies_p1.py`, and
+    `test/differential/pending/bank.json` holds the golden case. **Left:** the differential, once 4.8 lets
+    the engine read the shapes.
+- [ ] 4.8 (engine session) `cmd/scenario-run` reads the `bank_transaction` and `bank_transfer` shapes of
+  `fyniq-scenario@1` with `settings` and `as_of`, posts them through `bank_transaction@1`, its releases and
+  `bank_transfer@1`, and writes P1 entries in their canonical form (`test/differential/README.md`, "P1
+  sources"); then `test/differential/pending/bank.json` moves to `golden/` and `bank` joins
+  `FYNIQ_DIFFERENTIAL_SOURCES` in the Makefile's `differential` target.
+  - Verified by `make test` and `make differential` agreeing to the cent; a disagreement is settled from the
+    PRD ("P1 readings", decided in PRD-001 rev 0.155), an oracle bug fixed from the PRD and an engine bug handed back as a failing golden
+    case. `// req: QA-ENG-02`
 
 - [ ] 4.7 Dimensions on a bank transaction's parts and in a rule's action, once FR-DIM is built
   (`p1-organisation-chart` task 3.3), as on bill and invoice lines.
@@ -320,5 +337,7 @@ before any code that parses bank files or touches connector secrets (SEC-20).
 ## Workflow follow-up
 
 - `/opsx:verify`, then `/opsx:archive p1-bank-import-reconcile --skip-specs` once every task is done.
-- Before 4.6: the accountant confirms D6's cross-currency transfer rule.
+- ~~Before 4.6: the accountant confirms D6's cross-currency transfer rule.~~ Superseded (28 Oct 2026, PRD-001
+  rev 0.155): D6 is decided on the best current recommendation [accountant to confirm]; the accountant confirms
+  it later through the review register's accounting area (FR-UX-41), and 4.6 does not wait.
 - Before 7.2 is pinned: a redacted sample of Cognizhi's DBS IDEAL daily account report.

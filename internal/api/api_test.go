@@ -684,11 +684,12 @@ func TestDocumentNumbers(t *testing.T) {
 	}
 }
 
-// The standard chart loads once into an organisation with no account: 87 accounts with every attribute, and the
+// The standard chart loads once into an organisation with no account: 88 accounts with every attribute, and the
 // expense policy's starter claim categories; a second load, or a load into an organisation with accounts, is refused.
 // req: FR-COA-01
 // req: FR-COA-02
 // req: FR-AP-15
+// req: ledger/chart-of-accounts Default useful life (rev 0.151)
 func TestStandardChart(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
@@ -708,15 +709,15 @@ func TestStandardChart(t *testing.T) {
 	}
 
 	if r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil, "Prefer", "return=preview"); r.Status != 200 ||
-		r.Body["accounts"] != float64(87) || r.Body["claim_categories"] != float64(7) || len(list()) != 0 {
+		r.Body["accounts"] != float64(88) || r.Body["claim_categories"] != float64(7) || len(list()) != 0 {
 		t.Fatalf("the preview: %d %s", r.Status, r.Raw)
 	}
 	r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil, "Idempotency-Key", uuid.NewString())
-	if r.Status != 201 || r.Body["accounts"] != float64(87) || r.Body["claim_categories"] != float64(7) || r.Header.Get("Location") != "/v1/accounts" {
+	if r.Status != 201 || r.Body["accounts"] != float64(88) || r.Body["claim_categories"] != float64(7) || r.Header.Get("Location") != "/v1/accounts" {
 		t.Fatalf("loading the chart: %d %v %s", r.Status, r.Header, r.Raw)
 	}
 	accounts := list()
-	if len(accounts) != 87 {
+	if len(accounts) != 88 {
 		t.Fatalf("%d accounts after loading", len(accounts))
 	}
 	// The expense policy's starter categories come with it, each on its standard account with no limit (FR-AP-15).
@@ -759,6 +760,9 @@ func TestStandardChart(t *testing.T) {
 		"6020": {"type": "expense", "payroll_cost": true, "function": "G&A"},
 		"7040": {"type": "revenue", "name": "Unrealised FX gain or loss"},
 		"7050": {"name": "Gain / (loss) on disposal of assets"},
+		"1160": {"type": "asset", "report_group": "Other current assets", "name": "Asset disposal clearing"},
+		"1510": {"useful_life_months": float64(36)},
+		"1520": {"useful_life_months": float64(60)},
 	} {
 		for field, v := range want {
 			if accounts[code][field] != v {
@@ -777,9 +781,22 @@ func TestStandardChart(t *testing.T) {
 	if r := e.call(http.MethodPatch, "/v1/accounts/"+bank["id"].(string), accountant, map[string]any{"revalue": false}, "If-Match", fmt.Sprintf(`"%v"`, bank["version"])); r.Status != 200 || r.Body["revalue"] != false {
 		t.Errorf("unmarking a bank account: %d %s", r.Status, r.Raw)
 	}
+	// A default useful life is for the register's accounts only (rev 0.151): rent refuses one (COA-11), 1520 takes 48 months,
+	// and 0 clears it.
+	if r := e.call(http.MethodPatch, "/v1/accounts/"+rent["id"].(string), accountant, map[string]any{"useful_life_months": 36}, "If-Match", fmt.Sprintf(`"%v"`, rent["version"])); r.Status != 422 || !strings.Contains(r.Raw, "COA-11") {
+		t.Errorf("a life on rent: %d %s", r.Status, r.Raw)
+	}
+	furniture := accounts["1520"]
+	r = e.call(http.MethodPatch, "/v1/accounts/"+furniture["id"].(string), accountant, map[string]any{"useful_life_months": 48}, "If-Match", fmt.Sprintf(`"%v"`, furniture["version"]))
+	if r.Status != 200 || r.Body["useful_life_months"] != float64(48) {
+		t.Errorf("48 months on 1520: %d %s", r.Status, r.Raw)
+	}
+	if c := e.call(http.MethodPatch, "/v1/accounts/"+furniture["id"].(string), accountant, map[string]any{"useful_life_months": 0}, "If-Match", r.Header.Get("ETag")); c.Status != 200 || c.Body["useful_life_months"] != nil {
+		t.Errorf("clearing 1520's life: %d %s", c.Status, c.Raw)
+	}
 	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil), "loadStandardChart", 409, CodeChartLoaded)
 	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", e.as(authz.Accountant), nil), "loadStandardChart", 409, CodeChartLoaded)
-	if n := len(list()); n != 87 {
+	if n := len(list()); n != 88 {
 		t.Errorf("a refused load changed the chart: %d accounts", n)
 	}
 }

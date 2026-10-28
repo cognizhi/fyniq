@@ -11,10 +11,12 @@ Each journal is built to an *intent*: it meets every rule by construction, it br
 rounding. The intent is never an expected figure; the properties use it only to check that the
 generator and the rules agree about which documents must post and which must not.
 
-Shapes whose rule PRD-001 leaves open are never generated, so the differential test does not hinge
-on them (see ``test/differential/README.md``): a rate on a base-currency line, a base amount beyond
-16 integer digits, a foreign line whose base amount rounds to zero, and a reversal dated before its
-document. Every rate carries its source, as the format requires; no account carries a role.
+The shapes PRD-001 rev 0.24 decided (the "Decided in PRD-001 rev 0.24" table of
+``test/differential/README.md``) are not generated yet: a rate on a base-currency line (rejected,
+ENG-03), a base amount beyond 16 integer digits (rejected, ENG-44), a foreign line whose base amount
+rounds to zero (posts, INV-05), a reversal dated before its document (rejected, FR-GL-12) and a line
+to a share-capital account (rejected, INV-13). Every rate carries its source, as the format
+requires; no account carries a role.
 """
 
 from __future__ import annotations

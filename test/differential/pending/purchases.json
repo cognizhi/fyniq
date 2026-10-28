@@ -1,0 +1,48 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "pending-purchases",
+ "base_currency": "SGD",
+ "currencies": {"SGD": 2, "USD": 2},
+ "as_of": "2026-04-30",
+ "settings": {
+  "accounts": {"payable": "2010", "gst": "2200", "prepayments": "1210", "fx": "7030", "withholding_tax": "2330"},
+  "money_accounts": {"1010": "SGD", "1021": "USD"},
+  "gst": {"registered_from": "2025-01-01", "rates": [{"from": "2024-01-01", "percent": "9"}]}
+ },
+ "accounts": [
+  {"code": "1010", "type": "asset", "group": false, "active": true},
+  {"code": "1021", "type": "asset", "group": false, "active": true},
+  {"code": "1210", "type": "asset", "group": false, "active": true},
+  {"code": "1500", "type": "asset", "group": false, "active": true},
+  {"code": "2010", "type": "liability", "group": false, "active": true},
+  {"code": "2200", "type": "liability", "group": false, "active": true},
+  {"code": "2330", "type": "liability", "group": false, "active": true},
+  {"code": "6010", "type": "expense", "group": false, "active": true},
+  {"code": "7030", "type": "expense", "group": false, "active": true}
+ ],
+ "documents": [
+  {"type": "bill", "id": "BILL-0001", "version": 1, "date": "2026-03-05", "currency": "USD",
+   "fx_rate": "1.34", "fx_rate_source": "document",
+   "lines": [{"account": "6010", "amount": "1000.00", "gst_code": "TX", "gst": "90.00", "gst_base": "121.50"}]},
+  {"type": "bill", "id": "BILL-0002", "version": 1, "date": "2026-03-06", "currency": "SGD",
+   "lines": [{"account": "6010", "amount": "1000.00", "gst_code": "TX", "gst": "90.00"}]},
+  {"type": "bill", "id": "BILL-0003", "version": 1, "date": "2026-03-15", "currency": "SGD",
+   "lines": [{"account": "6010", "amount": "1200.00", "gst_code": "TX", "gst": "108.00",
+              "spread_months": 12, "spread_from": "2026-01-01"}]},
+  {"type": "bill", "id": "BILL-0004", "version": 1, "date": "2026-03-16", "currency": "SGD",
+   "lines": [{"account": "6010", "amount": "1234.56", "gst_code": "OP"}], "withholding": {"percent": "15"}},
+  {"type": "vendor_credit", "id": "VC-0001", "version": 1, "date": "2026-03-17", "currency": "SGD",
+   "lines": [{"account": "6010", "amount": "50.00", "gst_code": "TX", "gst": "4.50"}]},
+  {"type": "bill", "id": "BILL-0005", "version": 1, "date": "2026-03-18", "currency": "SGD",
+   "lines": [{"account": "1500", "amount": "1200.00", "gst_code": "TX", "gst": "108.00", "spread_months": 12}]},
+  {"type": "bill_payment", "id": "PAY-0001", "version": 1, "date": "2026-03-20", "account": "1021", "currency": "USD",
+   "fx_rate": "1.30", "fx_rate_source": "document", "parts": [{"document": "BILL-0001", "amount": "1090.00"}]},
+  {"type": "bill_payment", "id": "PAY-0002", "version": 1, "date": "2026-03-25", "account": "1010", "currency": "SGD",
+   "parts": [{"document": "BILL-0002", "amount": "1089.50", "in_full": true}]},
+  {"type": "bill_payment", "id": "PAY-0003", "version": 1, "date": "2026-04-02", "account": "1010", "currency": "SGD",
+   "parts": [{"document": "BILL-0003", "amount": "500.00"}], "unapplied": "20.00"},
+  {"type": "bill_payment", "id": "PAY-0004", "version": 1, "date": "2026-04-03", "account": "1010", "currency": "SGD",
+   "parts": [{"document": "BILL-0003", "amount": "900.00"}]}
+ ],
+ "reversals": []
+}

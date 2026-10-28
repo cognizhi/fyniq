@@ -4,7 +4,7 @@ type: task
 title: Keep the fixed asset register
 summary: How an Accountant registers assets from purchases or opening balances, how depreciation posts monthly, and how to sell, write off or void
 sources:
-  - docs/user-guide/fixed-assets.md sha256:26e4f0ae6ce29ae1d7dfa46db7d884957fb67bfd5f6062cd2d4a4f326976db99
+  - docs/user-guide/fixed-assets.md sha256:674c2c5cc59b90577b72635976083c828934d61f18878c23e365b40d28dc0066
 data_class: general
 taint: trusted
 status: draft
@@ -36,7 +36,7 @@ aliases:
 ## Register an asset
 
 - Open **Not in the register yet**: every line of a posted bill or categorised bank line on an asset account that no asset came from, with ⚠ **At or above** when its cost reaches the capitalisation threshold (S$1,000 unless changed, [[settings.organisation]]).
-- Choose **Register**, enter the useful life in months (such as 36 for a laptop) and any residual value; the cost is what the line put on the account, in Singapore dollars.
+- Choose **Register**, check the useful life in months (the form offers the asset account's default life, such as 36 for 1510 Computer equipment; change it if this asset lasts longer or shorter) and enter any residual value; the cost is what the line put on the account, in Singapore dollars.
 - Depreciation starts in the purchase month, or a later month when it went into use later. A posted bill with such a line shows ⚠ with a link to register it; a line is registered once.
 
 (src: docs/user-guide/fixed-assets.md#register-an-asset)
@@ -65,7 +65,7 @@ aliases:
 
 ## Sell or write off an asset
 
-- **Sell or write off**: the whole asset or part of its cost (its depreciation goes with it in proportion, the rest depreciates on), and the proceeds: money received with its GST code when GST-registered (usually SR), a sales invoice through the disposal clearing account, or none for a write-off.
+- **Sell or write off**: the whole asset or part of its cost (its depreciation goes with it in proportion, the rest depreciates on), and the proceeds: money received with its GST code when GST-registered (usually SR), a sales invoice through the disposal clearing account (1160 Asset disposal clearing in the standard chart), or none for a write-off.
 - **Check** shows the gain or loss and the entry before anything is saved; **Record** posts it, the gain or loss to 7050 Gain / (loss) on disposal of assets.
 - Every month before the disposal's month must have posted; one recorded late reverses its own month's depreciation.
 
@@ -77,6 +77,14 @@ aliases:
 - It is voided only before the asset changes again, or, after a part was sold, before what was left depreciates again.
 
 (src: docs/user-guide/fixed-assets.md#void-a-disposal)
+
+## Void an asset registered by mistake
+
+- **Void the asset**, with a reason, is for an asset registered from the wrong line or that was never an asset: each month of its depreciation that posted is reversed on its own date, it leaves the register for **Voided**, and its line shows again under **Not in the register yet**.
+- It waits while a disposal of the asset stands (void the disposal first) or while a month to reverse is in a closed period (reopen it first); in Founder mode another person approves it ([[approvals.decide]]).
+- An asset sold, scrapped or lost is not voided but sold or written off, so its gain or loss shows.
+
+(src: docs/user-guide/fixed-assets.md#void-an-asset-registered-by-mistake)
 
 ## At the close
 

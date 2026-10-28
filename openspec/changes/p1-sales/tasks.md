@@ -122,6 +122,13 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   `deposits` and `deposits-unsupported` (INV-07, C.2 #2). Tests: `TestPostDepositRefund`,
   `TestDepositsAreRefundedAndReconciled`, `TestDepositsAreRefundedThroughTheAPI`. The oracle posts none of 3.2 yet:
   task 9.1.)
+- [ ] 3.3 (engine session) PRD-001 rev 0.155: the credit notes linked to one invoice credit at most its total
+  together (its total before any deposit it deducts) [accountant to confirm]. Issuing one is refused (INVOICE-15)
+  when it credits more than the invoice's other issued, unvoided linked credit notes leave; a void frees what it
+  credited. Update `docs/user-guide/invoices.md` ("Credit notes" and INVOICE-15's row) and compile it into `kb/`.
+  - Tests: two linked credit notes within the total issue; a third beyond it is refused; after a void it issues.
+    `// req: FR-AR-04`. The oracle already follows the rule, and `test/differential/pending/sales.json` holds the
+    case, so 9.3's differential shows the difference until this is built.
 
 ## 4. Quotes and sales orders
 
@@ -239,4 +246,21 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 - [ ] 9.1 The invoice, receipt, credit, deposit, write-off and spread rules in the independent oracle, with scenario
   shapes and differential tests: an oracle session (QA-ENG-01), never a build session
+  (27 Oct 2026, the oracle session, whose author has not read the engine: the oracle's half is written.
+  `invoice@1` (`RND-LINE` with a discount, `RND-GST-EXCL` per subtotal or per line on the base nets, ENG-42's
+  customer total and its 7030 cents, spreads to 2400, deposits deducted under `RND-DEPOSIT`), `credit_note@1`
+  (standalone or linked, GST at the linked invoice's date), `customer_receipt@1` (the settlement of
+  `p1-purchases`, mirrored on 1100, with tolerances and customer credits), `customer_deposit@1`,
+  `deposit_refund@1`, `write_off@1` and the releases are in `oracle/src/oracle/sources/sales.py`. Hand-worked tests
+  are in `oracle/tests/test_sales.py` (G4-022, G4-038, the deposits' shares), INV-07's AR property is in
+  `test_p1_properties.py`, and the golden case is `test/differential/pending/sales.json`; the shapes are in
+  `test/differential/README.md`. **Left:** the differential, once 9.3 lets the engine read the shapes; applying
+  customer credits (`customer_credit_application@1`) and refunds of credits (`customer_refund@1`) are not in the
+  format yet)
+- [ ] 9.3 (engine session) `cmd/scenario-run` reads the `invoice`, `credit_note`, `customer_receipt`,
+  `customer_deposit`, `deposit_refund` and `write_off` shapes of `fyniq-scenario@1` and posts them through their
+  rule sets and `invoice_release@1`, writing P1 entries in their canonical form (`test/differential/README.md`,
+  "P1 sources"); then `test/differential/pending/sales.json` moves to `golden/` and `sales` joins
+  `FYNIQ_DIFFERENTIAL_SOURCES`. Verified by `make test` and `make differential` agreeing to the cent; a
+  disagreement is settled from the PRD ("P1 readings", decided in PRD-001 rev 0.155). `// req: QA-ENG-02`
 - [ ] 9.2 Finish with `make check` and `make test`

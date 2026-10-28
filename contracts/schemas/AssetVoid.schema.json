@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "description": "Why it is voided, such as registered from the wrong line; the audit trail and each reversing entry record it (FR-GL-12).",
+      "examples": [
+        "Registered from the wrong bill line"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "AssetVoid",
+  "type": "object"
+}

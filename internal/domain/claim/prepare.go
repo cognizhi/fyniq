@@ -306,7 +306,7 @@ func prepareTrip(ctx context.Context, u storage.UnitOfWork, d Draft, i int, l Li
 	}
 	def, _ := settings.Lookup(key)
 	value := settings.On(def, changes, l.Date).Value
-	if value == "" {
+	if value == "" { // a vehicle shipped with no recommended rate (each has one since rev 0.151) and none set since
 		add(CodeMileageRate, f("vehicle"), fmt.Sprintf("the organisation has set no rate per km for a %s on %s", l.Vehicle, day(l.Date)),
 			"Ask the owner or the accountant to set it in Settings › Organisation, Mileage rates")
 		return line, nil

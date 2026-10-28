@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -115,6 +116,7 @@ type BillPaymentPage struct {
 type BillPaymentPosting struct {
 	Payment BillPayment `json:"payment" doc:"The payment after the command."`
 	Entry   Entry       `json:"entry" doc:"The entry the command posted: the payment's entry, or its reversing entry."`
+	Checks  []BillCheck `json:"checks,omitempty" doc:"recordBillPayment only: the warnings it was recorded with (⚠), such as a payment to a supplier whose bank details wait for approval (PAYEE-12)."`
 }
 
 // BillPaymentPath names a payment in the path.
@@ -492,7 +494,8 @@ func registerBillPayments(a *API) {
 			"left it (at the payment's rate, or what a base-currency account paid for bills in another currency), and the realised " +
 			"FX to 7030; the part that settles what is left of a bill clears its carrying amount, the cent of RND-FX a part leaves " +
 			"on a base-only line. It settles at most what each bill has open (BILLPAY-05); what it paid beyond the bills is kept " +
-			"as a credit with the supplier. The money has left already, so no approval is asked. Side effects: the payment, its " +
+			"as a credit with the supplier. The money has left already, so no approval is asked; a payment to a supplier whose bank " +
+			"details wait for approval is recorded with a warning (PAYEE-12; FR-CT-03). Side effects: the payment, its " +
 			"number, the entry, an allocation per bill, a new ledger revision, balances, audit events. Every problem comes back " +
 			"together. Idempotent with Idempotency-Key; Prefer: return=preview posts nothing and shows the entry.",
 	}, recordCodes, func(ctx context.Context, in *recordPaymentInput) (*paymentPostingOutput, error) {
@@ -525,7 +528,20 @@ func registerBillPayments(a *API) {
 				return BillPaymentPosting{}, err
 			}
 			out, err := a.paymentOf(ctx, u, v, doc, true)
-			return BillPaymentPosting{Payment: out, Entry: entryOf(r.Entry)}, err
+			if err != nil {
+				return BillPaymentPosting{}, err
+			}
+			posting := BillPaymentPosting{Payment: out, Entry: entryOf(r.Entry)}
+			// FR-CT-03: the money has left already, so the payment is recorded; but a change of the supplier's bank details
+			// waits, so it may have gone to an account nobody approved yet (the owner's decision of 27 Oct 2026).
+			if waiting, err := payee.Waiting(ctx, u, d.SupplierID, a.deps.Clock.Now()); err != nil {
+				return BillPaymentPosting{}, err
+			} else if len(waiting) > 0 {
+				posting.Checks = []BillCheck{{Severity: "warning", Code: payee.CodeFrozen, Field: "supplier_id",
+					Message: "a change of the supplier's bank details waits for approval, so payments to it are frozen",
+					Fix:     "Check with the bank which account the money went to, and tell whoever approves the change"}}
+			}
+			return posting, nil
 		})
 		if err != nil {
 			return nil, err
