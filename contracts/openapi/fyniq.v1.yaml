@@ -15720,6 +15720,11 @@ components:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
           format: uuid
           type: string
+        money_account_name:
+          description: The bank account's name in Banking.
+          examples:
+            - DBS SGD current
+          type: string
         notes:
           description: Its notes.
           examples:
@@ -15746,6 +15751,11 @@ components:
           examples:
             - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
           type: string
+        reapproval_needed:
+          description: "Approved: a payee's bank account, or what is open on an item, changed since its latest approval, so it is not released until it is approved again (G4-055)."
+          examples:
+            - false
+          type: boolean
         release:
           $ref: "#/components/schemas/PaymentBatchRelease"
           description: "A released batch: who released it, when, under which approval, its file's name and hash, and the payments it posted."
@@ -15779,6 +15789,7 @@ components:
         - payments
         - total
         - checks
+        - reapproval_needed
         - version
       type: object
     PaymentBatchCancel:

@@ -99,7 +99,7 @@
 
 ## 3. Screens and docs
 
-- [ ] 3.1 `payment-batches` and `payment-batch` as designed (`PaymentBatches.html`, `PaymentBatch.html`, updated for
+- [x] 3.1 `payment-batches` and `payment-batch` as designed (`PaymentBatches.html`, `PaymentBatch.html`, updated for
   rev 0.154):
   - the list and the record;
   - New batch from planned bills and approved claims;
@@ -111,6 +111,10 @@
   `docs/security/threat-models/payment-batches.md`, and the approval words for `payment_batch` and
   `claimant_bank_change`.
   - Tests: Vitest with axe on each state, including release blocked after a payee's change. `// req: FR-BNK-12`
+  - Built: the list and the record as Bills › Batches; a new batch starts from the suggestion for its date, and the
+    record removes items; the approval words for `payment_batch`. The batch's ledger-impact, evidence and activity tabs
+    of the design wait (the payments' own pages show their entries); the API adds `reapproval_needed` and
+    `money_account_name` for the screens.
 - [ ] 3.2 Check the screens on the dev stack in a browser: prepare, approve as the other founder, release, download,
   match a statement line and see the remittance in Mailpit.
 - [ ] 3.3 Finish with `make check` and `make test`; `make test-e2e` for the batch journey.

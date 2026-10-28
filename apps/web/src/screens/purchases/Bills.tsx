@@ -44,6 +44,9 @@ export function BillTabs() {
       <Link to="/purchases/orders" activeOptions={{ exact: true }}>
         Orders
       </Link>
+      <Link to="/purchases/payment-batches" activeOptions={{ exact: false }}>
+        Batches
+      </Link>
     </nav>
   );
 }

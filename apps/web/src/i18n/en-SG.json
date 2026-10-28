@@ -276,6 +276,38 @@
       "label": "Attach",
       "tooltip": "Attach the vendor's letter, or a screenshot of their confirmation through a channel you already knew. It is kept as bank details."
     },
+    "purchases.payment-batches": {
+      "label": "Payment batches",
+      "tooltip": "Pay approved bills and claims together from one bank account: prepared, approved by another person, then released."
+    },
+    "purchases.payment-batch": {
+      "label": "Payment batch",
+      "tooltip": "One batch: its payments by payee, what holds any, its approval, its release and whether each is paid."
+    },
+    "batch.new": {
+      "label": "New batch",
+      "tooltip": "Start a batch for a payment date with the bills planned by then and the claims owed. Keep or remove each one next."
+    },
+    "batch.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Another person approves it before it is released. Its total and each payee's account are what they approve."
+    },
+    "batch.reapprove": {
+      "label": "Ask to approve again",
+      "tooltip": "A payee's account or an amount changed since it was approved. The approver sees what it pays now."
+    },
+    "batch.release": {
+      "label": "Release",
+      "tooltip": "Posts each payment and writes the payment list, once you confirm it's you. Then pay it in the bank."
+    },
+    "batch.download": {
+      "label": "Download payment list",
+      "tooltip": "The list to key into your bank, with full account numbers, once you confirm it's you. Each download is recorded."
+    },
+    "batch.cancel": {
+      "label": "Cancel batch",
+      "tooltip": "An approved batch not yet released is cancelled with a reason; its bills and claims are free again."
+    },
     "profile.bank-account": {
       "label": "Bank account for reimbursements",
       "tooltip": "Where your expense claims are paid. Only you enter it; someone in finance approves each change."

@@ -4,7 +4,7 @@ type: task
 title: Your profile and security: Basic or Expert mode, your bank account, passkeys and devices
 summary: Basic or Expert mode, your bank account for reimbursements and its approval, confirming it's you, passkeys, and signing out other devices
 sources:
-  - docs/user-guide/profile-and-security.md sha256:d9e33a44fe9b69a5e68f8a7872ecdc2044145cb2291e08b4ac622a2da4a1dacd
+  - docs/user-guide/profile-and-security.md sha256:4a55055eb003763c23c0e333089b9833d346ffcf99d488b838ade5681a0929d1
 data_class: general
 taint: trusted
 status: draft
@@ -98,6 +98,6 @@ aliases:
 - "This browser cannot make passkeys.": use a current browser on a device with a fingerprint reader, face recognition or a PIN.
 - "No screenshot of your banking app or statement header is attached.": attach one showing the name and the account number before asking for approval.
 - "An account for reimbursements is a Singapore bank's account.": use a bank in Singapore's code, such as DBSSSGSG, OCBCSGSG or UOVBSGSG.
-- Related: how Fyniq looks ([[preferences.appearance]]); claiming expenses ([[claims.make-a-claim]]).
+- Related: how Fyniq looks ([[preferences.appearance]]); claiming expenses ([[claims.make-a-claim]]); paying claims in a batch ([[purchases.payment-batches]]).
 
 (src: docs/user-guide/profile-and-security.md#common-problems) (src: docs/user-guide/profile-and-security.md#related)
