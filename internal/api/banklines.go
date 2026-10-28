@@ -556,7 +556,8 @@ func registerBankLines(a *API) {
 		Summary: "Reconcile now",
 		Description: "Runs auto-reconcile over the waiting lines, one money account's or every account's, as the system principal and within the " +
 			"same limits as after an upload (FR-BNK-14; the owner's decision of 26 Oct 2026, rev 0.143): a transfer's missing side, the one open " +
-			"document a line names exactly, and approved auto-apply rules. Lines that arrive by feed in P1 wait for it. Each line posts in its own " +
+			"document a line names exactly, the one payment of a released batch whose number the line names (rev 0.160), and approved auto-apply " +
+			"rules. Lines that arrive by feed in P1 wait for it. Each line posts in its own " +
 			"transaction, so one refusal never stops the others; what is left stays in the queue, counted by why. The person who asked is " +
 			"recorded as the one it acted for. Prefer: return=preview says what it would do and posts nothing.",
 	}, "Idempotency-Key", "Each line reconciles in its own transaction and a repeat finds those lines no longer waiting, so nothing posts twice (FR-BNK-14)."),
@@ -600,7 +601,7 @@ func registerBankLines(a *API) {
 			run := planned
 			if wantsPreview(in.Prefer) {
 				out.Applied = previewApplied
-			} else if run, err = banking.AutoReconcile(ctx, a.deps.Store, p.Organisation, ids, now); err != nil {
+			} else if run, err = banking.AutoReconcile(ctx, a.bank, p.Organisation, ids, now); err != nil {
 				return nil, err
 			}
 			out.Body = AutoReconciled{Reconciled: len(run.Reconciled), Left: map[string]int{}}

@@ -598,7 +598,9 @@ var (
 	RequestPaymentBatchApproval   = Policy{Operation: "requestPaymentBatchApproval", Capability: PaymentBatches, Need: Create, Unqualified: true}
 	RequestPaymentBatchReapproval = Policy{Operation: "requestPaymentBatchReapproval", Capability: PaymentBatches, Need: Create, Unqualified: true}
 	CancelPaymentBatch            = Policy{Operation: "cancelPaymentBatch", Capability: PaymentBatches, Need: Create, Unqualified: true}
-	ReleasePaymentBatch           = Policy{Operation: "releasePaymentBatch", Capability: PaymentBatches, Need: Release, Unqualified: true,
+	// Sending a failed remittance advice again (FR-BNK-12, rev 0.160): who can prepare a batch; never the salaries' qualified cell.
+	SendRemittanceAgain = Policy{Operation: "sendRemittanceAgain", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	ReleasePaymentBatch = Policy{Operation: "releasePaymentBatch", Capability: PaymentBatches, Need: Release, Unqualified: true,
 		Note: "A person stepped up in the last 5 minutes; in Standard mode never who prepared, asked for or approved the batch or a payee's account change (SOD-1, SOD-2)."}
 	GetPaymentBatchFile = Policy{Operation: "getPaymentBatchFile", Capability: PaymentBatches, Need: Release, Unqualified: true,
 		Note: "A person stepped up in the last 5 minutes; each download is audited."}
@@ -1036,7 +1038,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
-	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, ReleasePaymentBatch, GetPaymentBatchFile,
+	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, SendRemittanceAgain, ReleasePaymentBatch, GetPaymentBatchFile,
 	GetMyBankDetails, CreateMyBankChange, GetMyBankChange, ReplaceMyBankChange, RequestMyBankChangeApproval, WithdrawMyBankChange, RevealMyBankAccount,
 	GetClaimantBankChange, RevealClaimantBankAccount, AddMyBankChangeEvidence, ListMyBankChangeEvidence, GetMyBankChangeEvidence,
 	RemoveMyBankChangeEvidence, ListClaimantBankChangeEvidence, GetClaimantBankChangeEvidence,

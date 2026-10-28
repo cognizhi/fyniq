@@ -304,6 +304,10 @@
       "label": "Download payment list",
       "tooltip": "The list to key into your bank, with full account numbers, once you confirm it's you. Each download is recorded."
     },
+    "batch.remittance-again": {
+      "label": "Send again",
+      "tooltip": "A supplier's remittance advice that gave up after several tries is sent once more, with a reason. It is still sent at most once."
+    },
     "batch.cancel": {
       "label": "Cancel batch",
       "tooltip": "An approved batch not yet released is cancelled with a reason; its bills and claims are free again."

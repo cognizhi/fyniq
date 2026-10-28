@@ -24,9 +24,11 @@
   and an open bill, leave the line in the queue as ambiguous.
 - **Limits:** the line's size counts against `bank.auto_cap_line` like any other; a batch's payment is no rule, so
   `bank.auto_cap_rule_day` does not apply.
-- **The match:** the same as a person's `match-recorded`, made by the system principal, with the basis
-  `batch_payment`. It queues the remittance advice as a person's match does, appears in the Auto-reconciled list, is
-  undone while the period is open, and can be drawn into the weekly sample (FM-3).
+- **The match:** the same as a person's `match-recorded`, made by the system principal: a match of kind `recorded`
+  with the basis `exact` (exactly one thing the line can be), so the database's bases need no change. It queues the
+  remittance advice as a person's match does, appears in the Auto-reconciled list with the batch's number, is undone
+  while the period is open, and can be drawn into the weekly sample (FM-3). (29 Oct 2026, building: the plan named a
+  basis `batch_payment` of its own; `exact` says the same without a migration.)
 - **A batch's total** on one line is never matched by itself; a person matches it.
 
 ### D2 Send again

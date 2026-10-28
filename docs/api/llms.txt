@@ -348,6 +348,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/payment-batches/{batch_id}/approval` (requestPaymentBatchApproval): Ask for approval of a payment batch
 - `POST /v1/payment-batches/{batch_id}/cancel` (cancelPaymentBatch): Cancel an approved payment batch
 - `GET /v1/payment-batches/{batch_id}/file` (getPaymentBatchFile): Download a released batch's payment list
+- `POST /v1/payment-batches/{batch_id}/payments/{payment_id}/remittance-again` (sendRemittanceAgain): Send a failed remittance advice again
 - `POST /v1/payment-batches/{batch_id}/reapproval` (requestPaymentBatchReapproval): Ask for a payment batch's approval again
 - `POST /v1/payment-batches/{batch_id}/release` (releasePaymentBatch): Release a payment batch
 - `GET /v1/periods` (listPeriods): List the periods

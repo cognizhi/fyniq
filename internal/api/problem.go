@@ -734,6 +734,7 @@ var codeFacts = map[string]struct {
 	CodeBatchNotOpen:              {409, "The batch is not in that state"},
 	CodeBatchOwn:                  {403, "You prepared it, so another person approves it"},
 	CodeBatchReason:               {422, "Cancelling needs a reason"},
+	CodeRemittanceNotFailed:       {409, "The remittance advice did not fail"},
 	storage.CodePayee:             {409, "Bank details do not change that way"},
 	storage.CodeBatch:             {409, "A payment batch does not change that way"},
 	storage.CodeBatchHeld:         {409, "The item is paid by an approved payment batch"},

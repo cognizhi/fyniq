@@ -145,6 +145,7 @@ type plan struct {
 	basis    string
 	transfer *storage.BankTransfer
 	doc      *Suggestion
+	recorded *Suggestion // a released batch's payment the line names (rev 0.160)
 	rule     *Rule
 }
 
@@ -195,10 +196,11 @@ func decide(ctx context.Context, u storage.UnitOfWork, line storage.BankLine, ru
 	if err != nil {
 		return plan{}, "", err
 	}
-	var exact []Suggestion
+	var exact, recorded []Suggestion
 	for _, s := range suggested {
 		if s.Found == FoundRecorded {
-			return plan{}, LeftAmbiguous, nil // the money may be recorded by hand already: a person decides
+			recorded = append(recorded, s)
+			continue
 		}
 		if s.Found != FoundReference || s.Open == nil || s.Contact == "" {
 			continue
@@ -211,6 +213,18 @@ func decide(ctx context.Context, u storage.UnitOfWork, line storage.BankLine, ru
 		if s.Open.Equal(size) && strings.Contains(party, foldRef(s.Contact)) {
 			exact = append(exact, s)
 		}
+	}
+	// Money recorded already: one payment of a released batch the line names is matched (rev 0.160); any other, or more
+	// than one thing the line could be, is for a person to decide.
+	if len(recorded) > 0 {
+		if len(recorded) > 1 || len(exact) > 0 {
+			return plan{}, LeftAmbiguous, nil
+		}
+		named, err := ofBatchNamed(ctx, u, line, recorded[0].DocumentID)
+		if err != nil || !named {
+			return plan{}, LeftAmbiguous, err
+		}
+		return plan{basis: storage.BasisExact, recorded: &recorded[0]}, "", nil
 	}
 	if len(exact) > 1 {
 		return plan{}, LeftAmbiguous, nil
@@ -232,6 +246,22 @@ func decide(ctx context.Context, u storage.UnitOfWork, line storage.BankLine, ru
 		return plan{}, LeftRuleCap, nil
 	}
 	return plan{basis: storage.BasisRule, rule: &r}, "", nil
+}
+
+// ofBatchNamed says whether a payment was made by a released payment batch whose number the line names as a word, as
+// written or normalised (in its reference, counterparty or description), as the payment list's reference carries it
+// (FR-BNK-12).
+func ofBatchNamed(ctx context.Context, u storage.UnitOfWork, line storage.BankLine, paymentID uuid.UUID) (bool, error) {
+	rel, err := u.PaymentBatches().ReleaseOfPayment(ctx, paymentID)
+	if err != nil || rel == nil {
+		return false, err
+	}
+	batch, err := u.Documents().Get(ctx, rel.BatchID)
+	if err != nil {
+		return false, err
+	}
+	text := line.Reference + " " + line.Counterparty + " " + line.Description
+	return names(text, []string{batch.Number}, false) || names(text, []string{batch.Number}, true), nil
 }
 
 func equalAmount(d storage.Decimal, m money.Money) bool {
@@ -264,9 +294,11 @@ func ruleUsed(ctx context.Context, u storage.UnitOfWork, base money.Currency, ru
 }
 
 // AutoReconcile reconciles what it may of the lines named (nil: every line in the queue), each in its own unit of
-// work as AutoActor, so one refusal never stops the others. What it does not reconcile stays in the queue, with why.
-// The person whose import or Reconcile now started it is recorded as the one it acted for, with their request.
-func AutoReconcile(ctx context.Context, store storage.Store, org uuid.UUID, lineIDs []uuid.UUID, at time.Time) (AutoRun, error) {
+// work as AutoActor, so one refusal never stops the others, through txns, whose AfterMatch queues a matched batch
+// payment's remittance advice as a person's match does. What it does not reconcile stays in the queue, with why. The
+// person whose import or Reconcile now started it is recorded as the one it acted for, with their request.
+func AutoReconcile(ctx context.Context, txns journal.BankTransactions, org uuid.UUID, lineIDs []uuid.UUID, at time.Time) (AutoRun, error) {
+	store := txns.Store
 	caller := storage.AuditFrom(ctx)
 	ctx = storage.WithAudit(ctx, storage.AuditContext{Actor: &AutoActor, OnBehalfOf: caller.Actor, Reason: "Auto-reconciled (FR-BNK-14)",
 		Request: caller.Request})
@@ -282,7 +314,6 @@ func AutoReconcile(ctx context.Context, store storage.Store, org uuid.UUID, line
 			return run, err
 		}
 	}
-	txns := journal.BankTransactions{Store: store}
 	for _, id := range lineIDs {
 		var p plan
 		var why string
@@ -307,7 +338,9 @@ func AutoReconcile(ctx context.Context, store storage.Store, org uuid.UUID, line
 			}
 		case storage.BasisExact:
 			var x journal.Matched
-			if p.doc.Kind == storage.MatchReceipt {
+			if p.recorded != nil {
+				x, err = txns.MatchRecorded(ctx, org, line.ID, p.recorded.DocumentID, storage.BasisExact, at)
+			} else if p.doc.Kind == storage.MatchReceipt {
 				x, err = txns.MatchInvoices(ctx, org, journal.InvoiceMatch{LineID: line.ID, CustomerID: p.doc.ContactID, Currency: p.doc.Open.Currency(),
 					Invoices: []receipt.Part{{InvoiceID: p.doc.DocumentID, Amount: *p.doc.Open, InFull: true}}, Basis: storage.BasisExact, At: at})
 			} else {

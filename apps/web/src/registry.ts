@@ -258,6 +258,7 @@ export const actions = [
   { kind: "action", id: "batch.release", mode: "basic", help: "batch.release", guide: "purchases.payment-batches#release-a-batch" },
   { kind: "action", id: "batch.download", mode: "basic", help: "batch.download", guide: "purchases.payment-batches#pay-it-in-the-bank" },
   { kind: "action", id: "batch.cancel", mode: "basic", help: "batch.cancel", guide: "purchases.payment-batches#cancel-a-batch" },
+  { kind: "action", id: "batch.remittance-again", mode: "basic", help: "batch.remittance-again", guide: "purchases.payment-batches#paid-and-remittance-advice" },
   { kind: "action", id: "order.save", mode: "basic", help: "order.save", guide: "purchases.orders#raise-an-order" },
   { kind: "action", id: "order.approve", mode: "basic", help: "order.approve", guide: "purchases.orders#approve-an-order" },
   { kind: "action", id: "order.ask-approval", mode: "basic", help: "order.ask-approval", guide: "purchases.orders#approve-an-order" },

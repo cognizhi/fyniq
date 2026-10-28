@@ -1957,6 +1957,11 @@ components:
     AutoReconciliation:
       additionalProperties: false
       properties:
+        batch_number:
+          description: The payment batch, when the line matched one of its payments, which the line named (rev 0.160).
+          examples:
+            - PB-0003
+          type: string
         line:
           $ref: "#/components/schemas/BankLine"
           description: "The line, with its match: its basis says how (exact, transfer or rule)."
@@ -18798,6 +18803,19 @@ components:
         - day_of_month
         - starts_on
       type: object
+    RemittanceAgain:
+      additionalProperties: false
+      properties:
+        reason:
+          description: Why it is sent again; the audit trail records it.
+          examples:
+            - The email service was down on Tuesday
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - reason
+      type: object
     ReopenRequest:
       additionalProperties: false
       properties:
@@ -26711,7 +26729,7 @@ paths:
         right: P
   /v1/auto-reconciliations:
     get:
-      description: "The lines the system reconciled by itself that still stand, latest first, a page at a time (FR-BNK-14): exact matches, transfers and lines an approved rule categorised, each with its basis and rule. Undo one with unreconcileBankLine while its period is open; a weekly sample goes to the review log. Read-only."
+      description: "The lines the system reconciled by itself that still stand, latest first, a page at a time (FR-BNK-14): exact matches, a released batch's payments (rev 0.160), transfers and lines an approved rule categorised, each with its basis, rule or batch. Undo one with unreconcileBankLine while its period is open; a weekly sample goes to the review log. Read-only."
       operationId: listAutoReconciliations
       parameters:
         - description: How many items per page, up to 500.
@@ -30866,7 +30884,7 @@ paths:
         right: P
   /v1/bank-lines:auto-reconcile:
     post:
-      description: "Runs auto-reconcile over the waiting lines, one money account's or every account's, as the system principal and within the same limits as after an upload (FR-BNK-14; the owner's decision of 26 Oct 2026, rev 0.143): a transfer's missing side, the one open document a line names exactly, and approved auto-apply rules. Lines that arrive by feed in P1 wait for it. Each line posts in its own transaction, so one refusal never stops the others; what is left stays in the queue, counted by why. The person who asked is recorded as the one it acted for. Prefer: return=preview says what it would do and posts nothing."
+      description: "Runs auto-reconcile over the waiting lines, one money account's or every account's, as the system principal and within the same limits as after an upload (FR-BNK-14; the owner's decision of 26 Oct 2026, rev 0.143): a transfer's missing side, the one open document a line names exactly, the one payment of a released batch whose number the line names (rev 0.160), and approved auto-apply rules. Lines that arrive by feed in P1 wait for it. Each line posts in its own transaction, so one refusal never stops the others; what is left stays in the queue, counted by why. The person who asked is recorded as the one it acted for. Prefer: return=preview says what it would do and posts nothing."
       operationId: autoReconcileBankLines
       parameters:
         - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
@@ -82619,6 +82637,205 @@ paths:
         capability: Payment batches
         note: A person stepped up in the last 5 minutes; each download is audited.
         right: R
+  /v1/payment-batches/{batch_id}/payments/{payment_id}/remittance-again:
+    post:
+      description: "Queues once more the remittance advice of a released batch's payment to a supplier whose advice gave up after its attempts (FR-BNK-12; the owner's decision of 29 Oct 2026, rev 0.160), for a person who can prepare batches. The worker renders and emails it as the first time, so a payment voided since, or one sent meanwhile, sends nothing, and a payment gets at most one advice. An advice sent, waiting for the match, queued or not wanted (no remittance email) is PB-24. Side effects: the job and an audit event of the resend, with the reason. Idempotent with Idempotency-Key; Prefer: return=preview checks it and queues nothing."
+      operationId: sendRemittanceAgain
+      parameters:
+        - description: The batch's ID.
+          in: path
+          name: batch_id
+          required: true
+          schema:
+            description: The batch's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10
+            format: uuid
+            type: string
+        - description: The batch's payment to the supplier.
+          in: path
+          name: payment_id
+          required: true
+          schema:
+            description: The batch's payment to the supplier.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d20
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemittanceAgain"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentBatch"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The batch's version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The batch's URL.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PB-24` The remittance advice did not fail; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Send a failed remittance advice again
+      tags:
+        - Purchases
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PB-24
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Payment batches
+        right: C
   /v1/payment-batches/{batch_id}/reapproval:
     post:
       description: "Asks for another approval of an approved batch waiting for release, when a payee's account or what is open on an item changed since it was approved (G4-055): the approver sees the accounts and total it pays now, and the release checks this approval instead. Nothing else changes. Needs a person signed in who passed step-up, and If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing."
