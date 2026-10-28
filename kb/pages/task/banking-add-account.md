@@ -4,14 +4,14 @@ type: task
 title: Add a money account and choose where its data comes from
 summary: Add a bank, card, wallet, gateway or cash account in three steps, and set its statements to arrive as files, by email or through a connector
 sources:
-  - docs/user-guide/banking.md sha256:49aa643d2012253039f4a0e3060e4259e28c7e64c6a31f00c0e6e0891e5e4368
+  - docs/user-guide/banking.md sha256:0a214ec3e3ded677eed8f6f9fd8da9921d9e54563610ee314a5882ae2e0c9f9d
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-26
+compiled_at: 2026-10-28
 aliases:
   - add a bank account
   - new money account

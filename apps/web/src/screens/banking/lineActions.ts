@@ -91,7 +91,7 @@ export async function rule(id: string): Promise<Rule> {
   return data;
 }
 
-// What a suggestion is, in words: a document's payment, money recorded by hand, or a rule.
+// What a suggestion is, in words: a document's payment, money already recorded (by hand or by a batch's release), or a rule.
 export function suggestionWords(line: Line, s: Suggestion): string {
   const open = s.open ? ` (${s.open.amount} ${s.open.currency} open)` : "";
   switch (s.kind) {
@@ -100,14 +100,14 @@ export function suggestionWords(line: Line, s: Suggestion): string {
     case "bill_payment":
       return `Payment of ${s.number ?? "a bill"} to ${s.contact ?? "the supplier"}${open}`;
     case "recorded":
-      return `${sign(line.amount.amount) > 0 ? "Money received" : "Money paid"} recorded by hand: ${s.number ?? "a document"}`;
+      return `${sign(line.amount.amount) > 0 ? "Money received" : "Money paid"}, already recorded: ${s.number ?? "a document"}`;
     default:
       return `Rule: ${s.rule_name ?? "a bank rule"}`;
   }
 }
 
 export const found: Record<Suggestion["found"], string> = {
-  recorded: "Recorded by hand",
+  recorded: "Recorded already",
   reference: "Number matches",
   normalised: "Number matches, once tidied",
   amount: "Amount and name match",

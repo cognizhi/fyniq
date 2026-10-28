@@ -4,14 +4,14 @@ type: task
 title: Categorise and match the waiting bank lines
 summary: Accept, change or skip each waiting line's suggestion, run Reconcile now, and in Expert split, transfer, match or suspend lines
 sources:
-  - docs/user-guide/banking.md sha256:49aa643d2012253039f4a0e3060e4259e28c7e64c6a31f00c0e6e0891e5e4368
+  - docs/user-guide/banking.md sha256:0a214ec3e3ded677eed8f6f9fd8da9921d9e54563610ee314a5882ae2e0c9f9d
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-26
+compiled_at: 2026-10-28
 aliases:
   - categorise
   - bank queue
@@ -30,7 +30,7 @@ aliases:
 
 - **Categorise** lists the lines waiting for a person: new lines, possible duplicates and lines in suspense; Fyniq never applies a suggestion by itself.
 - Each line shows whether money came in or went out, its amount, and its description as the bank sent it.
-- **What is this?** lists the suggestions, best first: money already recorded by hand, an open invoice or bill whose number the line names, one of the amount the line's counterparty owes, then the first bank rule the line meets.
+- **What is this?** lists the suggestions, best first: money already recorded (by hand, or by releasing a payment batch, [[purchases.payment-batches]]), an open invoice or bill whose number the line names, one of the amount the line's counterparty owes, then the first bank rule the line meets.
 - **Accept** posts the line as the chosen suggestion says; **Change the category** posts the whole line to the chosen account with its GST code and, optionally, its contact; **Skip** moves on and comes back later.
 - **Reconcile now** lets Fyniq reconcile the exact matches among the waiting lines by itself, within the organisation's auto-reconcile limits ([[settings.organisation]]), and says how many it left and why; lines that arrive by email or from a connector wait for it.
 - A possible duplicate ⚠ says so (compare it on the account first, [[banking.accounts]]); a line in suspense ⚠ is posted to suspense (2999) until it is categorised or matched.

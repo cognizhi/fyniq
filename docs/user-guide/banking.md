@@ -91,11 +91,11 @@ Select **Import statement**, then choose the bank's files: several at once, for 
 suspense. Fyniq never applies a suggestion by itself.
 
 - Each line shows whether money came in or went out, its amount, and its description as the bank sent it.
-- **What is this?** lists the suggestions, best first: money already recorded by hand, an open invoice or
-  bill whose number the line names, one of the amount the line's counterparty owes, then the first bank
-  rule the line meets.
+- **What is this?** lists the suggestions, best first: money already recorded (by hand, or by releasing a
+  payment batch), an open invoice or bill whose number the line names, one of the amount the line's
+  counterparty owes, then the first bank rule the line meets.
 - **Accept** posts the line as the chosen suggestion says: a payment of the invoice or bill, a match to
-  the money recorded by hand, or the rule's category. **Change the category** posts the whole line to
+  the money already recorded, or the rule's category. **Change the category** posts the whole line to
   the account you choose, with its GST code and, if you like, its contact. **Skip** moves on and comes
   back to it later.
 - **Reconcile now** lets Fyniq reconcile the exact matches among the waiting lines by itself, within the
