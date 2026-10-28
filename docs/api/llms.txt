@@ -408,6 +408,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/recurring-journals/{recurring_journal_id}` (replaceRecurringJournal): Change a recurring journal
 - `POST /v1/recurring-journals/{recurring_journal_id}/pause` (pauseRecurringJournal): Pause a recurring journal
 - `POST /v1/recurring-journals/{recurring_journal_id}/resume` (resumeRecurringJournal): Resume a recurring journal
+- `GET /v1/report-exports` (listReportExports): List my exports
+- `POST /v1/report-exports` (requestReportExport): Ask for an accountant export
+- `GET /v1/report-exports/{export_id}` (getReportExport): Get one of my exports
+- `GET /v1/report-exports/{export_id}/file` (getReportExportFile): Download one of my exports
 - `GET /v1/reports/general-ledger` (getGeneralLedger): Get the general ledger report
 - `GET /v1/reports/schedules` (getSchedules): Get the prepayment and deferral schedules
 - `GET /v1/reports/statements/{kind}` (getFinancialStatement): Get a financial statement

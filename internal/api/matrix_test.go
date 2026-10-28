@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -15,14 +16,17 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/authz/authztest"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/reportexport"
 )
 
 // matrixCall makes one operation's request for a caller, with fresh records where it changes one, and
@@ -1249,6 +1253,18 @@ var matrixCalls = map[string]matrixCall{
 	"getSchedules": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/schedules?as_at=2026-10-31", tok, nil), nil
 	},
+	"requestReportExport": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/report-exports", tok, map[string]any{"report": "trial_balance", "to": "2026-10-31", "format": "csv"}), nil
+	},
+	"listReportExports": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/report-exports", tok, nil), nil
+	},
+	"getReportExport": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/report-exports/"+matrixExport(e, tok, false), tok, nil), nil
+	},
+	"getReportExportFile": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/report-exports/"+matrixExport(e, tok, true)+"/file", tok, nil), nil
+	},
 	"exportFinancialStatement": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/statements/bs/export?to=2026-10&format=csv", tok, nil), nil
 	},
@@ -2443,4 +2459,24 @@ func matrixMemberUser(e *env) uuid.UUID {
 	}
 	e.t.Fatalf("the matrix member %s is not listed", id)
 	return uuid.Nil
+}
+
+// matrixExport is an export the token's own person asked for, prepared by the worker when ready is true, so that a role
+// the matrix allows reaches it; a role it refuses cannot ask, and is refused before the export is looked up, whatever
+// its ID.
+func matrixExport(e *env, tok string, ready bool) string {
+	r := e.call(http.MethodPost, "/v1/report-exports", tok, map[string]any{"report": "trial_balance", "to": "2026-10-31", "format": "csv"})
+	if r.Status != http.StatusAccepted {
+		return uuid.NewString()
+	}
+	id := r.str("id")
+	if ready {
+		worker := workerStore(e.t)
+		p := reportexport.Preparer{Store: worker, Files: e.blobs, Outbox: outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: e.clock}, Clock: e.clock}
+		payload, _ := json.Marshal(map[string]string{"export_id": id})
+		if err := p.Work()(context.Background(), e.books.Org, storage.OutboxRow{Kind: reportexport.Kind, Payload: payload}); err != nil {
+			e.t.Fatal(err)
+		}
+	}
+	return id
 }

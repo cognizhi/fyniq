@@ -270,3 +270,56 @@ func TestARemittanceThatGaveUpShowsAsFailed(t *testing.T) {
 		t.Fatalf("Northwind's payment after its remittance gave up: %v", p)
 	}
 }
+
+// A batch payment voided after its match queued the remittance advice, and before the worker ran it, sends nothing:
+// no advice kept, no send recorded, no email; the job runs once and is done (FR-BNK-12, design D8). The void is a
+// person's direct one, so the organisation is in Standard mode (FM-1 asks for it in Founder mode).
+// req: FR-BNK-12
+// req: FR-AP-13
+func TestAPaymentVoidedBeforeItsRemittanceSendsNothing(t *testing.T) {
+	e := inStandardMode(newEnv(t))
+	accountant := e.as(authz.Accountant)
+	northwind := e.vendor("Northwind Analytics Pte Ltd")
+	if r := e.call(http.MethodPatch, "/v1/contacts/"+northwind, accountant, map[string]any{"remittance_email": "payments@northwind.example"}, "If-Match", "*"); r.Status != http.StatusOK {
+		t.Fatalf("setting the remittance email = %d: %s", r.Status, r.Raw)
+	}
+	e.vendorAccount(northwind, "0123456789")
+	rel, m := e.releasedBatch("bill:" + e.billOf(northwind, "100.00", "9.00"))
+	nw := paymentOf(t, rel, "Northwind Analytics Pte Ltd")["payment_id"].(string)
+	l := e.lineOn(m, "-109.00", nil)
+	if r := e.call(http.MethodPost, "/v1/bank-lines/"+l.ID.String()+"/match-recorded", accountant, map[string]any{"document_id": nw}, "If-Match", etag(l.Version)); r.Status != http.StatusOK {
+		t.Fatalf("matching = %d: %s", r.Status, r.Raw)
+	}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		l, err = u.Banking().Line(ctx, l.ID)
+		return err
+	})
+	if u := e.call(http.MethodPost, "/v1/bank-lines/"+l.ID.String()+"/unreconcile", accountant, map[string]any{"reason": "Not this payment"}, "If-Match", etag(l.Version)); u.Status != http.StatusOK {
+		t.Fatalf("undoing the match = %d: %s", u.Status, u.Raw)
+	}
+	g := e.call(http.MethodGet, "/v1/bill-payments/"+nw, accountant, nil)
+	if v := e.call(http.MethodPost, "/v1/bill-payments/"+nw+"/void", accountant, map[string]any{"date": "2026-10-21", "reason": "Returned by the bank"}, "If-Match", g.Header.Get("ETag")); v.Status != http.StatusOK {
+		t.Fatalf("voiding the payment = %d: %s", v.Status, v.Raw)
+	}
+	if n := e.runRemittances(); n != 1 {
+		t.Fatalf("%d remittance jobs ran, want the one the match queued", n)
+	}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		sent, err := u.DocumentSends().OfDocument(ctx, uuid.MustParse(nw))
+		if err != nil {
+			return err
+		}
+		files, err := u.Evidence().OfDocument(ctx, uuid.MustParse(nw), uuid.Nil, 10)
+		if err != nil {
+			return err
+		}
+		msgs, err := u.EmailMessages().List(ctx, storage.EmailMessageFilter{Purpose: "remittance", Limit: 10})
+		if len(sent) != 0 || len(files) != 0 || len(msgs) != 0 {
+			t.Errorf("a voided payment's remittance: sends %+v, evidence %+v, email %+v", sent, files, msgs)
+		}
+		return err
+	})
+	if n := e.runRemittances(); n != 0 {
+		t.Errorf("%d remittance jobs ran again", n)
+	}
+}

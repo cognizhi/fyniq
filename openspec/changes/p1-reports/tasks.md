@@ -49,12 +49,16 @@
 
 ## 2. The screens
 
-- [ ] 2.1 Design check: `Reports.html`, `FinancialStatement.html` and `ExportDialog.html` against what the API
+- [x] 2.1 Design check: `Reports.html`, `FinancialStatement.html` and `ExportDialog.html` against what the API
   gives. Update a fragment where the build differs, and republish the canvas (fyniq-openspec Recipe C).
   (28 Oct 2026, part: the statements' route is `/reports/statements/:kind` in the inventory. The build leaves out,
   for their tasks or changes: the budget and variance columns (`p1-planning`), the expenses by function view (an API
   option, later), Ask about this (wave 6), Print and Export (task 3), favourites and saved reports (P2). The fragments
   still show them as designed; nothing to republish. **Left:** `ExportDialog.html` with task 3.5.)
+  (29 Oct 2026, the rest: `ExportDialog.html` against the build. The build leaves out, for their tasks: another period
+  or columns than the screen's, the audit-tool layouts and the lines behind each figure (FR-RPT-10's formats for audit
+  tools), the logo on the PDF (FR-ORG-09's logo upload), and the chart's PNG (task 5.2). The fragment still shows them
+  as designed; nothing to republish.)
 - [x] 2.2 `reports-index`: Basic's curated set with a line each, and Expert's full list, the accountant exports among
   them.
   (28 Oct 2026: Reports (`/reports`, a new nav item for the roles that read every account): the essentials (the P&L,
@@ -90,21 +94,51 @@
   export is audited (`report.exported`, with what, the filters, rows and hash; FR-RPT-09's audit half). Tests:
   `TestCSVWritesNumbersAsNumbersAndNoFormula`, `TestXLSXWritesNumberCellsAndInlineText`,
   `TestFinancialStatementsThroughTheAPI`, the matrix row.)
-- [ ] 3.2 The PDF through the render service: a Typst statement template, titled with the framework, with the revision
+- [x] 3.2 The PDF through the render service: a Typst statement template, titled with the framework, with the revision
   in the footer. `// req: FR-RPT-05`
-- [ ] 3.3 Background exports on the outbox:
+  (29 Oct 2026: the render service lays out a report its caller wrote (`render.Report`, checked within its bounds) with
+  `report.typ`, PDF/A-2a and PDF/UA-1 as the documents are: the organisation, the statement, the statements' title and
+  basis, the period and currency; the rows as the sheets have them, the % of revenue beside a P&L of one or two
+  columns; the failed checks, the restated presentation and the cash flow's non-cash transactions as notes; the header
+  row repeated and the revision, platform version and page number on every page; landscape past five columns.
+  `exportFinancialStatement` takes `format=pdf`, renders outside the transaction and audits the export as the others;
+  REPORT-08 when the render service is missing, busy or failing. Design D5 revised: a statement's PDF downloads at once.
+  Tests: `TestAReportRendersArchivalAndAccessible` (snapshot hashes), `TestTheRenderServiceRendersAReport`,
+  `TestAReportIsCheckedBeforeItIsLaidOut`, `TestAStatementPrintsAsItReads` (worked by hand) and
+  `TestFinancialStatementsThroughTheAPI`.)
+- [x] 3.3 Background exports on the outbox:
   - an export record and its file in the blob store;
   - a link valid 24 hours (a setting), re-checked at each download, and a 60-second storage URL;
   - an audit event for every export, with its filters and row count;
   - the requester notified;
   - a migration with RLS.
   - Tests: a revoked right blocks the download; the link expires; the attack tests on the export rows. `// req: FR-RPT-09`
-- [ ] 3.4 The accountant exports: the GL, TB, journals, the fixed asset schedule, and AR and AP detail (GST detail comes
+  (28 Oct 2026: migration 000191's `report_export` (RLS forced, audited on every change, FY243: the API only asks, the
+  worker only moves pending to ready or failed and ready to expired, nothing deletes). `internal/reportexport`
+  prepares an export on the worker (`reports.export`), keeps the file in the staging store under
+  `exports/<org>/<export>/` with its SHA-256 and revision, and notifies the requester (`reports.export_ready`); the
+  hourly `reports.expire` deletes the files past their 24 hours. The API: `requestReportExport` (202),
+  `listReportExports`, `getReportExport` and `getReportExportFile`. The file is the requester's only (REPORT-07),
+  REPORT-05 while it is not ready, REPORT-06 once expired, rights checked again at each download, and the download is
+  audited. Locally the file comes back in base64; `[live-verify]` the cloud's redirect to a storage URL valid 60
+  seconds waits for the GCS adapter's signed URLs. Tests: `TestAnAccountantExportIsPreparedInTheBackground` (on the
+  worker's role, with the database's refusals), `TestAccountantExportsThroughTheAPI`, the matrix rows.)
+- [x] 3.4 The accountant exports: the GL, TB, journals, the fixed asset schedule, and AR and AP detail (GST detail comes
   with `p1-gst`). `// req: FR-RPT-10`
-- [ ] 3.5 `export-dialog` as designed: format, options, background progress, and the expired and blocked states.
+  (28 Oct 2026: each a sheet with its totals; the trial balance and the journal entries read at the revision; a range
+  too long for the general ledger, across a year's start, or a day the books have no period for fails with why. In
+  Expert, Reports has **Accountant exports**: choose, prepare, see each export's state, and download.
+  `statements.test.tsx`. Help key `reports.accountant-exports`; the guide's "Accountant exports".)
+- [x] 3.5 `export-dialog` as designed: format, options, background progress, and the expired and blocked states.
   (28 Oct 2026, part: the statement page's **Export to Excel** and **Export CSV** download the file at the revision
   shown, and a refusal says why; help key `statement.export`, the guide's "Export a statement". **Left:** the dialog
   itself, with the PDF and the background exports (3.2, 3.3).)
+  (28 Oct 2026, more: the accountant exports' background progress, ready and expired states, and why one failed, on
+  the reports index. **Left:** the PDF option, with 3.2.)
+  (29 Oct 2026, the rest: the statement page's **Export** opens the dialog: Excel, PDF or CSV as cards (arrow keys move
+  between them), what is on screen and its revision, the refusal in the dialog, the formula and audit note, and the
+  person's recent exports with Download and **Ask again** for an expired one; a blocked download's refusal says why.
+  Options the build leaves out are listed under 2.1. `statements.test.tsx` with axe; the guide's "Export a statement".)
 
 ## 4. Management reports (FR-RPT-03)
 
@@ -113,8 +147,13 @@
 
 ## 5. Charts (FR-VIZ-01…08)
 
-- [ ] 5.1 The palette validator in `make check` (D7): colour-vision separation and contrast in both themes.
+- [x] 5.1 The palette validator in `make check` (D7): colour-vision separation and contrast in both themes.
   `// req: FR-VIZ-07`
+  (29 Oct 2026: `docs/design-system/fyniq/scripts/check_palette.py`, in `make check-tokens`: the dataviz method's checks
+  on `--chart-1…8` in the four themes, its thresholds and simulation, matching the method's own validator figure for
+  figure (light: worst adjacent ΔE 9.1 protan, 19.6 normal; dark 8.4 and 19.3). Contrast under 3:1 is a warning, read
+  through the table view and labels (D7, corrected). `--self-test` plants four palettes, a grey slot, a red beside a
+  green, two close blues and a pale yellow, and each must fail for its reason.)
 - [x] 5.2 The `Chart` component on ECharts, loaded on demand:
   - the form by the data's job, and one y-axis;
   - fixed entity colours, with Other past 8 series;

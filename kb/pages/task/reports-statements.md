@@ -4,14 +4,14 @@ type: task
 title: Read the financial statements
 summary: The profit and loss, balance sheet, cash flow and trial balance for any run of months, comparisons, tracing a figure to its lines, and re-running at a revision
 sources:
-  - docs/user-guide/financial-statements.md sha256:32ad630b2d13cad0556aded07ec17988a4b76c434ce965078eb9fd2a46a86770
+  - docs/user-guide/financial-statements.md sha256:5ebd2270f4961f5194007b521358ce4914198f87599f7688af007ae6e3294fd2
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-28
+compiled_at: 2026-10-29
 aliases:
   - financial statements
   - profit and loss
@@ -62,11 +62,21 @@ aliases:
 
 ## Export a statement
 
-- **Export to Excel**: a workbook with the statement and a **Data** tab of every account's figure in every column; **Export CSV**: its rows.
-- Amounts are numbers, not text, and nothing in the file becomes a formula; the figures are read at the same ledger revision as the screen's.
-- Each export is recorded in the audit trail, with what was exported and its filters.
+- **Export** opens a dialog: **Excel (XLSX)**, a workbook with the statement and a **Data** tab of every account's figure in every column; **PDF**, the statement to print or send, with page numbers and the ledger revision on every page (landscape past five columns); or **CSV**, its rows as plain numbers.
+- The export is the statement as on screen (period, comparison, columns), read at the same ledger revision as the screen's; amounts are numbers, not text, and nothing in the file becomes a formula.
+- Each export is recorded in the audit trail, with what was exported and its filters. A PDF that cannot be made just then says so: try again in a moment, or export to Excel or CSV.
+- The dialog also lists your recent accountant exports, to download one that is ready or ask again for one that expired.
 
 (src: docs/user-guide/financial-statements.md#export-a-statement)
+
+## Accountant exports
+
+- In Expert mode **Reports** has the **Accountant exports**: the general ledger and the journal entries over a range of days, and the trial balance, the fixed asset schedule, and the receivables and payables in detail at a day, as Excel or CSV.
+- Choose the report, its days and the format, then **Prepare the export**; it is prepared in the background, the list says when it is ready and a notification tells you; then **Download**.
+- Only the person who asked can download it, for 24 hours; then it expires and its file is deleted; **Ask again** beside an expired export makes a fresh one.
+- An export that cannot be made says why, such as a general ledger range that crosses the start of a financial year (export each year apart). Each export and download is recorded in the audit trail.
+
+(src: docs/user-guide/financial-statements.md#accountant-exports)
 
 ## The same figures again
 

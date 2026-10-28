@@ -13,6 +13,7 @@ import { hasHelpText, helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf } from "../../ui";
 import { listPeriods, type Period } from "../accounting/data";
+import { ExportDialog } from "./ExportDialog";
 
 type Statement = components["schemas"]["FinancialStatement"];
 type Block = components["schemas"]["FinancialBlock"];
@@ -169,22 +170,12 @@ function BlockRows({ b, s, percent }: { b: Block; s: Statement; percent: boolean
 }
 
 // save gives the person a file the server wrote, in base64.
-function save(name: string, type: string, base64: string) {
-  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  const url = URL.createObjectURL(new Blob([bytes], { type }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 // FinancialStatement is Reports › Financial statements (docs/design/screens FinancialStatement; FR-RPT-01, FR-RPT-02,
 // FR-RPT-08): the P&L, the balance sheet, the cash flow or the trial balance for a run of months, with a comparative
 // or a column per month, read at one ledger revision. Every account's figure opens its general ledger lines (FR-UX-04).
 // Basic shows the current column with plain words under each section; Expert adds the codes, comparatives and % of
 // revenue. The layout is provisional (PRD-001 rev 0.159) [accountant to confirm]; budget comparatives come with
-// planning, dimension columns with dimensions, the function view and the PDF with their tasks.
+// planning, dimension columns with dimensions, and the function view with its task. Export opens the export dialog.
 export function FinancialStatement() {
   const id = useId();
   const { kind } = useParams({ strict: false }) as { kind: Kind };
@@ -210,21 +201,12 @@ export function FinancialStatement() {
   const last = (periods.data?.items ?? []).find((p) => run && ym(p) === run.to);
   const failed = s?.checks.filter((c) => !c.ok) ?? [];
   const exp = helpText("statement.export");
-  const [exporting, setExporting] = useState<"csv" | "xlsx" | null>(null);
-  const [exportProblem, setExportProblem] = useState<ReturnType<typeof problemOf> | null>(null);
-  // exportAs downloads the statement as the server wrote it, at the revision it shows, and audited (FR-RPT-05, FR-RPT-09).
-  const exportAs = async (format: "csv" | "xlsx") => {
-    if (!run || !s) return;
-    setExporting(format);
-    setExportProblem(null);
-    const r = await api.GET("/v1/reports/statements/{kind}/export", {
-      params: { path: { kind }, query: { from: run.from, to: run.to, compare: compare || undefined, columns: byMonth ? "month" : "total", as_at_revision: s.ledger_revision, format } },
-    });
-    setExporting(null);
-    if (r.error) return setExportProblem(problemOf(r.error));
-    save(r.data.file_name, r.data.media_type, r.data.content_base64);
-  };
+  const [exporting, setExporting] = useState(false);
   const name = statementNames[kind] ?? "Financial statement";
+  // shown is what the statement shows, as the export dialog names it.
+  const shown = s
+    ? `${date(s.from)} to ${date(s.to)}${byMonth ? ", a column per month" : compare === "prior_period" ? ", with the period before" : compare === "prior_year" ? ", with the same months a year earlier" : ""}`
+    : "";
 
   return (
     <div className="fy-page fy-enter">
@@ -243,16 +225,23 @@ export function FinancialStatement() {
         </div>
         {s && run && (
           <div className="fy-pagehead__actions">
-            {(["xlsx", "csv"] as const).map((f) => (
-              <Button key={f} variant={f === "xlsx" ? "primary" : "secondary"} disabled={exporting !== null} onClick={() => exportAs(f)} title={exp.tooltip}>
-                <Icon of={Download} />
-                {f === "xlsx" ? "Export to Excel" : "Export CSV"}
-              </Button>
-            ))}
+            <Button variant="primary" onClick={() => setExporting(true)} title={exp.tooltip}>
+              <Icon of={Download} />
+              {exp.label}
+            </Button>
           </div>
         )}
       </div>
-      {exportProblem && <Refusal problem={exportProblem} title={`The ${name.toLowerCase()} could not be exported`} />}
+      {s && run && (
+        <ExportDialog
+          open={exporting}
+          onOpenChange={setExporting}
+          kind={kind}
+          name={name}
+          shown={shown}
+          query={{ from: run.from, to: run.to, compare: compare || undefined, columns: byMonth ? "month" : "total", as_at_revision: s.ledger_revision }}
+        />
+      )}
       <nav className="fy-tabs" aria-label="Statements">
         {(["pl", "bs", "cf", "tb"] as const).map((k) => (
           <Link key={k} to="/reports/statements/$kind" params={{ kind: k }} aria-current={k === kind ? "page" : undefined} className={k === "tb" ? "fy-expert-only" : undefined}>

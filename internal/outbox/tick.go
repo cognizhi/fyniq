@@ -91,6 +91,8 @@ var PlatformSchedules = []Schedule{
 	// Daily at 03:25 in Singapore, the incoming-funds signals that no statement line closed within the organisation's
 	// bank.signal_expiry_days expire (FR-BNK-16, UC-BNK-02; rev 0.145).
 	{Job: "bank.signals-expiry", Every: 24 * time.Hour, Offset: 19*time.Hour + 25*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
+	// Hourly, the exports past their 24 hours: their files deleted and the exports marked expired (FR-RPT-09).
+	{Job: "reports.expire", Every: time.Hour, Offset: 25 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Daily at 03:20 in Singapore, the quotes past their validity date with no answer expire (FR-AR-01; rev 0.130).
 	{Job: "quotes.expiry", Every: 24 * time.Hour, Offset: 19*time.Hour + 20*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Hourly, the draft invoices of the recurring invoices due by each organisation's own today (FR-AR-07, FR-AUT-01;

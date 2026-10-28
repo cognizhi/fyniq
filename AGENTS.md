@@ -39,7 +39,7 @@ shell (p0-repo-skeleton-local-mode), and the database backstop with the storage 
 | Command | Does | Status |
 |---|---|---|
 | `make help` | Lists the targets | Today |
-| `make check` | Every check available today: design-token contrast in four themes, release configuration, the knowledge-base lint, the OpenSpec specs against the PRD, the P1–P3 plan against the specs, the screen inventory and fragments, the review register, the scan waivers and the scan, image and infra rules on planted findings | Today (CI runs it) |
+| `make check` | Every check available today: design-token contrast in four themes and the chart palette (FR-VIZ-07), release configuration, the knowledge-base lint, the OpenSpec specs against the PRD, the P1–P3 plan against the specs, the screen inventory and fragments, the review register, the scan waivers and the scan, image and infra rules on planted findings | Today (CI runs it) |
 | `make hooks` | Installs the Conventional Commit check as a git `commit-msg` hook | Today: run once per clone |
 | `make lint-commits` | Checks the commit messages in `RANGE` (default `origin/main..HEAD`) | Today |
 | `make deps-up` / `deps-down` / `deps-logs` | PostgreSQL 18 (port 55432), Mailpit (8025) and fake GCS (4443) in Docker | Today |
