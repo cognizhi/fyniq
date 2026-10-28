@@ -18356,6 +18356,11 @@ export interface components {
              */
             money_account_id: string;
             /**
+             * @description The bank account's name in Banking.
+             * @example DBS SGD current
+             */
+            money_account_name?: string;
+            /**
              * @description Its notes.
              * @example End of October suppliers and claims
              */
@@ -18378,6 +18383,11 @@ export interface components {
              * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
              */
             prepared_by?: string;
+            /**
+             * @description Approved: a payee's bank account, or what is open on an item, changed since its latest approval, so it is not released until it is approved again (G4-055).
+             * @example false
+             */
+            reapproval_needed: boolean;
             /** @description A released batch: who released it, when, under which approval, its file's name and hash, and the payments it posted. */
             release?: components["schemas"]["PaymentBatchRelease"];
             /**
@@ -18558,11 +18568,11 @@ export interface components {
              */
             rejected: boolean;
             /**
-             * @description A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, or no_email when the supplier has no remittance address (⚠). Absent for a claimant.
+             * @description A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, failed when sending it gave up after its attempts (⚠: tell the supplier another way), or no_email when the supplier has no remittance address (⚠). Absent for a claimant.
              * @example sent
              * @enum {string}
              */
-            remittance?: "waiting" | "queued" | "sent" | "no_email";
+            remittance?: "waiting" | "queued" | "sent" | "failed" | "no_email";
         };
         PaymentBatchPosted: {
             /**

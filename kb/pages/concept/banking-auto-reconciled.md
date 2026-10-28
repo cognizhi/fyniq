@@ -4,14 +4,14 @@ type: concept
 title: What Fyniq reconciled by itself, and undoing it
 summary: The Auto-reconciled list: exact matches, transfers' other sides and approved rules' lines, why and by whom, and undo while the month is open
 sources:
-  - docs/user-guide/banking.md sha256:49aa643d2012253039f4a0e3060e4259e28c7e64c6a31f00c0e6e0891e5e4368
+  - docs/user-guide/banking.md sha256:0a214ec3e3ded677eed8f6f9fd8da9921d9e54563610ee314a5882ae2e0c9f9d
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-26
+compiled_at: 2026-10-28
 aliases:
   - auto-reconciled
   - reconciled without a click

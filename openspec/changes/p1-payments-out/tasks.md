@@ -99,7 +99,7 @@
 
 ## 3. Screens and docs
 
-- [ ] 3.1 `payment-batches` and `payment-batch` as designed (`PaymentBatches.html`, `PaymentBatch.html`, updated for
+- [x] 3.1 `payment-batches` and `payment-batch` as designed (`PaymentBatches.html`, `PaymentBatch.html`, updated for
   rev 0.154):
   - the list and the record;
   - New batch from planned bills and approved claims;
@@ -111,9 +111,26 @@
   `docs/security/threat-models/payment-batches.md`, and the approval words for `payment_batch` and
   `claimant_bank_change`.
   - Tests: Vitest with axe on each state, including release blocked after a payee's change. `// req: FR-BNK-12`
-- [ ] 3.2 Check the screens on the dev stack in a browser: prepare, approve as the other founder, release, download,
+  - Built: the list and the record as Bills › Batches; a new batch starts from the suggestion for its date, and the
+    record removes items; the approval words for `payment_batch`. The batch's ledger-impact, evidence and activity tabs
+    of the design wait (the payments' own pages show their entries); the API adds `reapproval_needed` and
+    `money_account_name` for the screens.
+- [x] 3.2 Check the screens on the dev stack in a browser: prepare, approve as the other founder, release, download,
   match a statement line and see the remittance in Mailpit.
-- [ ] 3.3 Finish with `make check` and `make test`; `make test-e2e` for the batch journey.
+  - Checked on 28 Oct 2026 with two founders on a local stack: two batches prepared from planned bills, asked for,
+    approved by the other founder, released by the preparer (Founder mode), the payment list read with its hash,
+    statement lines imported and matched, each batch paid, and the remittance advice received in Mailpit with its PDF.
+  - Found and fixed on the way: the worker could not keep or send remittance advice under its own database role
+    (migration 000189 fences it to a matched batch payment; the test now runs as the worker); a money account on a
+    chart account with no currency of its own was refused (#319); a new batch for a day with nothing due sent an
+    empty batch; "1 payments" and an ISO date in the approval and the list; the record's breadcrumb; Categorise
+    called a batch's payment "recorded by hand"; a remittance that gave up showed "queued" for ever (now
+    **Remittance not sent**).
+  - Seen, not changed here: a person invited to an organisation has no screen to redeem the invitation (sign-in
+    offers only the Super admin invitation); a remittance job that dies is never retried (no dead-letter replay).
+- [x] 3.3 Finish with `make check` and `make test`; `make test-e2e` for the batch journey.
+  - 28 Oct 2026: `make test` and the non-local `go test ./...` pass; `make test-e2e` runs the new journey
+    `e2e/payment-batches.spec.ts` (new batch, ask, the other founder approves, release, download) with the 16 others.
 
 ## Workflow follow-up
 

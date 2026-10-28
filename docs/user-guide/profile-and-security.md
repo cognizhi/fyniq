@@ -104,3 +104,4 @@ held. Once approved, the new account replaces the old one for every payment from
 - [Sign in to Fyniq](sign-in.md)
 - [Change how Fyniq looks](appearance.md)
 - [Claim back money you spent for the company](claims-my-claims.md)
+- [Pay suppliers and claims in a batch](payment-batches.md)

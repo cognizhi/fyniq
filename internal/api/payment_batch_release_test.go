@@ -79,6 +79,9 @@ func TestAPaymentBatchIsApprovedThenReleased(t *testing.T) {
 	}
 	id := r.str("id")
 	asked := e.askBatch(id, ahkow, r.Header.Get("ETag"), false)
+	if s := asked.str("summary"); !strings.HasPrefix(s, "Pay a payment batch: 2 payments, ") || !strings.HasSuffix(s, " SGD, on 31 Oct 2026 by FAST") {
+		t.Errorf("the request's summary: %q", s)
+	}
 	if g := e.call(http.MethodGet, "/v1/payment-batches/"+id, ahkow, nil); g.str("status") != "waiting" || g.str("approval_id") != asked.str("id") {
 		t.Fatalf("waiting: %s", g.Raw)
 	}
@@ -99,6 +102,9 @@ func TestAPaymentBatchIsApprovedThenReleased(t *testing.T) {
 	// The supplier's account changes: the release waits for the batch's approval again, which shows the new account.
 	releaser := f.as(f.ahkow, authz.PaymentReleaser)
 	e.vendorAccount(vendor, "998877665544")
+	if b := e.call(http.MethodGet, "/v1/payment-batches/"+id, ahkow, nil); b.Body["reapproval_needed"] != true {
+		t.Errorf("the batch does not say it needs approving again: %s", b.Raw)
+	}
 	e.problemIs(e.call(http.MethodPost, "/v1/payment-batches/"+id+"/release", releaser, nil, "If-Match", g.Header.Get("ETag")),
 		"releasePaymentBatch", 409, CodeBatchReapprove)
 	again := e.askBatch(id, ahkow, g.Header.Get("ETag"), true)
@@ -107,6 +113,9 @@ func TestAPaymentBatchIsApprovedThenReleased(t *testing.T) {
 	}
 	if d := f.decide(weiling, again.str("id"), "approve", hashOf(again)); d.Status != http.StatusOK {
 		t.Fatalf("approving again = %d: %s", d.Status, d.Raw)
+	}
+	if b := e.call(http.MethodGet, "/v1/payment-batches/"+id, ahkow, nil); b.Body["reapproval_needed"] != false {
+		t.Errorf("approved again, the batch still needs approving again: %s", b.Raw)
 	}
 
 	// Released by Ah Kow, who prepared it: allowed in Founder mode, and logged.

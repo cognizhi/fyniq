@@ -82,6 +82,8 @@ func (a *API) releasedPayments(ctx context.Context, u storage.UnitOfWork, posted
 				pay.Remittance = "sent"
 			case strings.TrimSpace(c.RemittanceEmail) == "":
 				pay.Remittance = "no_email"
+			case queued != nil && queued.State == storage.OutboxDead:
+				pay.Remittance = "failed" // its attempts ran out; nothing queues it again
 			case queued != nil:
 				pay.Remittance = "queued"
 			default:

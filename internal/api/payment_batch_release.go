@@ -552,8 +552,15 @@ func registerPaymentBatchRelease(a *API) {
 				if op == approval.OpBatchReapprove {
 					verb = "Approve again, after a payee's change:"
 				}
-				summary := fmt.Sprintf("%s %s: %d payments, %s SGD, on %s by %s", verb, name, len(b.Payments), b.Total.String(), b.Stored.PaymentDate,
-					strings.ToUpper(b.Stored.Method))
+				payments := "1 payment"
+				if n := len(b.Payments); n != 1 {
+					payments = fmt.Sprintf("%d payments", n)
+				}
+				on := b.Stored.PaymentDate
+				if d, err := time.Parse(time.DateOnly, on); err == nil {
+					on = d.Format("2 Jan 2006")
+				}
+				summary := fmt.Sprintf("%s %s: %s, %s SGD, on %s by %s", verb, name, payments, b.Total.String(), on, strings.ToUpper(b.Stored.Method))
 				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectPaymentBatch, ObjectKey: id.String(), Operation: op, Summary: summary,
 					Execute: map[string]any{"batch_id": id.String(), "version": fmt.Sprint(doc.Version)}, Diff: diff,
 					Amounts: []approval.Amount{{Amount: b.Total.String(), Currency: paymentbatch.SGD.Code}}})
