@@ -52,6 +52,10 @@ func TestThePaymentListIsWrittenToTheByte(t *testing.T) {
 	if strings.Contains(string(out.Data), ",=HYPERLINK") {
 		t.Error("a formula is written live")
 	}
+	f.Payments = f.Payments[:1]
+	if one, err := (paymentfile.PaymentList{}).Write(f); err != nil || !strings.HasSuffix(string(one.Data), "Total,,,,,381.50,SGD,2026-10-31,FAST,1 payment from DBS SGD current 072-123456-7\r\n") {
+		t.Errorf("a list of one payment: %q, %v", one.Data, err)
+	}
 	if _, err := (paymentfile.PaymentList{}).Write(paymentfile.File{Batch: "PB-0004"}); err == nil {
 		t.Error("an empty batch was written")
 	}

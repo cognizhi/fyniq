@@ -79,6 +79,9 @@ func TestAPaymentBatchIsApprovedThenReleased(t *testing.T) {
 	}
 	id := r.str("id")
 	asked := e.askBatch(id, ahkow, r.Header.Get("ETag"), false)
+	if s := asked.str("summary"); !strings.HasPrefix(s, "Pay a payment batch: 2 payments, ") || !strings.HasSuffix(s, " SGD, on 31 Oct 2026 by FAST") {
+		t.Errorf("the request's summary: %q", s)
+	}
 	if g := e.call(http.MethodGet, "/v1/payment-batches/"+id, ahkow, nil); g.str("status") != "waiting" || g.str("approval_id") != asked.str("id") {
 		t.Fatalf("waiting: %s", g.Raw)
 	}

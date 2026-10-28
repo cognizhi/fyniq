@@ -88,8 +88,12 @@ func (PaymentList) Write(f File) (Out, error) {
 			return Out{}, err
 		}
 	}
+	count := "1 payment"
+	if n := len(f.Payments); n != 1 {
+		count = fmt.Sprintf("%d payments", n)
+	}
 	closing := []string{"Total", "", "", "", "", total.String(), total.Currency().Code, day, method,
-		fmt.Sprintf("%d payments from %s %s", len(f.Payments), f.Debit.Name, f.Debit.Identifier)}
+		fmt.Sprintf("%s from %s %s", count, f.Debit.Name, f.Debit.Identifier)}
 	if err := w.Write(inert(closing)); err != nil {
 		return Out{}, err
 	}
