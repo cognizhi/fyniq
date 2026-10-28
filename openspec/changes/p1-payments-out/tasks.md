@@ -51,11 +51,11 @@
   suggested from bills planned on or before its date (FR-AP-13).
   - Tests: each hold triggered by a fixture (QA-RPT-02); a supplier's three bills as one payment. `// req: FR-BNK-12`,
     `// req: FR-AP-13`, `// req: FR-AP-19`
-- [ ] 2.3 Approval (design D3): the batch's envelope holds its version, status, total and each payee's account in
+- [x] 2.3 Approval (design D3): the batch's envelope holds its version, status, total and each payee's account in
   force; approval posts and numbers it; `payment_batch.reapprove` after a payee's account changed.
   - Tests G4-055: a batch approved, then a vendor's bank change approved, refuses release until re-approved, and the
     re-approval shows the new account. `// req: FR-APR-05`, `// req: FR-APR-10`, `// req: G4-055`
-- [ ] 2.4 Release (design D4, D5):
+- [x] 2.4 Release (design D4, D5):
   - who may release: R on "Payment batches", a person, stepped up; SOD-2 and SOD-1 refused in Standard mode and
     logged in Founder mode (FM-3);
   - every check again, under ENG-47's locks;
@@ -63,6 +63,9 @@
     referenced with the batch's number;
   - the release row and its audit event, idempotent;
   - cancelling a draft or an approved, unreleased batch, with a reason.
+  - Built: only an approved, unreleased batch is cancelled; a draft cannot go to cancelled (a document moves draft →
+    approved → reversed), so it is changed or left. A batch names the chart's money account, as a payment recorded by
+    hand does, and Banking's account for it gives its kind and identifier.
   - Tests:
     - the entries are those of recording by hand, to the cent, and the bills and claims show paid;
     - a second release refused;
@@ -70,14 +73,15 @@
     - in Founder mode the approver's release is logged.
 
     `// req: FR-BNK-12`, `// req: SOD-1`, `// req: SOD-2`, `// req: FM-1`, `// req: FM-3`
-- [ ] 2.5 The file (design D6, D7):
+- [x] 2.5 The file (design D6, D7):
   - `internal/domain/paymentfile` with its writer interface;
   - the release seals the file into its row (SEC-11), with the writer's name and version and the SHA-256 of the
     clear file;
-  - `getPaymentBatchFile` for R or A, stepped up, each download audited.
+  - `getPaymentBatchFile` for R, stepped up, each download audited (built for R only: one policy names one right; the
+    approver compares the accounts and total in the approval instead).
   - Tests: the file is opened only for the release's batch; a download without step-up refused; the audit trail and
     the log hold no number. `// req: FR-BNK-12`, `// req: SEC-11`, `// req: AUD-02`
-- [ ] 2.6 The payment list writer, `payment-list@1` (design D6, rev 0.156): the CSV's header, one row per payment, the
+- [x] 2.6 The payment list writer, `payment-list@1` (design D6, rev 0.156): the CSV's header, one row per payment, the
   count and total; formula-like cells prefixed.
   - Tests: a golden file worked by hand, to the byte; a payee named `=HYPERLINK(…)` written inert; the total equals
     the batch's. `// req: FR-BNK-12`

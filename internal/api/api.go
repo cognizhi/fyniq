@@ -278,6 +278,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerClaimantBankDetails(a)
 	registerClaimantBankChangeEvidence(a)
 	registerPaymentBatches(a)
+	registerPaymentBatchRelease(a)
 	registerInvoices(a)
 	registerInvoiceDocuments(a)
 	registerDocumentSends(a)

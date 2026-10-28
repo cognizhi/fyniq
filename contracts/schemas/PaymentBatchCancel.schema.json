@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "description": "Why it is cancelled: its bills and claims are free for another batch, or to pay by hand.",
+      "examples": [
+        "The supplier asked to be paid by cheque"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "PaymentBatchCancel",
+  "type": "object"
+}

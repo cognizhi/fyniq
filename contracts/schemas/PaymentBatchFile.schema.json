@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "content_base64": {
+      "description": "The file, in base64. It holds full account numbers: keep it only as long as it takes to pay.",
+      "examples": [
+        "UGF5ZWUsUGF5ZWUgdHlwZQ=="
+      ],
+      "type": "string"
+    },
+    "file_name": {
+      "description": "The file's name.",
+      "examples": [
+        "PB-0003-payment-list.csv"
+      ],
+      "type": "string"
+    },
+    "media_type": {
+      "description": "Its type.",
+      "examples": [
+        "text/csv"
+      ],
+      "type": "string"
+    },
+    "sha256": {
+      "description": "The SHA-256 of the content, in hexadecimal: the release's.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "size_bytes": {
+      "description": "Its size, in bytes.",
+      "examples": [
+        512
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "file_name",
+    "media_type",
+    "sha256",
+    "size_bytes",
+    "content_base64"
+  ],
+  "title": "PaymentBatchFile",
+  "type": "object"
+}

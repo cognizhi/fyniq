@@ -575,6 +575,16 @@ var (
 	GetPaymentBatchSuggestion = Policy{Operation: "getPaymentBatchSuggestion", Capability: PaymentBatches, Need: Create, Unqualified: true}
 	CreatePaymentBatch        = Policy{Operation: "createPaymentBatch", Capability: PaymentBatches, Need: Create, Unqualified: true}
 	ReplacePaymentBatch       = Policy{Operation: "replacePaymentBatch", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	// Asking for a batch's approval, or for it again after a payee's change, and cancelling an approved one, are preparing it
+	// (C); the approval engine has another person who holds A approve it. Releasing it and downloading its payment list are
+	// the Payment releaser's (R), a person stepped up; separation by team mode is checked at the release (SOD-1, SOD-2, FM-3).
+	RequestPaymentBatchApproval   = Policy{Operation: "requestPaymentBatchApproval", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	RequestPaymentBatchReapproval = Policy{Operation: "requestPaymentBatchReapproval", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	CancelPaymentBatch            = Policy{Operation: "cancelPaymentBatch", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	ReleasePaymentBatch           = Policy{Operation: "releasePaymentBatch", Capability: PaymentBatches, Need: Release, Unqualified: true,
+		Note: "A person stepped up in the last 5 minutes; in Standard mode never who prepared, asked for or approved the batch or a payee's account change (SOD-1, SOD-2)."}
+	GetPaymentBatchFile = Policy{Operation: "getPaymentBatchFile", Capability: PaymentBatches, Need: Release, Unqualified: true,
+		Note: "A person stepped up in the last 5 minutes; each download is audited."}
 	// Invoices (FR-AR-03; p1-sales), as bills: read under V, prepared under C (the Bookkeeper, the AR specialist, the
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
 	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
@@ -1009,6 +1019,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
+	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, ReleasePaymentBatch, GetPaymentBatchFile,
 	GetMyBankDetails, CreateMyBankChange, GetMyBankChange, ReplaceMyBankChange, RequestMyBankChangeApproval, WithdrawMyBankChange, RevealMyBankAccount,
 	GetClaimantBankChange, RevealClaimantBankAccount, AddMyBankChangeEvidence, ListMyBankChangeEvidence, GetMyBankChangeEvidence,
 	RemoveMyBankChangeEvidence, ListClaimantBankChangeEvidence, GetClaimantBankChangeEvidence,

@@ -65,6 +65,7 @@ type PaymentBatch struct {
 	Total          Money                 `json:"total" doc:"What it pays in all, in SGD."`
 	Checks         []BillCheck           `json:"checks" nullable:"false" doc:"Before release: what stops it being asked for, approved or released (✖), every problem at once. Empty in a list."`
 	ApprovalID     string                `json:"approval_id,omitempty" format:"uuid" doc:"The approval request it waits for." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20"`
+	Release        *PaymentBatchRelease  `json:"release,omitempty" doc:"A released batch: who released it, when, under which approval, its file's name and hash, and the payments it posted."`
 	PreparedBy     string                `json:"prepared_by,omitempty" doc:"Who saved its current version: an actor of the audit trail." example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	Version        int                   `json:"version" doc:"The batch's version; with its status it makes the ETag." example:"1"`
 }
@@ -291,6 +292,11 @@ func (a *API) batchOf(ctx context.Context, u storage.UnitOfWork, v batchView, do
 			pay.Items = append(pay.Items, item)
 		}
 		out.Payments = append(out.Payments, pay)
+	}
+	if status == "released" {
+		if out.Release, err = a.releaseOf(ctx, u, doc.ID); err != nil {
+			return PaymentBatch{}, err
+		}
 	}
 	if checks && status != "released" && status != "cancelled" {
 		out.Checks = batchChecksOf(b.Errors)
