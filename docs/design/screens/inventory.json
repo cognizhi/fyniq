@@ -2625,7 +2625,7 @@
    "title": "Financial statement viewer",
    "canvas": "insight",
    "module": "Reports",
-   "route": "/reports/:statement",
+   "route": "/reports/statements/:kind",
    "kind": "page",
    "phase": "P1",
    "roles": [
