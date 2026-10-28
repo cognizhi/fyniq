@@ -64,7 +64,7 @@ CREATE TABLE fyniq.payment_batch_release (
   CONSTRAINT payment_batch_release_payments_positive CHECK (payments > 0),
   CONSTRAINT payment_batch_release_currency_format CHECK (currency ~ '^[A-Z]{3}$'),
   CONSTRAINT payment_batch_release_minor_units CHECK (minor_units BETWEEN 0 AND 4),
-  CONSTRAINT payment_batch_release_total_scale CHECK (total = trunc(total, minor_units) AND total > 0)
+  CONSTRAINT payment_batch_release_total_scale CHECK (total <> 'NaN' AND total = trunc(total, minor_units) AND total > 0)
 );
 
 CREATE TABLE fyniq.payment_batch_payment (
@@ -93,6 +93,9 @@ BEGIN
   IF TG_OP <> 'INSERT' THEN
     RAISE EXCEPTION 'The release of batch % is never changed or deleted', OLD.batch_id USING ERRCODE = 'FY239',
       HINT = 'A payment the bank rejects is voided on its own; the release stays as it was (FR-BNK-12).';
+  END IF;
+  IF NEW.total = 'NaN' THEN -- as payment_batch_release_total_scale says, before the guard looks for the batch (§11.3)
+    RAISE EXCEPTION 'The release''s total is not a number' USING ERRCODE = 'check_violation';
   END IF;
   IF EXISTS (SELECT 1 FROM fyniq.payment_batch_release r WHERE r.organisation_id = NEW.organisation_id AND r.batch_id = NEW.batch_id) THEN
     RAISE EXCEPTION 'Batch % is released already', NEW.batch_id USING ERRCODE = 'FY239',
