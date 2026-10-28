@@ -725,8 +725,17 @@ func registerBanking(a *API) {
 			if err := banking.CheckCardholder(ctx, u, in.Body.Kind, holder); err != nil {
 				return MoneyAccount{}, err
 			}
+			// A chart account with no currency of its own is in the base currency, as the database reads it.
+			currency := acc.Currency
+			if currency == "" {
+				o, err := u.Organisation(ctx)
+				if err != nil {
+					return MoneyAccount{}, err
+				}
+				currency = o.BaseCurrency
+			}
 			m, err := u.Banking().CreateMoneyAccount(ctx, storage.NewMoneyAccount{AccountID: account, Kind: in.Body.Kind, Name: strings.TrimSpace(in.Body.Name),
-				Institution: strings.TrimSpace(in.Body.Institution), Identifier: strings.TrimSpace(in.Body.Identifier), Currency: acc.Currency, OpenedOn: opened,
+				Institution: strings.TrimSpace(in.Body.Institution), Identifier: strings.TrimSpace(in.Body.Identifier), Currency: currency, OpenedOn: opened,
 				CardholderID: holder, At: a.deps.Clock.Now()})
 			if err != nil {
 				return MoneyAccount{}, err

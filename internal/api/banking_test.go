@@ -204,6 +204,25 @@ var matrixBanking = map[string]func(e *env, tok string) (response, func() bool){
 	},
 }
 
+// A chart account with no currency of its own, as the standard chart's bank accounts are, is in the base currency, and
+// so is the money account set up on it. A regression: the API sent the chart account's empty currency, and the
+// database refused it with STORAGE-BANKING-01.
+// req: FR-BNK-01
+func TestAMoneyAccountOnABaseCurrencyChartAccount(t *testing.T) {
+	e := newEnv(t)
+	var acc storage.Account
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		n := moneyCodes.Add(1)
+		acc, err = u.Accounts().Create(ctx, storage.NewAccount{Code: fmt.Sprintf("1%04d", n), Name: fmt.Sprintf("Bank %d", n), Type: storage.Asset,
+			AccountAttributes: storage.AccountAttributes{MoneyAccount: true}})
+		return err
+	})
+	c := e.call(http.MethodPost, "/v1/money-accounts", e.as(authz.Bookkeeper), map[string]any{"account_id": acc.ID.String(), "kind": "bank", "name": "DBS current"})
+	if c.Status != 201 || c.str("currency") != "SGD" {
+		t.Fatalf("setting up a money account on a base-currency chart account: %d %s", c.Status, c.Raw)
+	}
+}
+
 // FR-BNK-01, FR-BNK-02, FR-BNK-04, FR-BNK-14 and FR-BNK-16 through the API (p1-bank-import-reconcile task 9.1): a money
 // account set up on a chart account, its identifier shown by its last four characters; a mapping saved; a CSV
 // statement previewed (nothing saved), imported, and imported again (every line dropped on proof by its running
