@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "description": "The run's first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "key": {
+      "description": "current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P\u0026L by month.",
+      "examples": [
+        "current"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "The run's last day: a balance sheet's or a trial balance's figures are at its end.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "from",
+    "to"
+  ],
+  "title": "FinancialColumn",
+  "type": "object"
+}

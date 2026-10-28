@@ -257,6 +257,14 @@ func (r accounts) ByCode(ctx context.Context, code string) (storage.Account, err
 	return toAccount(accountRow(row)), nil
 }
 
+func (r accounts) ChangedAfter(ctx context.Context, revision int64) (bool, error) {
+	if err := r.u.check(); err != nil {
+		return false, err
+	}
+	changed, err := r.u.q.AccountsChangedAfter(ctx, revision)
+	return changed, mapError(err)
+}
+
 func (r accounts) SetActive(ctx context.Context, id uuid.UUID, active bool) (storage.Account, error) {
 	if err := r.u.check(); err != nil {
 		return storage.Account{}, err
@@ -952,6 +960,22 @@ func (r balances) ForPeriod(ctx context.Context, periodID uuid.UUID) ([]storage.
 		return nil, err
 	}
 	rows, err := r.u.q.BalancesForPeriod(ctx, periodID)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Balance, 0, len(rows))
+	for _, b := range rows {
+		out = append(out, storage.Balance{AccountID: b.AccountID, PeriodID: b.PeriodID, Currency: b.Currency,
+			Amount: storage.Decimal(b.Amount), BaseAmount: storage.Decimal(b.BaseAmount), LineCount: b.LineCount})
+	}
+	return out, nil
+}
+
+func (r balances) ForPeriodAt(ctx context.Context, periodID uuid.UUID, revision int64) ([]storage.Balance, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.BalancesForPeriodAt(ctx, sqlcdb.BalancesForPeriodAtParams{PeriodID: periodID, LedgerRevision: revision})
 	if err != nil {
 		return nil, mapError(err)
 	}

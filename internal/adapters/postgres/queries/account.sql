@@ -38,3 +38,12 @@ UPDATE fyniq.account SET name = sqlc.arg(name), parent_id = sqlc.narg(parent_id)
   guidance = sqlc.narg(guidance), revalue = sqlc.arg(revalue), useful_life_months = sqlc.narg(useful_life_months), version = version + 1
 WHERE id = sqlc.arg(id)
 RETURNING id, code, name, type, parent_id, is_group, is_active, version, role, report_group, cash_flow_line, function, is_money_account, default_gst_code, currency, is_control, is_payroll_cost, guidance, revalue, useful_life_months;
+
+-- name: AccountsChangedAfter :one
+-- Whether an account was created or changed after the entry with a ledger revision was recorded (FR-RPT-08): a report
+-- re-run as at the revision then shows a restated presentation. False when no entry has the revision.
+SELECT EXISTS (
+  SELECT 1 FROM fyniq.account a
+   WHERE greatest(a.created_at, coalesce(a.changed_at, a.created_at)) >
+         (SELECT e.recorded_at FROM fyniq.journal_entry e WHERE e.ledger_revision = $1)
+)::boolean AS changed;

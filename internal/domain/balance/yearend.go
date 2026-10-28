@@ -89,6 +89,11 @@ func earlier(p storage.Period, ys time.Time) bool { return !ys.IsZero() && p.End
 // expense of earlier financial years folded into retained earnings (FR-GL-10). The total does not change, so it nets to
 // zero exactly when the plain trial balance does.
 func Position(ctx context.Context, u storage.UnitOfWork, base money.Currency, all []storage.Period, through storage.Period) (TrialBalance, error) {
+	return PositionAt(ctx, u, base, Current, all, through)
+}
+
+// PositionAt is Position read through a snapshot.
+func PositionAt(ctx context.Context, u storage.UnitOfWork, base money.Currency, s Snapshot, all []storage.Period, through storage.Period) (TrialBalance, error) {
 	y, err := yearEndOf(ctx, u)
 	if err != nil {
 		return TrialBalance{}, err
@@ -104,14 +109,14 @@ func Position(ctx context.Context, u storage.UnitOfWork, base money.Currency, al
 			current = append(current, p.ID)
 		}
 	}
-	tb, err := Trial(ctx, u, base, current...)
+	tb, err := TrialAt(ctx, u, base, s, current...)
 	if err != nil {
 		return TrialBalance{}, err
 	}
 	if len(past) == 0 {
 		return tb, nil
 	}
-	before, err := Trial(ctx, u, base, past...)
+	before, err := TrialAt(ctx, u, base, s, past...)
 	if err != nil {
 		return TrialBalance{}, err
 	}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "lines": {
+      "description": "Its accounts with figures, by code.",
+      "items": {
+        "$ref": "FinancialLine.schema.json"
+      },
+      "type": "array"
+    },
+    "name": {
+      "description": "The report group; or a computed line such as \"Profit for the year to date\", which has no lines.",
+      "examples": [
+        "Sales \u0026 marketing"
+      ],
+      "type": "string"
+    },
+    "percents": {
+      "description": "As a line's.",
+      "items": {
+        "description": "A % of revenue to one decimal, such as 12.5; empty for none.",
+        "examples": [
+          "12.5"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "totals": {
+      "description": "One per column.",
+      "items": {
+        "$ref": "Money.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "totals",
+    "percents",
+    "lines"
+  ],
+  "title": "FinancialGroup",
+  "type": "object"
+}

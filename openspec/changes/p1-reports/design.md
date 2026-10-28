@@ -2,6 +2,7 @@
 
 ## Context
 
+- **The package:** `internal/domain/financials`, since `statement` is the customer's statement of account.
 - **The balance service (ENG-04)** is the only reader of the ledger. It offers:
   - `Trial` for some periods' movements;
   - `Position` for the balances at a period's end, with earlier years folded into retained earnings (FR-GL-10);
@@ -86,13 +87,17 @@ Each statement carries its checks:
 - the cash flow's sections add up to the change in the money accounts (CF_Chk);
 - equity's movement reconciles from the opening position to the closing one (BS_EqChk).
 
-The close gains a `statements` check that runs them for the month. ✖ blocks the close.
+The close gains a `statements` check for the month: ⚠ when an account with a balance sits in no section. The chart
+allows an account without a cash-flow line, so blocking the close on one would be harsh. The books balancing is
+already the close's `trial-balance` check, which blocks it (✖).
 
 ### D4 As at a revision (FR-RPT-08, ENG-46)
 
 - **One snapshot:** every statement reads one snapshot and returns the ledger revision visible in it.
-- **As at a revision:** reads only the lines with a revision up to it, through a storage query that sums the lines by
-  account and period at that revision, in the balance service.
+- **As at a revision:** reads only the lines with a revision up to it, through the database function
+  `fyniq.balances_at(period, revision)`, which the balance service alone calls (`balance.At`, `TrialAt`, `PositionAt`).
+  Revisions follow commit order, so a statement reads the ledger's revision first and every figure at it: one
+  snapshot, under READ COMMITTED too.
 - **Presentation (rev 0.159):** a re-run shows today's account names and groups. It is labelled "restated
   presentation" when an account was created or changed after the revision, as the audit trail and the account's
   version show.
@@ -155,6 +160,8 @@ each line and its source.
 - **The statements, trial balance and accountant exports:** V on "Reports, dashboards" without a qualifier, as the
   general ledger is.
 - **The board pack qualifier:** reads the P&L, balance sheet and cash flow, but not the trial balance or the exports.
+  Policies know only "unqualified" today, so the board pack's view arrives with the board pack. Until then a qualified
+  reader is refused, as for the general ledger.
 - **Sales, purchases and payroll qualifiers:** read the management reports of their area only.
 - **Exports:** never change the rights. A background export's download is checked again.
 

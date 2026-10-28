@@ -11,6 +11,23 @@ import (
 	"github.com/google/uuid"
 )
 
+const accountsChangedAfter = `-- name: AccountsChangedAfter :one
+SELECT EXISTS (
+  SELECT 1 FROM fyniq.account a
+   WHERE greatest(a.created_at, coalesce(a.changed_at, a.created_at)) >
+         (SELECT e.recorded_at FROM fyniq.journal_entry e WHERE e.ledger_revision = $1)
+)::boolean AS changed
+`
+
+// Whether an account was created or changed after the entry with a ledger revision was recorded (FR-RPT-08): a report
+// re-run as at the revision then shows a restated presentation. False when no entry has the revision.
+func (q *Queries) AccountsChangedAfter(ctx context.Context, ledgerRevision int64) (bool, error) {
+	row := q.db.QueryRow(ctx, accountsChangedAfter, ledgerRevision)
+	var changed bool
+	err := row.Scan(&changed)
+	return changed, err
+}
+
 const countAccounts = `-- name: CountAccounts :one
 SELECT count(*) FROM fyniq.account
 `

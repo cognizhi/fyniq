@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "description": "What is wrong and how to fix it.",
+      "examples": [
+        "1999 Unsorted: give each a cash-flow line of the standard chart in the chart of accounts"
+      ],
+      "type": "string"
+    },
+    "key": {
+      "description": "balances: debits equal credits in every column; placed: every balance-sheet account with figures sits in a section.",
+      "examples": [
+        "balances"
+      ],
+      "type": "string"
+    },
+    "ok": {
+      "description": "true when it holds.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "title": {
+      "description": "What it found.",
+      "examples": [
+        "Debits equal credits"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "ok",
+    "title"
+  ],
+  "title": "FinancialCheck",
+  "type": "object"
+}

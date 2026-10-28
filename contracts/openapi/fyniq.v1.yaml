@@ -10305,6 +10305,265 @@ components:
         - message
         - fix
       type: object
+    FinancialBlock:
+      additionalProperties: false
+      properties:
+        groups:
+          description: A section's report groups, in the order of their first account's code; none for a measure.
+          items:
+            $ref: "#/components/schemas/FinancialGroup"
+          type: array
+        key:
+          description: "The block: for the P&L revenue, cost_of_sales, gross_profit, operating_expenses, ebitda, depreciation_amortisation, operating_profit, other_income, finance_and_other, profit_before_tax, income_tax, net_profit; for the balance sheet current_assets, non_current_assets, total_assets, current_liabilities, borrowings, total_liabilities, equity, liabilities_and_equity; for the trial balance asset, liability, equity, revenue, expense and total."
+          examples:
+            - gross_profit
+          type: string
+        measure:
+          description: true for a line computed from the sections above it.
+          examples:
+            - true
+          type: boolean
+        percents:
+          description: As a line's.
+          items:
+            description: A % of revenue to one decimal, such as 12.5; empty for none.
+            examples:
+              - "12.5"
+            type: string
+          type: array
+        title:
+          description: Its title.
+          examples:
+            - Gross profit
+          type: string
+        totals:
+          description: One per column.
+          items:
+            $ref: "#/components/schemas/Money"
+          type: array
+      required:
+        - key
+        - title
+        - measure
+        - totals
+        - percents
+        - groups
+      type: object
+    FinancialCheck:
+      additionalProperties: false
+      properties:
+        detail:
+          description: What is wrong and how to fix it.
+          examples:
+            - "1999 Unsorted: give each a cash-flow line of the standard chart in the chart of accounts"
+          type: string
+        key:
+          description: "balances: debits equal credits in every column; placed: every balance-sheet account with figures sits in a section."
+          examples:
+            - balances
+          type: string
+        ok:
+          description: true when it holds.
+          examples:
+            - true
+          type: boolean
+        title:
+          description: What it found.
+          examples:
+            - Debits equal credits
+          type: string
+      required:
+        - key
+        - ok
+        - title
+      type: object
+    FinancialColumn:
+      additionalProperties: false
+      properties:
+        from:
+          description: The run's first day.
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        key:
+          description: current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month.
+          examples:
+            - current
+          type: string
+        to:
+          description: "The run's last day: a balance sheet's or a trial balance's figures are at its end."
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+      required:
+        - key
+        - from
+        - to
+      type: object
+    FinancialGroup:
+      additionalProperties: false
+      properties:
+        lines:
+          description: Its accounts with figures, by code.
+          items:
+            $ref: "#/components/schemas/FinancialLine"
+          type: array
+        name:
+          description: The report group; or a computed line such as "Profit for the year to date", which has no lines.
+          examples:
+            - Sales & marketing
+          type: string
+        percents:
+          description: As a line's.
+          items:
+            description: A % of revenue to one decimal, such as 12.5; empty for none.
+            examples:
+              - "12.5"
+            type: string
+          type: array
+        totals:
+          description: One per column.
+          items:
+            $ref: "#/components/schemas/Money"
+          type: array
+      required:
+        - name
+        - totals
+        - percents
+        - lines
+      type: object
+    FinancialLine:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: The account, to trace its figures in the general ledger.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+          format: uuid
+          type: string
+        amounts:
+          description: "One per column, signed as the statement shows them: income, liabilities and equity as positive credits, expenses and assets as positive debits; the trial balance keeps the ledger's sign, debits positive."
+          items:
+            $ref: "#/components/schemas/Money"
+          type: array
+        code:
+          description: Its code.
+          examples:
+            - "4010"
+          type: string
+        function:
+          description: "Its function: COGS, R&D, S&M, G&A or Other."
+          examples:
+            - S&M
+          type: string
+        name:
+          description: Its name, as the chart has it today (FR-RPT-08).
+          examples:
+            - Subscription revenue
+          type: string
+        percents:
+          description: "The P&L only: each column's % of that column's revenue (RND-PERCENT); empty where the revenue is zero, and for other statements."
+          items:
+            description: A % of revenue to one decimal, such as 12.5; empty for none.
+            examples:
+              - "12.5"
+            type: string
+          type: array
+      required:
+        - account_id
+        - code
+        - name
+        - amounts
+        - percents
+      type: object
+    FinancialStatement:
+      additionalProperties: false
+      properties:
+        basis:
+          description: What they are prepared under, once approved.
+          examples:
+            - Prepared under SFRS for Small Entities (2nd edition)
+          type: string
+        blocks:
+          description: The statement, block by block in order.
+          items:
+            $ref: "#/components/schemas/FinancialBlock"
+          type: array
+        checks:
+          description: "Its checks (INV-10): the balance sheet and trial balance balance, and every balance-sheet account sits in a section."
+          items:
+            $ref: "#/components/schemas/FinancialCheck"
+          type: array
+        columns:
+          description: "The columns, in order: the run, then its comparative; or a month each, then for a P&L the total."
+          items:
+            $ref: "#/components/schemas/FinancialColumn"
+          type: array
+        currency:
+          description: The base currency every amount is in.
+          examples:
+            - SGD
+          type: string
+        from:
+          description: The run's first day.
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        kind:
+          description: "pl: the profit and loss; bs: the balance sheet; tb: the trial balance."
+          enum:
+            - pl
+            - bs
+            - tb
+          examples:
+            - pl
+          type: string
+        ledger_revision:
+          description: "The ledger revision every figure is read as at (ENG-46): asking again as at it gives the same figures."
+          examples:
+            - 42
+          format: int64
+          type: integer
+        platform_version:
+          description: The platform version that laid it out (REL-05).
+          examples:
+            - 0.1.0
+          type: string
+        restated_presentation:
+          description: true when an account was created or changed after the revision, so the names and groups are today's, not those in force at it (rev 0.159).
+          examples:
+            - false
+          type: boolean
+        statement_title:
+          description: "How the financial year's statements are titled: management statements until its framework and policies are approved (FR-ORG-10)."
+          enum:
+            - Management statements
+            - Financial statements
+          examples:
+            - Management statements
+          type: string
+        to:
+          description: The run's last day.
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+      required:
+        - kind
+        - statement_title
+        - currency
+        - from
+        - to
+        - ledger_revision
+        - restated_presentation
+        - platform_version
+        - columns
+        - blocks
+        - checks
+      type: object
     FinancialYear:
       additionalProperties: false
       properties:
@@ -92435,6 +92694,167 @@ paths:
       x-fyniq-permission:
         capability: Reports, dashboards
         note: A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
+        right: V
+  /v1/reports/statements/{kind}:
+    get:
+      description: "The profit and loss, the balance sheet or the trial balance (FR-RPT-01) for a run of whole months (FR-RPT-02), with the prior period or the prior year beside it, or a column per month. It is laid out from each account's chart attributes (PRD-001 rev 0.159, provisional until the accountant confirms): the P&L from revenue by stream through gross profit, EBITDA and operating profit to net profit, each with its % of revenue; the balance sheet by current and non-current groups with borrowings apart and the year's profit to date in equity. Every figure is read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures, whatever was posted since, with today's account names, flagged restated_presentation when the chart changed after it. Its checks (INV-10) say whether it balances and whether every account sits in a section. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects."
+      operationId: getFinancialStatement
+      parameters:
+        - description: "pl: the profit and loss; bs: the balance sheet; tb: the trial balance."
+          in: path
+          name: kind
+          required: true
+          schema:
+            description: "pl: the profit and loss; bs: the balance sheet; tb: the trial balance."
+            enum:
+              - pl
+              - bs
+              - tb
+            examples:
+              - pl
+            type: string
+        - description: The run's first month, YYYY-MM; left out, the last month's. A balance sheet and a trial balance are at the last month's end.
+          explode: false
+          in: query
+          name: from
+          schema:
+            description: The run's first month, YYYY-MM; left out, the last month's. A balance sheet and a trial balance are at the last month's end.
+            examples:
+              - 2026-10
+            pattern: ^[0-9]{4}-[0-9]{2}$
+            type: string
+        - description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
+          explode: false
+          in: query
+          name: to
+          schema:
+            description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
+            examples:
+              - 2026-10
+            pattern: ^[0-9]{4}-[0-9]{2}$
+            type: string
+        - description: "A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning."
+          explode: false
+          in: query
+          name: compare
+          schema:
+            description: "A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning."
+            enum:
+              - prior_period
+              - prior_year
+            examples:
+              - prior_period
+            type: string
+        - description: "total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative."
+          explode: false
+          in: query
+          name: columns
+          schema:
+            default: total
+            description: "total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative."
+            enum:
+              - total
+              - month
+            examples:
+              - total
+            type: string
+        - description: Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands.
+          explode: false
+          in: query
+          name: as_at_revision
+          schema:
+            description: Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands.
+            examples:
+              - 42
+            format: int64
+            minimum: 1
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinancialStatement"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get a financial statement
+      tags:
+        - Reports
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - REPORT-03
+        - REPORT-04
+      x-fyniq-permission:
+        capability: Reports, dashboards
+        note: A view of the reports limited to sales, purchases, payroll or a department is refused; the board pack's view of the P&L and balance sheet arrives with the board pack.
         right: V
   /v1/review-log:
     get:

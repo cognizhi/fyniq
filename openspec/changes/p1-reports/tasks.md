@@ -2,10 +2,12 @@
 
 ## 1. The statements (FR-RPT-01, FR-RPT-02, FR-RPT-08, INV-10, INV-11)
 
-- [ ] 1.1 The balance service reads as at a revision (design D4): the lines up to a ledger revision, summed by
+- [x] 1.1 The balance service reads as at a revision (design D4): the lines up to a ledger revision, summed by
   account and period, through a storage query. One snapshot gives a statement its revision.
   - Tests: a back-dated posting after the revision is left out (G4-051); a re-run at the revision gives the same
     figures. `// req: FR-RPT-08`, `// req: ENG-46`
+  (28 Oct 2026: migration 000190's `fyniq.balances_at(period, revision)`; `Balances.ForPeriodAt`; `balance.At`,
+  `TrialAt` and `PositionAt`. Tests: `TestTheStatementsLaidOutFromTheChart`, `TestFinancialStatementsThroughTheAPI`.)
 - [ ] 1.2 `internal/domain/statement`: the P&L, balance sheet, indirect cash flow and trial balance laid out from the
   chart (D2) for a run of months, with the prior period, the prior year, and columns by month (D1).
   - Its checks (D3): the balance sheet balances; every account in one statement; the cash flow ties to the money
@@ -14,11 +16,21 @@
     session.
   - Tests: `// req: FR-RPT-01`, `// req: FR-RPT-02`, `// req: INV-10`, `// req: INV-11`, and the non-cash case (a cost a
     director paid personally).
+  (28 Oct 2026, part: `internal/domain/financials` lays out the P&L, the balance sheet and the trial balance from the
+  chart, with the prior period, the prior year, or a column per month; the checks `balances` and `placed` (INV-10).
+  Test: `TestTheStatementsLaidOutFromTheChart`, worked by hand. **Left:** the cash flow and the movement in equity
+  (INV-11), and the oracle's statement totals.)
 - [ ] 1.3 The API: the statement for its kind, period, comparison, columns and revision, with its checks, framework
   title (FR-ORG-10), revision, parameters and platform version, and "restated presentation" when the chart changed after
   the revision. Permissions per D9. `make openapi` first.
   - Tests: through the API, the matrix rows, and a board-pack reader refused the trial balance. `// req: FR-RPT-08`
+  (28 Oct 2026, part: `GET /v1/reports/statements/{kind}` for `pl`, `bs` and `tb`, with `from`, `to`, `compare`,
+  `columns` and `as_at_revision`; REPORT-03 and REPORT-04; the year's title, management statements without the
+  financial years set; `restated_presentation` from the accounts' `changed_at` (migration 000190). A qualified reader
+  is refused until the board pack (D9). **Left:** the cash flow.)
 - [ ] 1.4 The close's `statements` check (D3). `// req: INV-10`, `// req: INV-11`
+  (28 Oct 2026, part: ⚠ when an account with a balance sits in no section of the month's balance sheet; the close's
+  guide and kb page say so. **Left:** the cash flow's tie to the money accounts and equity's movement, with 1.2.)
 
 ## 2. The screens
 

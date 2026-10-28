@@ -253,3 +253,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-28] compile | docs/user-guide/periods-and-close.md → accounting.periods (the prepayments and deferred revenue close checks, rev 0.158)
 
 ## [2026-10-28] compile | docs/user-guide/schedules.md → accounting.schedules (new: the prepayment and deferral schedules, rev 0.158); accounting.periods links it
+
+## [2026-10-28] compile | docs/user-guide/periods-and-close.md → accounting.periods (the close's warning for accounts missing from the balance sheet, p1-reports)

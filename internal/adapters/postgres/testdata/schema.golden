@@ -23,6 +23,7 @@ account | is_payroll_cost | boolean | not null | false
 account | guidance | text | null | 
 account | revalue | boolean | not null | false
 account | useful_life_months | smallint | null | 
+account | changed_at | timestamp with time zone | null | 
 accounting_framework | organisation_id | uuid | not null | current_org()
 accounting_framework | id | uuid | not null | uuidv7()
 accounting_framework | version | integer | not null | 
@@ -3651,6 +3652,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_ad
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin_grant DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_grant_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.user_membership DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('user_membership', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER UPDATE ON fyniq.bank_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_line', 'id')
+CREATE TRIGGER account_changed_at BEFORE UPDATE ON fyniq.account FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION account_changed_at()
 CREATE TRIGGER account_guard BEFORE INSERT OR UPDATE ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_guard()
 CREATE TRIGGER accounting_framework_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_framework FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('framework', 'confirmed')
 CREATE TRIGGER accounting_policy_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_policy FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('policy', 'approved')
@@ -3936,6 +3938,7 @@ withholding_decision | tenant_isolation | * | (organisation_id = current_org()) 
 ## functions
 accept_member_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone, OUT organisation_id uuid, OUT invitation_id uuid, OUT user_id uuid, OUT new_user boolean, OUT membership_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 373d5598a87ef8c472e30e47598b7407
 accept_super_admin_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 4faeccc286a9ab13de1e09c0b43816ef
+account_changed_at() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 212c9a1cb1a190c3ac8fa234e62aa816
 account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 78889030731483263211599be66a7331
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
 allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0f047e77d40a26389a947b3cb78d1202
@@ -3957,6 +3960,7 @@ audit_chain_guard() → trigger | security invoker | v | search_path=pg_catalog,
 audit_event_append() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b28a8a36f47d380d03f4120d6fab3ae
 audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d06777cbb7f0bd4dfb455fd25fe4970
 balance_differences() → TABLE(account_id uuid, period_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 3fb15f23f1568ac9a4288b7dced1e16e
+balances_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c1c7750d26a82cb498c82056eec78082
 bank_agreement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 045b2a2e3ab50c531641fa49d5157cc4
 bank_feed_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 44b4e05c97a31d2e77d3cb543863849c
 bank_gap_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aa70c7f4e8b3f508860e4983c5813b44
