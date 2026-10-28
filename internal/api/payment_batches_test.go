@@ -142,6 +142,9 @@ func TestAPaymentBatchChecksEveryItem(t *testing.T) {
 	acc := e.batchAccount()
 	northwind := e.vendor("Northwind Analytics Pte Ltd")
 	e.vendorAccount(northwind, "0123456789")
+	if r := e.call(http.MethodPatch, "/v1/contacts/"+northwind, accountant, map[string]any{"remittance_email": "payments@northwind.example"}, "If-Match", "*"); r.Status != http.StatusOK {
+		t.Fatalf("setting the remittance email = %d: %s", r.Status, r.Raw)
+	}
 	b1, b2, b3 := e.billOf(northwind, "100.00", "9.00"), e.billOf(northwind, "200.00", "18.00"), e.billOf(northwind, "50.00", "4.50")
 	person := e.personAccount("5550001234")
 	claim := e.postedClaim(person)
