@@ -1,9 +1,10 @@
-// Package payee is a change of a vendor's bank account in one currency (FR-CT-03; PRD-001 rev 0.152; p1-organisation-chart
-// task 4.2): what it holds, the checks it is saved, asked for and approved under, and how its account number is
-// normalised, sealed and fingerprinted. On the owner's decisions of 27 Oct 2026 a vendor has at most one approved
-// account per currency, a Singapore account or an overseas one, and no PayNow proxy; the number is sealed by the
-// application (SEC-11) and never in the change's version, which keeps its last four characters and its keyed
-// fingerprint (FR-CT-04, AUD-02).
+// Package payee is a change of a payee's bank account in one currency: a vendor's (FR-CT-03; PRD-001 rev 0.152;
+// p1-organisation-chart task 4.2) or a person's own, for reimbursements (FR-AP-22; rev 0.154; p1-payments-out task 1.2):
+// what it holds, the checks it is saved, asked for and approved under, and how its account number is normalised, sealed
+// and fingerprinted. On the owner's decisions of 27 Oct 2026 a vendor has at most one approved account per currency, a
+// Singapore account or an overseas one, and no PayNow proxy; a person has a Singapore account in SGD. The number is
+// sealed by the application (SEC-11) and never in the change's version, which keeps its last four characters and its
+// keyed fingerprint (FR-CT-04, AUD-02).
 package payee
 
 import (
@@ -18,6 +19,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -43,6 +45,9 @@ const (
 	CodeCallback  = "PAYEE-16" // no call-back note (⚠, recommended)
 	CodeDuplicate = "PAYEE-17" // another vendor has this account in force (⚠, FR-CT-04)
 	CodeOwnChange = "PAYEE-18" // whoever prepared the change never approves it (SOD-1)
+	CodePerson    = "PAYEE-19" // a person's account for reimbursements is a Singapore bank's, in SGD (FR-AP-22)
+	CodeMember    = "PAYEE-20" // the person is not an active member
+	CodeOwnOnly   = "PAYEE-21" // a person prepares and asks for a change of their own account only, and never approves it (FR-AP-22, FM-1)
 )
 
 // The kinds of account.
@@ -54,6 +59,57 @@ const (
 // The evidence types that meet a change's required evidence (FR-DOC-06: a bank letter, or a screenshot of the vendor's
 // confirmation through a known channel).
 var RequiredEvidence = []string{"bank_letter", "vendor_confirmation"}
+
+// PersonEvidence are the evidence types that meet a person's change's required evidence (FR-DOC-06's payee default): a
+// screenshot of their banking app, or a statement's header, showing their name and the number.
+var PersonEvidence = []string{"bank_app_screenshot", "bank_statement"}
+
+// Payee is whom a change of bank details pays: a vendor, by its contact, or a person, by their user ID; exactly one.
+type Payee struct {
+	ContactID uuid.UUID // a vendor; uuid.Nil for a person
+	PersonID  uuid.UUID // a member's user ID; uuid.Nil for a vendor
+}
+
+// Vendor is a vendor as a payee.
+func Vendor(contactID uuid.UUID) Payee { return Payee{ContactID: contactID} }
+
+// Person is a member, by their user ID, as a payee of their own reimbursements.
+func Person(userID uuid.UUID) Payee { return Payee{PersonID: userID} }
+
+// IsPerson reports whether the payee is a person.
+func (p Payee) IsPerson() bool { return p.PersonID != uuid.Nil }
+
+// DocumentType is the type of the payee's changes.
+func (p Payee) DocumentType() storage.DocumentType {
+	if p.IsPerson() {
+		return storage.DocumentClaimantBankChange
+	}
+	return storage.DocumentPayeeBankChange
+}
+
+// ObjectType is the approval object of the payee's changes.
+func (p Payee) ObjectType() string {
+	if p.IsPerson() {
+		return approval.ObjectClaimantBankChange
+	}
+	return approval.ObjectPayeeBankChange
+}
+
+// Evidence are the evidence types that meet the payee's changes' required evidence.
+func (p Payee) Evidence() []string {
+	if p.IsPerson() {
+		return PersonEvidence
+	}
+	return RequiredEvidence
+}
+
+// Of is the payee of an account.
+func Of(a storage.PayeeBankAccount) Payee {
+	return Payee{ContactID: a.ContactID, PersonID: a.MemberUserID}
+}
+
+// Is reports whether an account is the payee's.
+func (p Payee) Is(a storage.PayeeBankAccount) bool { return Of(a) == p }
 
 // The limits of a change's text.
 const (
@@ -99,7 +155,8 @@ type Draft struct {
 // Stored is a change's version as its document keeps it: everything but the number, whose last four characters and
 // fingerprint it repeats from the sealed account (the database checks they agree).
 type Stored struct {
-	ContactID         string `json:"contact_id"`
+	ContactID         string `json:"contact_id,omitempty"`     // a vendor's change
+	MemberUserID      string `json:"member_user_id,omitempty"` // a person's change
 	Currency          string `json:"currency"`
 	Kind              string `json:"kind"`
 	BIC               string `json:"bic"`
@@ -113,7 +170,7 @@ type Stored struct {
 
 // Read is a change's version as stored.
 func Read(doc storage.Document) (Stored, error) {
-	if doc.Type != storage.DocumentPayeeBankChange {
+	if doc.Type != storage.DocumentPayeeBankChange && doc.Type != storage.DocumentClaimantBankChange {
 		return Stored{}, &Error{Code: CodeNotChange, Message: fmt.Sprintf("document %s is a %s, not a change of bank details", doc.ID, doc.Type),
 			Fix: "Open it with its own module"}
 	}
@@ -122,6 +179,26 @@ func Read(doc storage.Document) (Stored, error) {
 		return Stored{}, &Error{Code: CodeBadDraft, Message: "the saved change cannot be read", Fix: "Prepare the change again"}
 	}
 	return s, nil
+}
+
+// Payee is the payee a version names.
+func (s Stored) Payee() (Payee, error) {
+	bad := &Error{Code: CodeBadDraft, Message: "the saved change cannot be read", Fix: "Prepare the change again"}
+	switch {
+	case s.MemberUserID != "" && s.ContactID == "":
+		id, err := uuid.Parse(s.MemberUserID)
+		if err != nil {
+			return Payee{}, bad
+		}
+		return Person(id), nil
+	case s.ContactID != "" && s.MemberUserID == "":
+		id, err := uuid.Parse(s.ContactID)
+		if err != nil {
+			return Payee{}, bad
+		}
+		return Vendor(id), nil
+	}
+	return Payee{}, bad
 }
 
 // Same reports whether two versions name the same account: the bank, the country, the name and the number.
@@ -227,6 +304,30 @@ func AAD(org, changeID, contactID uuid.UUID, currency string) []byte {
 	return []byte("payee_bank_account:" + org.String() + ":" + changeID.String() + ":" + contactID.String() + ":" + currency)
 }
 
+// aad binds a sealed number to its change, payee and currency: a vendor's as AAD, a person's under its own prefix, so
+// neither opens as the other.
+func aad(org, changeID uuid.UUID, p Payee, currency string) []byte {
+	if p.IsPerson() {
+		return []byte("claimant_bank_account:" + org.String() + ":" + changeID.String() + ":" + p.PersonID.String() + ":" + currency)
+	}
+	return AAD(org, changeID, p.ContactID, currency)
+}
+
+// CheckFor returns every rule d breaks for the payee, or nil: Check's, and for a person a Singapore account in SGD.
+func CheckFor(p Payee, d Draft, needNumber bool) Problems {
+	out := Check(d, needNumber)
+	if p.IsPerson() {
+		if d.Kind != Singapore {
+			out = append(out, Problem{CodePerson, "kind", "an account for reimbursements is a Singapore bank's account",
+				"Enter an account at a bank in Singapore: reimbursements are paid by FAST or GIRO"})
+		}
+		if d.Currency != "SGD" {
+			out = append(out, Problem{CodePerson, "currency", "an account for reimbursements is in SGD", "Enter your SGD account"})
+		}
+	}
+	return out
+}
+
 // fingerprintOf is the keyed fingerprint of an account: its bank (the BIC's first eight characters) and its number, in
 // the organisation. The same number at another bank is another account.
 func fingerprintOf(ctx context.Context, c ports.Cipher, org uuid.UUID, bicCode, number string) ([]byte, error) {
@@ -255,23 +356,23 @@ func NumberOf(ctx context.Context, c ports.Cipher, org uuid.UUID, d Draft) (Numb
 	return Number{Last4: n[max(0, len(n)-4):], Fingerprint: fp, Kind: NumberKind(d.Kind, n), n: n}, nil
 }
 
-// Seal is the number sealed for its change, vendor and currency.
-func (x Number) Seal(ctx context.Context, c ports.Cipher, org, changeID, contactID uuid.UUID, currency string) ([]byte, error) {
+// Seal is the number sealed for its change, payee and currency.
+func (x Number) Seal(ctx context.Context, c ports.Cipher, org, changeID uuid.UUID, p Payee, currency string) ([]byte, error) {
 	if c == nil {
 		return nil, NoKeys()
 	}
-	return c.Seal(ctx, []byte(x.n), AAD(org, changeID, contactID, currency))
+	return c.Seal(ctx, []byte(x.n), aad(org, changeID, p, currency))
 }
 
-// Open is the full number of a kept account: for a reveal (audited) and, later, a payment file.
+// Open is the full number of a kept account: for a reveal (audited) and a payment file.
 func Open(ctx context.Context, c ports.Cipher, org uuid.UUID, a storage.PayeeBankAccount) (string, error) {
 	if c == nil {
 		return "", NoKeys()
 	}
-	b, err := c.Open(ctx, a.Sealed, AAD(org, a.ChangeID, a.ContactID, a.Currency))
+	b, err := c.Open(ctx, a.Sealed, aad(org, a.ChangeID, Of(a), a.Currency))
 	if errors.Is(err, ports.ErrNotSealed) {
 		return "", &Error{Code: CodeNoKeys, Message: "the account number does not open with this deployment's keys",
-			Fix: "Prepare the change again with the number from the vendor's letter"}
+			Fix: "Prepare the change again with the number from the bank's letter or app"}
 	}
 	return string(b), err
 }
@@ -282,11 +383,22 @@ func NoKeys() error {
 		Fix: "Ask your administrator to configure the field keys (SEC-11)"}
 }
 
-// Encode is the stored version of d with its number.
+// Encode is the stored version of d with its number, for a vendor.
 func Encode(contactID uuid.UUID, d Draft, x Number) ([]byte, error) {
-	return json.Marshal(Stored{ContactID: contactID.String(), Currency: d.Currency, Kind: d.Kind, BIC: d.BIC, BankCountry: d.BankCountry,
+	return EncodeFor(Vendor(contactID), d, x)
+}
+
+// EncodeFor is the stored version of d with its number, for the payee.
+func EncodeFor(p Payee, d Draft, x Number) ([]byte, error) {
+	s := Stored{Currency: d.Currency, Kind: d.Kind, BIC: d.BIC, BankCountry: d.BankCountry,
 		AccountName: strings.TrimSpace(d.AccountName), NumberKind: x.Kind, NumberLast4: x.Last4,
-		NumberFingerprint: hex.EncodeToString(x.Fingerprint), CallbackNote: strings.TrimSpace(d.CallbackNote)})
+		NumberFingerprint: hex.EncodeToString(x.Fingerprint), CallbackNote: strings.TrimSpace(d.CallbackNote)}
+	if p.IsPerson() {
+		s.MemberUserID = p.PersonID.String()
+	} else {
+		s.ContactID = p.ContactID.String()
+	}
+	return json.Marshal(s)
 }
 
 // Kept is the number of a stored version that keeps it on a revision: its last four characters, fingerprint and kind.

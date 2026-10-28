@@ -25,7 +25,7 @@
       "type": "string"
     },
     "evidence_type": {
-      "description": "What the file is: bank_letter or vendor_confirmation meet the change's required evidence.",
+      "description": "What the file is: bank_letter or vendor_confirmation meet a vendor's change's required evidence; bank_app_screenshot or bank_statement a person's own.",
       "examples": [
         "bank_letter"
       ],

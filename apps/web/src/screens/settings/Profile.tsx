@@ -13,6 +13,7 @@ import type { Mode } from "../../registry";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { MyBankAccount } from "./MyBankAccount";
 import { SettingsPage } from "./SettingsPage";
 
 type Passkey = NonNullable<Awaited<ReturnType<typeof listPasskeys>>>[number];
@@ -398,14 +399,16 @@ function Devices() {
 }
 
 // Profile is Settings › Profile and security (docs/design/screens ProfilePreferences, MfaEnrolment):
-// the experience mode, whether you confirmed it's you, your passkeys and your devices (FR-ADM-02,
-// FR-ADM-03, SEC-01). Appearance stays in the header's menu; formats, keyboard, linked sign-in
-// accounts and recovery codes join this page with their operations.
+// the experience mode, your bank account for reimbursements, whether you confirmed it's you, your
+// passkeys and your devices (FR-ADM-02, FR-ADM-03, FR-AP-22, SEC-01). Appearance stays in the
+// header's menu; formats, keyboard, linked sign-in accounts and recovery codes join this page with
+// their operations.
 export function Profile() {
   const { session, mode } = useSignedIn();
   return (
     <SettingsPage title="Profile and security" screen="profile-preferences" lead="How Fyniq behaves for you, and how you confirm it's you.">
       <ModeChoice mode={mode} />
+      <MyBankAccount />
       <section className="fy-card" aria-labelledby="security-title">
         <div className="fy-card__head">
           <h2 className="fy-h3" id="security-title">

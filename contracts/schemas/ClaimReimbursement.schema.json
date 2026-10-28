@@ -10,6 +10,16 @@
       "format": "uuid",
       "type": "string"
     },
+    "checks": {
+      "description": "recordClaimReimbursement only: warnings it was recorded with, such as payments to the claimant frozen while a change of their bank account waits for approval (FR-AP-22).",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "claimant": {
       "$ref": "Person.schema.json",
       "description": "Whose claims it paid back."

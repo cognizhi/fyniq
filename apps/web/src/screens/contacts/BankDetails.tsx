@@ -24,6 +24,8 @@ type Check = components["schemas"]["BillCheck"];
 export const bankPreparers = ["accountant", "ap_specialist"];
 export const bankRevealers = ["owner", "controller", ...bankPreparers];
 export const bankReaders = [...bankRevealers, "auditor", "tax_agent"];
+// Who reveals a person's own number as its approver (Appendix D's "Payment batches", A): the Controller (FR-AP-22).
+export const claimantRevealers = ["controller"];
 
 const kinds = { singapore: "Singapore bank", overseas: "Bank outside Singapore" } as const;
 
@@ -58,8 +60,9 @@ function ChangeStatus({ c }: { c: Change }) {
 }
 
 // Reveal shows one account's full number on request: the API asks for step-up, audits the reveal, and answers a masked
-// view masked (FR-CT-03; PRD-001 rev 0.152). The number stays on screen until hidden, and is never kept.
-export function Reveal({ changeId, label }: { changeId: string; label: string }) {
+// view masked (FR-CT-03; PRD-001 rev 0.152). The number stays on screen until hidden, and is never kept. via says whose
+// account it is: a vendor's, the caller's own, or a person's as its approver sees it (FR-AP-22).
+export function Reveal({ changeId, label, via = "vendor" }: { changeId: string; label: string; via?: "vendor" | "mine" | "claimant" }) {
   const confirm = useConfirm();
   const [number, setNumber] = useState("");
   const [busy, setBusy] = useState(false);
@@ -68,7 +71,14 @@ export function Reveal({ changeId, label }: { changeId: string; label: string })
   const show = async () => {
     setBusy(true);
     setProblem(null);
-    const out = await guarded(confirm, () => api.POST("/v1/bank-changes/{change_id}/reveal", { params: { path: { change_id: changeId } } }));
+    const params = { params: { path: { change_id: changeId } } };
+    const out = await guarded(confirm, () =>
+      via === "mine"
+        ? api.POST("/v1/me/bank-changes/{change_id}/reveal", params)
+        : via === "claimant"
+          ? api.POST("/v1/claimant-bank-changes/{change_id}/reveal", params)
+          : api.POST("/v1/bank-changes/{change_id}/reveal", params),
+    );
     setBusy(false);
     if (!out.data) return setProblem(problemOf(out.error));
     setNumber(out.data.account_number);
@@ -449,10 +459,12 @@ export function BankDetails({ contact, onClose, onChanged }: { contact: Contact 
 }
 
 // CompareNumbers lets the approver of a change compare the new number, and the one it replaces, with the vendor's letter
-// (FR-CT-03; PRD-001 rev 0.152): each revealed on request, stepped up and audited.
-export function CompareNumbers({ changeId, envelope }: { changeId: string; envelope: string }) {
+// (FR-CT-03; PRD-001 rev 0.152), or with a person's screenshot of their banking app (FR-AP-22): each revealed on request,
+// stepped up and audited.
+export function CompareNumbers({ changeId, envelope, person = false }: { changeId: string; envelope: string; person?: boolean }) {
   const { session } = useSignedIn();
-  if (!(session.roles ?? []).some((r) => bankRevealers.includes(r))) return null;
+  if (!(session.roles ?? []).some((r) => (person ? claimantRevealers : bankRevealers).includes(r))) return null;
+  const via = person ? "claimant" : "vendor";
   let replaces = "";
   try {
     replaces = String(JSON.parse(envelope)?.dependencies?.replaces ?? "");
@@ -462,18 +474,18 @@ export function CompareNumbers({ changeId, envelope }: { changeId: string; envel
   return (
     <section className="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="compare-numbers">
       <h2 className="fy-h3" id="compare-numbers">
-        Compare with the vendor's letter
+        {person ? "Compare with the person's screenshot" : "Compare with the vendor's letter"}
       </h2>
       <p className="fy-small fy-secondary">Each number shows after you confirm it's you, and the audit trail records that you looked.</p>
       <div className="fy-row fy-row--wrap gap-4">
         <span className="fy-stack fy-stack--1">
           <span className="fy-small fy-strong">The new account</span>
-          <Reveal changeId={changeId} label="The new account number" />
+          <Reveal changeId={changeId} label="The new account number" via={via} />
         </span>
         {replaces && (
           <span className="fy-stack fy-stack--1">
             <span className="fy-small fy-strong">The account it replaces</span>
-            <Reveal changeId={replaces} label="The account number it replaces" />
+            <Reveal changeId={replaces} label="The account number it replaces" via={via} />
           </span>
         )}
       </div>

@@ -89,6 +89,9 @@ const (
 	// second person who holds A on "Vendor bank details", neither its preparer nor its requester, approves it, in every
 	// team mode; its key is its id.
 	ObjectPayeeBankChange = "payee_bank_change"
+	// ObjectClaimantBankChange is a change of a person's own bank account for reimbursements (FR-AP-22, FM-1; rev 0.154):
+	// someone who holds A on "Payment batches", never the person, approves it, in every team mode; its key is its id.
+	ObjectClaimantBankChange = "claimant_bank_change"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -147,6 +150,8 @@ const (
 	OpFixedAssetVoid = "fixed_asset.void"
 	// OpPayeeBankChange puts a change of a vendor's bank account in force, retiring the account it replaces.
 	OpPayeeBankChange = "payee_bank_change.approve"
+	// OpClaimantBankChange puts a change of a person's own bank account in force, retiring the account it replaces.
+	OpClaimantBankChange = "claimant_bank_change.approve"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -161,11 +166,12 @@ var Operations = map[string]string{
 	OpWriteOffPost: ObjectWriteOff, OpWriteOffVoid: ObjectWriteOff, OpCustomerApplicationVoid: ObjectCustomerApplication,
 	OpCustomerRefundVoid: ObjectCustomerRefund, OpDepositVoid: ObjectDeposit, OpRecurringApprove: ObjectRecurringInvoice,
 	OpConnectorChange: ObjectConnector, OpRuleAutoApply: ObjectBankRule, OpClaimPost: ObjectClaim,
-	OpReimbursementVoid: ObjectReimbursement,
-	OpCashAdvanceVoid:   ObjectCashAdvance,
-	OpAssetDisposalVoid: ObjectAssetDisposal,
-	OpFixedAssetVoid:    ObjectFixedAsset,
-	OpPayeeBankChange:   ObjectPayeeBankChange,
+	OpReimbursementVoid:  ObjectReimbursement,
+	OpCashAdvanceVoid:    ObjectCashAdvance,
+	OpAssetDisposalVoid:  ObjectAssetDisposal,
+	OpFixedAssetVoid:     ObjectFixedAsset,
+	OpPayeeBankChange:    ObjectPayeeBankChange,
+	OpClaimantBankChange: ObjectClaimantBankChange,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -232,6 +238,8 @@ var Dependencies = map[string][]string{
 	ObjectFixedAsset: {"status", "cost", "accumulated"},
 	// the change's version and status, and the change whose account is in force for its vendor and currency: what it replaces
 	ObjectPayeeBankChange: {"status", "replaces"},
+	// the same for a person's change: its version and status, and the change in force for the person and currency
+	ObjectClaimantBankChange: {"status", "replaces"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -268,6 +276,7 @@ var Rows = map[string]string{
 	ObjectAssetDisposal:       "Fixed assets",
 	ObjectFixedAsset:          "Fixed assets",
 	ObjectPayeeBankChange:     "Vendor bank details",
+	ObjectClaimantBankChange:  "Payment batches",
 }
 
 // The limits of a policy.
@@ -333,6 +342,7 @@ var Policies = map[string]Policy{
 	ObjectAssetDisposal:       {ObjectType: ObjectAssetDisposal, Version: "founder/asset_disposal@2026-10-27.1", Steps: []Step{{Quorum: 1}}},
 	ObjectFixedAsset:          {ObjectType: ObjectFixedAsset, Version: "founder/fixed_asset@2026-10-27.1", Steps: []Step{{Quorum: 1}}},
 	ObjectPayeeBankChange:     {ObjectType: ObjectPayeeBankChange, Version: "founder/payee_bank_change@2026-10-27.1", Steps: []Step{{Quorum: 1}}},
+	ObjectClaimantBankChange:  {ObjectType: ObjectClaimantBankChange, Version: "founder/claimant_bank_change@2026-10-28.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

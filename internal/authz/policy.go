@@ -544,6 +544,29 @@ var (
 	ListPayeeBankChangeEvidence   = Policy{Operation: "listPayeeBankChangeEvidence", Capability: Evidence, Need: View, Parent: VendorBankDetails}
 	GetPayeeBankChangeEvidence    = Policy{Operation: "getPayeeBankChangeEvidence", Capability: Evidence, Need: View, Parent: VendorBankDetails}
 	RemovePayeeBankChangeEvidence = Policy{Operation: "removePayeeBankChangeEvidence", Capability: Evidence, Need: Create, Parent: VendorBankDetails}
+	// A person's own bank account for reimbursements (FR-AP-22; rev 0.154; p1-payments-out design D10): kept by the person
+	// under the Employee's "C (own)" on "Expense claims", which the handlers narrow to the caller's own; approved through
+	// the approval engine by someone who holds A on "Payment batches", never the person (FM-1). Whoever approves or pays
+	// reads a person's change under V on "Payment batches"; revealing a person's number there needs A and step-up.
+	GetMyBankDetails            = Policy{Operation: "getMyBankDetails", Capability: ExpenseClaims, Need: Create}
+	CreateMyBankChange          = Policy{Operation: "createMyBankChange", Capability: ExpenseClaims, Need: Create}
+	GetMyBankChange             = Policy{Operation: "getMyBankChange", Capability: ExpenseClaims, Need: Create}
+	ReplaceMyBankChange         = Policy{Operation: "replaceMyBankChange", Capability: ExpenseClaims, Need: Create}
+	RequestMyBankChangeApproval = Policy{Operation: "requestMyBankChangeApproval", Capability: ExpenseClaims, Need: Create}
+	WithdrawMyBankChange        = Policy{Operation: "withdrawMyBankChange", Capability: ExpenseClaims, Need: Create}
+	RevealMyBankAccount         = Policy{Operation: "revealMyBankAccount", Capability: ExpenseClaims, Need: Create,
+		Note: "Your own account only; you must have stepped up in the last 5 minutes."}
+	GetClaimantBankChange     = Policy{Operation: "getClaimantBankChange", Capability: PaymentBatches, Need: View, Unqualified: true}
+	RevealClaimantBankAccount = Policy{Operation: "revealClaimantBankAccount", Capability: PaymentBatches, Need: Approve, Unqualified: true,
+		Note: "For the approver comparing the number with the person's evidence; the caller must have stepped up in the last 5 minutes."}
+	// A person's change's files (FR-DOC-05, FR-DOC-06): the screenshot of their banking app or their statement's header,
+	// attached and removed by the person under "Expense claims", read by its approver under "Payment batches".
+	AddMyBankChangeEvidence        = Policy{Operation: "addMyBankChangeEvidence", Capability: Evidence, Need: Create, Parent: ExpenseClaims}
+	ListMyBankChangeEvidence       = Policy{Operation: "listMyBankChangeEvidence", Capability: Evidence, Need: View, Parent: ExpenseClaims}
+	GetMyBankChangeEvidence        = Policy{Operation: "getMyBankChangeEvidence", Capability: Evidence, Need: View, Parent: ExpenseClaims}
+	RemoveMyBankChangeEvidence     = Policy{Operation: "removeMyBankChangeEvidence", Capability: Evidence, Need: Create, Parent: ExpenseClaims}
+	ListClaimantBankChangeEvidence = Policy{Operation: "listClaimantBankChangeEvidence", Capability: Evidence, Need: View, Parent: PaymentBatches}
+	GetClaimantBankChangeEvidence  = Policy{Operation: "getClaimantBankChangeEvidence", Capability: Evidence, Need: View, Parent: PaymentBatches}
 	// Invoices (FR-AR-03; p1-sales), as bills: read under V, prepared under C (the Bookkeeper, the AR specialist, the
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
 	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
@@ -977,6 +1000,9 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid, VoidFixedAsset, RequestFixedAssetVoid,
 	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
+	GetMyBankDetails, CreateMyBankChange, GetMyBankChange, ReplaceMyBankChange, RequestMyBankChangeApproval, WithdrawMyBankChange, RevealMyBankAccount,
+	GetClaimantBankChange, RevealClaimantBankAccount, AddMyBankChangeEvidence, ListMyBankChangeEvidence, GetMyBankChangeEvidence,
+	RemoveMyBankChangeEvidence, ListClaimantBankChangeEvidence, GetClaimantBankChangeEvidence,
 	ListClaimPlaces, CreateClaimPlace, ReplaceClaimPlace, GetMileageLog,
 	ListClaimCategories, CreateClaimCategory, ReplaceClaimCategory, LoadStarterClaimCategories,
 	AddExpenseClaimEvidence, ListExpenseClaimEvidence, GetExpenseClaimEvidence, RemoveExpenseClaimEvidence,

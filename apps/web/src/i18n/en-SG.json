@@ -276,6 +276,30 @@
       "label": "Attach",
       "tooltip": "Attach the vendor's letter, or a screenshot of their confirmation through a channel you already knew. It is kept as bank details."
     },
+    "profile.bank-account": {
+      "label": "Bank account for reimbursements",
+      "tooltip": "Where your expense claims are paid. Only you enter it; someone in finance approves each change."
+    },
+    "my-bank.change": {
+      "label": "Change my bank account",
+      "tooltip": "Enter your Singapore bank account with a screenshot of your banking app. It takes effect when someone in finance approves it."
+    },
+    "my-bank.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Payments to you wait until someone in finance approves it, or you withdraw it."
+    },
+    "my-bank.withdraw": {
+      "label": "Withdraw",
+      "tooltip": "Take the change back: your account stays as it was, and payments to you are no longer held."
+    },
+    "my-bank-change.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach a screenshot of your banking app, or your statement's header, showing your name and the number. It is kept as bank details."
+    },
+    "claimant-bank-change.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Only the person attaches their own evidence; compare it with the number before you approve."
+    },
     "item.add": {
       "label": "New item",
       "tooltip": "Add a product or service with its prices; its code never changes."

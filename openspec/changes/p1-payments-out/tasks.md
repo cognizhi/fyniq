@@ -2,7 +2,7 @@
 
 ## 1. Claimants' bank details (FR-AP-22)
 
-- [ ] 1.1 Migrations (design D9):
+- [x] 1.1 Migrations (design D9):
   - `payee_bank_account` gains `member_user_id`, `contact_id` becomes optional, and the exactly-one check is added
     NOT VALID, then validated;
   - the document type `claimant_bank_change`;
@@ -12,18 +12,23 @@
   - squawk clean; goldens updated.
   - Tests: a person's account in force without approval refused; a second in force refused; the person signing their
     own refused, for every role (QA-ENG-05). `// req: FR-AP-22`
-- [ ] 1.2 `internal/domain/payee` takes a person as payee: a Singapore account only, sealed, shown by its last four
+- [x] 1.2 `internal/domain/payee` takes a person as payee: a Singapore account only, sealed, shown by its last four
   characters; the change's checks and evidence (FR-DOC-06's payee default); the freeze of their claims while a change
   waits.
   - Tests: an overseas account refused; a waiting change freezes the person; the number never in a response, log or
     audit event (AUD-02). `// req: FR-AP-22`, `// req: SEC-11`
-- [ ] 1.3 The API: the caller's own bank account (read, prepare, change, ask, reveal, evidence), approved through the
+- [x] 1.3 The API: the caller's own bank account (read, prepare, change, ask, reveal, evidence), approved through the
   engine under "Payment batches" (A), never by the person; the matrix rows; `make openapi` first.
+  - Added in building: `withdrawMyBankChange`, since a person reaches their change's request only through it (as a
+    claimant their claim's), never through the approvals; `getClaimantBankChange`, the approver's read; a reimbursement
+    recorded by hand while a change waits is flagged ⚠ (PAYEE-12), as a vendor's payment is.
   - Tests: a person cannot read or change another's; the Controller approves and the account comes into force; the
     person's approval refused (FM-1). `// req: FR-AP-22`, `// req: FM-1`
-- [ ] 1.4 The bank account card on `profile-preferences` (`docs/design/screens/src/ProfilePreferences.html`, updated):
+- [x] 1.4 The bank account card on `profile-preferences` (`docs/design/screens/src/ProfilePreferences.html`, updated):
   masked with Show number, the waiting change with Withdraw, Change my bank account with the evidence panel. Help
   keys; the guide page `settings.profile`, compiled into `kb/`.
+  - Built with the guide page `preferences.security` (the profile page's own) and a section of `approvals.decide` for
+    the approver; the approval page shows a person's change with its screenshot and number.
   - Tests: Vitest with axe on the card's states. `// req: FR-AP-22`
 
 ## 2. Payment batches

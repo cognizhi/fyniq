@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -78,6 +79,7 @@ type ClaimReimbursement struct {
 	RecordedBy     *Person                  `json:"recorded_by,omitempty" doc:"Who recorded it."`
 	RecordedAt     *time.Time               `json:"recorded_at,omitempty" doc:"When it was recorded." example:"2026-10-20T09:30:00Z"`
 	ApprovalAsked  string                   `json:"approval_asked,omitempty" format:"uuid" doc:"The pending request to void it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"`
+	Checks         []BillCheck              `json:"checks,omitempty" doc:"recordClaimReimbursement only: warnings it was recorded with, such as payments to the claimant frozen while a change of their bank account waits for approval (FR-AP-22)."`
 }
 
 // ClaimReimbursementPage is a page of reimbursements, newest date first.
@@ -476,7 +478,20 @@ func registerReimbursements(a *API) {
 			if err != nil {
 				return ClaimReimbursement{}, err
 			}
-			return a.reimbursementOf(ctx, u, v, rec.Reimbursement, true)
+			out, err := a.reimbursementOf(ctx, u, v, rec.Reimbursement, true)
+			if err != nil {
+				return out, err
+			}
+			// FR-AP-22: the money has left already, so the reimbursement is recorded; but a change of the claimant's bank
+			// account waits, so it may have gone to an account nobody approved yet.
+			if waiting, err := payee.WaitingFor(ctx, u, payee.Person(r.ClaimantID), a.deps.Clock.Now()); err != nil {
+				return out, err
+			} else if len(waiting) > 0 {
+				out.Checks = []BillCheck{{Severity: "warning", Code: payee.CodeFrozen, Field: "claimant_id",
+					Message: "a change of the claimant's bank account waits for approval, so payments to them are frozen",
+					Fix:     "Check with the bank which account the money went to, and tell whoever approves the change"}}
+			}
+			return out, nil
 		})
 		if err != nil {
 			return nil, err

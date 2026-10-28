@@ -99,7 +99,7 @@ func TestANumberIsSealedForItsChange(t *testing.T) {
 	if !bytes.Equal(x.Fingerprint, y.Fingerprint) || bytes.Equal(x.Fingerprint, z.Fingerprint) {
 		t.Error("the fingerprint is not of the bank and the number")
 	}
-	sealed, err := x.Seal(ctx, c, org, change, vendor, "SGD")
+	sealed, err := x.Seal(ctx, c, org, change, payee.Vendor(vendor), "SGD")
 	if err != nil || bytes.Contains(sealed, []byte("0123456789")) {
 		t.Fatalf("Seal = %x, %v", sealed, err)
 	}
@@ -113,5 +113,57 @@ func TestANumberIsSealedForItsChange(t *testing.T) {
 	}
 	if _, err := payee.NumberOf(ctx, nil, org, d); err == nil {
 		t.Error("no field keys, and a number was kept")
+	}
+
+	// A person's number is sealed under its own binding: it opens as the person's, never as a vendor's of the same IDs.
+	person := uuid.New()
+	mine, err := x.Seal(ctx, c, org, change, payee.Person(person), "SGD")
+	if err != nil {
+		t.Fatalf("Seal for a person = %v", err)
+	}
+	p := storage.PayeeBankAccount{ChangeID: change, MemberUserID: person, Currency: "SGD", Sealed: mine}
+	if n, err := payee.Open(ctx, c, org, p); err != nil || n != "0123456789" {
+		t.Fatalf("Open for a person = %q, %v", n, err)
+	}
+	asVendor := storage.PayeeBankAccount{ChangeID: change, ContactID: person, Currency: "SGD", Sealed: mine}
+	if _, err := payee.Open(ctx, c, org, asVendor); err == nil {
+		t.Error("a person's number opened as a vendor's")
+	}
+}
+
+// A person's own account for reimbursements is a Singapore bank's, in SGD (FR-AP-22; rev 0.154): an overseas account or
+// another currency is refused for a person, as a vendor may have them, every problem at once; and a stored person's change
+// names the person, never a vendor.
+// req: FR-AP-22
+// req: purchases/payables Entered by the person
+func TestAPersonsAccountIsSingaporeInSGD(t *testing.T) {
+	person, vendor := payee.Person(uuid.New()), payee.Vendor(uuid.New())
+	sg := payee.Draft{Currency: "SGD", Kind: payee.Singapore, BIC: "DBSSSGSG", BankCountry: "SG", AccountName: "Tan Ah Kow", Number: "0123456789"}
+	gb := payee.Draft{Currency: "GBP", Kind: payee.Overseas, BIC: "NWBKGB2L", BankCountry: "GB", AccountName: "Tan Ah Kow", Number: "GB82 WEST 1234 5698 7654 32"}
+	if probs := payee.CheckFor(person, sg, true); len(probs) != 0 {
+		t.Errorf("a person's Singapore SGD account: %v", probs)
+	}
+	if probs := payee.CheckFor(vendor, gb, true); len(probs) != 0 {
+		t.Errorf("a vendor's overseas account: %v", probs)
+	}
+	probs := payee.CheckFor(person, gb, true)
+	if len(probs) != 2 || probs[0].Code != payee.CodePerson || probs[0].Field != "kind" || probs[1].Field != "currency" {
+		t.Errorf("a person's overseas GBP account: %v", probs)
+	}
+	usd := with(sg, func(d *payee.Draft) { d.Currency = "USD" })
+	if probs := payee.CheckFor(person, usd, true); len(probs) != 1 || probs[0].Code != payee.CodePerson {
+		t.Errorf("a person's USD account at a Singapore bank: %v", probs)
+	}
+	b, err := payee.EncodeFor(person, sg, payee.Number{Last4: "6789", Fingerprint: []byte{1}, Kind: "account"})
+	if err != nil || bytes.Contains(b, []byte("contact_id")) || !bytes.Contains(b, []byte(person.PersonID.String())) ||
+		bytes.Contains(b, []byte("0123456789")) {
+		t.Fatalf("a person's stored change = %s, %v", b, err)
+	}
+	s, err := payee.Read(storage.Document{Type: storage.DocumentClaimantBankChange, Payload: b})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if who, err := s.Payee(); err != nil || who != person || !who.IsPerson() || who.DocumentType() != storage.DocumentClaimantBankChange {
+		t.Errorf("the stored change's payee = %+v, %v", who, err)
 	}
 }

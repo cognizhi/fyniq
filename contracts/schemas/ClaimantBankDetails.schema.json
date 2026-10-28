@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "changes": {
+      "description": "Every change, newest first.",
+      "items": {
+        "$ref": "ClaimantBankChange.schema.json"
+      },
+      "type": "array"
+    },
+    "in_force": {
+      "$ref": "ClaimantBankChange.schema.json",
+      "description": "The approved change in force, if any: reimbursements are paid into its account."
+    },
+    "member_user_id": {
+      "description": "The person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "payments_frozen": {
+      "description": "A change waits for approval: payments to the person are frozen until it is approved, rejected or withdrawn (FR-AP-22).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "member_user_id",
+    "payments_frozen",
+    "changes"
+  ],
+  "title": "ClaimantBankDetails",
+  "type": "object"
+}

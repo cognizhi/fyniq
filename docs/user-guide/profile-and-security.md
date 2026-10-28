@@ -3,7 +3,7 @@ key: preferences.security
 title: Your profile and security
 mode: basic
 roles: [all]
-requirements: [FR-UX-23, FR-UX-24, FR-UX-27, FR-ADM-02, FR-ADM-03, SEC-01]
+requirements: [FR-UX-23, FR-UX-24, FR-UX-27, FR-ADM-02, FR-ADM-03, SEC-01, FR-AP-22, FM-1, SEC-11]
 status: draft            # written with the app shell's settings pages (P1); reviewed with the shell's screens
 ---
 
@@ -12,8 +12,8 @@ status: draft            # written with the app shell's settings pages (P1); rev
 ## What it is
 
 **Settings › Profile and security** holds what is yours alone: whether Fyniq shows you Basic or
-Expert mode, the passkeys you confirm it's you with, and the devices you are signed in on. Nobody
-else sees or changes them.
+Expert mode, the bank account your expense claims are paid into, the passkeys you confirm it's you
+with, and the devices you are signed in on. Nobody else changes them.
 
 ## Before you start
 
@@ -63,6 +63,29 @@ when it was last used. **This device** marks the one you are using.
 
 Each sign-in also sends you an email, so you know when a new device signs in.
 
+## Your bank account for reimbursements
+
+If you claim expenses, the **Bank account for reimbursements** card shows where your claims are
+paid: the bank's code and the last four digits. Select **Show number** to see the whole number;
+Fyniq asks you to confirm it's you first, and records that you looked.
+
+Only you enter your own account. Someone in finance, never you, approves each change before it is
+used. While a change waits, payments to you wait too, so a claim is never paid into an account
+nobody checked.
+
+## Change your bank account
+
+1. Select **Change my bank account**.
+2. Enter the bank's SWIFT/BIC code, such as DBSSSGSG, the name on the account and the account
+   number. It must be a Singapore bank's account in SGD. Select **Save as a draft**.
+3. Attach a screenshot of your banking app, or your statement's header, showing your name and the
+   account number.
+4. Select **Ask for approval** and confirm it's you.
+
+The card shows **Change waits for approval** until someone in finance approves it. To take the
+change back, select **Withdraw**: your account stays as it was, and payments to you are no longer
+held. Once approved, the new account replaces the old one for every payment from then on.
+
 ## Common problems
 
 - **"You have no passkey yet."** Select **Sign in again** and sign in with your authenticator app,
@@ -71,8 +94,13 @@ Each sign-in also sends you an email, so you know when a new device signs in.
   Try again when you are ready.
 - **"This browser cannot make passkeys."** Use a current browser on a device with a fingerprint
   reader, face recognition or a PIN.
+- **"No screenshot of your banking app or statement header is attached."** Attach one before you
+  ask for approval: it must show your name and the account number.
+- **"An account for reimbursements is a Singapore bank's account."** The bank's code must be of a
+  bank in Singapore, such as DBSSSGSG, OCBCSGSG or UOVBSGSG.
 
 ## Related
 
 - [Sign in to Fyniq](sign-in.md)
 - [Change how Fyniq looks](appearance.md)
+- [Claim back money you spent for the company](claims-my-claims.md)

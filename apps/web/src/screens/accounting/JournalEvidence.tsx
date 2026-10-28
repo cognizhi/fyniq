@@ -30,10 +30,11 @@ export const billAttachers = ["owner", "controller", "accountant", "bookkeeper",
 export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeeper", "ar_specialist", "approver", "tax_agent"];
 
 // A record evidence goes on: a journal, a bill or vendor credit, an invoice or credit note, an expense claim, a
-// completed line of a company card, or a change of a vendor's bank details (FR-DOC-05, FR-AP-14, FR-AP-18, FR-CT-03), at
-// its ETag.
+// completed line of a company card, a change of a vendor's bank details, or a change of a person's own bank account, as
+// the person sees it (my-bank-change) or its approver does (claimant-bank-change) (FR-DOC-05, FR-AP-14, FR-AP-18,
+// FR-CT-03, FR-AP-22), at its ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change";
+  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change";
   id: string;
   etag: string;
 }
@@ -47,10 +48,22 @@ const kindsOf = {
   "card-line": ["receipt", "tax invoice", "screenshot"],
   // bank_letter or vendor_confirmation meets a change's required evidence (FR-DOC-06)
   "bank-change": ["bank_letter", "vendor_confirmation", "call-back record", "email"],
+  // bank_app_screenshot or bank_statement meets a person's change's required evidence (FR-AP-22)
+  "my-bank-change": ["bank_app_screenshot", "bank_statement"],
+  "claimant-bank-change": ["bank_app_screenshot", "bank_statement"],
 };
 
 // nouns name each record in the panel's words.
-const nouns = { journal: "journal", bill: "bill", invoice: "invoice", claim: "claim", "card-line": "card line", "bank-change": "change of bank details" };
+const nouns = {
+  journal: "journal",
+  bill: "bill",
+  invoice: "invoice",
+  claim: "claim",
+  "card-line": "card line",
+  "bank-change": "change of bank details",
+  "my-bank-change": "change of your bank account",
+  "claimant-bank-change": "change of bank account",
+};
 
 // Result is an evidence call's answer, whichever record it went to.
 type Result = { data?: Evidence; error?: unknown };
@@ -68,7 +81,11 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
             ? await api.GET("/v1/card-lines/{line_id}/evidence", { params: { path: { line_id: r.id }, query: { page_size: 100 } } })
             : r.kind === "bank-change"
               ? await api.GET("/v1/bank-changes/{change_id}/evidence", { params: { path: { change_id: r.id }, query: { page_size: 100 } } })
-              : await api.GET("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: r.id }, query: { page_size: 100 } } });
+              : r.kind === "my-bank-change"
+                ? await api.GET("/v1/me/bank-changes/{change_id}/evidence", { params: { path: { change_id: r.id }, query: { page_size: 100 } } })
+                : r.kind === "claimant-bank-change"
+                  ? await api.GET("/v1/claimant-bank-changes/{change_id}/evidence", { params: { path: { change_id: r.id }, query: { page_size: 100 } } })
+                  : await api.GET("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: r.id }, query: { page_size: 100 } } });
   if (out.error) throw out.error;
   return out.data.items ?? [];
 }
@@ -114,7 +131,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
-  const firstKind = record.kind === "bank-change" ? "bank_letter" : ""; // what a change's required file usually is
+  // what a change's required file usually is
+  const firstKind = record.kind === "bank-change" ? "bank_letter" : record.kind === "my-bank-change" ? "bank_app_screenshot" : "";
   const [kind, setKind] = useState(firstKind);
   const [note, setNote] = useState("");
   const [dataClass, setDataClass] = useState<DataClass>("general");
@@ -165,7 +183,9 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
               ? api.POST("/v1/card-lines/{line_id}/evidence", { params: { path: { line_id: record.id }, header }, body, bodySerializer })
               : record.kind === "bank-change"
                 ? api.POST("/v1/bank-changes/{change_id}/evidence", { params: { path: { change_id: record.id }, header }, body, bodySerializer })
-                : api.POST("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: record.id }, header }, body, bodySerializer });
+                : record.kind === "my-bank-change"
+                  ? api.POST("/v1/me/bank-changes/{change_id}/evidence", { params: { path: { change_id: record.id }, header }, body, bodySerializer })
+                  : api.POST("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: record.id }, header }, body, bodySerializer });
     const out = await guarded(confirm, post);
     setBusy(false);
     setFailed("The file was not attached");
@@ -182,7 +202,7 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
   const remove = async (e: Evidence) => {
     setBusy(true);
     setProblem(null);
-    if (record.kind === "card-line") return; // a card line's document is posted: its files stay
+    if (record.kind === "card-line" || record.kind === "claimant-bank-change") return; // posted, or not the caller's: its files stay
     const read: Result & { response: Response } =
       record.kind === "bill"
         ? await api.GET("/v1/bills/{bill_id}/evidence/{evidence_id}", { params: { path: { bill_id: record.id, evidence_id: e.id } } })
@@ -192,7 +212,9 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
             ? await api.GET("/v1/expense-claims/{claim_id}/evidence/{evidence_id}", { params: { path: { claim_id: record.id, evidence_id: e.id } } })
             : record.kind === "bank-change"
               ? await api.GET("/v1/bank-changes/{change_id}/evidence/{evidence_id}", { params: { path: { change_id: record.id, evidence_id: e.id } } })
-              : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
+              : record.kind === "my-bank-change"
+                ? await api.GET("/v1/me/bank-changes/{change_id}/evidence/{evidence_id}", { params: { path: { change_id: record.id, evidence_id: e.id } } })
+                : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
     const header = { "If-Match": etagOf(read.response) };
     const del = (): Promise<Result> =>
       record.kind === "bill"
@@ -203,7 +225,9 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
             ? api.DELETE("/v1/expense-claims/{claim_id}/evidence/{evidence_id}", { params: { path: { claim_id: record.id, evidence_id: e.id }, header } })
             : record.kind === "bank-change"
               ? api.DELETE("/v1/bank-changes/{change_id}/evidence/{evidence_id}", { params: { path: { change_id: record.id, evidence_id: e.id }, header } })
-              : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
+              : record.kind === "my-bank-change"
+                ? api.DELETE("/v1/me/bank-changes/{change_id}/evidence/{evidence_id}", { params: { path: { change_id: record.id, evidence_id: e.id }, header } })
+                : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
     const out = read.error ? read : await guarded(confirm, del);
     setBusy(false);
     setFailed("The file was not removed");
@@ -220,6 +244,10 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
       <p className="fy-small fy-muted">
         {record.kind === "bank-change"
           ? "The vendor's letter, or a screenshot of their confirmation through a channel you already knew, is needed before you ask for approval. Files are kept as bank details; once the change is approved they are never deleted."
+          : record.kind === "my-bank-change"
+          ? "A screenshot of your banking app, or your statement's header, showing your name and the account number, is needed before you ask for approval. Files are kept as bank details; once the change is approved they are never deleted."
+          : record.kind === "claimant-bank-change"
+          ? "The person's screenshot of their banking app, or their statement's header: compare its name and number with the change before you approve."
           : record.kind === "claim"
           ? draft
             ? "The receipt for each line, pasted, dropped or chosen. Name it on its line. While the claim is a draft, a file can come off again."
@@ -338,7 +366,7 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
             </datalist>
             {missing.kind && (
               <span className="fy-error" id={`${id}-kind-error`}>
-                {record.kind === "bank-change" ? "Say what the file is: bank_letter, or vendor_confirmation for a screenshot of their confirmation." : record.kind === "bill" || record.kind === "claim" || record.kind === "card-line" ? "Say what the file is, such as the invoice or a receipt." : record.kind === "invoice" ? "Say what the file is, such as the customer's purchase order." : "Say what the file is, such as a calculation or an invoice."}
+                {record.kind === "bank-change" ? "Say what the file is: bank_letter, or vendor_confirmation for a screenshot of their confirmation." : record.kind === "my-bank-change" ? "Say what the file is: bank_app_screenshot, or bank_statement for your statement's header." : record.kind === "bill" || record.kind === "claim" || record.kind === "card-line" ? "Say what the file is, such as the invoice or a receipt." : record.kind === "invoice" ? "Say what the file is, such as the customer's purchase order." : "Say what the file is, such as a calculation or an invoice."}
               </span>
             )}
           </div>
@@ -348,7 +376,7 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
             </label>
             <input className="fy-input" id={`${id}-note`} value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} />
           </div>
-          {record.kind !== "bank-change" && (
+          {record.kind !== "bank-change" && record.kind !== "my-bank-change" && (
             <div className="fy-field">
               <label className="fy-label" htmlFor={`${id}-class`}>
                 Personal data in it
