@@ -675,6 +675,15 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		for k, v := range deps {
 			e.Dependencies[k] = v
 		}
+	case approval.ObjectPaymentBatch: // the batch's version and status, its total, and each payee's account in force (G4-055)
+		version, deps, err := a.batchDependencies(ctx, u, c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = version
+		for k, v := range deps {
+			e.Dependencies[k] = v
+		}
 	case approval.ObjectPayeeBankChange, approval.ObjectClaimantBankChange: // the change's version and status, and the change it replaces (FR-CT-03, FR-AP-22)
 		version, deps, err := a.payeeDependencies(ctx, u, c.ObjectKey)
 		if err != nil {
@@ -1150,6 +1159,8 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 		return nil
 	case approval.OpClaimantBankChange: // FR-AP-22, FM-1: never the person whose account it is, nor whoever prepared it
 		return claimantBankExecutable(ctx, u, r, signer)
+	case approval.OpBatchApprove, approval.OpBatchReapprove: // FM-1: whoever prepared the batch never approves it
+		return batchExecutable(ctx, u, r, signer)
 	case approval.OpBillPost: // SOD-3: whoever prepared the bill never approves its post
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {
@@ -1534,6 +1545,8 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 	case approval.OpClaimantBankChange: // FR-AP-22: the person's account in force, the one it replaces retired
 		_, err := a.approveClaimantBankChange(ctx, u, r)
 		return err
+	case approval.OpBatchApprove, approval.OpBatchReapprove: // FR-BNK-12: the batch numbered and approved, or approved again (G4-055)
+		return a.executeBatchApproval(ctx, u, r)
 	case approval.OpClaimPost: // FR-AP-07: the approved claim posts, as its last approver
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {

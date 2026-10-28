@@ -14,6 +14,7 @@ const (
 	ReviewSelfApproved     = "self_approved"     // a founder posted alone at or below the self-approval threshold (FM-2)
 	ReviewScheduledIssue   = "scheduled_issue"   // the scheduler issued an approved recurring invoice's invoice (FR-AR-07, FM-3)
 	ReviewAutoReconciled   = "auto_reconciled"   // a bank line the system reconciled, in the week's sample (FR-BNK-14, FM-3)
+	ReviewReleaseConflict  = "release_conflict"  // in Founder mode, a payment batch released by who prepared or approved it, or a payee's account change (SOD-1, SOD-2, FM-3)
 )
 
 // ReviewLogEntry is a high-risk action that executed, with its review once it has one.

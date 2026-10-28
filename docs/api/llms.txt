@@ -345,6 +345,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/payment-batches/suggestion` (getPaymentBatchSuggestion): Suggest a payment batch's items for a date
 - `GET /v1/payment-batches/{batch_id}` (getPaymentBatch): Get a payment batch
 - `PUT /v1/payment-batches/{batch_id}` (replacePaymentBatch): Change a draft payment batch
+- `POST /v1/payment-batches/{batch_id}/approval` (requestPaymentBatchApproval): Ask for approval of a payment batch
+- `POST /v1/payment-batches/{batch_id}/cancel` (cancelPaymentBatch): Cancel an approved payment batch
+- `GET /v1/payment-batches/{batch_id}/file` (getPaymentBatchFile): Download a released batch's payment list
+- `POST /v1/payment-batches/{batch_id}/reapproval` (requestPaymentBatchReapproval): Ask for a payment batch's approval again
+- `POST /v1/payment-batches/{batch_id}/release` (releasePaymentBatch): Release a payment batch
 - `GET /v1/periods` (listPeriods): List the periods
 - `GET /v1/periods/{period_id}` (getPeriod): Get a period
 - `GET /v1/periods/{period_id}/checklist` (getPeriodChecklist): Get a month's close checklist

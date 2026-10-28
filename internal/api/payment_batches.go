@@ -57,7 +57,7 @@ type PaymentBatch struct {
 	ID             string                `json:"id" format:"uuid" doc:"The batch's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10"`
 	Number         string                `json:"number,omitempty" doc:"Its number, from the batch sequence, once approved (FR-ORG-04)." example:"PB-0003"`
 	Status         string                `json:"status" enum:"draft,waiting,approved,released,cancelled" doc:"draft: being prepared; waiting: asked for, waiting for approval; approved: ready to release; released: its payments posted and its payment list written; cancelled: before release, with a reason." example:"draft"`
-	MoneyAccountID string                `json:"money_account_id" format:"uuid" doc:"The SGD bank account it is paid from." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
+	MoneyAccountID string                `json:"money_account_id" format:"uuid" doc:"The SGD bank account it is paid from: the chart's money account, as a payment recorded by hand names it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
 	PaymentDate    string                `json:"payment_date" format:"date" doc:"The day the bank pays it: each payment is posted on it." example:"2026-10-31"`
 	Method         string                `json:"method" enum:"fast,giro" doc:"How the bank pays it: FAST, within minutes, or GIRO, over the next working days." example:"fast"`
 	Notes          string                `json:"notes,omitempty" doc:"Its notes." example:"End of October suppliers and claims"`
@@ -65,6 +65,7 @@ type PaymentBatch struct {
 	Total          Money                 `json:"total" doc:"What it pays in all, in SGD."`
 	Checks         []BillCheck           `json:"checks" nullable:"false" doc:"Before release: what stops it being asked for, approved or released (✖), every problem at once. Empty in a list."`
 	ApprovalID     string                `json:"approval_id,omitempty" format:"uuid" doc:"The approval request it waits for." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20"`
+	Release        *PaymentBatchRelease  `json:"release,omitempty" doc:"A released batch: who released it, when, under which approval, its file's name and hash, and the payments it posted."`
 	PreparedBy     string                `json:"prepared_by,omitempty" doc:"Who saved its current version: an actor of the audit trail." example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	Version        int                   `json:"version" doc:"The batch's version; with its status it makes the ETag." example:"1"`
 }
@@ -83,7 +84,7 @@ type PaymentBatchItemRef struct {
 
 // PaymentBatchDraft is a batch as sent.
 type PaymentBatchDraft struct {
-	MoneyAccountID string                `json:"money_account_id" format:"uuid" doc:"The SGD bank account it is paid from." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
+	MoneyAccountID string                `json:"money_account_id" format:"uuid" doc:"The SGD bank account it is paid from: the chart's money account, as a payment recorded by hand names it, set up in Banking." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
 	PaymentDate    string                `json:"payment_date" format:"date" doc:"The day the bank pays it." example:"2026-10-31"`
 	Method         string                `json:"method" enum:"fast,giro" doc:"FAST or GIRO." example:"fast"`
 	Items          []PaymentBatchItemRef `json:"items" maxItems:"500" nullable:"false" doc:"The bills and claims it pays, each whole, for what is open on it; at most 500."`
@@ -291,6 +292,11 @@ func (a *API) batchOf(ctx context.Context, u storage.UnitOfWork, v batchView, do
 			pay.Items = append(pay.Items, item)
 		}
 		out.Payments = append(out.Payments, pay)
+	}
+	if status == "released" {
+		if out.Release, err = a.releaseOf(ctx, u, doc.ID); err != nil {
+			return PaymentBatch{}, err
+		}
 	}
 	if checks && status != "released" && status != "cancelled" {
 		out.Checks = batchChecksOf(b.Errors)
