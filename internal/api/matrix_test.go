@@ -1271,6 +1271,18 @@ var matrixCalls = map[string]matrixCall{
 	"getFinancialStatement": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/statements/pl?from=2026-10&to=2026-11", tok, nil), nil
 	},
+	"getSalesByCustomer": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/sales-by-customer?from=2026-10&to=2026-11", tok, nil), nil
+	},
+	"getSalesByItem": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/sales-by-item?from=2026-10&to=2026-11", tok, nil), nil
+	},
+	"getSpendBySupplier": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/spend-by-supplier?from=2026-10&to=2026-11", tok, nil), nil
+	},
+	"getTopExpenses": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/top-expenses?from=2026-10&to=2026-11", tok, nil), nil
+	},
 	"listJournals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/journals", tok, nil), nil
 	},
@@ -2369,7 +2381,9 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 		t.Fatalf("Appendix D has no row %q", p.Capability)
 	}
 	allowed, masked = authztest.Allows(authztest.ParseCell(row[col]), p.Need)
-	if allowed && p.Unqualified && authztest.ParseCell(row[col]).Qualifier != "" { // such as Reports' "V sales" (rev 0.52)
+	// A qualified cell, such as Reports' "V sales" (rev 0.52), grants an Unqualified operation only when the operation reads
+	// that part of the books alone: the sales reports for "sales" (p1-reports design D9).
+	if q := authztest.ParseCell(row[col]).Qualifier; allowed && p.Unqualified && q != "" && !slices.Contains(p.Qualified, q) {
 		return false, false
 	}
 	if allowed && p.Parent != "" { // and the record it is under must be visible, unmasked

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "Its figure in the base currency: sales or spend net of GST, or the expense as the P\u0026L shows it."
+    },
+    "code": {
+      "description": "An item's or account's code.",
+      "examples": [
+        "6110"
+      ],
+      "type": "string"
+    },
+    "documents": {
+      "description": "The invoices, bills and credit notes behind it; 0 for the top expenses.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "id": {
+      "description": "The customer, item, supplier or account; none for the rest: the lines without an item, or the expenses after the top ten.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name, as on file today.",
+      "examples": [
+        "Acme Analytics Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "quantity": {
+      "description": "Sales by item: the quantity sold, net of credits, in the item's unit.",
+      "examples": [
+        "12"
+      ],
+      "type": "string"
+    },
+    "share": {
+      "description": "Its % of the total (RND-PERCENT); empty when the total is zero.",
+      "examples": [
+        "12.5"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "amount",
+    "share",
+    "documents"
+  ],
+  "title": "ManagementRow",
+  "type": "object"
+}
