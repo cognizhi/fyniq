@@ -239,3 +239,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-27] compile | docs/user-guide/contacts-and-items.md → contacts.manage (vendors' bank details: the change, its approval, the freeze, showing the number; FR-CT-03, rev 0.153)
 
 ## [2026-10-28] compile | docs/user-guide/profile-and-security.md, docs/user-guide/approvals.md → preferences.security, approvals.decide (a person's own bank account for reimbursements and its approval, FR-AP-22)
+
+## [2026-10-28] compile | docs/user-guide/sign-in.md → auth.sign-in (joining a company with an invitation from the sign-in page)

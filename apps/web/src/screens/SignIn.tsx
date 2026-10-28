@@ -147,8 +147,10 @@ function Providers({ providers, returnTo }: { providers: SignInProvider[]; retur
   );
 }
 
-// Invitation is the "Joining by invitation" variant: a person signed in without a Fyniq account enters
-// the one-time invitation a Super admin gave them and becomes the second Super admin (FR-ADM-06/07).
+// Invitation is the "Joining by invitation" variant: a person signed in without a Fyniq account enters the one-time
+// invitation they were given. A company's invitation makes them a member of its organisation with its roles
+// (FR-ADM-01); a Super admin's makes them the installation's second Super admin, who keeps ten recovery codes
+// (FR-ADM-06/07). The code says which: the company's, the commoner, is tried first.
 function Invitation({ session }: { session: Session }) {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -165,16 +167,25 @@ function Invitation({ session }: { session: Session }) {
 
   const accept = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.trim().length < 20) return setProblem({ field: "code", message: "Enter the whole invitation code, as the Super admin gave it to you." });
+    if (code.trim().length < 20) return setProblem({ field: "code", message: "Enter the whole invitation code, as it was given to you." });
     if (!name.trim()) return setProblem({ field: "name", message: "Enter your name, as other people will see it." });
     setBusy(true);
-    const { data, error } = await api.POST("/v1/super-admins", { body: { invitation_code: code.trim(), display_name: name.trim() } });
+    const body = { invitation_code: code.trim(), display_name: name.trim() };
+    const joined = await api.POST("/v1/members", { body });
+    if (joined.data) return go("/");
+    let p = problemOf(joined.error);
+    if (p.code === "API-SUPERADMIN-01") {
+      const { data, error } = await api.POST("/v1/super-admins", { body });
+      if (data) {
+        setBusy(false);
+        return setCodes(data.recovery_codes ?? []);
+      }
+      p = problemOf(error);
+    }
     setBusy(false);
-    if (data) return setCodes(data.recovery_codes ?? []);
-    const p = problemOf(error);
     setProblem(
       p.code === "API-SUPERADMIN-01"
-        ? { field: "code", message: "That invitation code is not valid, was used already or has expired. Ask the Super admin for a new one." }
+        ? { field: "code", message: "That invitation code is not valid, was used already or has expired. Ask whoever invited you for a new one." }
         : { field: "form", message: `${p.detail ?? "The invitation could not be accepted."} ${p.fix ?? ""} (${p.code ?? "error"})` },
     );
   };
@@ -186,8 +197,9 @@ function Invitation({ session }: { session: Session }) {
           Joining by invitation
         </h1>
         <p className="fy-secondary">
-          You are signed in{session.provider ? ` with ${session.provider}` : ""}, but you have no Fyniq account yet. If a Super admin
-          gave you an invitation code, enter it here to become the second Super admin of this installation.
+          You are signed in{session.provider ? ` with ${session.provider}` : ""}, but you have no Fyniq account yet. If you were given
+          an invitation code, enter it here: to join a company's books with the roles it gives you, or to become the second Super
+          admin of this installation.
         </p>
       </div>
       {problem && (
