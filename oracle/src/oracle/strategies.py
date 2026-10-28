@@ -12,11 +12,12 @@ rounding. The intent is never an expected figure; the properties use it only to 
 generator and the rules agree about which documents must post and which must not.
 
 The shapes PRD-001 rev 0.24 decided (the "Decided in PRD-001 rev 0.24" table of
-``test/differential/README.md``) are not generated yet: a rate on a base-currency line (rejected,
-ENG-03), a base amount beyond 16 integer digits (rejected, ENG-44), a foreign line whose base amount
-rounds to zero (posts, INV-05), a reversal dated before its document (rejected, FR-GL-12) and a line
-to a share-capital account (rejected, INV-13). Every rate carries its source, as the format
-requires; no account carries a role.
+``test/differential/README.md``) each have a kind: a foreign line whose base amount rounds to zero
+(posts, INV-05), a rate or rate source on a base-currency line (rejected, ENG-03), a base amount of
+17 integer digits or more (rejected, ENG-44) and a line to a share-capital account (rejected,
+INV-13); half of the charts have such an account. A reversal may be dated up to 20 days before its
+document (rejected, FR-GL-12, and the document stays unreversed). Every rate carries its source, as
+the format requires: ``document``, or ``base`` on a base-currency line built to be rejected.
 """
 
 from __future__ import annotations
@@ -58,7 +59,9 @@ _DATES = st.dates(date(2025, 11, 1), date(2027, 2, 28))  # crosses two year ends
 
 POST, REJECT, OPEN = "post", "reject", "open"
 
-_POSTING_KINDS = ["balanced"] * 14 + ["single-base", "long", "boundary", "half-unit", "half-unit"]
+_POSTING_KINDS = ["balanced"] * 14 + [
+    "single-base", "long", "boundary", "half-unit", "half-unit", "base-rounds-to-zero"
+]
 _OPEN_KINDS = ["single-foreign", "single-foreign"]
 _REJECTED_KINDS = [
     "one-line",
@@ -74,6 +77,9 @@ _REJECTED_KINDS = [
     "not-plain-amount",
     "bad-rate",
     "amount-out-of-range",
+    "rate-on-base-line",
+    "base-out-of-range",
+    "share-capital-account",
 ]
 KINDS = _POSTING_KINDS + _OPEN_KINDS + _REJECTED_KINDS
 
@@ -116,6 +122,7 @@ class _Ctx:
     postable: list[str]
     inactive: str
     group: str
+    share: str | None  # an account with the role share-capital, in half of the charts (INV-13)
 
     @property
     def base_minor(self) -> int:
@@ -159,7 +166,7 @@ def _rate(draw: st.DrawFn) -> Decimal:
 
 
 def _visible(amounts: list[Decimal], rate: Decimal, base_minor: int) -> Decimal:
-    """Scale ``rate`` by tens until no amount's base rounds to zero (a shape left open)."""
+    """Scale ``rate`` by tens until no amount's base rounds to zero (that shape has its own kind)."""
     while any(money.rnd_fx(a, rate, base_minor).is_zero() for a in amounts):
         rate = rate.scaleb(1, context=money.EXACT)
     return rate
@@ -298,6 +305,55 @@ def _half_unit(draw: st.DrawFn, ctx: _Ctx) -> list[dict]:
 
 
 @st.composite
+def _rounds_to_zero(draw: st.DrawFn, ctx: _Ctx) -> dict:
+    """A non-zero foreign line whose base amount rounds to zero; it posts as 0.00 (INV-05, rev 0.24).
+
+    amount = u line minor units and rate = k × 10^-10, so amount × rate = u × k × 10^-(line minor + 10),
+    below half a base minor unit, 5 × 10^-(base minor + 1), when u × k < 5 × 10^(line minor + 9 −
+    base minor). Half the time k is the largest such, so the product sits just under the half that
+    RND-FX would round away from zero.
+    """
+    currency = draw(st.sampled_from(ctx.foreign))
+    minor = ctx.currencies[currency]
+    units = draw(_units(6))
+    largest = (5 * 10 ** (minor + money.RATE_DECIMALS - 1 - ctx.base_minor) - 1) // abs(units)
+    assume(largest >= 1)
+    k = largest if draw(st.booleans()) else draw(st.integers(1, largest))
+    rate = _value(k, money.RATE_DECIMALS)
+    return _line(draw(st.sampled_from(ctx.postable)), currency, _text(_value(units, minor), minor), rate)
+
+
+@st.composite
+def _base_out_of_range(draw: st.DrawFn, ctx: _Ctx) -> list[dict]:
+    """A foreign line whose amount fits but whose base amount has 17 integer digits or more (ENG-44).
+
+    Rule 6 is the only rule it breaks: the line is balanced by its own negation (one currency,
+    balanced in it and in base), or by base-currency lines that each fit. A quarter of the time the
+    base amount is exactly 10^16, the first that does not fit NUMERIC(20,4).
+    """
+    currency = draw(st.sampled_from(ctx.foreign))
+    minor = ctx.currencies[currency]
+    if draw(st.integers(0, 3)) == 0:
+        k = draw(st.integers(1, 9))
+        rate, value = Decimal(10**k), Decimal(10 ** (money.AMOUNT_INTEGER_DIGITS - k))
+    else:  # rate 5 to 10^10 with four decimals; amount = target ÷ rate stays below 10^16
+        rate = _value(draw(st.integers(5 * 10**4, 10**14 - 1)), 4)
+        target = Decimal(draw(st.integers(10**16 + 10**12, 4 * 10**16)))
+        value = money.round_quotient(target, rate, minor)
+    if draw(st.booleans()):
+        value = money.negate(value)
+    base = money.rnd_fx(value, rate, ctx.base_minor)
+    line = _line(draw(st.sampled_from(ctx.postable)), currency, _text(value, minor), rate)
+    if draw(st.booleans()):
+        other = _line(draw(st.sampled_from(ctx.postable)), currency, _text(money.negate(value), minor), rate)
+        return [line, other]
+    count = int(money.EXACT.divide_int(base.copy_abs(), Decimal(9 * 10**15))) + 1  # each part below 10^16
+    parts = money.alloc_even(money.negate(base), count, ctx.base_minor)
+    others = [_line(draw(st.sampled_from(ctx.postable)), ctx.base, _text(part, ctx.base_minor)) for part in parts]
+    return list(draw(st.permutations([line, *others])))
+
+
+@st.composite
 def _unbalanced_in_currency(draw: st.DrawFn, ctx: _Ctx, currency: str) -> list[dict]:
     """One foreign currency; balanced in base but off by one minor unit in its own currency.
 
@@ -326,7 +382,9 @@ def _foreign_journal(draw: st.DrawFn, ctx: _Ctx) -> tuple[list[dict], int]:
 @st.composite
 def _journal(draw: st.DrawFn, ctx: _Ctx, kind: str) -> tuple[list[dict], str]:
     """The lines of one manual journal of ``kind``, and its intent."""
-    if kind in ("missing-rate", "bad-rate", "half-unit", "single-foreign", "unbalanced-currency") and not ctx.foreign:
+    foreign_kinds = ("missing-rate", "bad-rate", "half-unit", "single-foreign", "unbalanced-currency",
+                     "base-rounds-to-zero", "base-out-of-range")
+    if (kind in foreign_kinds and not ctx.foreign) or (kind == "share-capital-account" and ctx.share is None):
         kind = "balanced"
     if kind == "balanced":
         return draw(_balanced(ctx)), POST
@@ -338,6 +396,12 @@ def _journal(draw: st.DrawFn, ctx: _Ctx, kind: str) -> tuple[list[dict], str]:
         return draw(_boundary(ctx)), POST
     if kind == "half-unit":
         return draw(_half_unit(ctx)), POST
+    if kind == "base-rounds-to-zero":
+        lines = draw(_balanced(ctx))
+        lines.insert(draw(st.integers(0, len(lines))), draw(_rounds_to_zero(ctx)))
+        return lines, POST
+    if kind == "base-out-of-range":
+        return draw(_base_out_of_range(ctx)), REJECT
     if kind == "single-foreign":
         return draw(_single_foreign(ctx, draw(st.sampled_from(ctx.foreign)))), OPEN
     if kind == "unbalanced-currency":
@@ -363,6 +427,13 @@ def _journal(draw: st.DrawFn, ctx: _Ctx, kind: str) -> tuple[list[dict], str]:
         lines[i]["account"] = ctx.inactive
     elif kind == "group-account":
         lines[i]["account"] = ctx.group
+    elif kind == "share-capital-account":
+        lines[i]["account"] = ctx.share
+    elif kind == "rate-on-base-line":
+        i = draw(st.sampled_from([k for k, ln in enumerate(lines) if ln["currency"] == ctx.base]))
+        if draw(st.integers(0, 3)) > 0:  # a rate, which comes with its source; else the source alone
+            lines[i]["fx_rate"] = _rate_text(Decimal(1) if draw(st.booleans()) else draw(_rate()))
+        lines[i]["fx_rate_source"] = draw(st.sampled_from(["document", "base"]))
     elif kind == "unbalanced-base":
         plug = next(ln for ln in reversed(lines) if ln["currency"] == ctx.base and "fx_rate" not in ln)
         value = Decimal(plug["amount"])
@@ -394,15 +465,19 @@ def _context(draw: st.DrawFn) -> tuple[_Ctx, list[dict]]:
     base = draw(st.sampled_from(_BASES))
     others = draw(st.lists(st.sampled_from(sorted(set(CURRENCIES) - {base})), max_size=8, unique=True))
     currencies = {base: CURRENCIES[base], **{c: CURRENCIES[c] for c in sorted(others)}}
-    codes = draw(st.lists(st.integers(1000, 8999).map(str), min_size=4, max_size=12, unique=True))
+    with_share = draw(st.booleans())
+    codes = draw(st.lists(st.integers(1000, 8999).map(str), min_size=4 + with_share, max_size=12, unique=True))
+    share = codes.pop() if with_share else None
     *postable, inactive, group = codes
     kinds = ["asset", "liability", "equity", "revenue", "expense"]
     accounts = [
         {"code": c, "type": draw(st.sampled_from(kinds)), "group": c == group, "active": c != inactive}
         for c in codes
     ]
+    if share is not None:
+        accounts.append({"code": share, "type": "equity", "group": False, "active": True, "role": "share-capital"})
     accounts = draw(st.permutations(accounts))
-    return _Ctx(base, currencies, postable, inactive, group), accounts
+    return _Ctx(base, currencies, postable, inactive, group, share), accounts
 
 
 @st.composite
@@ -421,7 +496,8 @@ def scenarios_with_intent(draw: st.DrawFn, name: str = "generated") -> tuple[dic
     reversals = []
     for doc in documents:
         for _ in range(draw(st.sampled_from([0, 0, 0, 1, 1, 2]))):  # a second reversal must be rejected
-            day = date.fromisoformat(doc["date"]) + timedelta(days=draw(st.integers(0, 75)))
+            # Up to 20 days before the document: rejected, and the document stays unreversed (FR-GL-12).
+            day = date.fromisoformat(doc["date"]) + timedelta(days=draw(st.integers(-20, 75)))
             reversals.append({"document": doc["id"], "date": day.isoformat()})
     if draw(st.integers(0, 4)) == 0:
         reversals.append({"document": _UNKNOWN_DOCUMENT, "date": draw(_DATES).isoformat()})

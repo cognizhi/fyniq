@@ -1,0 +1,62 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "decided-rules",
+ "base_currency": "SGD",
+ "currencies": {"SGD": 2, "USD": 2, "JPY": 0},
+ "accounts": [
+  {"code": "1010", "type": "asset", "group": false, "active": true},
+  {"code": "1020", "type": "asset", "group": false, "active": true},
+  {"code": "3010", "type": "equity", "group": false, "active": true, "role": "share-capital"},
+  {"code": "4010", "type": "revenue", "group": false, "active": true},
+  {"code": "6010", "type": "expense", "group": false, "active": true},
+  {"code": "6110", "type": "expense", "group": false, "active": true}
+ ],
+ "documents": [
+  {"type": "manual_journal", "id": "JNL-0001", "version": 1, "date": "2026-01-05", "memo": "a base amount that rounds to zero",
+   "lines": [
+    {"account": "6010", "currency": "JPY", "amount": "4", "fx_rate": "0.001", "fx_rate_source": "document"},
+    {"account": "6110", "currency": "JPY", "amount": "5", "fx_rate": "0.001", "fx_rate_source": "document"},
+    {"account": "1010", "currency": "SGD", "amount": "-0.01"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0002", "version": 1, "date": "2026-01-12", "memo": "a rate on a base-currency line",
+   "lines": [
+    {"account": "1010", "currency": "SGD", "amount": "100.00", "fx_rate": "1", "fx_rate_source": "base"},
+    {"account": "4010", "currency": "SGD", "amount": "-100.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0003", "version": 1, "date": "2026-01-13", "memo": "a rate source alone on a base-currency line",
+   "lines": [
+    {"account": "1010", "currency": "SGD", "amount": "100.00", "fx_rate_source": "document"},
+    {"account": "4010", "currency": "SGD", "amount": "-100.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0004", "version": 1, "date": "2026-01-20", "memo": "a base amount of 17 integer digits",
+   "lines": [
+    {"account": "1020", "currency": "USD", "amount": "1000000000000000.00", "fx_rate": "10", "fx_rate_source": "document"},
+    {"account": "4010", "currency": "USD", "amount": "-1000000000000000.00", "fx_rate": "10", "fx_rate_source": "document"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0005", "version": 1, "date": "2026-01-21", "memo": "a base amount of 16 integer digits",
+   "lines": [
+    {"account": "1020", "currency": "USD", "amount": "999999999999999.99", "fx_rate": "10", "fx_rate_source": "document"},
+    {"account": "4010", "currency": "USD", "amount": "-999999999999999.99", "fx_rate": "10", "fx_rate_source": "document"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0006", "version": 1, "date": "2026-02-02", "memo": "a line to share capital",
+   "lines": [
+    {"account": "1010", "currency": "SGD", "amount": "5000.00"},
+    {"account": "3010", "currency": "SGD", "amount": "-5000.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0007", "version": 1, "date": "2026-02-03", "memo": "yen written with a decimal",
+   "lines": [
+    {"account": "6010", "currency": "JPY", "amount": "12345.0", "fx_rate": "0.0091", "fx_rate_source": "document"},
+    {"account": "1010", "currency": "SGD", "amount": "-112.34"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0008", "version": 1, "date": "2026-02-10", "memo": "balanced in dollars, not in base",
+   "lines": [
+    {"account": "6010", "currency": "USD", "amount": "0.01", "fx_rate": "1.5", "fx_rate_source": "document"},
+    {"account": "6110", "currency": "USD", "amount": "0.01", "fx_rate": "1.5", "fx_rate_source": "document"},
+    {"account": "1020", "currency": "USD", "amount": "-0.02", "fx_rate": "1.5", "fx_rate_source": "document"}
+   ]}
+ ],
+ "reversals": [
+  {"document": "JNL-0001", "date": "2026-01-04"},
+  {"document": "JNL-0001", "date": "2026-03-02"}
+ ]
+}

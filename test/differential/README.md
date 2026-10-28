@@ -44,8 +44,8 @@ from `cmd/seed` (2.4) and the merge gate (3.1).
   decimals, positive) and `fx_rate_source` are present only on lines not in the base currency, and
   a rate always comes with its source (PRD-001 rev 0.24).
 - An account may carry a `role`. The only role is `share-capital`, for the accounts a manual
-  journal may not post to (INV-13; 3010 and 3020 in the default chart). Until both sides refuse
-  those lines (change `p0-manual-journal-rules`), no golden or generated scenario carries a role.
+  journal may not post to (INV-13; 3010 and 3020 in the default chart). Both sides refuse those
+  lines (change `p0-manual-journal-rules`); half of the generated charts have such an account.
 - Documents post in array order; then each reversal reverses the posted entry of its document on
   its date. Every date falls in a calendar-month period, and all periods are open.
 
@@ -79,7 +79,8 @@ only when it meets every rule:
    make it fit.
 2. At least two lines.
 3. No line is zero (in its own currency).
-4. Every account exists, is active and is not a group account (INV-04).
+4. Every account exists, is active and is not a group account (INV-04), and none has the role
+   `share-capital` (INV-13).
 5. Every line not in the base currency has `fx_rate` (and so its source); a base-currency line has
    neither `fx_rate` nor `fx_rate_source` (ENG-03).
 6. Every base amount has fewer than 17 integer digits (NUMERIC(20,4)).
@@ -87,8 +88,9 @@ only when it meets every rule:
    half away from zero), sum to zero. A base-currency line's base amount is its amount.
 8. When every line shares one currency, the amounts also sum to zero in that currency.
 
-A reversal is rejected when its document is unknown or was rejected, or when the document was
-already reversed (a document is reversed at most once). A posted reversal negates every line of
+A reversal is rejected when its document is unknown or was rejected, when the document was
+already reversed (a document is reversed at most once), or when it is dated before the document's
+entry (FR-GL-12); a refused reversal leaves the document unreversed, so a later one can still post. A posted reversal negates every line of
 the original entry as stored (amount and base amount; never re-converted, ENG-14), on its own date.
 
 ## Result
@@ -125,21 +127,21 @@ the original entry as stored (amount and base amount; never re-converted, ENG-14
 ## Decided in PRD-001 rev 0.24
 
 These shapes were open until PRD-001 rev 0.24 decided them (ENG-24, the manual journal's validity
-rules, and the rows each cites below); both sides follow the decision. The generator does not yet
-produce those marked "not generated" (task 3.4 of `p0-manual-journal-rules` adds them), so a
-differential run reaches them only through golden cases.
+rules, and the rows each cites below); both sides follow the decision. The generator produces each
+of them (task 3.4 of `p0-manual-journal-rules`), and [`golden/decided-rules.json`](golden/README.md)
+posts one of each, its figures worked out by hand in `oracle/tests/test_golden.py`.
 
 | Shape | Both sides | Requirement | Generated |
 |---|---|---|---|
-| A rate (or rate source) on a base-currency line | Rejected | ENG-03 (a rate entered on a base-currency line is refused); ENG-24 rule 5 | Not generated |
-| A non-zero foreign line whose base amount rounds to zero (JPY 1 × 0.001) | Posts; the base amount is `0.00` | ENG-24 rule 3; INV-05 | Not generated |
-| A computed base amount of 17 or more integer digits | Rejected (it does not fit NUMERIC(20,4)), never truncated | ENG-44; ENG-24 rule 6 | Not generated |
-| A reversal dated before its document | Rejected; the document is not reversed, so a later reversal still posts | FR-GL-12 ("dated on or after the entry's posting date") | Not generated |
-| A line to an account with the role `share-capital` | Rejected | INV-13; ENG-24 ("the invariants of §10.7 apply as well") | Not generated |
+| A rate (or rate source) on a base-currency line | Rejected | ENG-03 (a rate entered on a base-currency line is refused); ENG-24 rule 5 | Generated (rate 1 or any rate, or the source alone) |
+| A non-zero foreign line whose base amount rounds to zero (JPY 1 × 0.001) | Posts; the base amount is `0.00` | ENG-24 rule 3; INV-05 | Generated (half of them just under half a minor unit) |
+| A computed base amount of 17 or more integer digits | Rejected (it does not fit NUMERIC(20,4)), never truncated | ENG-44; ENG-24 rule 6 | Generated (a quarter exactly 10^16) |
+| A reversal dated before its document | Rejected; the document is not reversed, so a later reversal still posts | FR-GL-12 ("dated on or after the entry's posting date") | Generated (up to 20 days before) |
+| A line to an account with the role `share-capital` | Rejected | INV-13; ENG-24 ("the invariants of §10.7 apply as well") | Generated |
 | An amount written with trailing zeros beyond the minor units (`"12345.0"` for JPY) | Rejected | ENG-44 (decimal places counted as written) | Generated |
 | A single-currency foreign journal that balances in its currency but not in base after `RND-FX` | Rejected (a manual journal has no rounding line) | ENG-24 rule 7 ("the engine never adds, drops or changes a line") | Generated |
 | `version` | Read but not used (P0 posts version 1 of each journal) | ENG-03 (an entry names its document's version) | Always 1 |
-| `fx_rate_source` values | Any non-empty string; not used in the result | ENG-03, ENG-40 (a rate typed on the document has the source "document") | Always `"document"` |
+| `fx_rate_source` values | Any non-empty string; not used in the result | ENG-03, ENG-40 (a rate typed on the document has the source "document") | `"document"`; `"base"` too on a base-currency line built to be rejected |
 
 ## P1 sources (pending: `cmd/scenario-run` does not read them yet)
 

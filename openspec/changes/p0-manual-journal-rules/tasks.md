@@ -33,21 +33,23 @@
 - [x] 3.1 Refuse a reversal dated before its document. Hand-worked tests `# req: FR-GL-12`: the day before (refused), the same day and a later month (both post) (as built: `reversal-before-entry`; a refused reversal leaves the document unreversed, so a later one still posts)
 - [x] 3.2 Refuse a manual journal line to an account whose role is `share-capital`, with tests `# req: INV-13`. The rule list in `oracle/src/oracle/ledger.py` cites ENG-24 and INV-13 (as built: rule 4's `share-capital-account`, either side of the line; an equity account without the role still posts)
 - [x] 3.3 In `test/differential/README.md`, rename "Choices where PRD-001 is silent" to "Decided in PRD-001 rev 0.24", with each row citing its requirement; update the strategies' docstring to match. Verify with `make oracle-test` (as built: the table gains the share-capital row; `make oracle-test` 120 passed, `make differential` and the Go gate green)
-- [ ] 3.4 Add generator kinds for every shape that was open, each with its intent:
+- [x] 3.4 Add generator kinds for every shape that was open, each with its intent:
   - a non-zero line whose base amount rounds to 0.00 (posts);
   - a rate on a base-currency line (rejected);
   - a computed base amount beyond 16 integer digits (rejected);
   - a reversal dated before its document (rejected);
   - a line to a share-capital account (rejected).
 
-  The properties check that built-to-post documents post and built-to-fail ones are rejected. Verify with `ORACLE_HYPOTHESIS_PROFILE=thorough` on the property tests
-- [ ] 3.5 Add `test/differential/golden/decided-rules.json` with one document or reversal per decided shape, worked by hand, and list it in `golden/README.md`. Hand-mutate each new rule and confirm the suite kills every mutant; record them in the pull request. The mutants:
+  The properties check that built-to-post documents post and built-to-fail ones are rejected. Verify with `ORACLE_HYPOTHESIS_PROFILE=thorough` on the property tests (as built: the kinds `base-rounds-to-zero` (posts; half of them just under half a minor unit), `rate-on-base-line` (rate 1 or any rate, or the source alone), `base-out-of-range` (a quarter exactly 10^16; balanced by its negation or by base lines that each fit) and `share-capital-account`; half of the charts have a share-capital account, and a reversal may be dated up to 20 days before its document, so the reversal property derives each one's outcome from its date. Thorough: 8 passed at 2,000 examples each. The Go gate's 60 generated scenarios (seed 20261015) now hold 16 rates on base lines, 10 base amounts out of range, 20 early reversals, 3 share-capital lines and 2 zero-base lines, with 0 disagreements)
+- [x] 3.5 Add `test/differential/golden/decided-rules.json` with one document or reversal per decided shape, worked by hand, and list it in `golden/README.md`. Hand-mutate each new rule and confirm the suite kills every mutant; record them in the pull request. The mutants:
   - allow an earlier-dated reversal;
   - allow a share-capital line;
   - re-convert a reversal;
   - accept `"12345.0"` for JPY;
   - truncate an out-of-range base amount
-- [ ] 3.6 The pull request says who wrote it and that its author did not read the engine (QA-ENG-01). `make test` (whose gate now runs the new shapes against the engine), `make differential` and `make check` pass
+
+  (as built: 8 journals and 2 reversals, also a rate source alone, a base amount of exactly 16 integer digits and a later reversal that posts; figures in `oracle/tests/test_golden.py`. Killed: the earlier-dated reversal, the share-capital line, `"12345.0"` for JPY, truncating and clamping the base amount, and three more (a rate on a base line, its source alone, refusing a zero base). Re-converting a reversal at its document's rate survives as an equivalent mutant: `RND-FX` rounds half away from zero, so round(−x) = −round(x), and the format has no other rate for it to use. It becomes observable once a reversal can convert at another rate, with the rate cascade (ENG-40, P1))
+- [x] 3.6 The pull request says who wrote it and that its author did not read the engine (QA-ENG-01). `make test` (whose gate now runs the new shapes against the engine), `make differential` and `make check` pass (as built: `make test` passed, its gate at 64 scenarios and 0 disagreements; `make differential` found none in 1,000; `/opsx:verify` and the archive wait for an engine session, since verifying the change means reading the engine)
 
 ## Workflow follow-up
 

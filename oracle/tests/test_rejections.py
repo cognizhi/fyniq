@@ -73,6 +73,12 @@ def test_a_rate_on_a_base_currency_line_is_rejected():
     )
 
 
+# req: ENG-03
+def test_a_rate_source_alone_on_a_base_currency_line_is_rejected():
+    alone = {"account": "1010", "currency": "SGD", "amount": "10.00", "fx_rate_source": "document"}
+    _refused(journal("JNL-0001", "2026-01-05", alone, line("4010", "SGD", "-10.00")), "rate-on-base-line")
+
+
 # req: QA-ENG-01
 def test_a_journal_that_does_not_balance_in_base_is_rejected():
     # 10.00 - 9.99 = 0.01
