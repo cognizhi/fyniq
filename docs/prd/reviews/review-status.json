@@ -313,6 +313,26 @@
     "invoice-record",
     "fixed-assets"
    ]
+  },
+  {
+   "id": "statements",
+   "title": "The financial statements' layout and the management reports",
+   "reviewer": "the accountant",
+   "status": "pending",
+   "pr": null,
+   "short": "The statements' layout and the management reports await review by the accountant",
+   "message": "The P&L, the balance sheet and the cash flow are laid out from each account's chart attributes on our best current reading of SFRS for Small Entities, and the management reports count sales and spend net of GST from the invoices and bills. Check them before you rely on them or file them.",
+   "sections": [
+    "PRD-001 §8.12"
+   ],
+   "requirements": [
+    "FR-RPT-01",
+    "FR-RPT-03"
+   ],
+   "screens": [
+    "financial-statement",
+    "management-report"
+   ]
   }
  ]
 }
