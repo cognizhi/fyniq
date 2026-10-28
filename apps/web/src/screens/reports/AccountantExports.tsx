@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleCheck, CircleX, Download, Hourglass, TimerOff } from "lucide-react";
+import { CircleCheck, CircleX, Download, Hourglass, RotateCcw, TimerOff } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -29,7 +29,7 @@ function today(): string {
 }
 
 // save gives the person a file the server wrote, in base64.
-function save(name: string, type: string, base64: string) {
+export function save(name: string, type: string, base64: string) {
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
   const url = URL.createObjectURL(new Blob([bytes], { type }));
   const a = document.createElement("a");
@@ -72,19 +72,12 @@ function State({ x }: { x: Export }) {
   }
 }
 
-// AccountantExports is the reports index's accountant exports (docs/design/screens ExportDialog; FR-RPT-09, FR-RPT-10):
-// ask for the general ledger, the trial balance, the journal entries, the fixed asset schedule or the receivables or
-// payables in detail as Excel or CSV; the worker prepares it, and it downloads for 24 hours, by the person who asked.
-export function AccountantExports() {
-  const id = useId();
+// MyExports is the person's background exports, newest first, with each one's state (FR-RPT-09): being prepared
+// (refreshed while one is), ready to download until it expires, failed with why, or expired, which asks again for the
+// same report. A download is refused when the person's rights changed since they asked; the refusal says so.
+export function MyExports({ limit, title }: { limit?: number; title?: string }) {
   const queries = useQueryClient();
-  const first = `${today().slice(0, 8)}01`;
-  const [report, setReport] = useState<Report>("general_ledger");
-  const [from, setFrom] = useState(first);
-  const [to, setTo] = useState(today);
-  const [format, setFormat] = useState<"xlsx" | "csv">("xlsx");
   const [problem, setProblem] = useState<ReturnType<typeof problemOf> | null>(null);
-  const range = reports.find((r) => r.report === report)?.range ?? false;
   const mine = useQuery({
     queryKey: ["report-exports"],
     queryFn: async () => {
@@ -94,9 +87,11 @@ export function AccountantExports() {
     },
     refetchInterval: (q) => ((q.state.data ?? []).some((x) => x.status === "pending") ? 3000 : false),
   });
-  const ask = useMutation({
-    mutationFn: async () => {
-      const r = await api.POST("/v1/report-exports", { body: { report, to, format, ...(range ? { from } : {}) } });
+  const again = useMutation({
+    mutationFn: async (x: Export) => {
+      const r = await api.POST("/v1/report-exports", {
+        body: { report: x.report as Report, to: x.to, format: x.format as "csv" | "xlsx", ...(x.from ? { from: x.from } : {}) },
+      });
       if (r.error) throw r.error;
       return r.data;
     },
@@ -110,6 +105,66 @@ export function AccountantExports() {
     if (r.error) return setProblem(problemOf(r.error));
     save(r.data.file_name, r.data.media_type, r.data.content_base64);
   };
+  const items = (mine.data ?? []).slice(0, limit);
+  if (items.length === 0 && !problem) return null;
+  return (
+    <div className="fy-stack fy-stack--2">
+      {title && <h3 className="fy-h4">{title}</h3>}
+      {problem && <Refusal problem={problem} title="The export could not be downloaded or asked for again" />}
+      <ul className="fy-list" aria-label="My exports">
+        {items.map((x) => (
+          <li key={x.id} className="fy-list__item">
+            <span className="fy-list__main">
+              <span className="fy-list__title">
+                {nameOf(x.report)}, {x.from ? `${x.from} to ${x.to}` : `at ${x.to}`} ({x.format === "xlsx" ? "Excel" : "CSV"})
+              </span>
+              <span className="fy-list__meta">
+                <State x={x} />
+                {x.status === "failed" && x.why ? ` ${x.why}` : ""}
+              </span>
+            </span>
+            {x.status === "ready" && (
+              <Button size="sm" onClick={() => download(x)} aria-label={`Download ${x.file_name ?? nameOf(x.report)}`}>
+                <Icon of={Download} />
+                Download
+              </Button>
+            )}
+            {x.status === "expired" && (
+              <Button size="sm" variant="secondary" disabled={again.isPending} onClick={() => again.mutate(x)} aria-label={`Ask again for ${nameOf(x.report)}`}>
+                <Icon of={RotateCcw} />
+                Ask again
+              </Button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// AccountantExports is the reports index's accountant exports (docs/design/screens ExportDialog; FR-RPT-09, FR-RPT-10):
+// ask for the general ledger, the trial balance, the journal entries, the fixed asset schedule or the receivables or
+// payables in detail as Excel or CSV; the worker prepares it, and it downloads for 24 hours, by the person who asked.
+export function AccountantExports() {
+  const id = useId();
+  const queries = useQueryClient();
+  const first = `${today().slice(0, 8)}01`;
+  const [report, setReport] = useState<Report>("general_ledger");
+  const [from, setFrom] = useState(first);
+  const [to, setTo] = useState(today);
+  const [format, setFormat] = useState<"xlsx" | "csv">("xlsx");
+  const [problem, setProblem] = useState<ReturnType<typeof problemOf> | null>(null);
+  const range = reports.find((r) => r.report === report)?.range ?? false;
+  const ask = useMutation({
+    mutationFn: async () => {
+      const r = await api.POST("/v1/report-exports", { body: { report, to, format, ...(range ? { from } : {}) } });
+      if (r.error) throw r.error;
+      return r.data;
+    },
+    onMutate: () => setProblem(null),
+    onError: (e) => setProblem(problemOf(e)),
+    onSuccess: () => queries.invalidateQueries({ queryKey: ["report-exports"] }),
+  });
   const h = helpText("reports.accountant-exports");
 
   return (
@@ -160,30 +215,8 @@ export function AccountantExports() {
           Prepare the export
         </Button>
       </div>
-      {problem && <Refusal problem={problem} title="The export could not be asked for or downloaded" />}
-      {(mine.data ?? []).length > 0 && (
-        <ul className="fy-list" aria-label="My exports">
-          {(mine.data ?? []).map((x) => (
-            <li key={x.id} className="fy-list__item">
-              <span className="fy-list__main">
-                <span className="fy-list__title">
-                  {nameOf(x.report)}, {x.from ? `${x.from} to ${x.to}` : `at ${x.to}`} ({x.format === "xlsx" ? "Excel" : "CSV"})
-                </span>
-                <span className="fy-list__meta">
-                  <State x={x} />
-                  {x.status === "failed" && x.why ? ` ${x.why}` : ""}
-                </span>
-              </span>
-              {x.status === "ready" && (
-                <Button size="sm" onClick={() => download(x)} aria-label={`Download ${x.file_name ?? nameOf(x.report)}`}>
-                  <Icon of={Download} />
-                  Download
-                </Button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      {problem && <Refusal problem={problem} title="The export could not be asked for" />}
+      <MyExports />
       <p className="fy-small fy-muted">Each export is prepared in the background, downloads for 24 hours by the person who asked for it, and is recorded in the audit trail.</p>
     </section>
   );

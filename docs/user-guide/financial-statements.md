@@ -58,11 +58,23 @@ same months. A computed figure, such as gross profit, does not open.
 
 ## Export a statement
 
-**Export to Excel** downloads the statement as shown, a workbook with the statement and a **Data**
-tab of every account's figure in every column; **Export CSV** downloads its rows. Amounts are
-numbers, not text, and nothing in the file becomes a formula. The file's figures are read at the
-same ledger revision as the screen's. Each export is recorded in the audit trail, with what was
-exported and its filters.
+Select **Export** and choose the format:
+
+- **Excel (XLSX)**: a workbook with the statement and a **Data** tab of every account's figure in
+  every column.
+- **PDF**: the statement to print or send, with the organisation's name, the statements' title,
+  page numbers and the ledger revision on every page. It turns to landscape when it has more than
+  five columns, such as a column per month.
+- **CSV**: the statement's rows, as plain numbers.
+
+The export is the statement as on screen: its period, comparison and columns, with its figures
+read at the same ledger revision as the screen's. Amounts are numbers, not text, and nothing in the
+file becomes a formula. Each export is recorded in the audit trail, with what was exported and its
+filters. If the PDF cannot be made just then, the dialog says so: try again in a moment, or export
+to Excel or CSV.
+
+The dialog also lists your recent accountant exports (below), so you can download one that is
+ready or ask again for one that expired.
 
 ## Accountant exports
 
@@ -74,7 +86,8 @@ and payables in detail at a day, as Excel or CSV.
 2. It is prepared in the background; the list below says when it is ready, and a notification
    tells you.
 3. Select **Download**. Only the person who asked for an export can download it, for 24 hours;
-   then it expires and its file is deleted. Ask again for a fresh one.
+   then it expires and its file is deleted. Select **Ask again** beside an expired export for a
+   fresh one.
 
 An export that cannot be made says why, such as a general ledger range that crosses the start of a
 financial year: export each year apart. Each export and each download is recorded in the audit

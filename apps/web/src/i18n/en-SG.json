@@ -774,7 +774,7 @@
     },
     "statement.export": {
       "label": "Export",
-      "tooltip": "Download the statement as shown, at its ledger revision: an Excel workbook with a data tab, or CSV. Each export is recorded in the audit trail."
+      "tooltip": "Download the statement as shown, at its ledger revision: an Excel workbook with a data tab, a PDF to print, or CSV. Each export is recorded in the audit trail."
     },
     "statement.revenue": {
       "label": "Revenue",

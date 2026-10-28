@@ -8658,7 +8658,7 @@ The profit and loss, the balance sheet, the cash flow or the trial balance (FR-R
 
 **Export a financial statement** (`exportFinancialStatement`)
 
-The statement getFinancialStatement gives for the same parameters, as a file (FR-RPT-05): CSV, the statement's rows with amounts as plain decimals and an ASCII minus; or XLSX, a workbook with the statement, totals in bold, and a data tab of every account's figure in every column, amounts as number cells. No text in either becomes a formula. Returned in base64 with its SHA-256 and the ledger revision its figures are read at (FR-RPT-08). Side effects: an audit event of the export with what was exported, its filters, rows and hash (FR-RPT-09). Never cached.
+The statement getFinancialStatement gives for the same parameters, as a file (FR-RPT-05): CSV, the statement's rows with amounts as plain decimals and an ASCII minus; XLSX, a workbook with the statement, totals in bold, and a data tab of every account's figure in every column, amounts as number cells; or PDF, the statement to print from the render service, archival and accessible, with the organisation's name, the statements' title and the revision on every page. No text in any becomes a formula. Returned in base64 with its SHA-256 and the ledger revision its figures are read at (FR-RPT-08). A PDF the render service cannot make now is REPORT-08. Side effects: an audit event of the export with what was exported, its filters, rows and hash (FR-RPT-09). Never cached.
 
 - **Permission:** View on Reports, dashboards. A view of the reports limited to sales, purchases, payroll or a department is refused.
 - **Parameters:**
@@ -8668,7 +8668,7 @@ The statement getFinancialStatement gives for the same parameters, as a file (FR
   - `compare` (query): A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning.
   - `columns` (query): total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative.
   - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands.
-  - `format` (query): csv: the statement's rows, plain decimals with an ASCII minus; xlsx: a workbook with the statement and a data tab of every figure, amounts as number cells.
+  - `format` (query): csv: the statement's rows, plain decimals with an ASCII minus; xlsx: a workbook with the statement and a data tab of every figure, amounts as number cells; pdf: the statement to print, archival (PDF/A-2a) and accessible (PDF/UA-1), with the revision on every page.
 - **Responses:**
   - `200` OK [`ReportFile`](../../contracts/schemas/ReportFile.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
@@ -8676,7 +8676,8 @@ The statement getFinancialStatement gives for the same parameters, as a file (FR
   - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
-- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-03`, `REPORT-04`
+  - `503` Service Unavailable: `REPORT-08` The PDF could not be made now.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-03`, `REPORT-04`, `REPORT-08`
 
 ## Contacts
 

@@ -120,8 +120,11 @@ already the close's `trial-balance` check, which blocks it (✖).
     formula from text. It adds no dependency to the image.
   - **PDF:** a Typst statement template through the render service, titled with the framework, with the revision in the
     footer.
-- **When:** a statement's CSV or XLSX downloads at once. PDFs and the accountant exports (GL, TB, journals, the fixed
+- **When:** a statement's CSV or XLSX downloads at once. ~~PDFs and~~ The accountant exports (GL, TB, journals, the fixed
   asset schedule, and AR and AP detail) run on the outbox.
+  - (29 Oct 2026, superseding "PDFs … run on the outbox") A statement's PDF downloads at once too: a statement is a few
+    pages, the render service lays it out in about a second, and FR-RPT-09 sends only large exports to the background.
+    The API renders it outside its transaction, so the books are not held while it does.
 - **The background run** stores the file in the blob store, marks the export ready, and tells the requester (FR-NTF).
 - **The link** works for 24 hours (a setting), and only for the requester when signed in. Each download checks their
   rights again and redirects to a storage URL valid for 60 seconds.
