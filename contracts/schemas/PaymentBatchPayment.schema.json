@@ -58,6 +58,9 @@
         "sent",
         "no_email"
       ],
+      "examples": [
+        "sent"
+      ],
       "type": "string"
     }
   },

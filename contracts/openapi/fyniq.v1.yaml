@@ -16021,6 +16021,8 @@ components:
             - queued
             - sent
             - no_email
+          examples:
+            - sent
           type: string
       required:
         - payee

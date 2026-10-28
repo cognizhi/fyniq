@@ -20,11 +20,12 @@ const CodeBatchNoRemittance = "PB-23"
 // releasedPayments are a released batch's payments as the release posted them, in its order: each payee, what it paid of
 // each item, whether bank import matched it to its statement line (paid, design D8) or it was voided (rejected), and a
 // supplier's remittance advice; with the total, and whether every payment is paid.
-func (a *API) releasedPayments(ctx context.Context, u storage.UnitOfWork, ids []string) ([]PaymentBatchPayment, Money, bool, error) {
+func (a *API) releasedPayments(ctx context.Context, u storage.UnitOfWork, posted []PaymentBatchPosted) ([]PaymentBatchPayment, Money, bool, error) {
 	out := []PaymentBatchPayment{}
 	total := money.Zero(paymentbatch.SGD)
-	all := len(ids) > 0
-	for _, s := range ids {
+	all := len(posted) > 0
+	for _, x := range posted {
+		s := x.PaymentID
 		id, err := uuid.Parse(s)
 		if err != nil {
 			return nil, Money{}, false, err

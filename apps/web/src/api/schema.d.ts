@@ -18559,6 +18559,7 @@ export interface components {
             rejected: boolean;
             /**
              * @description A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, or no_email when the supplier has no remittance address (⚠). Absent for a claimant.
+             * @example sent
              * @enum {string}
              */
             remittance?: "waiting" | "queued" | "sent" | "no_email";
