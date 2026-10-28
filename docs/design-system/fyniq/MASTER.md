@@ -211,6 +211,12 @@ signed values and arrow icons, not red and green alone. The palette is validated
 use the `--ai` tokens, the violet series appears only from the seventh series on, and AI content
 is always marked by the "AI" badge, never by hue alone (PRD §7.5, rev 0.11).
 
+Every chart in the web app is the `Chart` component (`apps/web/src/components/chart`), which applies these rules: the
+caller picks the form (`line`, `bar`, `bar-horizontal`) and gives each entity a fixed `slot`; the component folds a ninth
+series into "Other", shows the legend and direct labels, moves the tooltip with the arrow keys, offers the table view
+and the PNG and CSV downloads, and loads ECharts only when a chart is first shown. Its option is a pure function
+(`chartOption`), so a test can check that the table's figures are the plotted ones.
+
 ## 11. Accessibility (WCAG 2.2 AA, with AAA where stated)
 
 - Text contrast 4.5:1 (7:1 in high contrast); control boundaries and focus rings 3:1. Enforced
