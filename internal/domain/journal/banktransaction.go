@@ -25,6 +25,9 @@ type BankTransactions struct {
 	Store storage.Store
 	// AfterPosting runs inside the unit of work after an entry (or its reversal) is written and the document updated.
 	AfterPosting func(ctx context.Context, uow storage.UnitOfWork, doc storage.Document, entry storage.Entry) error
+	// AfterMatch, when set, runs inside the unit of work after a statement line is matched to a document recorded by hand
+	// or by a payment batch, such as to send a supplier its remittance advice (FR-BNK-12, design D8).
+	AfterMatch func(ctx context.Context, uow storage.UnitOfWork, doc storage.Document) error
 	// Clock, when set, makes categorising a line with a spread post at once the releases already due by the
 	// organisation's today (FR-GL-03); nil leaves them to the hourly job bank.releases.
 	Clock ports.Clock

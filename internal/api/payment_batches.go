@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -50,13 +51,18 @@ type PaymentBatchPayment struct {
 	Frozen  bool               `json:"payments_frozen" doc:"A change of the payee's bank account waits for approval: the payment is held (PAYEE-12)." example:"false"`
 	Amount  Money              `json:"amount" doc:"What it pays: the sum of its items, in SGD."`
 	Items   []PaymentBatchItem `json:"items" nullable:"false" doc:"The payee's bills or claims it pays, as the batch lists them."`
+	// Once released (design D8):
+	PaymentID  string `json:"payment_id,omitempty" format:"uuid" doc:"Released: the bill payment or reimbursement the release posted." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10"`
+	Paid       bool   `json:"paid" doc:"Released: bank import matched the payment to its statement line." example:"false"`
+	Rejected   bool   `json:"rejected" doc:"Released: the payment was voided, as when the bank rejected it; its bills or claims are open again." example:"false"`
+	Remittance string `json:"remittance,omitempty" enum:"waiting,queued,sent,no_email" doc:"A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, or no_email when the supplier has no remittance address (⚠). Absent for a claimant." example:"sent"`
 }
 
 // PaymentBatch is a batch of payments, as its checks read it now.
 type PaymentBatch struct {
 	ID             string                `json:"id" format:"uuid" doc:"The batch's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10"`
 	Number         string                `json:"number,omitempty" doc:"Its number, from the batch sequence, once approved (FR-ORG-04)." example:"PB-0003"`
-	Status         string                `json:"status" enum:"draft,waiting,approved,released,cancelled" doc:"draft: being prepared; waiting: asked for, waiting for approval; approved: ready to release; released: its payments posted and its payment list written; cancelled: before release, with a reason." example:"draft"`
+	Status         string                `json:"status" enum:"draft,waiting,approved,released,paid,cancelled" doc:"draft: being prepared; waiting: asked for, waiting for approval; approved: ready to release; released: its payments posted and its payment list written; paid: bank import matched every payment to its statement line; cancelled: before release, with a reason." example:"draft"`
 	MoneyAccountID string                `json:"money_account_id" format:"uuid" doc:"The SGD bank account it is paid from: the chart's money account, as a payment recorded by hand names it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
 	PaymentDate    string                `json:"payment_date" format:"date" doc:"The day the bank pays it: each payment is posted on it." example:"2026-10-31"`
 	Method         string                `json:"method" enum:"fast,giro" doc:"How the bank pays it: FAST, within minutes, or GIRO, over the next working days." example:"fast"`
@@ -104,7 +110,7 @@ type PaymentBatchPath struct {
 
 type batchListInput struct {
 	PageQuery
-	Status string `query:"status" enum:"draft,waiting,approved,released,cancelled" doc:"Only batches with this status." example:"approved"`
+	Status string `query:"status" enum:"draft,waiting,approved,released,paid,cancelled" doc:"Only batches with this status." example:"approved"`
 }
 
 type batchSuggestInput struct {
@@ -257,6 +263,7 @@ func (a *API) batchOf(ctx context.Context, u storage.UnitOfWork, v batchView, do
 	if r != nil {
 		out.ApprovalID = r.ID.String()
 	}
+	var warnings []BillCheck
 	byItem := map[uuid.UUID][]BillCheck{}
 	for _, x := range b.Errors {
 		if x.DocumentID != nil {
@@ -278,6 +285,11 @@ func (a *API) batchOf(ctx context.Context, u storage.UnitOfWork, v batchView, do
 				return PaymentBatch{}, err
 			}
 			who.Name = c.LegalName
+			if strings.TrimSpace(c.RemittanceEmail) == "" {
+				warnings = append(warnings, BillCheck{Severity: "warning", Code: CodeBatchNoRemittance, Field: "payments",
+					Message: c.LegalName + " has no remittance email, so no remittance advice is sent when it is paid",
+					Fix:     "Add the supplier's remittance email to its contact"})
+			}
 		}
 		pay := PaymentBatchPayment{Payee: who, Frozen: p.Frozen, Amount: moneyOut(p.Amount), Items: []PaymentBatchItem{}}
 		if p.Bank != nil {
@@ -297,9 +309,18 @@ func (a *API) batchOf(ctx context.Context, u storage.UnitOfWork, v batchView, do
 		if out.Release, err = a.releaseOf(ctx, u, doc.ID); err != nil {
 			return PaymentBatch{}, err
 		}
+		// What the release paid, from the payments it posted: its items are no longer open.
+		paid, total, all, err := a.releasedPayments(ctx, u, out.Release.Payments)
+		if err != nil {
+			return PaymentBatch{}, err
+		}
+		out.Payments, out.Total = paid, total
+		if all {
+			out.Status = "paid"
+		}
 	}
 	if checks && status != "released" && status != "cancelled" {
-		out.Checks = batchChecksOf(b.Errors)
+		out.Checks = append(batchChecksOf(b.Errors), warnings...)
 	}
 	return out, nil
 }

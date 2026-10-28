@@ -32,6 +32,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/passkey"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/render"
 )
 
@@ -198,6 +199,16 @@ func New(mux humago.Mux, d Deps) *API {
 		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store},
 		customerApplications: journal.CustomerCreditApplications{Store: d.Store}, customerRefunds: journal.CustomerRefunds{Store: d.Store},
 		deposits: journal.CustomerDeposits{Store: d.Store}, bank: journal.BankTransactions{Store: d.Store, Clock: d.Clock}, quotes: journal.Quotes{Store: d.Store}, claims: journal.Claims{Store: d.Store}, reimbursements: journal.ClaimReimbursements{Store: d.Store}, advances: journal.CashAdvances{Store: d.Store}, assets: journal.FixedAssets{Store: d.Store, Clock: d.Clock}, disposals: journal.AssetDisposals{Store: d.Store, Clock: d.Clock}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
+	if d.Outbox != nil { // FR-BNK-12: a batch's supplier payment matched to its statement line sends its remittance advice
+		dispatcher := *d.Outbox
+		a.bank.AfterMatch = func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) error {
+			o, err := u.Organisation(ctx)
+			if err != nil {
+				return err
+			}
+			return remitmail.Queue(ctx, dispatcher, u, o.ID, doc)
+		}
+	}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {

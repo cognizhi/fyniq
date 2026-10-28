@@ -38,6 +38,8 @@ type PaymentBatches interface {
 	ReleaseOf(ctx context.Context, batchID uuid.UUID) (*PaymentBatchRelease, error)
 	// Link records a payment the release posted.
 	Link(ctx context.Context, releaseID, paymentID uuid.UUID) error
+	// ReleaseOfPayment is the release that posted a payment, nil when a person recorded it by hand.
+	ReleaseOfPayment(ctx context.Context, paymentID uuid.UUID) (*PaymentBatchRelease, error)
 	// Payments are the payments a release posted, in the order they were linked.
 	Payments(ctx context.Context, releaseID uuid.UUID) ([]uuid.UUID, error)
 }

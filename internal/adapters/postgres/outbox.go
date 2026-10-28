@@ -79,6 +79,20 @@ func (r outbox) Get(ctx context.Context, id uuid.UUID) (storage.OutboxRow, error
 		row.Dispatches, row.TaskName, row.LeaseHolder, row.LeaseExpiresAt, row.DeadlineAt, row.LastError), nil
 }
 
+func (r outbox) ByKey(ctx context.Context, kind, key string) (*storage.OutboxRow, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.OutboxByKey(ctx, sqlcdb.OutboxByKeyParams{Kind: kind, BusinessKey: &key})
+	if err != nil || len(rows) == 0 {
+		return nil, mapError(err)
+	}
+	row := rows[0]
+	out := toOutbox(row.ID, row.WorkerClass, row.Kind, row.Payload, row.BusinessKey, row.State, row.Attempts, row.MaxAttempts,
+		row.Dispatches, row.TaskName, row.LeaseHolder, row.LeaseExpiresAt, row.DeadlineAt, row.LastError)
+	return &out, nil
+}
+
 func (r outbox) MarkDispatched(ctx context.Context, id uuid.UUID, taskName string, deadline time.Time) error {
 	if err := r.u.check(); err != nil {
 		return err

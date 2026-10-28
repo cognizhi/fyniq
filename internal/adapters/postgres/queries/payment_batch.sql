@@ -16,3 +16,8 @@ INSERT INTO fyniq.payment_batch_payment (release_id, payment_id) VALUES (sqlc.ar
 
 -- name: PaymentBatchPayments :many
 SELECT payment_id FROM fyniq.payment_batch_payment WHERE release_id = sqlc.arg(release_id) ORDER BY id;
+
+-- name: PaymentBatchReleaseOfPayment :many
+SELECT r.* FROM fyniq.payment_batch_release r
+JOIN fyniq.payment_batch_payment p ON p.organisation_id = r.organisation_id AND p.release_id = r.id
+WHERE p.payment_id = sqlc.arg(payment_id);

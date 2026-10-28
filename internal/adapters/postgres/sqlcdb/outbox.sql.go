@@ -366,3 +366,66 @@ func (q *Queries) OutboxAfterRestore(ctx context.Context) (int64, error) {
 	}
 	return result.RowsAffected(), nil
 }
+
+const outboxByKey = `-- name: OutboxByKey :many
+SELECT id, worker_class, kind, payload, business_key, state, attempts, max_attempts, dispatches, task_name,
+       lease_holder, lease_expires_at, deadline_at, last_error
+FROM fyniq.outbox WHERE kind = $1 AND business_key = $2
+`
+
+type OutboxByKeyParams struct {
+	Kind        string
+	BusinessKey *string
+}
+
+type OutboxByKeyRow struct {
+	ID             uuid.UUID
+	WorkerClass    string
+	Kind           string
+	Payload        []byte
+	BusinessKey    *string
+	State          string
+	Attempts       int32
+	MaxAttempts    int32
+	Dispatches     int32
+	TaskName       *string
+	LeaseHolder    *string
+	LeaseExpiresAt *time.Time
+	DeadlineAt     *time.Time
+	LastError      *string
+}
+
+func (q *Queries) OutboxByKey(ctx context.Context, arg OutboxByKeyParams) ([]OutboxByKeyRow, error) {
+	rows, err := q.db.Query(ctx, outboxByKey, arg.Kind, arg.BusinessKey)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OutboxByKeyRow
+	for rows.Next() {
+		var i OutboxByKeyRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkerClass,
+			&i.Kind,
+			&i.Payload,
+			&i.BusinessKey,
+			&i.State,
+			&i.Attempts,
+			&i.MaxAttempts,
+			&i.Dispatches,
+			&i.TaskName,
+			&i.LeaseHolder,
+			&i.LeaseExpiresAt,
+			&i.DeadlineAt,
+			&i.LastError,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

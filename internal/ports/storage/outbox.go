@@ -68,6 +68,9 @@ type Outbox interface {
 	// Enqueue writes a row in this unit of work; it is dispatched only after commit.
 	Enqueue(ctx context.Context, item NewOutboxItem) (OutboxRow, error)
 	Get(ctx context.Context, id uuid.UUID) (OutboxRow, error)
+	// ByKey is the row of a kind written with a business key, nil when there is none: what a job keyed once checks before
+	// it is written, so asking again in a later unit of work does nothing.
+	ByKey(ctx context.Context, kind, key string) (*OutboxRow, error)
 	// MarkDispatched records the task a row was sent as, and when it is overdue.
 	MarkDispatched(ctx context.Context, id uuid.UUID, taskName string, deadline time.Time) error
 	// Lease gives the row to holder until until, counting an attempt. ok is false when the row is

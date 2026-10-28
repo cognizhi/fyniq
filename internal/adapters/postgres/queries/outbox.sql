@@ -9,6 +9,11 @@ SELECT id, worker_class, kind, payload, business_key, state, attempts, max_attem
        lease_holder, lease_expires_at, deadline_at, last_error
 FROM fyniq.outbox WHERE id = $1;
 
+-- name: OutboxByKey :many
+SELECT id, worker_class, kind, payload, business_key, state, attempts, max_attempts, dispatches, task_name,
+       lease_holder, lease_expires_at, deadline_at, last_error
+FROM fyniq.outbox WHERE kind = sqlc.arg(kind) AND business_key = sqlc.arg(business_key);
+
 -- name: MarkOutboxDispatched :one
 -- After the task is enqueued; a re-dispatch drops any expired lease.
 UPDATE fyniq.outbox

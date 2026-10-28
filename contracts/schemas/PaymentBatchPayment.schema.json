@@ -17,9 +17,24 @@
       },
       "type": "array"
     },
+    "paid": {
+      "description": "Released: bank import matched the payment to its statement line.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "payee": {
       "$ref": "PaymentBatchPayee.schema.json",
       "description": "Whom it pays."
+    },
+    "payment_id": {
+      "description": "Released: the bill payment or reimbursement the release posted.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10"
+      ],
+      "format": "uuid",
+      "type": "string"
     },
     "payments_frozen": {
       "description": "A change of the payee's bank account waits for approval: the payment is held (PAYEE-12).",
@@ -27,13 +42,35 @@
         false
       ],
       "type": "boolean"
+    },
+    "rejected": {
+      "description": "Released: the payment was voided, as when the bank rejected it; its bills or claims are open again.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "remittance": {
+      "description": "A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, or no_email when the supplier has no remittance address (⚠). Absent for a claimant.",
+      "enum": [
+        "waiting",
+        "queued",
+        "sent",
+        "no_email"
+      ],
+      "examples": [
+        "sent"
+      ],
+      "type": "string"
     }
   },
   "required": [
     "payee",
     "payments_frozen",
     "amount",
-    "items"
+    "items",
+    "paid",
+    "rejected"
   ],
   "title": "PaymentBatchPayment",
   "type": "object"

@@ -25,6 +25,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/render"
 	"github.com/cognizhi/fyniq/internal/salesmail"
 )
@@ -199,6 +200,18 @@ func (k *Kit) dispatcher(clock ports.Clock) outbox.Dispatcher {
 // the staging store, with the web app's origin for their links. Without a render service it sends nothing.
 func (k *Kit) SalesSender(clock ports.Clock) salesmail.Sender {
 	out := salesmail.Sender{Store: k.Store, Staging: k.Staging, Outbox: k.dispatcher(clock), Origin: k.Origin, Clock: clock}
+	if k.Render != nil {
+		out.Render = func(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time) (render.Response, error) {
+			return k.Render.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: created, Check: true})
+		}
+	}
+	return out
+}
+
+// Remittances send suppliers their remittance advice when a batch's payment is matched (FR-BNK-12): rendered by the render
+// service and staged in the staging store. Without a render service the job waits for one.
+func (k *Kit) Remittances(clock ports.Clock) remitmail.Sender {
+	out := remitmail.Sender{Store: k.Store, Staging: k.Staging, Outbox: k.dispatcher(clock)}
 	if k.Render != nil {
 		out.Render = func(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time) (render.Response, error) {
 			return k.Render.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: created, Check: true})
