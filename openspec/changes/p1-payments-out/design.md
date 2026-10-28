@@ -130,19 +130,21 @@ shows it as rejected; its bills or claims are open again and can join another ba
   be lost;
 - a payments-in-transit account: rejected by the owner.
 
-### D6. The DBS UFF file behind a writer
+### D6. The file behind a writer: the payment list first
 
 `internal/domain/paymentfile` defines a writer: from the batch, the debit account (the money account's identifier)
-and each payee's name, bank, number and amount, it returns the file's bytes, name and media type.
-- **The DBS UFF writer** follows DBS's specification, which the owner shares: its header, the FAST and GIRO
-  transaction records, the trailer with its counts and hash total, and DBS's own field rules (lengths, character set,
-  value date). It is tested against a golden file worked by hand from the specification. Until the specification is
-  in the repository (`docs/prd/research/`, never the bank's credentials), the release is built and tested against a
-  test writer, and the UFF writer's task waits.
-- **The organisation's DBS IDEAL identifiers** that the header needs (such as its company ID) become organisation
-  settings, with no recommended value, under dual control.
-- **The method** (FAST or GIRO) is chosen per batch, FAST by default. [proposed: the specification may put it per
-  transaction; the setting follows the specification.]
+and each payee's name, bank, number and amount, it returns the file's bytes, name and media type, and the writer's
+name and version, which the release row records.
+- **The payment list writer** (`payment-list@1`, rev 0.156) writes a CSV (UTF-8, CRLF, RFC 4180 quoting): a header row,
+  then one row per payment with the payee's name, bank, BIC, account number, amount (a plain decimal), currency, the
+  payment date, the method and the reference (the batch's number and the payee's documents). The batch's count and
+  total close it. A cell that a spreadsheet would read as a formula (starting `=`, `+`, `-`, `@`, tab or carriage
+  return) is prefixed with `'`. It is tested against a golden file worked by hand.
+- **The bank's own file** (DBS UFF, or another bank's) is a follow-up change once the bank is chosen. It is another
+  writer behind the same interface, chosen per money account, with the bank's identifiers (such as IDEAL's company
+  ID) as organisation settings under dual control and a golden file from the bank's specification.
+- **The method** (FAST or GIRO) is chosen per batch, FAST by default, and shown on the list. [proposed: a bank's
+  specification may put it per transaction.]
 
 **Alternatives:** generating the file at approval. Rejected: the release is the decided step, and the file must show
 the accounts in force at release.
@@ -151,7 +153,7 @@ the accounts in force at release.
 
 - **Writing:** the payees' numbers are opened with `Cipher` only inside the release's transaction, written into the
   file, and the file is sealed (SEC-11) into the release row, bound to the batch (AAD). Its SHA-256 is computed over
-  the clear file, so the copy uploaded to IDEAL can be checked against it.
+  the clear file, so a downloaded copy can be checked against it.
 - **Downloading:** `getPaymentBatchFile` opens it for a person holding R or A on "Payment batches", stepped up, and
   audits each download with the hash. Never cached, and never in logs or in a response other than the download.
 
@@ -214,16 +216,17 @@ Beyond those:
 
 ## Risks / Trade-offs
 
-- [DBS's specification is late, or a field is read wrongly and IDEAL rejects the file] → the writer is a separate
-  slice with a golden file; the first upload goes to IDEAL's test or with one small batch, [verify] until it passes,
-  and the PRD row keeps the tag.
+- [A payment keyed wrongly from the list] → bank import matching leaves a payment whose amount or reference differs
+  unmatched, and the batch stays unpaid until it is resolved; the guide asks for the bank's batch count and total to
+  be compared with the list's before authorising in the bank. A wrong account number with the right amount is not
+  caught by matching: the bank file, once built, removes the keying.
+- [A name or reference opened in a spreadsheet runs as a formula] → cells that start like a formula are prefixed
+  (D6).
 - [A bill paid twice, by hand and by a batch] → recording a payment of a bill in an approved, unreleased batch is
   refused, and a batch refuses a bill with a payment recorded since it was added (D2).
 - [An account diverted between approval and release] → the release checks the accounts against the latest approval
   (D3, D4), and a waiting change freezes the payee.
-- [The downloaded file is edited before upload] → the release shows its SHA-256, which IDEAL's upload summary does
-  not; the user guide asks for the batch total and count to be compared in IDEAL before authorising there [verify
-  what IDEAL shows].
+- [The downloaded list is edited] → the release shows its SHA-256, and each download is audited.
 - [Founder mode lets the preparer release] → the approval by another person comes first, and the release is logged
   for the weekly review. This is the owner's decision.
 
@@ -242,7 +245,5 @@ No backfill: no batch exists yet. A rollback is a new forward migration.
 
 ## Open Questions
 
-- The exact UFF header identifiers, value-date rules and character set, and whether FAST or GIRO is chosen per file
-  or per transaction: answered by DBS's specification, without changing this design.
-- Whether IDEAL's upload summary shows a file hash or only the count and total: the guide's wording follows the first
-  upload.
+- Which bank, and so which bank file: the owner's choice (rev 0.156); the follow-up change adds its writer without
+  changing this design.

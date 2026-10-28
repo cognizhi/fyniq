@@ -64,18 +64,16 @@
 
     `// req: FR-BNK-12`, `// req: SOD-1`, `// req: SOD-2`, `// req: FM-1`, `// req: FM-3`
 - [ ] 2.5 The file (design D6, D7):
-  - `internal/domain/paymentfile` with its writer interface and a test writer;
-  - the release seals the file into its row (SEC-11), with the SHA-256 of the clear file;
+  - `internal/domain/paymentfile` with its writer interface;
+  - the release seals the file into its row (SEC-11), with the writer's name and version and the SHA-256 of the
+    clear file;
   - `getPaymentBatchFile` for R or A, stepped up, each download audited.
   - Tests: the file is opened only for the release's batch; a download without step-up refused; the audit trail and
     the log hold no number. `// req: FR-BNK-12`, `// req: SEC-11`, `// req: AUD-02`
-- [ ] 2.6 **(waits for DBS's specification, which the owner shares into `docs/prd/research/`)** The DBS UFF writer for
-  FAST and GIRO, from "DBS UFF Version 1.9.3":
-  - the header, transaction and trailer records, field lengths, character set, value date and hash total;
-  - the organisation's IDEAL identifiers as settings, with no recommended value, under dual control;
-  - a golden file worked by hand from the specification.
-  - Tests: the golden file to the byte; a name with characters outside DBS's set refused, with the field named
-    (ENG-23). `// req: FR-BNK-12` [verify with a test upload to IDEAL before go-live]
+- [ ] 2.6 The payment list writer, `payment-list@1` (design D6, rev 0.156): the CSV's header, one row per payment, the
+  count and total; formula-like cells prefixed.
+  - Tests: a golden file worked by hand, to the byte; a payee named `=HYPERLINK(…)` written inert; the total equals
+    the batch's. `// req: FR-BNK-12`
 - [ ] 2.7 Paid and remittance (design D8):
   - a batch's payment is paid when bank import matches it, by a person or by auto-reconcile, and the batch is paid
     when all its payments are;
@@ -105,6 +103,7 @@
 
 ## Workflow follow-up
 
-- Archive once every task but 2.6 is done and 2.6 has its specification, or archive with 2.6 carried to a follow-up
-  change if the specification is still awaited at go-live planning.
+- The bank's own file (DBS UFF Version 2.2, or the chosen bank's) is a follow-up change once the owner chooses the
+  bank (rev 0.156): its writer, its identifiers as settings, a golden file from the bank's specification, and a test
+  upload [verify].
 - The co-founder review (#6) of money movement before production (AGENTS.md).

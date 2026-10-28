@@ -1787,7 +1787,7 @@
     "Item table: payee, document (bill, claim, pay run), amount, payee bank-details version, holds",
     "Holds explained: IR21 clearance hold, withholding-tax decision pending, payee bank details changed (re-approval required)",
     "Approval steps; release after step-up by the Payment releaser: in Founder mode whoever prepared or approved it, never one person alone; in Standard mode a third person (rev 0.154)",
-    "Release posts each payment and makes the DBS IDEAL UFF file (FAST and GIRO, SGD to Singapore accounts) with its hash (rev 0.154); P2 initiate via bank API",
+    "Release posts each payment and gives the payment list (CSV; SGD to Singapore accounts by FAST or GIRO) with its hash, keyed into the bank until the bank's own file is built (rev 0.156); P2 initiate via bank API",
     "Evidence: bank confirmation screenshot or file; mark paid when the feed shows the debit",
     "Remittance advice emailed to each supplier when its payment matches the bank statement line (rev 0.154)"
    ],

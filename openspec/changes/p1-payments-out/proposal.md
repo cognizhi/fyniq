@@ -15,10 +15,11 @@ matched without retyping.
 
 ## What Changes
 
-- **The owner's decisions of 27 Oct 2026, taken interactively (PRD-001 rev 0.154):**
-  - **the file:** DBS IDEAL's Universal File Format (UFF) for FAST and GIRO, from DBS's own specification ("DBS UFF
-    Version 1.9.3", in IDEAL's Resource Center), which the owner shares; each field stays [verify] until a test
-    upload to IDEAL passes;
+- **The owner's decisions of 27 and 28 Oct 2026, taken interactively (PRD-001 rev 0.154, rev 0.156):**
+  - **the file:** the bank is not chosen yet and there is no IDEAL account (rev 0.156), so releasing a batch gives a
+    **payment list**: a CSV of each payment's payee, bank and account, amount, date and reference, sealed and
+    downloaded like a bank file, and keyed into the bank. The bank's own file follows in its own change once the bank
+    is chosen; for DBS, the UFF of "DBS UFF Version 2.2". This supersedes rev 0.154's DBS UFF first;
   - **what a batch pays:**
     - SGD from an SGD money account, to Singapore bank accounts, by FAST or GIRO;
     - approved bills (with their planned dates, FR-AP-13) and approved expense claims (FR-AP-07);
@@ -44,8 +45,9 @@ matched without retyping.
     - an item no longer open;
   - the batch is approved through the engine by someone who holds A, its envelope holding each payee's account in
     force (FR-APR-05, FR-APR-10, G4-055);
-  - it is released by the Payment releaser as decided above. Releasing posts the payments, writes the UFF file (kept
-    with its SHA-256, downloaded on request, each download audited) and marks the bills and claims paid in a batch;
+  - it is released by the Payment releaser as decided above. Releasing posts the payments, writes the payment list
+    (kept with its SHA-256, downloaded on request, each download audited) and marks the bills and claims paid in a
+    batch;
   - it is paid when bank import matches its lines.
 - **Claimants' bank details (FR-AP-22):** under My profile. The same sealing, masking, reveal and approval as vendors'
   (FR-CT-03), approved under "Payment batches".
@@ -81,10 +83,10 @@ None.
   reimbursement in a batch; FR-AP-13's planned dates read by the batch.
 - **Screens (docs/design/screens/inventory.json):** `payment-batches`, `payment-batch` (designed); `profile-preferences`
   gains the bank account card (FR-AP-22).
-- **Outside dependency:** DBS's UFF specification, which only the owner can download from IDEAL. Everything but the
-  UFF writer is built and tested without it, against a writer interface. The writer and its golden file follow the
-  spec, and the first test upload to IDEAL is [verify] before go-live.
+- **Outside dependency:** none for this change. The bank's own file needs the bank chosen, its specification and a
+  test upload, so it is a follow-up change behind the same writer interface (rev 0.156).
 - **Not built here:**
+  - the bank's own file (DBS UFF or another bank's), a follow-up change once the bank is chosen (rev 0.156);
   - the bank API (P2);
   - overseas and foreign-currency payments: they need SWIFT's structured addresses (November 2026) and FX on release;
   - UOB and OCBC files;

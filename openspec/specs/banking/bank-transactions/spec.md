@@ -238,9 +238,14 @@ Source: PRD-001 §8.4 · Priority S · Phase P1 (file) / P2 (API)
 - **WHEN** the feed shows the debit for a batch
 - **THEN** the batch is marked paid
 
-#### Scenario: The DBS file first (rev 0.154)
-- **WHEN** an approved batch is released
-- **THEN** its file is DBS IDEAL's Universal File Format (UFF) for FAST and GIRO, written from DBS's own specification, each field [verify] with a test upload to IDEAL
+#### Scenario: A payment list until the bank's file (rev 0.156)
+- **WHEN** an approved batch is released before the bank's own file is built
+- **THEN** it gives a payment list (CSV) with each payment's payee, bank and account, amount, payment date and the batch's reference
+- **AND** the list is sealed with its SHA-256 and downloaded only after step-up, each download audited, as a bank file would be
+
+#### Scenario: The bank's file once the bank is chosen (rev 0.156)
+- **WHEN** the bank is chosen
+- **THEN** its bulk-payment file replaces the list, written from the bank's own specification (for DBS, "DBS UFF Version 2.2"), each field [verify] with a test upload
 
 #### Scenario: SGD to Singapore accounts (rev 0.154)
 - **WHEN** a payment is added to a batch
