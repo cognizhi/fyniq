@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account, to trace its figures in the general ledger.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amounts": {
+      "description": "One per column, signed as the statement shows them: income, liabilities and equity as positive credits, expenses and assets as positive debits; the trial balance keeps the ledger's sign, debits positive.",
+      "items": {
+        "$ref": "Money.schema.json"
+      },
+      "type": "array"
+    },
+    "code": {
+      "description": "Its code.",
+      "examples": [
+        "4010"
+      ],
+      "type": "string"
+    },
+    "function": {
+      "description": "Its function: COGS, R\u0026D, S\u0026M, G\u0026A or Other.",
+      "examples": [
+        "S\u0026M"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name, as the chart has it today (FR-RPT-08).",
+      "examples": [
+        "Subscription revenue"
+      ],
+      "type": "string"
+    },
+    "percents": {
+      "description": "The P\u0026L only: each column's % of that column's revenue (RND-PERCENT); empty where the revenue is zero, and for other statements.",
+      "items": {
+        "description": "A % of revenue to one decimal, such as 12.5; empty for none.",
+        "examples": [
+          "12.5"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "account_id",
+    "code",
+    "name",
+    "amounts",
+    "percents"
+  ],
+  "title": "FinancialLine",
+  "type": "object"
+}

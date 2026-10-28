@@ -29,11 +29,40 @@ type TrialBalance struct {
 	Total money.Money
 }
 
+// Snapshot is how the balance service reads the ledger (FR-RPT-08, ENG-46): Current reads the materialised balances as
+// they stand; At reads the lines up to a ledger revision, so that a report re-run at the revision it recorded gives the
+// same figures whatever was posted since.
+type Snapshot struct {
+	at       bool
+	revision int64
+}
+
+// Current reads the balances as they stand.
+var Current = Snapshot{}
+
+// At reads the ledger as at a revision.
+func At(revision int64) Snapshot { return Snapshot{at: true, revision: revision} }
+
+// Revision is the revision s reads as at, and whether it reads at one.
+func (s Snapshot) Revision() (int64, bool) { return s.revision, s.at }
+
+func (s Snapshot) forPeriod(ctx context.Context, u storage.UnitOfWork, period uuid.UUID) ([]storage.Balance, error) {
+	if s.at {
+		return u.Balances().ForPeriodAt(ctx, period, s.revision)
+	}
+	return u.Balances().ForPeriod(ctx, period)
+}
+
 // Trial returns the trial balance of the given periods, in the organisation's base currency.
 func Trial(ctx context.Context, u storage.UnitOfWork, base money.Currency, periods ...uuid.UUID) (TrialBalance, error) {
+	return TrialAt(ctx, u, base, Current, periods...)
+}
+
+// TrialAt is Trial read through a snapshot.
+func TrialAt(ctx context.Context, u storage.UnitOfWork, base money.Currency, s Snapshot, periods ...uuid.UUID) (TrialBalance, error) {
 	totals := map[uuid.UUID]money.Money{}
 	for _, p := range periods {
-		rows, err := u.Balances().ForPeriod(ctx, p)
+		rows, err := s.forPeriod(ctx, u, p)
 		if err != nil {
 			return TrialBalance{}, err
 		}

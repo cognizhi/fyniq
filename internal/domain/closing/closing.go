@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/deposit"
+	"github.com/cognizhi/fyniq/internal/domain/financials"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -229,6 +231,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		return nil, err
 	}
 	out = append(out, deferrals...)
+	placed, err := statementsCheck(ctx, u, cur, p)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, placed...)
 	bank, err := bankChecks(ctx, u, cur, p, today)
 	if err != nil {
 		return nil, err
@@ -463,6 +470,32 @@ func deferralChecks(ctx context.Context, u storage.UnitOfWork, p storage.Period)
 		}
 	}
 	return out, nil
+}
+
+// statementsCheck lays out the month's balance sheet (INV-10, BS_Uncl; p1-reports design D3): ⚠ when an account with
+// a balance sits in no section of it, because its cash-flow line is not one the statements know; the account's figures
+// would be missing from the statements. That the books balance is the trial-balance check's. Nothing is said when every
+// account sits in a section.
+func statementsCheck(ctx context.Context, u storage.UnitOfWork, cur money.Currency, p storage.Period) ([]Check, error) {
+	all, err := u.Periods().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	i := slices.IndexFunc(all, func(x storage.Period) bool { return x.ID == p.ID })
+	revision, err := u.Ledger().Revision(ctx)
+	if err != nil || i < 0 {
+		return nil, err
+	}
+	bs, err := financials.Lay(ctx, u, cur, financials.Request{Kind: financials.BalanceSheet, All: all, First: i, Last: i, Revision: revision})
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range bs.Checks {
+		if c.Key == "placed" && !c.OK {
+			return []Check{{"statements", Warning, "Accounts are missing from the balance sheet", c.Detail}}, nil
+		}
+	}
+	return nil, nil
 }
 
 // receivablesChecks reconcile the AR sub-ledger with the accounts-receivable account at the period's end (INV-07;

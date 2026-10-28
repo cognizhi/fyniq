@@ -410,6 +410,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/recurring-journals/{recurring_journal_id}/resume` (resumeRecurringJournal): Resume a recurring journal
 - `GET /v1/reports/general-ledger` (getGeneralLedger): Get the general ledger report
 - `GET /v1/reports/schedules` (getSchedules): Get the prepayment and deferral schedules
+- `GET /v1/reports/statements/{kind}` (getFinancialStatement): Get a financial statement
 - `GET /v1/review-log` (listReviewLog): List the review log
 - `POST /v1/review-log/reviews` (reviewLogEntries): Review high-risk actions
 - `GET /v1/sales-reminders` (listSalesReminders): List the reminders due to customers

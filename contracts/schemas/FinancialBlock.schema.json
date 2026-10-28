@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "groups": {
+      "description": "A section's report groups, in the order of their first account's code; none for a measure.",
+      "items": {
+        "$ref": "FinancialGroup.schema.json"
+      },
+      "type": "array"
+    },
+    "key": {
+      "description": "The block: for the P\u0026L revenue, cost_of_sales, gross_profit, operating_expenses, ebitda, depreciation_amortisation, operating_profit, other_income, finance_and_other, profit_before_tax, income_tax, net_profit; for the balance sheet current_assets, non_current_assets, total_assets, current_liabilities, borrowings, total_liabilities, equity, liabilities_and_equity; for the trial balance asset, liability, equity, revenue, expense and total.",
+      "examples": [
+        "gross_profit"
+      ],
+      "type": "string"
+    },
+    "measure": {
+      "description": "true for a line computed from the sections above it.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "percents": {
+      "description": "As a line's.",
+      "items": {
+        "description": "A % of revenue to one decimal, such as 12.5; empty for none.",
+        "examples": [
+          "12.5"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "title": {
+      "description": "Its title.",
+      "examples": [
+        "Gross profit"
+      ],
+      "type": "string"
+    },
+    "totals": {
+      "description": "One per column.",
+      "items": {
+        "$ref": "Money.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "key",
+    "title",
+    "measure",
+    "totals",
+    "percents",
+    "groups"
+  ],
+  "title": "FinancialBlock",
+  "type": "object"
+}

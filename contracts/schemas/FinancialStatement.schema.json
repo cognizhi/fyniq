@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "basis": {
+      "description": "What they are prepared under, once approved.",
+      "examples": [
+        "Prepared under SFRS for Small Entities (2nd edition)"
+      ],
+      "type": "string"
+    },
+    "blocks": {
+      "description": "The statement, block by block in order.",
+      "items": {
+        "$ref": "FinancialBlock.schema.json"
+      },
+      "type": "array"
+    },
+    "checks": {
+      "description": "Its checks (INV-10): the balance sheet and trial balance balance, and every balance-sheet account sits in a section.",
+      "items": {
+        "$ref": "FinancialCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "columns": {
+      "description": "The columns, in order: the run, then its comparative; or a month each, then for a P\u0026L the total.",
+      "items": {
+        "$ref": "FinancialColumn.schema.json"
+      },
+      "type": "array"
+    },
+    "currency": {
+      "description": "The base currency every amount is in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The run's first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "kind": {
+      "description": "pl: the profit and loss; bs: the balance sheet; tb: the trial balance.",
+      "enum": [
+        "pl",
+        "bs",
+        "tb"
+      ],
+      "examples": [
+        "pl"
+      ],
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision every figure is read as at (ENG-46): asking again as at it gives the same figures.",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "platform_version": {
+      "description": "The platform version that laid it out (REL-05).",
+      "examples": [
+        "0.1.0"
+      ],
+      "type": "string"
+    },
+    "restated_presentation": {
+      "description": "true when an account was created or changed after the revision, so the names and groups are today's, not those in force at it (rev 0.159).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "statement_title": {
+      "description": "How the financial year's statements are titled: management statements until its framework and policies are approved (FR-ORG-10).",
+      "enum": [
+        "Management statements",
+        "Financial statements"
+      ],
+      "examples": [
+        "Management statements"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "The run's last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "statement_title",
+    "currency",
+    "from",
+    "to",
+    "ledger_revision",
+    "restated_presentation",
+    "platform_version",
+    "columns",
+    "blocks",
+    "checks"
+  ],
+  "title": "FinancialStatement",
+  "type": "object"
+}

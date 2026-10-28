@@ -34,6 +34,7 @@ type FyniqAccount struct {
 	Guidance         *string
 	Revalue          bool
 	UsefulLifeMonths *int16
+	ChangedAt        *time.Time
 }
 
 type FyniqAccountingFramework struct {

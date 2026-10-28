@@ -6696,6 +6696,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/reports/statements/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a financial statement
+         * @description The profit and loss, the balance sheet or the trial balance (FR-RPT-01) for a run of whole months (FR-RPT-02), with the prior period or the prior year beside it, or a column per month. It is laid out from each account's chart attributes (PRD-001 rev 0.159, provisional until the accountant confirms): the P&L from revenue by stream through gross profit, EBITDA and operating profit to net profit, each with its % of revenue; the balance sheet by current and non-current groups with borrowings apart and the year's profit to date in equity. Every figure is read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures, whatever was posted since, with today's account names, flagged restated_presentation when the chart changed after it. Its checks (INV-10) say whether it balances and whether every account sits in a section. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects.
+         */
+        get: operations["getFinancialStatement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/review-log": {
         parameters: {
             query?: never;
@@ -14620,6 +14640,168 @@ export interface components {
              * @example the account does not exist in this organisation
              */
             message: string;
+        };
+        FinancialBlock: {
+            /** @description A section's report groups, in the order of their first account's code; none for a measure. */
+            groups: components["schemas"]["FinancialGroup"][];
+            /**
+             * @description The block: for the P&L revenue, cost_of_sales, gross_profit, operating_expenses, ebitda, depreciation_amortisation, operating_profit, other_income, finance_and_other, profit_before_tax, income_tax, net_profit; for the balance sheet current_assets, non_current_assets, total_assets, current_liabilities, borrowings, total_liabilities, equity, liabilities_and_equity; for the trial balance asset, liability, equity, revenue, expense and total.
+             * @example gross_profit
+             */
+            key: string;
+            /**
+             * @description true for a line computed from the sections above it.
+             * @example true
+             */
+            measure: boolean;
+            /** @description As a line's. */
+            percents: string[];
+            /**
+             * @description Its title.
+             * @example Gross profit
+             */
+            title: string;
+            /** @description One per column. */
+            totals: components["schemas"]["Money"][];
+        };
+        FinancialCheck: {
+            /**
+             * @description What is wrong and how to fix it.
+             * @example 1999 Unsorted: give each a cash-flow line of the standard chart in the chart of accounts
+             */
+            detail?: string;
+            /**
+             * @description balances: debits equal credits in every column; placed: every balance-sheet account with figures sits in a section.
+             * @example balances
+             */
+            key: string;
+            /**
+             * @description true when it holds.
+             * @example true
+             */
+            ok: boolean;
+            /**
+             * @description What it found.
+             * @example Debits equal credits
+             */
+            title: string;
+        };
+        FinancialColumn: {
+            /**
+             * Format: date
+             * @description The run's first day.
+             * @example 2026-10-01
+             */
+            from: string;
+            /**
+             * @description current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month.
+             * @example current
+             */
+            key: string;
+            /**
+             * Format: date
+             * @description The run's last day: a balance sheet's or a trial balance's figures are at its end.
+             * @example 2026-10-31
+             */
+            to: string;
+        };
+        FinancialGroup: {
+            /** @description Its accounts with figures, by code. */
+            lines: components["schemas"]["FinancialLine"][];
+            /**
+             * @description The report group; or a computed line such as "Profit for the year to date", which has no lines.
+             * @example Sales & marketing
+             */
+            name: string;
+            /** @description As a line's. */
+            percents: string[];
+            /** @description One per column. */
+            totals: components["schemas"]["Money"][];
+        };
+        FinancialLine: {
+            /**
+             * Format: uuid
+             * @description The account, to trace its figures in the general ledger.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+             */
+            account_id: string;
+            /** @description One per column, signed as the statement shows them: income, liabilities and equity as positive credits, expenses and assets as positive debits; the trial balance keeps the ledger's sign, debits positive. */
+            amounts: components["schemas"]["Money"][];
+            /**
+             * @description Its code.
+             * @example 4010
+             */
+            code: string;
+            /**
+             * @description Its function: COGS, R&D, S&M, G&A or Other.
+             * @example S&M
+             */
+            function?: string;
+            /**
+             * @description Its name, as the chart has it today (FR-RPT-08).
+             * @example Subscription revenue
+             */
+            name: string;
+            /** @description The P&L only: each column's % of that column's revenue (RND-PERCENT); empty where the revenue is zero, and for other statements. */
+            percents: string[];
+        };
+        FinancialStatement: {
+            /**
+             * @description What they are prepared under, once approved.
+             * @example Prepared under SFRS for Small Entities (2nd edition)
+             */
+            basis?: string;
+            /** @description The statement, block by block in order. */
+            blocks: components["schemas"]["FinancialBlock"][];
+            /** @description Its checks (INV-10): the balance sheet and trial balance balance, and every balance-sheet account sits in a section. */
+            checks: components["schemas"]["FinancialCheck"][];
+            /** @description The columns, in order: the run, then its comparative; or a month each, then for a P&L the total. */
+            columns: components["schemas"]["FinancialColumn"][];
+            /**
+             * @description The base currency every amount is in.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: date
+             * @description The run's first day.
+             * @example 2026-10-01
+             */
+            from: string;
+            /**
+             * @description pl: the profit and loss; bs: the balance sheet; tb: the trial balance.
+             * @example pl
+             * @enum {string}
+             */
+            kind: "pl" | "bs" | "tb";
+            /**
+             * Format: int64
+             * @description The ledger revision every figure is read as at (ENG-46): asking again as at it gives the same figures.
+             * @example 42
+             */
+            ledger_revision: number;
+            /**
+             * @description The platform version that laid it out (REL-05).
+             * @example 0.1.0
+             */
+            platform_version: string;
+            /**
+             * @description true when an account was created or changed after the revision, so the names and groups are today's, not those in force at it (rev 0.159).
+             * @example false
+             */
+            restated_presentation: boolean;
+            /**
+             * @description How the financial year's statements are titled: management statements until its framework and policies are approved (FR-ORG-10).
+             * @example Management statements
+             * @enum {string}
+             */
+            statement_title: "Management statements" | "Financial statements";
+            /**
+             * Format: date
+             * @description The run's last day.
+             * @example 2026-10-31
+             */
+            to: string;
         };
         FinancialYear: {
             /**
@@ -73913,6 +74095,95 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getFinancialStatement: {
+        parameters: {
+            query?: {
+                /** @description The run's first month, YYYY-MM; left out, the last month's. A balance sheet and a trial balance are at the last month's end. */
+                from?: string;
+                /** @description The run's last month, YYYY-MM; left out, the month of the organisation's today. */
+                to?: string;
+                /** @description A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning. */
+                compare?: "prior_period" | "prior_year";
+                /** @description total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative. */
+                columns?: "total" | "month";
+                /** @description Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands. */
+                as_at_revision?: number;
+            };
+            header?: never;
+            path: {
+                /** @description pl: the profit and loss; bs: the balance sheet; tb: the trial balance. */
+                kind: "pl" | "bs" | "tb";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialStatement"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger. */
             422: {
                 headers: {
                     [name: string]: unknown;

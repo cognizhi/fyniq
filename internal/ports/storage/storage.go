@@ -129,6 +129,9 @@ type Accounts interface {
 	Get(ctx context.Context, id uuid.UUID) (Account, error)
 	ByCode(ctx context.Context, code string) (Account, error)
 	SetActive(ctx context.Context, id uuid.UUID, active bool) (Account, error)
+	// ChangedAfter says whether an account was created or changed after the entry with a ledger revision was recorded:
+	// a report re-run as at the revision then shows a restated presentation (FR-RPT-08; rev 0.159).
+	ChangedAfter(ctx context.Context, revision int64) (bool, error)
 	// List returns every account, by code.
 	List(ctx context.Context) ([]Account, error)
 	// Page returns at most limit accounts with a code after after (all when after is ""), by code:
@@ -261,6 +264,10 @@ type AccountLine struct {
 // Balances is the materialised balances cache (INV-08).
 type Balances interface {
 	ForPeriod(ctx context.Context, periodID uuid.UUID) ([]Balance, error)
+	// ForPeriodAt is a period's balances as at a ledger revision (FR-RPT-08, ENG-46): the lines of its entries with a
+	// revision up to it, summed as the cache sums them. It reads the lines, so a report re-run at a revision is
+	// unchanged by every later posting, back-dated or not (G4-051).
+	ForPeriodAt(ctx context.Context, periodID uuid.UUID, revision int64) ([]Balance, error)
 	// Differences compares the cache with a recomputation from the lines; empty means they agree.
 	Differences(ctx context.Context) ([]BalanceDifference, error)
 	// Rebuild recomputes the cache from the lines under the ledger lock and returns the rows written.
