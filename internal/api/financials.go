@@ -14,7 +14,6 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
-	"github.com/cognizhi/fyniq/internal/version"
 )
 
 // ------------------------------------------------------- the financial statements (FR-RPT-01, FR-RPT-02, FR-RPT-08)
@@ -231,7 +230,7 @@ func registerFinancials(a *API) {
 			}
 			out = FinancialStatement{Kind: in.Kind, StatementTitle: year.StatementTitle, Basis: year.StatementBasis, Currency: base.Code,
 				From: dateOf(all[first].StartsOn), To: dateOf(all[last].EndsOn), Revision: revision, Restated: restated,
-				PlatformVersion: version.Version, Columns: []FinancialColumn{}, Blocks: []FinancialBlock{}, Checks: []FinancialCheck{}, NonCash: []FinancialNonCash{}}
+				PlatformVersion: a.deps.Version, Columns: []FinancialColumn{}, Blocks: []FinancialBlock{}, Checks: []FinancialCheck{}, NonCash: []FinancialNonCash{}}
 			n := len(s.Columns)
 			for _, c := range s.Columns {
 				out.Columns = append(out.Columns, FinancialColumn{Key: c.Key, From: dateOf(c.From), To: dateOf(c.To)})
