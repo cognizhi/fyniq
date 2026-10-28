@@ -85,12 +85,15 @@
   count and total; formula-like cells prefixed.
   - Tests: a golden file worked by hand, to the byte; a payee named `=HYPERLINK(…)` written inert; the total equals
     the batch's. `// req: FR-BNK-12`
-- [ ] 2.7 Paid and remittance (design D8):
+- [x] 2.7 Paid and remittance (design D8):
   - a batch's payment is paid when bank import matches it, by a person or by auto-reconcile, and the batch is paid
     when all its payments are;
   - the match enqueues `payments.remittance` (keyed by the payment): the worker renders the supplier's remittance
     template to PDF, emails it to the remittance address, and records the send;
   - a supplier without one is ⚠.
+  - Built: matched by a person (match-recorded); auto-reconcile leaves a payment recorded by hand, or by a batch, to a
+    person, as before. The advice goes from the invoices sender (the accounts address) until a purchases sender exists.
+    Not tested: a payment voided between its match and the worker's run, which the worker skips.
   - Tests: one email per payment however often the match is undone and redone; no email for a rejected (voided)
     payment; claims send nothing. `// req: FR-BNK-12`, `// req: FR-AP-13`
 

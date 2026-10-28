@@ -216,18 +216,10 @@ func TestAStandardModeReleaseNeedsAThirdPerson(t *testing.T) {
 	}
 }
 
-// matrixApprovedBatch is a batch of one bill of a payee with an approved account, prepared by the matrix person and
-// approved as the engine approves it, by two people of another organisation (so the matrix's members stay as they are),
-// its envelope holding the batch's dependencies; with its ETag.
-func matrixApprovedBatch(e *env) (id, tag string) {
+// approveBatch approves batch id as the approval engine does, by two people of another organisation (so the
+// organisation's members stay as they are), its envelope holding the batch's dependencies; the approval numbers it.
+func (e *env) approveBatch(id string) {
 	e.t.Helper()
-	vendor := e.vendor("Matrix payee " + uuid.NewString()[:8])
-	e.vendorAccount(vendor, "0123456789")
-	r := e.call(http.MethodPost, "/v1/payment-batches", steppedUp(e, e.as(authz.Accountant)), batchBody(e.batchAccount(), "bill:"+e.billOf(vendor, "10.00", "0.90")))
-	if r.Status != http.StatusCreated {
-		e.t.Fatalf("preparing the matrix batch = %d: %s", r.Status, r.Raw)
-	}
-	id = r.str("id")
 	requester, signer := e.otherUser(), e.otherUser()
 	now := e.clock.Now()
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: signer.String()}})
@@ -260,6 +252,21 @@ func matrixApprovedBatch(e *env) (id, tag string) {
 	}); err != nil {
 		e.t.Fatal(err)
 	}
+}
+
+// matrixApprovedBatch is a batch of one bill of a payee with an approved account, prepared by the matrix person and
+// approved as the engine approves it, by two people of another organisation (so the matrix's members stay as they are),
+// its envelope holding the batch's dependencies; with its ETag.
+func matrixApprovedBatch(e *env) (id, tag string) {
+	e.t.Helper()
+	vendor := e.vendor("Matrix payee " + uuid.NewString()[:8])
+	e.vendorAccount(vendor, "0123456789")
+	r := e.call(http.MethodPost, "/v1/payment-batches", steppedUp(e, e.as(authz.Accountant)), batchBody(e.batchAccount(), "bill:"+e.billOf(vendor, "10.00", "0.90")))
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("preparing the matrix batch = %d: %s", r.Status, r.Raw)
+	}
+	id = r.str("id")
+	e.approveBatch(id)
 	g := e.call(http.MethodGet, "/v1/payment-batches/"+id, e.as(authz.Accountant), nil)
 	return id, g.Header.Get("ETag")
 }
@@ -283,7 +290,9 @@ var matrixPaymentBatchRelease = map[string]func(e *env, tok string) (response, f
 	"releasePaymentBatch": func(e *env, tok string) (response, func() bool) {
 		id, tag := matrixApprovedBatch(e)
 		r := e.call(http.MethodPost, "/v1/payment-batches/"+id+"/release", steppedUp(e, tok), nil, "If-Match", tag)
-		return r, func() bool { return e.call(http.MethodGet, "/v1/payment-batches/"+id, e.as(authz.Accountant), nil).str("status") == "approved" }
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/payment-batches/"+id, e.as(authz.Accountant), nil).str("status") == "approved"
+		}
 	},
 	"getPaymentBatchFile": func(e *env, tok string) (response, func() bool) {
 		id, tag := matrixApprovedBatch(e)
@@ -295,6 +304,8 @@ var matrixPaymentBatchRelease = map[string]func(e *env, tok string) (response, f
 	"cancelPaymentBatch": func(e *env, tok string) (response, func() bool) {
 		id, tag := matrixApprovedBatch(e)
 		r := e.call(http.MethodPost, "/v1/payment-batches/"+id+"/cancel", tok, map[string]any{"reason": "Matrix"}, "If-Match", tag)
-		return r, func() bool { return e.call(http.MethodGet, "/v1/payment-batches/"+id, e.as(authz.Accountant), nil).str("status") == "approved" }
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/payment-batches/"+id, e.as(authz.Accountant), nil).str("status") == "approved"
+		}
 	},
 }

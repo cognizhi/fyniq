@@ -76,3 +76,15 @@ func (r paymentBatches) Payments(ctx context.Context, releaseID uuid.UUID) ([]uu
 	ids, err := r.u.q.PaymentBatchPayments(ctx, releaseID)
 	return ids, mapError(err)
 }
+
+func (r paymentBatches) ReleaseOfPayment(ctx context.Context, paymentID uuid.UUID) (*storage.PaymentBatchRelease, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.PaymentBatchReleaseOfPayment(ctx, paymentID)
+	if err != nil || len(rows) == 0 {
+		return nil, mapError(err)
+	}
+	out := toPaymentBatchRelease(rows[0])
+	return &out, nil
+}

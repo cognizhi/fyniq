@@ -155,3 +155,46 @@ func (q *Queries) PaymentBatchReleaseOf(ctx context.Context, batchID uuid.UUID) 
 	}
 	return items, nil
 }
+
+const paymentBatchReleaseOfPayment = `-- name: PaymentBatchReleaseOfPayment :many
+SELECT r.organisation_id, r.id, r.batch_id, r.batch_version, r.approval_id, r.released_by, r.released_at, r.writer, r.file_name, r.media_type, r.file_sealed, r.file_sha256, r.payments, r.currency, r.minor_units, r.total FROM fyniq.payment_batch_release r
+JOIN fyniq.payment_batch_payment p ON p.organisation_id = r.organisation_id AND p.release_id = r.id
+WHERE p.payment_id = $1
+`
+
+func (q *Queries) PaymentBatchReleaseOfPayment(ctx context.Context, paymentID uuid.UUID) ([]FyniqPaymentBatchRelease, error) {
+	rows, err := q.db.Query(ctx, paymentBatchReleaseOfPayment, paymentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqPaymentBatchRelease
+	for rows.Next() {
+		var i FyniqPaymentBatchRelease
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.BatchID,
+			&i.BatchVersion,
+			&i.ApprovalID,
+			&i.ReleasedBy,
+			&i.ReleasedAt,
+			&i.Writer,
+			&i.FileName,
+			&i.MediaType,
+			&i.FileSealed,
+			&i.FileSha256,
+			&i.Payments,
+			&i.Currency,
+			&i.MinorUnits,
+			&i.Total,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

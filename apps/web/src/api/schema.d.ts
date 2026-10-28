@@ -18381,11 +18381,11 @@ export interface components {
             /** @description A released batch: who released it, when, under which approval, its file's name and hash, and the payments it posted. */
             release?: components["schemas"]["PaymentBatchRelease"];
             /**
-             * @description draft: being prepared; waiting: asked for, waiting for approval; approved: ready to release; released: its payments posted and its payment list written; cancelled: before release, with a reason.
+             * @description draft: being prepared; waiting: asked for, waiting for approval; approved: ready to release; released: its payments posted and its payment list written; paid: bank import matched every payment to its statement line; cancelled: before release, with a reason.
              * @example draft
              * @enum {string}
              */
-            status: "draft" | "waiting" | "approved" | "released" | "cancelled";
+            status: "draft" | "waiting" | "approved" | "released" | "paid" | "cancelled";
             /** @description What it pays in all, in SGD. */
             total: components["schemas"]["Money"];
             /**
@@ -18534,13 +18534,34 @@ export interface components {
             amount: components["schemas"]["Money"];
             /** @description The payee's bills or claims it pays, as the batch lists them. */
             items: components["schemas"]["PaymentBatchItem"][];
+            /**
+             * @description Released: bank import matched the payment to its statement line.
+             * @example false
+             */
+            paid: boolean;
             /** @description Whom it pays. */
             payee: components["schemas"]["PaymentBatchPayee"];
+            /**
+             * Format: uuid
+             * @description Released: the bill payment or reimbursement the release posted.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10
+             */
+            payment_id?: string;
             /**
              * @description A change of the payee's bank account waits for approval: the payment is held (PAYEE-12).
              * @example false
              */
             payments_frozen: boolean;
+            /**
+             * @description Released: the payment was voided, as when the bank rejected it; its bills or claims are open again.
+             * @example false
+             */
+            rejected: boolean;
+            /**
+             * @description A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, or no_email when the supplier has no remittance address (⚠). Absent for a claimant.
+             * @enum {string}
+             */
+            remittance?: "waiting" | "queued" | "sent" | "no_email";
         };
         PaymentBatchRelease: {
             /**
@@ -65184,7 +65205,7 @@ export interface operations {
                 /** @description The next_cursor of the previous page; leave it out for the first page. */
                 cursor?: string;
                 /** @description Only batches with this status. */
-                status?: "draft" | "waiting" | "approved" | "released" | "cancelled";
+                status?: "draft" | "waiting" | "approved" | "released" | "paid" | "cancelled";
             };
             header?: never;
             path?: never;

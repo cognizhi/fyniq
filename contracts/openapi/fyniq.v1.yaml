@@ -15750,12 +15750,13 @@ components:
           $ref: "#/components/schemas/PaymentBatchRelease"
           description: "A released batch: who released it, when, under which approval, its file's name and hash, and the payments it posted."
         status:
-          description: "draft: being prepared; waiting: asked for, waiting for approval; approved: ready to release; released: its payments posted and its payment list written; cancelled: before release, with a reason."
+          description: "draft: being prepared; waiting: asked for, waiting for approval; approved: ready to release; released: its payments posted and its payment list written; paid: bank import matched every payment to its statement line; cancelled: before release, with a reason."
           enum:
             - draft
             - waiting
             - approved
             - released
+            - paid
             - cancelled
           examples:
             - draft
@@ -15989,19 +15990,45 @@ components:
           items:
             $ref: "#/components/schemas/PaymentBatchItem"
           type: array
+        paid:
+          description: "Released: bank import matched the payment to its statement line."
+          examples:
+            - false
+          type: boolean
         payee:
           $ref: "#/components/schemas/PaymentBatchPayee"
           description: Whom it pays.
+        payment_id:
+          description: "Released: the bill payment or reimbursement the release posted."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10
+          format: uuid
+          type: string
         payments_frozen:
           description: "A change of the payee's bank account waits for approval: the payment is held (PAYEE-12)."
           examples:
             - false
           type: boolean
+        rejected:
+          description: "Released: the payment was voided, as when the bank rejected it; its bills or claims are open again."
+          examples:
+            - false
+          type: boolean
+        remittance:
+          description: "A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, or no_email when the supplier has no remittance address (⚠). Absent for a claimant."
+          enum:
+            - waiting
+            - queued
+            - sent
+            - no_email
+          type: string
       required:
         - payee
         - payments_frozen
         - amount
         - items
+        - paid
+        - rejected
       type: object
     PaymentBatchRelease:
       additionalProperties: false
@@ -80528,6 +80555,7 @@ paths:
               - waiting
               - approved
               - released
+              - paid
               - cancelled
             examples:
               - approved

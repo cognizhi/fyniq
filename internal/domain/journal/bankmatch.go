@@ -263,6 +263,11 @@ func (s BankTransactions) matchRecorded(ctx context.Context, u storage.UnitOfWor
 		if out, err = s.matched(ctx, u, line, storage.MatchRecorded, doc, nil, basis, nil, at); err != nil {
 			return err
 		}
+		if s.AfterMatch != nil {
+			if err := s.AfterMatch(ctx, u, doc); err != nil {
+				return err
+			}
+		}
 		if doc.Type != storage.DocumentCustomerReceipt {
 			return nil
 		}
