@@ -56,6 +56,14 @@ the accountant's confirmation too.
 Select an account's figure, or a group's total, to open the general ledger at its lines for the
 same months. A computed figure, such as gross profit, does not open.
 
+## Export a statement
+
+**Export to Excel** downloads the statement as shown, a workbook with the statement and a **Data**
+tab of every account's figure in every column; **Export CSV** downloads its rows. Amounts are
+numbers, not text, and nothing in the file becomes a formula. The file's figures are read at the
+same ledger revision as the screen's. Each export is recorded in the audit trail, with what was
+exported and its filters.
+
 ## The same figures again
 
 Every statement is read at one ledger revision, shown at the bottom. Asked again at that revision,

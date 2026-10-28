@@ -768,6 +768,10 @@
       "label": "Financial statements",
       "tooltip": "The profit and loss, balance sheet, cash flow and trial balance for any run of months, with a comparison, read at one ledger revision."
     },
+    "statement.export": {
+      "label": "Export",
+      "tooltip": "Download the statement as shown, at its ledger revision: an Excel workbook with a data tab, or CSV. Each export is recorded in the audit trail."
+    },
     "statement.revenue": {
       "label": "Revenue",
       "tooltip": "What customers paid for in the period, before any costs."

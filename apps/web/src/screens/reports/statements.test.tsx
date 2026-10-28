@@ -112,6 +112,37 @@ describe("a financial statement", () => {
   });
 });
 
+// req: FR-RPT-05
+// req: FR-RPT-09
+describe("exporting a statement", () => {
+  it("downloads the file the server wrote, at the revision shown, and says when it cannot", async () => {
+    const file = { export_id: "x1", file_name: "profit-and-loss-2026-10.xlsx", media_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", sha256: "ab", size_bytes: 3, rows: 1, ledger_revision: 42, content_base64: btoa("abc") };
+    answer({
+      "GET /v1/periods": { status: 200, body: { items: periods } },
+      "GET /v1/reports/statements/pl": { status: 200, body: pl },
+      "GET /v1/reports/statements/pl/export": { status: 200, body: file },
+    });
+    const create = vi.fn(() => "blob:x");
+    Object.assign(URL, { createObjectURL: create, revokeObjectURL: vi.fn() });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    renderPage(FinancialStatement, { path: "/reports/statements/pl", route: "/reports/statements/$kind", session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "Export to Excel" }));
+    await vi.waitFor(() => expect(click).toHaveBeenCalled());
+    const q = seen.find((s) => s.path === "/v1/reports/statements/pl/export")!.query;
+    expect(q).toContain("format=xlsx");
+    expect(q).toContain("as_at_revision=42");
+    expect(create).toHaveBeenCalled();
+
+    answer({
+      "GET /v1/periods": { status: 200, body: { items: periods } },
+      "GET /v1/reports/statements/pl": { status: 200, body: pl },
+      "GET /v1/reports/statements/pl/export": { status: 422, body: { code: "REPORT-04", title: "A revision later than the ledger", status: 422, detail: "as_at_revision is later than the ledger's revision" } },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+    expect(await screen.findByText("The profit and loss could not be exported")).toBeTruthy();
+  });
+});
+
 // req: QA-UI-04
 describe("a statement in both modes", () => {
   it("asks the API the same in Basic and in Expert", async () => {

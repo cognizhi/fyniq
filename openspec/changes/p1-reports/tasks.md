@@ -79,8 +79,17 @@
 
 ## 3. Exports (FR-RPT-05, FR-RPT-09, FR-RPT-10)
 
-- [ ] 3.1 The CSV and XLSX writers (D5): typed numbers, a data tab, formula-safe text.
+- [x] 3.1 The CSV and XLSX writers (D5): typed numbers, a data tab, formula-safe text.
   - Tests: an XLSX opened and parsed back, and a name that starts with =, + or @. `// req: FR-RPT-05`
+  (28 Oct 2026: `internal/sheet`, archive/zip and encoding/xml only. In CSV, amounts are plain decimals with an ASCII
+  minus, unquoted, and every text is quoted with an apostrophe before =, +, -, @, a tab, CR or LF. In XLSX, amounts
+  are number cells with the currency's decimals, percentages with one, text is inline strings (never evaluated),
+  totals are bold, sheet names are cut to the workbook's rules, and the same report at the same time gives the same
+  bytes. `GET /v1/reports/statements/{kind}/export?format=csv|xlsx` returns the statement as a file in base64, with
+  its SHA-256, rows and revision; the workbook has the statement and a data tab of every account's figure. Each
+  export is audited (`report.exported`, with what, the filters, rows and hash; FR-RPT-09's audit half). Tests:
+  `TestCSVWritesNumbersAsNumbersAndNoFormula`, `TestXLSXWritesNumberCellsAndInlineText`,
+  `TestFinancialStatementsThroughTheAPI`, the matrix row.)
 - [ ] 3.2 The PDF through the render service: a Typst statement template, titled with the framework, with the revision
   in the footer. `// req: FR-RPT-05`
 - [ ] 3.3 Background exports on the outbox:
@@ -93,6 +102,9 @@
 - [ ] 3.4 The accountant exports: the GL, TB, journals, the fixed asset schedule, and AR and AP detail (GST detail comes
   with `p1-gst`). `// req: FR-RPT-10`
 - [ ] 3.5 `export-dialog` as designed: format, options, background progress, and the expired and blocked states.
+  (28 Oct 2026, part: the statement page's **Export to Excel** and **Export CSV** download the file at the revision
+  shown, and a refusal says why; help key `statement.export`, the guide's "Export a statement". **Left:** the dialog
+  itself, with the PDF and the background exports (3.2, 3.3).)
 
 ## 4. Management reports (FR-RPT-03)
 

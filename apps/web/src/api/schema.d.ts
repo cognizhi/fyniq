@@ -6716,6 +6716,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/reports/statements/{kind}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export a financial statement
+         * @description The statement getFinancialStatement gives for the same parameters, as a file (FR-RPT-05): CSV, the statement's rows with amounts as plain decimals and an ASCII minus; or XLSX, a workbook with the statement, totals in bold, and a data tab of every account's figure in every column, amounts as number cells. No text in either becomes a formula. Returned in base64 with its SHA-256 and the ledger revision its figures are read at (FR-RPT-08). Side effects: an audit event of the export with what was exported, its filters, rows and hash (FR-RPT-09). Never cached.
+         */
+        get: operations["exportFinancialStatement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/review-log": {
         parameters: {
             query?: never;
@@ -20511,6 +20531,52 @@ export interface components {
              * @example A supplier's October invoice arrived late
              */
             reason: string;
+        };
+        ReportFile: {
+            /**
+             * @description The file, in base64.
+             * @example UGF5ZWUsUGF5ZWUgdHlwZQ==
+             */
+            content_base64: string;
+            /**
+             * Format: uuid
+             * @description The export, as the audit trail records it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+             */
+            export_id: string;
+            /**
+             * @description The file's name.
+             * @example profit-and-loss-2026-10.xlsx
+             */
+            file_name: string;
+            /**
+             * Format: int64
+             * @description The ledger revision its figures are read at (FR-RPT-08).
+             * @example 42
+             */
+            ledger_revision: number;
+            /**
+             * @description Its type.
+             * @example application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+             */
+            media_type: string;
+            /**
+             * Format: int64
+             * @description The rows of figures it holds.
+             * @example 42
+             */
+            rows: number;
+            /**
+             * @description The SHA-256 of the content, in hexadecimal, as the audit trail records it.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256: string;
+            /**
+             * Format: int64
+             * @description Its size, in bytes.
+             * @example 4096
+             */
+            size_bytes: number;
         };
         ResolveGapInputBody: {
             /**
@@ -74190,6 +74256,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FinancialStatement"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    exportFinancialStatement: {
+        parameters: {
+            query?: {
+                /** @description The run's first month, YYYY-MM; left out, the last month's. A balance sheet is at the last month's end, with the movement in equity over the run; a trial balance is at the last month's end. */
+                from?: string;
+                /** @description The run's last month, YYYY-MM; left out, the month of the organisation's today. */
+                to?: string;
+                /** @description A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning. */
+                compare?: "prior_period" | "prior_year";
+                /** @description total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative. */
+                columns?: "total" | "month";
+                /** @description Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands. */
+                as_at_revision?: number;
+                /** @description csv: the statement's rows, plain decimals with an ASCII minus; xlsx: a workbook with the statement and a data tab of every figure, amounts as number cells. */
+                format?: "csv" | "xlsx";
+            };
+            header?: never;
+            path: {
+                /** @description pl: the profit and loss; bs: the balance sheet; cf: the cash flow; tb: the trial balance. */
+                kind: "pl" | "bs" | "cf" | "tb";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportFile"];
                 };
             };
             /** @description Unauthorized: `API-AUTH-01` Sign-in required. */

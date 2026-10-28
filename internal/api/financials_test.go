@@ -3,7 +3,10 @@
 package api
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"encoding/base64"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,6 +30,8 @@ import (
 // req: FR-RPT-08
 // req: G4-051
 // req: INV-11
+// req: FR-RPT-05
+// req: FR-RPT-09
 func TestFinancialStatementsThroughTheAPI(t *testing.T) {
 	e := newEnv(t)
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
@@ -114,6 +119,24 @@ func TestFinancialStatementsThroughTheAPI(t *testing.T) {
 	if cf.Status != 200 || first(block(cf, "net_operating"), "totals") != "400.00" || first(block(cf, "cash_at_start"), "totals") != "1000.00" ||
 		first(block(cf, "cash_at_end"), "totals") != "1400.00" || strings.Contains(cf.Raw, `"ok":false`) || !strings.Contains(cf.Raw, `"non_cash":[]`) {
 		t.Errorf("October's cash flow: %d %s", cf.Status, cf.Raw)
+	}
+
+	// Exported (FR-RPT-05, FR-RPT-09): the P&L as CSV, amounts as plain decimals; the balance sheet as a workbook with its
+	// data tab; each export audited with its hash.
+	csv := e.call(http.MethodGet, "/v1/reports/statements/pl/export?from=2026-10&to=2026-10&format=csv", e.as(authz.Accountant), nil)
+	content, _ := base64.StdEncoding.DecodeString(csv.str("content_base64"))
+	if csv.Status != 200 || csv.str("file_name") != "profit-and-loss-2026-10.csv" || !strings.HasPrefix(string(content), "\"SGD\",\"Oct 2026\",\"% of revenue\"\r\n") ||
+		!strings.Contains(string(content), "\"4010 Subscription revenue\",500.00,100.0\r\n") || !strings.Contains(string(content), "\"Net profit\",400.00,80.0\r\n") {
+		t.Errorf("the P&L as CSV: %d %s\n%s", csv.Status, csv.Raw, content)
+	}
+	xlsx := e.call(http.MethodGet, "/v1/reports/statements/bs/export?to=2026-10", e.as(authz.Auditor), nil)
+	book, _ := base64.StdEncoding.DecodeString(xlsx.str("content_base64"))
+	z, err := zip.NewReader(bytes.NewReader(book), int64(len(book)))
+	if err != nil || xlsx.str("file_name") != "balance-sheet-2026-10.xlsx" || len(z.File) != 7 {
+		t.Errorf("the balance sheet as a workbook: %v %s", err, xlsx.str("file_name"))
+	}
+	if trail := auditTrail(t, e); strings.Count(trail, `"action":"report.exported"`) != 2 || !strings.Contains(trail, csv.str("sha256")) {
+		t.Errorf("the exports' audit events: %s", trail)
 	}
 
 	// G4-051: a back-dated 50.00 of advertising after the revision leaves October as at it unchanged.

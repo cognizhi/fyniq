@@ -259,3 +259,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-28] compile | docs/user-guide/periods-and-close.md → accounting.periods (the close's cash flow and equity checks, p1-reports)
 
 ## [2026-10-28] compile | docs/user-guide/financial-statements.md → reports.statements (new: the statements' screens, p1-reports task 2.4); reports.general-ledger links it
+
+## [2026-10-29] compile | docs/user-guide/financial-statements.md → reports.statements (export a statement, p1-reports task 3.1)
