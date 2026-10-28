@@ -23,6 +23,7 @@ import (
 // worker has prepared it, it downloads with its hash, audited; past its 24 hours it is REPORT-06.
 // req: FR-RPT-09
 // req: FR-RPT-10
+// asvs: V8.2.2
 func TestAccountantExportsThroughTheAPI(t *testing.T) {
 	e := newEnv(t)
 	me := e.as(authz.Accountant)

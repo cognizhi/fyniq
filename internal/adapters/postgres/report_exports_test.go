@@ -32,6 +32,7 @@ import (
 // req: FR-RPT-09
 // req: FR-RPT-10
 // req: QA-ENG-05
+// asvs: V13.2.2, V8.2.2
 func TestAnAccountantExportIsPreparedInTheBackground(t *testing.T) {
 	person := uuid.New()
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: person.String()}})
