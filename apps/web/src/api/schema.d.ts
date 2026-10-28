@@ -6665,7 +6665,7 @@ export interface paths {
         };
         /**
          * List my exports
-         * @description The caller's background exports, newest first, at most 50, each with its status (FR-RPT-09). Read-only; no side effects.
+         * @description The caller's background exports, newest first, each with its status (FR-RPT-09), a page at a time (FR-INT-10). Read-only; no side effects.
          */
         get: operations["listReportExports"];
         put?: never;
@@ -20597,8 +20597,13 @@ export interface components {
             reason: string;
         };
         ReportExportList: {
-            /** @description The caller's exports, newest first, at most 50. */
+            /** @description The caller's exports, newest first. */
             items: components["schemas"]["ReportExportOut"][];
+            /**
+             * @description The cursor of the next page; none on the last.
+             * @example eyJhZnRlciI6IjEwMDAifQ
+             */
+            next_cursor?: string;
         };
         ReportExportOut: {
             /**
@@ -74240,7 +74245,12 @@ export interface operations {
     };
     listReportExports: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -74278,7 +74288,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

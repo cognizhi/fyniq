@@ -18815,10 +18815,15 @@ components:
       additionalProperties: false
       properties:
         items:
-          description: The caller's exports, newest first, at most 50.
+          description: The caller's exports, newest first.
           items:
             $ref: "#/components/schemas/ReportExportOut"
           type: array
+        next_cursor:
+          description: The cursor of the next page; none on the last.
+          examples:
+            - eyJhZnRlciI6IjEwMDAifQ
+          type: string
       required:
         - items
       type: object
@@ -92701,8 +92706,32 @@ paths:
         right: C
   /v1/report-exports:
     get:
-      description: The caller's background exports, newest first, at most 50, each with its status (FR-RPT-09). Read-only; no side effects.
+      description: The caller's background exports, newest first, each with its status (FR-RPT-09), a page at a time (FR-INT-10). Read-only; no side effects.
       operationId: listReportExports
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
       responses:
         "200":
           content:
@@ -92740,7 +92769,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
         "429":
           content:
             application/problem+json:
@@ -92781,6 +92810,7 @@ paths:
         - API-AUTHZ-02
         - API-AUTHZ-03
         - API-AUTHZ-07
+        - API-CURSOR-01
         - API-FAILURE-01
         - API-INPUT-02
         - API-RATE-01

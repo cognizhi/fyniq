@@ -3,11 +3,18 @@
   "additionalProperties": false,
   "properties": {
     "items": {
-      "description": "The caller's exports, newest first, at most 50.",
+      "description": "The caller's exports, newest first.",
       "items": {
         "$ref": "ReportExportOut.schema.json"
       },
       "type": "array"
+    },
+    "next_cursor": {
+      "description": "The cursor of the next page; none on the last.",
+      "examples": [
+        "eyJhZnRlciI6IjEwMDAifQ"
+      ],
+      "type": "string"
     }
   },
   "required": [

@@ -56,9 +56,10 @@ type ReportExportOut struct {
 	Why         string `json:"why,omitempty" doc:"Why it failed, and what to do." example:"the range crosses the start of a financial year: export each year apart"`
 }
 
-// ReportExportList is a person's exports, newest first.
+// ReportExportList is a page of a person's exports, newest first.
 type ReportExportList struct {
-	Items []ReportExportOut `json:"items" nullable:"false" doc:"The caller's exports, newest first, at most 50."`
+	Items      []ReportExportOut `json:"items" nullable:"false" doc:"The caller's exports, newest first."`
+	NextCursor string            `json:"next_cursor,omitempty" doc:"The cursor of the next page; none on the last." example:"eyJhZnRlciI6IjEwMDAifQ"`
 }
 
 func reportExportOut(x storage.ReportExport) ReportExportOut {
@@ -93,6 +94,9 @@ type reportExportPath struct {
 type reportExportGetOutput struct{ Body ReportExportOut }
 
 type reportExportListOutput struct{ Body ReportExportList }
+
+// maxExportsListed is the most of a person's exports the list pages through: the latest.
+const maxExportsListed = 1000
 
 // mine is an export the caller asked for, else REPORT-07; or not found.
 func mine(ctx context.Context, u storage.UnitOfWork, path reportExportPath) (storage.ReportExport, error) {
@@ -167,15 +171,20 @@ func registerReportExports(a *API) {
 	register(a, authz.ListReportExports, huma.Operation{
 		OperationID: "listReportExports", Method: http.MethodGet, Path: "/v1/report-exports", Tags: []string{"Reports"},
 		Summary:     "List my exports",
-		Description: "The caller's background exports, newest first, at most 50, each with its status (FR-RPT-09). Read-only; no side effects.",
-	}, nil, func(ctx context.Context, _ *struct{}) (*reportExportListOutput, error) {
+		Description: "The caller's background exports, newest first, each with its status (FR-RPT-09), a page at a time (FR-INT-10). Read-only; no side effects.",
+	}, []string{CodeCursor}, func(ctx context.Context, in *PageQuery) (*reportExportListOutput, error) {
 		out := ReportExportList{Items: []ReportExportOut{}}
 		p, _ := authn.From(ctx)
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-			xs, err := u.ReportExports().Mine(ctx, uploader(ctx), 50)
-			for _, x := range xs {
+			xs, err := u.ReportExports().Mine(ctx, uploader(ctx), maxExportsListed)
+			if err != nil {
+				return err
+			}
+			page, next, err := pageOf(xs, func(x storage.ReportExport) string { return x.ID.String() }, *in)
+			for _, x := range page {
 				out.Items = append(out.Items, reportExportOut(x))
 			}
+			out.NextCursor = next
 			return err
 		})
 		return &reportExportListOutput{Body: out}, err
