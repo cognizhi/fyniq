@@ -33,7 +33,7 @@
 
 ## 2. Payment batches
 
-- [ ] 2.1 Migrations (design D1):
+- [x] 2.1 Migrations (design D1):
   - the document type `payment_batch` and its sequence (PB-);
   - `payment_batch_release`, one per batch, never changed or deleted (FY239);
   - `payment_batch_payment`, linking a release to the payments it posted, each a posted bill payment or reimbursement
@@ -41,9 +41,11 @@
   - the approval object `payment_batch` with `payment_batch.approve` and `payment_batch.reapprove`;
   - recording a payment of a bill in an approved, unreleased batch refused;
   - RLS, grants, squawk, goldens.
+  - Added in building: a batch is approved, by posting, only under an approved request that neither its requester nor
+    its preparer signed (FY242), as FY237 does for bank details; a second release is refused by the guard (FY239).
   - Tests: a second release refused; a release row changed or deleted refused; a link to another account's payment
     refused (QA-ENG-05). `// req: FR-BNK-12`
-- [ ] 2.2 `internal/domain/paymentbatch`: the batch's content by version, its items and the checks of design D2
+- [x] 2.2 `internal/domain/paymentbatch`: the batch's content by version, its items and the checks of design D2
   (posted, SGD, open, not in another batch, the payee's account in force at a Singapore bank and no change waiting,
   no withholding-tax decision pending, nothing recorded by hand since), every problem at once (ENG-23); the batch
   suggested from bills planned on or before its date (FR-AP-13).

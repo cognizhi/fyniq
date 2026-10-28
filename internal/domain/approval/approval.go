@@ -92,6 +92,9 @@ const (
 	// ObjectClaimantBankChange is a change of a person's own bank account for reimbursements (FR-AP-22, FM-1; rev 0.154):
 	// someone who holds A on "Payment batches", never the person, approves it, in every team mode; its key is its id.
 	ObjectClaimantBankChange = "claimant_bank_change"
+	// ObjectPaymentBatch is a batch of payments (FR-BNK-12, FM-1, G4-055; rev 0.154): another person who holds A on
+	// "Payment batches" (the Controller) approves it, or approves it again after a payee's account changed; its key is its id.
+	ObjectPaymentBatch = "payment_batch"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -152,6 +155,10 @@ const (
 	OpPayeeBankChange = "payee_bank_change.approve"
 	// OpClaimantBankChange puts a change of a person's own bank account in force, retiring the account it replaces.
 	OpClaimantBankChange = "claimant_bank_change.approve"
+	// OpBatchApprove approves a payment batch, which numbers it, ready to release.
+	OpBatchApprove = "payment_batch.approve"
+	// OpBatchReapprove approves an approved, unreleased batch again with its payees' accounts in force now (G4-055).
+	OpBatchReapprove = "payment_batch.reapprove"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -172,6 +179,8 @@ var Operations = map[string]string{
 	OpFixedAssetVoid:     ObjectFixedAsset,
 	OpPayeeBankChange:    ObjectPayeeBankChange,
 	OpClaimantBankChange: ObjectClaimantBankChange,
+	OpBatchApprove:       ObjectPaymentBatch,
+	OpBatchReapprove:     ObjectPaymentBatch,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -240,6 +249,8 @@ var Dependencies = map[string][]string{
 	ObjectPayeeBankChange: {"status", "replaces"},
 	// the same for a person's change: its version and status, and the change in force for the person and currency
 	ObjectClaimantBankChange: {"status", "replaces"},
+	// the batch's version and status, its total in SGD, and each payee's account in force, payee to change (G4-055)
+	ObjectPaymentBatch: {"status", "total", "accounts"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -277,6 +288,7 @@ var Rows = map[string]string{
 	ObjectFixedAsset:          "Fixed assets",
 	ObjectPayeeBankChange:     "Vendor bank details",
 	ObjectClaimantBankChange:  "Payment batches",
+	ObjectPaymentBatch:        "Payment batches",
 }
 
 // The limits of a policy.
@@ -343,6 +355,7 @@ var Policies = map[string]Policy{
 	ObjectFixedAsset:          {ObjectType: ObjectFixedAsset, Version: "founder/fixed_asset@2026-10-27.1", Steps: []Step{{Quorum: 1}}},
 	ObjectPayeeBankChange:     {ObjectType: ObjectPayeeBankChange, Version: "founder/payee_bank_change@2026-10-27.1", Steps: []Step{{Quorum: 1}}},
 	ObjectClaimantBankChange:  {ObjectType: ObjectClaimantBankChange, Version: "founder/claimant_bank_change@2026-10-28.1", Steps: []Step{{Quorum: 1}}},
+	ObjectPaymentBatch:        {ObjectType: ObjectPaymentBatch, Version: "founder/payment_batch@2026-10-28.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

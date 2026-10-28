@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "description": "The approval request it waits for.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "checks": {
+      "description": "Before release: what stops it being asked for, approved or released (✖), every problem at once. Empty in a list.",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "id": {
+      "description": "The batch's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "method": {
+      "description": "How the bank pays it: FAST, within minutes, or GIRO, over the next working days.",
+      "enum": [
+        "fast",
+        "giro"
+      ],
+      "examples": [
+        "fast"
+      ],
+      "type": "string"
+    },
+    "money_account_id": {
+      "description": "The SGD bank account it is paid from: the chart's money account, as a payment recorded by hand names it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "notes": {
+      "description": "Its notes.",
+      "examples": [
+        "End of October suppliers and claims"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number, from the batch sequence, once approved (FR-ORG-04).",
+      "examples": [
+        "PB-0003"
+      ],
+      "type": "string"
+    },
+    "payment_date": {
+      "description": "The day the bank pays it: each payment is posted on it.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "payments": {
+      "description": "One payment per payee: a supplier's bills as one bill payment, a claimant's claims as one reimbursement.",
+      "items": {
+        "$ref": "PaymentBatchPayment.schema.json"
+      },
+      "type": "array"
+    },
+    "prepared_by": {
+      "description": "Who saved its current version: an actor of the audit trail.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "draft: being prepared; waiting: asked for, waiting for approval; approved: ready to release; released: its payments posted and its payment list written; cancelled: before release, with a reason.",
+      "enum": [
+        "draft",
+        "waiting",
+        "approved",
+        "released",
+        "cancelled"
+      ],
+      "examples": [
+        "draft"
+      ],
+      "type": "string"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "What it pays in all, in SGD."
+    },
+    "version": {
+      "description": "The batch's version; with its status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "money_account_id",
+    "payment_date",
+    "method",
+    "payments",
+    "total",
+    "checks",
+    "version"
+  ],
+  "title": "PaymentBatch",
+  "type": "object"
+}

@@ -113,6 +113,7 @@ type UnitOfWork interface {
 	AssetSources() AssetSources
 	// PayeeBankAccounts are the account numbers of the changes of vendors' bank details (FR-CT-03).
 	PayeeBankAccounts() PayeeBankAccounts
+	PaymentBatches() PaymentBatches
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))
@@ -489,6 +490,10 @@ const (
 	// prepared by the person, approved by someone who holds A on "Payment batches", never the person, whose approval
 	// posts it with no entry; its account is kept as a vendor's is.
 	DocumentClaimantBankChange DocumentType = "claimant_bank_change"
+	// DocumentPaymentBatch is a batch of payments to suppliers and claimants from one SGD money account on one date
+	// (FR-BNK-12; rev 0.154): approved by a second person, whose approval posts it (numbered PB-) with no entry, and
+	// released once, which records its payments.
+	DocumentPaymentBatch DocumentType = "payment_batch"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -665,6 +670,11 @@ const (
 	// change approved by a second person, goes out of force only when a later change is, and is never changed or
 	// deleted otherwise (FR-CT-03, SOD-1, FM-1).
 	CodePayee          = "STORAGE-PAYEE-01"
+	// CodeBatch: a batch is released once, approved and at its current version, and never cancelled once released; a
+	// release's payments are posted payments of its account and date; neither ever changes (FR-BNK-12).
+	CodeBatch = "STORAGE-BATCH-01"
+	// CodeBatchHeld: a bill or claim in an approved, unreleased batch is paid by the batch, not by hand (FR-BNK-12).
+	CodeBatchHeld = "STORAGE-BATCH-02"
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
 	CodeBanner         = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends

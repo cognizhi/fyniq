@@ -47,6 +47,8 @@ const operations: Record<Approval["operation"], string> = {
   "fixed_asset.void": "Void a fixed asset registered by mistake",
   "payee_bank_change.approve": "Change a supplier's bank details",
   "claimant_bank_change.approve": "Change a person's bank account for reimbursements",
+  "payment_batch.approve": "Approve a payment batch",
+  "payment_batch.reapprove": "Approve a payment batch again after a payee's account changed",
 };
 
 export function operationLabel(op: string): string {
@@ -85,6 +87,7 @@ const objects: Record<string, string> = {
   fixed_asset: "Fixed asset",
   payee_bank_change: "Supplier's bank details",
   claimant_bank_change: "Bank account for reimbursements",
+  payment_batch: "Payment batch",
 };
 
 export function objectLabel(t: string): string {

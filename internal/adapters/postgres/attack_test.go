@@ -449,6 +449,7 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"bank_transfer.to_amount":      func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "to", v) },
 	"bank_transfer.fee":            func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "fee", v) },
 	"bank_signal.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawSignal(t, b, v) },
+	"payment_batch_release.total":  func(t *testing.T, b porttest.Books, v string) error { return rawRelease(t, b, v) },
 	"claim_category.line_limit":    func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "limit", v) },
 	"claim_category.receipt_above": func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "receipt", v) },
 	"claim_category.attendees_above": func(t *testing.T, b porttest.Books, v string) error {
@@ -1207,6 +1208,18 @@ func rawSignal(t *testing.T, b porttest.Books, value string) error {
 	return asOrg(ctx, conn(t, "fyniq_worker"), b.Org, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.bank_signal (money_account_id, amount, currency, minor_units, received_at)
 VALUES ($1, $2::numeric, 'SGD', 2, now())`, uuid.New(), value)
+		return err
+	})
+}
+
+func rawRelease(t *testing.T, b porttest.Books, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.payment_batch_release (batch_id, batch_version, approval_id, released_by, released_at, writer,
+file_name, media_type, file_sealed, file_sha256, payments, currency, minor_units, total)
+VALUES ($1, 1, $2, $3, now(), 'payment-list@1', 'PB-0001.csv', 'text/csv', $4, $5, 1, 'SGD', 2, $6::numeric)`,
+			uuid.New(), uuid.New(), uuid.New(), make([]byte, 64), make([]byte, 32), value)
 		return err
 	})
 }

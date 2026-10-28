@@ -3072,6 +3072,119 @@ What the company owes its suppliers as at a day (FR-AP-06), from the AP sub-ledg
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
 
+### `GET /v1/payment-batches`
+
+**List payment batches** (`listPaymentBatches`)
+
+The payment batches, newest payment date first, a page at a time, narrowed by status (FR-BNK-12): each with its money account, payment date, method, payments by payee and total. Read-only; no side effects.
+
+- **Permission:** View on Payment batches
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `status` (query): Only batches with this status.
+- **Responses:**
+  - `200` OK [`PaymentBatchPage`](../../contracts/schemas/PaymentBatchPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/payment-batches`
+
+**Prepare a payment batch** (`createPaymentBatch`)
+
+Saves a draft batch (FR-BNK-12; PRD-001 rev 0.154): an SGD bank account, a payment date, FAST or GIRO, and the approved bills and expense claims it pays, each whole, for what is open on it. Saving checks its form only; getPaymentBatch shows what stops it being asked for: an item not posted or not open, a bill not in SGD or waiting for withholding (FR-AP-19), an item in another approved batch, a payee with no approved Singapore account, or one whose change of bank account waits (PAYEE-12). Side effects: the batch and its audit event; nothing is paid or posted. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Payment batches
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PaymentBatchDraft`](../../contracts/schemas/PaymentBatchDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PaymentBatch`](../../contracts/schemas/PaymentBatch.schema.json)
+  - `201` Created [`PaymentBatch`](../../contracts/schemas/PaymentBatch.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `PB-01` Not a payment batch.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PB-14` The batch is approved already; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill or an approved claim; `PB-15` Too many items for one batch; `PB-16` The notes are too long.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `PB-01`, `PB-02`, `PB-03`, `PB-04`, `PB-05`, `PB-06`, `PB-07`, `PB-08`, `PB-14`, `PB-15`, `PB-16`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/payment-batches/suggestion`
+
+**Suggest a payment batch's items for a date** (`getPaymentBatchSuggestion`)
+
+What a new batch for a payment date starts with (FR-AP-13, FR-BNK-12): every posted SGD bill with something open whose planned payment date is on or before it, then every approved expense claim with something owed, oldest first, none in an approved batch. A suggestion never adds itself: send the items you keep with createPaymentBatch. Read-only; no side effects.
+
+- **Permission:** Create on Payment batches
+- **Parameters:**
+  - `payment_date` (query, required): The payment date of the batch to prepare.
+- **Responses:**
+  - `200` OK [`PaymentBatchSuggestion`](../../contracts/schemas/PaymentBatchSuggestion.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `GET /v1/payment-batches/{batch_id}`
+
+**Get a payment batch** (`getPaymentBatch`)
+
+Returns a batch with its status, its payments by payee (each payee's account in force by its last four characters, and whether a change of it waits), each item with what is open on it now, its total, and before release every check that stops it, with its ETag (FR-BNK-12). Read-only; no side effects.
+
+- **Permission:** View on Payment batches
+- **Parameters:**
+  - `batch_id` (path, required): The batch's ID.
+- **Responses:**
+  - `200` OK [`PaymentBatch`](../../contracts/schemas/PaymentBatch.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PB-01` Not a payment batch.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PB-02` The saved batch cannot be read.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PB-01`, `PB-02`
+
+### `PUT /v1/payment-batches/{batch_id}`
+
+**Change a draft payment batch** (`replacePaymentBatch`)
+
+Saves a draft batch's new content as its next version (FR-BNK-12). Saving voids an approval it waits for: ask again. An approved batch never changes: cancel it and prepare another. Side effects: the new version and its audit event. Needs If-Match with the batch's ETag. Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Payment batches
+- **Parameters:**
+  - `batch_id` (path, required): The batch's ID.
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PaymentBatchDraft`](../../contracts/schemas/PaymentBatchDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PaymentBatch`](../../contracts/schemas/PaymentBatch.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `PB-01` Not a payment batch.
+  - `409` Conflict: `PB-14` The batch is approved already; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill or an approved claim; `PB-15` Too many items for one batch; `PB-16` The notes are too long.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PB-01`, `PB-02`, `PB-03`, `PB-04`, `PB-05`, `PB-06`, `PB-07`, `PB-08`, `PB-14`, `PB-15`, `PB-16`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/purchase-orders`
 
 **List the purchase orders** (`listPurchaseOrders`)

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checks": {
+      "description": "What stops it being paid in the batch (✖).",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "date": {
+      "description": "Its date.",
+      "examples": [
+        "2026-10-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "document_id": {
+      "description": "The bill or claim.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "A posted bill, or an approved expense claim.",
+      "enum": [
+        "bill",
+        "claim"
+      ],
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number.",
+      "examples": [
+        "BILL-0042"
+      ],
+      "type": "string"
+    },
+    "open": {
+      "$ref": "Money.schema.json",
+      "description": "What the batch pays of it: what is open on it now, in SGD."
+    }
+  },
+  "required": [
+    "kind",
+    "document_id",
+    "open",
+    "checks"
+  ],
+  "title": "PaymentBatchItem",
+  "type": "object"
+}

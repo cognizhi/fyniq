@@ -210,6 +210,10 @@ fyniq_api       UPDATE    outbox (attempts, deadline_at, dispatches, job_executi
 fyniq_api       INSERT    payee_bank_account (change_id, change_version, contact_id, currency, member_user_id, number_fingerprint, number_last4, number_sealed)
 fyniq_api       SELECT    payee_bank_account
 fyniq_api       UPDATE    payee_bank_account (state)
+fyniq_api       INSERT    payment_batch_payment (payment_id, release_id)
+fyniq_api       SELECT    payment_batch_payment
+fyniq_api       INSERT    payment_batch_release (approval_id, batch_id, batch_version, currency, file_name, file_sealed, file_sha256, media_type, minor_units, payments, released_at, released_by, total, writer)
+fyniq_api       SELECT    payment_batch_release
 fyniq_api       INSERT    period (ends_on, starts_on)
 fyniq_api       SELECT    period
 fyniq_api       UPDATE    period (status, version)
@@ -440,6 +444,8 @@ fyniq_readonly  SELECT    organisation_connector_secret
 fyniq_readonly  SELECT    organisation_setting
 fyniq_readonly  SELECT    outbox
 fyniq_readonly  SELECT    payee_bank_account
+fyniq_readonly  SELECT    payment_batch_payment
+fyniq_readonly  SELECT    payment_batch_release
 fyniq_readonly  SELECT    period
 fyniq_readonly  SELECT    period_close
 fyniq_readonly  SELECT    period_close_check
@@ -592,6 +598,8 @@ fyniq_worker    INSERT    outbox (business_key, kind, max_attempts, payload, wor
 fyniq_worker    SELECT    outbox
 fyniq_worker    UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
 fyniq_worker    SELECT    payee_bank_account
+fyniq_worker    SELECT    payment_batch_payment
+fyniq_worker    SELECT    payment_batch_release
 fyniq_worker    SELECT    period
 fyniq_worker    SELECT    period_close
 fyniq_worker    SELECT    period_close_check
