@@ -149,116 +149,123 @@ func registerFinancials(a *API) {
 	}, []string{CodeInvalid, CodeNoPeriod, CodeLaterRevision}, func(ctx context.Context, in *financialStatementInput) (*financialStatementOutput, error) {
 		p, _ := authn.From(ctx)
 		var out FinancialStatement
-		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-			org, err := u.Organisation(ctx)
-			if err != nil {
-				return err
-			}
-			base, err := money.Lookup(org.BaseCurrency)
-			if err != nil {
-				return err
-			}
-			today, err := orgToday(ctx, a, u)
-			if err != nil {
-				return err
-			}
-			to := in.To
-			if to == "" {
-				to = today.Format(statementMonthForm)
-			}
-			from := in.From
-			if from == "" || in.Kind == string(financials.TrialBalance) {
-				from = to
-			}
-			all, err := u.Periods().List(ctx)
-			if err != nil {
-				return err
-			}
-			index := func(field, month string) (int, *FieldProblem) {
-				for i, x := range all {
-					if x.StartsOn.Format(statementMonthForm) == month {
-						return i, nil
-					}
-				}
-				return 0, &FieldProblem{Code: CodeNoPeriod, Field: field, Message: "the books have no period for " + month,
-					Fix: "Choose a month of an open financial year, or open the year in Accounting › Periods and close"}
-			}
-			var bad []FieldProblem
-			first, fp := index("from", from)
-			if fp != nil {
-				bad = append(bad, *fp)
-			}
-			last, tp := index("to", to)
-			if tp != nil {
-				bad = append(bad, *tp)
-			}
-			if len(bad) == 0 && first > last {
-				bad = append(bad, FieldProblem{Code: CodeInvalid, Field: "to", Message: "is before from", Fix: "Send a last month on or after the first"})
-			}
-			current, err := u.Ledger().Revision(ctx)
-			if err != nil {
-				return err
-			}
-			revision := current
-			if in.Revision != 0 {
-				if in.Revision > current {
-					bad = append(bad, FieldProblem{Code: CodeLaterRevision, Field: "as_at_revision", Message: "is later than the ledger's revision",
-						Fix: "Send a revision a statement recorded, or leave it out to read the ledger as it stands"})
-				}
-				revision = in.Revision
-			}
-			if len(bad) > 0 {
-				return invalid(bad)
-			}
-			s, err := financials.Lay(ctx, u, base, financials.Request{Kind: financials.Kind(in.Kind), All: all, First: first, Last: last,
-				Compare: financials.Compare(in.Compare), ByMonth: in.Columns == "month", Revision: revision})
-			if err != nil {
-				return err
-			}
-			restated := false
-			if revision < current {
-				if restated, err = u.Accounts().ChangedAfter(ctx, revision); err != nil {
-					return err
-				}
-			}
-			// Without its financial years set, the books have no framework to title them by: management statements.
-			year := AccountingYear{StatementTitle: "Management statements"}
-			if y, err := a.accountingYear(ctx, u, all[last].EndsOn.Format(time.DateOnly)); err == nil {
-				year = y
-			} else if pe := (*period.Error)(nil); !errors.As(err, &pe) || pe.Code != period.CodeNoYear {
-				return err
-			}
-			out = FinancialStatement{Kind: in.Kind, StatementTitle: year.StatementTitle, Basis: year.StatementBasis, Currency: base.Code,
-				From: dateOf(all[first].StartsOn), To: dateOf(all[last].EndsOn), Revision: revision, Restated: restated,
-				PlatformVersion: a.deps.Version, Columns: []FinancialColumn{}, Blocks: []FinancialBlock{}, Checks: []FinancialCheck{}, NonCash: []FinancialNonCash{}}
-			n := len(s.Columns)
-			for _, c := range s.Columns {
-				out.Columns = append(out.Columns, FinancialColumn{Key: c.Key, From: dateOf(c.From), To: dateOf(c.To)})
-			}
-			for _, b := range s.Blocks {
-				x := FinancialBlock{Key: b.Key, Title: b.Title, Measure: b.Measure, Totals: moneysOut(b.Totals), Percents: percentsOut(b.Percents, n),
-					Groups: []FinancialGroup{}}
-				for _, g := range b.Groups {
-					y := FinancialGroup{Name: g.Name, Totals: moneysOut(g.Totals), Percents: percentsOut(g.Percents, n), Lines: []FinancialLine{}}
-					for _, l := range g.Lines {
-						y.Lines = append(y.Lines, FinancialLine{AccountID: l.Account.ID.String(), Code: l.Account.Code, Name: l.Account.Name,
-							Function: l.Account.Function, Amounts: moneysOut(l.Amounts), Percents: percentsOut(l.Percents, n)})
-					}
-					x.Groups = append(x.Groups, y)
-				}
-				out.Blocks = append(out.Blocks, x)
-			}
-			for _, c := range s.Checks {
-				out.Checks = append(out.Checks, FinancialCheck{Key: c.Key, OK: c.OK, Title: c.Title, Detail: c.Detail})
-			}
-			for _, x := range s.NonCash {
-				out.NonCash = append(out.NonCash, FinancialNonCash{Date: dateOf(x.Date), SourceType: x.Source.Type, SourceID: x.Source.ID, Memo: x.Memo, Amount: moneyOut(x.Amount)})
-			}
-			return nil
+		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			out, err = a.financialStatement(ctx, u, in)
+			return err
 		})
 		if err != nil {
 			return nil, err
 		}
 		return &financialStatementOutput{Body: out}, nil
 	})
+}
+
+// financialStatement reads and lays out a statement in u (FR-RPT-01, FR-RPT-02, FR-RPT-08): the run of months, the
+// revision, and the year's title.
+func (a *API) financialStatement(ctx context.Context, u storage.UnitOfWork, in *financialStatementInput) (out FinancialStatement, err error) {
+	org, err := u.Organisation(ctx)
+	if err != nil {
+		return out, err
+	}
+	base, err := money.Lookup(org.BaseCurrency)
+	if err != nil {
+		return out, err
+	}
+	today, err := orgToday(ctx, a, u)
+	if err != nil {
+		return out, err
+	}
+	to := in.To
+	if to == "" {
+		to = today.Format(statementMonthForm)
+	}
+	from := in.From
+	if from == "" || in.Kind == string(financials.TrialBalance) {
+		from = to
+	}
+	all, err := u.Periods().List(ctx)
+	if err != nil {
+		return out, err
+	}
+	index := func(field, month string) (int, *FieldProblem) {
+		for i, x := range all {
+			if x.StartsOn.Format(statementMonthForm) == month {
+				return i, nil
+			}
+		}
+		return 0, &FieldProblem{Code: CodeNoPeriod, Field: field, Message: "the books have no period for " + month,
+			Fix: "Choose a month of an open financial year, or open the year in Accounting › Periods and close"}
+	}
+	var bad []FieldProblem
+	first, fp := index("from", from)
+	if fp != nil {
+		bad = append(bad, *fp)
+	}
+	last, tp := index("to", to)
+	if tp != nil {
+		bad = append(bad, *tp)
+	}
+	if len(bad) == 0 && first > last {
+		bad = append(bad, FieldProblem{Code: CodeInvalid, Field: "to", Message: "is before from", Fix: "Send a last month on or after the first"})
+	}
+	current, err := u.Ledger().Revision(ctx)
+	if err != nil {
+		return out, err
+	}
+	revision := current
+	if in.Revision != 0 {
+		if in.Revision > current {
+			bad = append(bad, FieldProblem{Code: CodeLaterRevision, Field: "as_at_revision", Message: "is later than the ledger's revision",
+				Fix: "Send a revision a statement recorded, or leave it out to read the ledger as it stands"})
+		}
+		revision = in.Revision
+	}
+	if len(bad) > 0 {
+		return out, invalid(bad)
+	}
+	s, err := financials.Lay(ctx, u, base, financials.Request{Kind: financials.Kind(in.Kind), All: all, First: first, Last: last,
+		Compare: financials.Compare(in.Compare), ByMonth: in.Columns == "month", Revision: revision})
+	if err != nil {
+		return out, err
+	}
+	restated := false
+	if revision < current {
+		if restated, err = u.Accounts().ChangedAfter(ctx, revision); err != nil {
+			return out, err
+		}
+	}
+	// Without its financial years set, the books have no framework to title them by: management statements.
+	year := AccountingYear{StatementTitle: "Management statements"}
+	if y, err := a.accountingYear(ctx, u, all[last].EndsOn.Format(time.DateOnly)); err == nil {
+		year = y
+	} else if pe := (*period.Error)(nil); !errors.As(err, &pe) || pe.Code != period.CodeNoYear {
+		return out, err
+	}
+	out = FinancialStatement{Kind: in.Kind, StatementTitle: year.StatementTitle, Basis: year.StatementBasis, Currency: base.Code,
+		From: dateOf(all[first].StartsOn), To: dateOf(all[last].EndsOn), Revision: revision, Restated: restated,
+		PlatformVersion: a.deps.Version, Columns: []FinancialColumn{}, Blocks: []FinancialBlock{}, Checks: []FinancialCheck{}, NonCash: []FinancialNonCash{}}
+	n := len(s.Columns)
+	for _, c := range s.Columns {
+		out.Columns = append(out.Columns, FinancialColumn{Key: c.Key, From: dateOf(c.From), To: dateOf(c.To)})
+	}
+	for _, b := range s.Blocks {
+		x := FinancialBlock{Key: b.Key, Title: b.Title, Measure: b.Measure, Totals: moneysOut(b.Totals), Percents: percentsOut(b.Percents, n),
+			Groups: []FinancialGroup{}}
+		for _, g := range b.Groups {
+			y := FinancialGroup{Name: g.Name, Totals: moneysOut(g.Totals), Percents: percentsOut(g.Percents, n), Lines: []FinancialLine{}}
+			for _, l := range g.Lines {
+				y.Lines = append(y.Lines, FinancialLine{AccountID: l.Account.ID.String(), Code: l.Account.Code, Name: l.Account.Name,
+					Function: l.Account.Function, Amounts: moneysOut(l.Amounts), Percents: percentsOut(l.Percents, n)})
+			}
+			x.Groups = append(x.Groups, y)
+		}
+		out.Blocks = append(out.Blocks, x)
+	}
+	for _, c := range s.Checks {
+		out.Checks = append(out.Checks, FinancialCheck{Key: c.Key, OK: c.OK, Title: c.Title, Detail: c.Detail})
+	}
+	for _, x := range s.NonCash {
+		out.NonCash = append(out.NonCash, FinancialNonCash{Date: dateOf(x.Date), SourceType: x.Source.Type, SourceID: x.Source.ID, Memo: x.Memo, Amount: moneyOut(x.Amount)})
+	}
+	return out, nil
 }

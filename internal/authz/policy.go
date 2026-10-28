@@ -417,6 +417,9 @@ var (
 	// of the reports, as the general ledger does.
 	GetFinancialStatement = Policy{Operation: "getFinancialStatement", Capability: Reports, Need: View, Unqualified: true,
 		Note: "A view of the reports limited to sales, purchases, payroll or a department is refused; the board pack's view of the P&L and balance sheet arrives with the board pack."}
+	// Exporting a statement reads what getting it does, and is audited (FR-RPT-09).
+	ExportFinancialStatement = Policy{Operation: "exportFinancialStatement", Capability: Reports, Need: View, Unqualified: true,
+		Note: "A view of the reports limited to sales, purchases, payroll or a department is refused."}
 	GetPeriodClose = Policy{Operation: "getPeriodClose", Capability: PeriodClose, Need: View}
 	RunCloseChecks = Policy{Operation: "runCloseChecks", Capability: PeriodClose, Need: Create}
 	ClosePeriod    = Policy{Operation: "closePeriod", Capability: PeriodClose, Need: Approve,
@@ -1011,7 +1014,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
-	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetSchedules, GetFinancialStatement, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
+	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetSchedules, GetFinancialStatement, ExportFinancialStatement, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence, AddBillEvidence, ListBillEvidence, GetBillEvidence, RemoveBillEvidence,

@@ -1249,6 +1249,9 @@ var matrixCalls = map[string]matrixCall{
 	"getSchedules": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/schedules?as_at=2026-10-31", tok, nil), nil
 	},
+	"exportFinancialStatement": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/statements/bs/export?to=2026-10&format=csv", tok, nil), nil
+	},
 	"getFinancialStatement": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/statements/pl?from=2026-10&to=2026-11", tok, nil), nil
 	},

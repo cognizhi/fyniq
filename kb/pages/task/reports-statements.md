@@ -4,7 +4,7 @@ type: task
 title: Read the financial statements
 summary: The profit and loss, balance sheet, cash flow and trial balance for any run of months, comparisons, tracing a figure to its lines, and re-running at a revision
 sources:
-  - docs/user-guide/financial-statements.md sha256:94bf0b05f36baf4c597c966012ed909c2c14b72bacb7696ae9059269bb4c124d
+  - docs/user-guide/financial-statements.md sha256:32ad630b2d13cad0556aded07ec17988a4b76c434ce965078eb9fd2a46a86770
 data_class: general
 taint: trusted
 status: draft
@@ -59,6 +59,14 @@ aliases:
 - An account's figure, or a group's total, opens the general ledger at its lines for the same months; a computed figure such as gross profit does not open.
 
 (src: docs/user-guide/financial-statements.md#see-the-lines-behind-a-figure)
+
+## Export a statement
+
+- **Export to Excel**: a workbook with the statement and a **Data** tab of every account's figure in every column; **Export CSV**: its rows.
+- Amounts are numbers, not text, and nothing in the file becomes a formula; the figures are read at the same ledger revision as the screen's.
+- Each export is recorded in the audit trail, with what was exported and its filters.
+
+(src: docs/user-guide/financial-statements.md#export-a-statement)
 
 ## The same figures again
 
