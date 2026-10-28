@@ -18251,7 +18251,7 @@ export interface components {
             method: "fast" | "giro";
             /**
              * Format: uuid
-             * @description The SGD bank account it is paid from.
+             * @description The SGD bank account it is paid from: the chart's money account, as a payment recorded by hand names it.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
              */
             money_account_id: string;
@@ -18304,7 +18304,7 @@ export interface components {
             method: "fast" | "giro";
             /**
              * Format: uuid
-             * @description The SGD bank account it is paid from.
+             * @description The SGD bank account it is paid from: the chart's money account, as a payment recorded by hand names it, set up in Banking.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
              */
             money_account_id: string;

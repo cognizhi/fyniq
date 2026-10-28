@@ -2776,7 +2776,7 @@ payment_batch_release | payment_batch_release_released_by_not_null | NOT NULL re
 payment_batch_release | payment_batch_release_sealed_length | CHECK (((octet_length(file_sealed) >= 40) AND (octet_length(file_sealed) <= 16777216)))
 payment_batch_release | payment_batch_release_sha256_length | CHECK ((octet_length(file_sha256) = 32))
 payment_batch_release | payment_batch_release_total_not_null | NOT NULL total
-payment_batch_release | payment_batch_release_total_scale | CHECK (((total = trunc(total, (minor_units)::integer)) AND (total > (0)::numeric)))
+payment_batch_release | payment_batch_release_total_scale | CHECK (((total <> 'NaN'::numeric) AND (total = trunc(total, (minor_units)::integer)) AND (total > (0)::numeric)))
 payment_batch_release | payment_batch_release_version_fkey | FOREIGN KEY (organisation_id, batch_id, batch_version) REFERENCES document_version(organisation_id, document_id, version)
 payment_batch_release | payment_batch_release_writer_format | CHECK ((writer ~ '^[a-z0-9-]+@[0-9]+$'::text))
 payment_batch_release | payment_batch_release_writer_not_null | NOT NULL writer
@@ -4075,7 +4075,7 @@ payee_bank_change_approved() → trigger | security invoker | v | search_path=pg
 payment_batch_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 50eb5cd820c5342dedae9a0668929e84
 payment_batch_holds() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e828989f43ccadc695506c2496db8c0a
 payment_batch_payment_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bb2e9135fea18ed77039c55b0c9a0110
-payment_batch_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 192027241eb4e377bd517db4048f6908
+payment_batch_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ae4685e2e7cb02d1878b021352e70f08
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bd7af6699cf1474f70577dbea9a60dc6
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470

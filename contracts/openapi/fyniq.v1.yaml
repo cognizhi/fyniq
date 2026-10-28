@@ -15715,7 +15715,7 @@ components:
             - fast
           type: string
         money_account_id:
-          description: The SGD bank account it is paid from.
+          description: "The SGD bank account it is paid from: the chart's money account, as a payment recorded by hand names it."
           examples:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
           format: uuid
@@ -15795,7 +15795,7 @@ components:
             - fast
           type: string
         money_account_id:
-          description: The SGD bank account it is paid from.
+          description: "The SGD bank account it is paid from: the chart's money account, as a payment recorded by hand names it, set up in Banking."
           examples:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
           format: uuid

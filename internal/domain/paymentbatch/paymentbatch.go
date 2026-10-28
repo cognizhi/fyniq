@@ -78,8 +78,8 @@ type Draft struct {
 	Notes          string
 }
 
-// Stored is a batch's version as its document keeps it. The database reads money_account_id, date and the items'
-// document_id (FY240, FY241).
+// Stored is a batch's version as its document keeps it: MoneyAccountID is the chart's money account, as a payment's. The
+// database reads money_account_id, date and the items' document_id (FY240, FY241).
 type Stored struct {
 	MoneyAccountID uuid.UUID `json:"money_account_id"`
 	PaymentDate    string    `json:"date"`
@@ -248,14 +248,15 @@ func Evaluate(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s
 	}
 	out.Errors = Check(d)
 	if s.MoneyAccountID != uuid.Nil {
-		acc, err := u.Banking().MoneyAccount(ctx, s.MoneyAccountID)
+		acc, err := moneyAccount(ctx, u, s.MoneyAccountID)
 		switch {
-		case errors.Is(err, ports.ErrNotFound):
-			out.Errors = append(out.Errors, Problem{Code: CodeAccount, Field: "money_account_id", Message: "the money account does not exist", Fix: "Choose one of the organisation's SGD bank accounts"})
 		case err != nil:
 			return Batch{}, err
+		case acc == nil:
+			out.Errors = append(out.Errors, Problem{Code: CodeAccount, Field: "money_account_id", Message: "the account is not a bank account in Banking",
+				Fix: "Choose one of the organisation's SGD bank accounts, set up in Banking"})
 		default:
-			out.Account = &acc
+			out.Account = acc
 			if acc.Currency != SGD.Code || acc.Kind != storage.MoneyBank || acc.ClosedOn != nil && !acc.ClosedOn.After(date) {
 				out.Errors = append(out.Errors, Problem{Code: CodeAccount, Field: "money_account_id",
 					Message: fmt.Sprintf("%s is not an open SGD bank account", acc.Name), Fix: "Choose an open SGD bank account: a batch pays SGD by FAST or GIRO"})
@@ -388,6 +389,21 @@ func Evaluate(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s
 		out.Payments = append(out.Payments, *p)
 	}
 	return out, nil
+}
+
+// moneyAccount is Banking's account on a chart account, nil when it has none. A batch names the chart's money account, as
+// a payment recorded by hand does; Banking's account gives its kind, currency and identifier.
+func moneyAccount(ctx context.Context, u storage.UnitOfWork, chart uuid.UUID) (*storage.MoneyAccount, error) {
+	all, err := u.Banking().MoneyAccounts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, m := range all {
+		if m.AccountID == chart {
+			return &m, nil
+		}
+	}
+	return nil, nil
 }
 
 // account finds a payment's account in force in SGD, its bank, and whether a change of it waits.

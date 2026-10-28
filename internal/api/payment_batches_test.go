@@ -113,7 +113,7 @@ func batchBody(acc storage.MoneyAccount, items ...string) map[string]any {
 		kind, id, _ := strings.Cut(x, ":")
 		list = append(list, map[string]any{"kind": kind, "document_id": id})
 	}
-	return map[string]any{"money_account_id": acc.ID.String(), "payment_date": "2026-10-31", "method": "fast", "items": list}
+	return map[string]any{"money_account_id": acc.AccountID.String(), "payment_date": "2026-10-31", "method": "fast", "items": list}
 }
 
 // checkCodes are the codes of a batch's checks, and of each item's.
