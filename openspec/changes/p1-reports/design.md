@@ -155,6 +155,12 @@ already the close's `trial-balance` check, which blocks it (✖).
 - **First uses:** the P&L's monthly trend and the top expenses.
 - **The palette** is checked by a script in `make check` (FR-VIZ-07): each pair of `--chart-1…8` is told apart under
   the three common colour-vision deficiencies, and each colour has 3:1 against the light and dark surfaces.
+  - (29 Oct 2026, correcting the line above to MASTER.md §10's dataviz method, which it contradicted) The script runs the
+    method's checks in all four themes: the lightness band, the chroma floor, adjacent-pair separation under protanopia
+    and deuteranopia (the method's simulation; tritanopia, which the method only reports, is left out), and the normal-vision
+    floor, each failing the build. Contrast below 3:1 is reported, not failed: the light theme's aqua, yellow and
+    magenta are 2.2 to 2.8:1 on white, which the method allows because every chart is also read through its table view
+    and direct labels (FR-VIZ-06), so the colour is never the only way to a value (WCAG 1.4.11).
 
 ### D8 Trace (FR-UX-04)
 
