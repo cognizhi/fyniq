@@ -66,6 +66,12 @@ closes the month.
      when they differ by anything Fyniq cannot explain); amounts on customer deposits from opening
      balances or manual journals, which no deposit supports, show ⚠: support them with the
      customers' statements, or record the deposits;
+   - prepayments and deferred revenue agree with the costs and income still spread over the months
+     ahead at the month's end, in the same way (✖ when they differ by anything Fyniq cannot
+     explain); amounts on them from opening balances or manual journals show ⚠: release them by
+     journal as the months pass, or have the accountant check them; a cost or income that a bill or a
+     bank line put on them directly, which nothing releases, shows ⚠: spread it over its months
+     instead, or release it by journal;
    - settlement differences cleared to FX and rounding in the month above the monthly cap in
      **Settings → Organisation** (⚠: the cap was lowered after they cleared; review them);
    - income and expense accounts that moved against the previous month by more than both

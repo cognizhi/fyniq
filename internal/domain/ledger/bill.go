@@ -2,6 +2,7 @@ package ledger
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -182,6 +183,7 @@ func PostBill(b Bill, s Settings) (Entry, error) {
 	gstControl, hasGST := s.byRole(RoleGSTControl)
 	prepay, hasPrepay := s.byRole(RolePrepayments)
 	spread := false
+	spreads := slices.ContainsFunc(b.Lines, func(l BillLine) bool { return l.Spread != nil })
 
 	var lines []Line
 	total := money.Zero(b.Currency)
@@ -204,6 +206,10 @@ func PostBill(b Bill, s Settings) (Entry, error) {
 		case acc.Role == RoleAccountsPayable || acc.Role == RoleGSTControl:
 			add(CodeRuleAccount, f("account"), fmt.Sprintf("account %s is the one the bill posts its total or its GST to", acc.Code),
 				"Choose the account the bill is for: the rule posts to it by itself")
+		case acc.Role == RolePrepayments && hasPrepay && spreads && l.Spread == nil:
+			// Its line on 1210 and the spread's would be one account's, and the releases could not tell them apart.
+			add(CodeSpread, f("account"), fmt.Sprintf("account %s holds the bill's spread costs", acc.Code),
+				"Choose the account the cost is for, and spread that line")
 		}
 		if len(l.Description) > MaxDescription {
 			add(CodeTooLong, f("description"), fmt.Sprintf("the description has %d characters; the most is %d", len(l.Description), MaxDescription), "Shorten it")

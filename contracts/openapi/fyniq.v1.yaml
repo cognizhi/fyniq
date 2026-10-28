@@ -19167,6 +19167,254 @@ components:
         - as_at
         - items
       type: object
+    Schedule:
+      additionalProperties: false
+      properties:
+        account_code:
+          description: Its code.
+          examples:
+            - "6410"
+          type: string
+        account_id:
+          description: "The account each month posts to: an expense account for a prepayment, a revenue account for deferred revenue."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+          format: uuid
+          type: string
+        account_name:
+          description: Its name.
+          examples:
+            - Insurance
+          type: string
+        description:
+          description: The line's description.
+          examples:
+            - Directors' and officers' insurance
+          type: string
+        kind:
+          description: "prepayment: a cost on 1210 Prepayments, expensed month by month; deferred_revenue: income on 2400 Deferred revenue, earned month by month."
+          enum:
+            - prepayment
+            - deferred_revenue
+          examples:
+            - prepayment
+          type: string
+        line:
+          description: The document's line that is spread, from 1.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        months:
+          description: Each month with something to release, in order.
+          items:
+            $ref: "#/components/schemas/ScheduleMonth"
+          type: array
+        months_posted:
+          description: How many of its months are posted by the day.
+          examples:
+            - 6
+          format: int64
+          type: integer
+        number:
+          description: The document's number, once it has one.
+          examples:
+            - BILL-0866
+          type: string
+        recognised:
+          $ref: "#/components/schemas/Money"
+          description: What its months posted by the day took off it.
+        remaining:
+          $ref: "#/components/schemas/Money"
+          description: "What is left on the holding account: the total less what is recognised."
+        source_id:
+          description: The document, to open it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+          format: uuid
+          type: string
+        source_type:
+          description: The document whose line is spread.
+          enum:
+            - bill
+            - invoice
+            - bank_transaction
+          examples:
+            - bill
+          type: string
+        total:
+          $ref: "#/components/schemas/Money"
+          description: What the line put on the holding account, in the base currency.
+      required:
+        - kind
+        - source_type
+        - source_id
+        - line
+        - account_id
+        - account_code
+        - account_name
+        - total
+        - recognised
+        - remaining
+        - months_posted
+        - months
+      type: object
+    ScheduleExplained:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: What it put on the account, in the base currency, as the holding account reads it.
+        source_type:
+          description: "The source: opening_balance or manual_journal, or another."
+          examples:
+            - manual_journal
+          type: string
+      required:
+        - source_type
+        - amount
+      type: object
+    ScheduleHolding:
+      additionalProperties: false
+      properties:
+        account_code:
+          description: Its code.
+          examples:
+            - "1210"
+          type: string
+        account_id:
+          description: The account with the role.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+          format: uuid
+          type: string
+        account_name:
+          description: Its name.
+          examples:
+            - Prepayments
+          type: string
+        balance:
+          $ref: "#/components/schemas/Money"
+          description: "What the account holds at the day, in the base currency, from the balance service (ENG-04): a debit for prepayments, a credit for deferred revenue, each read as positive."
+        direct:
+          $ref: "#/components/schemas/Money"
+          description: What bills and bank lines put on it directly, which no schedule releases.
+        explained:
+          description: What opening balances, manual journals and other sources put on it.
+          items:
+            $ref: "#/components/schemas/ScheduleExplained"
+          type: array
+        kind:
+          description: "prepayment: 1210 Prepayments; deferred_revenue: 2400 Deferred revenue."
+          enum:
+            - prepayment
+            - deferred_revenue
+          examples:
+            - prepayment
+          type: string
+        open:
+          description: Its schedules with something remaining.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        schedules:
+          $ref: "#/components/schemas/Money"
+          description: What its open schedules still hold.
+        status:
+          description: "agrees: the schedules and the documents' direct amounts are all it holds; explained: it also holds amounts from other sources; differs: something is unexplained, which the close refuses."
+          enum:
+            - agrees
+            - explained
+            - differs
+          examples:
+            - agrees
+          type: string
+        unexplained:
+          $ref: "#/components/schemas/Money"
+          description: "What is left: a posting and its document disagree. Zero when it ties."
+      required:
+        - kind
+        - account_id
+        - account_code
+        - account_name
+        - balance
+        - schedules
+        - direct
+        - explained
+        - unexplained
+        - status
+        - open
+      type: object
+    ScheduleMonth:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "What the month releases, in the base currency: the months are rounded on the running total, so they add up to the schedule's total exactly (ALLOC-EVEN)."
+        date:
+          description: "The release's date: the month's first day, or the document's date for a month before it."
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        entry_id:
+          description: Its entry, once posted.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80
+          format: uuid
+          type: string
+        month:
+          description: The month, as YYYY-MM.
+          examples:
+            - 2026-10
+          type: string
+        status:
+          description: "As at the day: posted, in the ledger; reversed, posted and then reversed; waiting, dated by the day and not in the ledger yet (the hourly job posts it, or waits for its period to open); projected, dated after the day, not in the ledger (ENG-05)."
+          enum:
+            - posted
+            - reversed
+            - waiting
+            - projected
+          examples:
+            - posted
+          type: string
+      required:
+        - month
+        - date
+        - amount
+        - status
+      type: object
+    Schedules:
+      additionalProperties: false
+      properties:
+        as_at:
+          description: The day.
+          examples:
+            - "2026-09-30"
+          format: date
+          type: string
+        currency:
+          description: The base currency every amount is in.
+          examples:
+            - SGD
+          type: string
+        holdings:
+          description: 1210 Prepayments and 2400 Deferred revenue, each that the chart has, reconciled with their schedules.
+          items:
+            $ref: "#/components/schemas/ScheduleHolding"
+          type: array
+        schedules:
+          description: The schedules, prepayments first, by the date of their first month, then the document's number and line.
+          items:
+            $ref: "#/components/schemas/Schedule"
+          type: array
+      required:
+        - as_at
+        - currency
+        - holdings
+        - schedules
+      type: object
     SendSalesReminder:
       additionalProperties: false
       properties:
@@ -92071,6 +92319,119 @@ paths:
         - API-RATE-01
         - REPORT-01
         - REPORT-02
+      x-fyniq-permission:
+        capability: Reports, dashboards
+        note: A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
+        right: V
+  /v1/reports/schedules:
+    get:
+      description: "Every cost and income spread over months (FR-GL-03) as at a day: each spread line of a posted bill, invoice or bank line, with what it put on 1210 Prepayments or 2400 Deferred revenue, what its months posted by the day took off it, what remains, and each month's state. Months post only once they are reached (ENG-05): later ones are projections, never in the ledger. Each holding account is reconciled with its schedules (INV-07): its balance from the balance service against what the schedules and the documents' direct amounts hold, with what opening balances and manual journals put on it named, and anything else unexplained, which the period close refuses. Read-only; no side effects."
+      operationId: getSchedules
+      parameters:
+        - description: The day; left out, the organisation's today.
+          explode: false
+          in: query
+          name: as_at
+          schema:
+            description: The day; left out, the organisation's today.
+            examples:
+              - "2026-09-30"
+            format: date
+            type: string
+        - description: "open: the schedules with something remaining at the day; all: those finished too."
+          explode: false
+          in: query
+          name: status
+          schema:
+            default: open
+            description: "open: the schedules with something remaining at the day; all: those finished too."
+            enum:
+              - open
+              - all
+            examples:
+              - open
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Schedules"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get the prepayment and deferral schedules
+      tags:
+        - Reports
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
       x-fyniq-permission:
         capability: Reports, dashboards
         note: A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.

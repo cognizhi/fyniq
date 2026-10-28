@@ -93,6 +93,21 @@ func TestPostBillSpreadsALineToPrepayments(t *testing.T) {
 	}
 }
 
+// A bill line on 1210 itself beside a spread line puts two lines on 1210, and the bill's releases cannot tell the spread's
+// from the other: they failed, so the bill could neither release nor be voided. The bill is refused on that line, as a
+// bank line's part on its holding account is. A bill that spreads nothing may still put a cost on 1210 by hand.
+// req: FR-GL-03
+func TestABillThatSpreadsRefusesALineOnPrepayments(t *testing.T) {
+	s := purchasing()
+	b := sgdBill(spreadLine(t, billLine(t, software, "1200.00", "0.00", sgd, true), october, 12), billLine(t, prepaid, "300.00", "0.00", sgd, true))
+	if _, err := PostBill(b, s); !slices.Equal(codes(err), []string{CodeSpread}) || err.(Problems)[0].Field != "lines[2].account" {
+		t.Fatalf("a line on 1210 beside a spread: %v", err)
+	}
+	if _, err := PostBill(sgdBill(billLine(t, prepaid, "300.00", "0.00", sgd, true)), s); err != nil {
+		t.Errorf("a cost put on 1210 by hand, with no spread: %v", err)
+	}
+}
+
 // Worked by hand: a bill dated 14 October 2026 spreads 13,080.00 over 12 months from August, a service that started
 // before the bill: 1,090.00 a month, the parts of August, September and October dated on the bill's date and the rest
 // on the first of their months. S$1.00 spread over 6 months from November is G4-015: 0.17, 0.16, 0.17, 0.17, 0.16,

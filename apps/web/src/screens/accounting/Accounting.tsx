@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { BookOpen, CalendarRange, ChevronRight, Coins, NotebookPen, Package, Scale, ScrollText, type LucideIcon } from "lucide-react";
+import { BookOpen, CalendarClock, CalendarRange, ChevronRight, Coins, NotebookPen, Package, Scale, ScrollText, type LucideIcon } from "lucide-react";
 import { helpText } from "../../i18n";
 import { Icon } from "../../ui";
 
@@ -9,19 +9,20 @@ const pages: { to: string; help: string; icon: LucideIcon }[] = [
   { to: "/accounting/opening-balances", help: "accounting.opening-balances", icon: Scale },
   { to: "/accounting/fx", help: "accounting.currencies", icon: Coins },
   { to: "/accounting/assets", help: "accounting.fixed-assets", icon: Package },
+  { to: "/accounting/schedules", help: "accounting.schedules", icon: CalendarClock },
   { to: "/reports/general-ledger", help: "reports.general-ledger", icon: ScrollText },
   { to: "/accounting/chart-of-accounts", help: "accounting.chart", icon: BookOpen },
 ];
 
 // Accounting is the Accounting workspace's first page (docs/design/screens: the breadcrumb's "Accounting"): its
-// pages, each with what it is for. Schedules join with their task.
+// pages, each with what it is for.
 export function Accounting() {
   return (
     <div className="fy-page fy-page--narrow fy-enter">
       <div className="fy-pagehead">
         <div className="fy-pagehead__text">
           <h1 className="fy-h1">Accounting</h1>
-          <p className="fy-secondary">Journals, the periods they post in, the accounts they post to, and the fixed asset register.</p>
+          <p className="fy-secondary">Journals, the periods they post in, the accounts they post to, the fixed asset register and the schedules of what is spread over months.</p>
         </div>
       </div>
       <nav className="fy-card" aria-label="Accounting pages">

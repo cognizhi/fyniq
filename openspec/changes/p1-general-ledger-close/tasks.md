@@ -119,7 +119,7 @@
 
 ## 5. Scheduler and system postings
 
-- [ ] 5.1 The scheduler tick: due items once per slot, under the `system:scheduler` principal, period locks and approval policies applied. Tests `// req: FR-AUT-01` and `// req: FR-AUT-02`
+- [x] 5.1 The scheduler tick: due items once per slot, under the `system:scheduler` principal, period locks and approval policies applied. Tests `// req: FR-AUT-01` and `// req: FR-AUT-02`
   (21 Oct 2026, part, PRD rev 0.55: the tick's platform schedules gain `journals.auto-reverse`, hourly at :20, run with
   the worker's role (migration 000063: UPDATE (status) on `document`, and `document_reversed_posted`, FY056, so any
   reversal needs its entry); each run names `scheduler:journals.auto-reverse`; a reversal whose period is closed or not
@@ -131,7 +131,15 @@
   (21 Oct 2026, PRD rev 0.60: the platform schedules gain `journals.recurring`, hourly at ten past, as
   `scheduler:journals.recurring`; it makes documents only through `create_scheduled_draft`. **Left:** the other automated
   postings with their sources (depreciation, FX revaluation, schedules).)
-- [ ] 5.2 Recognition up to the current period only, with future amounts as projections. Test `// req: ENG-05`
+  (28 Oct 2026: the other automated postings are built, each with its own principal: `fx.revalue` and
+  `fx.reversals` (`p1-multi-currency-fx`), `bills.releases`, `invoices.releases` and `bank.releases` (the spreads),
+  `assets.depreciation` (`p1-fixed-assets`), and the recurring bills and invoices as drafts. Each runs once per slot
+  and waits, with an audit event, for a period that is not open.)
+- [x] 5.2 Recognition up to the current period only, with future amounts as projections. Test `// req: ENG-05`
+  (28 Oct 2026: built with each source that spreads or depreciates: a month posts only once the organisation's today
+  reaches it, and a bill's, an invoice's and an asset's later months show as projected, never in the ledger. Tests
+  tagged `// req: ENG-05` in `release_test.go`, `invoice_release_test.go`, `bank_transaction_test.go` and
+  `depreciation_test.go`; `TestSchedulesThroughTheAPI` across documents.)
 - [x] 5.3 Versioned posting rules with a replay test per rule version. Test `// req: ENG-06` (QA-ENG-06)
   (22 Oct 2026, PRD rev 0.67, provisional: `ledger.Rules` names every rule version the engine has posted with
   (`manual_journal@1`, `opening_balance@1`); `ledger.Replay` re-runs one, and an unknown version is LEDGER-18. Each
@@ -169,9 +177,17 @@
   `TestFluxAnalysisInTheClose`, `TestAttackVarianceExplanationsAreAppendOnlyAndOnlyInAnOpenPeriod`, the matrix rows.
   **Out of scope:** the AI-drafted explanation (an AI catalogue task type, wave 6) and budget variances (`p1-planning`).
   The page's Variances section joins 7.2.)
-- [ ] 6.4 Schedules for prepayments and deferred revenue, with the first source that spreads over months (`p1-purchases` bills). Tests `// req: FR-GL-03`
+- [x] 6.4 Schedules for prepayments and deferred revenue, with the first source that spreads over months (`p1-purchases` bills). Tests `// req: FR-GL-03`
   (23 Oct 2026, prepayments from bills: `p1-purchases` 6.1, PRD-001 rev 0.83. Deferred revenue waits for `p1-sales`;
   bank lines' spreads and the reconciliation of open schedules with 1210 and 2400 follow)
+  (28 Oct 2026, PRD rev 0.158, provisional: `journal.DeferralsAt` reads the documents with a line on 1210 or 2400
+  from the balance service (`balance.Sources`), each at its current version: its spread lines with their months as at
+  a day, and what it still holds of each account. `GET /v1/reports/schedules` (V on Reports, unqualified) lists them
+  with 1210 and 2400 reconciled (INV-07); the close checks `prepayments` and `deferred-revenue` refuse a difference no
+  source explains (✖) and warn of amounts from opening balances and manual journals, and of costs or income put on
+  the account directly (⚠). A bill line on 1210 beside a spread line is refused (LEDGER-28): the releases could not
+  tell the two apart. Tests: `TestPrepaymentSchedulesReconcileWith1210`, `TestDeferredRevenueSchedulesReconcileWith2400`,
+  `TestSchedulesThroughTheAPI`, `TestABillThatSpreadsRefusesALineOnPrepayments`, the matrix row.)
 
 ## 7. Screens
 
@@ -193,7 +209,7 @@
   draft. Guide `journals.md` "Attach evidence". The Recurring tab and auto-reversal were built with 2.4 (#112, #120).
   **Left:** dimensions (`p1-organisation-chart` 3.3); the locked-period banner, which the design shows for soft locks
   (FR-GL-09, P2): a journal dated in a closed month already shows the status JOURNAL-LOCKED.)
-- [ ] 7.2 Build opening-balances and period-close as designed, with the periods of the year on the close page
+- [x] 7.2 Build opening-balances and period-close as designed, with the periods of the year on the close page
   (21 Oct 2026, part: Accounting › Periods and close lists the periods by financial year, open or closed, and opens the
   next year; Home's set-up checklist gains "Open the first financial year". Guide `periods-and-close.md` → kb
   `accounting.periods`. Accounting › Opening balances lists every balance-sheet account (revenue and expenses on request)
@@ -224,13 +240,21 @@
   the matrix row, `YearEnd.test.tsx`. Director balance confirmations (FR-EQ-12) arrive with the director accounts; the
   optional closing entry waits for open question 31.
   **Left:** reconciliations, open items (with `p1-sales`, `p1-purchases`).)
+  (28 Oct 2026: the reconciliations and open items are close checks now, which the page lists with the rest: bank
+  reconciliation and sign-off (`p1-bank-import-reconcile`), the AR, AP, deposit and asset sub-ledgers, and the
+  schedules (6.4).)
 - [x] 7.3 Build the general ledger report (its screen belongs to `p1-reports`; built early so the founders see what they post)
   (21 Oct 2026: Accounting › General ledger (`/reports/general-ledger`): accounts chosen one at a time (up to 20), a
   range of dates from the first of the month to today, each account's opening balance, lines with the running balance
   and their source as a link (a journal, the opening balances), debits, credits and closing balance, the ledger revision
   it read; Export CSV with plain decimals, an ASCII minus and inert formulas. Guide `general-ledger.md` → kb
   `reports.general-ledger`. **Left:** dimensions and saved views, the background export (`p1-reports`).)
-- [ ] 7.4 Build schedules with 6.4
+- [x] 7.4 Build schedules with 6.4
+  (28 Oct 2026: Accounting › Schedules (`/accounting/schedules`, Expert): the schedules as at a day, by kind, each with
+  its source, total, months posted, recognised and remaining; the two holding accounts' tiles tied as the close ties
+  them, with what was entered on them directly and what journals put there; a schedule's months posted, waiting,
+  future or reversed; finished schedules on request. The roll-forward is P2 (FR-RPT-13). Guide `schedules.md` → kb
+  `accounting.schedules`. Test: `Schedules.test.tsx`.)
 
 ## 8. The oracle (for the oracle session; never written from the engine)
 

@@ -148,6 +148,15 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** its months are released
 - **THEN** each month's release is dated the later of the month's first day and the document's date
 
+#### Scenario: The schedules as at a day (rev 0.158)
+- **WHEN** the schedules are read as at a day
+- **THEN** every spread of a bill, an invoice or a bank line shows what it put on 1210 or 2400, what its months posted by the day took off, what remains, and each month posted, waiting or projected
+- **AND** 1210 and 2400 are reconciled with them (INV-07)
+
+#### Scenario: A bill line on prepayments beside a spread (rev 0.158)
+- **WHEN** a bill has a line on 1210 itself and another line spread over months
+- **THEN** the line on 1210 is refused (LEDGER-28), because the bill's releases could not tell it from the spread
+
 ### Requirement: FR-GL-04 FX revaluation
 The system SHALL revalue the open foreign-currency monetary items at month end at the period-end rate, posting the unrealised gain or loss as base-only lines (INV-05) with automatic reversal on day 1 of the next period.
 

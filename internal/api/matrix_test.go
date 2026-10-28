@@ -1246,6 +1246,9 @@ var matrixCalls = map[string]matrixCall{
 	"getGeneralLedger": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/general-ledger?account_id="+e.books.Bank.ID.String()+"&from=2026-10-01&to=2026-11-30", tok, nil), nil
 	},
+	"getSchedules": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/schedules?as_at=2026-10-31", tok, nil), nil
+	},
 	"listJournals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/journals", tok, nil), nil
 	},

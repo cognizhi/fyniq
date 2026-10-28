@@ -179,6 +179,11 @@ Source: PRD-001 §10.7
 - **THEN** what 2410 holds of each posted deposit by the period's end (its base amount less its GST, less what the invoices that deduct it and its refunds took) is compared with 2410's balance by source type
 - **AND** a difference no source explains is ✖ and blocks the close, and amounts on 2410 from opening balances or manual journals are ⚠
 
+#### Scenario: Prepayments and deferred revenue at the close (rev 0.158)
+- **WHEN** a period's close checks run
+- **THEN** what 1210 and 2400 hold of each posted bill, invoice and bank line by the period's end (what its entry put on the account, less its releases dated by then) is compared with the account's balance by source type
+- **AND** a difference no source explains is ✖ and blocks the close, and amounts from opening balances or manual journals, and costs or income a bill or a bank line put on the account directly, are ⚠
+
 #### Scenario: G4-036 GST roll-forward over a quarter
 - **GIVEN** a quarter with output tax, input tax, a payment to IRAS and a refund
 - **WHEN** the quarter's GST control is verified
