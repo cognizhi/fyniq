@@ -76,6 +76,12 @@ An entry with no line on a money account that moves a financing or investing acc
 personally, a conversion to shares) is taken out of financing or investing. It is listed apart as a non-cash
 transaction.
 
+As built, each entry is classified by the accounts it moves: investing when it moves a capital-expenditure account,
+financing when it moves borrowings or equity, operating otherwise. Its cash is what it put on the cash accounts, and the
+operating reconciliation equals the operating entries' cash exactly. One consequence is to confirm with the accountant:
+equipment bought on account is a non-cash investing entry, and paying the supplier later is operating, since that entry
+moves only payables and the bank.
+
 An account whose cash-flow line is outside that set, or a balance-sheet account without one, belongs to no section.
 That is a ✖ check, never silently dropped (D3).
 
