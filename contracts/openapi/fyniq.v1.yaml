@@ -16030,6 +16030,18 @@ components:
         - paid
         - rejected
       type: object
+    PaymentBatchPosted:
+      additionalProperties: false
+      properties:
+        payment_id:
+          description: The bill payment or reimbursement.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10
+          format: uuid
+          type: string
+      required:
+        - payment_id
+      type: object
     PaymentBatchRelease:
       additionalProperties: false
       properties:
@@ -16044,12 +16056,10 @@ components:
           examples:
             - PB-0003-payment-list.csv
           type: string
-        payment_ids:
-          description: The bill payments and reimbursements it posted, one per payee.
-          examples:
-            - - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10
+        payments:
+          description: The bill payments and reimbursements it posted, one per payee, in the file's order.
           items:
-            type: string
+            $ref: "#/components/schemas/PaymentBatchPosted"
           type: array
         released_at:
           description: When it was released.
@@ -16077,7 +16087,7 @@ components:
         - writer
         - file_name
         - sha256
-        - payment_ids
+        - payments
       type: object
     PaymentBatchSuggestion:
       additionalProperties: false
