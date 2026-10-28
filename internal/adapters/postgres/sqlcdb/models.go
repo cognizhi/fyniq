@@ -1407,6 +1407,26 @@ type FyniqRecurringJournalVersion struct {
 	EditedAt           time.Time
 }
 
+type FyniqReportExport struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Report         string
+	Format         string
+	Parameters     []byte
+	RequestedBy    string
+	RequestedAt    time.Time
+	Status         string
+	LedgerRevision *int64
+	FileName       *string
+	MediaType      *string
+	SizeBytes      *int64
+	FileSha256     []byte
+	RowsCount      *int64
+	ReadyAt        *time.Time
+	ExpiresAt      *time.Time
+	Failure        *string
+}
+
 type FyniqReviewLogEntry struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

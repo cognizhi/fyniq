@@ -167,6 +167,7 @@ describe("the reports index", () => {
       "GET /v1/reports/statements/pl": { status: 200, body: pl },
       "GET /v1/reports/statements/bs": { status: 200, body: bs },
       "GET /v1/reports/statements/cf": { status: 403, body: { code: "API-AUTHZ-01", title: "Forbidden", status: 403 } },
+      "GET /v1/report-exports": { status: 200, body: { items: [] } },
     });
     renderPage(Reports, { path: "/reports", session: accountant });
     expect(await screen.findByText("3,190.00")).toBeTruthy();
@@ -176,5 +177,41 @@ describe("the reports index", () => {
     fireEvent.change(screen.getByLabelText("Find a report"), { target: { value: "ledger" } });
     expect(screen.queryByRole("link", { name: "Profit and loss" })).toBeNull();
     expect(screen.getByRole("link", { name: /General ledger/ })).toBeTruthy();
+  });
+});
+
+// req: FR-RPT-09
+// req: FR-RPT-10
+describe("the accountant exports", () => {
+  it("asks for an export with its days, lists mine and downloads a ready one; axe finds nothing", async () => {
+    const ready = { id: "x1", report: "trial_balance", format: "csv", to: "2026-10-31", status: "ready", requested_at: "2026-10-31T09:00:00Z", file_name: "trial-balance-2026-10-31.csv",
+      media_type: "text/csv", size_bytes: 3, rows: 1, sha256: "ab", ledger_revision: 42, ready_at: "2026-10-31T09:00:05Z", expires_at: "2026-11-01T09:00:05Z" };
+    const failed = { id: "x2", report: "general_ledger", format: "xlsx", from: "2026-10-01", to: "2027-01-31", status: "failed", requested_at: "2026-10-31T09:00:00Z",
+      why: "the range crosses the start of a financial year: export each year apart" };
+    answer({
+      "GET /v1/periods": { status: 200, body: { items: periods } },
+      "GET /v1/reports/statements/pl": { status: 200, body: pl },
+      "GET /v1/reports/statements/bs": { status: 200, body: pl },
+      "GET /v1/reports/statements/cf": { status: 200, body: pl },
+      "GET /v1/report-exports": { status: 200, body: { items: [ready, failed] } },
+      "POST /v1/report-exports": { status: 202, body: { ...ready, id: "x3", status: "pending" } },
+      "GET /v1/report-exports/x1/file": { status: 200, body: { export_id: "x1", file_name: ready.file_name, media_type: "text/csv", sha256: "ab", size_bytes: 3, rows: 1, ledger_revision: 42, content_base64: btoa("abc") } },
+    });
+    Object.assign(URL, { createObjectURL: vi.fn(() => "blob:x"), revokeObjectURL: vi.fn() });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    renderPage(Reports, { path: "/reports", session: accountant });
+    const list = await screen.findByRole("list", { name: "My exports" });
+    expect(within(list).getByText(/Ready until/)).toBeTruthy();
+    expect(within(list).getByText(/crosses the start of a financial year/)).toBeTruthy();
+    await noViolations(document.body);
+    fireEvent.change(screen.getByLabelText("Report"), { target: { value: "journals" } });
+    fireEvent.change(screen.getByLabelText("From"), { target: { value: "2026-10-01" } });
+    fireEvent.change(screen.getByLabelText("To"), { target: { value: "2026-10-31" } });
+    fireEvent.click(screen.getByRole("button", { name: "Prepare the export" }));
+    await vi.waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/report-exports")).toBe(true));
+    const sent = seen.find((x) => x.method === "POST" && x.path === "/v1/report-exports")!.body as Record<string, unknown>;
+    expect(sent).toEqual({ report: "journals", from: "2026-10-01", to: "2026-10-31", format: "xlsx" });
+    fireEvent.click(within(list).getByRole("button", { name: "Download trial-balance-2026-10-31.csv" }));
+    await vi.waitFor(() => expect(click).toHaveBeenCalled());
   });
 });

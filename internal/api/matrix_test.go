@@ -1249,6 +1249,18 @@ var matrixCalls = map[string]matrixCall{
 	"getSchedules": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/schedules?as_at=2026-10-31", tok, nil), nil
 	},
+	"requestReportExport": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/report-exports", tok, map[string]any{"report": "trial_balance", "to": "2026-10-31", "format": "csv"}), nil
+	},
+	"listReportExports": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/report-exports", tok, nil), nil
+	},
+	"getReportExport": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/report-exports/"+uuid.NewString(), tok, nil), nil
+	},
+	"getReportExportFile": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/report-exports/"+uuid.NewString()+"/file", tok, nil), nil
+	},
 	"exportFinancialStatement": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/statements/bs/export?to=2026-10&format=csv", tok, nil), nil
 	},

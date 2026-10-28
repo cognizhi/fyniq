@@ -114,6 +114,8 @@ type UnitOfWork interface {
 	// PayeeBankAccounts are the account numbers of the changes of vendors' bank details (FR-CT-03).
 	PayeeBankAccounts() PayeeBankAccounts
 	PaymentBatches() PaymentBatches
+	// ReportExports are the exports that run in the background (FR-RPT-09).
+	ReportExports() ReportExports
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))

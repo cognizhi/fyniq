@@ -1091,6 +1091,23 @@ recurring_journal_version | version | integer | not null |
 recurring_journal_version | content | jsonb | not null | 
 recurring_journal_version | edited_by | text | not null | 
 recurring_journal_version | edited_at | timestamp with time zone | not null | now()
+report_export | organisation_id | uuid | not null | current_org()
+report_export | id | uuid | not null | uuidv7()
+report_export | report | text | not null | 
+report_export | format | text | not null | 
+report_export | parameters | jsonb | not null | 
+report_export | requested_by | text | not null | 
+report_export | requested_at | timestamp with time zone | not null | 
+report_export | status | text | not null | 'pending'::text
+report_export | ledger_revision | bigint | null | 
+report_export | file_name | text | null | 
+report_export | media_type | text | null | 
+report_export | size_bytes | bigint | null | 
+report_export | file_sha256 | bytea | null | 
+report_export | rows_count | bigint | null | 
+report_export | ready_at | timestamp with time zone | null | 
+report_export | expires_at | timestamp with time zone | null | 
+report_export | failure | text | null | 
 review_log_entry | organisation_id | uuid | not null | current_org()
 review_log_entry | id | uuid | not null | uuidv7()
 review_log_entry | kind | text | not null | 
@@ -3011,6 +3028,24 @@ recurring_journal_version | recurring_journal_version_positive | CHECK ((version
 recurring_journal_version | recurring_journal_version_recurring_journal_id_not_null | NOT NULL recurring_journal_id
 recurring_journal_version | recurring_journal_version_version_not_null | NOT NULL version
 recurring_journal_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+report_export | report_export_failed_says_why | CHECK (((status <> 'failed'::text) OR ((length(btrim(failure)) >= 1) AND (length(btrim(failure)) <= 500))))
+report_export | report_export_file_name_length | CHECK (((length(file_name) >= 1) AND (length(file_name) <= 200)))
+report_export | report_export_format_known | CHECK ((format = ANY (ARRAY['csv'::text, 'xlsx'::text])))
+report_export | report_export_format_not_null | NOT NULL format
+report_export | report_export_id_not_null | NOT NULL id
+report_export | report_export_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+report_export | report_export_organisation_id_not_null | NOT NULL organisation_id
+report_export | report_export_parameters_not_null | NOT NULL parameters
+report_export | report_export_parameters_object | CHECK ((jsonb_typeof(parameters) = 'object'::text))
+report_export | report_export_pkey | PRIMARY KEY (organisation_id, id)
+report_export | report_export_ready_whole | CHECK (((status <> ALL (ARRAY['ready'::text, 'expired'::text])) OR ((ledger_revision IS NOT NULL) AND (file_name IS NOT NULL) AND (media_type IS NOT NULL) AND (size_bytes IS NOT NULL) AND (file_sha256 IS NOT NULL) AND (rows_count IS NOT NULL) AND (ready_at IS NOT NULL) AND (expires_at > ready_at))))
+report_export | report_export_report_known | CHECK ((report = ANY (ARRAY['general_ledger'::text, 'trial_balance'::text, 'journals'::text, 'fixed_assets'::text, 'receivables'::text, 'payables'::text])))
+report_export | report_export_report_not_null | NOT NULL report
+report_export | report_export_requested_at_not_null | NOT NULL requested_at
+report_export | report_export_requested_by_not_null | NOT NULL requested_by
+report_export | report_export_status_known | CHECK ((status = ANY (ARRAY['pending'::text, 'ready'::text, 'failed'::text, 'expired'::text])))
+report_export | report_export_status_not_null | NOT NULL status
+report_export | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 review_log_entry | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 review_log_entry | review_log_entry_actor_fkey | FOREIGN KEY (actor) REFERENCES app_user(user_id)
 review_log_entry | review_log_entry_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES approval_request(organisation_id, id)
@@ -3343,6 +3378,8 @@ CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, date
 CREATE INDEX period_reopen_period ON fyniq.period_reopen USING btree (organisation_id, period_id, reopened_at)
 CREATE INDEX period_variance_explanation_period ON fyniq.period_variance_explanation USING btree (organisation_id, period_id, account_id, written_at)
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
+CREATE INDEX report_export_expiring ON fyniq.report_export USING btree (organisation_id, status, expires_at)
+CREATE INDEX report_export_requested ON fyniq.report_export USING btree (organisation_id, requested_by, requested_at DESC)
 CREATE INDEX review_log_entry_logged ON fyniq.review_log_entry USING btree (organisation_id, logged_at)
 CREATE INDEX role_assignment_membership_idx ON fyniq.role_assignment USING btree (organisation_id, membership_id)
 CREATE INDEX sod_override_lookup ON fyniq.sod_override USING btree (organisation_id, team_mode_version, user_id, conflict)
@@ -3521,6 +3558,7 @@ CREATE UNIQUE INDEX recurring_invoice_version_pkey ON fyniq.recurring_invoice_ve
 CREATE UNIQUE INDEX recurring_journal_pkey ON fyniq.recurring_journal USING btree (organisation_id, id)
 CREATE UNIQUE INDEX recurring_journal_version_key ON fyniq.recurring_journal_version USING btree (organisation_id, recurring_journal_id, version)
 CREATE UNIQUE INDEX recurring_journal_version_pkey ON fyniq.recurring_journal_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX report_export_pkey ON fyniq.report_export USING btree (organisation_id, id)
 CREATE UNIQUE INDEX review_log_entry_approval_once ON fyniq.review_log_entry USING btree (organisation_id, approval_id)
 CREATE UNIQUE INDEX review_log_entry_pkey ON fyniq.review_log_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX review_log_review_once ON fyniq.review_log_review USING btree (organisation_id, entry_id)
@@ -3646,6 +3684,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period D
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_bill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_journal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.report_export DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('report_export', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('role_assignment', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.statement_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statement_mapping', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_installation_audit()
@@ -3811,6 +3850,8 @@ CREATE TRIGGER recurring_bill_version_immutable BEFORE DELETE OR UPDATE ON fyniq
 CREATE TRIGGER recurring_invoice_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_invoice_version FOR EACH ROW EXECUTE FUNCTION recurring_invoice_version_immutable()
 CREATE TRIGGER recurring_invoice_version_no_truncate BEFORE TRUNCATE ON fyniq.recurring_invoice_version FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER recurring_journal_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_journal_version FOR EACH ROW EXECUTE FUNCTION recurring_journal_version_immutable()
+CREATE TRIGGER report_export_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.report_export FOR EACH ROW EXECUTE FUNCTION report_export_guard()
+CREATE TRIGGER report_export_no_truncate BEFORE TRUNCATE ON fyniq.report_export FOR EACH STATEMENT EXECUTE FUNCTION report_export_guard()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_review FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER role_assignment_guard BEFORE UPDATE ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION membership_guard()
@@ -3924,6 +3965,7 @@ recurring_invoice | tenant_isolation | * | (organisation_id = current_org()) | (
 recurring_invoice_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_journal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_journal_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+report_export | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 role_assignment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -4097,6 +4139,7 @@ recurring_invoice_version_immutable() → trigger | security invoker | v | searc
 recurring_journal_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4998ee7053cefac747e643b32d1a0311
 remittance_allowed(p_payment uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 71486c98f030e272cb2b831b924e47d1
 remittance_email_sent() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f9c42f700a81ca6d6d0fd3fc96e9ba53
+report_export_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 20502c6b8dfb382053b912027176702f
 request_installation_change(p_by uuid, p_connector_id uuid, p_connector text, p_step text, p_summary text, p_change jsonb, p_envelope text, p_hash bytea, p_mfa_at timestamp with time zone, p_at timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 081e531ac2fa6d7a04725c2968ee4893
 require_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88b80585540483298b0397296b364b9d
 require_grant_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 10dc33c6231fa48667c6b95ffe2a04c4

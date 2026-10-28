@@ -8507,6 +8507,87 @@ Runs the period's month-end revaluation (FR-GL-04; PRD-001 rev 0.73, provisional
 
 Reports read from the ledger at one revision: the general ledger (FR-GL-11), and the statements as they arrive.
 
+### `GET /v1/report-exports`
+
+**List my exports** (`listReportExports`)
+
+The caller's background exports, newest first, at most 50, each with its status (FR-RPT-09). Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards
+- **Responses:**
+  - `200` OK [`ReportExportList`](../../contracts/schemas/ReportExportList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/report-exports`
+
+**Ask for an accountant export** (`requestReportExport`)
+
+Asks for one of the accountant exports (FR-RPT-10) as CSV or XLSX, which the worker prepares in the background (FR-RPT-09): the general ledger or the journal entries over a range of days, or the trial balance, the fixed asset schedule, or the receivables or payables in detail at a day. The answer is 202 with the export, pending; getReportExport says when it is ready, and the caller is notified. Its file is downloaded with getReportExportFile, by the caller only, until 24 hours after it is ready. Side effects: the export and its audit event, and the job. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.
+
+- **Permission:** View on Reports, dashboards
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ReportExportRequest`](../../contracts/schemas/ReportExportRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ReportExportOut`](../../contracts/schemas/ReportExportOut.schema.json)
+  - `202` Accepted [`ReportExportOut`](../../contracts/schemas/ReportExportOut.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-EXPORT-01` An export changes only from pending to ready or failed, and from ready to expired.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-EXPORT-01`
+
+### `GET /v1/report-exports/{export_id}`
+
+**Get one of my exports** (`getReportExport`)
+
+An export the caller asked for and its status: pending, ready with its file's name, hash and expiry, failed with why, or expired (FR-RPT-09). Another person's is REPORT-07. Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards
+- **Parameters:**
+  - `export_id` (path, required): The export.
+- **Responses:**
+  - `200` OK [`ReportExportOut`](../../contracts/schemas/ReportExportOut.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `REPORT-07` Another person's export.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `REPORT-07`
+
+### `GET /v1/report-exports/{export_id}/file`
+
+**Download one of my exports** (`getReportExportFile`)
+
+The file of a ready export the caller asked for, in base64 with its SHA-256 (FR-RPT-09). The caller's rights are checked again at each download, so a role taken away stops it at once. A pending or failed export is REPORT-05; one past its 24 hours is REPORT-06; another person's is REPORT-07. Side effects: an audit event of the download, with the file's hash. Never cached.
+
+- **Permission:** View on Reports, dashboards. Checked again at each download: a right taken away stops the download at once.
+- **Parameters:**
+  - `export_id` (path, required): The export.
+- **Responses:**
+  - `200` OK [`ReportFile`](../../contracts/schemas/ReportFile.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `REPORT-07` Another person's export.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `REPORT-05` The export is not ready.
+  - `410` Gone: `REPORT-06` The export has expired.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `REPORT-05`, `REPORT-06`, `REPORT-07`
+
 ### `GET /v1/reports/general-ledger`
 
 **Get the general ledger report** (`getGeneralLedger`)

@@ -123,6 +123,7 @@ var fyCodes = map[string]string{
 	"FY240": storage.CodeBatch,
 	"FY241": storage.CodeBatchHeld,
 	"FY242": storage.CodeBatch,
+	"FY243": storage.CodeReportExport,
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,
