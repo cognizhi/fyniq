@@ -198,6 +198,25 @@ func (b *builder) value(path, format string) string {
 
 func (b *builder) text(t string) string { return doctemplate.Expand(t, b.value) }
 
+// parts expands a text of parts joined by " · ", leaving out a part whose fields are all empty: the footer's
+// "UEN {{organisation.uen}}" of an organisation with no UEN, rather than a dangling "· UEN".
+func (b *builder) parts(t string) string {
+	var out []string
+	for _, p := range strings.Split(t, " · ") {
+		fields, filled := false, false
+		s := doctemplate.Expand(p, func(path, format string) string {
+			v := b.value(path, format)
+			fields, filled = true, filled || strings.TrimSpace(v) != ""
+			return v
+		})
+		if fields && !filled {
+			continue
+		}
+		out = append(out, s)
+	}
+	return strings.Join(out, " · ")
+}
+
 func (b *builder) item(path, particular string) []Item {
 	s := strings.TrimSpace(b.value(path, ""))
 	if s == "" {
@@ -283,7 +302,9 @@ func Build(documentType string, c doctemplate.Content, d Data) (Layout, error) {
 			blk.Label, blk.Body = t[doctemplate.TextLabel], strings.TrimSpace(b.text(t[doctemplate.TextBody]))
 		case doctemplate.BlockSignature:
 			blk.Label = t[doctemplate.TextLabel]
-		case doctemplate.BlockFooter, doctemplate.BlockText:
+		case doctemplate.BlockFooter:
+			blk.Body = strings.TrimSpace(b.parts(t[doctemplate.TextBody]))
+		case doctemplate.BlockText:
 			blk.Body = strings.TrimSpace(b.text(t[doctemplate.TextBody]))
 		default:
 			continue
