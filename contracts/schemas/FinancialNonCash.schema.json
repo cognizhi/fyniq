@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "Its debits, in the base currency."
+    },
+    "date": {
+      "description": "Its date.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "memo": {
+      "description": "The entry's memo.",
+      "examples": [
+        "Interest on the director's loan"
+      ],
+      "type": "string"
+    },
+    "source_id": {
+      "description": "The source document, to open it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"
+      ],
+      "type": "string"
+    },
+    "source_type": {
+      "description": "Where it comes from (ENG-03).",
+      "examples": [
+        "manual_journal"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "date",
+    "source_type",
+    "source_id",
+    "amount"
+  ],
+  "title": "FinancialNonCash",
+  "type": "object"
+}

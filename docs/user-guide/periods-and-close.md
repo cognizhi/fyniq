@@ -72,9 +72,11 @@ closes the month.
      journal as the months pass, or have the accountant check them; a cost or income that a bill or a
      bank line put on them directly, which nothing releases, shows ⚠: spread it over its months
      instead, or release it by journal;
-   - accounts with a balance that sit in no section of the balance sheet, because their cash-flow
-     line is not one of the standard chart's (⚠: their figures are missing from the statements;
-     give each a cash-flow line in the chart of accounts);
+   - accounts with a balance that sit in no section of the balance sheet or no line of the cash
+     flow, because their cash-flow line is not one of the standard chart's (⚠: their figures are
+     missing from the statements; give each a cash-flow line in the chart of accounts);
+   - the month's cash flow ties to the cash accounts, and its movement in equity reconciles (✖ when
+     either does not, which a sound ledger never shows: report it);
    - settlement differences cleared to FX and rounding in the month above the monthly cap in
      **Settings → Organisation** (⚠: the cap was lowered after they cleared; review them);
    - income and expense accounts that moved against the previous month by more than both

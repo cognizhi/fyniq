@@ -285,3 +285,29 @@ func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, y ye
 	}
 	return total, nil
 }
+
+// EachEntry calls each with every entry the ledger holds up to a revision, in revision order, with its lines: what a
+// statement that needs entries rather than balances reads, such as the cash flow (FR-RPT-01, INV-11), at the revision
+// it reads every other figure at.
+func EachEntry(ctx context.Context, u storage.UnitOfWork, revision int64, each func(storage.Entry) error) error {
+	const page = 500
+	after := int64(0)
+	for {
+		entries, err := u.Ledger().Entries(ctx, after, page)
+		if err != nil {
+			return err
+		}
+		for _, e := range entries {
+			if e.LedgerRevision > revision {
+				return nil
+			}
+			if err := each(e); err != nil {
+				return err
+			}
+			after = e.LedgerRevision
+		}
+		if len(entries) < page {
+			return nil
+		}
+	}
+}

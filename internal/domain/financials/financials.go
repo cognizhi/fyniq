@@ -23,7 +23,7 @@ import (
 // Kind is a statement.
 type Kind string
 
-// The statements this package lays out. The cash flow follows with the movement in equity (INV-11).
+// The statements this package lays out; the cash flow is in flows.go.
 const (
 	ProfitAndLoss Kind = "pl"
 	BalanceSheet  Kind = "bs"
@@ -93,12 +93,14 @@ type Check struct {
 	Detail string
 }
 
-// Statement is a laid-out statement: its columns, its blocks in order and its checks, read as at Revision.
+// Statement is a laid-out statement: its columns, its blocks in order and its checks, read as at Revision. A cash flow
+// lists its run's non-cash transactions apart.
 type Statement struct {
 	Kind     Kind
 	Columns  []Column
 	Blocks   []Block
 	Checks   []Check
+	NonCash  []NonCash
 	Revision int64
 }
 
@@ -214,7 +216,7 @@ func Columns(r Request) ([]Column, error) {
 		for _, p := range current {
 			out = append(out, run(p.StartsOn.Format("2006-01"), []storage.Period{p}))
 		}
-		if r.Kind == ProfitAndLoss && len(current) > 1 {
+		if (r.Kind == ProfitAndLoss || r.Kind == CashFlow) && len(current) > 1 {
 			out = append(out, run(KeyTotal, current))
 		}
 		return out, nil
@@ -280,12 +282,20 @@ func Lay(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Reque
 	if err != nil {
 		return Statement{}, err
 	}
+	s := Statement{Kind: r.Kind, Columns: cols, Revision: r.Revision}
+	if r.Kind == CashFlow {
+		fs, err := flows(ctx, u, base, r, cols, accounts)
+		if err != nil {
+			return Statement{}, err
+		}
+		s.Blocks, s.Checks, s.NonCash, err = cashFlow(fs, len(cols), base)
+		return s, err
+	}
 	figs, totals, err := figures(ctx, u, base, r, cols)
 	if err != nil {
 		return Statement{}, err
 	}
 	l := layout{kind: r.Kind, base: base, n: len(cols), figs: figs, accounts: accounts}
-	s := Statement{Kind: r.Kind, Columns: cols, Revision: r.Revision}
 	switch r.Kind {
 	case ProfitAndLoss:
 		s.Blocks, err = l.profitAndLoss()
@@ -300,6 +310,19 @@ func Lay(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Reque
 		return Statement{}, err
 	}
 	s.Checks = l.checks(totals)
+	if r.Kind == BalanceSheet {
+		// The movement in equity over each column's run, and that it reconciles (INV-11, BS_EqChk).
+		fs, err := flows(ctx, u, base, r, cols, accounts)
+		if err != nil {
+			return Statement{}, err
+		}
+		b, c, err := equityMovement(fs, len(cols), base)
+		if err != nil {
+			return Statement{}, err
+		}
+		s.Blocks = append(s.Blocks, b)
+		s.Checks = append(s.Checks, c)
+	}
 	return s, nil
 }
 

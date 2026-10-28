@@ -472,10 +472,11 @@ func deferralChecks(ctx context.Context, u storage.UnitOfWork, p storage.Period)
 	return out, nil
 }
 
-// statementsCheck lays out the month's balance sheet (INV-10, BS_Uncl; p1-reports design D3): ⚠ when an account with
-// a balance sits in no section of it, because its cash-flow line is not one the statements know; the account's figures
-// would be missing from the statements. That the books balance is the trial-balance check's. Nothing is said when every
-// account sits in a section.
+// statementsCheck lays out the month's balance sheet and cash flow (INV-10, INV-11; p1-reports design D3): ⚠ when an
+// account with a balance sits in no section or line of them, because its cash-flow line is not one the statements
+// know, so its figures would be missing; ✖ when the movement in equity does not reconcile or the cash flow does not tie
+// to the cash accounts, which a sound ledger never shows. That the books balance is the trial-balance check's. Nothing
+// is said when all is well.
 func statementsCheck(ctx context.Context, u storage.UnitOfWork, cur money.Currency, p storage.Period) ([]Check, error) {
 	all, err := u.Periods().List(ctx)
 	if err != nil {
@@ -486,16 +487,25 @@ func statementsCheck(ctx context.Context, u storage.UnitOfWork, cur money.Curren
 	if err != nil || i < 0 {
 		return nil, err
 	}
-	bs, err := financials.Lay(ctx, u, cur, financials.Request{Kind: financials.BalanceSheet, All: all, First: i, Last: i, Revision: revision})
-	if err != nil {
-		return nil, err
-	}
-	for _, c := range bs.Checks {
-		if c.Key == "placed" && !c.OK {
-			return []Check{{"statements", Warning, "Accounts are missing from the balance sheet", c.Detail}}, nil
+	var out []Check
+	for _, k := range []financials.Kind{financials.BalanceSheet, financials.CashFlow} {
+		s, err := financials.Lay(ctx, u, cur, financials.Request{Kind: k, All: all, First: i, Last: i, Revision: revision})
+		if err != nil {
+			return nil, err
+		}
+		for _, c := range s.Checks {
+			switch {
+			case c.OK:
+			case c.Key == "placed" && k == financials.BalanceSheet:
+				out = append(out, Check{"statements", Warning, "Accounts are missing from the balance sheet", c.Detail})
+			case c.Key == "placed":
+				out = append(out, Check{"statements-cash", Warning, "Accounts are missing from the cash flow", c.Detail})
+			case c.Key == "equity" || c.Key == "ties":
+				out = append(out, Check{"statements-" + c.Key, Failed, c.Title, c.Detail})
+			}
 		}
 	}
-	return nil, nil
+	return out, nil
 }
 
 // receivablesChecks reconcile the AR sub-ledger with the accounts-receivable account at the period's end (INV-07;

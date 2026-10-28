@@ -21,11 +21,12 @@ import (
 // 1,000.00 in the bank from share capital; a sale of 500.00 is received; 100.00 of advertising is paid. The P&L:
 // revenue 500.00, operating expenses 100.00 (20.0%), net profit 400.00 (80.0%). The balance sheet at 31 October: the
 // bank 1,400.00; equity 1,000.00 and the profit 400.00. Read again as at its revision after a back-dated 50.00, the
-// P&L is unchanged; once the advertising account is renamed, the re-run is flagged restated presentation. A month
+// P&L is unchanged; the cash flow ties the profit to the bank. Once the advertising account is renamed, the re-run is flagged restated presentation. A month
 // without a period and a revision later than the ledger are refused.
 // req: FR-RPT-01
 // req: FR-RPT-08
 // req: G4-051
+// req: INV-11
 func TestFinancialStatementsThroughTheAPI(t *testing.T) {
 	e := newEnv(t)
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
@@ -102,6 +103,17 @@ func TestFinancialStatementsThroughTheAPI(t *testing.T) {
 	if first(block(bs, "current_assets"), "totals") != "1400.00" || first(block(bs, "equity"), "totals") != "1400.00" ||
 		!strings.Contains(bs.Raw, `"name":"Profit for the year to date","totals":[{"amount":"400.00","currency":"SGD"}]`) {
 		t.Errorf("31 October's balance sheet: %s", bs.Raw)
+	}
+
+	if first(block(bs, "equity_movement"), "totals") != "1400.00" {
+		t.Errorf("the movement in equity: %s", bs.Raw)
+	}
+	// The cash flow: the profit of 400.00 is what the sale and the advertising moved; the opening 1,000.00 is where the
+	// books start, not a flow.
+	cf := e.call(http.MethodGet, "/v1/reports/statements/cf?from=2026-10&to=2026-10", e.as(authz.Accountant), nil)
+	if cf.Status != 200 || first(block(cf, "net_operating"), "totals") != "400.00" || first(block(cf, "cash_at_start"), "totals") != "1000.00" ||
+		first(block(cf, "cash_at_end"), "totals") != "1400.00" || strings.Contains(cf.Raw, `"ok":false`) || !strings.Contains(cf.Raw, `"non_cash":[]`) {
+		t.Errorf("October's cash flow: %d %s", cf.Status, cf.Raw)
 	}
 
 	// G4-051: a back-dated 50.00 of advertising after the revision leaves October as at it unchanged.
