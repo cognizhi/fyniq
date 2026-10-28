@@ -3,12 +3,15 @@
 package api
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -213,21 +216,52 @@ func TestAStandardModeReleaseNeedsAThirdPerson(t *testing.T) {
 	}
 }
 
-// matrixApprovedBatch is a batch of one bill of a payee with an approved account, prepared and asked for by the matrix
-// person and approved through the engine by another member holding the Controller role; with its ETag.
+// matrixApprovedBatch is a batch of one bill of a payee with an approved account, prepared by the matrix person and
+// approved as the engine approves it, by two people of another organisation (so the matrix's members stay as they are),
+// its envelope holding the batch's dependencies; with its ETag.
 func matrixApprovedBatch(e *env) (id, tag string) {
 	e.t.Helper()
 	vendor := e.vendor("Matrix payee " + uuid.NewString()[:8])
 	e.vendorAccount(vendor, "0123456789")
-	prep := steppedUp(e, e.as(authz.Accountant))
-	r := e.call(http.MethodPost, "/v1/payment-batches", prep, batchBody(e.batchAccount(), "bill:"+e.billOf(vendor, "10.00", "0.90")))
-	asked := e.askBatch(r.str("id"), prep, r.Header.Get("ETag"), false)
-	ctrl := e.joinedIn(e.books.Org, "Matrix Controller", "controller")
-	if d := e.call(http.MethodPost, "/v1/approvals/"+asked.str("id")+"/approve", e.personAs(ctrl, authz.Controller), hashOf(asked), "If-Match", `"1"`); d.Status != http.StatusOK {
-		e.t.Fatalf("approving the matrix batch = %d: %s", d.Status, d.Raw)
+	r := e.call(http.MethodPost, "/v1/payment-batches", steppedUp(e, e.as(authz.Accountant)), batchBody(e.batchAccount(), "bill:"+e.billOf(vendor, "10.00", "0.90")))
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("preparing the matrix batch = %d: %s", r.Status, r.Raw)
 	}
-	g := e.call(http.MethodGet, "/v1/payment-batches/"+r.str("id"), e.as(authz.Accountant), nil)
-	return r.str("id"), g.Header.Get("ETag")
+	id = r.str("id")
+	requester, signer := e.otherUser(), e.otherUser()
+	now := e.clock.Now()
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: signer.String()}})
+	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, deps, err := e.api.batchDependencies(ctx, u, id)
+		if err != nil {
+			return err
+		}
+		envelope, err := json.Marshal(map[string]any{"object": map[string]any{"id": id, "type": approval.ObjectPaymentBatch}, "dependencies": deps,
+			"nonce": uuid.NewString()})
+		if err != nil {
+			return err
+		}
+		sum := sha256.Sum256(envelope)
+		req, err := u.Approvals().Request(ctx, storage.NewApprovalRequest{ObjectType: approval.ObjectPaymentBatch, ObjectKey: id, Operation: approval.OpBatchApprove,
+			Summary: "A batch", Change: []byte(`{"execute":{}}`), Envelope: string(envelope), EnvelopeHash: sum[:], PolicyVersion: "p",
+			PolicySteps: []storage.ApprovalStep{{Quorum: 1}}, RequestedBy: requester, RequestedAt: now, RequesterMFAMethod: "session_step_up",
+			RequesterMFAAt: now, ExpiresAt: now.Add(7 * 24 * time.Hour)})
+		if err != nil {
+			return err
+		}
+		if _, err := u.Approvals().Sign(ctx, storage.NewApprovalSignature{RequestID: req.ID, Step: 1, Signer: signer, Decision: "approve",
+			EnvelopeHash: req.EnvelopeHash, MFAMethod: "session_step_up", MFAAt: now, SignedAt: now}); err != nil {
+			return err
+		}
+		if req, err = u.Approvals().Decide(ctx, req.ID, req.Version, "approved", "", now); err != nil {
+			return err
+		}
+		return e.api.executeBatchApproval(ctx, u, req)
+	}); err != nil {
+		e.t.Fatal(err)
+	}
+	g := e.call(http.MethodGet, "/v1/payment-batches/"+id, e.as(authz.Accountant), nil)
+	return id, g.Header.Get("ETag")
 }
 
 // matrixPaymentBatchRelease has one request per operation on approving, releasing and cancelling batches.
