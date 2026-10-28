@@ -74,8 +74,9 @@ The batch's page shows the list's SHA-256, so you can check a copy is the one re
 
 When you match a batch's payment to its line on the bank statement, it shows **Paid**, and the batch is paid once every
 payment is. A supplier is then emailed remittance advice to its remittance address, once. A supplier with no remittance
-email is warned of before release, and is sent nothing. A payment the bank rejects is voided on its own, and its bills
-or claims are open again.
+email is warned of before release, and is sent nothing. If sending the advice fails after several tries, the payment
+shows **Remittance not sent**: tell the supplier of the payment another way. A payment the bank rejects is voided on its
+own, and its bills or claims are open again.
 
 ## Cancel a batch
 

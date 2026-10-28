@@ -4,7 +4,7 @@ type: task
 title: Pay suppliers and claims in a payment batch
 summary: Prepare a batch of approved bills and claims, have another person approve it, release it, pay it from the payment list, and see it paid
 sources:
-  - docs/user-guide/payment-batches.md sha256:8df0cbc1fd0bc56fe9ab89d0e4c95710dcd1bc0dff260586f3772c90f807a1a1
+  - docs/user-guide/payment-batches.md sha256:c36ff1df40cae398119bb71544125e399e36edb952c2596d498d22cf80deee8e
 data_class: general
 taint: trusted
 status: draft
@@ -89,6 +89,7 @@ aliases:
 
 - Matching a batch's payment to its bank statement line shows it **Paid**; the batch is paid once every payment is.
 - A supplier is then emailed remittance advice to its remittance address, once; one with no remittance email is warned of before release and sent nothing.
+- If sending the advice fails after several tries, the payment shows **Remittance not sent**: tell the supplier of the payment another way.
 - A payment the bank rejects is voided on its own, and its bills or claims are open again.
 
 (src: docs/user-guide/payment-batches.md#paid-and-remittance-advice)

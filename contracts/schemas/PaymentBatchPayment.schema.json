@@ -51,11 +51,12 @@
       "type": "boolean"
     },
     "remittance": {
-      "description": "A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, or no_email when the supplier has no remittance address (⚠). Absent for a claimant.",
+      "description": "A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, failed when sending it gave up after its attempts (⚠: tell the supplier another way), or no_email when the supplier has no remittance address (⚠). Absent for a claimant.",
       "enum": [
         "waiting",
         "queued",
         "sent",
+        "failed",
         "no_email"
       ],
       "examples": [

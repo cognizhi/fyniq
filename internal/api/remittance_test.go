@@ -238,3 +238,35 @@ func TestRemittanceAdviceIsSentWhenTheBatchPaymentMatches(t *testing.T) {
 		t.Errorf("every payment matched, and the batch is %s: %s", g.str("status"), g.Raw)
 	}
 }
+
+// A remittance job that gave up after its attempts shows as failed on the batch, so the supplier can be told of the
+// payment another way; nothing queues it again (design D8).
+// req: FR-BNK-12
+func TestARemittanceThatGaveUpShowsAsFailed(t *testing.T) {
+	e := newEnv(t)
+	accountant := e.as(authz.Accountant)
+	northwind := e.vendor("Northwind Analytics Pte Ltd")
+	if r := e.call(http.MethodPatch, "/v1/contacts/"+northwind, accountant, map[string]any{"remittance_email": "payments@northwind.example"}, "If-Match", "*"); r.Status != http.StatusOK {
+		t.Fatalf("setting the remittance email = %d: %s", r.Status, r.Raw)
+	}
+	e.vendorAccount(northwind, "0123456789")
+	rel, m := e.releasedBatch("bill:" + e.billOf(northwind, "100.00", "9.00"))
+	nw := paymentOf(t, rel, "Northwind Analytics Pte Ltd")["payment_id"].(string)
+	l := e.lineOn(m, "-109.00", nil)
+	if r := e.call(http.MethodPost, "/v1/bank-lines/"+l.ID.String()+"/match-recorded", accountant, map[string]any{"document_id": nw}, "If-Match", etag(l.Version)); r.Status != http.StatusOK {
+		t.Fatalf("matching = %d: %s", r.Status, r.Raw)
+	}
+	if err := workerStore(t).Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		row, err := u.Outbox().ByKey(ctx, remitmail.Kind, remitmail.Key(uuid.MustParse(nw)))
+		if err != nil || row == nil {
+			t.Fatalf("the remittance job: %+v, %v", row, err)
+		}
+		return u.Sweeping().MarkDead(ctx, row.ID, "the render service did not answer")
+	}); err != nil {
+		t.Fatal(err)
+	}
+	g := e.call(http.MethodGet, "/v1/payment-batches/"+rel.str("id"), accountant, nil)
+	if p := paymentOf(t, g, "Northwind Analytics Pte Ltd"); p["remittance"] != "failed" || p["paid"] != true {
+		t.Fatalf("Northwind's payment after its remittance gave up: %v", p)
+	}
+}

@@ -51,13 +51,16 @@ Trust boundaries:
 | B5 | The list is sealed (SEC-11) bound to the batch, with the SHA-256 of the file shown on the batch; it is downloaded only by the releaser, stepped up, and each download is audited with the hash; the guide asks for the list to be deleted once keyed | `TestAPaymentBatchIsApprovedThenReleased` (`// asvs: V14.2.4`) |
 | B6 | The bank's count and total are compared with the list's last row before authorising in the bank (the guide); bank import matching leaves a payment of a wrong amount unmatched. A wrong account with the right amount is not caught until the bank's own file replaces the keying (rev 0.156) | The guide `purchases.payment-batches`; [live-verify] with the first batch |
 | B7 | Numbers are opened only inside the release's transaction; the list is sealed; the audit trail and the log carry the file's name and hash only | `TestAPaymentBatchIsApprovedThenReleased` (the trail and the log hold no number) |
-| B8 | One remittance job per payment, keyed by it, however often the match is undone and done again (Outbox.ByKey); the worker sends nothing for a payment voided since, sent already, or a supplier with no remittance address | `TestRemittanceAdviceIsSentWhenTheBatchPaymentMatches` |
+| B8 | One remittance job per payment, keyed by it, however often the match is undone and done again (Outbox.ByKey); the worker sends nothing for a payment voided since, sent already, or a supplier with no remittance address. The worker's database role keeps advice, records a send and queues remittance email only for a posted bill payment a released batch recorded and a live match ties to the bank (`remittance_allowed`, FY201, FY202; migration 000189) | `TestRemittanceAdviceIsSentWhenTheBatchPaymentMatches` (`// req: QA-ENG-05`, `// asvs: V8.2.2`), run on the worker's role |
 | B9 | A cell that starts like a formula is written with a leading apostrophe (CWE-1236) | `TestThePaymentListIsWrittenToTheByte` |
 
 ## 4. What remains
 
 - The bank's own file (DBS UFF or another bank's), which removes the keying, follows once the bank is chosen (rev 0.156).
 - A payment voided between its match and the worker's run is skipped by the worker; there is no test of that window.
+- A remittance job that fails five times is dead: nothing retries it, and its key stops a second job for the payment.
+  The batch shows **Remittance not sent** (`TestARemittanceThatGaveUpShowsAsFailed`) and the guide says to tell the
+  supplier another way; there is no dead-letter replay yet.
 - Auto-reconcile leaves a batch's payments to a person to match, as it does any payment recorded by hand.
 - Salaries in batches arrive with `p1-payroll-link`; the IR21 hold with them.
 - The first live batch is [live-verify]: the list keyed into the bank, the count and total compared, the statement lines

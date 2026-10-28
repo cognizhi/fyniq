@@ -55,7 +55,7 @@ type PaymentBatchPayment struct {
 	PaymentID  string `json:"payment_id,omitempty" format:"uuid" doc:"Released: the bill payment or reimbursement the release posted." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10"`
 	Paid       bool   `json:"paid" doc:"Released: bank import matched the payment to its statement line." example:"false"`
 	Rejected   bool   `json:"rejected" doc:"Released: the payment was voided, as when the bank rejected it; its bills or claims are open again." example:"false"`
-	Remittance string `json:"remittance,omitempty" enum:"waiting,queued,sent,no_email" doc:"A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, or no_email when the supplier has no remittance address (⚠). Absent for a claimant." example:"sent"`
+	Remittance string `json:"remittance,omitempty" enum:"waiting,queued,sent,failed,no_email" doc:"A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, failed when sending it gave up after its attempts (⚠: tell the supplier another way), or no_email when the supplier has no remittance address (⚠). Absent for a claimant." example:"sent"`
 }
 
 // PaymentBatch is a batch of payments, as its checks read it now.

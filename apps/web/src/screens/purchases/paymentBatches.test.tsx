@@ -115,17 +115,19 @@ describe("payment batches", () => {
     expect(seen.find((s) => s.path === "/v1/payment-batches/b1/release")!.headers.get("If-Match")).toBe('"1-posted"');
   });
 
-  it("shows a released batch's payments as paid or waiting, the remittance sent, and downloads its payment list; axe finds nothing", async () => {
+  it("shows a released batch's payments as paid or waiting, the remittance sent or not, and downloads its payment list; axe finds nothing", async () => {
     const paid = { ...northwind, payment_id: "p1", paid: true, remittance: "sent" as const };
+    const gaveUp = { ...northwind, payee: { kind: "vendor" as const, id: "v2", name: "Quiet Supplier Pte Ltd" }, payment_id: "p3", paid: false, remittance: "failed" as const };
     const waiting = { ...northwind, payee: { kind: "person" as const, id: "u1", name: "Tan Ah Kow" }, payment_id: "p2", account: undefined, amount: sgd("27.30") };
     const release = { released_by: { kind: "user", id: "u2", name: "Mei Lin Tan" }, released_at: "2026-10-31T01:30:00Z", approval_id: "a1", writer: "payment-list@1",
       file_name: "PB-0003-payment-list.csv", sha256: "ab".repeat(32), payments: [{ payment_id: "p1" }, { payment_id: "p2" }] };
-    const seen = page({ ...base, status: "released", number: "PB-0003", payments: [paid, waiting], release }, releaser, {
+    const seen = page({ ...base, status: "released", number: "PB-0003", payments: [paid, waiting, gaveUp], release }, releaser, {
       "GET /v1/payment-batches/b1/file": { status: 200, body: { file_name: "PB-0003-payment-list.csv", media_type: "text/csv", sha256: "ab".repeat(32), size_bytes: 3, content_base64: "YWJj" } },
     });
     expect(await screen.findByText("Remittance sent")).toBeTruthy();
     expect(screen.getByText("Paid")).toBeTruthy();
-    expect(screen.getByText("Waiting for the bank")).toBeTruthy();
+    expect(screen.getAllByText("Waiting for the bank")).toHaveLength(2);
+    expect(screen.getByText("Remittance not sent")).toBeTruthy();
     expect(screen.getByText(/Released by Mei Lin Tan/)).toBeTruthy();
     await noViolations(document.body);
     fireEvent.click(screen.getByRole("button", { name: "Download payment list" }));

@@ -64,6 +64,12 @@ function PaymentState({ p, released }: { p: Payment; released: boolean }) {
             Remittance sent
           </span>
         )}
+        {p.remittance === "failed" && (
+          <span className="fy-chip fy-chip--warning" title="Sending it gave up. Tell the supplier of the payment another way.">
+            <Icon of={MailX} />
+            Remittance not sent
+          </span>
+        )}
         {p.remittance === "no_email" && (
           <span className="fy-chip fy-chip--warning">
             <Icon of={MailX} />
