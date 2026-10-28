@@ -5,7 +5,8 @@ import { answer } from "../test/api";
 import { noViolations } from "../test/axe";
 import { SignIn } from "./SignIn";
 
-vi.mock("../route", async (original) => ({ ...(await original<typeof import("../route")>()), go: vi.fn() }));
+// go replaces the page, which jsdom cannot do: the tests read where it would go.
+vi.mock("../route", async (original) => ({ ...(await original<Record<string, unknown>>()), go: vi.fn() }));
 
 const code = "ABCDE-FGHIJ-KLMNO-PQRST";
 const signedIn = { "GET /v1/setup": { status: 200, body: { done: true } }, "GET /v1/session": { status: 200, body: { provider: "Google" } } };
