@@ -8528,6 +8528,25 @@ The general ledger of one to 20 accounts over a range of dates, in the base curr
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `REPORT-01`, `REPORT-02`
 
+### `GET /v1/reports/schedules`
+
+**Get the prepayment and deferral schedules** (`getSchedules`)
+
+Every cost and income spread over months (FR-GL-03) as at a day: each spread line of a posted bill, invoice or bank line, with what it put on 1210 Prepayments or 2400 Deferred revenue, what its months posted by the day took off it, what remains, and each month's state. Months post only once they are reached (ENG-05): later ones are projections, never in the ledger. Each holding account is reconciled with its schedules (INV-07): its balance from the balance service against what the schedules and the documents' direct amounts hold, with what opening balances and manual journals put on it named, and anything else unexplained, which the period close refuses. Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards. A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
+- **Parameters:**
+  - `as_at` (query): The day; left out, the organisation's today.
+  - `status` (query): open: the schedules with something remaining at the day; all: those finished too.
+- **Responses:**
+  - `200` OK [`Schedules`](../../contracts/schemas/Schedules.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
 ## Contacts
 
 Customers and vendors (FR-CT-01).

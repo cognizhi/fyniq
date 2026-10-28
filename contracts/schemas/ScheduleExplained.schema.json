@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What it put on the account, in the base currency, as the holding account reads it."
+    },
+    "source_type": {
+      "description": "The source: opening_balance or manual_journal, or another.",
+      "examples": [
+        "manual_journal"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_type",
+    "amount"
+  ],
+  "title": "ScheduleExplained",
+  "type": "object"
+}

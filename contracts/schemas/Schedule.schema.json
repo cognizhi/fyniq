@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "Its code.",
+      "examples": [
+        "6410"
+      ],
+      "type": "string"
+    },
+    "account_id": {
+      "description": "The account each month posts to: an expense account for a prepayment, a revenue account for deferred revenue.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "account_name": {
+      "description": "Its name.",
+      "examples": [
+        "Insurance"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "The line's description.",
+      "examples": [
+        "Directors' and officers' insurance"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "prepayment: a cost on 1210 Prepayments, expensed month by month; deferred_revenue: income on 2400 Deferred revenue, earned month by month.",
+      "enum": [
+        "prepayment",
+        "deferred_revenue"
+      ],
+      "examples": [
+        "prepayment"
+      ],
+      "type": "string"
+    },
+    "line": {
+      "description": "The document's line that is spread, from 1.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "months": {
+      "description": "Each month with something to release, in order.",
+      "items": {
+        "$ref": "ScheduleMonth.schema.json"
+      },
+      "type": "array"
+    },
+    "months_posted": {
+      "description": "How many of its months are posted by the day.",
+      "examples": [
+        6
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "number": {
+      "description": "The document's number, once it has one.",
+      "examples": [
+        "BILL-0866"
+      ],
+      "type": "string"
+    },
+    "recognised": {
+      "$ref": "Money.schema.json",
+      "description": "What its months posted by the day took off it."
+    },
+    "remaining": {
+      "$ref": "Money.schema.json",
+      "description": "What is left on the holding account: the total less what is recognised."
+    },
+    "source_id": {
+      "description": "The document, to open it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "source_type": {
+      "description": "The document whose line is spread.",
+      "enum": [
+        "bill",
+        "invoice",
+        "bank_transaction"
+      ],
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "What the line put on the holding account, in the base currency."
+    }
+  },
+  "required": [
+    "kind",
+    "source_type",
+    "source_id",
+    "line",
+    "account_id",
+    "account_code",
+    "account_name",
+    "total",
+    "recognised",
+    "remaining",
+    "months_posted",
+    "months"
+  ],
+  "title": "Schedule",
+  "type": "object"
+}

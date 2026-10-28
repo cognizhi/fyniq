@@ -224,6 +224,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		return nil, err
 	}
 	out = append(out, deposits...)
+	deferrals, err := deferralChecks(ctx, u, p)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, deferrals...)
 	bank, err := bankChecks(ctx, u, cur, p, today)
 	if err != nil {
 		return nil, err
@@ -398,6 +403,64 @@ func assetChecks(ctx context.Context, u storage.UnitOfWork, p storage.Period) ([
 	if len(lines) > 0 {
 		out = append(out, Check{"assets-unregistered", Warning, "Purchases on asset accounts are not in the register",
 			strings.Join(lines, ", ") + ": register each in Accounting › Fixed assets, so it depreciates"})
+	}
+	return out, nil
+}
+
+// deferralChecks reconcile the holding accounts of spreads, 1210 Prepayments and 2400 Deferred revenue, with the
+// documents that put amounts on them at the period's end (INV-07, FR-GL-03), as payablesChecks do for accounts payable:
+// ✖ when one differs by anything no source explains, which is a fault; ⚠ when one holds amounts from opening balances or
+// manual journals, or amounts bills and bank lines put on it directly, which no schedule releases; ✔ otherwise. Nothing
+// is said for a holding account that holds nothing and has no schedule.
+func deferralChecks(ctx context.Context, u storage.UnitOfWork, p storage.Period) ([]Check, error) {
+	d, err := journal.DeferralsAt(ctx, u, p.EndsOn)
+	if err != nil {
+		return nil, err
+	}
+	var out []Check
+	for _, h := range d.Holdings {
+		r := h.Reconciliation
+		if len(r.Currencies) == 0 && h.Open == 0 && len(h.Direct) == 0 {
+			continue
+		}
+		id, holding, schedules, what, fix := "prepayments", "Prepayments", "prepayment schedules", "costs", "spread the cost over its months"
+		if h.Role == ledger.RoleDeferredRevenue {
+			id, holding, schedules, what, fix = "deferred-revenue", "Deferred revenue", "deferred revenue schedules", "income", "spread the income over its months"
+		}
+		code := h.Account.Code
+		if r.Unexplained() {
+			var parts []string
+			for _, c := range r.Currencies {
+				if !c.Unexplained.IsZero() && c.Currency != r.Base.Currency {
+					parts = append(parts, fmt.Sprintf("in %s, %s says %s and the open schedules %s", c.Currency, code, c.Control, c.SubLedger))
+				}
+			}
+			if b := r.Base; !b.Unexplained.IsZero() {
+				parts = append(parts, fmt.Sprintf("%s says %s %s and the open schedules %s", code, b.Control, b.Currency, b.SubLedger))
+			}
+			out = append(out, Check{id, Failed, fmt.Sprintf("The %s do not agree with %s", schedules, strings.ToLower(holding)),
+				strings.Join(parts, "; ") + ": a posting and its document disagree; report it, never adjust it by journal"})
+		} else {
+			out = append(out, Check{id, OK, fmt.Sprintf("The %s agree with %s", schedules, strings.ToLower(holding)), fmt.Sprintf("%d open schedule(s)", h.Open)})
+		}
+		var held []string
+		for _, e := range r.Base.Explained {
+			if w, ok := explainedWords[e.SourceType]; ok && !e.Amount.IsZero() {
+				held = append(held, fmt.Sprintf("%s %s from %s", e.Amount, r.Base.Currency, w))
+			}
+		}
+		if len(held) > 0 {
+			out = append(out, Check{id + "-unsupported", Warning, holding + " holds amounts no schedule releases",
+				fmt.Sprintf("%s holds %s: release them by journal as the months pass, or have the accountant check them", code, strings.Join(held, ", "))})
+		}
+		if len(h.Direct) > 0 {
+			var docs []string
+			for _, it := range h.Direct {
+				docs = append(docs, fmt.Sprintf("%s (%s)", cmp.Or(it.Number, it.Kind), it.Carrying))
+			}
+			out = append(out, Check{id + "-unscheduled", Warning, fmt.Sprintf("%s holds %s entered on it directly", holding, what),
+				fmt.Sprintf("%s: no schedule releases them; %s instead, or release them by journal", strings.Join(docs, ", "), fix)})
+		}
 	}
 	return out, nil
 }

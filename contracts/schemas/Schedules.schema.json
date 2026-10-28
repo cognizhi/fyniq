@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_at": {
+      "description": "The day.",
+      "examples": [
+        "2026-09-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "currency": {
+      "description": "The base currency every amount is in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "holdings": {
+      "description": "1210 Prepayments and 2400 Deferred revenue, each that the chart has, reconciled with their schedules.",
+      "items": {
+        "$ref": "ScheduleHolding.schema.json"
+      },
+      "type": "array"
+    },
+    "schedules": {
+      "description": "The schedules, prepayments first, by the date of their first month, then the document's number and line.",
+      "items": {
+        "$ref": "Schedule.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "as_at",
+    "currency",
+    "holdings",
+    "schedules"
+  ],
+  "title": "Schedules",
+  "type": "object"
+}

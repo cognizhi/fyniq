@@ -6676,6 +6676,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/reports/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the prepayment and deferral schedules
+         * @description Every cost and income spread over months (FR-GL-03) as at a day: each spread line of a posted bill, invoice or bank line, with what it put on 1210 Prepayments or 2400 Deferred revenue, what its months posted by the day took off it, what remains, and each month's state. Months post only once they are reached (ENG-05): later ones are projections, never in the ledger. Each holding account is reconciled with its schedules (INV-07): its balance from the balance service against what the schedules and the documents' direct amounts hold, with what opening balances and manual journals put on it named, and anything else unexplained, which the period close refuses. Read-only; no side effects.
+         */
+        get: operations["getSchedules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/review-log": {
         parameters: {
             query?: never;
@@ -20752,6 +20772,171 @@ export interface components {
              * @example eyJhZnRlciI6IjAxOTI4ZjZlIn0
              */
             next_cursor?: string;
+        };
+        Schedule: {
+            /**
+             * @description Its code.
+             * @example 6410
+             */
+            account_code: string;
+            /**
+             * Format: uuid
+             * @description The account each month posts to: an expense account for a prepayment, a revenue account for deferred revenue.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+             */
+            account_id: string;
+            /**
+             * @description Its name.
+             * @example Insurance
+             */
+            account_name: string;
+            /**
+             * @description The line's description.
+             * @example Directors' and officers' insurance
+             */
+            description?: string;
+            /**
+             * @description prepayment: a cost on 1210 Prepayments, expensed month by month; deferred_revenue: income on 2400 Deferred revenue, earned month by month.
+             * @example prepayment
+             * @enum {string}
+             */
+            kind: "prepayment" | "deferred_revenue";
+            /**
+             * Format: int64
+             * @description The document's line that is spread, from 1.
+             * @example 1
+             */
+            line: number;
+            /** @description Each month with something to release, in order. */
+            months: components["schemas"]["ScheduleMonth"][];
+            /**
+             * Format: int64
+             * @description How many of its months are posted by the day.
+             * @example 6
+             */
+            months_posted: number;
+            /**
+             * @description The document's number, once it has one.
+             * @example BILL-0866
+             */
+            number?: string;
+            /** @description What its months posted by the day took off it. */
+            recognised: components["schemas"]["Money"];
+            /** @description What is left on the holding account: the total less what is recognised. */
+            remaining: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The document, to open it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+             */
+            source_id: string;
+            /**
+             * @description The document whose line is spread.
+             * @example bill
+             * @enum {string}
+             */
+            source_type: "bill" | "invoice" | "bank_transaction";
+            /** @description What the line put on the holding account, in the base currency. */
+            total: components["schemas"]["Money"];
+        };
+        ScheduleExplained: {
+            /** @description What it put on the account, in the base currency, as the holding account reads it. */
+            amount: components["schemas"]["Money"];
+            /**
+             * @description The source: opening_balance or manual_journal, or another.
+             * @example manual_journal
+             */
+            source_type: string;
+        };
+        ScheduleHolding: {
+            /**
+             * @description Its code.
+             * @example 1210
+             */
+            account_code: string;
+            /**
+             * Format: uuid
+             * @description The account with the role.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+             */
+            account_id: string;
+            /**
+             * @description Its name.
+             * @example Prepayments
+             */
+            account_name: string;
+            /** @description What the account holds at the day, in the base currency, from the balance service (ENG-04): a debit for prepayments, a credit for deferred revenue, each read as positive. */
+            balance: components["schemas"]["Money"];
+            /** @description What bills and bank lines put on it directly, which no schedule releases. */
+            direct: components["schemas"]["Money"];
+            /** @description What opening balances, manual journals and other sources put on it. */
+            explained: components["schemas"]["ScheduleExplained"][];
+            /**
+             * @description prepayment: 1210 Prepayments; deferred_revenue: 2400 Deferred revenue.
+             * @example prepayment
+             * @enum {string}
+             */
+            kind: "prepayment" | "deferred_revenue";
+            /**
+             * Format: int64
+             * @description Its schedules with something remaining.
+             * @example 3
+             */
+            open: number;
+            /** @description What its open schedules still hold. */
+            schedules: components["schemas"]["Money"];
+            /**
+             * @description agrees: the schedules and the documents' direct amounts are all it holds; explained: it also holds amounts from other sources; differs: something is unexplained, which the close refuses.
+             * @example agrees
+             * @enum {string}
+             */
+            status: "agrees" | "explained" | "differs";
+            /** @description What is left: a posting and its document disagree. Zero when it ties. */
+            unexplained: components["schemas"]["Money"];
+        };
+        ScheduleMonth: {
+            /** @description What the month releases, in the base currency: the months are rounded on the running total, so they add up to the schedule's total exactly (ALLOC-EVEN). */
+            amount: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description The release's date: the month's first day, or the document's date for a month before it.
+             * @example 2026-10-01
+             */
+            date: string;
+            /**
+             * Format: uuid
+             * @description Its entry, once posted.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80
+             */
+            entry_id?: string;
+            /**
+             * @description The month, as YYYY-MM.
+             * @example 2026-10
+             */
+            month: string;
+            /**
+             * @description As at the day: posted, in the ledger; reversed, posted and then reversed; waiting, dated by the day and not in the ledger yet (the hourly job posts it, or waits for its period to open); projected, dated after the day, not in the ledger (ENG-05).
+             * @example posted
+             * @enum {string}
+             */
+            status: "posted" | "reversed" | "waiting" | "projected";
+        };
+        Schedules: {
+            /**
+             * Format: date
+             * @description The day.
+             * @example 2026-09-30
+             */
+            as_at: string;
+            /**
+             * @description The base currency every amount is in.
+             * @example SGD
+             */
+            currency: string;
+            /** @description 1210 Prepayments and 2400 Deferred revenue, each that the chart has, reconciled with their schedules. */
+            holdings: components["schemas"]["ScheduleHolding"][];
+            /** @description The schedules, prepayments first, by the date of their first month, then the document's number and line. */
+            schedules: components["schemas"]["Schedule"][];
         };
         SendSalesReminder: {
             /**
@@ -73648,6 +73833,86 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-01` Too many lines for one report; `REPORT-02` The range crosses a financial year. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getSchedules: {
+        parameters: {
+            query?: {
+                /** @description The day; left out, the organisation's today. */
+                as_at?: string;
+                /** @description open: the schedules with something remaining at the day; all: those finished too. */
+                status?: "open" | "all";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Schedules"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

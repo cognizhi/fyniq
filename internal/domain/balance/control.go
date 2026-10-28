@@ -26,13 +26,70 @@ type SourceTotal struct {
 // ledger does (FR-GL-11), since the cached balances do not keep the source. Balance-sheet accounts only: the year-end
 // never folds them (FR-GL-10).
 func Control(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, through time.Time) ([]SourceTotal, error) {
-	periods, err := u.Periods().List(ctx)
-	if err != nil {
-		return nil, err
-	}
 	type key struct{ source, currency string }
 	totals := map[key]*SourceTotal{}
 	var order []key
+	err := controlLines(ctx, u, account, through, func(l storage.AccountLine) error {
+		cur, err := money.Lookup(l.Currency)
+		if err != nil {
+			return err
+		}
+		amount, err := money.ParseStored(string(l.Amount), cur)
+		if err != nil {
+			return err
+		}
+		b, err := money.ParseStored(string(l.BaseAmount), base)
+		if err != nil {
+			return err
+		}
+		k := key{l.Source.Type, l.Currency}
+		t := totals[k]
+		if t == nil {
+			t = &SourceTotal{SourceType: l.Source.Type, Amount: money.Zero(cur), Base: money.Zero(base)}
+			totals[k] = t
+			order = append(order, k)
+		}
+		if t.Amount, err = t.Amount.Add(amount); err != nil {
+			return err
+		}
+		t.Base, err = t.Base.Add(b)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]SourceTotal, 0, len(order))
+	for _, k := range order {
+		out = append(out, *totals[k])
+	}
+	return out, nil
+}
+
+// Sources are the source documents of a control account's lines through a day, each once, in posting order: the
+// documents a sub-ledger that cannot list its own documents cheaply walks (INV-07; the holding accounts of spreads,
+// FR-GL-03). A source names the document, not the version that posted.
+func Sources(ctx context.Context, u storage.UnitOfWork, account uuid.UUID, through time.Time) ([]storage.Source, error) {
+	type key struct{ kind, id string }
+	seen := map[key]bool{}
+	var out []storage.Source
+	err := controlLines(ctx, u, account, through, func(l storage.AccountLine) error {
+		k := key{l.Source.Type, l.Source.ID}
+		if !seen[k] {
+			seen[k] = true
+			out = append(out, storage.Source{Type: l.Source.Type, ID: l.Source.ID})
+		}
+		return nil
+	})
+	return out, err
+}
+
+// controlLines reads an account's lines through a day a period at a time, refusing a period with more than
+// MaxControlLines (TooMany).
+func controlLines(ctx context.Context, u storage.UnitOfWork, account uuid.UUID, through time.Time, each func(storage.AccountLine) error) error {
+	periods, err := u.Periods().List(ctx)
+	if err != nil {
+		return err
+	}
 	for _, p := range periods {
 		if p.StartsOn.After(through) {
 			continue
@@ -43,42 +100,16 @@ func Control(ctx context.Context, u storage.UnitOfWork, base money.Currency, acc
 		}
 		lines, err := u.Ledger().AccountLines(ctx, account, p.StartsOn, to, MaxControlLines+1)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if len(lines) > MaxControlLines {
-			return nil, &TooMany{AccountID: account}
+			return &TooMany{AccountID: account}
 		}
 		for _, l := range lines {
-			cur, err := money.Lookup(l.Currency)
-			if err != nil {
-				return nil, err
-			}
-			amount, err := money.ParseStored(string(l.Amount), cur)
-			if err != nil {
-				return nil, err
-			}
-			b, err := money.ParseStored(string(l.BaseAmount), base)
-			if err != nil {
-				return nil, err
-			}
-			k := key{l.Source.Type, l.Currency}
-			t := totals[k]
-			if t == nil {
-				t = &SourceTotal{SourceType: l.Source.Type, Amount: money.Zero(cur), Base: money.Zero(base)}
-				totals[k] = t
-				order = append(order, k)
-			}
-			if t.Amount, err = t.Amount.Add(amount); err != nil {
-				return nil, err
-			}
-			if t.Base, err = t.Base.Add(b); err != nil {
-				return nil, err
+			if err := each(l); err != nil {
+				return err
 			}
 		}
 	}
-	out := make([]SourceTotal, 0, len(order))
-	for _, k := range order {
-		out = append(out, *totals[k])
-	}
-	return out, nil
+	return nil
 }

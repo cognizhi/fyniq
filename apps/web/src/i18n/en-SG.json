@@ -760,6 +760,10 @@
       "label": "Fixed assets",
       "tooltip": "The assets the company owns and uses for more than a year: their cost, monthly depreciation and net book value, and their sales and write-offs."
     },
+    "accounting.schedules": {
+      "label": "Schedules",
+      "tooltip": "Costs paid ahead and income received ahead, spread over the months they belong to: what each has recognised, what remains, and Prepayments and Deferred revenue tied to them."
+    },
     "fixed-assets.register": {
       "label": "Register",
       "tooltip": "Add the purchase to the register as an asset: its cost is what the line put on the asset account; enter its useful life."

@@ -120,6 +120,7 @@ export const routes = [
   { kind: "route", id: "chart-of-accounts", path: "/accounting/chart-of-accounts", mode: "expert", signedIn: true, help: "accounting.chart", guide: "accounting.chart" },
   { kind: "route", id: "currencies", path: "/accounting/fx", mode: "expert", signedIn: true, help: "accounting.currencies", guide: "accounting.currencies" },
   { kind: "route", id: "fixed-assets", path: "/accounting/assets", mode: "expert", signedIn: true, help: "accounting.fixed-assets", guide: "accounting.fixed-assets" },
+  { kind: "route", id: "schedules", path: "/accounting/schedules", mode: "expert", signedIn: true, help: "accounting.schedules", guide: "accounting.schedules" },
   { kind: "route", id: "settings", path: "/settings", mode: "basic", signedIn: true, help: "settings.overview", guide: "home.overview#settings" },
   { kind: "route", id: "settings-profile", path: "/settings/profile", mode: "basic", signedIn: true, help: "settings.profile", guide: "preferences.security" },
   { kind: "route", id: "settings-organisation", path: "/settings/organisation", mode: "expert", signedIn: true, help: "settings.organisation", guide: "settings.organisation" },

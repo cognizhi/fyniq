@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What the month releases, in the base currency: the months are rounded on the running total, so they add up to the schedule's total exactly (ALLOC-EVEN)."
+    },
+    "date": {
+      "description": "The release's date: the month's first day, or the document's date for a month before it.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "entry_id": {
+      "description": "Its entry, once posted.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "month": {
+      "description": "The month, as YYYY-MM.",
+      "examples": [
+        "2026-10"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "As at the day: posted, in the ledger; reversed, posted and then reversed; waiting, dated by the day and not in the ledger yet (the hourly job posts it, or waits for its period to open); projected, dated after the day, not in the ledger (ENG-05).",
+      "enum": [
+        "posted",
+        "reversed",
+        "waiting",
+        "projected"
+      ],
+      "examples": [
+        "posted"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "month",
+    "date",
+    "amount",
+    "status"
+  ],
+  "title": "ScheduleMonth",
+  "type": "object"
+}

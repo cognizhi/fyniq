@@ -249,3 +249,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-28] compile | docs/user-guide/payment-batches.md → purchases.payment-batches (Remittance not sent, when sending the advice gave up)
 
 ## [2026-10-28] compile | docs/user-guide/sign-in.md → auth.sign-in (joining a company with an invitation from the sign-in page)
+
+## [2026-10-28] compile | docs/user-guide/periods-and-close.md → accounting.periods (the prepayments and deferred revenue close checks, rev 0.158)
+
+## [2026-10-28] compile | docs/user-guide/schedules.md → accounting.schedules (new: the prepayment and deferral schedules, rev 0.158); accounting.periods links it

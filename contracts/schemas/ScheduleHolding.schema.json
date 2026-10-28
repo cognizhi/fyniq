@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "Its code.",
+      "examples": [
+        "1210"
+      ],
+      "type": "string"
+    },
+    "account_id": {
+      "description": "The account with the role.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "account_name": {
+      "description": "Its name.",
+      "examples": [
+        "Prepayments"
+      ],
+      "type": "string"
+    },
+    "balance": {
+      "$ref": "Money.schema.json",
+      "description": "What the account holds at the day, in the base currency, from the balance service (ENG-04): a debit for prepayments, a credit for deferred revenue, each read as positive."
+    },
+    "direct": {
+      "$ref": "Money.schema.json",
+      "description": "What bills and bank lines put on it directly, which no schedule releases."
+    },
+    "explained": {
+      "description": "What opening balances, manual journals and other sources put on it.",
+      "items": {
+        "$ref": "ScheduleExplained.schema.json"
+      },
+      "type": "array"
+    },
+    "kind": {
+      "description": "prepayment: 1210 Prepayments; deferred_revenue: 2400 Deferred revenue.",
+      "enum": [
+        "prepayment",
+        "deferred_revenue"
+      ],
+      "examples": [
+        "prepayment"
+      ],
+      "type": "string"
+    },
+    "open": {
+      "description": "Its schedules with something remaining.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "schedules": {
+      "$ref": "Money.schema.json",
+      "description": "What its open schedules still hold."
+    },
+    "status": {
+      "description": "agrees: the schedules and the documents' direct amounts are all it holds; explained: it also holds amounts from other sources; differs: something is unexplained, which the close refuses.",
+      "enum": [
+        "agrees",
+        "explained",
+        "differs"
+      ],
+      "examples": [
+        "agrees"
+      ],
+      "type": "string"
+    },
+    "unexplained": {
+      "$ref": "Money.schema.json",
+      "description": "What is left: a posting and its document disagree. Zero when it ties."
+    }
+  },
+  "required": [
+    "kind",
+    "account_id",
+    "account_code",
+    "account_name",
+    "balance",
+    "schedules",
+    "direct",
+    "explained",
+    "unexplained",
+    "status",
+    "open"
+  ],
+  "title": "ScheduleHolding",
+  "type": "object"
+}
