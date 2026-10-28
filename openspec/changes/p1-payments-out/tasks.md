@@ -128,7 +128,9 @@
     **Remittance not sent**).
   - Seen, not changed here: a person invited to an organisation has no screen to redeem the invitation (sign-in
     offers only the Super admin invitation); a remittance job that dies is never retried (no dead-letter replay).
-- [ ] 3.3 Finish with `make check` and `make test`; `make test-e2e` for the batch journey.
+- [x] 3.3 Finish with `make check` and `make test`; `make test-e2e` for the batch journey.
+  - 28 Oct 2026: `make test` and the non-local `go test ./...` pass; `make test-e2e` runs the new journey
+    `e2e/payment-batches.spec.ts` (new batch, ask, the other founder approves, release, download) with the 16 others.
 
 ## Workflow follow-up
 
