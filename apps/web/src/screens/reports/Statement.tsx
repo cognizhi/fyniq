@@ -24,8 +24,8 @@ export const statementNames: Record<Kind, string> = { pl: "Profit and loss", bs:
 
 // runOf is a preset's run of months, from the books' periods: the month of today, the one before it, the financial year
 // to date, the whole financial year and the one before it; or a run the person chooses.
-type Preset = "month" | "last_month" | "ytd" | "year" | "last_year" | "custom";
-const presetNames: Record<Preset, string> = {
+export type Preset = "month" | "last_month" | "ytd" | "year" | "last_year" | "custom";
+export const presetNames: Record<Preset, string> = {
   month: "This month",
   last_month: "Last month",
   ytd: "Year to date",

@@ -2702,7 +2702,7 @@
    "title": "Management report (ageing and analysis)",
    "canvas": "insight",
    "module": "Reports",
-   "route": "/reports/ageing",
+   "route": "/reports/management/:report",
    "kind": "page",
    "phase": "P1",
    "roles": [

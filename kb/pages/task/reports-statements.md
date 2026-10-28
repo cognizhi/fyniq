@@ -4,7 +4,7 @@ type: task
 title: Read the financial statements
 summary: The profit and loss, balance sheet, cash flow and trial balance for any run of months, comparisons, tracing a figure to its lines, and re-running at a revision
 sources:
-  - docs/user-guide/financial-statements.md sha256:5ebd2270f4961f5194007b521358ce4914198f87599f7688af007ae6e3294fd2
+  - docs/user-guide/financial-statements.md sha256:e8b09e812285a25b97ee4bdcb8d874aca4d4306b7c612d82d781211db3ac4dfe
 data_class: general
 taint: trusted
 status: draft
@@ -29,7 +29,7 @@ aliases:
 
 ## Find a report
 
-- **Reports** opens with the essentials, the profit and loss, the balance sheet and the cash flow, each with this month's headline figure; below them the other reports, such as who owes the company and whom it owes, and in Expert mode the trial balance, the general ledger ([[reports.general-ledger]]) and the schedules ([[accounting.schedules]]).
+- **Reports** opens with the essentials, the profit and loss, the balance sheet and the cash flow, each with this month's headline figure; below them the other reports, such as who owes the company and whom it owes, and in Expert mode the trial balance, the general ledger ([[reports.general-ledger]]), the schedules ([[accounting.schedules]]) and the management reports: sales by customer and item, spend by supplier and the top expenses ([[reports.management]]).
 - **Find a report** narrows the list.
 - Anyone who can read every account sees the statements: the Owner, the Administrator, the Controller, the Accountant, the Bookkeeper, the Auditor, the Tax agent and the DPO.
 
