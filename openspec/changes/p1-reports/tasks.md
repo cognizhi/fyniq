@@ -113,8 +113,13 @@
 
 ## 5. Charts (FR-VIZ-01…08)
 
-- [ ] 5.1 The palette validator in `make check` (D7): colour-vision separation and contrast in both themes.
+- [x] 5.1 The palette validator in `make check` (D7): colour-vision separation and contrast in both themes.
   `// req: FR-VIZ-07`
+  (29 Oct 2026: `docs/design-system/fyniq/scripts/check_palette.py`, in `make check-tokens`: the dataviz method's checks
+  on `--chart-1…8` in the four themes, its thresholds and simulation, matching the method's own validator figure for
+  figure (light: worst adjacent ΔE 9.1 protan, 19.6 normal; dark 8.4 and 19.3). Contrast under 3:1 is a warning, read
+  through the table view and labels (D7, corrected). `--self-test` plants four palettes, a grey slot, a red beside a
+  green, two close blues and a pale yellow, and each must fail for its reason.)
 - [ ] 5.2 The `Chart` component on ECharts, loaded on demand:
   - the form by the data's job, and one y-axis;
   - fixed entity colours, with Other past 8 series;
