@@ -126,6 +126,15 @@ function NewBatch({ open, onClose }: { open: boolean; onClose: () => void }) {
       setBusy(false);
       return setProblem(problemOf(suggestion.error));
     }
+    if (suggestion.data.suggested.length === 0) {
+      // A batch that pays nothing is refused (PB-06): say why nothing was picked instead of sending it.
+      setBusy(false);
+      return setProblem({
+        code: "PB-06",
+        detail: `Nothing is due to be paid by ${date(day)}: no bill is planned to be paid on or before that day, and no approved expense claim is owed.`,
+        fix: "Plan a payment date on each bill to pay (Plan payment, on the bill), or choose a later date.",
+      });
+    }
     const out = await api.POST("/v1/payment-batches", {
       params: { header: { "Idempotency-Key": newKey() } },
       body: { money_account_id: chosen, payment_date: day, method, items: suggestion.data.suggested },

@@ -246,6 +246,7 @@ export function PaymentBatchPage() {
         <div className="fy-pagehead__text">
           <nav className="fy-breadcrumb" aria-label="Breadcrumb">
             <span>Purchases</span>
+            <span aria-hidden="true">›</span>
             <Link to="/purchases/payment-batches">Payment batches</Link>
           </nav>
           <h1 className="fy-h1">{batchName(b)}</h1>

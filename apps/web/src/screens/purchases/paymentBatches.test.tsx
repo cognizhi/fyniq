@@ -43,6 +43,33 @@ describe("payment batches", () => {
     await noViolations(document.body);
   });
 
+  it("prepares a new batch from what is due by its day, and says why a day with nothing due prepares nothing", async () => {
+    const dbs = { id: "m1", account_id: "a1", kind: "bank", name: "DBS current", identifier: "…8771", currency: "SGD" };
+    let suggested: unknown[] = [];
+    const seen = answer({
+      "GET /v1/payment-batches": { status: 200, body: { items: [] } },
+      "GET /v1/money-accounts": { status: 200, body: { items: [dbs, { ...dbs, id: "m2", account_id: "a2", name: "Wise USD", currency: "USD" }] } },
+      "GET /v1/payment-batches/suggestion": () => ({ status: 200, body: { payment_date: "2026-10-30", suggested } }),
+      "POST /v1/payment-batches": { status: 201, body: base },
+    });
+    renderPage(PaymentBatches, { path: "/purchases/payment-batches", session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "New batch" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByRole("option", { name: /Wise USD/ })).toBeNull();
+    fireEvent.change(within(dialog).getByLabelText("Payment date"), { target: { value: "2026-10-30" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Prepare the batch" }));
+    expect(await within(dialog).findByText(/Nothing is due to be paid by 30 Oct 2026/)).toBeTruthy();
+    expect(seen.some((s) => s.method === "POST")).toBe(false);
+    await noViolations(document.body);
+
+    suggested = [{ kind: "bill", document_id: "d-BILL-0041" }, { kind: "claim", document_id: "c1" }];
+    fireEvent.click(within(dialog).getByRole("button", { name: "Prepare the batch" }));
+    await waitFor(() => expect(seen.some((s) => s.method === "POST")).toBe(true));
+    const post = seen.find((s) => s.method === "POST")!;
+    expect(post.body).toEqual({ money_account_id: "a1", payment_date: "2026-10-30", method: "fast", items: suggested });
+    expect(post.headers.get("Idempotency-Key")).toBeTruthy();
+  });
+
   it("shows a draft's held item and its warning, keeps it from being asked for, and removes the item; axe finds nothing", async () => {
     const held = { ...northwind, items: [item("BILL-0041", "109.00"), item("BILL-0042", "218.00", [{ severity: "error", code: "PB-13", field: "items[1]", message: "BILL-0042 waits for withholding", fix: "Record the decision" }])] };
     const seen = page(
