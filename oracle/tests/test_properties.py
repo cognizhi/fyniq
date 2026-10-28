@@ -3,7 +3,7 @@
 They check the oracle against rules stated independently of its code: entries balance, a reversal
 and its original net to zero, each month's trial balance nets to zero, a base amount is within half a
 minor unit of amount × rate and rounds a half away from zero, and the documents the generator built to
-post (or to be rejected) are posted (or rejected).
+post (or to be rejected) are posted (or rejected), the shapes PRD-001 rev 0.24 decided among them.
 """
 
 from collections import Counter, defaultdict
@@ -114,14 +114,20 @@ def test_documents_built_to_post_post_and_those_built_to_fail_are_rejected(pair)
         elif meant == REJECT:
             assert doc_id in rejected and doc_id not in posted, doc_id
 
-    # Reversals: the first of a posted document posts; every other one is refused.
-    listed = Counter(r["document"] for r in data["reversals"])
+    # Reversals, in order: one dated before its document is refused and leaves it unreversed
+    # (FR-GL-12); the first other one of a posted document posts; every later one is refused.
+    dates = {doc["id"]: doc["date"] for doc in data["documents"]}
+    expected_posted, expected_refused = Counter(), Counter()
+    for reversal in data["reversals"]:
+        doc_id = reversal["document"]
+        if doc_id in posted and reversal["date"] >= dates[doc_id] and not expected_posted[doc_id]:
+            expected_posted[doc_id] += 1
+        else:
+            expected_refused[doc_id] += 1
     reversed_ = Counter(e["document"] for e in result["entries"] if e["kind"] == "reversal")
     refused = Counter(key.removesuffix("/reversal") for key in result["rejected"] if key.endswith("/reversal"))
-    for doc_id, count in listed.items():
-        first_posts = 1 if doc_id in posted else 0
-        assert reversed_[doc_id] == first_posts
-        assert refused[doc_id] == count - first_posts
+    assert reversed_ == expected_posted
+    assert refused == expected_refused
 
 
 # req: QA-ENG-01
@@ -147,29 +153,36 @@ def test_the_generator_is_reproducible_and_covers_its_targets():
     assert len(bases) >= 3 and minors == {0, 2, 3, 4}
     assert max(len(doc["lines"]) for s in first for doc in s["documents"]) >= 20
     assert sixteen
-    results = [Ledger(scenario_from_json(s)).result() for s in first]
+    ledgers = [Ledger(scenario_from_json(s)) for s in first]
+    results = [ledger.result() for ledger in ledgers]
     assert any(r["rejected"] for r in results)
     assert any(e["kind"] == "reversal" for r in results for e in r["entries"])
+
+    # The shapes PRD-001 rev 0.24 decided (test/differential/README.md): each is generated.
+    reasons = {reason for ledger in ledgers for _, reason in ledger.reasons}
+    decided = {"rate-on-base-line", "base-out-of-range", "reversal-before-entry", "share-capital-account"}
+    assert decided <= reasons
+    zero_base = [ln for ledger in ledgers for e in ledger.entries for ln in e.lines if ln.base_amount.is_zero()]
+    assert zero_base and all(not ln.amount.is_zero() for ln in zero_base)
 
 
 # req: QA-ENG-01
 @given(scenarios())
-def test_the_generator_does_not_yet_produce_the_shapes_rev_0_24_decided(data):
-    # test/differential/README.md, "Decided in PRD-001 rev 0.24": the shapes marked "not generated".
+def test_the_generator_writes_version_1_and_a_rate_source_only_where_it_means_to(data):
+    # test/differential/README.md, "Decided in PRD-001 rev 0.24": the version is always 1, and a
+    # rate always comes with its source, "document", or "base" on a base-currency line (rejected).
+    # A share-capital account is active, not a group, and equity.
     base = data["base_currency"]
-    dates = {doc["id"]: doc["date"] for doc in data["documents"]}
     for doc in data["documents"]:
-        for ln in doc["lines"]:
-            if ln["currency"] == base:
-                assert "fx_rate" not in ln and "fx_rate_source" not in ln
-            assert ("fx_rate" in ln) == ("fx_rate_source" in ln)
-            assert ln.get("fx_rate_source", "document") == "document"
         assert doc["version"] == 1
-    for reversal in data["reversals"]:
-        if reversal["document"] in dates:
-            assert reversal["date"] >= dates[reversal["document"]]
-    assert all("role" not in account for account in data["accounts"])
-    ledger = Ledger(scenario_from_json(data))
-    assert "base-out-of-range" not in {reason for _, reason in ledger.reasons}
-    for entry in ledger.entries:
-        assert all(not ln.base_amount.is_zero() for ln in entry.lines)
+        for ln in doc["lines"]:
+            if "fx_rate" in ln:
+                assert "fx_rate_source" in ln
+            if ln["currency"] != base:
+                assert ln.get("fx_rate_source", "document") == "document"
+            else:
+                assert ln.get("fx_rate_source", "base") in ("document", "base")
+    for account in data["accounts"]:
+        if "role" in account:
+            assert account["role"] == "share-capital"
+            assert (account["type"], account["group"], account["active"]) == ("equity", False, True)

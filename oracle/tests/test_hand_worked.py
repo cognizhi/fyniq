@@ -225,9 +225,9 @@ def test_a_long_product_is_exact_before_its_one_rounding():
     assert _lines(result)[0] == ("1010", "KWD", "1234567890123456.789", "15185185.05")
 
 
-# req: QA-ENG-01
+# req: INV-05
 def test_a_non_zero_line_whose_base_rounds_to_zero_posts():
-    # A choice the PRD leaves open (test/differential/README.md): JPY 1 × 0.001 = 0.001 -> SGD 0.00.
+    # Decided in PRD-001 rev 0.24 (test/differential/README.md): JPY 1 × 0.001 = 0.001 -> SGD 0.00.
     # The line is not zero in its own currency, and JPY 1 - 1 = 0 balances, so the journal posts.
     result, _ = post(
         journal("JNL-0001", "2026-01-05", line("1010", "JPY", "1", "0.001"), line("4010", "JPY", "-1", "0.001")),
