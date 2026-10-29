@@ -76,7 +76,7 @@ jobs:
       - run: make test 2>&1 | tee make-test.log
         shell: bash
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: test-report   # the evidence of the controls checked in make test (compliance/controls/)
           path: make-test.log
@@ -106,7 +106,7 @@ jobs:
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       - run: make differential   # QA-ENG-02: 1,000 generated scenarios; a disagreement is shrunk and saved
       - if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: shrunk-scenario
           path: test/differential/golden/shrunk-*.json
@@ -125,7 +125,7 @@ jobs:
       - run: pnpm install --frozen-lockfile   # the npm licences
       - run: make scan   # SEC-21, CTL-CHG-03, CTL-CHG-11: a blocking finding without a waiver fails the merge
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: security-scan-reports   # the evidence (compliance-as-code)
           path: .data/scan/
@@ -162,7 +162,7 @@ jobs:
           # 55432 briefly, and PostgreSQL then cannot bind it (two of three runs of #71 failed that way).
           FYNIQ_PG_PORT: "25432"
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: image-reports   # SBOMs, scans and signatures: the evidence (CTL-CHG-08, CTL-CHG-04)
           path: .data/images/
