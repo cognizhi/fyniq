@@ -1147,7 +1147,7 @@ func registerBanking(a *API) {
 			return nil, err
 		}
 		if !w.Previewed && !w.Replayed && len(added) > 0 {
-			run, err := banking.AutoReconcile(context.WithoutCancel(ctx), a.deps.Store, p.Organisation, added, a.deps.Clock.Now())
+			run, err := banking.AutoReconcile(context.WithoutCancel(ctx), a.bank, p.Organisation, added, a.deps.Clock.Now())
 			if err != nil {
 				logFailure(ctx, fmt.Errorf("auto-reconcile after an import: %w", err)) // the lines wait in the queue; the import stands
 			}

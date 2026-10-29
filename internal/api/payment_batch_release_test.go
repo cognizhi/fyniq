@@ -282,6 +282,13 @@ func matrixApprovedBatch(e *env) (id, tag string) {
 
 // matrixPaymentBatchRelease has one request per operation on approving, releasing and cancelling batches.
 var matrixPaymentBatchRelease = map[string]func(e *env, tok string) (response, func() bool){
+	"sendRemittanceAgain": func(e *env, tok string) (response, func() bool) {
+		batch, pay := e.failedRemittance()
+		r := e.call(http.MethodPost, "/v1/payment-batches/"+batch+"/payments/"+pay+"/remittance-again", tok, map[string]any{"reason": "Matrix"})
+		return r, func() bool {
+			return paymentOfID(e.t, e.call(http.MethodGet, "/v1/payment-batches/"+batch, e.as(authz.Accountant), nil), pay)["remittance"] == "failed"
+		}
+	},
 	"requestPaymentBatchApproval": func(e *env, tok string) (response, func() bool) {
 		vendor := e.vendor("Matrix payee " + uuid.NewString()[:8])
 		e.vendorAccount(vendor, "0123456789")

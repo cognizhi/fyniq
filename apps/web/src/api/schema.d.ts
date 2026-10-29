@@ -369,7 +369,7 @@ export interface paths {
         };
         /**
          * List what the system reconciled
-         * @description The lines the system reconciled by itself that still stand, latest first, a page at a time (FR-BNK-14): exact matches, transfers and lines an approved rule categorised, each with its basis and rule. Undo one with unreconcileBankLine while its period is open; a weekly sample goes to the review log. Read-only.
+         * @description The lines the system reconciled by itself that still stand, latest first, a page at a time (FR-BNK-14): exact matches, a released batch's payments (rev 0.160), transfers and lines an approved rule categorised, each with its basis, rule or batch. Undo one with unreconcileBankLine while its period is open; a weekly sample goes to the review log. Read-only.
          */
         get: operations["listAutoReconciliations"];
         put?: never;
@@ -743,7 +743,7 @@ export interface paths {
         put?: never;
         /**
          * Reconcile now
-         * @description Runs auto-reconcile over the waiting lines, one money account's or every account's, as the system principal and within the same limits as after an upload (FR-BNK-14; the owner's decision of 26 Oct 2026, rev 0.143): a transfer's missing side, the one open document a line names exactly, and approved auto-apply rules. Lines that arrive by feed in P1 wait for it. Each line posts in its own transaction, so one refusal never stops the others; what is left stays in the queue, counted by why. The person who asked is recorded as the one it acted for. Prefer: return=preview says what it would do and posts nothing.
+         * @description Runs auto-reconcile over the waiting lines, one money account's or every account's, as the system principal and within the same limits as after an upload (FR-BNK-14; the owner's decision of 26 Oct 2026, rev 0.143): a transfer's missing side, the one open document a line names exactly, the one payment of a released batch whose number the line names (rev 0.160), and approved auto-apply rules. Lines that arrive by feed in P1 wait for it. Each line posts in its own transaction, so one refusal never stops the others; what is left stays in the queue, counted by why. The person who asked is recorded as the one it acted for. Prefer: return=preview says what it would do and posts nothing.
          */
         post: operations["autoReconcileBankLines"];
         delete?: never;
@@ -5648,6 +5648,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payment-batches/{batch_id}/payments/{payment_id}/remittance-again": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a failed remittance advice again
+         * @description Queues once more the remittance advice of a released batch's payment to a supplier whose advice gave up after its attempts (FR-BNK-12; the owner's decision of 29 Oct 2026, rev 0.160), for a person who can prepare batches. The worker renders and emails it as the first time, so a payment voided since, or one sent meanwhile, sends nothing, and a payment gets at most one advice. An advice sent, waiting for the match, queued or not wanted (no remittance email) is PB-24. Side effects: the job and an audit event of the resend, with the reason. Idempotent with Idempotency-Key; Prefer: return=preview checks it and queues nothing.
+         */
+        post: operations["sendRemittanceAgain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/payment-batches/{batch_id}/reapproval": {
         parameters: {
             query?: never;
@@ -8995,6 +9015,11 @@ export interface components {
             reconciled: number;
         };
         AutoReconciliation: {
+            /**
+             * @description The payment batch, when the line matched one of its payments, which the line named (rev 0.160).
+             * @example PB-0003
+             */
+            batch_number?: string;
             /** @description The line, with its match: its basis says how (exact, transfer or rule). */
             line: components["schemas"]["BankLine"];
             /**
@@ -20744,6 +20769,13 @@ export interface components {
              * @example 2026-11-01
              */
             starts_on: string;
+        };
+        RemittanceAgain: {
+            /**
+             * @description Why it is sent again; the audit trail records it.
+             * @example The email service was down on Tuesday
+             */
+            reason: string;
         };
         ReopenRequest: {
             /**
@@ -66996,6 +67028,154 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `PAYEE-15` Bank details cannot be kept here. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    sendRemittanceAgain: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The batch's ID. */
+                batch_id: string;
+                /** @description The batch's payment to the supplier. */
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemittanceAgain"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentBatch"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PB-24` The remittance advice did not fail; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;

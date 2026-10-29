@@ -3263,6 +3263,34 @@ Returns the file a release wrote, as it was written, in base64, with its SHA-256
   - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-15`, `PB-01`, `PB-20`
 
+### `POST /v1/payment-batches/{batch_id}/payments/{payment_id}/remittance-again`
+
+**Send a failed remittance advice again** (`sendRemittanceAgain`)
+
+Queues once more the remittance advice of a released batch's payment to a supplier whose advice gave up after its attempts (FR-BNK-12; the owner's decision of 29 Oct 2026, rev 0.160), for a person who can prepare batches. The worker renders and emails it as the first time, so a payment voided since, or one sent meanwhile, sends nothing, and a payment gets at most one advice. An advice sent, waiting for the match, queued or not wanted (no remittance email) is PB-24. Side effects: the job and an audit event of the resend, with the reason. Idempotent with Idempotency-Key; Prefer: return=preview checks it and queues nothing.
+
+- **Permission:** Create on Payment batches
+- **Parameters:**
+  - `batch_id` (path, required): The batch's ID.
+  - `payment_id` (path, required): The batch's payment to the supplier.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`RemittanceAgain`](../../contracts/schemas/RemittanceAgain.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PaymentBatch`](../../contracts/schemas/PaymentBatch.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PB-24` The remittance advice did not fail; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PB-24`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/payment-batches/{batch_id}/reapproval`
 
 **Ask for a payment batch's approval again** (`requestPaymentBatchReapproval`)
@@ -5594,7 +5622,7 @@ Money accounts, their statements and lines, and the rules that code them; a rule
 
 **List what the system reconciled** (`listAutoReconciliations`)
 
-The lines the system reconciled by itself that still stand, latest first, a page at a time (FR-BNK-14): exact matches, transfers and lines an approved rule categorised, each with its basis and rule. Undo one with unreconcileBankLine while its period is open; a weekly sample goes to the review log. Read-only.
+The lines the system reconciled by itself that still stand, latest first, a page at a time (FR-BNK-14): exact matches, a released batch's payments (rev 0.160), transfers and lines an approved rule categorised, each with its basis, rule or batch. Undo one with unreconcileBankLine while its period is open; a weekly sample goes to the review log. Read-only.
 
 - **Permission:** View on Bank transactions, categorise
 - **Parameters:**
@@ -5919,7 +5947,7 @@ Undoes what a line was reconciled to, with a reason, while its period is open (F
 
 **Reconcile now** (`autoReconcileBankLines`)
 
-Runs auto-reconcile over the waiting lines, one money account's or every account's, as the system principal and within the same limits as after an upload (FR-BNK-14; the owner's decision of 26 Oct 2026, rev 0.143): a transfer's missing side, the one open document a line names exactly, and approved auto-apply rules. Lines that arrive by feed in P1 wait for it. Each line posts in its own transaction, so one refusal never stops the others; what is left stays in the queue, counted by why. The person who asked is recorded as the one it acted for. Prefer: return=preview says what it would do and posts nothing.
+Runs auto-reconcile over the waiting lines, one money account's or every account's, as the system principal and within the same limits as after an upload (FR-BNK-14; the owner's decision of 26 Oct 2026, rev 0.143): a transfer's missing side, the one open document a line names exactly, the one payment of a released batch whose number the line names (rev 0.160), and approved auto-apply rules. Lines that arrive by feed in P1 wait for it. Each line posts in its own transaction, so one refusal never stops the others; what is left stays in the queue, counted by why. The person who asked is recorded as the one it acted for. Prefer: return=preview says what it would do and posts nothing.
 
 - **Permission:** Post on Bank transactions, categorise
 - **Parameters:**

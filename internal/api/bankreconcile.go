@@ -43,8 +43,9 @@ type BankReconciliation struct {
 
 // AutoReconciliation is a line the system reconciled by itself, and the rule it used.
 type AutoReconciliation struct {
-	Line     BankLine `json:"line" doc:"The line, with its match: its basis says how (exact, transfer or rule)."`
-	RuleName string   `json:"rule_name,omitempty" doc:"The rule, when a rule did it." example:"AWS to hosting"`
+	Line        BankLine `json:"line" doc:"The line, with its match: its basis says how (exact, transfer or rule)."`
+	RuleName    string   `json:"rule_name,omitempty" doc:"The rule, when a rule did it." example:"AWS to hosting"`
+	BatchNumber string   `json:"batch_number,omitempty" doc:"The payment batch, when the line matched one of its payments, which the line named (rev 0.160)." example:"PB-0003"`
 }
 
 // AccountName is a money account's name, as a list names it (FR-INT-13).
@@ -308,7 +309,7 @@ func registerBankReconciliation(a *API) {
 		OperationID: "listAutoReconciliations", Method: http.MethodGet, Path: "/v1/auto-reconciliations", Tags: []string{"Banking"},
 		Summary: "List what the system reconciled",
 		Description: "The lines the system reconciled by itself that still stand, latest first, a page at a time (FR-BNK-14): exact matches, " +
-			"transfers and lines an approved rule categorised, each with its basis and rule. Undo one with unreconcileBankLine while its " +
+			"a released batch's payments (rev 0.160), transfers and lines an approved rule categorised, each with its basis, rule or batch. Undo one with unreconcileBankLine while its " +
 			"period is open; a weekly sample goes to the review log. Read-only.",
 	}, []string{CodeCursor, CodeInvalid}, func(ctx context.Context, in *autoReconciliationsInput) (*autoReconciliationsOutput, error) {
 		since, bad := optionalDate("since", in.Since)
@@ -351,6 +352,19 @@ func registerBankReconciliation(a *API) {
 						}
 					}
 					item.RuleName = names[*m.RuleID]
+				}
+				if m.Kind == storage.MatchRecorded && m.DocumentID != nil {
+					rel, err := u.PaymentBatches().ReleaseOfPayment(ctx, *m.DocumentID)
+					if err != nil {
+						return err
+					}
+					if rel != nil {
+						batch, err := u.Documents().Get(ctx, rel.BatchID)
+						if err != nil {
+							return err
+						}
+						item.BatchNumber = batch.Number
+					}
 				}
 				out.Body.Items = append(out.Body.Items, item)
 			}

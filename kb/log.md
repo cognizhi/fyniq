@@ -265,6 +265,9 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-29] compile | docs/user-guide/financial-statements.md → reports.statements (accountant exports in the background, p1-reports tasks 3.3, 3.4)
 
 ## [2026-10-29] compile | docs/user-guide/financial-statements.md → reports.statements (the export dialog: a statement's PDF beside Excel and CSV; Ask again for an expired export)
+## [2026-10-29] compile | docs/user-guide/banking.md → banking.auto-reconciled (a batch's payment reconciles by itself when the line names the batch, rev 0.160); the other banking pages re-hashed, unchanged
+
+## [2026-10-29] compile | docs/user-guide/payment-batches.md → purchases.payment-batches (Send again for a failed remittance advice; a batch's payment matched by itself, rev 0.160)
 
 ## [2026-10-29] compile | docs/user-guide/management-reports.md → reports.management (new: the management reports, who sees them); docs/user-guide/financial-statements.md → reports.statements (Find a report lists the management reports)
 
