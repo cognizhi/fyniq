@@ -62,6 +62,38 @@
       "description": "Optional. true asks both sides for every month's statements (FR-RPT-01, README \"Statements\"); the chart then needs an account with the role retained-earnings.",
       "const": true
     },
+    "kpis": {
+      "description": "Optional, with statements true. Asks both sides for every stated month's KPIs (FR-KPI-02, README \"KPIs\").",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["year_start_month"],
+      "properties": {
+        "year_start_month": {"description": "The month a financial year starts (1 to 12): three-month averages stay inside one year.", "type": "integer", "minimum": 1, "maximum": 12},
+        "counts": {
+          "description": "Month -> the counts entered for it (rev 0.161): the three customer counts together, headcount on its own.",
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[0-9]{4}-(0[1-9]|1[0-2])$": {
+              "type": "object",
+              "additionalProperties": false,
+              "minProperties": 1,
+              "dependentRequired": {
+                "paying_customers": ["new_customers", "customers_lost"],
+                "new_customers": ["paying_customers", "customers_lost"],
+                "customers_lost": ["paying_customers", "new_customers"]
+              },
+              "properties": {
+                "paying_customers": {"$ref": "#/$defs/count"},
+                "new_customers": {"$ref": "#/$defs/count"},
+                "customers_lost": {"$ref": "#/$defs/count"},
+                "headcount": {"$ref": "#/$defs/count"}
+              }
+            }
+          }
+        }
+      }
+    },
     "as_of": {
       "description": "The organisation's business date, 'today' (ENG-05): scheduled entries (releases) dated on or before it post. Required, and on or after every date in the scenario, when a document is not a manual journal.",
       "$ref": "#/$defs/date"
@@ -88,6 +120,7 @@
   },
   "$defs": {
     "currencyCode": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "count": {"description": "A whole number entered for a month (FR-KPI-02 rev 0.161).", "type": "integer", "minimum": 0, "maximum": 1000000000},
     "accountCode": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$"},
     "date": {
       "description": "A calendar date, YYYY-MM-DD; an impossible day (2026-02-30) makes the scenario invalid.",

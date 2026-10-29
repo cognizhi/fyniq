@@ -136,3 +136,31 @@ def test_the_generator_reaches_every_shape_of_the_statements():
     assert all(seen[shape] for shape in ("non-cash", "investing", "financing", "results taken out",
                                          "depreciation added back", "income tax", "percentages", "unplaced",
                                          "not tied")), seen
+
+
+WITH_KPIS = st.one_of(with_statements(scenarios(), kpis=True), with_statements(p1_scenarios(), kpis=True))
+
+
+# req: FR-KPI-02, FR-KPI-03, RND-KPI
+@given(WITH_KPIS)
+def test_the_kpis_agree_with_the_statements_they_read(data):
+    _, result = _run(data)
+    counts = data["kpis"].get("counts", {})
+    assert list(result["kpis"]) == list(result["statements"])
+    for month, k in result["kpis"].items():
+        s = result["statements"][month]
+        pl, bs, cf = s["profit_and_loss"], s["balance_sheet"], s["cash_flow"]
+        percent = pl.get("percent_of_revenue", {})
+        assert (k["gross_margin"], k["ebitda_margin"], k["net_margin"]) == (
+            percent.get("gross_profit"), percent.get("ebitda"), percent.get("net_profit"))
+        assert _d(k["working_capital"]) == _d(bs["current_assets"]["total"]) - _d(bs["current_liabilities"]["total"])
+        assert _d(k["net_burn"]) == -(_d(cf["operating"]["total"]) + _d(cf["investing"]))
+        if k["booked_mrr"] is not None:
+            assert _d(k["arr"]) == _d(k["booked_mrr"]) * 12
+        entered = counts.get(month, {})
+        assert k["headcount"] == (str(entered["headcount"]) if "headcount" in entered else None)
+        if "paying_customers" not in entered:
+            assert [k[key] for key in ("arpa", "churn", "cac", "ltv", "ltv_to_cac", "cac_payback")] == [None] * 6
+        assert k["contracted_mrr"] is None
+        if k["runway"] != "not-burning":
+            assert _d(k["runway"]) * _d(cf["closing_cash"]) >= 0  # cash ÷ a positive average burn

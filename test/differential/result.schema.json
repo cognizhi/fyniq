@@ -61,6 +61,14 @@
       "patternProperties": {
         "^[0-9]{4}-(0[1-9]|1[0-2])$": {"$ref": "#/$defs/monthStatements"}
       }
+    },
+    "kpis": {
+      "description": "Present only when the scenario has kpis. Month -> that month's KPIs, for every stated month (README, \"KPIs\"). null is undefined (FR-KPI-03: never 0).",
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[0-9]{4}-(0[1-9]|1[0-2])$": {"$ref": "#/$defs/monthKpis"}
+      }
     }
   },
   "$defs": {
@@ -68,6 +76,53 @@
       "description": "A plain decimal string: no exponent, no '+', no grouping.",
       "type": "string",
       "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+    },
+    "kpi": {"anyOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
+    "monthKpis": {
+      "description": "Each KPI under RND-KPI: amounts at the base currency's minor units, percentages, ratios, multiples, months and days to 1 decimal, headcount whole.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["booked_mrr", "arr", "contracted_mrr", "revenue_growth", "gross_margin", "spend_by_function", "net_burn",
+                   "runway", "arpa", "churn", "cac", "ltv", "ltv_to_cac", "cac_payback", "burn_multiple", "current_ratio",
+                   "quick_ratio", "working_capital", "debt_to_equity", "dso", "dpo", "ebitda_margin", "net_margin",
+                   "headcount", "revenue_per_employee"],
+      "properties": {
+        "booked_mrr": {"$ref": "#/$defs/kpi"},
+        "arr": {"$ref": "#/$defs/kpi"},
+        "contracted_mrr": {"description": "No subscription data until FR-AR-15 (P2).", "type": "null"},
+        "revenue_growth": {"$ref": "#/$defs/kpi"},
+        "gross_margin": {"$ref": "#/$defs/kpi"},
+        "spend_by_function": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["R&D", "S&M", "G&A"],
+          "properties": {
+            "R&D": {"$ref": "#/$defs/decimal"},
+            "S&M": {"$ref": "#/$defs/decimal"},
+            "G&A": {"$ref": "#/$defs/decimal"}
+          }
+        },
+        "net_burn": {"$ref": "#/$defs/decimal"},
+        "runway": {"description": "Months, or \"not-burning\" when the three-month average net burn is not above zero.",
+                   "anyOf": [{"$ref": "#/$defs/decimal"}, {"const": "not-burning"}]},
+        "arpa": {"$ref": "#/$defs/kpi"},
+        "churn": {"$ref": "#/$defs/kpi"},
+        "cac": {"$ref": "#/$defs/kpi"},
+        "ltv": {"$ref": "#/$defs/kpi"},
+        "ltv_to_cac": {"$ref": "#/$defs/kpi"},
+        "cac_payback": {"$ref": "#/$defs/kpi"},
+        "burn_multiple": {"$ref": "#/$defs/kpi"},
+        "current_ratio": {"$ref": "#/$defs/kpi"},
+        "quick_ratio": {"$ref": "#/$defs/kpi"},
+        "working_capital": {"$ref": "#/$defs/decimal"},
+        "debt_to_equity": {"$ref": "#/$defs/kpi"},
+        "dso": {"$ref": "#/$defs/kpi"},
+        "dpo": {"$ref": "#/$defs/kpi"},
+        "ebitda_margin": {"$ref": "#/$defs/kpi"},
+        "net_margin": {"$ref": "#/$defs/kpi"},
+        "headcount": {"$ref": "#/$defs/kpi"},
+        "revenue_per_employee": {"$ref": "#/$defs/kpi"}
+      }
     },
     "section": {
       "description": "A section's total and its figure per report group; a group whose figure is zero may be left out, and a comparator reads a missing group as zero.",

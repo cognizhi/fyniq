@@ -136,6 +136,15 @@ class Settings:
 
 
 @dataclass(frozen=True)
+class KpiSettings:
+    """What the KPIs read besides the ledger (README, "KPIs"): the financial year's first month, and each
+    month's entered counts (FR-KPI-02 rev 0.161), month -> {"paying_customers": n, ...}."""
+
+    year_start_month: int
+    counts: MappingProxyType[str, MappingProxyType[str, int]]
+
+
+@dataclass(frozen=True)
 class Scenario:
     name: str
     base_currency: str
@@ -146,6 +155,7 @@ class Scenario:
     as_of: date | None = None
     settings: Settings | None = None
     statements: bool = False
+    kpis: KpiSettings | None = None
 
 
 # A role the statements read belongs to at most one account, of this type (README, "Statements").
@@ -309,6 +319,11 @@ def scenario_from_json(data: Any) -> Scenario:
     statements = data.get("statements", False)
     if statements and not any(a.role == "retained-earnings" for a in accounts.values()):
         raise ScenarioError("statements: the chart needs an account with the role retained-earnings")
+    kpis = None
+    if "kpis" in data:
+        if not statements:
+            raise ScenarioError("kpis: the KPIs read the statements, so the scenario needs statements: true")
+        kpis = KpiSettings(data["kpis"]["year_start_month"], _frozen(data["kpis"].get("counts", {})))
 
     documents: list[Document | Source] = []
     seen: set[str] = set()
@@ -360,7 +375,8 @@ def scenario_from_json(data: Any) -> Scenario:
                     f"reversals/{i}: {reversal.document} is a {types[reversal.document]}; a reversal names a "
                     "manual journal (voids of P1 documents are not in the format yet)"
                 )
-    return Scenario(data["name"], base, currencies, accounts, tuple(documents), reversals, as_of, settings, statements)
+    return Scenario(data["name"], base, currencies, accounts, tuple(documents), reversals, as_of, settings, statements,
+                    kpis)
 
 
 def load_scenario(path: str | Path) -> Scenario:

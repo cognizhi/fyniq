@@ -71,7 +71,7 @@ runner should fail the same way). The input is not a `fyniq-scenario@1` document
   before a date in the scenario, a reversal of a P1 document, a settings account not in `accounts`);
 - two accounts have the role `retained-earnings`, `depreciation` or `income-tax-expense`, or one of
   them is on an account of the wrong type (equity, expense and expense), or `statements` is true with no
-  `retained-earnings` account (section "Statements").
+  `retained-earnings` account (section "Statements"), or `kpis` comes without `statements` (section "KPIs").
 
 **A document is rejected** (it is listed in `rejected`, and none of its lines posts). A journal posts
 only when it meets every rule:
@@ -507,6 +507,60 @@ Readings the PRD leaves open, each [accountant to confirm] with rev 0.159:
 | An entry moving both capital expenditure and borrowings or equity | Investing | Investing is tested first, as D2 lists it |
 | The profit to date in the balance sheet | All revenue and expense posted so far, inside the retained-earnings account's group | FR-GL-10 and FR-RPT-01; a scenario has no opening balances, so no earlier year is missing |
 | A month with no entry between two that have | Stated: nothing in the P&L and the cash flow, the balance sheet as the month before | FR-RPT-02 runs any period of whole months |
+
+## KPIs (pending: `cmd/scenario-run` does not state them yet)
+
+From `p1-dashboard-kpis` (task 1.3), a scenario with `statements` may also have `kpis`, which asks both
+sides for every stated month's KPIs in the result's `kpis` (`result.schema.json` lists them). They are
+read from the month's statements and trial balance and the entered counts, written from the workbook's
+own definitions (its PRD §11.5, which FR-KPI-02 adopts), FR-KPI-02 and FR-KPI-03 (rev 0.161) and
+`RND-KPI`; `oracle/src/oracle/kpis.py` is the oracle's side, and `pending/statements.json` carries them.
+
+```text
+"kpis": {"year_start_month": 1,
+         "counts": {"2026-01": {"paying_customers": 10, "new_customers": 10, "customers_lost": 0, "headcount": 3},
+                    "2026-03": {"headcount": 4}}}
+```
+
+`year_start_month` is the financial year's first month; `counts` are the month's entered counts (rev
+0.161: the three customer counts together, headcount on its own). Each KPI is computed from exact figures
+and rounded once, half away from zero (`RND-KPI`): amounts at the base currency's minor units;
+percentages and margins to 1 decimal as `RND-PERCENT` (against the size of the whole, with the part's
+sign); ratios, multiples, months and days to 1 decimal; headcount whole. An undefined KPI is `null`,
+never 0 (FR-KPI-03), and a comparator matches `null` only with `null`.
+
+| KPI | The month's | Undefined (`null`) |
+|---|---|---|
+| `booked_mrr`, `arr` | revenue (not other income) of the accounts whose report group contains "subscription", any case; × 12 | no such account in the chart |
+| `contracted_mrr` | always `null`: no subscription data until FR-AR-15 (P2) | always |
+| `revenue_growth` | `RND-PERCENT` of (revenue − the month before's) against the month before's | the month before had no revenue |
+| `gross_margin`, `ebitda_margin`, `net_margin` | `RND-PERCENT` of gross profit, EBITDA, net profit against revenue (the statements' `percent_of_revenue`) | revenue 0 |
+| `spend_by_function` | R&D, S&M and G&A: the expense lines of the accounts with that function, whatever their P&L section | never |
+| `net_burn` | −(operating + investing cash flow) | never |
+| `runway` | closing cash ÷ the three-month average net burn; `"not-burning"` when that average is not above zero | — |
+| `arpa` | booked MRR ÷ paying customers | no counts, no MRR, or 0 paying |
+| `churn` | `RND-PERCENT` of customers lost against customers at the start (paying − new + lost) | no counts, or none at the start |
+| `cac` | S&M spend ÷ new customers | no counts, or 0 new |
+| `ltv`, `ltv_to_cac`, `cac_payback` | ARPA × gross margin ÷ churn; LTV ÷ CAC; CAC ÷ (ARPA × gross margin), from the exact values | an input undefined, or a divisor 0 |
+| `burn_multiple` | net burn ÷ net new ARR (ARR − the month before's) | the month's net burn not above zero, no MRR, or ARR not grown |
+| `current_ratio`, `quick_ratio` | current assets ÷ current liabilities; (closing cash + the Receivables line's balance) ÷ current liabilities | current liabilities 0 |
+| `working_capital`, `debt_to_equity` | current assets − current liabilities; total liabilities ÷ equity | equity not above zero (debt/equity) |
+| `dso`, `dpo` | the Receivables line's balance × 30 ÷ the average revenue; the Payables & accruals line's (credit positive) × 30 ÷ the average costs (cost of sales and operating expenses) | that average 0 |
+| `headcount`, `revenue_per_employee` | as entered; revenue × 12 ÷ headcount | not entered, or 0 (per employee) |
+
+Three-month averages take the month and up to two before it, inside its financial year and from the
+first stated month on ("the months of the selected financial year that exist"). The month before the
+first stated month had nothing posted: its revenue and ARR are 0.
+
+Readings the PRD and the workbook leave open, each [accountant to confirm] with rev 0.161:
+
+| Shape | Oracle | Why |
+|---|---|---|
+| Which accounts are subscription revenue | Revenue accounts (not other income) whose report group contains "subscription" | The workbook's "subscription revenue"; `p1-dashboard-kpis` design ("accounts whose report group is a subscription stream") |
+| Customers at the start of the month | Paying − new + lost, from the month's own counts | The counts the month records; it needs no earlier month's entry |
+| Spend by function | Every expense account with the function, depreciation included when its account says G&A | The workbook: "totals from each account's function" |
+| The costs DPO averages | Cost of sales and operating expenses (above EBITDA) | What suppliers bill; depreciation, finance costs and tax are not bought on credit |
+| "Not burning" for the burn multiple | The month's own net burn not above zero | The multiple is the month's; runway's "Not burning" is the three-month average's (FR-KPI-03) |
 
 ## Commands
 
