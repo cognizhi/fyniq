@@ -117,7 +117,7 @@ services:
     # FYNIQ_CLAMD_ADDR (localhost:3310 for make dev; clamav:3310 for the api container). It downloads its
     # signatures when it starts, and is ready when clamd listens. The Debian build, because clamav/clamav
     # is published for amd64 only and every image here runs natively on arm64 too (NFR-IMG-08).
-    image: clamav/clamav-debian:1.4.3@sha256:1d261f9c83ef2bbeef3915c7792f125e5707500fde0019d53547461747b90374
+    image: clamav/clamav-debian:1.5.3@sha256:741e6c447241220e0792a901befcaec1d55a755c5097fc9cd88d7fd8be251a5c
     profiles: [scanner]
     ports:
       - "127.0.0.1:${FYNIQ_CLAMD_PORT:-3310}:3310"
