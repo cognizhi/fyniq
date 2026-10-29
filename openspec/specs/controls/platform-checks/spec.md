@@ -98,16 +98,16 @@ Source: PRD-001 §C.2
 - **THEN** the check passes
 
 ### Requirement: C.2 #7 Access review overdue
-The system SHALL flag for review, on every relevant change and nightly, an access review that is overdue.
+The system SHALL flag for review, on every relevant change and nightly, an access review that is overdue: a calendar quarter that ended more than 14 days ago without its attestation (FR-CTL-06).
 
 Source: PRD-001 §C.2
 
 #### Scenario: The access review is overdue
-- **WHEN** the access review is overdue
+- **WHEN** a calendar quarter ended more than 14 days ago and its access review has not been attested
 - **THEN** the check flags it for review
 
 #### Scenario: The access review is up to date
-- **WHEN** the access review is not overdue
+- **WHEN** the last quarter that ended more than 14 days ago has been attested
 - **THEN** the check passes
 
 ### Requirement: C.2 #8 Bank feed stale over 3 days
