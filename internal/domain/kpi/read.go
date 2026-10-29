@@ -70,7 +70,7 @@ func Read(ctx context.Context, u storage.UnitOfWork, base money.Currency, all []
 	month := func(i int) Month {
 		p := all[i]
 		key := p.StartsOn.Format("2006-01")
-		m := Month{Start: p.StartsOn, Revenue: zero, GrossProfit: zero, EBITDA: zero, NetProfit: zero, SM: zero, RD: zero, GA: zero, Costs: zero,
+		m := Month{Start: p.StartsOn, Revenue: zero, GrossProfit: zero, EBITDA: zero, NetProfit: zero, NetProfitYTD: zero, SM: zero, RD: zero, GA: zero, Costs: zero,
 			NetBurn: zero, Cash: zero, Receivables: zero, Payables: zero, CurrentAssets: zero, CurrentLiabilities: zero, TotalLiabilities: zero, Equity: zero}
 		if subscriptions {
 			m.Subscription = &zero
@@ -169,6 +169,21 @@ func Read(ctx context.Context, u storage.UnitOfWork, base money.Currency, all []
 	var months []Month
 	for i := first; i <= last; i++ {
 		months = append(months, month(i))
+	}
+	// The year to date: the P&L from the financial year's first month to the last, one column.
+	ytd := last
+	for ytd > 0 && !all[ytd-1].StartsOn.Before(yearStart) {
+		ytd--
+	}
+	year, err := financials.Lay(ctx, u, base, financials.Request{Kind: financials.ProfitAndLoss, All: all, First: ytd, Last: last, Revision: revision})
+	if err != nil {
+		return nil, nil, err
+	}
+	months[len(months)-1].NetProfitYTD = zero
+	for _, b := range year.Blocks {
+		if b.Key == "net_profit" {
+			months[len(months)-1].NetProfitYTD = b.Totals[0]
+		}
 	}
 	var before *Month
 	if last > 0 {

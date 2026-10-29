@@ -2,7 +2,7 @@
   "help": {
     "home.overview": {
       "label": "Home",
-      "tooltip": "Where you start: who is signed in, and the way to every page you can use."
+      "tooltip": "Where you start: the company's cash, runway and the figures that matter this month, what waits for you, and while the company is new, the set-up steps."
     },
     "auth.sign-in": {
       "label": "Sign in",
@@ -775,6 +775,10 @@
     "reports.management": {
       "label": "Management reports",
       "tooltip": "Sales by customer and by item, spend by supplier and the top expenses for any run of months, each with its share of the total, net of GST."
+    },
+    "reports.kpis": {
+      "label": "Start-up KPIs",
+      "tooltip": "A month's KPIs beside the month before: MRR, burn, runway, margins, churn, CAC and the rest, each with how it is worked out. The customer counts and headcount are entered here each month."
     },
     "reports.accountant-exports": {
       "label": "Accountant exports",

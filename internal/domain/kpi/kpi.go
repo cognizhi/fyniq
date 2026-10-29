@@ -82,6 +82,11 @@ const (
 
 // Definitions are the KPI set in the order the KPI page shows it (FR-KPI-02). A change of formula is a new version.
 var Definitions = []Definition{
+	{"cash", "Cash", "cash@1", Amount, Ledger, "Cash in the money accounts at the month end", "the month end", ""},
+	{"revenue", "Revenue", "revenue@1", Amount, Ledger, "Revenue recognised in the month", "the accounting month", ""},
+	{"net_profit_ytd", "Net profit, year to date", "net_profit_ytd@1", Amount, Ledger, "Net profit from the financial year's first day to the month end", "the financial year to the month end", ""},
+	{"owed_to_us", "Owed to us", "owed_to_us@1", Amount, Ledger, "Receivables at the month end", "the month end", ""},
+	{"owed_by_us", "We owe", "owed_by_us@1", Amount, Ledger, "Payables and accruals at the month end", "the month end", ""},
 	{"booked_mrr", "Booked MRR", "booked_mrr@1", Amount, Ledger, "Subscription revenue recognised in the month: revenue accounts whose report group is a subscription stream", "the accounting month", NoSubscription},
 	{"contracted_mrr", "Contracted MRR", "contracted_mrr@1", Amount, Pending, "The monthly value of active subscriptions at month end", "the month end", NoSubscriptions},
 	{"arr", "ARR (booked)", "arr@1", Amount, Ledger, "Booked MRR × 12", "the accounting month", NoSubscription},
@@ -126,6 +131,7 @@ type Month struct {
 	Start                       time.Time
 	Revenue, GrossProfit        money.Money
 	EBITDA, NetProfit           money.Money
+	NetProfitYTD                money.Money  // from the financial year's first day to the month end
 	Subscription                *money.Money // nil: the chart has no subscription revenue account
 	SM, RD, GA                  money.Money
 	Costs                       money.Money // cost of sales and operating expenses
@@ -271,6 +277,16 @@ func Compute(months []Month, before *Month, base money.Currency) []Value {
 			return quo(mul(a, g), c), ""
 		}
 		switch d.Key {
+		case "cash":
+			set(dec(m.Cash))
+		case "revenue":
+			set(rev)
+		case "net_profit_ytd":
+			set(dec(m.NetProfitYTD))
+		case "owed_to_us":
+			set(dec(m.Receivables))
+		case "owed_by_us":
+			set(dec(m.Payables))
 		case "booked_mrr":
 			if m.Subscription == nil {
 				none(NoSubscription)
