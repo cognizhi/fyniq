@@ -10,7 +10,7 @@ Built for a lean founding team, with the controls a growing company needs.**
 | Document | PRD-001 (initial PRD, greenfield) |
 | Product | **Fyniq**, "Intelligence behind every number" (rev 0.9: the founders' chosen name; formerly the working name "Cognizhi Finance Hub Cloud", short "FH Cloud") |
 | Status | Draft for founder review |
-| Revision | 0.161 (29 Oct 2026): customer counts and headcount entered monthly until subscription and payroll data exist, and the rounding policy RND-KPI |
+| Revision | 0.162 (29 Oct 2026): the checks engine's owners, books health and not-assessed checks, the access review page, and each check built with its module |
 | Date | 15 Oct 2026 (rev 0.24) |
 | Owner | Cognizhi founders |
 | Reviewers | Founders; external accountant / tax agent; security reviewer (later: auditor). (rev 0.19) Second review of rev 0.16–0.19 split by area, one pull request each, before P0 work on that area ([plan](reviews/second-review-plan-2026-10-14.md)). (rev 0.22) The reviews no longer gate building: work proceeds on the best current recommendation, and pages awaiting review show a banner until the area's pull request merges (FR-UX-41) |
@@ -1045,12 +1045,12 @@ payroll source.
 
 | ID | Requirement | Pri | Phase |
 |---|---|---|---|
-| FR-CTL-01 | **Checks engine**: every live workbook check ((rev 0.11) 36: C.1 #34 is retired) plus new platform checks (Appendix C), each with a severity (✖ blocks close, ⚠ needs review), a plain-English explanation, a drill-down to offending items, and an owner. Runs on every relevant change and nightly. | M | P1 |
-| FR-CTL-02 | **Books health score** on Home (OK / review / problems) with counts by severity | M | P1 |
+| FR-CTL-01 | **Checks engine**: every live workbook check ((rev 0.11) 36: C.1 #34 is retired) plus new platform checks (Appendix C), each with a severity (✖ blocks close, ⚠ needs review), a plain-English explanation, a drill-down to offending items, and an owner. Runs on every relevant change and nightly. (rev 0.162, the owner's decisions of 29 Oct 2026) A check's owner is a role named by the catalogue; an Owner or Controller may name a person instead, audited. A check that cannot run for want of an input is **not assessed** and names that input; a run that fails says so and counts as ✖. Each check is built with the module it guards (Appendix C): a module not built or not set up shows none of its checks | M | P1 |
+| FR-CTL-02 | **Books health score** on Home (OK / review / problems) with counts by severity. (rev 0.162) **Problems** when any check finds ✖, **review** when any finds ⚠ or ⏰, **OK** otherwise; the checks not assessed are counted beside the score and never change it | M | P1 |
 | FR-CTL-03 | **Audit trail explorer**: filter by user, AI, record, field, time, action; see before/after values; export; verify integrity (hash chain) on demand | M | P1 |
 | FR-CTL-04 | Period lock, approvals, SoD and team mode as in §6 and FR-GL-07/08 | M | P1 |
 | FR-CTL-05 | **Continuous ledger verification** (nightly): recompute balances from journal lines and compare with materialised balances; subledgers (AR, AP, payroll liabilities, fixed assets, GST; (rev 0.8) prepayments, deferred revenue, expense claims) vs control accounts; hash chain and anchors; result on Checks and in the Compliance Center | M | P1 |
-| FR-CTL-06 | User access review report (who has what, last sign-in, SoD conflicts) with quarterly attestation | S | P1 |
+| FR-CTL-06 | User access review report (who has what, last sign-in, SoD conflicts) with quarterly attestation. (rev 0.162, the owner's decision of 29 Oct 2026) A page of its own, **Settings › Access review**: each member's roles, last sign-in and SoD conflicts with what the team mode allows, external users and their expiry, and the integration clients; an Owner attests each calendar quarter, audited, and C.2 #7 warns until it is | S | P1 |
 
 ### 8.16 Documents and attachments
 
@@ -3661,6 +3661,8 @@ All amounts carry the person as a sub-ledger key on 2500 and 2120 (FR-EQ-01).
 
 (rev 0.11) Each check runs from P1 unless its row names a later phase (for example #52, P2).
 
+(rev 0.162, the owner's decision of 29 Oct 2026) Each check of C.1 and C.2 is built with the module it guards, on the checks engine (FR-CTL-01): the checks of payroll, projects, the founders' money, equity, the company secretary, AI, payment providers, GST filing and budgets join with those modules.
+
 | # | Area | Check | Severity |
 |---|---|---|---|
 | 1 | Ledger | Materialised balances equal recomputation from lines (INV-08) | ✖ |
@@ -3669,7 +3671,7 @@ All amounts carry the person as a sub-ledger key on 2500 and 2120 (FR-EQ-01).
 | 4 | Controls | Self-approved items not reviewed within 14 days (FM-3) | ⚠ |
 | 5 | Controls | Users with SoD conflicts not covered by the team mode | ✖ |
 | 6 | Controls | External users past their expiry date still active | ✖ |
-| 7 | Controls | Access review overdue | ⚠ |
+| 7 | Controls | Access review overdue (rev 0.162: a calendar quarter ended more than 14 days ago without its attestation, FR-CTL-06) | ⚠ |
 | 8 | Banking | Feed not updated for more than 3 days | ⚠ |
 | 9 | Banking | Unreconciled lines older than 30 days | ⚠ |
 | 10 | Purchases | Possible duplicate bills (same vendor, amount and date window) | ⚠ |
@@ -4859,6 +4861,7 @@ the connector pays off as volume grows (a judgement, not a measured threshold).
 | 0.159 | 28 Oct 2026 | Before building the reports (`p1-reports`): the owner's decision of 28 Oct 2026, taken interactively, that a re-run as at a revision gives its figures exactly with today's account names, labelled restated presentation when the chart changed (FR-RPT-08); and, on the owner's instruction to decide without waiting for the accountant, the statements' layout from the chart's attributes: the P&L to EBITDA and net profit, the balance sheet by current and non-current groups with borrowings apart, and the indirect cash flow tied to the money accounts with non-cash transactions apart (FR-RPT-01) [accountant to confirm]. The spec `reporting/reports` updated; the change `p1-reports` proposed. |
 | 0.160 | 29 Oct 2026 | Two decisions of the owner, taken interactively, on the payment batches' follow-ups: bank auto-reconcile also matches a line to one payment of a released batch when it names the batch and its amount and currency are that payment's alone (FR-BNK-14), never a batch's total; and a remittance advice that gave up can be sent again by a person (FR-BNK-12). The spec `banking/bank-transactions` updated. |
 | 0.161 | 29 Oct 2026 | Before building the dashboard and KPIs (`p1-dashboard-kpis`): the owner's decision of 29 Oct 2026, taken interactively, that a person enters each month's customer counts and headcount until subscription and payroll data exist, each KPI using them labelled entered (FR-KPI-02; G4-047 noted); and the rounding policy `RND-KPI` for every KPI shown (§10.4). Specs `reporting/dashboards-and-kpis` and `ledger/money-and-rounding` updated. |
+| 0.162 | 29 Oct 2026 | Before building the checks engine (`p1-checks`), the owner's decisions of 29 Oct 2026, taken interactively: each check is built with the module it guards, so the checks of modules not yet built join with them (Appendix C; the P1–P3 plan moves them); a check's owner is a role named by the catalogue, or a person an Owner or Controller names (FR-CTL-01); the user access review is a page of its own, Settings › Access review, attested by an Owner each quarter (FR-CTL-06, C.2 #7 overdue after 14 days). Also defined: books health from the severities found, with the checks not assessed counted beside it (FR-CTL-02). Specs `controls/checks` and `controls/platform-checks` updated. |
 | 0.138 | 25 Oct 2026 | Built statements of account (`p1-sales` task 7.2; FR-AR-08), provisional until sign-off: the document type `statement` (ST-; FY204; migrations 000139 and 000140), email of purpose `statement` from the invoices sender, the operations `getCustomerStatement`, `createStatement`, `listStatements`, `getStatement` and `emailStatement`, and the statement template's ageing fields and rows. No requirement was renumbered or removed. |
 | 0.137 | 25 Oct 2026 | Built reminders to customers through the Inbox (`p1-sales` task 7.1; FR-AR-08, FR-INT-21), provisional until sign-off, per the owner's decision of 24 Oct 2026: the tables `customer_group` and `sales_reminder` (FY203; migrations 000137 and 000138), the contact's `customer_group_id`, email of purpose `reminder` from the reminders sender, the operations `listCustomerGroups`, `getCustomerGroup`, `createCustomerGroup`, `replaceCustomerGroup`, `listSalesReminders`, `sendSalesReminder` and `skipSalesReminder`, and threats T15 and T16 in `docs/security/threat-models/email-delivery.md`. No requirement was renumbered or removed. |
 | 0.136 | 25 Oct 2026 | Built recurring invoices that the scheduler issues and sends (`p1-sales` task 6.1, the rest; FR-AR-07, FR-AUT-02, FR-APR-01, FM-3, SOD-3), provisional until sign-off, per the owner's decision of 24 Oct 2026 (the worker, fenced by the database): the recurring invoice's `mode` and approved version, the approval object `recurring_invoice` (`recurring_invoice.approve`, requested with `requestRecurringInvoiceApproval`), the review kind `scheduled_issue`, the worker's grants to issue, number, attach, link and email such invoices and the triggers that confine them (FY201, FY202; migrations 000135 and 000136), and the threat model `docs/security/threat-models/scheduled-invoices.md`. No requirement was renumbered or removed. |

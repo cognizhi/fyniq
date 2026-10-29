@@ -69,7 +69,7 @@ ch("p1-payroll-link", F1, 4, "Fyniq's side of payroll: the people-platform contr
 ch("p1-reports", F1, 5, "Financial statements, periods and comparatives, management reports, exports, reproducible reports, asynchronous exports, accountant exports, the charts and the remaining statement invariants", ["p1-general-ledger-close"], "—", "The accountant confirms the framework (Q31)", "Accountant", "Launch")
 ch("p1-dashboard-kpis", F1, 5, "The default Home and Dashboard and the workbook KPI set as versioned definitions", ["p1-reports"], "—", "—", "—", "Launch")
 ch("p1-planning", F1, 5, "Budgets, the driver-based forecast and its outputs, the 13-week and short-term cash forecasts, the feasibility calculator, sandboxed forecasts", ["p1-reports"], "—", "—", "—", "Launch")
-ch("p1-checks", F1, 5, "The checks engine, books health and the user access review report; the workbook checks (Appendix C.1) and platform checks (C.2), each closed as its module arrives", ["p1-reports"], "—", "—", "Accountant", "Launch")
+ch("p1-checks", F1, 5, "The checks engine, books health and the user access review page; the workbook checks (Appendix C.1) and platform checks (C.2) of the modules built, each later module building its own on the engine (owner, 29 Oct 2026)", ["p1-reports"], "—", "—", "Accountant", "Launch")
 ch("p1-audit-explorer", F1, 5, "Sensitive values in the trail, period-close snapshots, logged sensitive reads and exports, audit retention, the audit explorer and export, purge and restore that keep the chain", ["p1-general-ledger-close"], "—", "—", "Security (#4)", "Launch")
 ch("p1-compliance-center", F1, 5, "The control dashboard, statutory calendar view, attestations, PDPA registers, risk register, policy library; the control rows of Appendix F (F.1, F.3, F.7), each closed when its check runs, and AI governance", ["p1-checks"], "Evidence from local runs; cloud evidence at the cloud gate", "—", "Security (#4)", "Launch")
 ch("p1-pdpa-retention", F1, 5, "The DPO, data inventory, notices and consent, access and correction requests, breach timers, transfers, NRIC handling, DPIAs; encryption, application-level encryption, residency, minimisation; retention per data class with crypto-shredding", ["p1-documents-evidence", "p1-audit-explorer"], "—", "Counsel confirms before payroll data is loaded (Q39)", "Security (#4)", "Launch (before payroll data)")
@@ -209,6 +209,24 @@ BY_ID.update({
     "FR-PPL-15": "p1-nemura-fyniq-link", "FR-PPL-18": "p1-nemura-fyniq-link", "NM-ONB-02": "p1-nemura-self-service-letters",
     "DEV-09": "p1-ai-providers",
 })
+# The checks of Appendix C are built with the module each guards, on the checks engine of p1-checks (the owner's
+# decision of 29 Oct 2026, PRD-001 rev 0.162): those of modules after p1-checks sit with those modules' changes.
+CHECKS_WITH_MODULES = {
+    "p1-payroll-link": "C.1 #19|C.1 #20|C.1 #21|C.2 #14|C.2 #44|C.2 #45",
+    "p1-projects": "C.1 #26|C.1 #27|C.2 #40|C.2 #41",
+    "p1-planning": "C.1 #35",
+    "p1-gst": "C.1 #37|C.2 #13|C.2 #15|C.2 #46|C.2 #47",
+    "p1-founders-money": "C.2 #21|C.2 #22|C.2 #23|C.2 #24|C.2 #25",
+    "p1-equity-register": "C.2 #26|C.2 #27|C.2 #28|C.2 #29",
+    "p1-company-secretary": "C.2 #32|C.2 #33|C.2 #34|C.2 #35|C.2 #54",
+    "p1-ai-proposals": "C.2 #19",
+    "p1-scheduled-agents": "C.2 #36",
+    "p1-ai-providers": "C.2 #55",
+    "p1-payment-providers": "C.2 #42|C.2 #50",
+    "p1-approval-engine": "C.2 #53",
+    "p2-mobile-approvals-automation": "C.2 #52",
+}
+BY_ID.update({i: c for c, ids in CHECKS_WITH_MODULES.items() for i in ids.split("|")})
 # Phase-less rows placed by title
 TITLE = [
     ("ledger/posting-rules", r"bank transaction|Transfer between money|bank, card or cash", "p1-bank-import-reconcile"),
