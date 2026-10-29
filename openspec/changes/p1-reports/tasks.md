@@ -142,8 +142,22 @@
 
 ## 4. Management reports (FR-RPT-03)
 
-- [ ] 4.1 Sales by customer and item, spend by supplier, and the top expenses, as at a run of months (D6), with their
+- [x] 4.1 Sales by customer and item, spend by supplier, and the top expenses, as at a run of months (D6), with their
   screens in the reports index. `// req: FR-RPT-03`
+  (29 Oct 2026: `internal/domain/management`. Sales are what the invoices and credit notes posted in the run earned net
+  of GST: their entries' lines on any account but the receivables, payables, GST, deposits, tax withheld and FX
+  controls, spread revenue counted in full when invoiced; spend the same of the bills and suppliers' credit notes,
+  GST that cannot be claimed being a cost; a void or edit counts in the month its reversal posts, as in the P&L. By
+  item, each entry line goes to its document line's item (the rule posts one per line, in order), with the quantity
+  net of credits. The top expenses are the P&L's expense accounts, the top ten and the rest. All read at one revision,
+  with shares by RND-PERCENT. [accountant to confirm] what counts as a sale or spend. The API: `getSalesByCustomer`,
+  `getSalesByItem`, `getSpendBySupplier`, `getTopExpenses`; D9's qualified views through a new `Qualified` list on a
+  policy (a sales view reads the sales reports, a purchases view the spend). The web: `/reports/management/:report`
+  with a tab per report beside Who owes us and Whom we owe, the period presets, each row's share, an expense opening
+  its general ledger; listed in the reports index in Expert. Tests: `TestManagementReportsThroughTheAPI` (worked by
+  hand, a void and an as-at re-run, the qualified views), `TestTheTopExpensesKeepTenAndAddUpTheRest`,
+  `TestAQualifiedViewReadsTheReportsOfItsArea`, the matrix rows, `management.test.tsx` with axe; the guide's
+  "Read the management reports" and kb `reports.management`. The screen's chart of the top expenses is 5.3.)
 
 ## 5. Charts (FR-VIZ-01…08)
 
@@ -169,7 +183,14 @@
   keys, and has a table view, a text summary and PNG and CSV downloads. Tests: `chart.test.tsx` with axe, the table's
   figures read back equal to the plotted ones. MASTER.md §10 names it the one way to draw a chart. Status colours:
   the component takes none (FR-VIZ-05 is the chips'.))
-- [ ] 5.3 First uses: the P&L's monthly trend and the top expenses.
+- [x] 5.3 First uses: the P&L's monthly trend and the top expenses.
+  (29 Oct 2026: on the P&L with a column per month (Expert), the trend of revenue, gross profit and net profit a line
+  each, in fixed slots, from the same statement the table shows; on Top expenses, horizontal bars with their amounts.
+  Each through the Chart component, with its summary, table view and downloads; its heading level is now a prop (an
+  h2 under a page's title). Drawn by ECharts' server-side SVG and looked at: labels inside the plot, values on the
+  bars. A collapsed or empty section of a statement no longer points aria-controls at rows not drawn. The inventory
+  names both charts; the guides and kb pages say so. Tests: `statements.test.tsx`, `management.test.tsx` with axe,
+  the trend's table read against the plotted figures.)
 
 ## 6. Finish
 

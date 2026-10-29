@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, CalendarClock, ChevronRight, HandCoins, Landmark, ReceiptText, Scale, ScrollText, Search, Wallet, type LucideIcon } from "lucide-react";
+import { BookOpen, CalendarClock, ChartBarDecreasing, ChartColumn, ChevronRight, HandCoins, Landmark, ReceiptText, Scale, ScrollText, Search, Truck, Wallet, type LucideIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -24,6 +24,9 @@ const essentials: { kind: "pl" | "bs" | "cf"; icon: LucideIcon; line: string }[]
 const more: { name: string; line: string; icon: LucideIcon; to: string; params?: Record<string, string>; expert?: boolean }[] = [
   { name: "Who owes us", line: "Customers' statements of account and what each owes.", icon: HandCoins, to: "/sales/statements" },
   { name: "Whom we owe", line: "Bills to pay, by when they fall due.", icon: ReceiptText, to: "/purchases/bills" },
+  { name: "Sales by customer and item", line: "What each customer and each item was invoiced, net of GST.", icon: ChartColumn, to: "/reports/management/$report", params: { report: "sales-by-customer" }, expert: true },
+  { name: "Spend by supplier", line: "What each supplier billed, net of the GST you can claim.", icon: Truck, to: "/reports/management/$report", params: { report: "spend-by-supplier" }, expert: true },
+  { name: "Top expenses", line: "The ten largest expense accounts, and the rest as one line.", icon: ChartBarDecreasing, to: "/reports/management/$report", params: { report: "top-expenses" }, expert: true },
   { name: statementNames.tb, line: "Every account's balance at a month's end, debits and credits.", icon: BookOpen, to: "/reports/statements/$kind", params: { kind: "tb" }, expert: true },
   { name: "General ledger", line: "Every posted line of the accounts you choose, with a running balance.", icon: ScrollText, to: "/reports/general-ledger", expert: true },
   { name: "Schedules", line: "Costs and income spread over months, and what each has recognised.", icon: CalendarClock, to: "/accounting/schedules", expert: true },
@@ -78,7 +81,7 @@ function Essential({ kind, icon, line, run }: (typeof essentials)[number] & { ru
 
 // Reports is the reports index (docs/design/screens Reports; FR-RPT-03, FR-RPT-10): Basic's essentials with this
 // month's headline figure, and the other reports where they live. Saved reports, favourites and the report builder are
-// P2; the management reports join with their task. In Expert, the accountant exports run in the background.
+// P2. In Expert, the management reports are listed, and the accountant exports run in the background.
 export function Reports() {
   const id = useId();
   const [find, setFind] = useState("");

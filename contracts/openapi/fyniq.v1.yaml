@@ -13654,6 +13654,109 @@ components:
       required:
         - items
       type: object
+    ManagementReport:
+      additionalProperties: false
+      properties:
+        currency:
+          description: The base currency every amount is in.
+          examples:
+            - SGD
+          type: string
+        from:
+          description: The run's first day.
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        ledger_revision:
+          description: "The ledger revision every figure is read as at (ENG-46): asking again as at it gives the same figures."
+          examples:
+            - 42
+          format: int64
+          type: integer
+        platform_version:
+          description: The platform version that laid it out (REL-05).
+          examples:
+            - 0.1.0
+          type: string
+        report:
+          description: The report.
+          enum:
+            - sales_by_customer
+            - sales_by_item
+            - spend_by_supplier
+            - top_expenses
+          examples:
+            - sales_by_customer
+          type: string
+        rows:
+          description: Largest first.
+          items:
+            $ref: "#/components/schemas/ManagementRow"
+          type: array
+        to:
+          description: The run's last day.
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+        total:
+          $ref: "#/components/schemas/Money"
+          description: The rows' total.
+      required:
+        - report
+        - currency
+        - from
+        - to
+        - ledger_revision
+        - platform_version
+        - rows
+        - total
+      type: object
+    ManagementRow:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "Its figure in the base currency: sales or spend net of GST, or the expense as the P&L shows it."
+        code:
+          description: An item's or account's code.
+          examples:
+            - "6110"
+          type: string
+        documents:
+          description: The invoices, bills and credit notes behind it; 0 for the top expenses.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        id:
+          description: "The customer, item, supplier or account; none for the rest: the lines without an item, or the expenses after the top ten."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+          format: uuid
+          type: string
+        name:
+          description: Its name, as on file today.
+          examples:
+            - Acme Analytics Pte Ltd
+          type: string
+        quantity:
+          description: "Sales by item: the quantity sold, net of credits, in the item's unit."
+          examples:
+            - "12"
+          type: string
+        share:
+          description: Its % of the total (RND-PERCENT); empty when the total is zero.
+          examples:
+            - "12.5"
+          type: string
+      required:
+        - name
+        - amount
+        - share
+        - documents
+      type: object
     MappingNumber:
       additionalProperties: false
       properties:
@@ -93579,6 +93682,252 @@ paths:
         capability: Reports, dashboards
         note: A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
         right: V
+  /v1/reports/sales-by-customer:
+    get:
+      description: "The invoices and credit notes of the run by customer, largest first, each with its share and how many documents (FR-RPT-03). What the documents posted in the run earned or spent net of GST: their entries' lines on any account but the receivables, payables, GST, deposits, tax withheld and FX controls, revenue or cost spread over months counted in full when invoiced or billed. A void or an edit posts a reversal, which counts in the month it posts, as in the P&L. Money received or paid at the bank without an invoice or bill, and expense claims, are in the P&L and the top expenses, not here. Over a run of whole months (FR-RPT-02), every amount in the base currency, read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects."
+      operationId: getSalesByCustomer
+      parameters:
+        - description: The run's first month, YYYY-MM; left out, the last month's.
+          explode: false
+          in: query
+          name: from
+          schema:
+            description: The run's first month, YYYY-MM; left out, the last month's.
+            examples:
+              - 2026-10
+            pattern: ^[0-9]{4}-[0-9]{2}$
+            type: string
+        - description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
+          explode: false
+          in: query
+          name: to
+          schema:
+            description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
+            examples:
+              - 2026-10
+            pattern: ^[0-9]{4}-[0-9]{2}$
+            type: string
+        - description: Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
+          explode: false
+          in: query
+          name: as_at_revision
+          schema:
+            description: Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
+            examples:
+              - 42
+            format: int64
+            minimum: 1
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagementReport"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get sales by customer
+      tags:
+        - Reports
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - REPORT-03
+        - REPORT-04
+      x-fyniq-permission:
+        capability: Reports, dashboards
+        note: A view of the reports limited to sales reads it; one limited to purchases, payroll, a department or the board pack is refused.
+        right: V
+  /v1/reports/sales-by-item:
+    get:
+      description: "The invoices' and credit notes' lines of the run by item, largest first, each with its share, the quantity sold net of credits and how many documents (FR-RPT-03); the lines without an item are one row. What the documents posted in the run earned or spent net of GST: their entries' lines on any account but the receivables, payables, GST, deposits, tax withheld and FX controls, revenue or cost spread over months counted in full when invoiced or billed. A void or an edit posts a reversal, which counts in the month it posts, as in the P&L. Money received or paid at the bank without an invoice or bill, and expense claims, are in the P&L and the top expenses, not here. Over a run of whole months (FR-RPT-02), every amount in the base currency, read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects."
+      operationId: getSalesByItem
+      parameters:
+        - description: The run's first month, YYYY-MM; left out, the last month's.
+          explode: false
+          in: query
+          name: from
+          schema:
+            description: The run's first month, YYYY-MM; left out, the last month's.
+            examples:
+              - 2026-10
+            pattern: ^[0-9]{4}-[0-9]{2}$
+            type: string
+        - description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
+          explode: false
+          in: query
+          name: to
+          schema:
+            description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
+            examples:
+              - 2026-10
+            pattern: ^[0-9]{4}-[0-9]{2}$
+            type: string
+        - description: Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
+          explode: false
+          in: query
+          name: as_at_revision
+          schema:
+            description: Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
+            examples:
+              - 42
+            format: int64
+            minimum: 1
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagementReport"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get sales by item
+      tags:
+        - Reports
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - REPORT-03
+        - REPORT-04
+      x-fyniq-permission:
+        capability: Reports, dashboards
+        note: A view of the reports limited to sales reads it; one limited to purchases, payroll, a department or the board pack is refused.
+        right: V
   /v1/reports/schedules:
     get:
       description: "Every cost and income spread over months (FR-GL-03) as at a day: each spread line of a posted bill, invoice or bank line, with what it put on 1210 Prepayments or 2400 Deferred revenue, what its months posted by the day took off it, what remains, and each month's state. Months post only once they are reached (ENG-05): later ones are projections, never in the ledger. Each holding account is reconciled with its schedules (INV-07): its balance from the balance service against what the schedules and the documents' direct amounts hold, with what opening balances and manual journals put on it named, and anything else unexplained, which the period close refuses. Read-only; no side effects."
@@ -93691,6 +94040,129 @@ paths:
       x-fyniq-permission:
         capability: Reports, dashboards
         note: A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
+        right: V
+  /v1/reports/spend-by-supplier:
+    get:
+      description: "The bills and suppliers' credit notes of the run by supplier, largest first, each with its share and how many documents (FR-RPT-03). What the documents posted in the run earned or spent net of GST: their entries' lines on any account but the receivables, payables, GST, deposits, tax withheld and FX controls, revenue or cost spread over months counted in full when invoiced or billed. A void or an edit posts a reversal, which counts in the month it posts, as in the P&L. Money received or paid at the bank without an invoice or bill, and expense claims, are in the P&L and the top expenses, not here. Over a run of whole months (FR-RPT-02), every amount in the base currency, read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects."
+      operationId: getSpendBySupplier
+      parameters:
+        - description: The run's first month, YYYY-MM; left out, the last month's.
+          explode: false
+          in: query
+          name: from
+          schema:
+            description: The run's first month, YYYY-MM; left out, the last month's.
+            examples:
+              - 2026-10
+            pattern: ^[0-9]{4}-[0-9]{2}$
+            type: string
+        - description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
+          explode: false
+          in: query
+          name: to
+          schema:
+            description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
+            examples:
+              - 2026-10
+            pattern: ^[0-9]{4}-[0-9]{2}$
+            type: string
+        - description: Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
+          explode: false
+          in: query
+          name: as_at_revision
+          schema:
+            description: Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
+            examples:
+              - 42
+            format: int64
+            minimum: 1
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagementReport"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get spend by supplier
+      tags:
+        - Reports
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - REPORT-03
+        - REPORT-04
+      x-fyniq-permission:
+        capability: Reports, dashboards
+        note: A view of the reports limited to purchases reads it; one limited to sales, payroll, a department or the board pack is refused.
         right: V
   /v1/reports/statements/{kind}:
     get:
@@ -94036,6 +94508,129 @@ paths:
       x-fyniq-permission:
         capability: Reports, dashboards
         note: A view of the reports limited to sales, purchases, payroll or a department is refused.
+        right: V
+  /v1/reports/top-expenses:
+    get:
+      description: "The P&L's expense accounts over the run, largest first: the top ten, and the rest as one row, each with its share of the expenses (FR-RPT-03). They are the P&L's figures, so they include what was paid at the bank and claimed. Over a run of whole months (FR-RPT-02), every amount in the base currency, read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects."
+      operationId: getTopExpenses
+      parameters:
+        - description: The run's first month, YYYY-MM; left out, the last month's.
+          explode: false
+          in: query
+          name: from
+          schema:
+            description: The run's first month, YYYY-MM; left out, the last month's.
+            examples:
+              - 2026-10
+            pattern: ^[0-9]{4}-[0-9]{2}$
+            type: string
+        - description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
+          explode: false
+          in: query
+          name: to
+          schema:
+            description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
+            examples:
+              - 2026-10
+            pattern: ^[0-9]{4}-[0-9]{2}$
+            type: string
+        - description: Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
+          explode: false
+          in: query
+          name: as_at_revision
+          schema:
+            description: Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
+            examples:
+              - 42
+            format: int64
+            minimum: 1
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagementReport"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get the top expenses
+      tags:
+        - Reports
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - REPORT-03
+        - REPORT-04
+      x-fyniq-permission:
+        capability: Reports, dashboards
+        note: A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
         right: V
   /v1/review-log:
     get:

@@ -160,32 +160,30 @@ func registerFinancials(a *API) {
 	})
 }
 
-// financialStatement reads and lays out a statement in u (FR-RPT-01, FR-RPT-02, FR-RPT-08): the run of months, the
-// revision, and the year's title.
-func (a *API) financialStatement(ctx context.Context, u storage.UnitOfWork, in *financialStatementInput) (out FinancialStatement, err error) {
-	org, err := u.Organisation(ctx)
-	if err != nil {
-		return out, err
-	}
-	base, err := money.Lookup(org.BaseCurrency)
-	if err != nil {
-		return out, err
-	}
-	today, err := orgToday(ctx, a, u)
-	if err != nil {
-		return out, err
-	}
-	to := in.To
+// run is a run of whole months of the books and the revision it is read at.
+type run struct {
+	all               []storage.Period
+	first, last       int
+	revision, current int64 // the revision asked for, else current: the ledger's
+}
+
+// monthsOf is the run of months from to to (YYYY-MM) read as at revision (FR-RPT-02, FR-RPT-08): to left out is the
+// month of the organisation's today; from left out, or "-", is to's month; revision 0 is the ledger as it stands. A
+// month the books have no period for is REPORT-03, and a revision later than the ledger's REPORT-04.
+func (a *API) monthsOf(ctx context.Context, u storage.UnitOfWork, from, to string, revision int64) (run, error) {
 	if to == "" {
+		today, err := orgToday(ctx, a, u)
+		if err != nil {
+			return run{}, err
+		}
 		to = today.Format(statementMonthForm)
 	}
-	from := in.From
-	if from == "" || in.Kind == string(financials.TrialBalance) {
+	if from == "" || from == "-" {
 		from = to
 	}
 	all, err := u.Periods().List(ctx)
 	if err != nil {
-		return out, err
+		return run{}, err
 	}
 	index := func(field, month string) (int, *FieldProblem) {
 		for i, x := range all {
@@ -210,19 +208,45 @@ func (a *API) financialStatement(ctx context.Context, u storage.UnitOfWork, in *
 	}
 	current, err := u.Ledger().Revision(ctx)
 	if err != nil {
-		return out, err
+		return run{}, err
 	}
-	revision := current
-	if in.Revision != 0 {
-		if in.Revision > current {
+	out := run{all: all, first: first, last: last, revision: current, current: current}
+	if revision != 0 {
+		if revision > current {
 			bad = append(bad, FieldProblem{Code: CodeLaterRevision, Field: "as_at_revision", Message: "is later than the ledger's revision",
 				Fix: "Send a revision a statement recorded, or leave it out to read the ledger as it stands"})
 		}
-		revision = in.Revision
+		out.revision = revision
 	}
 	if len(bad) > 0 {
-		return out, invalid(bad)
+		return run{}, invalid(bad)
 	}
+	return out, nil
+}
+
+// financialStatement reads and lays out a statement in u (FR-RPT-01, FR-RPT-02, FR-RPT-08): the run of months, the
+// revision, and the year's title.
+func (a *API) financialStatement(ctx context.Context, u storage.UnitOfWork, in *financialStatementInput) (out FinancialStatement, err error) {
+	org, err := u.Organisation(ctx)
+	if err != nil {
+		return out, err
+	}
+	base, err := money.Lookup(org.BaseCurrency)
+	if err != nil {
+		return out, err
+	}
+	from := in.From
+	if in.Kind == string(financials.TrialBalance) {
+		from = in.To
+		if from == "" {
+			from = "-" // the month to is, once known
+		}
+	}
+	run, err := a.monthsOf(ctx, u, from, in.To, in.Revision)
+	if err != nil {
+		return out, err
+	}
+	all, first, last, revision, current := run.all, run.first, run.last, run.revision, run.current
 	s, err := financials.Lay(ctx, u, base, financials.Request{Kind: financials.Kind(in.Kind), All: all, First: first, Last: last,
 		Compare: financials.Compare(in.Compare), ByMonth: in.Columns == "month", Revision: revision})
 	if err != nil {

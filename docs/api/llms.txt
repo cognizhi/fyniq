@@ -414,9 +414,13 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/report-exports/{export_id}` (getReportExport): Get one of my exports
 - `GET /v1/report-exports/{export_id}/file` (getReportExportFile): Download one of my exports
 - `GET /v1/reports/general-ledger` (getGeneralLedger): Get the general ledger report
+- `GET /v1/reports/sales-by-customer` (getSalesByCustomer): Get sales by customer
+- `GET /v1/reports/sales-by-item` (getSalesByItem): Get sales by item
 - `GET /v1/reports/schedules` (getSchedules): Get the prepayment and deferral schedules
+- `GET /v1/reports/spend-by-supplier` (getSpendBySupplier): Get spend by supplier
 - `GET /v1/reports/statements/{kind}` (getFinancialStatement): Get a financial statement
 - `GET /v1/reports/statements/{kind}/export` (exportFinancialStatement): Export a financial statement
+- `GET /v1/reports/top-expenses` (getTopExpenses): Get the top expenses
 - `GET /v1/review-log` (listReviewLog): List the review log
 - `POST /v1/review-log/reviews` (reviewLogEntries): Review high-risk actions
 - `GET /v1/sales-reminders` (listSalesReminders): List the reminders due to customers

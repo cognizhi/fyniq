@@ -4,7 +4,7 @@ type: task
 title: Read the financial statements
 summary: The profit and loss, balance sheet, cash flow and trial balance for any run of months, comparisons, tracing a figure to its lines, and re-running at a revision
 sources:
-  - docs/user-guide/financial-statements.md sha256:5ebd2270f4961f5194007b521358ce4914198f87599f7688af007ae6e3294fd2
+  - docs/user-guide/financial-statements.md sha256:d237993822feda62064239a45563ffd2c9cb5f13915e03936f3999a8a425cdf9
 data_class: general
 taint: trusted
 status: draft
@@ -29,7 +29,7 @@ aliases:
 
 ## Find a report
 
-- **Reports** opens with the essentials, the profit and loss, the balance sheet and the cash flow, each with this month's headline figure; below them the other reports, such as who owes the company and whom it owes, and in Expert mode the trial balance, the general ledger ([[reports.general-ledger]]) and the schedules ([[accounting.schedules]]).
+- **Reports** opens with the essentials, the profit and loss, the balance sheet and the cash flow, each with this month's headline figure; below them the other reports, such as who owes the company and whom it owes, and in Expert mode the trial balance, the general ledger ([[reports.general-ledger]]), the schedules ([[accounting.schedules]]) and the management reports: sales by customer and item, spend by supplier and the top expenses ([[reports.management]]).
 - **Find a report** narrows the list.
 - Anyone who can read every account sees the statements: the Owner, the Administrator, the Controller, the Accountant, the Bookkeeper, the Auditor, the Tax agent and the DPO.
 
@@ -39,7 +39,7 @@ aliases:
 
 - A tab per statement: **Profit and loss**, **Balance sheet**, **Cash flow** and, in Expert mode, **Trial balance**.
 - **Period**: this month, last month, the financial year to date, this financial year, last financial year, or any run of months. The balance sheet and the trial balance are at the end of the last month; the balance sheet also shows how equity moved over the months chosen.
-- In Expert mode **Compare with** adds the period before or the same months a year earlier, and **A column per month** shows each month apart.
+- In Expert mode **Compare with** adds the period before or the same months a year earlier, and **A column per month** shows each month apart; on the profit and loss a chart then draws revenue, gross profit and net profit a line each, month by month, with **Table**, **PNG** and **CSV**.
 - While the last month is not closed, a note says its figures can still change ([[accounting.periods]]).
 
 (src: docs/user-guide/financial-statements.md#choose-the-period)

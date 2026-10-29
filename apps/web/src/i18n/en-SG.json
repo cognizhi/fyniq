@@ -772,6 +772,10 @@
       "label": "Financial statements",
       "tooltip": "The profit and loss, balance sheet, cash flow and trial balance for any run of months, with a comparison, read at one ledger revision."
     },
+    "reports.management": {
+      "label": "Management reports",
+      "tooltip": "Sales by customer and by item, spend by supplier and the top expenses for any run of months, each with its share of the total, net of GST."
+    },
     "reports.accountant-exports": {
       "label": "Accountant exports",
       "tooltip": "The general ledger, the trial balance, the journal entries, the fixed asset schedule, and the receivables and payables in detail, as Excel or CSV for the accountant or the auditor."

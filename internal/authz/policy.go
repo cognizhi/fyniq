@@ -266,6 +266,10 @@ type Policy struct {
 	// Unqualified operations need the right without a qualifier: a cell such as Reports' "V sales" or "V dept"
 	// grants it over part of the books only, which the operation does not narrow to (rev 0.52).
 	Unqualified bool
+	// Qualified are the qualifiers that grant an Unqualified operation all the same, because it reads only that part
+	// of the books: Reports' "V sales" reads the sales reports (p1-reports design D9). It never widens an operation
+	// that is not Unqualified.
+	Qualified []string
 }
 
 // The policies of the P0 endpoints. A cell's qualifier is carried, not enforced: the amount limit
@@ -427,6 +431,16 @@ var (
 	GetReportExport     = Policy{Operation: "getReportExport", Capability: Reports, Need: View, Unqualified: true}
 	GetReportExportFile = Policy{Operation: "getReportExportFile", Capability: Reports, Need: View, Unqualified: true,
 		Note: "Checked again at each download: a right taken away stops the download at once."}
+	// The management reports (FR-RPT-03; p1-reports design D9): a view of the reports limited to sales reads the sales
+	// reports, and one limited to purchases the spend by supplier; the top expenses read the P&L, as the statements do.
+	GetSalesByCustomer = Policy{Operation: "getSalesByCustomer", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"sales"},
+		Note: "A view of the reports limited to sales reads it; one limited to purchases, payroll, a department or the board pack is refused."}
+	GetSalesByItem = Policy{Operation: "getSalesByItem", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"sales"},
+		Note: "A view of the reports limited to sales reads it; one limited to purchases, payroll, a department or the board pack is refused."}
+	GetSpendBySupplier = Policy{Operation: "getSpendBySupplier", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"purchases"},
+		Note: "A view of the reports limited to purchases reads it; one limited to sales, payroll, a department or the board pack is refused."}
+	GetTopExpenses = Policy{Operation: "getTopExpenses", Capability: Reports, Need: View, Unqualified: true,
+		Note: "A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused."}
 	GetPeriodClose = Policy{Operation: "getPeriodClose", Capability: PeriodClose, Need: View}
 	RunCloseChecks = Policy{Operation: "runCloseChecks", Capability: PeriodClose, Need: Create}
 	ClosePeriod    = Policy{Operation: "closePeriod", Capability: PeriodClose, Need: Approve,
@@ -1023,7 +1037,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
-	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
+	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence, AddBillEvidence, ListBillEvidence, GetBillEvidence, RemoveBillEvidence,
@@ -1188,7 +1202,7 @@ func holds(p Policy, roles []Role) (Right, bool) {
 		switch cell := Grants[p.Capability][col]; {
 		case p.Capability == Membership:
 			rights = "V"
-		case p.Unqualified && cell.Qualifier != "":
+		case p.Unqualified && cell.Qualifier != "" && !slices.Contains(p.Qualified, cell.Qualifier):
 			continue
 		default:
 			rights = cell.Rights

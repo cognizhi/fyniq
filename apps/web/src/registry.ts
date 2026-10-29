@@ -118,6 +118,7 @@ export const routes = [
   { kind: "route", id: "period-close", path: "/accounting/close/$periodId", mode: "expert", signedIn: true, help: "accounting.period-close", guide: "accounting.periods#close-a-month" },
   { kind: "route", id: "reports", path: "/reports", mode: "basic", signedIn: true, help: "reports.index", guide: "reports.statements" },
   { kind: "route", id: "financial-statement", path: "/reports/statements/$kind", mode: "basic", signedIn: true, help: "reports.statement", guide: "reports.statements" },
+  { kind: "route", id: "management-report", path: "/reports/management/$report", mode: "expert", signedIn: true, help: "reports.management", guide: "reports.management" },
   { kind: "route", id: "general-ledger", path: "/reports/general-ledger", mode: "expert", signedIn: true, help: "reports.general-ledger", guide: "reports.general-ledger" },
   { kind: "route", id: "chart-of-accounts", path: "/accounting/chart-of-accounts", mode: "expert", signedIn: true, help: "accounting.chart", guide: "accounting.chart" },
   { kind: "route", id: "currencies", path: "/accounting/fx", mode: "expert", signedIn: true, help: "accounting.currencies", guide: "accounting.currencies" },

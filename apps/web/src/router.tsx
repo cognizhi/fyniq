@@ -84,6 +84,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "general-ledger": lazyRouteComponent(() => import("./screens/accounting/GeneralLedger"), "GeneralLedger"),
   reports: lazyRouteComponent(() => import("./screens/reports/Reports"), "Reports"),
   "financial-statement": lazyRouteComponent(() => import("./screens/reports/Statement"), "FinancialStatement"),
+  "management-report": lazyRouteComponent(() => import("./screens/reports/ManagementReport"), "ManagementReport"),
   "chart-of-accounts": lazyRouteComponent(() => import("./screens/accounting/ChartOfAccounts"), "ChartOfAccounts"),
   currencies: lazyRouteComponent(() => import("./screens/accounting/Currencies"), "Currencies"),
   "fixed-assets": lazyRouteComponent(() => import("./screens/accounting/FixedAssets"), "FixedAssets"),

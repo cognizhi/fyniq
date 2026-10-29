@@ -13,8 +13,9 @@ status: draft            # written with the statements (P1); the layout waits fo
 
 **Reports** opens with the essentials: the profit and loss, the balance sheet and the cash flow,
 each with this month's headline figure. Below them are the other reports, such as who owes the
-company and whom it owes; in Expert mode also the trial balance, the general ledger and the
-schedules. Type in **Find a report** to narrow the list.
+company and whom it owes; in Expert mode also the trial balance, the general ledger, the
+schedules and the management reports: sales by customer and item, spend by supplier and the top
+expenses. Type in **Find a report** to narrow the list.
 
 Anyone who can read every account sees the statements: the Owner, the Administrator, the
 Controller, the Accountant, the Bookkeeper, the Auditor, the Tax agent and the DPO.
@@ -29,7 +30,9 @@ mode, **Trial balance**.
 - The balance sheet and the trial balance are at the end of the last month. The balance sheet also
   shows how equity moved over the months chosen.
 - In Expert mode, **Compare with** adds the period before or the same months a year earlier, and
-  **A column per month** shows each month apart.
+  **A column per month** shows each month apart. On the profit and loss, a chart then draws revenue,
+  gross profit and net profit a line each, month by month; **Table** shows its figures, and **PNG**
+  and **CSV** download it.
 
 While the last month is not closed, a note says its figures can still change.
 

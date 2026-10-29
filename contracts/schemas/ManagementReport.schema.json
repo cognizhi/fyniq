@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The base currency every amount is in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The run's first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision every figure is read as at (ENG-46): asking again as at it gives the same figures.",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "platform_version": {
+      "description": "The platform version that laid it out (REL-05).",
+      "examples": [
+        "0.1.0"
+      ],
+      "type": "string"
+    },
+    "report": {
+      "description": "The report.",
+      "enum": [
+        "sales_by_customer",
+        "sales_by_item",
+        "spend_by_supplier",
+        "top_expenses"
+      ],
+      "examples": [
+        "sales_by_customer"
+      ],
+      "type": "string"
+    },
+    "rows": {
+      "description": "Largest first.",
+      "items": {
+        "$ref": "ManagementRow.schema.json"
+      },
+      "type": "array"
+    },
+    "to": {
+      "description": "The run's last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "The rows' total."
+    }
+  },
+  "required": [
+    "report",
+    "currency",
+    "from",
+    "to",
+    "ledger_revision",
+    "platform_version",
+    "rows",
+    "total"
+  ],
+  "title": "ManagementReport",
+  "type": "object"
+}

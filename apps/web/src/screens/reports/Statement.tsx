@@ -12,6 +12,7 @@ import { date, month, timeZone } from "../../format/date";
 import { hasHelpText, helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf } from "../../ui";
+import { Chart } from "../../components/chart/Chart";
 import { listPeriods, type Period } from "../accounting/data";
 import { ExportDialog } from "./ExportDialog";
 
@@ -24,8 +25,8 @@ export const statementNames: Record<Kind, string> = { pl: "Profit and loss", bs:
 
 // runOf is a preset's run of months, from the books' periods: the month of today, the one before it, the financial year
 // to date, the whole financial year and the one before it; or a run the person chooses.
-type Preset = "month" | "last_month" | "ytd" | "year" | "last_year" | "custom";
-const presetNames: Record<Preset, string> = {
+export type Preset = "month" | "last_month" | "ytd" | "year" | "last_year" | "custom";
+export const presetNames: Record<Preset, string> = {
   month: "This month",
   last_month: "Last month",
   ytd: "Year to date",
@@ -127,7 +128,7 @@ function BlockRows({ b, s, percent }: { b: Block; s: Statement; percent: boolean
     <>
       <tr className="fy-group">
         <th scope="rowgroup" colSpan={span}>
-          <button type="button" className="fy-row gap-2 border-0 bg-transparent p-0 font-semibold" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
+          <button type="button" className="fy-row gap-2 border-0 bg-transparent p-0 font-semibold" aria-expanded={open} aria-controls={open && b.groups.length > 0 ? id : undefined} onClick={() => setOpen(!open)}>
             <Icon of={open ? ChevronDown : ChevronRight} />
             {b.title}
           </button>
@@ -170,6 +171,44 @@ function BlockRows({ b, s, percent }: { b: Block; s: Statement; percent: boolean
 }
 
 // save gives the person a file the server wrote, in base64.
+// trendLines are the P&L's lines its monthly trend draws, each in its fixed colour (FR-VIZ-03).
+const trendLines: { key: string; name: string; slot: number }[] = [
+  { key: "revenue", name: "Revenue", slot: 0 },
+  { key: "gross_profit", name: "Gross profit", slot: 1 },
+  { key: "net_profit", name: "Net profit", slot: 2 },
+];
+
+// Trend is the P&L's monthly trend (p1-reports task 5.3; FR-VIZ-01): revenue, gross profit and net profit a line each,
+// month by month, from the statement shown with a column per month, so it reads the figures the table does.
+function Trend({ s }: { s: Statement }) {
+  const months = s.columns.map((c, i) => ({ c, i })).filter(({ c }) => c.key !== "total");
+  if (months.length < 2) return null;
+  const series = trendLines.flatMap((l) => {
+    const b = s.blocks.find((x) => x.key === l.key);
+    return b ? [{ key: l.key, name: l.name, slot: l.slot, values: months.map(({ i }) => b.totals[i]?.amount ?? "") }] : [];
+  });
+  const net = series.find((x) => x.key === "net_profit");
+  const first = months[0]!;
+  const last = months[months.length - 1]!;
+  const summary = net
+    ? `Net profit went from ${formatAmount(net.values[0] ?? "0")} in ${columnLabel(first.c)} to ${formatAmount(net.values[net.values.length - 1] ?? "0")} in ${columnLabel(last.c)}.`
+    : "Revenue and profit, month by month.";
+  return (
+    <div className="fy-expert-only">
+      <Chart
+        title="The trend, month by month"
+        summary={summary}
+        form="line"
+        label="Month"
+        categories={months.map(({ c }) => columnLabel(c))}
+        series={series}
+        unit={s.currency}
+        file={`profit-and-loss-trend-${s.from.slice(0, 7)}-to-${s.to.slice(0, 7)}`}
+      />
+    </div>
+  );
+}
+
 // FinancialStatement is Reports › Financial statements (docs/design/screens FinancialStatement; FR-RPT-01, FR-RPT-02,
 // FR-RPT-08): the P&L, the balance sheet, the cash flow or the trial balance for a run of months, with a comparative
 // or a column per month, read at one ledger revision. Every account's figure opens its general ledger lines (FR-UX-04).
@@ -317,6 +356,7 @@ export function FinancialStatement() {
       {periods.data && run === null && <p className="fy-secondary">The books have no months for this choice. Choose another, or open the financial year in Accounting › Periods and close.</p>}
       {statement.isError && <Refusal problem={problemOf(statement.error)} title={`The ${name.toLowerCase()} could not be shown`} />}
       {statement.isFetching && !s && <p className="fy-secondary">Reading the ledger…</p>}
+      {s && kind === "pl" && byMonth && <Trend s={s} />}
       {s && (
         <section className="fy-stack fy-stack--3" aria-labelledby={`${id}-title`}>
           <div className="fy-row fy-row--between fy-row--wrap">
