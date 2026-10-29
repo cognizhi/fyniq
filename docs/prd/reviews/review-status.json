@@ -333,6 +333,25 @@
     "financial-statement",
     "management-report"
    ]
+  },
+  {
+   "id": "kpis",
+   "title": "The KPI definitions read without an accountant",
+   "reviewer": "the accountant",
+   "status": "pending",
+   "pr": null,
+   "short": "The KPI definitions await review by the accountant",
+   "message": "Booked MRR counts the revenue of accounts whose report group names a subscription stream, the costs behind DPO are the cost of sales and the operating expenses, and spend by function follows each expense account's function, on our best current reading. Check them before you rely on them or share them.",
+   "sections": [
+    "PRD-001 §8.13"
+   ],
+   "requirements": [
+    "FR-KPI-02",
+    "FR-KPI-03"
+   ],
+   "screens": [
+    "kpis"
+   ]
   }
  ]
 }
