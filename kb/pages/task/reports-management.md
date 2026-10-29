@@ -4,7 +4,7 @@ type: task
 title: Read the management reports
 summary: Sales by customer and by item, spend by supplier and the top expenses for any run of months, net of GST, with who sees which
 sources:
-  - docs/user-guide/management-reports.md sha256:47d824d89dc5479942ffba79d8cc00d38f0f40d050672cd04cda133eb21ce0ca
+  - docs/user-guide/management-reports.md sha256:04412b06dc089b5229f6f1f9f45d9b6a7e6874f0f8a8a7994c80ca1dff37a8dc
 data_class: general
 taint: trusted
 status: draft
@@ -48,7 +48,7 @@ aliases:
 
 ## Top expenses
 
-- The ten largest expense accounts in the profit and loss for the months, and the rest as one line. Select an account to see its lines in the general ledger ([[reports.general-ledger]]).
+- The ten largest expense accounts in the profit and loss for the months, and the rest as one line, also drawn as bars with their amounts. Select an account to see its lines in the general ledger ([[reports.general-ledger]]).
 
 (src: docs/user-guide/management-reports.md#top-expenses)
 

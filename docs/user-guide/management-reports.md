@@ -39,7 +39,8 @@ and the top expenses, not here.
 ## Top expenses
 
 **Top expenses** are the ten largest expense accounts in the profit and loss for the months, and the
-rest as one line. Select an account to see its lines in the general ledger.
+rest as one line, also drawn as bars with their amounts. Select an account to see its lines in the
+general ledger.
 
 ## Who sees them
 
