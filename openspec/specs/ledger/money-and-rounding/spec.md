@@ -420,7 +420,7 @@ Source: PRD-001 §10.4
 
 #### Scenario: Decimals by kind
 - **WHEN** a KPI is shown
-- **THEN** an amount is rounded to the base currency's minor units, a percentage or margin to 1 decimal (as RND-PERCENT), a ratio, multiple or number of months to 1 decimal, and a count is whole, half away from zero
+- **THEN** an amount is rounded to the base currency's minor units, a percentage or margin to 1 decimal (as RND-PERCENT), a ratio, multiple, or number of months or days to 1 decimal, and a count is whole, half away from zero
 
 #### Scenario: Exact inputs, one rounding
 - **WHEN** a KPI is computed from other figures

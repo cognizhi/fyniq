@@ -56,8 +56,8 @@ labelled *entered*, with who and when.
 
 ### D4 Rounding
 
-`RND-KPI`: amounts at the base currency's minor units; percentages and margins to 1 decimal; ratios, multiples and
-months to 1 decimal; counts whole; each rounded once from exact inputs, half away from zero. Nothing undefined is ever
+`RND-KPI`: amounts at the base currency's minor units; percentages and margins to 1 decimal; ratios, multiples,
+months and days to 1 decimal; counts whole; each rounded once from exact inputs, half away from zero. Nothing undefined is ever
 0.
 
 ### D5 Home as the dashboard
