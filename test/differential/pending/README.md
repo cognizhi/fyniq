@@ -1,14 +1,14 @@
 # Pending golden scenarios (QA-ENG-02)
 
-Golden cases for the P1 sources, in the `fyniq-scenario@1` format, waiting for the engine's
-`cmd/scenario-run` to read their shapes. Until it does, they live here and not in `golden/`: the Go
+Golden cases for the P1 sources and the statements, in the `fyniq-scenario@1` format, waiting for the
+engine's `cmd/scenario-run` to read their shapes. Until it does, they live here and not in `golden/`: the Go
 gate (`make test`) posts every file in `golden/` through both sides, and the engine would refuse
 these as invalid input.
 
 As in `golden/`, only inputs live here. Each figure is worked out by hand in
 `oracle/tests/test_pending_golden.py`, which the oracle must match today (`make oracle-test`). When
-an engine session teaches `cmd/scenario-run` a source's shapes, it moves that source's file to
-`golden/`, adds the source to `FYNIQ_DIFFERENTIAL_SOURCES` in the Makefile's `differential` target,
+an engine session teaches `cmd/scenario-run` a source's shapes (or the statements), it moves that file to
+`golden/`, adds the source (or `statements`) to `FYNIQ_DIFFERENTIAL_SOURCES` in the Makefile's `differential` target,
 and settles any disagreement from the PRD (README, "P1 readings"); an engine bug is a failing golden
 case, and the oracle never changes to match the engine.
 
@@ -19,3 +19,4 @@ case, and the oracle never changes to match the engine.
 | `sales.json` | Invoices, credit notes, receipts, deposits, refunds and write-offs (`p1-sales` 9.1) | A part-payment deposit bearing GST; G4-038's USD invoice, its receipt at 1.32 and its residual written off; GST per subtotal; ENG-42's USD invoice with its 7030 cent; G4-022's spread with its GST in the invoice's month; a zero-rated invoice deducting part of the deposit (`RND-DEPOSIT`); two credit notes linked to one invoice that credit its total together, and a third of 0.01 beyond it refused (rev 0.155); a receipt in full within tolerance; a deposit refund; a receipt above what is open and a spread on an expense, both refused |
 | `claims.json` | Expense claims, reimbursements and cash advances (`p1-expense-claims` 9.1) | An advance used up by two claims (one with a receipt and a trip, one owing the rest on 2150); a USD claim reimbursed in SGD at 1.33 with the difference to 7030; trips by motorcycle and car under `RND-MILEAGE`; one reimbursement of two claims; an advance refunded whole; a reimbursement of a paid claim and a trip in USD, both refused |
 | `assets.json` | Fixed asset depreciation and disposals (`p1-fixed-assets` 8.1) | Months on their last days under `ALLOC-EVEN` (333.33, 333.34, 333.33 from a later start); an asset bought before the books' start, posting from it; a residual value; a sale with GST on the proceeds received and a loss; a sale invoiced through the disposal clearing account; each disposal ending its asset's months; a second disposal and an asset on an expense account, both refused |
+| `statements.json` | The statements (`p1-reports` 1.5) | A small company with every section of rev 0.159's layout, over four months: a director's loan, a laptop bought with GST and sold at a gain, an invoice on credit and its part-payment, costs by function (one with none), rent a director paid personally and part of the loan turned into a capital contribution (both non-cash), depreciation and amortisation in one report group, prepaid insurance, money paid ahead, a grant, interest repaid with the loan, income tax, a dividend, a reversed cost; percentages of exactly half a tenth (-16.65, 83.35); a month with no entry; and 50.00 paid to an account with no cash-flow line, which both checks catch |

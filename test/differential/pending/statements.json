@@ -1,0 +1,157 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "statements",
+ "base_currency": "SGD",
+ "currencies": {"SGD": 2},
+ "statements": true,
+ "accounts": [
+  {"code": "1000", "type": "asset", "group": true, "active": true, "report_group": "Cash and bank"},
+  {"code": "1010", "type": "asset", "group": false, "active": true, "report_group": "Cash and bank", "cash_flow_line": "Cash & cash equivalents"},
+  {"code": "1020", "type": "asset", "group": false, "active": true, "report_group": "Cash and bank", "cash_flow_line": "Cash & cash equivalents"},
+  {"code": "1100", "type": "asset", "group": false, "active": true, "report_group": "Trade receivables", "cash_flow_line": "Receivables"},
+  {"code": "1210", "type": "asset", "group": false, "active": true, "report_group": "Prepayments", "cash_flow_line": "Other current assets"},
+  {"code": "1510", "type": "asset", "group": false, "active": true, "report_group": "Property, plant & equipment", "cash_flow_line": "Capital expenditure"},
+  {"code": "1590", "type": "asset", "group": false, "active": true, "report_group": "Property, plant & equipment", "cash_flow_line": "Depreciation & amortisation"},
+  {"code": "1990", "type": "asset", "group": false, "active": true, "report_group": "Unclassified"},
+  {"code": "2010", "type": "liability", "group": false, "active": true, "report_group": "Trade payables", "cash_flow_line": "Payables & accruals"},
+  {"code": "2200", "type": "liability", "group": false, "active": true, "report_group": "GST", "cash_flow_line": "Tax liabilities"},
+  {"code": "2300", "type": "liability", "group": false, "active": true, "report_group": "Income tax payable", "cash_flow_line": "Tax liabilities"},
+  {"code": "2400", "type": "liability", "group": false, "active": true, "report_group": "Deferred revenue", "cash_flow_line": "Deferred revenue"},
+  {"code": "2500", "type": "liability", "group": false, "active": true, "report_group": "Loan from director", "cash_flow_line": "Borrowings"},
+  {"code": "3010", "type": "equity", "group": false, "active": true, "role": "share-capital", "report_group": "Share capital", "cash_flow_line": "Share capital"},
+  {"code": "3100", "type": "equity", "group": false, "active": true, "role": "retained-earnings", "report_group": "Retained earnings", "cash_flow_line": "Dividends & other equity"},
+  {"code": "3300", "type": "equity", "group": false, "active": true, "report_group": "Capital contribution", "cash_flow_line": "Dividends & other equity"},
+  {"code": "4010", "type": "revenue", "group": false, "active": true, "report_group": "Subscriptions"},
+  {"code": "4020", "type": "revenue", "group": false, "active": true, "report_group": "Services"},
+  {"code": "4900", "type": "revenue", "group": false, "active": true, "report_group": "Grants & subsidies", "function": "Other"},
+  {"code": "5010", "type": "expense", "group": false, "active": true, "report_group": "Hosting", "function": "COGS"},
+  {"code": "6010", "type": "expense", "group": false, "active": true, "report_group": "Salaries", "function": "R&D"},
+  {"code": "6100", "type": "expense", "group": false, "active": true, "report_group": "Marketing", "function": "S&M"},
+  {"code": "6200", "type": "expense", "group": false, "active": true, "report_group": "Rent", "function": "G&A"},
+  {"code": "6300", "type": "expense", "group": false, "active": true},
+  {"code": "6610", "type": "expense", "group": false, "active": true, "role": "depreciation", "report_group": "Depreciation & amortisation", "function": "G&A"},
+  {"code": "6620", "type": "expense", "group": false, "active": true, "report_group": "Depreciation & amortisation"},
+  {"code": "7010", "type": "expense", "group": false, "active": true, "report_group": "Finance costs", "function": "Other"},
+  {"code": "7050", "type": "revenue", "group": false, "active": true, "report_group": "Gains & losses on disposal", "function": "Other"},
+  {"code": "8010", "type": "expense", "group": false, "active": true, "role": "income-tax-expense", "report_group": "Income tax", "function": "Other"}
+ ],
+ "documents": [
+  {"type": "manual_journal", "id": "JNL-0001", "version": 1, "date": "2026-01-05", "memo": "a director lends money to the company",
+   "lines": [
+    {"account": "1010", "currency": "SGD", "amount": "10000.00"},
+    {"account": "2500", "currency": "SGD", "amount": "-10000.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0002", "version": 1, "date": "2026-01-10", "memo": "a laptop bought from the bank, with GST",
+   "lines": [
+    {"account": "1510", "currency": "SGD", "amount": "3000.00"},
+    {"account": "2200", "currency": "SGD", "amount": "270.00"},
+    {"account": "1010", "currency": "SGD", "amount": "-3270.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0003", "version": 1, "date": "2026-01-15", "memo": "a subscription invoiced on credit",
+   "lines": [
+    {"account": "1100", "currency": "SGD", "amount": "1308.00"},
+    {"account": "4010", "currency": "SGD", "amount": "-1200.00"},
+    {"account": "2200", "currency": "SGD", "amount": "-108.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0004", "version": 1, "date": "2026-01-20", "memo": "part of it received",
+   "lines": [
+    {"account": "1010", "currency": "SGD", "amount": "1000.00"},
+    {"account": "1100", "currency": "SGD", "amount": "-1000.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0005", "version": 1, "date": "2026-01-25", "memo": "hosting paid",
+   "lines": [
+    {"account": "5010", "currency": "SGD", "amount": "199.80"},
+    {"account": "1010", "currency": "SGD", "amount": "-199.80"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0006", "version": 1, "date": "2026-01-26", "memo": "salaries paid",
+   "lines": [
+    {"account": "6010", "currency": "SGD", "amount": "2000.00"},
+    {"account": "1010", "currency": "SGD", "amount": "-2000.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0007", "version": 1, "date": "2026-01-27", "memo": "marketing on account",
+   "lines": [
+    {"account": "6100", "currency": "SGD", "amount": "500.00"},
+    {"account": "2010", "currency": "SGD", "amount": "-500.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0008", "version": 1, "date": "2026-01-28", "memo": "rent a director paid personally",
+   "lines": [
+    {"account": "6200", "currency": "SGD", "amount": "800.00"},
+    {"account": "2500", "currency": "SGD", "amount": "-800.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0009", "version": 1, "date": "2026-01-31", "memo": "January's depreciation",
+   "lines": [
+    {"account": "6610", "currency": "SGD", "amount": "83.33"},
+    {"account": "1590", "currency": "SGD", "amount": "-83.33"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0010", "version": 1, "date": "2026-01-31", "memo": "software paid, reversed in February",
+   "lines": [
+    {"account": "6300", "currency": "SGD", "amount": "99.99"},
+    {"account": "1010", "currency": "SGD", "amount": "-99.99"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0011", "version": 1, "date": "2026-02-03", "memo": "the marketing supplier paid",
+   "lines": [
+    {"account": "2010", "currency": "SGD", "amount": "500.00"},
+    {"account": "1010", "currency": "SGD", "amount": "-500.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0012", "version": 1, "date": "2026-02-10", "memo": "a year's insurance paid ahead",
+   "lines": [
+    {"account": "1210", "currency": "SGD", "amount": "1200.00"},
+    {"account": "1010", "currency": "SGD", "amount": "-1200.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0013", "version": 1, "date": "2026-02-12", "memo": "services paid on the spot, with GST",
+   "lines": [
+    {"account": "1020", "currency": "SGD", "amount": "2180.00"},
+    {"account": "4020", "currency": "SGD", "amount": "-2000.00"},
+    {"account": "2200", "currency": "SGD", "amount": "-180.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0014", "version": 1, "date": "2026-02-14", "memo": "a customer pays ahead",
+   "lines": [
+    {"account": "1010", "currency": "SGD", "amount": "600.00"},
+    {"account": "2400", "currency": "SGD", "amount": "-600.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0015", "version": 1, "date": "2026-02-15", "memo": "a grant received",
+   "lines": [
+    {"account": "1010", "currency": "SGD", "amount": "1500.00"},
+    {"account": "4900", "currency": "SGD", "amount": "-1500.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0016", "version": 1, "date": "2026-02-20", "memo": "the laptop sold at a gain",
+   "lines": [
+    {"account": "1010", "currency": "SGD", "amount": "2950.00"},
+    {"account": "1590", "currency": "SGD", "amount": "83.33"},
+    {"account": "1510", "currency": "SGD", "amount": "-3000.00"},
+    {"account": "7050", "currency": "SGD", "amount": "-33.33"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0017", "version": 1, "date": "2026-02-25", "memo": "part of the loan repaid, with interest",
+   "lines": [
+    {"account": "2500", "currency": "SGD", "amount": "1000.00"},
+    {"account": "7010", "currency": "SGD", "amount": "50.00"},
+    {"account": "1010", "currency": "SGD", "amount": "-1050.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0018", "version": 1, "date": "2026-02-26", "memo": "part of the loan becomes a capital contribution",
+   "lines": [
+    {"account": "2500", "currency": "SGD", "amount": "2000.00"},
+    {"account": "3300", "currency": "SGD", "amount": "-2000.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0019", "version": 1, "date": "2026-02-27", "memo": "amortisation",
+   "lines": [
+    {"account": "6620", "currency": "SGD", "amount": "40.00"},
+    {"account": "1590", "currency": "SGD", "amount": "-40.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0020", "version": 1, "date": "2026-02-28", "memo": "income tax provided for",
+   "lines": [
+    {"account": "8010", "currency": "SGD", "amount": "100.00"},
+    {"account": "2300", "currency": "SGD", "amount": "-100.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0021", "version": 1, "date": "2026-02-28", "memo": "a dividend paid from retained earnings",
+   "lines": [
+    {"account": "3100", "currency": "SGD", "amount": "300.00"},
+    {"account": "1010", "currency": "SGD", "amount": "-300.00"}
+   ]},
+  {"type": "manual_journal", "id": "JNL-0022", "version": 1, "date": "2026-04-01", "memo": "money paid to an account with no cash-flow line",
+   "lines": [
+    {"account": "1990", "currency": "SGD", "amount": "50.00"},
+    {"account": "1010", "currency": "SGD", "amount": "-50.00"}
+   ]}
+ ],
+ "reversals": [{"document": "JNL-0010", "date": "2026-02-05"}]
+}

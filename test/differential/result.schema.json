@@ -53,6 +53,14 @@
           "additionalProperties": {"$ref": "#/$defs/decimal"}
         }
       }
+    },
+    "statements": {
+      "description": "Present only when the scenario has \"statements\": true. Month -> that month's statements, for every month from the first posting month to the last (README, \"Statements\"). Every figure is in the base currency at its minor units.",
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[0-9]{4}-(0[1-9]|1[0-2])$": {"$ref": "#/$defs/monthStatements"}
+      }
     }
   },
   "$defs": {
@@ -60,6 +68,159 @@
       "description": "A plain decimal string: no exponent, no '+', no grouping.",
       "type": "string",
       "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+    },
+    "section": {
+      "description": "A section's total and its figure per report group; a group whose figure is zero may be left out, and a comparator reads a missing group as zero.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "groups"],
+      "properties": {
+        "total": {"$ref": "#/$defs/decimal"},
+        "groups": {"type": "object", "additionalProperties": {"$ref": "#/$defs/decimal"}}
+      }
+    },
+    "monthStatements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profit_and_loss", "balance_sheet", "cash_flow", "equity_movement", "checks"],
+      "properties": {
+        "profit_and_loss": {
+          "description": "The month's P&L. Each figure is what it adds to profit (credit positive): revenue positive, costs negative.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["revenue", "cost_of_sales", "gross_profit", "operating_expenses", "ebitda",
+                       "depreciation_and_amortisation", "operating_profit", "other_income",
+                       "finance_costs_and_other_expenses", "profit_before_tax", "income_tax", "net_profit"],
+          "properties": {
+            "revenue": {"$ref": "#/$defs/section"},
+            "cost_of_sales": {"$ref": "#/$defs/section"},
+            "gross_profit": {"$ref": "#/$defs/decimal"},
+            "operating_expenses": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["total", "groups", "functions"],
+              "properties": {
+                "total": {"$ref": "#/$defs/decimal"},
+                "groups": {"type": "object", "additionalProperties": {"$ref": "#/$defs/decimal"}},
+                "functions": {
+                  "description": "The same expenses by function; an account without one counts under Other. A function whose figure is zero may be left out.",
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "R&D": {"$ref": "#/$defs/decimal"},
+                    "S&M": {"$ref": "#/$defs/decimal"},
+                    "G&A": {"$ref": "#/$defs/decimal"},
+                    "Other": {"$ref": "#/$defs/decimal"}
+                  }
+                }
+              }
+            },
+            "ebitda": {"$ref": "#/$defs/decimal"},
+            "depreciation_and_amortisation": {"$ref": "#/$defs/section"},
+            "operating_profit": {"$ref": "#/$defs/decimal"},
+            "other_income": {"$ref": "#/$defs/section"},
+            "finance_costs_and_other_expenses": {"$ref": "#/$defs/section"},
+            "profit_before_tax": {"$ref": "#/$defs/decimal"},
+            "income_tax": {"$ref": "#/$defs/decimal"},
+            "net_profit": {"$ref": "#/$defs/decimal"},
+            "percent_of_revenue": {
+              "description": "RND-PERCENT of each line against the month's revenue; absent when the revenue is zero.",
+              "type": "object",
+              "additionalProperties": {"$ref": "#/$defs/decimal"}
+            }
+          }
+        },
+        "balance_sheet": {
+          "description": "At the month's last day. Assets debit positive; liabilities, borrowings and equity credit positive.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["current_assets", "non_current_assets", "total_assets", "current_liabilities", "borrowings",
+                       "total_liabilities", "equity", "total_liabilities_and_equity"],
+          "properties": {
+            "current_assets": {"$ref": "#/$defs/section"},
+            "non_current_assets": {"$ref": "#/$defs/section"},
+            "total_assets": {"$ref": "#/$defs/decimal"},
+            "current_liabilities": {"$ref": "#/$defs/section"},
+            "borrowings": {"$ref": "#/$defs/section"},
+            "total_liabilities": {"$ref": "#/$defs/decimal"},
+            "equity": {"$ref": "#/$defs/section"},
+            "total_liabilities_and_equity": {"$ref": "#/$defs/decimal"}
+          }
+        },
+        "cash_flow": {
+          "description": "The month's indirect cash flow. Money in positive.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["operating", "investing", "financing", "net_change", "opening_cash", "closing_cash", "non_cash"],
+          "properties": {
+            "operating": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["net_profit", "depreciation_and_amortisation", "investing_and_financing_results",
+                           "working_capital", "total"],
+              "properties": {
+                "net_profit": {"$ref": "#/$defs/decimal"},
+                "depreciation_and_amortisation": {"$ref": "#/$defs/decimal"},
+                "investing_and_financing_results": {"$ref": "#/$defs/decimal"},
+                "working_capital": {
+                  "description": "Cash-flow line -> its change; a line whose change is zero may be left out.",
+                  "type": "object",
+                  "additionalProperties": {"$ref": "#/$defs/decimal"}
+                },
+                "total": {"$ref": "#/$defs/decimal"}
+              }
+            },
+            "investing": {"$ref": "#/$defs/decimal"},
+            "financing": {"$ref": "#/$defs/decimal"},
+            "net_change": {"$ref": "#/$defs/decimal"},
+            "opening_cash": {"$ref": "#/$defs/decimal"},
+            "closing_cash": {"$ref": "#/$defs/decimal"},
+            "non_cash": {
+              "description": "The month's investing and financing entries that moved no money, in the order of entries.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["document", "kind", "posting_date", "section"],
+                "properties": {
+                  "document": {"type": "string"},
+                  "kind": {"enum": ["post", "reversal", "release", "depreciation"]},
+                  "posting_date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+                  "section": {"enum": ["investing", "financing"]}
+                }
+              }
+            }
+          }
+        },
+        "equity_movement": {
+          "description": "From the month's opening equity to its closing equity, credit positive.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["opening", "profit", "share_capital", "other", "closing"],
+          "properties": {
+            "opening": {"$ref": "#/$defs/decimal"},
+            "profit": {"$ref": "#/$defs/decimal"},
+            "share_capital": {"$ref": "#/$defs/decimal"},
+            "other": {"$ref": "#/$defs/decimal"},
+            "closing": {"$ref": "#/$defs/decimal"}
+          }
+        },
+        "checks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["balances", "ties", "equity", "unplaced"],
+          "properties": {
+            "balances": {"description": "Total assets equal total liabilities and equity (INV-10, BS_Chk).", "type": "boolean"},
+            "ties": {"description": "Opening cash plus the net change equals closing cash (INV-11, CF_Chk).", "type": "boolean"},
+            "equity": {"description": "The movement in equity reconciles opening to closing (BS_EqChk).", "type": "boolean"},
+            "unplaced": {
+              "description": "The balance-sheet accounts with a balance or a line in the month that no section places (PL_Chk, BS_Uncl), by code.",
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          }
+        }
+      }
     }
   }
 }
