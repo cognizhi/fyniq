@@ -438,3 +438,69 @@ def test_pending_statements():
     assert apr["cash_flow"] == {"operating": _NO_CASH_FLOW, "investing": "0.00", "financing": "0.00",
                                 "net_change": "0.00", "opening_cash": "9710.20", "closing_cash": "9660.20", "non_cash": []}
     assert apr["checks"] == {"balances": False, "ties": False, "equity": True, "unplaced": ["1990"]}
+
+
+# req: FR-KPI-02, FR-KPI-03, RND-KPI, QA-ENG-02
+def test_pending_kpis():
+    k = _run("statements")["kpis"]
+    assert list(k) == ["2026-01", "2026-02", "2026-03", "2026-04"]
+    # January: 4010 is the subscription stream; 10 paying customers, all new; 3 people.
+    assert k["2026-01"] == {
+        "booked_mrr": "1200.00", "arr": "14400.00", "contracted_mrr": None,
+        "revenue_growth": None,  # nothing posted the month before
+        "gross_margin": "83.4",  # 1,000.20 ÷ 1,200.00 = 83.35%
+        "spend_by_function": {"R&D": "2000.00", "S&M": "500.00", "G&A": "883.33"},  # rent 800.00 + depreciation 83.33
+        "net_burn": "4569.79",  # -(-1,299.79 operating - 3,270.00 investing)
+        "runway": "1.2",  # 5,430.21 ÷ 4,569.79 (January alone) = 1.188
+        "arpa": "120.00",  # 1,200.00 ÷ 10
+        "churn": None,  # 10 - 10 + 0 = no customers at the start of the month
+        "cac": "50.00",  # 500.00 ÷ 10
+        "ltv": None, "ltv_to_cac": None,  # no churn
+        "cac_payback": "0.5",  # 50.00 ÷ (120.00 × 0.8335) = 0.4999
+        "burn_multiple": "0.3",  # 4,569.79 ÷ 14,400.00 of new ARR
+        "current_ratio": "17.0", "quick_ratio": "17.0",  # 5,738.21 ÷ 338.00; cash and receivables are all of it
+        "working_capital": "5400.21",
+        "debt_to_equity": None,  # equity -2,483.12
+        "dso": "7.7",  # 308.00 ÷ (1,200.00 ÷ 30)
+        "dpo": "4.2",  # 500.00 ÷ ((199.80 + 3,399.99) ÷ 30) = 4.167
+        "ebitda_margin": "-200.0", "net_margin": "-206.9",
+        "headcount": "3", "revenue_per_employee": "4800.00",  # 1,200.00 × 12 ÷ 3
+    }
+    # February: services only, so booked MRR is 0.00 (the stream exists); the month made cash.
+    assert k["2026-02"] == {
+        "booked_mrr": "0.00", "arr": "0.00", "contracted_mrr": None,
+        "revenue_growth": "66.7",  # (2,000.00 - 1,200.00) ÷ 1,200.00
+        "gross_margin": "100.0",
+        "spend_by_function": {"R&D": "0.00", "S&M": "0.00", "G&A": "0.00"},  # 6300 and 6620 have no function
+        "net_burn": "-5629.99",  # -(2,679.99 + 2,950.00)
+        "runway": "not-burning",  # (4,569.79 - 5,629.99) ÷ 2 ≤ 0
+        "arpa": "0.00",
+        "churn": "20.0",  # 2 ÷ (12 - 4 + 2)
+        "cac": "0.00",  # no S&M spend
+        "ltv": "0.00",  # 0.00 × 100% ÷ 20%
+        "ltv_to_cac": None,  # a CAC of 0
+        "cac_payback": None,  # ARPA × margin is 0
+        "burn_multiple": None,  # not burning
+        "current_ratio": "15.6",  # 11,218.20 ÷ 718.00 = 15.624
+        "quick_ratio": "14.0",  # (9,710.20 + 308.00) ÷ 718.00 = 13.953
+        "working_capital": "10500.20",
+        "debt_to_equity": "3.2",  # 8,518.00 ÷ 2,660.20
+        "dso": "5.8",  # 308.00 ÷ ((1,200.00 + 2,000.00) ÷ 2 ÷ 30) = 5.775
+        "dpo": "0.0",  # nothing owed to suppliers
+        "ebitda_margin": "105.0", "net_margin": "172.2",
+        "headcount": "4", "revenue_per_employee": "6000.00",
+    }
+    # March: no entry and no customer counts; headcount entered.
+    mar = k["2026-03"]
+    assert (mar["booked_mrr"], mar["revenue_growth"], mar["gross_margin"], mar["net_margin"]) == ("0.00", "-100.0", None, None)
+    assert (mar["net_burn"], mar["runway"]) == ("0.00", "not-burning")
+    assert [mar[key] for key in ("arpa", "churn", "cac", "ltv", "ltv_to_cac", "cac_payback")] == [None] * 6  # not entered
+    assert mar["dso"] == "8.7"  # 308.00 ÷ (3,200.00 ÷ 3 ÷ 30) = 8.6625
+    assert (mar["headcount"], mar["revenue_per_employee"]) == ("4", "0.00")
+    # April: counts without headcount; the 50.00 to an unplaced account is in neither the cash flow nor its burn.
+    apr = k["2026-04"]
+    assert (apr["revenue_growth"], apr["net_burn"], apr["runway"]) == (None, "0.00", "not-burning")
+    assert (apr["arpa"], apr["churn"], apr["cac"], apr["ltv"]) == ("0.00", "0.0", None, None)  # no new customers
+    assert (apr["current_ratio"], apr["quick_ratio"], apr["working_capital"]) == ("15.6", "13.9", "10450.20")
+    assert apr["dso"] == "13.9"  # February to April: 308.00 ÷ (2,000.00 ÷ 3 ÷ 30) = 13.86
+    assert (apr["headcount"], apr["revenue_per_employee"]) == (None, None)

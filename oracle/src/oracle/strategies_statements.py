@@ -7,8 +7,9 @@ retained-earnings account joins the chart, and an expense account may take the d
 income-tax role. Random journals seldom move both a cash account and a capital-expenditure or
 borrowings account, so up to four journals in the base currency are added that do: bought for cash, a
 loan received, a sale at a gain or loss, equipment on account and a cost a director paid (the last two
-moved no money). ``make differential`` draws these once ``statements`` is in
-FYNIQ_DIFFERENTIAL_SOURCES.
+moved no money). With ``kpis``, the scenario also asks for the KPIs, with a financial year starting in
+any month and counts entered for some months (FR-KPI-02 rev 0.161). ``make differential`` draws these
+once ``statements`` (or ``kpis``) is in FYNIQ_DIFFERENTIAL_SOURCES.
 """
 
 from __future__ import annotations
@@ -54,8 +55,8 @@ def _attributes(draw: st.DrawFn, account: dict[str, Any]) -> dict[str, Any]:
 
 
 @st.composite
-def with_statements(draw: st.DrawFn, base: st.SearchStrategy[dict[str, Any]]) -> dict[str, Any]:
-    """A scenario from ``base`` that asks for the statements."""
+def with_statements(draw: st.DrawFn, base: st.SearchStrategy[dict[str, Any]], kpis: bool = False) -> dict[str, Any]:
+    """A scenario from ``base`` that asks for the statements, and for the KPIs when ``kpis``."""
     scenario = draw(base)
     accounts = [draw(_attributes(account)) for account in scenario["accounts"]]
     retained = {"code": RETAINED, "type": "equity", "group": False, "active": True, "role": "retained-earnings"}
@@ -68,8 +69,32 @@ def with_statements(draw: st.DrawFn, base: st.SearchStrategy[dict[str, Any]]) ->
             chosen = draw(st.sampled_from(expenses))
             chosen["role"] = role
             expenses.remove(chosen)
+    if accounts and draw(st.booleans()):  # a subscription stream for booked MRR
+        streams = [a for a in accounts if a["type"] == "revenue"]
+        if streams:
+            draw(st.sampled_from(streams))["report_group"] = draw(st.sampled_from(["Subscriptions", "SaaS subscription fees"]))
     journals = draw(_journals(scenario, accounts))
-    return {**scenario, "accounts": accounts, "documents": [*scenario["documents"], *journals], "statements": True}
+    result = {**scenario, "accounts": accounts, "documents": [*scenario["documents"], *journals], "statements": True}
+    if kpis:
+        result["kpis"] = draw(_kpi_settings([d["date"][:7] for d in result["documents"]]))
+    return result
+
+
+@st.composite
+def _kpi_settings(draw: st.DrawFn, months: list[str]) -> dict[str, Any]:
+    counts: dict[str, dict[str, int]] = {}
+    for month in sorted(set(months)):
+        entry: dict[str, int] = {}
+        if draw(st.integers(0, 3)) > 0:
+            paying = draw(st.integers(0, 200))
+            new = draw(st.integers(0, paying))
+            entry |= {"paying_customers": paying, "new_customers": new,
+                      "customers_lost": draw(st.integers(0, 20))}
+        if draw(st.booleans()):
+            entry["headcount"] = draw(st.integers(0, 40))
+        if entry:
+            counts[month] = entry
+    return {"year_start_month": draw(st.sampled_from([1, 1, 4, 7, 10, 12])), "counts": counts}
 
 
 def _postable(accounts: list[dict[str, Any]], test) -> list[str]:

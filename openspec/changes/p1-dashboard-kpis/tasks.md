@@ -17,6 +17,15 @@
   year to date (its own P&L from the year's first month), owed to us and we owe, so each tile has a definition too.)
 - [ ] 1.3 (oracle session) The KPIs of the sample company in the independent oracle, from §11.5's words.
   `// req: QA-ENG-02`
+  (29 Oct 2026, the oracle session, whose author has not read the engine: the oracle's half is written, from the
+  workbook PRD's §11.5 as written there, FR-KPI-02, FR-KPI-03 and `RND-KPI`. A scenario with statements may carry
+  `kpis` (the financial year's first month and each month's entered counts), and the result then holds every
+  stated month's 25 KPIs, `null` when undefined (`test/differential/README.md`, "KPIs", with the readings left
+  open). The oracle's side is `oracle/src/oracle/kpis.py`, read from the statements and the trial balance; the
+  rules are worked by hand in `oracle/tests/test_kpis.py` (the year's window, G4-047, G4-048, the burn multiple,
+  `RND-KPI`), the four months of `test/differential/pending/statements.json` in `test_pending_kpis`, and a
+  property ties them to the statements. 15 hand mutants, all killed. **Left:** as `p1-reports` 1.5: the sample
+  company's chart attributes and counts, and `cmd/scenario-run` stating the KPIs, in an engine session.)
 
 ## 2. Entered counts (rev 0.161)
 

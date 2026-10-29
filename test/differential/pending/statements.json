@@ -4,6 +4,15 @@
  "base_currency": "SGD",
  "currencies": {"SGD": 2},
  "statements": true,
+ "kpis": {
+  "year_start_month": 1,
+  "counts": {
+   "2026-01": {"paying_customers": 10, "new_customers": 10, "customers_lost": 0, "headcount": 3},
+   "2026-02": {"paying_customers": 12, "new_customers": 4, "customers_lost": 2, "headcount": 4},
+   "2026-03": {"headcount": 4},
+   "2026-04": {"paying_customers": 12, "new_customers": 0, "customers_lost": 0}
+  }
+ },
  "accounts": [
   {"code": "1000", "type": "asset", "group": true, "active": true, "report_group": "Cash and bank"},
   {"code": "1010", "type": "asset", "group": false, "active": true, "report_group": "Cash and bank", "cash_flow_line": "Cash & cash equivalents"},
