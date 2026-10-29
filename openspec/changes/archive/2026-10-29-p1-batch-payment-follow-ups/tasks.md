@@ -38,4 +38,5 @@
 
 ## 3. Finish
 
-- [ ] 3.1 `make check`, `make test`; archive.
+- [x] 3.1 `make check`, `make test`; archive.
+  (29 Oct 2026: green locally and in CI on #343, which merged.)
