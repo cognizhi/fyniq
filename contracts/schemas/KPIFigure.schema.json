@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entered": {
+      "description": "true when it used the month's entered customer counts or headcount (rev 0.161).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "undefined": {
+      "description": "Why it has no value, in words; never shown as 0 (FR-KPI-03).",
+      "examples": [
+        "no subscription data: enter the month's customer counts"
+      ],
+      "type": "string"
+    },
+    "value": {
+      "description": "The figure, rounded by RND-KPI: an amount in the base currency as a decimal string, a percentage, ratio, number of months or days to one decimal, or a whole count. Left out when the KPI has words or no value.",
+      "examples": [
+        "40.0"
+      ],
+      "type": "string"
+    },
+    "words": {
+      "description": "Words that stand for the figure, such as Not burning for the runway when the average net burn is zero or less.",
+      "examples": [
+        "Not burning"
+      ],
+      "type": "string"
+    }
+  },
+  "title": "KPIFigure",
+  "type": "object"
+}

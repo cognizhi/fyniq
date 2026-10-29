@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "counts": {
+      "$ref": "KPICountsOut.schema.json",
+      "description": "The month's entered counts, when any were entered (rev 0.161)."
+    },
+    "currency": {
+      "description": "The base currency every amount is in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The month's first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "kpis": {
+      "description": "Every KPI, in the KPI page's order (FR-KPI-02).",
+      "items": {
+        "$ref": "KPIItem.schema.json"
+      },
+      "type": "array"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision every ledger figure is read as at (FR-RPT-08).",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "month": {
+      "description": "The month, YYYY-MM.",
+      "examples": [
+        "2026-10"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}$",
+      "type": "string"
+    },
+    "platform_version": {
+      "description": "The platform version that worked them out (REL-05).",
+      "examples": [
+        "0.1.0"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "Its last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "month",
+    "from",
+    "to",
+    "currency",
+    "ledger_revision",
+    "platform_version",
+    "kpis"
+  ],
+  "title": "KPIs",
+  "type": "object"
+}

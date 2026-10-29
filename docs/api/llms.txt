@@ -255,6 +255,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/journals/{journal_id}/reverse` (reverseJournal): Reverse a posted journal
 - `POST /v1/journals/{journal_id}/reverse-approval` (requestJournalReversal): Ask for approval to reverse a journal
 - `POST /v1/journals:bulk` (bulkCreateJournals): Save up to 250 draft journals
+- `GET /v1/kpi-inputs` (listKpiInputs): List the KPIs' entered counts
+- `PUT /v1/kpi-inputs/{month}` (setKpiInput): Enter a month's KPI counts
+- `GET /v1/kpis` (getKpis): Get the KPIs of a month
 - `POST /v1/me/bank-changes` (createMyBankChange): Prepare a change of your bank account for reimbursements
 - `GET /v1/me/bank-changes/{change_id}` (getMyBankChange): Get a change of your bank account
 - `PUT /v1/me/bank-changes/{change_id}` (replaceMyBankChange): Change a draft change of your bank account

@@ -116,6 +116,8 @@ type UnitOfWork interface {
 	PaymentBatches() PaymentBatches
 	// ReportExports are the exports that run in the background (FR-RPT-09).
 	ReportExports() ReportExports
+	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).
+	KPIInputs() KPIInputs
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))

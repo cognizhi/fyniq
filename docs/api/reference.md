@@ -8535,6 +8535,74 @@ Runs the period's month-end revaluation (FR-GL-04; PRD-001 rev 0.73, provisional
 
 Reports read from the ledger at one revision: the general ledger (FR-GL-11), and the statements as they arrive.
 
+### `GET /v1/kpi-inputs`
+
+**List the KPIs' entered counts** (`listKpiInputs`)
+
+The months' customer counts and headcount a person entered for the KPIs (FR-KPI-02, rev 0.161), earliest first, with who entered them and their version, a page at a time (FR-INT-10). Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards. A view of the reports limited to the board pack reads them; one limited to sales, purchases, payroll or a department is refused.
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `from` (query): The first month, YYYY-MM; left out, twelve months before to.
+  - `to` (query): The last month, YYYY-MM; left out, the month of the organisation's today.
+- **Responses:**
+  - `200` OK [`KPICountsList`](../../contracts/schemas/KPICountsList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `PUT /v1/kpi-inputs/{month}`
+
+**Enter a month's KPI counts** (`setKpiInput`)
+
+Enters a month's paying, new and lost customers (the three together, or none of them) and headcount, each a whole number from zero, for the KPIs that need them until subscription data (FR-KPI-04) and the payroll link exist (FR-KPI-02; the owner's decision of 29 Oct 2026, rev 0.161). A closed month's counts are corrected the same way: they are not ledger figures. Side effects: the month's counts at their next version and its audit event, with the counts before and after. Needs If-Match with the counts' ETag ("0" for a month without counts). Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Budgets, forecasts. A department's budget holder (C dept) does not enter the company's counts.
+- **Parameters:**
+  - `month` (path, required): The month, YYYY-MM.
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`KPICountsIn`](../../contracts/schemas/KPICountsIn.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`KPICountsOut`](../../contracts/schemas/KPICountsOut.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-KPI-01` A month's KPI counts change only as their next version; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-KPI-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/kpis`
+
+**Get the KPIs of a month** (`getKpis`)
+
+The workbook's KPI set for a month (FR-KPI-02), each with its definition, version, source, formula and date basis (FR-KPI-03), its value for the month and the month before: booked and contracted MRR and ARR, revenue growth, margins, spend by function, net burn, runway, ARPA, churn, CAC, LTV and its ratio, CAC payback, the burn multiple, the current and quick ratios, working capital, debt/equity, DSO, DPO, headcount and revenue per employee. Ledger figures are read through the statements at one ledger revision, which it returns (FR-RPT-08); customer counts and headcount are those a person entered for the month (rev 0.161), and the KPIs that use them say so. Each value is rounded by RND-KPI; a KPI that cannot be worked out has no value and says why, never 0. A month the books have no period for is REPORT-03, a later revision REPORT-04. Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards. A view of the reports limited to the board pack reads it; one limited to sales, purchases, payroll or a department is refused.
+- **Parameters:**
+  - `month` (query): The month, YYYY-MM; left out, the month of the organisation's today.
+  - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08); left out, the ledger as it stands.
+- **Responses:**
+  - `200` OK [`KPIs`](../../contracts/schemas/KPIs.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-03`, `REPORT-04`
+
 ### `GET /v1/report-exports`
 
 **List my exports** (`listReportExports`)

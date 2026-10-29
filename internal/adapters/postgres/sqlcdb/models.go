@@ -1001,6 +1001,19 @@ type FyniqJournalLine struct {
 	RecordedAt     time.Time
 }
 
+type FyniqKpiInput struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	Month           time.Time
+	PayingCustomers *int64
+	NewCustomers    *int64
+	LostCustomers   *int64
+	Headcount       *int64
+	EnteredBy       string
+	EnteredAt       time.Time
+	Version         int32
+}
+
 type FyniqLedgerRevision struct {
 	OrganisationID uuid.UUID
 	Revision       int64
