@@ -413,6 +413,23 @@ Source: PRD-001 §10.4
 - **WHEN** a rule compares a change with a percentage threshold
 - **THEN** it compares the exact amounts, never a rounded percentage
 
+### Requirement: RND-KPI KPI value
+A KPI's value SHALL be rounded once, half away from zero, to its definition's decimals, from exact inputs, and an undefined KPI SHALL never be rounded to 0 (new, FR-KPI-03; rev 0.161).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Decimals by kind
+- **WHEN** a KPI is shown
+- **THEN** an amount is rounded to the base currency's minor units, a percentage or margin to 1 decimal (as RND-PERCENT), a ratio, multiple or number of months to 1 decimal, and a count is whole, half away from zero
+
+#### Scenario: Exact inputs, one rounding
+- **WHEN** a KPI is computed from other figures
+- **THEN** each input is the exact figure from the balance service or the entered counts, never a rounded one, and the value is rounded once
+
+#### Scenario: Undefined is not zero
+- **WHEN** a KPI is undefined (FR-KPI-03)
+- **THEN** it is shown as "—" with the reason, never rounded to 0
+
 ### Requirement: RND-LINE Line amount
 A line's amount SHALL be round(quantity × unit price, the currency's minor units), half away from zero, computed exactly before its one rounding; part of a line taken after others SHALL be RND-LINE of all taken so far less RND-LINE of what was taken before (rev 0.87; provisional).
 

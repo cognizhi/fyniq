@@ -11,9 +11,9 @@ behind the specs or the screens.
 
 <!-- roadmap:summary -->
 
-That is all 1,364 requirements:
+That is all 1,365 requirements:
 - 112 belong to the P0 changes, which built them or hold them for the cloud gate;
-- the other 1,252 are spread over 65 changes below;
+- the other 1,253 are spread over 65 changes below;
 - all 200 designed screens after P0 sit with the change that owns most of their requirements.
 
 <!-- /roadmap -->
@@ -212,7 +212,7 @@ providers.
 | 4 | `p1-equity-register` | Holders, share classes, equity transactions, SAFEs and notes, the option-pool register, the cap table at any date, round modelling, investor records and linked statutory checks; share-issue and conversion posting rules | 15 | 8 | `p1-founders-money` | — | A lawyer confirms the SAFE's conversion terms (Q33) | Accountant | Launch |
 | 4 | `p1-payroll-link` | Fyniq's side of payroll: the people-platform contract (FR-PPL), verifying, posting and paying pay runs from Nemura, a provider's journal or manual entry (FR-PAY-15), salary bank details by version, tax-clearance holds, and the payroll posting rules | 20 | 5 | `p1-general-ledger-close`, `p1-payments-out`, `p1-nemura-payroll` (the Nemura route only) | Nemura and a provider journal file, both local | The accountant confirms the SDL difference (Q27) | Accountant (#5) | After go-live (Q4, Q16) |
 | 5 | `p1-reports` | Financial statements, periods and comparatives, management reports, exports, reproducible reports, asynchronous exports, accountant exports, the charts and the remaining statement invariants | 18 | 4 | `p1-general-ledger-close` | — | The accountant confirms the framework (Q31) | Accountant | Launch |
-| 5 | `p1-dashboard-kpis` | The default Home and Dashboard and the workbook KPI set as versioned definitions | 3 | 2 | `p1-reports` | — | — | — | Launch |
+| 5 | `p1-dashboard-kpis` | The default Home and Dashboard and the workbook KPI set as versioned definitions | 4 | 2 | `p1-reports` | — | — | — | Launch |
 | 5 | `p1-planning` | Budgets, the driver-based forecast and its outputs, the 13-week and short-term cash forecasts, the feasibility calculator, sandboxed forecasts | 7 | 4 | `p1-reports` | — | — | — | Launch |
 | 5 | `p1-checks` | The checks engine, books health and the user access review report; the workbook checks (Appendix C.1) and platform checks (C.2), each closed as its module arrives | 101 | 1 | `p1-reports` | — | — | Accountant | Launch |
 | 5 | `p1-audit-explorer` | Sensitive values in the trail, period-close snapshots, logged sensitive reads and exports, audit retention, the audit explorer and export, purge and restore that keep the chain | 9 | 1 | `p1-general-ledger-close` | — | — | Security (#4) | Launch |
@@ -375,7 +375,7 @@ as a posting rule or a use case; `openspec show <capability> --type spec` lists 
 | `p1-equity-register` | `equity/cap-table-and-investors`: FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-19, FR-EQ-20, FR-EQ-21, FR-EQ-22, FR-EQ-25, FR-EQ-26, FR-EQ-27; `ledger/money-and-rounding`: RND-SHARE; `ledger/posting-rules`: 3 unnumbered<br>Screens: cap-table, equity-transaction, holder-record, holders, instruments, option-pool, round-simulator, share-classes |
 | `p1-payroll-link` | `integrations/people-platform`: FR-PPL-01, FR-PPL-04, FR-PPL-05, FR-PPL-06, FR-PPL-07, FR-PPL-08, FR-PPL-09, FR-PPL-11, FR-PPL-12, FR-PPL-13, FR-PPL-14, FR-PPL-16, FR-PPL-17, FR-PPL-19; `ledger/posting-rules`: 3 unnumbered; `payroll/pay-runs`: FR-PAY-07, FR-PAY-11, FR-PAY-15<br>Screens: employee-record, pay-run, payroll-overview, people-hr-settings, salary-batch |
 | `p1-reports` | `experience/visualisation`: FR-VIZ-01, FR-VIZ-02, FR-VIZ-03, FR-VIZ-04, FR-VIZ-05, FR-VIZ-06, FR-VIZ-07, FR-VIZ-08, 1 unnumbered; `ledger/invariants`: INV-10, INV-11; `reporting/reports`: FR-RPT-01, FR-RPT-02, FR-RPT-03, FR-RPT-05, FR-RPT-08, FR-RPT-09, FR-RPT-10<br>Screens: export-dialog, financial-statement, general-ledger, reports-index |
-| `p1-dashboard-kpis` | `reporting/dashboards-and-kpis`: FR-KPI-01, FR-KPI-02, FR-KPI-03<br>Screens: home, kpis |
+| `p1-dashboard-kpis` | `ledger/money-and-rounding`: RND-KPI; `reporting/dashboards-and-kpis`: FR-KPI-01, FR-KPI-02, FR-KPI-03<br>Screens: home, kpis |
 | `p1-planning` | `planning/budgets-and-forecasts`: FR-PLN-01, FR-PLN-02, FR-PLN-03, FR-PLN-05, FR-PLN-09, FR-PLN-06, FR-PLN-08<br>Screens: budgets, cash-flow-forecast, feasibility, forecast |
 | `p1-checks` | `controls/checks`: FR-CTL-01, FR-CTL-02, FR-CTL-05, FR-CTL-06, C.1 #1, C.1 #2, C.1 #3, C.1 #4, C.1 #5, C.1 #6, C.1 #7, C.1 #8, C.1 #9, C.1 #10, C.1 #11, C.1 #12, C.1 #13, C.1 #14, C.1 #15, C.1 #16, C.1 #17, C.1 #18, C.1 #19, C.1 #20, C.1 #21, C.1 #22, C.1 #23, C.1 #24, C.1 #25, C.1 #26, C.1 #27, C.1 #28, C.1 #29, C.1 #30, C.1 #31, C.1 #32, C.1 #33, C.1 #34, C.1 #35, C.1 #36, C.1 #37; `controls/platform-checks`: C.2 #1, C.2 #2, C.2 #3, C.2 #4, C.2 #5, C.2 #6, C.2 #7, C.2 #8, C.2 #9, C.2 #10, C.2 #11, C.2 #12, C.2 #13, C.2 #14, C.2 #15, C.2 #16, C.2 #17, C.2 #18, C.2 #19, C.2 #20, C.2 #21, C.2 #22, C.2 #23, C.2 #24, C.2 #25, C.2 #26, C.2 #27, C.2 #28, C.2 #29, C.2 #30, C.2 #31, C.2 #32, C.2 #33, C.2 #34, C.2 #35, C.2 #36, C.2 #37, C.2 #38, C.2 #39, C.2 #40, C.2 #41, C.2 #42, C.2 #43, C.2 #44, C.2 #45, C.2 #46, C.2 #47, C.2 #48, C.2 #49, C.2 #50, C.2 #51, C.2 #52, C.2 #53, C.2 #54, C.2 #56, C.2 #59, C.2 #58, C.2 #57, C.2 #55; `ledger/invariants`: INV-07<br>Screens: checks |
 | `p1-audit-explorer` | `controls/checks`: FR-CTL-03; `data/audit-trail`: AUD-02, AUD-03, AUD-04, AUD-05, AUD-06, AUD-07, AUD-09, 1 unnumbered<br>Screens: audit-trail |
