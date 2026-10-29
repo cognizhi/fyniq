@@ -264,6 +264,9 @@ func matrixInvoiceEvidence(e *env) (invoiceID, evidenceID string) {
 }
 
 // matrixCalls has one request per operation; an operation without one fails the test.
+// matrixKPIMonth numbers the months the matrix enters KPI counts for, one each.
+var matrixKPIMonth int
+
 var matrixCalls = map[string]matrixCall{
 	"addInvoiceEvidence": func(e *env, tok string) (response, func() bool) {
 		id, _ := e.createInvoice("1", "10.00")
@@ -1279,6 +1282,22 @@ var matrixCalls = map[string]matrixCall{
 	},
 	"getSpendBySupplier": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/spend-by-supplier?from=2026-10&to=2026-11", tok, nil), nil
+	},
+	"getKpis": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/kpis?month=2026-10", tok, nil), nil
+	},
+	"listKpiInputs": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/kpi-inputs", tok, nil), nil
+	},
+	// Each call enters a month of its own, so each starts from no counts (If-Match "0").
+	"setKpiInput": func(e *env, tok string) (response, func() bool) {
+		matrixKPIMonth++
+		month := time.Date(2020, time.Month(matrixKPIMonth), 1, 0, 0, 0, 0, time.UTC).Format("2006-01")
+		r := e.call(http.MethodPut, "/v1/kpi-inputs/"+month, tok, map[string]any{"headcount": 3}, "If-Match", `"0"`)
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/kpi-inputs?from="+month+"&to="+month, e.as(authz.Accountant), nil)
+			return !strings.Contains(l.Raw, `"month":"`+month+`"`)
+		}
 	},
 	"getTopExpenses": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/top-expenses?from=2026-10&to=2026-11", tok, nil), nil

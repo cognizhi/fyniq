@@ -441,6 +441,14 @@ var (
 		Note: "A view of the reports limited to purchases reads it; one limited to sales, payroll, a department or the board pack is refused."}
 	GetTopExpenses = Policy{Operation: "getTopExpenses", Capability: Reports, Need: View, Unqualified: true,
 		Note: "A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused."}
+	// The KPIs (FR-KPI-02, p1-dashboard-kpis design D7) read every account, as the statements do; the board pack's view reads
+	// them too (Home's board viewer sees KPIs only). Their entered counts are planning inputs: "Budgets, forecasts" C.
+	GetKpis = Policy{Operation: "getKpis", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"},
+		Note: "A view of the reports limited to the board pack reads it; one limited to sales, purchases, payroll or a department is refused."}
+	ListKpiInputs = Policy{Operation: "listKpiInputs", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"},
+		Note: "A view of the reports limited to the board pack reads them; one limited to sales, purchases, payroll or a department is refused."}
+	SetKpiInput = Policy{Operation: "setKpiInput", Capability: Budgets, Need: Create, Unqualified: true,
+		Note: "A department's budget holder (C dept) does not enter the company's counts."}
 	GetPeriodClose = Policy{Operation: "getPeriodClose", Capability: PeriodClose, Need: View}
 	RunCloseChecks = Policy{Operation: "runCloseChecks", Capability: PeriodClose, Need: Create}
 	ClosePeriod    = Policy{Operation: "closePeriod", Capability: PeriodClose, Need: Approve,
@@ -1037,7 +1045,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
-	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
+	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetKpis, ListKpiInputs, SetKpiInput, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence, AddBillEvidence, ListBillEvidence, GetBillEvidence, RemoveBillEvidence,

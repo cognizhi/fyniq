@@ -4060,6 +4060,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/kpi-inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the KPIs' entered counts
+         * @description The months' customer counts and headcount a person entered for the KPIs (FR-KPI-02, rev 0.161), earliest first, with who entered them and their version, a page at a time (FR-INT-10). Read-only; no side effects.
+         */
+        get: operations["listKpiInputs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/kpi-inputs/{month}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Enter a month's KPI counts
+         * @description Enters a month's paying, new and lost customers (the three together, or none of them) and headcount, each a whole number from zero, for the KPIs that need them until subscription data (FR-KPI-04) and the payroll link exist (FR-KPI-02; the owner's decision of 29 Oct 2026, rev 0.161). A closed month's counts are corrected the same way: they are not ledger figures. Side effects: the month's counts at their next version and its audit event, with the counts before and after. Needs If-Match with the counts' ETag ("0" for a month without counts). Prefer: return=preview checks it and saves nothing.
+         */
+        put: operations["setKpiInput"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/kpis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the KPIs of a month
+         * @description The workbook's KPI set for a month (FR-KPI-02), each with its definition, version, source, formula and date basis (FR-KPI-03), its value for the month and the month before: booked and contracted MRR and ARR, revenue growth, margins, spend by function, net burn, runway, ARPA, churn, CAC, LTV and its ratio, CAC payback, the burn multiple, the current and quick ratios, working capital, debt/equity, DSO, DPO, headcount and revenue per employee. Ledger figures are read through the statements at one ledger revision, which it returns (FR-RPT-08); customer counts and headcount are those a person entered for the month (rev 0.161), and the KPIs that use them say so. Each value is rounded by RND-KPI; a KPI that cannot be worked out has no value and says why, never 0. A month the books have no period for is REPORT-03, a later revision REPORT-04. Read-only; no side effects.
+         */
+        get: operations["getKpis"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/bank-changes": {
         parameters: {
             query?: never;
@@ -17070,6 +17130,189 @@ export interface components {
              * @example 2
              */
             version: number;
+        };
+        KPICountsIn: {
+            /**
+             * Format: int64
+             * @description People employed in the month.
+             * @example 8
+             */
+            headcount?: number;
+            /**
+             * Format: int64
+             * @description Customers who stopped paying in the month.
+             * @example 1
+             */
+            lost_customers?: number;
+            /**
+             * Format: int64
+             * @description Customers who started paying in the month.
+             * @example 2
+             */
+            new_customers?: number;
+            /**
+             * Format: int64
+             * @description Paying customers at the month's end; with new_customers and lost_customers, or none of the three.
+             * @example 10
+             */
+            paying_customers?: number;
+        };
+        KPICountsList: {
+            /** @description The months with counts entered, earliest first. */
+            items: components["schemas"]["KPICountsOut"][];
+            /**
+             * @description The cursor of the next page; none on the last.
+             * @example eyJhZnRlciI6IjIwMjYtMDUifQ
+             */
+            next_cursor?: string;
+        };
+        KPICountsOut: {
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-03T02:00:00Z
+             */
+            entered_at: string;
+            /** @description Who entered them last. */
+            entered_by?: components["schemas"]["Person"];
+            /**
+             * Format: int64
+             * @description People employed in the month.
+             * @example 8
+             */
+            headcount?: number;
+            /**
+             * Format: int64
+             * @description Customers who stopped paying in the month.
+             * @example 1
+             */
+            lost_customers?: number;
+            /**
+             * @description The month, YYYY-MM.
+             * @example 2026-10
+             */
+            month: string;
+            /**
+             * Format: int64
+             * @description Customers who started paying in the month.
+             * @example 2
+             */
+            new_customers?: number;
+            /**
+             * Format: int64
+             * @description Paying customers at the month's end.
+             * @example 10
+             */
+            paying_customers?: number;
+            /**
+             * Format: int64
+             * @description The counts' version: If-Match takes it as the ETag.
+             * @example 1
+             */
+            version: number;
+        };
+        KPIFigure: {
+            /**
+             * @description true when it used the month's entered customer counts or headcount (rev 0.161).
+             * @example false
+             */
+            entered?: boolean;
+            /**
+             * @description Why it has no value, in words; never shown as 0 (FR-KPI-03).
+             * @example no subscription data: enter the month's customer counts
+             */
+            undefined?: string;
+            /**
+             * @description The figure, rounded by RND-KPI: an amount in the base currency as a decimal string, a percentage, ratio, number of months or days to one decimal, or a whole count. Left out when the KPI has words or no value.
+             * @example 40.0
+             */
+            value?: string;
+            /**
+             * @description Words that stand for the figure, such as Not burning for the runway when the average net burn is zero or less.
+             * @example Not burning
+             */
+            words?: string;
+        };
+        KPIItem: {
+            /** @description Its value for the month before, when the books have it. */
+            before?: components["schemas"]["KPIFigure"];
+            /**
+             * @description The dates it reads.
+             * @example the month end and the last three months
+             */
+            date_basis: string;
+            /**
+             * @description How it is worked out, in words, as its tile shows on hover.
+             * @example Cash at month end ÷ the average net burn of the last three months of the financial year
+             */
+            formula: string;
+            /**
+             * @description The KPI.
+             * @example runway
+             */
+            key: string;
+            /** @description Its value for the month. */
+            month: components["schemas"]["KPIFigure"];
+            /**
+             * @description Its name.
+             * @example Runway
+             */
+            name: string;
+            /**
+             * @description Where it comes from: ledger (the balance service), entered (counts a person entered), ledger and entered, or subscription data (P2).
+             * @example ledger
+             */
+            source: string;
+            /**
+             * @description What its value measures, which decides its decimals (RND-KPI).
+             * @example months
+             * @enum {string}
+             */
+            unit: "amount" | "percent" | "ratio" | "months" | "days" | "count";
+            /**
+             * @description The definition's version: a change of formula is a new one (FR-KPI-03).
+             * @example runway@1
+             */
+            version: string;
+        };
+        KPIs: {
+            /** @description The month's entered counts, when any were entered (rev 0.161). */
+            counts?: components["schemas"]["KPICountsOut"];
+            /**
+             * @description The base currency every amount is in.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: date
+             * @description The month's first day.
+             * @example 2026-10-01
+             */
+            from: string;
+            /** @description Every KPI, in the KPI page's order (FR-KPI-02). */
+            kpis: components["schemas"]["KPIItem"][];
+            /**
+             * Format: int64
+             * @description The ledger revision every ledger figure is read as at (FR-RPT-08).
+             * @example 42
+             */
+            ledger_revision: number;
+            /**
+             * @description The month, YYYY-MM.
+             * @example 2026-10
+             */
+            month: string;
+            /**
+             * @description The platform version that worked them out (REL-05).
+             * @example 0.1.0
+             */
+            platform_version: string;
+            /**
+             * Format: date
+             * @description Its last day.
+             * @example 2026-10-31
+             */
+            to: string;
         };
         LedgerLine: {
             /** @description In the line's currency: debit positive, credit negative. */
@@ -55618,6 +55861,323 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listKpiInputs: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description The first month, YYYY-MM; left out, twelve months before to. */
+                from?: string;
+                /** @description The last month, YYYY-MM; left out, the month of the organisation's today. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KPICountsList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setKpiInput: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The month, YYYY-MM. */
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KPICountsIn"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KPICountsOut"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-KPI-01` A month's KPI counts change only as their next version; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getKpis: {
+        parameters: {
+            query?: {
+                /** @description The month, YYYY-MM; left out, the month of the organisation's today. */
+                month?: string;
+                /** @description Read as at this ledger revision (FR-RPT-08); left out, the ledger as it stands. */
+                as_at_revision?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KPIs"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

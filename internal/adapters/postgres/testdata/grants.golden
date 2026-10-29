@@ -171,6 +171,9 @@ fyniq_api       INSERT    journal_entry (memo, posting_date, posting_identity, r
 fyniq_api       SELECT    journal_entry
 fyniq_api       INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no)
 fyniq_api       SELECT    journal_line
+fyniq_api       INSERT    kpi_input (entered_at, entered_by, headcount, lost_customers, month, new_customers, paying_customers)
+fyniq_api       SELECT    kpi_input
+fyniq_api       UPDATE    kpi_input (entered_at, entered_by, headcount, lost_customers, new_customers, paying_customers, version)
 fyniq_api       EXECUTE   latest_job_slot()
 fyniq_api       SELECT    ledger_revision
 fyniq_api       EXECUTE   lock_ledger()
@@ -433,6 +436,7 @@ fyniq_readonly  SELECT    item_price
 fyniq_readonly  SELECT    job_slots
 fyniq_readonly  SELECT    journal_entry
 fyniq_readonly  SELECT    journal_line
+fyniq_readonly  SELECT    kpi_input
 fyniq_readonly  SELECT    ledger_revision
 fyniq_readonly  SELECT    member_invitation
 fyniq_readonly  SELECT    money_account
