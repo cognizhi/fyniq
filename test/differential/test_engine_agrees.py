@@ -8,7 +8,8 @@ public entry points and the engine's command line.
 
 It draws manual-journal scenarios, and also the P1 sources named in FYNIQ_DIFFERENTIAL_SOURCES
 (comma-separated, e.g. "bank"): an engine session names a source there once cmd/scenario-run reads
-its shapes (README, "P1 sources").
+its shapes (README, "P1 sources"). The name "statements" there also draws those scenarios asking for
+the statements, once cmd/scenario-run states them (README, "Statements").
 """
 
 import hashlib
@@ -27,6 +28,7 @@ from oracle.ledger import Ledger
 from oracle.scenario import ScenarioError, scenario_from_json
 from oracle.strategies import scenarios
 from oracle.strategies_p1 import p1_scenarios
+from oracle.strategies_statements import with_statements
 
 GOLDEN = Path(__file__).parent / "golden"
 EXAMPLES = int(os.environ.get("FYNIQ_DIFFERENTIAL_EXAMPLES", "1000"))
@@ -34,9 +36,13 @@ SOURCES = tuple(s.strip() for s in os.environ.get("FYNIQ_DIFFERENTIAL_SOURCES", 
 
 
 def strategy() -> st.SearchStrategy[dict]:
-    if not SOURCES:
-        return scenarios("differential")
-    return st.one_of(scenarios("differential"), p1_scenarios(SOURCES, "differential"))
+    p1 = tuple(s for s in SOURCES if s != "statements")
+    base = scenarios("differential")
+    if p1:
+        base = st.one_of(base, p1_scenarios(p1, "differential"))
+    if "statements" in SOURCES:
+        return st.one_of(base, with_statements(base))
+    return base
 
 
 def engine(scenario: dict) -> dict:
@@ -88,7 +94,21 @@ def difference(e: dict, o: dict) -> str | None:
         for account in sorted(set(ea) | set(oa)):
             if not same(ea.get(account), oa.get(account)):
                 return f"trial balance {month} account {account}: engine {ea.get(account, '0')}, oracle {oa.get(account, '0')}"
-    return None
+    return tree_difference(e.get("statements"), o.get("statements"), "statements")
+
+
+def tree_difference(e, o, where: str) -> str | None:
+    """Two statements to the cent: a missing report group, function or line reads as zero (README, "Statements");
+    a missing month or percent_of_revenue, a check or a non-cash list must match."""
+    if isinstance(e, dict) and isinstance(o, dict):
+        for key in sorted(set(e) | set(o)):
+            found = tree_difference(e.get(key), o.get(key), f"{where}/{key}")
+            if found is not None:
+                return found
+        return None
+    if isinstance(e, (dict, list, bool)) or isinstance(o, (dict, list, bool)):
+        return None if e == o else f"{where}: engine {repr(e)[:200]}, oracle {repr(o)[:200]}"
+    return None if same(e, o) else f"{where}: engine {e or '0'}, oracle {o or '0'}"
 
 
 def test_the_engine_and_the_oracle_agree() -> None:  # req: QA-ENG-02

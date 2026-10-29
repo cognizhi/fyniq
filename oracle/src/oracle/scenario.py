@@ -65,7 +65,10 @@ class Account:
     type: str
     group: bool
     active: bool
-    role: str | None = None  # "share-capital" (INV-13), or none
+    role: str | None = None  # "share-capital" (INV-13), a role the statements read, or none
+    report_group: str | None = None  # the statements' attributes (FR-COA-02); README, "Statements"
+    function: str | None = None
+    cash_flow_line: str | None = None
 
 
 @dataclass(frozen=True)
@@ -142,6 +145,11 @@ class Scenario:
     reversals: tuple[Reversal, ...]
     as_of: date | None = None
     settings: Settings | None = None
+    statements: bool = False
+
+
+# A role the statements read belongs to at most one account, of this type (README, "Statements").
+_SINGLE_ROLES = {"retained-earnings": "equity", "depreciation": "expense", "income-tax-expense": "expense"}
 
 
 @cache
@@ -290,7 +298,17 @@ def scenario_from_json(data: Any) -> Scenario:
         _shape(_ACCOUNT, raw["code"], f"accounts/{i}/code")
         if raw["code"] in accounts:
             raise ScenarioError(f"accounts/{i}: the code {raw['code']!r} appears twice")
-        accounts[raw["code"]] = Account(raw["code"], raw["type"], raw["group"], raw["active"], raw.get("role"))
+        accounts[raw["code"]] = Account(raw["code"], raw["type"], raw["group"], raw["active"], raw.get("role"),
+                                        raw.get("report_group"), raw.get("function"), raw.get("cash_flow_line"))
+    for role, kind in _SINGLE_ROLES.items():
+        holders = [a for a in accounts.values() if a.role == role]
+        if len(holders) > 1:
+            raise ScenarioError(f"accounts: {holders[0].code} and {holders[1].code} both have the role {role}")
+        if holders and holders[0].type != kind:
+            raise ScenarioError(f"accounts: {holders[0].code} has the role {role}, which needs an account of type {kind}")
+    statements = data.get("statements", False)
+    if statements and not any(a.role == "retained-earnings" for a in accounts.values()):
+        raise ScenarioError("statements: the chart needs an account with the role retained-earnings")
 
     documents: list[Document | Source] = []
     seen: set[str] = set()
@@ -342,7 +360,7 @@ def scenario_from_json(data: Any) -> Scenario:
                     f"reversals/{i}: {reversal.document} is a {types[reversal.document]}; a reversal names a "
                     "manual journal (voids of P1 documents are not in the format yet)"
                 )
-    return Scenario(data["name"], base, currencies, accounts, tuple(documents), reversals, as_of, settings)
+    return Scenario(data["name"], base, currencies, accounts, tuple(documents), reversals, as_of, settings, statements)
 
 
 def load_scenario(path: str | Path) -> Scenario:

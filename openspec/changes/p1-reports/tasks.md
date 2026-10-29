@@ -46,6 +46,18 @@
 - [ ] 1.5 (oracle session) The statements' totals in the independent oracle, on the sample company: the P&L, the
   balance sheet, the cash flow and the movement in equity, written from rev 0.159's layout, never from the engine
   (QA-ENG-01). `// req: QA-ENG-02`
+  (29 Oct 2026, the oracle session, whose author has not read the engine: the oracle's half is written.
+  `fyniq-scenario@1` grows additively: an account may carry `report_group`, `function` and `cash_flow_line`, the
+  roles `retained-earnings`, `depreciation` and `income-tax-expense` join `share-capital`, and `"statements": true`
+  asks for every month's P&L, balance sheet, indirect cash flow, movement in equity and checks in the result
+  (`test/differential/README.md`, "Statements", with the readings the PRD leaves open). The oracle's side is
+  `oracle/src/oracle/statements.py`; the rules are worked by hand in `oracle/tests/test_statements.py`, a company
+  with every section over four months in `test/differential/pending/statements.json`
+  (`test_pending_golden.py`), and the properties in `test_statement_properties.py`; `strategies_statements.py`
+  draws statement scenarios over any generated one. 14 hand mutants of the rules, all killed. **Left:** the sample
+  company: its generated scenarios carry no chart attributes, and the standard chart is the engine's data, so an
+  engine session writes them into `sample-company-seed-*.json`, teaches `cmd/scenario-run` the statements, moves
+  `pending/statements.json` to `golden/` and adds `statements` to `FYNIQ_DIFFERENTIAL_SOURCES`.)
 
 ## 2. The screens
 

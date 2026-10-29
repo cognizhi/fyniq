@@ -263,3 +263,178 @@ def test_pending_assets():
         "2026-05": {"1160": "1500.00", "1510": "-2000.00", "1590": "-33.33", "6610": "433.33",
                     "7050": "100.00"},  # 1590: +400.00 cleared, -(100.00 + 333.33)
     }
+
+
+def _section(total: str, groups: dict[str, str] | None = None) -> dict:
+    return {"total": total, "groups": groups or {}}
+
+
+_NO_PROFIT = {
+    "revenue": _section("0.00"), "cost_of_sales": _section("0.00"), "gross_profit": "0.00",
+    "operating_expenses": {"total": "0.00", "groups": {}, "functions": {}}, "ebitda": "0.00",
+    "depreciation_and_amortisation": _section("0.00"), "operating_profit": "0.00", "other_income": _section("0.00"),
+    "finance_costs_and_other_expenses": _section("0.00"), "profit_before_tax": "0.00", "income_tax": "0.00",
+    "net_profit": "0.00",
+}  # no percentages: a revenue of zero has none (RND-PERCENT)
+_NO_CASH_FLOW = {"net_profit": "0.00", "depreciation_and_amortisation": "0.00", "investing_and_financing_results": "0.00",
+                 "working_capital": {}, "total": "0.00"}
+
+
+# req: FR-RPT-01, INV-10, INV-11, RND-PERCENT, QA-ENG-02
+def test_pending_statements():
+    r = _run("statements")
+    assert r["rejected"] == []
+    assert len(r["entries"]) == 23  # 22 journals and JNL-0010's reversal on 5 February
+    s = r["statements"]
+    assert list(s) == ["2026-01", "2026-02", "2026-03", "2026-04"]  # March has no entry and is still stated
+
+    jan = s["2026-01"]
+    assert jan["profit_and_loss"] == {
+        "revenue": _section("1200.00", {"Subscriptions": "1200.00"}),
+        "cost_of_sales": _section("-199.80", {"Hosting": "-199.80"}),
+        "gross_profit": "1000.20",  # 1,200.00 - 199.80
+        "operating_expenses": {
+            "total": "-3399.99",  # salaries 2,000.00, marketing 500.00, rent 800.00 (paid by a director), software 99.99
+            "groups": {"6300": "-99.99", "Marketing": "-500.00", "Rent": "-800.00", "Salaries": "-2000.00"},
+            "functions": {"R&D": "-2000.00", "S&M": "-500.00", "G&A": "-800.00", "Other": "-99.99"},  # 6300 has none
+        },
+        "ebitda": "-2399.79",  # 1,000.20 - 3,399.99; depreciation is below it
+        "depreciation_and_amortisation": _section("-83.33", {"Depreciation & amortisation": "-83.33"}),
+        "operating_profit": "-2483.12",
+        "other_income": _section("0.00"),
+        "finance_costs_and_other_expenses": _section("0.00"),
+        "profit_before_tax": "-2483.12",
+        "income_tax": "0.00",
+        "net_profit": "-2483.12",
+        "percent_of_revenue": {  # of 1,200.00, to 1 decimal, half away from zero
+            "revenue": "100.0",
+            "cost_of_sales": "-16.7",  # -16.65 exactly: away from zero
+            "gross_profit": "83.4",  # 83.35 exactly
+            "operating_expenses": "-283.3",  # -283.3325
+            "ebitda": "-200.0",  # -199.9825
+            "depreciation_and_amortisation": "-6.9",  # -6.94416…
+            "operating_profit": "-206.9",  # -206.92666…
+            "other_income": "0.0",
+            "finance_costs_and_other_expenses": "0.0",
+            "profit_before_tax": "-206.9",
+            "income_tax": "0.0",
+            "net_profit": "-206.9",
+        },
+    }
+    # Bank 10,000.00 - 3,270.00 + 1,000.00 - 199.80 - 2,000.00 - 99.99 = 5,430.21; receivable 1,308.00 - 1,000.00;
+    # the laptop 3,000.00 less 83.33; GST paid 270.00 less 108.00 charged is a debit under current liabilities;
+    # the director's loan 10,000.00 + 800.00; retained earnings hold the month's loss.
+    assert jan["balance_sheet"] == {
+        "current_assets": _section("5738.21", {"Cash and bank": "5430.21", "Trade receivables": "308.00"}),
+        "non_current_assets": _section("2916.67", {"Property, plant & equipment": "2916.67"}),
+        "total_assets": "8654.88",
+        "current_liabilities": _section("338.00", {"GST": "-162.00", "Trade payables": "500.00"}),
+        "borrowings": _section("10800.00", {"Loan from director": "10800.00"}),
+        "total_liabilities": "11138.00",
+        "equity": _section("-2483.12", {"Retained earnings": "-2483.12"}),
+        "total_liabilities_and_equity": "8654.88",
+    }
+    # JNL-0001 is financing (+10,000.00) and JNL-0002 investing (-3,270.00, its GST inside); JNL-0008 moved no money.
+    # Operating: -2,483.12 + 83.33 depreciation + 800.00 (the rent in a financing entry) - 308.00 receivables
+    # + 108.00 GST charged + 500.00 payables = -1,299.79, the operating entries' cash: 1,000.00 - 199.80 - 2,000.00 - 99.99.
+    assert jan["cash_flow"] == {
+        "operating": {"net_profit": "-2483.12", "depreciation_and_amortisation": "83.33",
+                      "investing_and_financing_results": "800.00",
+                      "working_capital": {"Receivables": "-308.00", "Payables & accruals": "500.00",
+                                          "Tax liabilities": "108.00"},
+                      "total": "-1299.79"},
+        "investing": "-3270.00",
+        "financing": "10000.00",
+        "net_change": "5430.21",
+        "opening_cash": "0.00",
+        "closing_cash": "5430.21",
+        "non_cash": [{"document": "JNL-0008", "kind": "post", "posting_date": "2026-01-28", "section": "financing"}],
+    }
+    assert jan["equity_movement"] == {"opening": "0.00", "profit": "-2483.12", "share_capital": "0.00", "other": "0.00",
+                                      "closing": "-2483.12"}
+    assert jan["checks"] == {"balances": True, "ties": True, "equity": True, "unplaced": []}
+
+    feb = s["2026-02"]
+    assert feb["profit_and_loss"] == {
+        "revenue": _section("2000.00", {"Services": "2000.00"}),
+        "cost_of_sales": _section("0.00"),
+        "gross_profit": "2000.00",
+        "operating_expenses": {"total": "99.99", "groups": {"6300": "99.99"}, "functions": {"Other": "99.99"}},  # reversed
+        "ebitda": "2099.99",
+        "depreciation_and_amortisation": _section("-40.00", {"Depreciation & amortisation": "-40.00"}),  # 6620, same group
+        "operating_profit": "2059.99",
+        "other_income": _section("1533.33", {"Gains & losses on disposal": "33.33", "Grants & subsidies": "1500.00"}),
+        "finance_costs_and_other_expenses": _section("-50.00", {"Finance costs": "-50.00"}),
+        "profit_before_tax": "3543.32",  # 2,059.99 + 1,533.33 - 50.00
+        "income_tax": "-100.00",
+        "net_profit": "3443.32",
+        "percent_of_revenue": {  # of 2,000.00
+            "revenue": "100.0", "cost_of_sales": "0.0", "gross_profit": "100.0",
+            "operating_expenses": "5.0",  # 4.9995
+            "ebitda": "105.0",  # 104.9995
+            "depreciation_and_amortisation": "-2.0",
+            "operating_profit": "103.0",  # 102.9995
+            "other_income": "76.7",  # 76.6665
+            "finance_costs_and_other_expenses": "-2.5",
+            "profit_before_tax": "177.2",  # 177.166
+            "income_tax": "-5.0",
+            "net_profit": "172.2",  # 172.166
+        },
+    }
+    # Bank 5,430.21 - 500.00 - 1,200.00 + 600.00 + 1,500.00 + 2,950.00 - 1,050.00 - 300.00 + 99.99 = 7,530.20, and
+    # 2,180.00 in 1020; the laptop gone and 40.00 of amortisation left on 1590; GST 162.00 debit - 180.00 = 18.00 owed;
+    # the loan 10,800.00 - 1,000.00 - 2,000.00; retained earnings -2,483.12 + 3,443.32 - 300.00 of dividend.
+    assert feb["balance_sheet"] == {
+        "current_assets": _section("11218.20", {"Cash and bank": "9710.20", "Prepayments": "1200.00",
+                                                "Trade receivables": "308.00"}),
+        "non_current_assets": _section("-40.00", {"Property, plant & equipment": "-40.00"}),
+        "total_assets": "11178.20",
+        "current_liabilities": _section("718.00", {"Deferred revenue": "600.00", "GST": "18.00",
+                                                   "Income tax payable": "100.00"}),  # trade payables back at nothing
+        "borrowings": _section("7800.00", {"Loan from director": "7800.00"}),
+        "total_liabilities": "8518.00",
+        "equity": _section("2660.20", {"Capital contribution": "2000.00", "Retained earnings": "660.20"}),
+        "total_liabilities_and_equity": "11178.20",
+    }
+    # The sale (+2,950.00) is investing with its 33.33 gain taken out of operating; the repayment with interest
+    # (-1,050.00) and the dividend (-300.00) are financing, the interest put back; the conversion moved no money.
+    # Operating: 3,443.32 + 40.00 + 16.67 - 1,200.00 prepaid - 500.00 paid to the supplier + 280.00 tax (180.00 GST,
+    # 100.00 income tax) + 600.00 paid ahead = 2,679.99 = -500.00 - 1,200.00 + 2,180.00 + 600.00 + 1,500.00 + 99.99.
+    assert feb["cash_flow"] == {
+        "operating": {"net_profit": "3443.32", "depreciation_and_amortisation": "40.00",
+                      "investing_and_financing_results": "16.67",
+                      "working_capital": {"Other current assets": "-1200.00", "Payables & accruals": "-500.00",
+                                          "Tax liabilities": "280.00", "Deferred revenue": "600.00"},
+                      "total": "2679.99"},
+        "investing": "2950.00",
+        "financing": "-1350.00",
+        "net_change": "4279.99",
+        "opening_cash": "5430.21",
+        "closing_cash": "9710.20",
+        "non_cash": [{"document": "JNL-0018", "kind": "post", "posting_date": "2026-02-26", "section": "financing"}],
+    }
+    # The capital contribution 2,000.00 less the dividend 300.00.
+    assert feb["equity_movement"] == {"opening": "-2483.12", "profit": "3443.32", "share_capital": "0.00",
+                                      "other": "1700.00", "closing": "2660.20"}
+    assert feb["checks"] == {"balances": True, "ties": True, "equity": True, "unplaced": []}
+
+    mar = s["2026-03"]
+    assert mar["profit_and_loss"] == _NO_PROFIT
+    assert mar["balance_sheet"] == feb["balance_sheet"]
+    assert mar["cash_flow"] == {"operating": _NO_CASH_FLOW, "investing": "0.00", "financing": "0.00",
+                                "net_change": "0.00", "opening_cash": "9710.20", "closing_cash": "9710.20", "non_cash": []}
+    assert mar["equity_movement"] == {"opening": "2660.20", "profit": "0.00", "share_capital": "0.00", "other": "0.00",
+                                      "closing": "2660.20"}
+    assert mar["checks"] == {"balances": True, "ties": True, "equity": True, "unplaced": []}
+
+    # 50.00 paid to 1990, which has no cash-flow line: it sits in no section, so the balance sheet is 50.00 short
+    # and the cash flow misses the 50.00 that left the bank. Both checks say so, and name the account.
+    apr = s["2026-04"]
+    assert apr["profit_and_loss"] == _NO_PROFIT
+    assert apr["balance_sheet"]["current_assets"] == _section(
+        "11168.20", {"Cash and bank": "9660.20", "Prepayments": "1200.00", "Trade receivables": "308.00"})
+    assert (apr["balance_sheet"]["total_assets"], apr["balance_sheet"]["total_liabilities_and_equity"]) == (
+        "11128.20", "11178.20")
+    assert apr["cash_flow"] == {"operating": _NO_CASH_FLOW, "investing": "0.00", "financing": "0.00",
+                                "net_change": "0.00", "opening_cash": "9710.20", "closing_cash": "9660.20", "non_cash": []}
+    assert apr["checks"] == {"balances": False, "ties": False, "equity": True, "unplaced": ["1990"]}
