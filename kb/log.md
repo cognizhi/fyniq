@@ -272,3 +272,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-29] compile | docs/user-guide/management-reports.md → reports.management (new: the management reports, who sees them); docs/user-guide/financial-statements.md → reports.statements (Find a report lists the management reports)
 
 ## [2026-10-29] compile | financial-statements.md → reports.statements, management-reports.md → reports.management (the P&L's monthly trend and the top expenses drawn as charts, p1-reports 5.3)
+
+## [2026-10-29] compile | reports.kpis from docs/user-guide/kpis.md (new); home.overview recompiled for the pulse card, tiles and charts

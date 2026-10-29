@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, CalendarClock, ChartBarDecreasing, ChartColumn, ChevronRight, HandCoins, Landmark, ReceiptText, Scale, ScrollText, Search, Truck, Wallet, type LucideIcon } from "lucide-react";
+import { BookOpen, CalendarClock, ChartBarDecreasing, ChartColumn, ChevronRight, Gauge, HandCoins, Landmark, ReceiptText, Scale, ScrollText, Search, Truck, Wallet, type LucideIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -22,6 +22,7 @@ const essentials: { kind: "pl" | "bs" | "cf"; icon: LucideIcon; line: string }[]
 
 // more are the other reports, each where it already lives: Expert's list, with the essentials' links.
 const more: { name: string; line: string; icon: LucideIcon; to: string; params?: Record<string, string>; expert?: boolean }[] = [
+  { name: "Start-up KPIs", line: "MRR, burn, runway, margins, churn and the rest, each with how it is worked out.", icon: Gauge, to: "/reports/kpis" },
   { name: "Who owes us", line: "Customers' statements of account and what each owes.", icon: HandCoins, to: "/sales/statements" },
   { name: "Whom we owe", line: "Bills to pay, by when they fall due.", icon: ReceiptText, to: "/purchases/bills" },
   { name: "Sales by customer and item", line: "What each customer and each item was invoiced, net of GST.", icon: ChartColumn, to: "/reports/management/$report", params: { report: "sales-by-customer" }, expert: true },

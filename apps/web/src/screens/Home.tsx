@@ -4,6 +4,7 @@ import { ChevronRight, Circle, CircleCheck, ClipboardCheck, ClockAlert, Stamp, T
 import { api } from "../api/client";
 import { useSignedIn } from "../session";
 import { Icon } from "../ui";
+import { Dashboard } from "./Dashboard";
 
 // Each read answers null when the person's roles may not read it: the step it feeds is left out
 // rather than shown as not done (the API decides who sees what).
@@ -166,9 +167,9 @@ function SetUp({ steps }: { steps: Step[] }) {
   );
 }
 
-// Home is the first signed-in page (docs/design/screens Home): what waits for the person, and while
-// the company is new, the set-up checklist. The pulse card, tiles and deadlines arrive with the
-// ledger's reports.
+// Home is the first signed-in page (docs/design/screens Home): the money's pulse, tiles and charts
+// (FR-KPI-01), what waits for the person, and while the company is new, the set-up checklist.
+// Deadlines arrive with their modules.
 // personalRoles are the roles whose rights are a person's own items only (FR-UX-39): someone who holds no other lands
 // on My claims, with nothing of the company's finances.
 export const personalRoles = ["employee"];
@@ -206,7 +207,7 @@ function Workspace() {
   const allDone = steps.length > 0 && steps.every((s) => s.done);
 
   return (
-    <div className="fy-page fy-page--narrow fy-enter">
+    <div className="fy-page fy-enter">
       <div className="fy-pagehead">
         <div className="fy-pagehead__text">
           <h1 className="fy-h1">{organisation ? organisation.name : "Fyniq"}</h1>
@@ -221,6 +222,7 @@ function Workspace() {
       </div>
       {organisation && (
         <>
+          <Dashboard />
           <Waiting toApprove={c.toApprove.data ?? null} review={c.review.data ?? null} reversals={c.reversals.data ?? null} />
           {!allDone && <SetUp steps={steps} />}
         </>
