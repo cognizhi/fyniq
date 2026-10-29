@@ -48,6 +48,7 @@ export function Chart({
   unit,
   file,
   height = 280,
+  level = 2,
 }: {
   title: string;
   summary: string;
@@ -58,6 +59,7 @@ export function Chart({
   unit: string; // the figures' currency or unit, such as "SGD"
   file: string; // the downloads' base name
   height?: number;
+  level?: 2 | 3; // the heading's level where the chart sits: 2 under a page's title, 3 inside a section
 }) {
   const id = useId();
   const [view, setView] = useState<"chart" | "table">("chart");
@@ -68,6 +70,7 @@ export function Chart({
   const motion = useMotion();
   const shown = useMemo(() => fold(series, categories.length), [series, categories]);
   const data = JSON.stringify([form, categories, series]);
+  const Heading = level === 2 ? "h2" : "h3";
 
   useEffect(() => {
     const el = plot.current;
@@ -127,9 +130,9 @@ export function Chart({
   return (
     <figure className="fy-card fy-card--pad fy-stack fy-stack--3 m-0" aria-labelledby={`${id}-title`}>
       <div className="fy-row fy-row--wrap fy-row--between gap-2">
-        <h3 className="fy-h3" id={`${id}-title`}>
+        <Heading className="fy-h3" id={`${id}-title`}>
           {title}
-        </h3>
+        </Heading>
         <div className="fy-row gap-2">
           <div className="fy-segmented" role="radiogroup" aria-label={`Show ${title} as`}>
             {(["chart", "table"] as const).map((v) => (

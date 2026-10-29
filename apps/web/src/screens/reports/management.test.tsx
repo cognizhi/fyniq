@@ -1,5 +1,5 @@
 import { screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Session } from "../../api/client";
 import type { components } from "../../api/schema";
 import { answer, ownerSession, seen } from "../../test/api";
@@ -15,6 +15,12 @@ const m = (amount: string) => ({ amount, currency: "SGD" });
 const period = (id: string, starts: string, ends: string): Period => ({ id, starts_on: starts, ends_on: ends, status: "open", financial_year: 1, version: 1 });
 const periods = [period("p-sep", "2026-09-01", "2026-09-30"), period("p-oct", "2026-10-01", "2026-10-31")];
 const base = { currency: "SGD", from: "2026-10-01", to: "2026-10-31", ledger_revision: 42, platform_version: "0.1.0" };
+
+// ECharts draws on a canvas, which jsdom lacks: its module records what it is asked to draw.
+const drawn: { option: { series: { data: (number | null)[] }[] } | null } = { option: null };
+vi.mock("../../components/chart/echarts", () => ({
+  init: () => ({ setOption: (o: typeof drawn.option) => (drawn.option = o), dispatchAction: () => undefined, getDataURL: () => "", resize: () => undefined, dispose: () => undefined }),
+}));
 
 // req: FR-RPT-03
 describe("the management reports", () => {
@@ -42,6 +48,22 @@ describe("the management reports", () => {
     ]);
     expect(seen.find((s) => s.path === "/v1/reports/sales-by-item")!.query).toContain("from=");
     expect(screen.getByText(/Read at ledger revision 42/)).toBeTruthy();
+    await noViolations(document.body);
+  });
+
+  it("draws the top expenses as bars, largest first, with values; axe finds nothing", async () => {
+    const top: Report = {
+      ...base, report: "top_expenses", total: m("845.00"),
+      rows: [
+        { id: "a1", code: "6100", name: "Rent", amount: m("545.00"), share: "64.5", documents: 0 },
+        { id: "a2", code: "6110", name: "Advertising", amount: m("300.00"), share: "35.5", documents: 0 },
+      ],
+    };
+    answer({ "GET /v1/periods": { status: 200, body: { items: periods } }, "GET /v1/reports/top-expenses": { status: 200, body: top } });
+    renderPage(ManagementReport, { path: "/reports/management/top-expenses", route: "/reports/management/$report", session: accountant, mode: "expert" });
+    expect(await screen.findByRole("img", { name: /The largest expenses\. Rent is the largest expense, 545\.00 SGD, 64\.5% of the total\./ })).toBeTruthy();
+    await vi.waitFor(() => expect(drawn.option).not.toBeNull());
+    expect(drawn.option!.series.map((x) => x.data)).toEqual([[545, 300]]);
     await noViolations(document.body);
   });
 

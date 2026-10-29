@@ -44,6 +44,54 @@ const pl: Statement = {
 
 afterEach(() => vi.restoreAllMocks());
 
+// ECharts draws on a canvas, which jsdom lacks: its module records what it is asked to draw.
+const drawn: { option: { series: { name: string; data: (number | null)[] }[] } | null } = { option: null };
+vi.mock("../../components/chart/echarts", () => ({
+  init: () => ({ setOption: (o: typeof drawn.option) => (drawn.option = o), dispatchAction: () => undefined, getDataURL: () => "", resize: () => undefined, dispose: () => undefined }),
+}));
+
+// req: FR-VIZ-01
+// req: FR-VIZ-06
+describe("the P&L's monthly trend", () => {
+  it("draws revenue, gross profit and net profit a line each when the P&L has a column per month, and its table reads the same figures; axe finds nothing", async () => {
+    const months = [
+      { key: "2026-09", from: "2026-09-01", to: "2026-09-30" },
+      { key: "2026-10", from: "2026-10-01", to: "2026-10-31" },
+      { key: "total", from: "2026-09-01", to: "2026-10-31" },
+    ];
+    const byMonth: Statement = {
+      ...pl,
+      from: "2026-09-01",
+      columns: months,
+      blocks: [
+        { key: "revenue", title: "Revenue", measure: false, totals: [m("4000.00"), m("5000.00"), m("9000.00")], percents: ["", "", ""], groups: [] },
+        { key: "gross_profit", title: "Gross profit", measure: true, totals: [m("3000.00"), m("4000.00"), m("7000.00")], percents: ["", "", ""], groups: [] },
+        { key: "net_profit", title: "Net profit", measure: true, totals: [m("-500.00"), m("3190.00"), m("2690.00")], percents: ["", "", ""], groups: [] },
+      ],
+    };
+    answer({ "GET /v1/periods": { status: 200, body: { items: periods } }, "GET /v1/reports/statements/pl": { status: 200, body: byMonth } });
+    renderPage(FinancialStatement, { path: "/reports/statements/pl", route: "/reports/statements/$kind", session: accountant, mode: "expert" });
+    expect(screen.queryByRole("img", { name: /The trend, month by month/ })).toBeNull(); // a single column draws no trend
+    fireEvent.click(await screen.findByLabelText("A column per month"));
+    const plot = await screen.findByRole("img", { name: /The trend, month by month\. Net profit went from −500\.00 in Sept 2026 to 3,190\.00 in Oct 2026\./ });
+    expect(plot).toBeTruthy();
+    await vi.waitFor(() => expect(drawn.option).not.toBeNull());
+    expect(drawn.option!.series.map((x) => [x.name, x.data])).toEqual([
+      ["Revenue", [4000, 5000]],
+      ["Gross profit", [3000, 4000]],
+      ["Net profit", [-500, 3190]],
+    ]);
+    await noViolations(document.body);
+    fireEvent.click(screen.getByRole("radio", { name: "Table" }));
+    const table = screen.getByRole("table", { name: "The trend, month by month" });
+    expect(within(table).getAllByRole("row").map((r) => r.textContent)).toEqual([
+      "MonthRevenueGross profitNet profit",
+      "Sept 20264,000.003,000.00−500.00",
+      "Oct 20265,000.004,000.003,190.00",
+    ]);
+  });
+});
+
 // req: FR-RPT-02
 describe("the statements' periods", () => {
   it("runs this month, last month, the year to date and the financial years from the books' periods", () => {

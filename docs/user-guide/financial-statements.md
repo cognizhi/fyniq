@@ -30,7 +30,9 @@ mode, **Trial balance**.
 - The balance sheet and the trial balance are at the end of the last month. The balance sheet also
   shows how equity moved over the months chosen.
 - In Expert mode, **Compare with** adds the period before or the same months a year earlier, and
-  **A column per month** shows each month apart.
+  **A column per month** shows each month apart. On the profit and loss, a chart then draws revenue,
+  gross profit and net profit a line each, month by month; **Table** shows its figures, and **PNG**
+  and **CSV** download it.
 
 While the last month is not closed, a note says its figures can still change.
 

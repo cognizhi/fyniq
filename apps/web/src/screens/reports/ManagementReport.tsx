@@ -6,6 +6,7 @@ import { api } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
 import { ReviewBanner } from "../../components/ReviewBanner";
+import { Chart } from "../../components/chart/Chart";
 import { formatAmount } from "../../format/amount";
 import { date } from "../../format/date";
 import { helpText } from "../../i18n";
@@ -30,7 +31,7 @@ const kinds = Object.keys(reports) as ManagementKind[];
 // ManagementReport is Reports › Management (docs/design/screens ManagementReport; FR-RPT-03, FR-RPT-08): sales by
 // customer and by item, spend by supplier and the top expenses for a run of months, each row with its share of the
 // total, read at one ledger revision. Who owes us and whom we owe live with sales and purchases; an expense opens its
-// general ledger lines (FR-UX-04). The chart of the top expenses arrives with the charts (p1-reports 5.3).
+// general ledger lines (FR-UX-04). The top expenses are also drawn as bars (p1-reports 5.3).
 export function ManagementReport() {
   const id = useId();
   const { report } = useParams({ strict: false }) as { report: ManagementKind };
@@ -119,6 +120,19 @@ export function ManagementReport() {
       {data.error && <Refusal problem={problemOf(data.error)} title={`The ${about.name.toLowerCase()} could not be shown`} />}
       {data.isPending && run !== null && <div className="fy-skeleton h-40" aria-hidden="true" />}
       {s && s.rows.length === 0 && <p className="fy-secondary">Nothing in these months.</p>}
+      {s && report === "top-expenses" && s.rows.length > 0 && (
+        <Chart
+          title="The largest expenses"
+          summary={`${s.rows[0]!.name} is the largest expense, ${formatAmount(s.rows[0]!.amount.amount)} ${s.currency}${s.rows[0]!.share ? `, ${s.rows[0]!.share}% of the total` : ""}.`}
+          form="bar-horizontal"
+          label="Account"
+          categories={s.rows.map((r) => r.name)}
+          series={[{ key: "expenses", name: "Expenses", values: s.rows.map((r) => r.amount.amount) }]}
+          unit={s.currency}
+          file={`top-expenses-${s.from.slice(0, 7)}-to-${s.to.slice(0, 7)}`}
+          height={Math.max(160, 36 * s.rows.length + 48)}
+        />
+      )}
       {s && s.rows.length > 0 && (
         <div className="fy-card">
           <div className="fy-tablewrap">
