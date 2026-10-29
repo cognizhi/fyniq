@@ -28,7 +28,7 @@ func october() Month {
 	return Month{Revenue: m("10000.00"), GrossProfit: m("8000.00"), EBITDA: m("2000.00"), NetProfit: m("1500.00"), Subscription: ptr(m("9000.00")),
 		SM: m("3000.00"), RD: m("2000.00"), GA: m("1000.00"), Costs: m("8000.00"), NetBurn: m("4000.00"), Cash: m("120000.00"),
 		Receivables: m("15000.00"), Payables: m("6000.00"), CurrentAssets: m("140000.00"), CurrentLiabilities: m("20000.00"),
-		TotalLiabilities: m("30000.00"), Equity: m("110000.00"), Counts: &Counts{Paying: 10, New: 2, Lost: 1, Headcount: ptr(int64(8)), HasCustomers: true}}
+		TotalLiabilities: m("30000.00"), Equity: m("110000.00"), NetProfitYTD: m("4500.00"), Counts: &Counts{Paying: 10, New: 2, Lost: 1, Headcount: ptr(int64(8)), HasCustomers: true}}
 }
 
 func shown(vs []Value) map[string]string {
@@ -61,6 +61,7 @@ func TestTheKPIsWorkedByHand(t *testing.T) {
 	sep.NetBurn, sep.Revenue, sep.Costs, sep.Subscription = m("3000.00"), m("9000.00"), m("7000.00"), ptr(m("8000.00"))
 	got := shown(Compute([]Month{aug, sep, oct}, &sep, sgd))
 	want := map[string]string{
+		"cash": "120000.00", "revenue": "10000.00", "net_profit_ytd": "4500.00", "owed_to_us": "15000.00", "owed_by_us": "6000.00",
 		"booked_mrr": "9000.00", "contracted_mrr": "— no subscription data", "arr": "108000.00", "revenue_growth": "11.1",
 		"gross_margin": "80.0", "ebitda_margin": "20.0", "net_margin": "15.0", "spend_sm": "3000.00", "spend_rd": "2000.00",
 		"spend_ga": "1000.00", "net_burn": "4000.00", "runway": "40.0", "arpa": "900.00", "churn": "11.1", "cac": "1500.00",

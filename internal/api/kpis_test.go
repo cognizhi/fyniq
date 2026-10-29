@@ -26,7 +26,8 @@ import (
 // equity 93,900.00. With 5 paying customers, 1 new and none lost, and 4 people entered for November:
 // ARPA 1,000.00; churn 0.0%, so the LTV is unbounded; CAC 1,000.00; payback 1,000 ÷ 900 = 1.1 months; runway
 // 92,500 ÷ 3,750 = 24.7 months; burn multiple 2,500 ÷ 12,000 = 0.2; DSO 2,000 ÷ (5,000 ÷ 30) = 12.0 days; DPO 600 ÷
-// (8,050 ÷ 30) = 2.2 days. October had no counts: its customer KPIs have none.
+// (8,050 ÷ 30) = 2.2 days; the year to date's net profit, October's and November's, -6,100.00. October had no
+// counts: its customer KPIs have none.
 // req: FR-KPI-02
 // req: FR-KPI-03
 // req: RND-KPI
@@ -121,6 +122,7 @@ func TestKPIsThroughTheAPI(t *testing.T) {
 		}
 	}
 	for key, want := range map[string]string{
+		"cash": "92500.00", "revenue": "6000.00", "net_profit_ytd": "-6100.00", "owed_to_us": "2000.00", "owed_by_us": "600.00",
 		"booked_mrr": "5000.00", "arr": "60000.00", "revenue_growth": "50.0", "gross_margin": "90.0", "ebitda_margin": "-26.7", "net_margin": "-26.7",
 		"spend_sm": "1000.00", "spend_rd": "0.00", "spend_ga": "6000.00", "net_burn": "2500.00", "runway": "24.7", "arpa": "1000.00", "churn": "0.0",
 		"cac": "1000.00", "ltv": "— no customers lost, so a lifetime is not bounded", "cac_payback": "1.1", "burn_multiple": "0.2",
