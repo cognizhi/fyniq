@@ -732,6 +732,18 @@
       "label": "Close a month",
       "tooltip": "Run the close checks, then another founder attests and closes the month, which then refuses every posting."
     },
+    "checks.overview": {
+      "label": "Books health",
+      "tooltip": "Every check of the books in one place: OK, to review, blocking the close, due, or not assessed for want of an input, each with what it found and who owns it."
+    },
+    "checks.run": {
+      "label": "Run all checks now",
+      "tooltip": "Run every check now instead of waiting for the next change or the night's run. At most once a minute."
+    },
+    "checks.owner": {
+      "label": "Name the owner",
+      "tooltip": "Name the person who looks into what this check finds, instead of the role the catalogue gives it. Owners and Controllers only."
+    },
     "close.run-checks": {
       "label": "Run the checks",
       "tooltip": "Check the month can close, recording the ledger as the checks find it. Another founder attests them."
