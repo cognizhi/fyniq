@@ -1,7 +1,8 @@
 // Package service is the render service's one operation (PRD-001 §12.3, rev 0.96; the owner's decision of 23 Oct
 // 2026): a private service that compiles a template version and a document's data to PDF for the api (previews and a
-// publication's test documents) and the worker (issued documents). It accepts only its callers' tokens, holds no
-// database role and no secret, and checks the template again before it lays anything out (FR-TPL-02).
+// publication's test documents) and the worker (issued documents), and a report the api laid out, such as a financial
+// statement (FR-RPT-05). It accepts only its callers' tokens, holds no database role and no secret, and checks the
+// template, or the report's bounds, again before it lays anything out (FR-TPL-02).
 package service
 
 import (
@@ -70,15 +71,30 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		reply(w, http.StatusBadRequest, render.Problem{Code: render.CodeRequest, Message: "the request names no creation time"})
 		return
 	}
-	if ps := doctemplate.Check(doctemplate.KindDocument, in.DocumentType, in.Content); len(ps) > 0 {
-		reply(w, http.StatusUnprocessableEntity, render.Problem{Code: render.CodeTemplate, Message: "the template breaks its rules", Errors: ps})
-		return
-	}
-	in.Data.Logo = len(in.Logo) > 0
-	layout, err := render.Build(in.DocumentType, in.Content, in.Data)
-	if err != nil {
-		reply(w, http.StatusUnprocessableEntity, render.Problem{Code: render.CodeRequest, Message: err.Error()})
-		return
+	x := typst.Input{Logo: in.Logo, Created: in.Created.UTC()}
+	if in.Report != nil {
+		// A report is laid out by its caller: it names no document type, and has no particulars to find.
+		if in.DocumentType != "" || len(in.Logo) > 0 || in.Check {
+			reply(w, http.StatusBadRequest, render.Problem{Code: render.CodeRequest, Message: "a report names no document type, logo or particulars check"})
+			return
+		}
+		if err := in.Report.Check(); err != nil {
+			reply(w, http.StatusUnprocessableEntity, render.Problem{Code: render.CodeRequest, Message: err.Error()})
+			return
+		}
+		x.Report = in.Report
+	} else {
+		if ps := doctemplate.Check(doctemplate.KindDocument, in.DocumentType, in.Content); len(ps) > 0 {
+			reply(w, http.StatusUnprocessableEntity, render.Problem{Code: render.CodeTemplate, Message: "the template breaks its rules", Errors: ps})
+			return
+		}
+		in.Data.Logo = len(in.Logo) > 0
+		layout, err := render.Build(in.DocumentType, in.Content, in.Data)
+		if err != nil {
+			reply(w, http.StatusUnprocessableEntity, render.Problem{Code: render.CodeRequest, Message: err.Error()})
+			return
+		}
+		x.Layout = layout
 	}
 	select {
 	case h.slots <- struct{}{}:
@@ -90,7 +106,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		reply(w, http.StatusServiceUnavailable, render.Problem{Code: render.CodeBusy, Message: "every compile slot is taken"})
 		return
 	}
-	out, err := h.render(r.Context(), typst.Input{Layout: layout, Logo: in.Logo, Created: in.Created.UTC()}, in)
+	out, err := h.render(r.Context(), x, in)
 	if err != nil {
 		if errors.Is(r.Context().Err(), context.Canceled) {
 			return

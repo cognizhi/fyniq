@@ -104,3 +104,36 @@ func TestTheRenderServiceRendersForItsCallers(t *testing.T) {
 		t.Errorf("no creation time: %d", w.Code)
 	}
 }
+
+// A report its caller laid out renders without a template, within its bounds, and names nothing of a document.
+// req: FR-RPT-05
+func TestTheRenderServiceRendersAReport(t *testing.T) {
+	c, err := typst.New(os.Getenv("FYNIQ_TYPST"), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := New(c, tokens{})
+	report := render.Report{Title: "Balance sheet", Author: "Cognizhi Pte Ltd", Lines: []string{"At 31 October 2026"}, Label: "SGD", Columns: []string{"Oct 2026"},
+		Rows: []render.ReportRow{{Kind: render.RowSection, Label: "Current assets"}, {Kind: render.RowLine, Code: "1010", Label: "Bank", Cells: []string{"1,000.00"}},
+			{Kind: render.RowTotal, Label: "Total current assets", Cells: []string{"1,000.00"}}}, Footer: "ledger revision 7"}
+	req := render.Request{Report: &report, Created: time.Date(2026, 10, 31, 9, 0, 0, 0, time.UTC)}
+	w, _ := call(t, h, "ok", req)
+	var res render.Response
+	if err := json.Unmarshal(w.Body.Bytes(), &res); w.Code != http.StatusOK || err != nil || !bytes.HasPrefix(res.PDF, []byte("%PDF-")) || len(res.SHA256) != 64 {
+		t.Fatalf("a report: %d %s", w.Code, w.Body.String())
+	}
+	both := req
+	both.DocumentType = doctemplate.Invoice
+	if w, out := call(t, h, "ok", both); w.Code != http.StatusBadRequest || out["code"] != render.CodeRequest {
+		t.Errorf("a report that names a document type: %d %v", w.Code, out)
+	}
+	short := report
+	short.Rows = append(slices.Clone(report.Rows), render.ReportRow{Kind: render.RowLine, Label: "Cash", Cells: []string{"1", "2"}})
+	if w, out := call(t, h, "ok", render.Request{Report: &short, Created: req.Created}); w.Code != http.StatusUnprocessableEntity || out["code"] != render.CodeRequest ||
+		!strings.Contains(out["message"].(string), "row 4 has 2 figures for 1 columns") {
+		t.Errorf("a row with a figure too many: %d %v", w.Code, out)
+	}
+	if w, _ := call(t, h, "", req); w.Code != http.StatusUnauthorized {
+		t.Errorf("a report without a token: %d", w.Code)
+	}
+}

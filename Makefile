@@ -178,9 +178,11 @@ scan-waivers: ## The scan waivers are well formed, and the scan, image and infra
 	@python3 scripts/images.py self-test
 	@python3 scripts/infra.py self-test
 
-check-tokens: ## Design tokens (Fyniq and Nemura) meet WCAG contrast in all four themes (QA-UI-03)
+check-tokens: ## Design tokens (Fyniq and Nemura) meet WCAG contrast in all four themes (QA-UI-03); the chart palette passes the dataviz checks (FR-VIZ-07)
 	@python3 $(DESIGN)/scripts/check_contrast.py
 	@python3 $(DESIGN)/scripts/check_contrast.py --tokens docs/design-system/nemura/tokens.css
+	@python3 $(DESIGN)/scripts/check_palette.py
+	@python3 $(DESIGN)/scripts/check_palette.py --self-test
 
 check-config: ## Release configuration is valid and VERSION matches the manifest
 	@python3 -m json.tool release-please-config.json > /dev/null

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The months with counts entered, earliest first.",
+      "items": {
+        "$ref": "KPICountsOut.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "The cursor of the next page; none on the last.",
+      "examples": [
+        "eyJhZnRlciI6IjIwMjYtMDUifQ"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "KPICountsList",
+  "type": "object"
+}

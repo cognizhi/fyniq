@@ -257,3 +257,20 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-28] compile | docs/user-guide/periods-and-close.md → accounting.periods (the close's warning for accounts missing from the balance sheet, p1-reports)
 
 ## [2026-10-28] compile | docs/user-guide/periods-and-close.md → accounting.periods (the close's cash flow and equity checks, p1-reports)
+
+## [2026-10-28] compile | docs/user-guide/financial-statements.md → reports.statements (new: the statements' screens, p1-reports task 2.4); reports.general-ledger links it
+
+## [2026-10-29] compile | docs/user-guide/financial-statements.md → reports.statements (export a statement, p1-reports task 3.1)
+
+## [2026-10-29] compile | docs/user-guide/financial-statements.md → reports.statements (accountant exports in the background, p1-reports tasks 3.3, 3.4)
+
+## [2026-10-29] compile | docs/user-guide/financial-statements.md → reports.statements (the export dialog: a statement's PDF beside Excel and CSV; Ask again for an expired export)
+## [2026-10-29] compile | docs/user-guide/banking.md → banking.auto-reconciled (a batch's payment reconciles by itself when the line names the batch, rev 0.160); the other banking pages re-hashed, unchanged
+
+## [2026-10-29] compile | docs/user-guide/payment-batches.md → purchases.payment-batches (Send again for a failed remittance advice; a batch's payment matched by itself, rev 0.160)
+
+## [2026-10-29] compile | docs/user-guide/management-reports.md → reports.management (new: the management reports, who sees them); docs/user-guide/financial-statements.md → reports.statements (Find a report lists the management reports)
+
+## [2026-10-29] compile | financial-statements.md → reports.statements, management-reports.md → reports.management (the P&L's monthly trend and the top expenses drawn as charts, p1-reports 5.3)
+
+## [2026-10-29] compile | reports.kpis from docs/user-guide/kpis.md (new); home.overview recompiled for the pulse card, tiles and charts

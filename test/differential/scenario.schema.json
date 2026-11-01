@@ -36,8 +36,60 @@
           "group": {"description": "A group (parent) account cannot be posted to (INV-04).", "type": "boolean"},
           "active": {"type": "boolean"},
           "role": {
-            "description": "Optional. \"share-capital\" marks an account a manual journal may not post to (INV-13, PRD-001 rev 0.24), such as 3010 and 3020 in the default chart.",
-            "enum": ["share-capital"]
+            "description": "Optional. \"share-capital\" marks an account a manual journal may not post to (INV-13, PRD-001 rev 0.24), such as 3010 and 3020 in the default chart. The statements read three more (FR-RPT-01 rev 0.159): \"retained-earnings\" (an equity account, 3100), \"depreciation\" (an expense account, 6610) and \"income-tax-expense\" (an expense account, 8010); a chart has at most one account with each of these three.",
+            "enum": ["share-capital", "retained-earnings", "depreciation", "income-tax-expense"]
+          },
+          "report_group": {
+            "description": "Optional (FR-COA-02): the line a statement shows the account under. An account without one is shown under its code.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "function": {
+            "description": "Optional (FR-COA-02): places a revenue or expense account in the P&L (README, \"Statements\"). Ignored on balance-sheet accounts.",
+            "enum": ["COGS", "R&D", "S&M", "G&A", "Other"]
+          },
+          "cash_flow_line": {
+            "description": "Optional (FR-COA-02): places a balance-sheet account in the balance sheet and the cash flow; the standard chart's set is listed in README, \"Statements\". Ignored on revenue and expense accounts.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        }
+      }
+    },
+    "statements": {
+      "description": "Optional. true asks both sides for every month's statements (FR-RPT-01, README \"Statements\"); the chart then needs an account with the role retained-earnings.",
+      "const": true
+    },
+    "kpis": {
+      "description": "Optional, with statements true. Asks both sides for every stated month's KPIs (FR-KPI-02, README \"KPIs\").",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["year_start_month"],
+      "properties": {
+        "year_start_month": {"description": "The month a financial year starts (1 to 12): three-month averages stay inside one year.", "type": "integer", "minimum": 1, "maximum": 12},
+        "counts": {
+          "description": "Month -> the counts entered for it (rev 0.161): the three customer counts together, headcount on its own.",
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[0-9]{4}-(0[1-9]|1[0-2])$": {
+              "type": "object",
+              "additionalProperties": false,
+              "minProperties": 1,
+              "dependentRequired": {
+                "paying_customers": ["new_customers", "customers_lost"],
+                "new_customers": ["paying_customers", "customers_lost"],
+                "customers_lost": ["paying_customers", "new_customers"]
+              },
+              "properties": {
+                "paying_customers": {"$ref": "#/$defs/count"},
+                "new_customers": {"$ref": "#/$defs/count"},
+                "customers_lost": {"$ref": "#/$defs/count"},
+                "headcount": {"$ref": "#/$defs/count"}
+              }
+            }
           }
         }
       }
@@ -68,6 +120,7 @@
   },
   "$defs": {
     "currencyCode": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "count": {"description": "A whole number entered for a month (FR-KPI-02 rev 0.161).", "type": "integer", "minimum": 0, "maximum": 1000000000},
     "accountCode": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$"},
     "date": {
       "description": "A calendar date, YYYY-MM-DD; an impossible day (2026-02-30) makes the scenario invalid.",

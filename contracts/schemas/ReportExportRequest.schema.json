@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "default": "xlsx",
+      "description": "csv: the rows, amounts as plain decimals with an ASCII minus; xlsx: a workbook, amounts as number cells. Left out, xlsx.",
+      "enum": [
+        "csv",
+        "xlsx"
+      ],
+      "examples": [
+        "xlsx"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The first day: needed for general_ledger and journals, which run over a range.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "report": {
+      "description": "general_ledger: every account's lines over the range with the running balance; trial_balance: every account's balance at the end of the month that holds to; journals: every entry posted over the range, a row per line; fixed_assets: the register's cost, accumulated depreciation and net book value at to; receivables and payables: each open document and credit by customer or supplier at to.",
+      "enum": [
+        "general_ledger",
+        "trial_balance",
+        "journals",
+        "fixed_assets",
+        "receivables",
+        "payables"
+      ],
+      "examples": [
+        "general_ledger"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "The last day of the range, or the day the report is as at.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "report",
+    "to"
+  ],
+  "title": "ReportExportRequest",
+  "type": "object"
+}

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { Ban, CircleCheck, CircleX, Download, Hourglass, Mail, MailX, Send, Trash2, TriangleAlert, Undo2, UserCheck } from "lucide-react";
+import { Ban, CircleCheck, CircleX, Download, Hourglass, Mail, MailX, RotateCcw, Send, Trash2, TriangleAlert, Undo2, UserCheck } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -38,7 +38,7 @@ function Checks({ list }: { list: Check[] }) {
 
 // PaymentState is a payment's state in words: before release, ready, held by a change of its payee's account, or blocked
 // by its items' checks; after, paid, waiting for the bank's statement line, or rejected; and a supplier's remittance.
-function PaymentState({ p, released }: { p: Payment; released: boolean }) {
+function PaymentState({ p, released, onAgain }: { p: Payment; released: boolean; onAgain?: (p: Payment) => void }) {
   if (released) {
     return (
       <span className="fy-row fy-row--wrap gap-2">
@@ -65,9 +65,23 @@ function PaymentState({ p, released }: { p: Payment; released: boolean }) {
           </span>
         )}
         {p.remittance === "failed" && (
-          <span className="fy-chip fy-chip--warning" title="Sending it gave up. Tell the supplier of the payment another way.">
-            <Icon of={MailX} />
-            Remittance not sent
+          <>
+            <span className="fy-chip fy-chip--warning" title="Sending it gave up. Send it again, or tell the supplier of the payment another way.">
+              <Icon of={MailX} />
+              Remittance not sent
+            </span>
+            {onAgain && (
+              <Button variant="secondary" size="sm" onClick={() => onAgain(p)} aria-label={`Send the remittance advice to ${p.payee.name} again`}>
+                <Icon of={RotateCcw} />
+                Send again
+              </Button>
+            )}
+          </>
+        )}
+        {p.remittance === "queued" && (
+          <span className="fy-chip fy-chip--neutral">
+            <Icon of={Hourglass} />
+            Remittance being sent
           </span>
         )}
         {p.remittance === "no_email" && (
@@ -162,6 +176,67 @@ function CancelBatch({ open, batch, etag, onClose, onDone }: { open: boolean; ba
   );
 }
 
+// SendAgain sends a supplier's failed remittance advice once more, with a reason (FR-BNK-12, rev 0.160).
+function SendAgain({ batch, payment, onClose, onDone }: { batch: Batch; payment: Payment; onClose: () => void; onDone: (what: string) => void }) {
+  const id = useId();
+  const h = helpText("batch.remittance-again");
+  const [reason, setReason] = useState("");
+  const [missing, setMissing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const run = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!reason.trim()) return setMissing(true);
+    setBusy(true);
+    setProblem(null);
+    const out = await api.POST("/v1/payment-batches/{batch_id}/payments/{payment_id}/remittance-again", {
+      params: { path: { batch_id: batch.id, payment_id: payment.payment_id ?? "" }, header: { "Idempotency-Key": newKey() } },
+      body: { reason: reason.trim() },
+    });
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    onDone(`Sending the remittance advice to ${payment.payee.name} again.`);
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()} dismissible={!busy} eyebrow={batchName(batch)} title={h.label} description={h.tooltip}>
+      {problem && <Refusal problem={problem} title="The remittance advice was not sent again" />}
+      <form className="fy-stack fy-stack--3" onSubmit={(e) => void run(e)} noValidate>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-reason`}>
+            Why it is sent again
+          </label>
+          <textarea
+            className="fy-textarea"
+            id={`${id}-reason`}
+            value={reason}
+            maxLength={500}
+            onChange={(e) => {
+              setReason(e.target.value);
+              setMissing(false);
+            }}
+            aria-invalid={missing || undefined}
+            aria-describedby={missing ? `${id}-reason-error` : undefined}
+          />
+          {missing && (
+            <span className="fy-error" id={`${id}-reason-error`}>
+              Say why: the audit trail keeps the reason.
+            </span>
+          )}
+        </div>
+        <div className="fy-row justify-end gap-2">
+          <Button variant="ghost" type="button" onClick={onClose} disabled={busy}>
+            Not now
+          </Button>
+          <Button variant="primary" type="submit" disabled={busy}>
+            <Icon of={RotateCcw} />
+            {h.label}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
 // save keeps a file the browser downloads: the payment list, from its base64.
 function save(name: string, type: string, base64: string) {
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
@@ -190,6 +265,7 @@ export function PaymentBatchPage() {
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [failed, setFailed] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [resending, setResending] = useState<Payment | null>(null);
   const [file, setFile] = useState<{ name: string; sha256: string } | null>(null);
   const ask = helpText("batch.ask");
   const again = helpText("batch.reapprove");
@@ -382,7 +458,7 @@ export function PaymentBatchPage() {
                     {formatAmount(p.amount.amount)}
                   </td>
                   <td data-card="status">
-                    <PaymentState p={p} released={released} />
+                    <PaymentState p={p} released={released} onAgain={prepares ? setResending : undefined} />
                   </td>
                 </tr>
               ))}
@@ -415,6 +491,18 @@ export function PaymentBatchPage() {
         </section>
       )}
 
+      {resending && (
+        <SendAgain
+          batch={b}
+          payment={resending}
+          onClose={() => setResending(null)}
+          onDone={(what) => {
+            setResending(null);
+            setStatus(what);
+            void refresh();
+          }}
+        />
+      )}
       {cancelling && (
         <CancelBatch
           open

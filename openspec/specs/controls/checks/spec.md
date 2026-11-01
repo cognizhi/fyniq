@@ -6,7 +6,7 @@ How Fyniq keeps the books trustworthy without a person re-checking every figure:
 ## Requirements
 
 ### Requirement: FR-CTL-01 Checks engine
-The system SHALL run a checks engine with every live workbook check (36, because C.1 #34 is retired) plus the new platform checks (Appendix C), each with a severity, a plain-English explanation, a drill-down to the offending items, and an owner.
+The system SHALL run a checks engine with every live workbook check (36, because C.1 #34 is retired) plus the new platform checks (Appendix C), each built with the module it guards and with a severity, a plain-English explanation, a drill-down to the offending items, and an owner: a role the catalogue names, or a person named instead.
 
 Source: PRD-001 §8.15 · Priority M · Phase P1
 
@@ -31,8 +31,25 @@ Source: PRD-001 §8.15 · Priority M · Phase P1
 - **WHEN** the nightly run starts
 - **THEN** every check runs
 
+#### Scenario: A person owns a check instead of its role
+- **WHEN** an Owner or Controller names a person as a check's owner
+- **THEN** the check names that person instead of the catalogue's role
+- **AND** the change is audited
+
+#### Scenario: A check without its input is not assessed
+- **WHEN** a check cannot run for want of an input
+- **THEN** it is not assessed and names the input it needs
+
+#### Scenario: A failed run counts as a problem
+- **WHEN** a check's run fails
+- **THEN** it says so and counts as ✖
+
+#### Scenario: A module's checks come with the module
+- **WHEN** the module a check guards is not built or not set up
+- **THEN** none of that module's checks is shown
+
 ### Requirement: FR-CTL-02 Books health score
-The system SHALL show a books health score on Home (OK / review / problems) with counts by severity.
+The system SHALL show a books health score on Home (OK / review / problems) with counts by severity: problems when any check finds ✖, review when any finds ⚠ or ⏰, OK otherwise.
 
 Source: PRD-001 §8.15 · Priority M · Phase P1
 
@@ -40,6 +57,16 @@ Source: PRD-001 §8.15 · Priority M · Phase P1
 - **WHEN** a user opens Home
 - **THEN** the books health score shows OK, review or problems
 - **AND** it shows the count of findings for each severity
+
+#### Scenario: The score follows the worst severity found
+- **WHEN** any check finds ✖
+- **THEN** the score is problems
+- **AND** when none finds ✖ but one finds ⚠ or ⏰, the score is review, and otherwise it is OK
+
+#### Scenario: Checks not assessed are counted beside the score
+- **WHEN** some checks are not assessed
+- **THEN** their count is shown beside the score
+- **AND** they do not change the score
 
 ### Requirement: FR-CTL-03 Audit trail explorer
 The system SHALL provide an audit trail explorer that filters the audit trail, shows before/after values, exports it and verifies its integrity (hash chain) on demand.
@@ -98,17 +125,23 @@ Source: PRD-001 §8.15 · Priority M · Phase P1
 - **THEN** its result is shown on Checks and in the Compliance Center
 
 ### Requirement: FR-CTL-06 User access review report
-The system SHALL produce a user access review report (who has what, last sign-in, SoD conflicts) with quarterly attestation.
+The system SHALL produce a user access review report (who has what, last sign-in, SoD conflicts) with quarterly attestation, on a page of its own, Settings › Access review, that also lists external users with their expiry and the integration clients.
 
 Source: PRD-001 §8.15 · Priority S · Phase P1
 
 #### Scenario: Report contents
 - **WHEN** the user access review report is produced
-- **THEN** it shows each user's access, their last sign-in and any SoD conflicts
+- **THEN** it shows each user's access, their last sign-in and any SoD conflicts, with what the team mode allows
+- **AND** it lists the external users with their expiry and the integration clients
 
 #### Scenario: Quarterly attestation
 - **WHEN** the access review for a quarter is completed
-- **THEN** it is attested for that quarter
+- **THEN** an Owner attests it for that quarter
+- **AND** the attestation is audited
+
+#### Scenario: An unattested quarter is flagged
+- **WHEN** a quarter ends without its attestation
+- **THEN** C.2 #7 flags the access review as overdue once 14 days have passed
 
 ### Requirement: C.1 #1 Debits equal credits
 The system SHALL check, on every relevant change and nightly, that debits equal credits in the books; a failure blocks the close.

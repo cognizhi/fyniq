@@ -2,7 +2,7 @@
   "help": {
     "home.overview": {
       "label": "Home",
-      "tooltip": "Where you start: who is signed in, and the way to every page you can use."
+      "tooltip": "Where you start: the company's cash, runway and the figures that matter this month, what waits for you, and while the company is new, the set-up steps."
     },
     "auth.sign-in": {
       "label": "Sign in",
@@ -303,6 +303,10 @@
     "batch.download": {
       "label": "Download payment list",
       "tooltip": "The list to key into your bank, with full account numbers, once you confirm it's you. Each download is recorded."
+    },
+    "batch.remittance-again": {
+      "label": "Send again",
+      "tooltip": "A supplier's remittance advice that gave up after several tries is sent once more, with a reason. It is still sent at most once."
     },
     "batch.cancel": {
       "label": "Cancel batch",
@@ -759,6 +763,86 @@
     "accounting.fixed-assets": {
       "label": "Fixed assets",
       "tooltip": "The assets the company owns and uses for more than a year: their cost, monthly depreciation and net book value, and their sales and write-offs."
+    },
+    "reports.index": {
+      "label": "Reports",
+      "tooltip": "The financial statements and the other reports, each with what it answers. Every figure opens to the lines behind it."
+    },
+    "reports.statement": {
+      "label": "Financial statements",
+      "tooltip": "The profit and loss, balance sheet, cash flow and trial balance for any run of months, with a comparison, read at one ledger revision."
+    },
+    "reports.management": {
+      "label": "Management reports",
+      "tooltip": "Sales by customer and by item, spend by supplier and the top expenses for any run of months, each with its share of the total, net of GST."
+    },
+    "reports.kpis": {
+      "label": "Start-up KPIs",
+      "tooltip": "A month's KPIs beside the month before: MRR, burn, runway, margins, churn, CAC and the rest, each with how it is worked out. The customer counts and headcount are entered here each month."
+    },
+    "reports.accountant-exports": {
+      "label": "Accountant exports",
+      "tooltip": "The general ledger, the trial balance, the journal entries, the fixed asset schedule, and the receivables and payables in detail, as Excel or CSV for the accountant or the auditor."
+    },
+    "statement.export": {
+      "label": "Export",
+      "tooltip": "Download the statement as shown, at its ledger revision: an Excel workbook with a data tab, a PDF to print, or CSV. Each export is recorded in the audit trail."
+    },
+    "statement.revenue": {
+      "label": "Revenue",
+      "tooltip": "What customers paid for in the period, before any costs."
+    },
+    "statement.cost_of_sales": {
+      "label": "Cost of sales",
+      "tooltip": "Costs that grow with each customer served, such as hosting, delivery contractors and card fees."
+    },
+    "statement.gross_profit": {
+      "label": "Gross profit",
+      "tooltip": "What is left from revenue after the costs of serving customers."
+    },
+    "statement.operating_expenses": {
+      "label": "Operating expenses",
+      "tooltip": "The cost of running the company: the team, the office, tools, marketing and advisers."
+    },
+    "statement.ebitda": {
+      "label": "EBITDA",
+      "tooltip": "The result before depreciation, interest and tax: how the business itself is doing."
+    },
+    "statement.net_profit": {
+      "label": "Net profit",
+      "tooltip": "The result after every cost and tax: a minus is a loss."
+    },
+    "statement.current_assets": {
+      "label": "Current assets",
+      "tooltip": "Cash, and what customers and others owe the company, which turns into cash within a year."
+    },
+    "statement.non_current_assets": {
+      "label": "Non-current assets",
+      "tooltip": "Equipment and software the company keeps for more than a year, less what has been used up."
+    },
+    "statement.current_liabilities": {
+      "label": "Current liabilities",
+      "tooltip": "What the company owes and pays within a year: suppliers, staff, tax and income received ahead."
+    },
+    "statement.borrowings": {
+      "label": "Borrowings",
+      "tooltip": "Loans to the company, from a director, a bank or investors."
+    },
+    "statement.equity": {
+      "label": "Equity",
+      "tooltip": "What is left for the shareholders: the capital they put in and the results so far."
+    },
+    "statement.net_operating": {
+      "label": "Net cash from operating activities",
+      "tooltip": "Cash the business itself brought in or used: the profit, less what customers still owe, plus what is still to pay."
+    },
+    "statement.net_investing": {
+      "label": "Net cash from investing activities",
+      "tooltip": "Cash spent on or received for equipment and other long-term assets."
+    },
+    "statement.net_financing": {
+      "label": "Net cash from financing activities",
+      "tooltip": "Cash from or to shareholders and lenders: shares issued, loans taken and repaid."
     },
     "accounting.schedules": {
       "label": "Schedules",

@@ -1,6 +1,7 @@
 package render
 
 import (
+	"errors"
 	"slices"
 	"strings"
 	"testing"
@@ -117,6 +118,26 @@ func TestTheLayoutFollowsTheTemplate(t *testing.T) {
 		t.Errorf("a simplified tax invoice requires %v", Required(doctemplate.Invoice, d))
 	}
 
+	// The footer leaves out a part whose fields are all empty: an organisation with no UEN shows its name alone, not a
+	// dangling "· UEN"; text without a field always stays.
+	d = Sample(doctemplate.Invoice)
+	if l, _ = Build(doctemplate.Invoice, doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice), d); find(l, "footer").Body != "Example Analytics Pte Ltd · UEN 202400001A" {
+		t.Errorf("the footer with a UEN: %q", find(l, "footer").Body)
+	}
+	delete(d.Fields, "organisation.uen")
+	if l, _ = Build(doctemplate.Invoice, doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice), d); find(l, "footer").Body != "Example Analytics Pte Ltd" {
+		t.Errorf("the footer without a UEN: %q", find(l, "footer").Body)
+	}
+	thanks := doctemplate.Default(doctemplate.KindDocument, doctemplate.Invoice)
+	for i := range thanks.Blocks {
+		if thanks.Blocks[i].Kind == doctemplate.BlockFooter {
+			thanks.Blocks[i].Texts[doctemplate.TextBody] = "Thank you · UEN {{organisation.uen}} · {{organisation.email}}"
+		}
+	}
+	if l, _ = Build(doctemplate.Invoice, thanks, d); find(l, "footer").Body != "Thank you · accounts@example.com" {
+		t.Errorf("a footer of text and fields: %q", find(l, "footer").Body)
+	}
+
 	// A purchase order is addressed to its supplier, whose details carry no customer particular.
 	l, _ = Build(doctemplate.PurchaseOrder, doctemplate.Default(doctemplate.KindDocument, doctemplate.PurchaseOrder), Sample(doctemplate.PurchaseOrder))
 	if r := find(l, "recipient"); r.Label != "Supplier" || r.Items[0] != (Item{Text: "Cloud Tools Pte Ltd"}) || Required(doctemplate.PurchaseOrder, Sample(doctemplate.PurchaseOrder)) != nil {
@@ -129,5 +150,34 @@ func TestTheLayoutFollowsTheTemplate(t *testing.T) {
 	}
 	if _, err := Build(doctemplate.Quote, doctemplate.Default(doctemplate.KindEmail, doctemplate.Quote), Sample(doctemplate.Quote)); err == nil {
 		t.Error("an email template was laid out as a document")
+	}
+}
+
+// A report is checked before the render service lays it out: a title, its columns and rows within bounds, each row of a
+// known kind with a figure per column, and no text longer than 500 characters.
+// req: FR-RPT-05
+func TestAReportIsCheckedBeforeItIsLaidOut(t *testing.T) {
+	good := func() Report {
+		return Report{Title: "Profit and loss", Columns: []string{"Oct 2026"}, Rows: []ReportRow{{Kind: RowSection, Label: "Revenue"},
+			{Kind: RowLine, Code: "4010", Label: "Sales", Cells: []string{"10.00"}}, {Kind: RowMeasure, Label: "Net profit", Cells: []string{"10.00"}}}}
+	}
+	if err := good().Check(); err != nil {
+		t.Fatal(err)
+	}
+	for name, change := range map[string]func(r *Report){
+		"no title":          func(r *Report) { r.Title = " " },
+		"no columns":        func(r *Report) { r.Columns = nil },
+		"too many columns":  func(r *Report) { r.Columns = make([]string, MaxReportColumns+1) },
+		"too many rows":     func(r *Report) { r.Rows = make([]ReportRow, MaxReportRows+1) },
+		"a section's cells": func(r *Report) { r.Rows[0].Cells = []string{"1"} },
+		"a missing figure":  func(r *Report) { r.Rows[1].Cells = nil },
+		"an unknown kind":   func(r *Report) { r.Rows[2].Kind = "chart" },
+		"a long note":       func(r *Report) { r.Notes = []ReportNote{{Title: "Checks", Items: []string{strings.Repeat("x", 501)}}} },
+	} {
+		r := good()
+		change(&r)
+		if err := r.Check(); !errors.Is(err, ErrReport) {
+			t.Errorf("%s: %v", name, err)
+		}
 	}
 }

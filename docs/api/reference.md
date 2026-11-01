@@ -3263,6 +3263,34 @@ Returns the file a release wrote, as it was written, in base64, with its SHA-256
   - `503` Service Unavailable: `PAYEE-15` Bank details cannot be kept here.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-15`, `PB-01`, `PB-20`
 
+### `POST /v1/payment-batches/{batch_id}/payments/{payment_id}/remittance-again`
+
+**Send a failed remittance advice again** (`sendRemittanceAgain`)
+
+Queues once more the remittance advice of a released batch's payment to a supplier whose advice gave up after its attempts (FR-BNK-12; the owner's decision of 29 Oct 2026, rev 0.160), for a person who can prepare batches. The worker renders and emails it as the first time, so a payment voided since, or one sent meanwhile, sends nothing, and a payment gets at most one advice. An advice sent, waiting for the match, queued or not wanted (no remittance email) is PB-24. Side effects: the job and an audit event of the resend, with the reason. Idempotent with Idempotency-Key; Prefer: return=preview checks it and queues nothing.
+
+- **Permission:** Create on Payment batches
+- **Parameters:**
+  - `batch_id` (path, required): The batch's ID.
+  - `payment_id` (path, required): The batch's payment to the supplier.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`RemittanceAgain`](../../contracts/schemas/RemittanceAgain.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PaymentBatch`](../../contracts/schemas/PaymentBatch.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PB-24` The remittance advice did not fail; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PB-24`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/payment-batches/{batch_id}/reapproval`
 
 **Ask for a payment batch's approval again** (`requestPaymentBatchReapproval`)
@@ -5594,7 +5622,7 @@ Money accounts, their statements and lines, and the rules that code them; a rule
 
 **List what the system reconciled** (`listAutoReconciliations`)
 
-The lines the system reconciled by itself that still stand, latest first, a page at a time (FR-BNK-14): exact matches, transfers and lines an approved rule categorised, each with its basis and rule. Undo one with unreconcileBankLine while its period is open; a weekly sample goes to the review log. Read-only.
+The lines the system reconciled by itself that still stand, latest first, a page at a time (FR-BNK-14): exact matches, a released batch's payments (rev 0.160), transfers and lines an approved rule categorised, each with its basis, rule or batch. Undo one with unreconcileBankLine while its period is open; a weekly sample goes to the review log. Read-only.
 
 - **Permission:** View on Bank transactions, categorise
 - **Parameters:**
@@ -5919,7 +5947,7 @@ Undoes what a line was reconciled to, with a reason, while its period is open (F
 
 **Reconcile now** (`autoReconcileBankLines`)
 
-Runs auto-reconcile over the waiting lines, one money account's or every account's, as the system principal and within the same limits as after an upload (FR-BNK-14; the owner's decision of 26 Oct 2026, rev 0.143): a transfer's missing side, the one open document a line names exactly, and approved auto-apply rules. Lines that arrive by feed in P1 wait for it. Each line posts in its own transaction, so one refusal never stops the others; what is left stays in the queue, counted by why. The person who asked is recorded as the one it acted for. Prefer: return=preview says what it would do and posts nothing.
+Runs auto-reconcile over the waiting lines, one money account's or every account's, as the system principal and within the same limits as after an upload (FR-BNK-14; the owner's decision of 26 Oct 2026, rev 0.143): a transfer's missing side, the one open document a line names exactly, the one payment of a released batch whose number the line names (rev 0.160), and approved auto-apply rules. Lines that arrive by feed in P1 wait for it. Each line posts in its own transaction, so one refusal never stops the others; what is left stays in the queue, counted by why. The person who asked is recorded as the one it acted for. Prefer: return=preview says what it would do and posts nothing.
 
 - **Permission:** Post on Bank transactions, categorise
 - **Parameters:**
@@ -8507,6 +8535,158 @@ Runs the period's month-end revaluation (FR-GL-04; PRD-001 rev 0.73, provisional
 
 Reports read from the ledger at one revision: the general ledger (FR-GL-11), and the statements as they arrive.
 
+### `GET /v1/kpi-inputs`
+
+**List the KPIs' entered counts** (`listKpiInputs`)
+
+The months' customer counts and headcount a person entered for the KPIs (FR-KPI-02, rev 0.161), earliest first, with who entered them and their version, a page at a time (FR-INT-10). Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards. A view of the reports limited to the board pack reads them; one limited to sales, purchases, payroll or a department is refused.
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `from` (query): The first month, YYYY-MM; left out, twelve months before to.
+  - `to` (query): The last month, YYYY-MM; left out, the month of the organisation's today.
+- **Responses:**
+  - `200` OK [`KPICountsList`](../../contracts/schemas/KPICountsList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `PUT /v1/kpi-inputs/{month}`
+
+**Enter a month's KPI counts** (`setKpiInput`)
+
+Enters a month's paying, new and lost customers (the three together, or none of them) and headcount, each a whole number from zero, for the KPIs that need them until subscription data (FR-KPI-04) and the payroll link exist (FR-KPI-02; the owner's decision of 29 Oct 2026, rev 0.161). A closed month's counts are corrected the same way: they are not ledger figures. Side effects: the month's counts at their next version and its audit event, with the counts before and after. Needs If-Match with the counts' ETag ("0" for a month without counts). Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Budgets, forecasts. A department's budget holder (C dept) does not enter the company's counts.
+- **Parameters:**
+  - `month` (path, required): The month, YYYY-MM.
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`KPICountsIn`](../../contracts/schemas/KPICountsIn.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`KPICountsOut`](../../contracts/schemas/KPICountsOut.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-KPI-01` A month's KPI counts change only as their next version; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-KPI-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/kpis`
+
+**Get the KPIs of a month** (`getKpis`)
+
+The workbook's KPI set for a month (FR-KPI-02), each with its definition, version, source, formula and date basis (FR-KPI-03), its value for the month and the month before: booked and contracted MRR and ARR, revenue growth, margins, spend by function, net burn, runway, ARPA, churn, CAC, LTV and its ratio, CAC payback, the burn multiple, the current and quick ratios, working capital, debt/equity, DSO, DPO, headcount and revenue per employee. Ledger figures are read through the statements at one ledger revision, which it returns (FR-RPT-08); customer counts and headcount are those a person entered for the month (rev 0.161), and the KPIs that use them say so. Each value is rounded by RND-KPI; a KPI that cannot be worked out has no value and says why, never 0. A month the books have no period for is REPORT-03, a later revision REPORT-04. Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards. A view of the reports limited to the board pack reads it; one limited to sales, purchases, payroll or a department is refused.
+- **Parameters:**
+  - `month` (query): The month, YYYY-MM; left out, the month of the organisation's today.
+  - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08); left out, the ledger as it stands.
+- **Responses:**
+  - `200` OK [`KPIs`](../../contracts/schemas/KPIs.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-03`, `REPORT-04`
+
+### `GET /v1/report-exports`
+
+**List my exports** (`listReportExports`)
+
+The caller's background exports, newest first, each with its status (FR-RPT-09), a page at a time (FR-INT-10). Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`ReportExportList`](../../contracts/schemas/ReportExportList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/report-exports`
+
+**Ask for an accountant export** (`requestReportExport`)
+
+Asks for one of the accountant exports (FR-RPT-10) as CSV or XLSX, which the worker prepares in the background (FR-RPT-09): the general ledger or the journal entries over a range of days, or the trial balance, the fixed asset schedule, or the receivables or payables in detail at a day. The answer is 202 with the export, pending; getReportExport says when it is ready, and the caller is notified. Its file is downloaded with getReportExportFile, by the caller only, until 24 hours after it is ready. Side effects: the export and its audit event, and the job. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.
+
+- **Permission:** View on Reports, dashboards
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ReportExportRequest`](../../contracts/schemas/ReportExportRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ReportExportOut`](../../contracts/schemas/ReportExportOut.schema.json)
+  - `202` Accepted [`ReportExportOut`](../../contracts/schemas/ReportExportOut.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-EXPORT-01` An export changes only from pending to ready or failed, and from ready to expired.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-EXPORT-01`
+
+### `GET /v1/report-exports/{export_id}`
+
+**Get one of my exports** (`getReportExport`)
+
+An export the caller asked for and its status: pending, ready with its file's name, hash and expiry, failed with why, or expired (FR-RPT-09). Another person's is REPORT-07. Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards
+- **Parameters:**
+  - `export_id` (path, required): The export.
+- **Responses:**
+  - `200` OK [`ReportExportOut`](../../contracts/schemas/ReportExportOut.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `REPORT-07` Another person's export.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `REPORT-07`
+
+### `GET /v1/report-exports/{export_id}/file`
+
+**Download one of my exports** (`getReportExportFile`)
+
+The file of a ready export the caller asked for, in base64 with its SHA-256 (FR-RPT-09). The caller's rights are checked again at each download, so a role taken away stops it at once. A pending or failed export is REPORT-05; one past its 24 hours is REPORT-06; another person's is REPORT-07. Side effects: an audit event of the download, with the file's hash. Never cached.
+
+- **Permission:** View on Reports, dashboards. Checked again at each download: a right taken away stops the download at once.
+- **Parameters:**
+  - `export_id` (path, required): The export.
+- **Responses:**
+  - `200` OK [`ReportFile`](../../contracts/schemas/ReportFile.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `REPORT-07` Another person's export.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `REPORT-05` The export is not ready.
+  - `410` Gone: `REPORT-06` The export has expired.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `REPORT-05`, `REPORT-06`, `REPORT-07`
+
 ### `GET /v1/reports/general-ledger`
 
 **Get the general ledger report** (`getGeneralLedger`)
@@ -8528,6 +8708,46 @@ The general ledger of one to 20 accounts over a range of dates, in the base curr
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `REPORT-01`, `REPORT-02`
 
+### `GET /v1/reports/sales-by-customer`
+
+**Get sales by customer** (`getSalesByCustomer`)
+
+The invoices and credit notes of the run by customer, largest first, each with its share and how many documents (FR-RPT-03). What the documents posted in the run earned or spent net of GST: their entries' lines on any account but the receivables, payables, GST, deposits, tax withheld and FX controls, revenue or cost spread over months counted in full when invoiced or billed. A void or an edit posts a reversal, which counts in the month it posts, as in the P&L. Money received or paid at the bank without an invoice or bill, and expense claims, are in the P&L and the top expenses, not here. Over a run of whole months (FR-RPT-02), every amount in the base currency, read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards. A view of the reports limited to sales reads it; one limited to purchases, payroll, a department or the board pack is refused.
+- **Parameters:**
+  - `from` (query): The run's first month, YYYY-MM; left out, the last month's.
+  - `to` (query): The run's last month, YYYY-MM; left out, the month of the organisation's today.
+  - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
+- **Responses:**
+  - `200` OK [`ManagementReport`](../../contracts/schemas/ManagementReport.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-03`, `REPORT-04`
+
+### `GET /v1/reports/sales-by-item`
+
+**Get sales by item** (`getSalesByItem`)
+
+The invoices' and credit notes' lines of the run by item, largest first, each with its share, the quantity sold net of credits and how many documents (FR-RPT-03); the lines without an item are one row. What the documents posted in the run earned or spent net of GST: their entries' lines on any account but the receivables, payables, GST, deposits, tax withheld and FX controls, revenue or cost spread over months counted in full when invoiced or billed. A void or an edit posts a reversal, which counts in the month it posts, as in the P&L. Money received or paid at the bank without an invoice or bill, and expense claims, are in the P&L and the top expenses, not here. Over a run of whole months (FR-RPT-02), every amount in the base currency, read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards. A view of the reports limited to sales reads it; one limited to purchases, payroll, a department or the board pack is refused.
+- **Parameters:**
+  - `from` (query): The run's first month, YYYY-MM; left out, the last month's.
+  - `to` (query): The run's last month, YYYY-MM; left out, the month of the organisation's today.
+  - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
+- **Responses:**
+  - `200` OK [`ManagementReport`](../../contracts/schemas/ManagementReport.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-03`, `REPORT-04`
+
 ### `GET /v1/reports/schedules`
 
 **Get the prepayment and deferral schedules** (`getSchedules`)
@@ -8547,6 +8767,26 @@ Every cost and income spread over months (FR-GL-03) as at a day: each spread lin
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
 
+### `GET /v1/reports/spend-by-supplier`
+
+**Get spend by supplier** (`getSpendBySupplier`)
+
+The bills and suppliers' credit notes of the run by supplier, largest first, each with its share and how many documents (FR-RPT-03). What the documents posted in the run earned or spent net of GST: their entries' lines on any account but the receivables, payables, GST, deposits, tax withheld and FX controls, revenue or cost spread over months counted in full when invoiced or billed. A void or an edit posts a reversal, which counts in the month it posts, as in the P&L. Money received or paid at the bank without an invoice or bill, and expense claims, are in the P&L and the top expenses, not here. Over a run of whole months (FR-RPT-02), every amount in the base currency, read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards. A view of the reports limited to purchases reads it; one limited to sales, payroll, a department or the board pack is refused.
+- **Parameters:**
+  - `from` (query): The run's first month, YYYY-MM; left out, the last month's.
+  - `to` (query): The run's last month, YYYY-MM; left out, the month of the organisation's today.
+  - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
+- **Responses:**
+  - `200` OK [`ManagementReport`](../../contracts/schemas/ManagementReport.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-03`, `REPORT-04`
+
 ### `GET /v1/reports/statements/{kind}`
 
 **Get a financial statement** (`getFinancialStatement`)
@@ -8563,6 +8803,51 @@ The profit and loss, the balance sheet, the cash flow or the trial balance (FR-R
   - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands.
 - **Responses:**
   - `200` OK [`FinancialStatement`](../../contracts/schemas/FinancialStatement.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-03`, `REPORT-04`
+
+### `GET /v1/reports/statements/{kind}/export`
+
+**Export a financial statement** (`exportFinancialStatement`)
+
+The statement getFinancialStatement gives for the same parameters, as a file (FR-RPT-05): CSV, the statement's rows with amounts as plain decimals and an ASCII minus; XLSX, a workbook with the statement, totals in bold, and a data tab of every account's figure in every column, amounts as number cells; or PDF, the statement to print from the render service, archival and accessible, with the organisation's name, the statements' title and the revision on every page. No text in any becomes a formula. Returned in base64 with its SHA-256 and the ledger revision its figures are read at (FR-RPT-08). A PDF the render service cannot make now is REPORT-08. Side effects: an audit event of the export with what was exported, its filters, rows and hash (FR-RPT-09). Never cached.
+
+- **Permission:** View on Reports, dashboards. A view of the reports limited to sales, purchases, payroll or a department is refused.
+- **Parameters:**
+  - `kind` (path, required): pl: the profit and loss; bs: the balance sheet; cf: the cash flow; tb: the trial balance.
+  - `from` (query): The run's first month, YYYY-MM; left out, the last month's. A balance sheet is at the last month's end, with the movement in equity over the run; a trial balance is at the last month's end.
+  - `to` (query): The run's last month, YYYY-MM; left out, the month of the organisation's today.
+  - `compare` (query): A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning.
+  - `columns` (query): total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative.
+  - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands.
+  - `format` (query): csv: the statement's rows, plain decimals with an ASCII minus; xlsx: a workbook with the statement and a data tab of every figure, amounts as number cells; pdf: the statement to print, archival (PDF/A-2a) and accessible (PDF/UA-1), with the revision on every page.
+- **Responses:**
+  - `200` OK [`ReportFile`](../../contracts/schemas/ReportFile.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `REPORT-08` The PDF could not be made now.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-03`, `REPORT-04`, `REPORT-08`
+
+### `GET /v1/reports/top-expenses`
+
+**Get the top expenses** (`getTopExpenses`)
+
+The P&L's expense accounts over the run, largest first: the top ten, and the rest as one row, each with its share of the expenses (FR-RPT-03). They are the P&L's figures, so they include what was paid at the bank and claimed. Over a run of whole months (FR-RPT-02), every amount in the base currency, read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards. A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
+- **Parameters:**
+  - `from` (query): The run's first month, YYYY-MM; left out, the last month's.
+  - `to` (query): The run's last month, YYYY-MM; left out, the month of the organisation's today.
+  - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
+- **Responses:**
+  - `200` OK [`ManagementReport`](../../contracts/schemas/ManagementReport.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
   - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger.

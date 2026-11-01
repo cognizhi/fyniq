@@ -8,7 +8,9 @@ import (
 	"encoding/hex"
 	"flag"
 	"os"
+	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -175,5 +177,94 @@ func TestPreviewPagesArePNGs(t *testing.T) {
 	pages, err := c.Pages(context.Background(), in)
 	if err != nil || len(pages) != 1 || !bytes.HasPrefix(pages[0], []byte("\x89PNG\r\n\x1a\n")) {
 		t.Fatalf("the pages: %d %v", len(pages), err)
+	}
+}
+
+// sampleReport is a statement as the api lays one out: a section, its accounts, a total and a measure, rows times over,
+// in columns columns, with a label that looks like Typst.
+func sampleReport(title string, columns, rows int) render.Report {
+	r := render.Report{Title: title, Author: "Cognizhi Pte Ltd", Lines: []string{"Management statements", "1 January 2026 to 31 December 2026", "Amounts in SGD"},
+		Label: "SGD", Footer: "Management statements · ledger revision 42 · Fyniq 0.30.0"}
+	cells := func(s string) []string {
+		out := make([]string, columns)
+		for i := range out {
+			out[i] = s
+		}
+		return out
+	}
+	for i := range columns {
+		r.Columns = append(r.Columns, time.Date(2026, time.Month(i%12+1), 1, 0, 0, 0, 0, time.UTC).Format("Jan 2006"))
+	}
+	for i := range rows {
+		r.Rows = append(r.Rows, render.ReportRow{Kind: render.RowSection, Label: "Operating expenses"},
+			render.ReportRow{Kind: render.RowLine, Code: "6010", Label: "Salaries", Cells: cells("12,345.67")},
+			render.ReportRow{Kind: render.RowLine, Code: "6020", Label: `#panic("ran") *bold* $x$`, Cells: cells(render.Minus + "1,234.50")},
+			render.ReportRow{Kind: render.RowSubtotal, Label: "General & administrative", Cells: cells("11,111.17")},
+			render.ReportRow{Kind: render.RowTotal, Label: "Total operating expenses", Cells: cells("11,111.17")},
+			render.ReportRow{Kind: render.RowMeasure, Label: "Operating profit " + strconv.Itoa(i+1), Cells: cells(render.Minus + "11,111.17")})
+	}
+	r.Notes = []render.ReportNote{{Title: "Checks", Items: []string{"The cash flow does not tie to the cash accounts: 1999 Unsorted has no cash-flow line"}}}
+	return r
+}
+
+// A report renders to PDF/A-2a and PDF/UA-1, the same bytes every time (snapshot hashes in testdata), portrait up to
+// five columns and landscape past them, over as many pages as its rows need; text that looks like Typst stays text.
+// req: FR-RPT-05
+func TestAReportRendersArchivalAndAccessible(t *testing.T) {
+	c := compiler(t)
+	golden := map[string]string{}
+	if b, err := os.ReadFile("testdata/report-sha256.golden"); err == nil {
+		for _, l := range strings.Split(strings.TrimSpace(string(b)), "\n") {
+			if name, sum, ok := strings.Cut(l, " "); ok {
+				golden[name] = sum
+			}
+		}
+	}
+	var lines []string
+	for _, x := range []struct {
+		name string
+		r    render.Report
+	}{{"balance-sheet", sampleReport("Balance sheet", 2, 3)}, {"profit-and-loss-by-month", sampleReport("Profit and loss", 13, 30)}} {
+		if err := x.r.Check(); err != nil {
+			t.Fatalf("%s: %v", x.name, err)
+		}
+		in := Input{Report: &x.r, Created: issued}
+		pdf, err := c.PDF(context.Background(), in)
+		if err != nil {
+			t.Fatalf("%s: %v", x.name, err)
+		}
+		again, err := c.PDF(context.Background(), in)
+		if err != nil || !bytes.Equal(pdf, again) {
+			t.Errorf("%s: two renders differ (%v)", x.name, err)
+		}
+		for _, want := range []string{"%PDF-", "<pdfaid:part>2</pdfaid:part>", "<pdfaid:conformance>A</pdfaid:conformance>", "<pdfuaid:part>1</pdfuaid:part>"} {
+			if !bytes.Contains(pdf, []byte(want)) {
+				t.Errorf("%s: the PDF lacks %s", x.name, want)
+			}
+		}
+		h := sha256.Sum256(pdf)
+		sum := hex.EncodeToString(h[:])
+		lines = append(lines, x.name+" "+sum)
+		if !*update && golden[x.name] != sum {
+			t.Errorf("%s: the PDF's SHA-256 is %s, not the snapshot's %s; check the PDF and run go test ./internal/render/typst -update", x.name, sum, golden[x.name])
+		}
+		pages, err := c.Pages(context.Background(), in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if (x.name == "balance-sheet") != (len(pages) == 1) {
+			t.Errorf("%s: %d pages", x.name, len(pages))
+		}
+		if *update { // to look at
+			_ = os.WriteFile(filepath.Join(os.TempDir(), "fyniq-"+x.name+".pdf"), pdf, 0o600)
+			for i, p := range pages {
+				_ = os.WriteFile(filepath.Join(os.TempDir(), "fyniq-"+x.name+"-"+strconv.Itoa(i+1)+".png"), p, 0o600)
+			}
+		}
+	}
+	if *update {
+		if err := os.WriteFile("testdata/report-sha256.golden", []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

@@ -2,6 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "batch_number": {
+      "description": "The payment batch, when the line matched one of its payments, which the line named (rev 0.160).",
+      "examples": [
+        "PB-0003"
+      ],
+      "type": "string"
+    },
     "line": {
       "$ref": "BankLine.schema.json",
       "description": "The line, with its match: its basis says how (exact, transfer or rule)."

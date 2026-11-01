@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "content_base64": {
+      "description": "The file, in base64.",
+      "examples": [
+        "UGF5ZWUsUGF5ZWUgdHlwZQ=="
+      ],
+      "type": "string"
+    },
+    "export_id": {
+      "description": "The export, as the audit trail records it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "file_name": {
+      "description": "The file's name.",
+      "examples": [
+        "profit-and-loss-2026-10.xlsx"
+      ],
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision its figures are read at (FR-RPT-08).",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "media_type": {
+      "description": "Its type.",
+      "examples": [
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      ],
+      "type": "string"
+    },
+    "rows": {
+      "description": "The rows of figures it holds.",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "sha256": {
+      "description": "The SHA-256 of the content, in hexadecimal, as the audit trail records it.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "size_bytes": {
+      "description": "Its size, in bytes.",
+      "examples": [
+        4096
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "export_id",
+    "file_name",
+    "media_type",
+    "sha256",
+    "size_bytes",
+    "rows",
+    "ledger_revision",
+    "content_base64"
+  ],
+  "title": "ReportFile",
+  "type": "object"
+}

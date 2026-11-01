@@ -266,6 +266,10 @@ type Policy struct {
 	// Unqualified operations need the right without a qualifier: a cell such as Reports' "V sales" or "V dept"
 	// grants it over part of the books only, which the operation does not narrow to (rev 0.52).
 	Unqualified bool
+	// Qualified are the qualifiers that grant an Unqualified operation all the same, because it reads only that part
+	// of the books: Reports' "V sales" reads the sales reports (p1-reports design D9). It never widens an operation
+	// that is not Unqualified.
+	Qualified []string
 }
 
 // The policies of the P0 endpoints. A cell's qualifier is carried, not enforced: the amount limit
@@ -417,6 +421,34 @@ var (
 	// of the reports, as the general ledger does.
 	GetFinancialStatement = Policy{Operation: "getFinancialStatement", Capability: Reports, Need: View, Unqualified: true,
 		Note: "A view of the reports limited to sales, purchases, payroll or a department is refused; the board pack's view of the P&L and balance sheet arrives with the board pack."}
+	// Exporting a statement reads what getting it does, and is audited (FR-RPT-09).
+	ExportFinancialStatement = Policy{Operation: "exportFinancialStatement", Capability: Reports, Need: View, Unqualified: true,
+		Note: "A view of the reports limited to sales, purchases, payroll or a department is refused."}
+	// The accountant exports in the background (FR-RPT-09, FR-RPT-10) read every account: an unqualified view of the reports.
+	// Each person sees and downloads their own exports only, which the API decides.
+	RequestReportExport = Policy{Operation: "requestReportExport", Capability: Reports, Need: View, Unqualified: true}
+	ListReportExports   = Policy{Operation: "listReportExports", Capability: Reports, Need: View, Unqualified: true}
+	GetReportExport     = Policy{Operation: "getReportExport", Capability: Reports, Need: View, Unqualified: true}
+	GetReportExportFile = Policy{Operation: "getReportExportFile", Capability: Reports, Need: View, Unqualified: true,
+		Note: "Checked again at each download: a right taken away stops the download at once."}
+	// The management reports (FR-RPT-03; p1-reports design D9): a view of the reports limited to sales reads the sales
+	// reports, and one limited to purchases the spend by supplier; the top expenses read the P&L, as the statements do.
+	GetSalesByCustomer = Policy{Operation: "getSalesByCustomer", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"sales"},
+		Note: "A view of the reports limited to sales reads it; one limited to purchases, payroll, a department or the board pack is refused."}
+	GetSalesByItem = Policy{Operation: "getSalesByItem", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"sales"},
+		Note: "A view of the reports limited to sales reads it; one limited to purchases, payroll, a department or the board pack is refused."}
+	GetSpendBySupplier = Policy{Operation: "getSpendBySupplier", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"purchases"},
+		Note: "A view of the reports limited to purchases reads it; one limited to sales, payroll, a department or the board pack is refused."}
+	GetTopExpenses = Policy{Operation: "getTopExpenses", Capability: Reports, Need: View, Unqualified: true,
+		Note: "A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused."}
+	// The KPIs (FR-KPI-02, p1-dashboard-kpis design D7) read every account, as the statements do; the board pack's view reads
+	// them too (Home's board viewer sees KPIs only). Their entered counts are planning inputs: "Budgets, forecasts" C.
+	GetKpis = Policy{Operation: "getKpis", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"},
+		Note: "A view of the reports limited to the board pack reads it; one limited to sales, purchases, payroll or a department is refused."}
+	ListKpiInputs = Policy{Operation: "listKpiInputs", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"},
+		Note: "A view of the reports limited to the board pack reads them; one limited to sales, purchases, payroll or a department is refused."}
+	SetKpiInput = Policy{Operation: "setKpiInput", Capability: Budgets, Need: Create, Unqualified: true,
+		Note: "A department's budget holder (C dept) does not enter the company's counts."}
 	GetPeriodClose = Policy{Operation: "getPeriodClose", Capability: PeriodClose, Need: View}
 	RunCloseChecks = Policy{Operation: "runCloseChecks", Capability: PeriodClose, Need: Create}
 	ClosePeriod    = Policy{Operation: "closePeriod", Capability: PeriodClose, Need: Approve,
@@ -588,7 +620,9 @@ var (
 	RequestPaymentBatchApproval   = Policy{Operation: "requestPaymentBatchApproval", Capability: PaymentBatches, Need: Create, Unqualified: true}
 	RequestPaymentBatchReapproval = Policy{Operation: "requestPaymentBatchReapproval", Capability: PaymentBatches, Need: Create, Unqualified: true}
 	CancelPaymentBatch            = Policy{Operation: "cancelPaymentBatch", Capability: PaymentBatches, Need: Create, Unqualified: true}
-	ReleasePaymentBatch           = Policy{Operation: "releasePaymentBatch", Capability: PaymentBatches, Need: Release, Unqualified: true,
+	// Sending a failed remittance advice again (FR-BNK-12, rev 0.160): who can prepare a batch; never the salaries' qualified cell.
+	SendRemittanceAgain = Policy{Operation: "sendRemittanceAgain", Capability: PaymentBatches, Need: Create, Unqualified: true}
+	ReleasePaymentBatch = Policy{Operation: "releasePaymentBatch", Capability: PaymentBatches, Need: Release, Unqualified: true,
 		Note: "A person stepped up in the last 5 minutes; in Standard mode never who prepared, asked for or approved the batch or a payee's account change (SOD-1, SOD-2)."}
 	GetPaymentBatchFile = Policy{Operation: "getPaymentBatchFile", Capability: PaymentBatches, Need: Release, Unqualified: true,
 		Note: "A person stepped up in the last 5 minutes; each download is audited."}
@@ -1011,7 +1045,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
-	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetSchedules, GetFinancialStatement, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
+	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetKpis, ListKpiInputs, SetKpiInput, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence, AddBillEvidence, ListBillEvidence, GetBillEvidence, RemoveBillEvidence,
@@ -1026,7 +1060,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
-	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, ReleasePaymentBatch, GetPaymentBatchFile,
+	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, SendRemittanceAgain, ReleasePaymentBatch, GetPaymentBatchFile,
 	GetMyBankDetails, CreateMyBankChange, GetMyBankChange, ReplaceMyBankChange, RequestMyBankChangeApproval, WithdrawMyBankChange, RevealMyBankAccount,
 	GetClaimantBankChange, RevealClaimantBankAccount, AddMyBankChangeEvidence, ListMyBankChangeEvidence, GetMyBankChangeEvidence,
 	RemoveMyBankChangeEvidence, ListClaimantBankChangeEvidence, GetClaimantBankChangeEvidence,
@@ -1176,7 +1210,7 @@ func holds(p Policy, roles []Role) (Right, bool) {
 		switch cell := Grants[p.Capability][col]; {
 		case p.Capability == Membership:
 			rights = "V"
-		case p.Unqualified && cell.Qualifier != "":
+		case p.Unqualified && cell.Qualifier != "" && !slices.Contains(p.Qualified, cell.Qualifier):
 			continue
 		default:
 			rights = cell.Rights

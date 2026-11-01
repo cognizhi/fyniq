@@ -82,3 +82,16 @@ describe("the general ledger page", () => {
     expect(create).toHaveBeenCalledTimes(1);
   });
 });
+
+// req: FR-UX-04
+describe("the general ledger opened from a statement's figure", () => {
+  it("reads the accounts and the run from the link", async () => {
+    answer({ "GET /v1/accounts": { status: 200, body: { items: [bank] } }, "GET /v1/reports/general-ledger": { status: 200, body: report } });
+    renderPage(GeneralLedger, { path: `/reports/general-ledger?account_id=${encodeURIComponent('["a-bank"]')}&from=2026-10-01&to=2026-10-31`, route: "/reports/general-ledger", session: accountant });
+    await screen.findByRole("table", { name: /Ledger lines for account 1010/ });
+    const q = seen.find((s) => s.path === "/v1/reports/general-ledger")!.query;
+    expect(q).toContain("account_id=a-bank");
+    expect(q).toContain("from=2026-10-01");
+  });
+});
+

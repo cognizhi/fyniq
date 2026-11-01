@@ -139,8 +139,9 @@ Software. A rule suggests; it does not post by itself.
 ## What Fyniq reconciled by itself
 
 **Auto-reconciled** lists what Fyniq reconciled without a click in the last 30 days and still stands:
-exact matches (the amount, the document's number and the contact), the other side of a transfer, and
-lines an approved rule met.
+exact matches (the amount, the document's number and the contact), the payment of a payment batch
+whose number the line names when no other payment of that batch has its amount, the other side of a
+transfer, and lines an approved rule met. A line for a whole batch's total always waits for you.
 
 - Each shows why, and the principal and time that did it.
 - **Undo it** puts the line back in the queue with your reason, while its month is open: what it posted

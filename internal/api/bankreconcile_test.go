@@ -171,7 +171,7 @@ func TestBankRulesAndReconciliationThroughTheAPI(t *testing.T) {
 	// What the system reconciled: a transfer's other side.
 	tr, to := e.inTransit()
 	line := e.lineOn(to, "10.00", nil)
-	if _, err := banking.AutoReconcile(e.bankCtx(), e.store, e.books.Org, []uuid.UUID{line.ID}, e.clock.Now()); err != nil {
+	if _, err := banking.AutoReconcile(e.bankCtx(), e.api.bank, e.books.Org, []uuid.UUID{line.ID}, e.clock.Now()); err != nil {
 		t.Fatal(err)
 	}
 	ar := e.call(http.MethodGet, "/v1/auto-reconciliations?since=2026-10-01", bk, nil)

@@ -3,7 +3,8 @@
 // the match writes the job, once per payment however often the match is undone and done again; the worker renders the
 // remittance template that applies to the supplier to PDF, keeps it as the payment's evidence, emails it to the
 // supplier's remittance address from the organisation's invoices sender, and records the send. A payment voided since,
-// a supplier with no remittance address, or one already sent, sends nothing; a claimant's reimbursement never sends.
+// a supplier with no remittance address, or one already sent, sends nothing; a claimant's reimbursement never sends. A
+// job that gave up is sent again only by a person (Again; rev 0.160).
 package remitmail
 
 import (
@@ -43,6 +44,41 @@ type job struct {
 
 // Key is the business key of a payment's remittance job: one per payment.
 func Key(paymentID uuid.UUID) string { return "remittance:" + paymentID.String() }
+
+// againKey is the business key of the nth time a person sent a payment's failed advice again (rev 0.160).
+func againKey(paymentID uuid.UUID, n int) string { return fmt.Sprintf("%s:again:%d", Key(paymentID), n) }
+
+// Latest is a payment's latest remittance job, nil when none was queued, and how many times a person sent it again:
+// the job the match queued, then each one Again queued after it.
+func Latest(ctx context.Context, u storage.UnitOfWork, paymentID uuid.UUID) (*storage.OutboxRow, int, error) {
+	row, err := u.Outbox().ByKey(ctx, Kind, Key(paymentID))
+	if err != nil || row == nil {
+		return row, 0, err
+	}
+	n := 0
+	for {
+		next, err := u.Outbox().ByKey(ctx, Kind, againKey(paymentID, n+1))
+		if err != nil || next == nil {
+			return row, n, err
+		}
+		row, n = next, n+1
+	}
+}
+
+// Again queues a payment's failed advice once more, under a key of its own, for a person who sent it again (FR-BNK-12,
+// rev 0.160): the sender's checks hold, so a payment voided or sent since sends nothing, and it sends at most once.
+func Again(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org, paymentID uuid.UUID) error {
+	_, n, err := Latest(ctx, u, paymentID)
+	if err != nil {
+		return err
+	}
+	b, err := json.Marshal(job{PaymentID: paymentID})
+	if err != nil {
+		return err
+	}
+	_, err = d.Enqueue(ctx, u, org, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: Kind, Payload: b, BusinessKey: againKey(paymentID, n+1)})
+	return err
+}
 
 // Queue writes the remittance job of doc, a document just matched to a statement line, in u: only for a supplier payment
 // that a batch released, and only once.

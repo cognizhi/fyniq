@@ -133,5 +133,26 @@ describe("payment batches", () => {
     fireEvent.click(screen.getByRole("button", { name: "Download payment list" }));
     expect(await screen.findByText(/Downloaded PB-0003-payment-list.csv/)).toBeTruthy();
     expect(seen.some((s) => s.path === "/v1/payment-batches/b1/file")).toBe(true);
+    expect(screen.queryByRole("button", { name: /Send the remittance advice/ })).toBeNull(); // the releaser does not prepare batches
+  });
+
+  // req: banking/bank-transactions A failed advice is sent again by a person (rev 0.160)
+  it("sends a failed remittance advice again with a reason, for a person who prepares batches; axe finds nothing", async () => {
+    const gaveUp = { ...northwind, payee: { kind: "vendor" as const, id: "v2", name: "Quiet Supplier Pte Ltd" }, payment_id: "p3", paid: true, remittance: "failed" as const };
+    const release = { released_by: { kind: "user", id: "u2", name: "Mei Lin Tan" }, released_at: "2026-10-31T01:30:00Z", approval_id: "a1", writer: "payment-list@1",
+      file_name: "PB-0003-payment-list.csv", sha256: "ab".repeat(32), payments: [{ payment_id: "p3" }] };
+    const batch = { ...base, status: "released", number: "PB-0003", payments: [gaveUp], release };
+    const seen = page(batch, accountant, {
+      "POST /v1/payment-batches/b1/payments/p3/remittance-again": { status: 200, body: { ...batch, payments: [{ ...gaveUp, remittance: "queued" }] } },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Send the remittance advice to Quiet Supplier Pte Ltd again" }));
+    const dialog = await screen.findByRole("dialog", { name: "Send again" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Send again" }));
+    expect(within(dialog).getByText(/Say why/)).toBeTruthy();
+    await noViolations(document.body);
+    fireEvent.change(within(dialog).getByLabelText("Why it is sent again"), { target: { value: "The email service was down" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Send again" }));
+    expect(await screen.findByText("Sending the remittance advice to Quiet Supplier Pte Ltd again.")).toBeTruthy();
+    expect(seen.find((s) => s.method === "POST" && s.path === "/v1/payment-batches/b1/payments/p3/remittance-again")?.body).toEqual({ reason: "The email service was down" });
   });
 });

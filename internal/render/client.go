@@ -16,15 +16,17 @@ import (
 // Class is the token class the render service accepts: its callers ask for a token of it (ports.TaskTokens).
 const Class = "render"
 
-// Request is a document to render: a template version's content, the document's data and its issue time.
+// Request is a document to render: a template version's content, the document's data and its issue time; or a report
+// its caller laid out, with no document type, template or data.
 type Request struct {
 	DocumentType string              `json:"document_type"`
 	Content      doctemplate.Content `json:"content"`
 	Data         Data                `json:"data"`
-	Logo         []byte              `json:"logo,omitempty"`  // a PNG, base64 in JSON
-	Created      time.Time           `json:"created"`         // the PDF's creation date, so a reprint is the same bytes
-	Check        bool                `json:"check,omitempty"` // also find the IRAS particulars in the document
-	Pages        bool                `json:"pages,omitempty"` // also each page as a PNG, for a preview
+	Report       *Report             `json:"report,omitempty"` // a report (FR-RPT-05), in place of a document
+	Logo         []byte              `json:"logo,omitempty"`   // a PNG, base64 in JSON
+	Created      time.Time           `json:"created"`          // the PDF's creation date, so a reprint is the same bytes
+	Check        bool                `json:"check,omitempty"`  // also find the IRAS particulars in the document
+	Pages        bool                `json:"pages,omitempty"`  // also each page as a PNG, for a preview
 }
 
 // Response is the rendered document.

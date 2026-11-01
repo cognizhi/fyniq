@@ -17,8 +17,10 @@ import { BankTabs, makers } from "./BankAccounts";
 
 type Auto = components["schemas"]["AutoReconciliation"];
 
-// basisWords says what made a system reconciliation (FR-BNK-14): an exact match, a transfer's other side, or a rule.
+// basisWords says what made a system reconciliation (FR-BNK-14): an exact match, a payment of the batch the line named
+// (rev 0.160), a transfer's other side, or a rule.
 export function basisWords(a: Auto): { words: string; icon: typeof Hash } {
+  if (a.batch_number) return { words: `A payment of ${a.batch_number}, which the line names`, icon: Hash };
   switch (a.line.match?.basis) {
     case "transfer":
       return { words: "The other side of a transfer", icon: ArrowLeftRight };

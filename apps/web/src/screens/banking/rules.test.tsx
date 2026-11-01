@@ -152,6 +152,10 @@ describe("what the system reconciled", () => {
           items: [
             { line: line(), rule_name: "AWS to software" },
             { line: line({ id: "l2", amount: sgd("109.00"), description: "GIRO ACME", match: { kind: "receipt", basis: "exact", made_by: "service:bank.auto-reconcile", made_at: "2026-10-21T01:00:00Z" } }) },
+            {
+              line: line({ id: "l3", amount: sgd("-109.00"), description: "FAST PB-0003 BILL-0920", match: { kind: "recorded", basis: "exact", made_by: "service:bank.auto-reconcile", made_at: "2026-10-21T01:00:00Z" } }),
+              batch_number: "PB-0003",
+            },
           ],
         },
       },
@@ -167,6 +171,7 @@ describe("what the system reconciled", () => {
     expect(rows[1]!.textContent).toContain("The rule AWS to software");
     expect(rows[1]!.textContent).toContain("service:bank.auto-reconcile");
     expect(rows[2]!.textContent).toContain("Exact match: amount, number and contact");
+    expect(rows[3]!.textContent).toContain("A payment of PB-0003, which the line names"); // rev 0.160
     expect(await screen.findByText(/Auto-reconcile, the largest line/)).toBeTruthy();
     await noViolations(container);
     fireEvent.click(within(rows[1]!).getByRole("button", { name: /Undo the line/ }));

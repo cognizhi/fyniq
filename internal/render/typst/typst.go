@@ -27,6 +27,9 @@ import (
 //go:embed document.typ
 var source []byte
 
+//go:embed report.typ
+var reportSource []byte
+
 //go:embed fonts
 var fonts embed.FS
 
@@ -78,26 +81,32 @@ func (c *Compiler) Version(ctx context.Context) (string, error) {
 	return strings.TrimSpace(string(out)), err
 }
 
-// Input is one document to compile.
+// Input is one document to compile, or one report.
 type Input struct {
 	Layout  render.Layout
-	Logo    []byte    // a PNG, when the layout shows the logo
-	Created time.Time // the PDF's creation date: the document's issue, so a reprint is the same bytes
+	Report  *render.Report // a report, laid out with report.typ in place of the layout
+	Logo    []byte         // a PNG, when the layout shows the logo
+	Created time.Time      // the PDF's creation date: the document's issue, so a reprint is the same bytes
 }
 
-// sandbox writes the input to a fresh folder and returns it and a function that removes it.
+// sandbox writes the input to a fresh folder and returns it and a function that removes it. The source is always
+// document.typ: the document's, or the report's.
 func sandbox(in Input) (string, func(), error) {
 	dir, err := os.MkdirTemp("", "fyniq-render-")
 	if err != nil {
 		return "", nil, err
 	}
 	done := func() { _ = os.RemoveAll(dir) }
-	layout, err := json.Marshal(in.Layout)
+	data, name, src := any(in.Layout), "layout.json", source
+	if in.Report != nil {
+		data, name, src = in.Report, "report.json", reportSource
+	}
+	layout, err := json.Marshal(data)
 	if err == nil {
-		err = os.WriteFile(filepath.Join(dir, "layout.json"), layout, 0o600)
+		err = os.WriteFile(filepath.Join(dir, name), layout, 0o600)
 	}
 	if err == nil {
-		err = os.WriteFile(filepath.Join(dir, "document.typ"), source, 0o600)
+		err = os.WriteFile(filepath.Join(dir, "document.typ"), src, 0o600)
 	}
 	if err == nil && len(in.Logo) > 0 {
 		err = os.WriteFile(filepath.Join(dir, "logo.png"), in.Logo, 0o600)

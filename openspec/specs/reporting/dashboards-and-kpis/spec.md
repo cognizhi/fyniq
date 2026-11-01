@@ -41,6 +41,11 @@ Source: PRD-001 §8.13 · Priority M · Phase P1
 - **THEN** it shows both MRR measures
 - **AND** it explains the difference between them (mid-month starts, credits, unpaid or failed invoices, FX)
 
+#### Scenario: Customer counts and headcount entered until their data exists (rev 0.161)
+- **WHEN** no subscription data (FR-KPI-04) or payroll link yet gives a month's customer counts or headcount
+- **THEN** a person enters the month's paying customers, new customers, customers lost and headcount, audited
+- **AND** each KPI that uses them is labelled entered, and the entries give way to the subscriptions' counts and the payroll link's headcount when those arrive
+
 #### Scenario: G4-046 Mid-month start and an unpaid invoice
 - **GIVEN** a subscription starts on the 20th, and one subscription invoice is unpaid at month end
 - **WHEN** the month's MRR is shown
@@ -81,6 +86,7 @@ Source: PRD-001 §8.13 · Priority M · Phase P1
 - **WHEN** the KPIs are shown
 - **THEN** churn, ARPA, LTV and CAC show "—" with "no subscription data", never 0
 - **AND** the ledger KPIs still show
+- **AND** (rev 0.161) with the month's customer counts entered, they show, labelled entered
 
 #### Scenario: G4-048 Negative equity in a cash-generating month
 - **GIVEN** equity ≤ 0 and a month that generates cash
