@@ -78,6 +78,15 @@ type Service struct {
 	// Clock gives the day the checks run on, in the organisation's time zone, for the checks that depend on it (a
 	// recurring journal's occurrence the scheduler failed to make, C.1 #28). Without it they are not run.
 	Clock ports.Clock
+	// More are the checks the close runs besides its own: the checks engine's that refuse a close when they find ✖
+	// (FR-CTL-01, p1-checks design D2), so a check is written once. Nil: the close's own only.
+	More func(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time.Time) ([]Check, error)
+}
+
+// Checks are the close's own checks of a period as they stand in u, on today (zero: those that depend on it are not
+// run), as RunChecks records them: what the checks engine reads for the checks the close runs (p1-checks design D2).
+func Checks(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time.Time) ([]Check, error) {
+	return run(ctx, u, p, today)
 }
 
 // earlier are the periods before p, earliest first.
@@ -688,6 +697,13 @@ func (s Service) RunChecks(ctx context.Context, org, periodID uuid.UUID) (storag
 		checks, err := run(ctx, u, p, today)
 		if err != nil {
 			return err
+		}
+		if s.More != nil {
+			more, err := s.More(ctx, u, p, today)
+			if err != nil {
+				return err
+			}
+			checks = append(checks, more...)
 		}
 		result, err := json.Marshal(checks)
 		if err != nil {

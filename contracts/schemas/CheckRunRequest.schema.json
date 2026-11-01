@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "already_waiting": {
+      "description": "true when an earlier Run now was still waiting, so this one joined it.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "requested_at": {
+      "description": "When it was asked for: the run that follows finishes after it.",
+      "examples": [
+        "2026-11-01T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "requested_at",
+    "already_waiting"
+  ],
+  "title": "CheckRunRequest",
+  "type": "object"
+}

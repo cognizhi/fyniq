@@ -231,7 +231,8 @@ func registerClose(a *API) {
 		OperationID: "runCloseChecks", Method: http.MethodPost, Path: "/v1/periods/{period_id}/close-checks", Tags: []string{"Periods"},
 		Summary: "Run a period's close checks",
 		Description: "Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the " +
-			"close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Until the checks catalogue arrives they are: every earlier " +
+			"close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Besides each check of the checks engine that can find ✖ and " +
+			"found it at its latest run (FR-CTL-01; listChecks), they are: every earlier " +
 			"period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), " +
 			"draft journals dated in the period (⚠), automatic reversals not posted (⚠), recurring journals without their drafts (⚠, or ✖ " +
 			"when the scheduler failed) or with content the posting rules refuse (⚠), variances against the previous month above both " +

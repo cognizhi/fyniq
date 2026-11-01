@@ -324,6 +324,38 @@ capture_sender | decision | text | not null |
 capture_sender | decided_by | text | not null | 
 capture_sender | decided_at | timestamp with time zone | not null | 
 capture_sender | kind | text | not null | 'documents'::text
+check_owner | organisation_id | uuid | not null | current_org()
+check_owner | id | uuid | not null | uuidv7()
+check_owner | key | text | not null | 
+check_owner | person_user_id | uuid | null | 
+check_owner | set_by | text | not null | 
+check_owner | set_at | timestamp with time zone | not null | 
+check_owner | version | integer | not null | 1
+check_run | organisation_id | uuid | not null | current_org()
+check_run | id | uuid | not null | uuidv7()
+check_run | run_trigger | text | not null | 
+check_run | requested_by | text | null | 
+check_run | started_at | timestamp with time zone | not null | 
+check_run | finished_at | timestamp with time zone | not null | 
+check_run | ledger_revision | bigint | not null | 
+check_run | audit_seq | bigint | not null | 
+check_run | keys | text[] | not null | 
+check_run | results | jsonb | null | 
+check_state | organisation_id | uuid | not null | current_org()
+check_state | id | uuid | not null | uuidv7()
+check_state | key | text | not null | 
+check_state | status | text | not null | 
+check_state | item_count | integer | not null | 
+check_state | items | jsonb | not null | '[]'::jsonb
+check_state | detail | text | null | 
+check_state | fix | text | null | 
+check_state | needs | text | null | 
+check_state | setting | text | null | 
+check_state | run_at | timestamp with time zone | not null | 
+check_state | run_trigger | text | not null | 
+check_state | ledger_revision | bigint | not null | 
+check_state | changed_at | timestamp with time zone | not null | 
+check_state | version | integer | not null | 1
 claim_category | organisation_id | uuid | not null | current_org()
 claim_category | id | uuid | not null | uuidv7()
 claim_category | name | text | not null | 
@@ -1825,6 +1857,61 @@ capture_sender | capture_sender_organisation_fkey | FOREIGN KEY (organisation_id
 capture_sender | capture_sender_organisation_id_not_null | NOT NULL organisation_id
 capture_sender | capture_sender_pkey | PRIMARY KEY (organisation_id, id)
 capture_sender | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+check_owner | check_owner_id_key | UNIQUE (organisation_id, id)
+check_owner | check_owner_id_not_null | NOT NULL id
+check_owner | check_owner_key_format | CHECK (((key ~ '^[a-z][a-z0-9-]*(\.[a-z0-9-]+)+$'::text) AND (length(key) <= 100)))
+check_owner | check_owner_key_not_null | NOT NULL key
+check_owner | check_owner_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+check_owner | check_owner_organisation_id_not_null | NOT NULL organisation_id
+check_owner | check_owner_person_fkey | FOREIGN KEY (organisation_id, person_user_id) REFERENCES user_membership(organisation_id, user_id)
+check_owner | check_owner_pkey | PRIMARY KEY (organisation_id, key)
+check_owner | check_owner_set_at_not_null | NOT NULL set_at
+check_owner | check_owner_set_by | CHECK (((length(btrim(set_by)) >= 1) AND (length(btrim(set_by)) <= 200)))
+check_owner | check_owner_set_by_not_null | NOT NULL set_by
+check_owner | check_owner_version | CHECK ((version >= 1))
+check_owner | check_owner_version_not_null | NOT NULL version
+check_owner | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+check_run | check_run_audit_seq_not_null | NOT NULL audit_seq
+check_run | check_run_finished_at_not_null | NOT NULL finished_at
+check_run | check_run_id_not_null | NOT NULL id
+check_run | check_run_keys | CHECK ((cardinality(keys) <= 500))
+check_run | check_run_keys_not_null | NOT NULL keys
+check_run | check_run_ledger_revision_not_null | NOT NULL ledger_revision
+check_run | check_run_nightly_results | CHECK ((((run_trigger = 'nightly'::text) = (results IS NOT NULL)) AND ((results IS NULL) OR ((jsonb_typeof(results) = 'array'::text) AND (octet_length((results)::text) <= 4194304)))))
+check_run | check_run_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+check_run | check_run_organisation_id_not_null | NOT NULL organisation_id
+check_run | check_run_pkey | PRIMARY KEY (organisation_id, id)
+check_run | check_run_requested_by | CHECK ((((run_trigger = 'request'::text) = (requested_by IS NOT NULL)) AND (length(requested_by) <= 200)))
+check_run | check_run_run_trigger_not_null | NOT NULL run_trigger
+check_run | check_run_started_at_not_null | NOT NULL started_at
+check_run | check_run_times | CHECK ((finished_at >= started_at))
+check_run | check_run_trigger_known | CHECK ((run_trigger = ANY (ARRAY['change'::text, 'nightly'::text, 'request'::text])))
+check_run | check_run_watermarks | CHECK (((ledger_revision >= 0) AND (audit_seq >= 0)))
+check_state | check_state_changed_at_not_null | NOT NULL changed_at
+check_state | check_state_count | CHECK ((item_count >= 0))
+check_state | check_state_id_key | UNIQUE (organisation_id, id)
+check_state | check_state_id_not_null | NOT NULL id
+check_state | check_state_item_count_not_null | NOT NULL item_count
+check_state | check_state_items | CHECK (((jsonb_typeof(items) = 'array'::text) AND (jsonb_array_length(items) <= 50) AND (jsonb_array_length(items) <= item_count) AND (octet_length((items)::text) <= 262144)))
+check_state | check_state_items_not_null | NOT NULL items
+check_state | check_state_key_format | CHECK (((key ~ '^[a-z][a-z0-9-]*(\.[a-z0-9-]+)+$'::text) AND (length(key) <= 100)))
+check_state | check_state_key_not_null | NOT NULL key
+check_state | check_state_ledger_revision_not_null | NOT NULL ledger_revision
+check_state | check_state_not_assessed_names_input | CHECK (((status = 'not_assessed'::text) = (needs IS NOT NULL)))
+check_state | check_state_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+check_state | check_state_organisation_id_not_null | NOT NULL organisation_id
+check_state | check_state_pkey | PRIMARY KEY (organisation_id, key)
+check_state | check_state_revision | CHECK ((ledger_revision >= 0))
+check_state | check_state_run_at_not_null | NOT NULL run_at
+check_state | check_state_run_trigger_not_null | NOT NULL run_trigger
+check_state | check_state_status_known | CHECK ((status = ANY (ARRAY['ok'::text, 'warning'::text, 'error'::text, 'due'::text, 'not_assessed'::text, 'failed'::text])))
+check_state | check_state_status_not_null | NOT NULL status
+check_state | check_state_trigger_known | CHECK ((run_trigger = ANY (ARRAY['change'::text, 'nightly'::text, 'request'::text])))
+check_state | check_state_version | CHECK ((version >= 1))
+check_state | check_state_version_not_null | NOT NULL version
+check_state | check_state_words | CHECK (((length(detail) <= 2000) AND (length(fix) <= 500) AND (length(needs) <= 300) AND (length(setting) <= 200)))
+check_state | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+check_state | require_audit_status | TRIGGER DEFERRABLE INITIALLY DEFERRED
 claim_category | claim_category_account_fkey | FOREIGN KEY (organisation_id, account_id) REFERENCES account(organisation_id, id)
 claim_category | claim_category_account_id_not_null | NOT NULL account_id
 claim_category | claim_category_active_not_null | NOT NULL active
@@ -3368,6 +3455,8 @@ CREATE INDEX bank_statement_account_period ON fyniq.bank_statement USING btree (
 CREATE INDEX bank_transfer_in_transit ON fyniq.bank_transfer USING btree (organisation_id, to_account_id) WHERE ((from_line_id IS NULL) OR (to_line_id IS NULL))
 CREATE INDEX bill_payment_plan_bill ON fyniq.bill_payment_plan USING btree (organisation_id, bill_id, recorded_at)
 CREATE INDEX capture_sender_latest ON fyniq.capture_sender USING btree (organisation_id, address, decided_at)
+CREATE INDEX check_owner_person ON fyniq.check_owner USING btree (organisation_id, person_user_id)
+CREATE INDEX check_run_latest ON fyniq.check_run USING btree (organisation_id, run_trigger, finished_at DESC)
 CREATE INDEX close_checklist_entry_period ON fyniq.close_checklist_entry USING btree (organisation_id, period_id, task_key, written_at)
 CREATE INDEX contact_document_template_latest ON fyniq.contact_document_template USING btree (organisation_id, contact_id, kind, document_type, set_at)
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
@@ -3462,6 +3551,11 @@ CREATE UNIQUE INDEX capture_address_live_owner ON fyniq.capture_address USING bt
 CREATE UNIQUE INDEX capture_address_pkey ON fyniq.capture_address USING btree (organisation_id, id)
 CREATE UNIQUE INDEX capture_name_pkey ON fyniq.capture_name USING btree (local_part)
 CREATE UNIQUE INDEX capture_sender_pkey ON fyniq.capture_sender USING btree (organisation_id, id)
+CREATE UNIQUE INDEX check_owner_id_key ON fyniq.check_owner USING btree (organisation_id, id)
+CREATE UNIQUE INDEX check_owner_pkey ON fyniq.check_owner USING btree (organisation_id, key)
+CREATE UNIQUE INDEX check_run_pkey ON fyniq.check_run USING btree (organisation_id, id)
+CREATE UNIQUE INDEX check_state_id_key ON fyniq.check_state USING btree (organisation_id, id)
+CREATE UNIQUE INDEX check_state_pkey ON fyniq.check_state USING btree (organisation_id, key)
 CREATE UNIQUE INDEX claim_category_live_mileage ON fyniq.claim_category USING btree (organisation_id) WHERE (active AND mileage)
 CREATE UNIQUE INDEX claim_category_live_name ON fyniq.claim_category USING btree (organisation_id, lower(btrim(name))) WHERE active
 CREATE UNIQUE INDEX claim_category_pkey ON fyniq.claim_category USING btree (organisation_id, id)
@@ -3638,6 +3732,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bank_statement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_statement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bill_payment_plan DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'bill_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.capture_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_sender', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.check_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('check_state', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_template', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.contact_document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'contact_id')
@@ -3688,6 +3783,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_rul
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_signal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_signal', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_transfer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_transfer', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.capture_address DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_address', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.check_owner DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('check_owner', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.claim_category DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('claim_category', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.claim_place DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('claim_place', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
@@ -3720,6 +3816,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_ad
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin_grant DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_grant_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.user_membership DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('user_membership', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER UPDATE ON fyniq.bank_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_line', 'id')
+CREATE CONSTRAINT TRIGGER require_audit_status AFTER UPDATE ON fyniq.check_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION require_audit('check_state', 'id')
 CREATE TRIGGER account_changed_at BEFORE UPDATE ON fyniq.account FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION account_changed_at()
 CREATE TRIGGER account_guard BEFORE INSERT OR UPDATE ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_guard()
 CREATE TRIGGER accounting_framework_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_framework FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('framework', 'confirmed')
@@ -3758,6 +3855,12 @@ CREATE TRIGGER capture_address_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.
 CREATE TRIGGER capture_address_no_truncate BEFORE TRUNCATE ON fyniq.capture_address FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER capture_sender_guard BEFORE DELETE OR UPDATE ON fyniq.capture_sender FOR EACH ROW EXECUTE FUNCTION capture_sender_guard()
 CREATE TRIGGER capture_sender_no_truncate BEFORE TRUNCATE ON fyniq.capture_sender FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER check_owner_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.check_owner FOR EACH ROW EXECUTE FUNCTION check_owner_guard()
+CREATE TRIGGER check_owner_no_truncate BEFORE TRUNCATE ON fyniq.check_owner FOR EACH STATEMENT EXECUTE FUNCTION check_owner_guard()
+CREATE TRIGGER check_run_guard BEFORE DELETE OR UPDATE ON fyniq.check_run FOR EACH ROW EXECUTE FUNCTION check_run_guard()
+CREATE TRIGGER check_run_no_truncate BEFORE TRUNCATE ON fyniq.check_run FOR EACH STATEMENT EXECUTE FUNCTION check_run_guard()
+CREATE TRIGGER check_state_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.check_state FOR EACH ROW EXECUTE FUNCTION check_state_guard()
+CREATE TRIGGER check_state_no_truncate BEFORE TRUNCATE ON fyniq.check_state FOR EACH STATEMENT EXECUTE FUNCTION check_state_guard()
 CREATE TRIGGER claim_category_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.claim_category FOR EACH ROW EXECUTE FUNCTION claim_category_guard()
 CREATE TRIGGER claim_place_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.claim_place FOR EACH ROW EXECUTE FUNCTION claim_place_guard()
 CREATE TRIGGER close_checklist_entry_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.close_checklist_entry FOR EACH ROW EXECUTE FUNCTION close_checklist_guard()
@@ -3935,6 +4038,9 @@ bank_transfer | tenant_isolation | * | (organisation_id = current_org()) | (orga
 bill_payment_plan | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_address | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_sender | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+check_owner | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+check_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+check_state | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 claim_category | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 claim_place | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 close_checklist_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -4054,6 +4160,9 @@ capture_route(p_local text) → TABLE(organisation_id uuid, address_id uuid, use
 capture_sender_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d3ca1a62ec41cff9d93981758a2f74c
 change_installation_connector(p_by uuid, p_change uuid, p_step text, p_id uuid, p_version integer, p_state text, p_configuration jsonb, p_position integer, p_test_passed boolean, p_test_reason text, p_tested_at timestamp with time zone, p_manifest_version text, p_manifest_hash text, p_secret_names text[], p_consent jsonb, p_at timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 9b989ec9c61abe049b0de80a90368cbf
 check_entry_balanced() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b53334884d5e11426b962a38e77aed9
+check_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 67670ce232a94d3474e05685ff99ec02
+check_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 789c42faab651972a3829fc61e9262cc
+check_state_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5d0771ae59040d5aa848b3f53f0dff8b
 claim_category_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e3555d3e253fa24e081bd77a62a656f2
 claim_job_slot(p_job text, p_slot timestamp with time zone, p_holder text, p_until timestamp with time zone, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 25c90e46d6e3d1e87666459f6db394db
 claim_place_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b9d945198410ff448d1bc24902010e4d

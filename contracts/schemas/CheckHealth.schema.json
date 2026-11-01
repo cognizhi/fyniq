@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "due": {
+      "description": "Checks that found ⏰.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "not_assessed": {
+      "description": "Checks not assessed for want of an input, or not run yet: counted beside the score.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "ok": {
+      "description": "Checks that found nothing.",
+      "examples": [
+        8
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "problems": {
+      "description": "Checks that found ✖, or whose run failed.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "score": {
+      "description": "problems when any check found ✖ or could not run; review when any found ⚠ or ⏰; ok otherwise. Checks not assessed do not change it.",
+      "enum": [
+        "ok",
+        "review",
+        "problems"
+      ],
+      "examples": [
+        "review"
+      ],
+      "type": "string"
+    },
+    "warnings": {
+      "description": "Checks that found ⚠.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "score",
+    "problems",
+    "warnings",
+    "due",
+    "ok",
+    "not_assessed"
+  ],
+  "title": "CheckHealth",
+  "type": "object"
+}

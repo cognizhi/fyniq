@@ -1299,6 +1299,25 @@ var matrixCalls = map[string]matrixCall{
 			return !strings.Contains(l.Raw, `"month":"`+month+`"`)
 		}
 	},
+	"listChecks": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/checks", tok, nil), nil
+	},
+	"getCheck": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/checks/books.debits-equal-credits", tok, nil), nil
+	},
+	// Run now joins the one still waiting: no worker runs here, so every allowed call after the first joins it.
+	"runChecks": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/checks/runs", tok, nil), nil
+	},
+	"setCheckOwner": func(e *env, tok string) (response, func() bool) {
+		version := func() string {
+			r := e.call(http.MethodGet, "/v1/checks/setup.system-accounts-exist", e.as(authz.Controller), nil)
+			return fmt.Sprint(r.Body["owner"].(map[string]any)["version"])
+		}
+		before := version()
+		r := e.call(http.MethodPut, "/v1/checks/setup.system-accounts-exist/owner", tok, map[string]any{"person_user_id": nil}, "If-Match", `"`+before+`"`)
+		return r, func() bool { return version() == before }
+	},
 	"getTopExpenses": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/top-expenses?from=2026-10&to=2026-11", tok, nil), nil
 	},

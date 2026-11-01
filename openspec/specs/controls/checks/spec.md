@@ -196,13 +196,14 @@ Source: PRD-001 §C.1
 - **THEN** the check passes
 
 ### Requirement: C.1 #5 Balance sheet includes every account
-The system SHALL check, on every relevant change and nightly, that the balance sheet includes every account that belongs in it; a failure blocks the close.
+The system SHALL check, on every relevant change and nightly, that the balance sheet includes every account that belongs in it, warning (⚠) as the period close does (rev 0.163; was ✖).
 
 Source: PRD-001 §C.1
 
 #### Scenario: An account is missing from the balance sheet
-- **WHEN** an account that belongs in the balance sheet is not included in it
-- **THEN** the check fails and blocks the close
+- **WHEN** an account with a balance sits in no section of the balance sheet, or no line of the cash flow
+- **THEN** the check warns (⚠) and names the account
+- **AND** it does not block the close, because the chart allows an account without a cash-flow line and the books balancing is C.1 #1's and #2's ✖
 
 #### Scenario: Every account is included
 - **WHEN** the balance sheet includes every account that belongs in it

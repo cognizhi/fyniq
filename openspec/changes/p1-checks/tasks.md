@@ -1,32 +1,39 @@
 # Tasks
 
-Each slice below is one pull request that passes `make test` on its own.
+Each slice below is one pull request that passes `make test` on its own. Slice 1 is two: the engine with its API (1.1 to
+1.6), then the page (1.7), as the KPIs were.
 
 ## 1. The engine, its storage and its runs (slice 1)
 
-- [ ] 1.1 PRD rev 0.163 with the code: Appendix D's row "Checks and books health" (design D7). Add `authz.Checks`
+- [x] 1.1 PRD rev 0.163 with the code: Appendix D's row "Checks and books health" (design D7). Add `authz.Checks`
   and its policies (`listChecks`, `getCheck`, `runChecks`, `setCheckOwner`) and the matrix rows. Test:
   `TestPolicyMatchesAppendixD`, the matrix. `// req: QA-SEC-03`
-- [ ] 1.2 `internal/domain/checks`:
+- [x] 1.2 `internal/domain/checks`:
   - `Definition`, `Result`, `Env` (D1);
   - running a set of definitions;
   - books health (D9);
   - a run's error recorded as failed, never in the result.
   Tests: property tests (no change, no new state; health is the worst status). `// req: FR-CTL-01`,
   `// req: FR-CTL-02`
-- [ ] 1.3 Migration: `check_state`, `check_run`, `check_owner` (RLS forced, worker writes, purge function), the
+- [x] 1.3 Migration: `check_state`, `check_run`, `check_owner` (RLS forced, worker writes, purge function), the
   storage port and adapter, attack tests, the grants and schema goldens. `// req: FR-CTL-01`
-- [ ] 1.4 The runs (D5):
+- [x] 1.4 The runs (D5):
   - the `checks.refresh` outbox work from the audit watermark, enqueued at commit by the adapter and coalesced;
   - the platform job `checks.run` at 04:15 Singapore time;
   - `runChecks`, at most once a minute;
   - status changes audited.
   Tests: a posting reruns its checks within one refresh; the nightly runs all; a burst makes one run.
   `// req: FR-CTL-01`
-- [ ] 1.5 The API: `listChecks` (the summary and books health, each check with its owner, last run and items
+- [x] 1.5 The API: `listChecks` (the summary and books health, each check with its owner, last run and items
   filtered by the viewer, D7), `getCheck`, `runChecks`, `setCheckOwner` (If-Match, CHECK-02). Then `make openapi`.
   Tests: through the API as each matrix role. `// req: FR-CTL-01`, `// req: FR-CTL-02`
-- [ ] 1.6 The first checks, close-backed and ledger (D2, D6):
+  Built (rev 0.163, migration 000193): the Appendix D row "Checks and books health" also took C.1 #5 to ⚠, as the close
+  built it in `p1-reports` (D3), so the two say one thing. The close adds the catalogue's ✖ through
+  `closing.Service.More`. The design's "As built" notes record the rest: no delay before a refresh (a commit asks only
+  while none waits), the purge refused by a trigger within retention, C.2 #1 recomputed nightly and on request, and C.2 #3
+  read from `audit.verified`. C.1 #23's failure is triggered on a stubbed statement: the equity movement and its
+  positions are both worked out from the lines, so no change to the lines or the balances makes them disagree.
+- [x] 1.6 The first checks, close-backed and ledger (D2, D6):
   - C.1 #1 debits equal credits; #2 the balance sheet balances every month; #3 cash flow agrees to the bank;
     #4 and #5 every account in the P&L and the balance sheet; #6 opening balances balance; #7 system accounts
     exist; #23 movement in equity reconciles;

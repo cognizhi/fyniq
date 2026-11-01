@@ -30,6 +30,7 @@ type Store struct {
 	lockTimeout time.Duration
 	clock       ports.Clock   // stamps audit events
 	actor       storage.Actor // the service identity, when a request names no actor
+	changed     storage.Changed
 }
 
 var _ storage.Store = (*Store)(nil)
@@ -46,6 +47,11 @@ func WithClock(c ports.Clock) Option { return func(s *Store) { s.clock = c } }
 // WithActor sets the service identity recorded when a request names no actor. The default is the
 // database role the store connects as.
 func WithActor(a storage.Actor) Option { return func(s *Store) { s.actor = a } }
+
+// OnChange sets what a unit of work calls once its work is done, with the object types of the events it recorded
+// (storage.Changed): the outbox item that reruns the checks a change concerns (FR-CTL-01). Set it before the store is
+// used.
+func (s *Store) OnChange(fn storage.Changed) { s.changed = fn }
 
 // Open connects to url, for example FYNIQ_DATABASE_URL, and checks the connection.
 func Open(ctx context.Context, url string, opts ...Option) (*Store, error) {
@@ -147,8 +153,14 @@ func (s *Store) Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Conte
 		u = &unitOfWork{q: q, store: s, org: org}
 		attempts = append(attempts, u)
 		defer func() { u.done = true }()
-		if err := fn(context.WithValue(ctx, openUnit{}, u), u); err != nil {
+		inner := context.WithValue(ctx, openUnit{}, u)
+		if err := fn(inner, u); err != nil {
 			return err
+		}
+		if s.changed != nil && len(u.pending) > 0 {
+			if err := s.changed(inner, u, org, u.changedTypes()); err != nil {
+				return err
+			}
 		}
 		// The audit events go last, just before commit: the chain head is the last lock (ENG-47).
 		if err := u.flush(ctx); err != nil {

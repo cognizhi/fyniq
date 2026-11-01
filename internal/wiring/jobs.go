@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
+	"github.com/cognizhi/fyniq/internal/domain/checks"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
@@ -26,8 +27,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/remitmail"
-	"github.com/cognizhi/fyniq/internal/reportexport"
 	"github.com/cognizhi/fyniq/internal/render"
+	"github.com/cognizhi/fyniq/internal/reportexport"
 	"github.com/cognizhi/fyniq/internal/salesmail"
 )
 
@@ -53,6 +54,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		"ledger.verify": func(ctx context.Context) error {
 			_, err := balance.VerifyAll(ctx, k.Store)
+			return err
+		},
+		checks.Job: func(ctx context.Context) error { // FR-CTL-01, FR-CTL-05: every check of every organisation
+			_, err := k.Checks(clock).Nightly(ctx)
 			return err
 		},
 		"ledger.replay": func(ctx context.Context) error {

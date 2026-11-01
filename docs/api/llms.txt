@@ -106,6 +106,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/cash-advances/{advance_id}/void` (voidCashAdvance): Void a cash advance or its refund
 - `POST /v1/cash-advances/{advance_id}/void-approval` (requestCashAdvanceVoid): Ask for approval to void a cash advance or its refund
 - `GET /v1/cash-position` (getCashPosition): Get the cash position
+- `GET /v1/checks` (listChecks): List the checks and books health
+- `POST /v1/checks/runs` (runChecks): Run every check now
+- `GET /v1/checks/{key}` (getCheck): Get a check
+- `PUT /v1/checks/{key}/owner` (setCheckOwner): Name a check's owner
 - `GET /v1/claim-categories` (listClaimCategories): List the expense policy's categories
 - `POST /v1/claim-categories` (createClaimCategory): Add a category to the expense policy
 - `PUT /v1/claim-categories/{category_id}` (replaceClaimCategory): Change a category of the expense policy

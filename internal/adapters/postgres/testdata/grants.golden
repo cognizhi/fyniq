@@ -69,6 +69,11 @@ fyniq_api       EXECUTE   capture_route()
 fyniq_api       INSERT    capture_sender (address, decided_at, decided_by, decision, kind, user_id)
 fyniq_api       SELECT    capture_sender
 fyniq_api       EXECUTE   change_installation_connector()
+fyniq_api       INSERT    check_owner (key, person_user_id, set_at, set_by)
+fyniq_api       SELECT    check_owner
+fyniq_api       UPDATE    check_owner (person_user_id, set_at, set_by, version)
+fyniq_api       SELECT    check_run
+fyniq_api       SELECT    check_state
 fyniq_api       INSERT    claim_category (account_id, attendees_above, changed_at, changed_by, created_at, created_by, currency, line_limit, mileage, minor_units, name, receipt_above)
 fyniq_api       SELECT    claim_category
 fyniq_api       UPDATE    claim_category (account_id, active, attendees_above, changed_at, changed_by, line_limit, name, receipt_above, version)
@@ -400,6 +405,9 @@ fyniq_readonly  SELECT    bank_transfer
 fyniq_readonly  SELECT    bill_payment_plan
 fyniq_readonly  SELECT    capture_address
 fyniq_readonly  SELECT    capture_sender
+fyniq_readonly  SELECT    check_owner
+fyniq_readonly  SELECT    check_run
+fyniq_readonly  SELECT    check_state
 fyniq_readonly  SELECT    claim_category
 fyniq_readonly  SELECT    claim_place
 fyniq_readonly  SELECT    close_checklist_entry
@@ -517,6 +525,13 @@ fyniq_worker    SELECT    bill_payment_plan
 fyniq_worker    SELECT    capture_address
 fyniq_worker    EXECUTE   capture_route()
 fyniq_worker    SELECT    capture_sender
+fyniq_worker    SELECT    check_owner
+fyniq_worker    DELETE    check_run
+fyniq_worker    INSERT    check_run (audit_seq, finished_at, keys, ledger_revision, requested_by, results, run_trigger, started_at)
+fyniq_worker    SELECT    check_run
+fyniq_worker    INSERT    check_state (changed_at, detail, fix, item_count, items, key, ledger_revision, needs, run_at, run_trigger, setting, status)
+fyniq_worker    SELECT    check_state
+fyniq_worker    UPDATE    check_state (changed_at, detail, fix, item_count, items, ledger_revision, needs, run_at, run_trigger, setting, status, version)
 fyniq_worker    SELECT    claim_category
 fyniq_worker    SELECT    claim_place
 fyniq_worker    SELECT    close_checklist_entry
