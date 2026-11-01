@@ -40,13 +40,17 @@ Each slice below is one pull request that passes `make test` on its own. Slice 1
   - C.2 #1 INV-08; #3 the audit chain.
   - A test runs the close and the catalogue on one fixture and compares them.
   Each with a fixture that fires and one that passes. `// req: C.1 #1` … `// req: C.2 #3`
-- [ ] 1.7 The Checks page (`/checks`, `Checks.html`):
+- [x] 1.7 The Checks page (`/checks`, `Checks.html`):
   - the summary, the nightly verification group, the areas, the items with their links, Run now, the owner
     picker;
   - books health in Home's pulse card, with net burn moving to Basic's tiles;
   - registry entries, help keys `checks.overview` and `checks.owner`, the guide page `checks.md` compiled into
     `kb/`.
   Tests: Vitest with axe; mode parity. `// req: FR-CTL-02`, `// req: FR-UX-09`
+  Built: `screens/checks/Checks.tsx` with the nightly verification group of the checks built (C.2 #1, #3), Run now
+  (`checks.run`) and the owner's dialog (`checks.owner`); books health takes the pulse card's third place for a reader
+  of the checks, with net burn moving to the tiles; `home.md` and its compiled page say so. Item links open the
+  period's close, the chart or the opening balances; the documents' links join with their checks.
 
 ## 2. Setup, transactions and documents (slice 2)
 

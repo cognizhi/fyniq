@@ -4,14 +4,14 @@ type: task
 title: The Home page, search and commands, Settings, and signing out
 summary: What Home shows (pulse card, tiles, charts, what waits, set-up steps), Search and commands (Ctrl+K), Settings, and signing out
 sources:
-  - docs/user-guide/home.md sha256:ccc0277c2af42fe25b3cc9a37f9063a8f7e08aa82b8fc1870907fdb1ad76929e
+  - docs/user-guide/home.md sha256:18173a135687c66cc9e59611da15e0d11779236fb69c4c8c09ab806f2123c556
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-29
+compiled_at: 2026-11-01
 aliases:
   - command palette
   - quick search
@@ -44,11 +44,11 @@ aliases:
 
 ## The pulse card, tiles and charts
 
-- **The pulse card**: the cash in the bank at the end of this month; the **runway**, how many months that cash lasts at the average net burn of the last three months, or **Not burning** when those months brought in more cash than they used; and this month's **net burn**.
-- **The tiles**: what customers owe the company and what it owes. Expert mode adds the month's revenue, the gross margin and the net profit for the financial year so far.
+- **The pulse card**: the cash in the bank at the end of this month; the **runway**, how many months that cash lasts at the average net burn of the last three months, or **Not burning** when those months brought in more cash than they used; and **books health**, **OK**, **Review** or **Problems**, with how many checks block the close, ask for a review or are due, and how many are not assessed. Selecting it opens the checks ([[checks.overview]]). For someone whose roles do not read the checks, the card shows this month's **net burn** instead.
+- **The tiles**: what customers owe the company and what it owes, and this month's net burn when books health is on the pulse card. Expert mode adds the month's revenue, the gross margin and the net profit for the financial year so far.
 - Expert mode also draws three charts: revenue, costs and profit by month; cash by month; and costs by function, this month beside the last.
 - **ⓘ** beside a figure says how it is worked out, the dates it reads, its source and its definition's version; selecting the figure opens the report behind it. A figure the books cannot give shows **—** with the reason, never 0.
-- **All KPIs** opens the start-up KPIs ([[reports.kpis]]). Revenue and costs against the budget, the books' health, unbilled time and GST due join with their modules.
+- **All KPIs** opens the start-up KPIs ([[reports.kpis]]). Revenue and costs against the budget, unbilled time and GST due join with their modules.
 
 (src: docs/user-guide/home.md#what-it-is)
 

@@ -17,8 +17,12 @@ each module arrives; you only ever see the pages your roles allow.
 
 - **The pulse card** shows the cash in the bank at the end of this month, the **runway** (how many
   months that cash lasts at the average net burn of the last three months, or **Not burning** when
-  those months brought in more cash than they used) and this month's **net burn**.
-- **The tiles** show what customers owe the company and what it owes. In Expert mode they add the
+  those months brought in more cash than they used) and **books health**: **OK**, **Review** or
+  **Problems**, with how many checks block the close, ask for a review or are due, and how many are
+  not assessed. Select it to open the checks ([Read books health and the checks](checks.md)). If
+  your roles do not read the checks, the card shows this month's **net burn** instead.
+- **The tiles** show what customers owe the company and what it owes, and this month's net burn
+  when books health is on the pulse card. In Expert mode they add the
   month's revenue, the gross margin and the net profit for the financial year so far, and three
   charts: revenue, costs and profit by month; cash by month; and costs by function, this month
   beside the last.
@@ -33,8 +37,8 @@ each module arrives; you only ever see the pages your roles allow.
   It goes once every step is done.
 
 The pulse card, the tiles and the charts appear once the books have a month and your roles let you
-read the reports. Revenue and costs against the budget, the books' health, unbilled time and GST
-due join them with their modules.
+read the reports. Revenue and costs against the budget, unbilled time and GST due join them with
+their modules.
 
 ## Before you start
 

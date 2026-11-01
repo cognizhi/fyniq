@@ -119,6 +119,8 @@ export const routes = [
   { kind: "route", id: "reports", path: "/reports", mode: "basic", signedIn: true, help: "reports.index", guide: "reports.statements" },
   { kind: "route", id: "financial-statement", path: "/reports/statements/$kind", mode: "basic", signedIn: true, help: "reports.statement", guide: "reports.statements" },
   { kind: "route", id: "kpis", path: "/reports/kpis", mode: "basic", signedIn: true, help: "reports.kpis", guide: "reports.kpis" },
+  // Books health and checks (FR-CTL-01, FR-CTL-02, FR-CTL-05; p1-checks task 1.7): Basic; the statuses show in both modes.
+  { kind: "route", id: "checks", path: "/checks", mode: "basic", signedIn: true, help: "checks.overview", guide: "checks.overview" },
   { kind: "route", id: "management-report", path: "/reports/management/$report", mode: "expert", signedIn: true, help: "reports.management", guide: "reports.management" },
   { kind: "route", id: "general-ledger", path: "/reports/general-ledger", mode: "expert", signedIn: true, help: "reports.general-ledger", guide: "reports.general-ledger" },
   { kind: "route", id: "chart-of-accounts", path: "/accounting/chart-of-accounts", mode: "expert", signedIn: true, help: "accounting.chart", guide: "accounting.chart" },
@@ -363,6 +365,8 @@ export const actions = [
   { kind: "action", id: "opening.check", mode: "expert", help: "opening.check", guide: "accounting.opening-balances#check-and-post-them" },
   { kind: "action", id: "opening.post", mode: "expert", help: "opening.post", guide: "accounting.opening-balances#check-and-post-them" },
   { kind: "action", id: "opening.ask-change", mode: "expert", help: "opening.ask-change", guide: "accounting.opening-balances#change-posted-opening-balances" },
+  { kind: "action", id: "checks.run", mode: "basic", help: "checks.run", guide: "checks.overview#run-the-checks-now" },
+  { kind: "action", id: "checks.owner", mode: "basic", help: "checks.owner", guide: "checks.overview#name-a-checks-owner" },
   { kind: "action", id: "close.run-checks", mode: "expert", help: "close.run-checks", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.attest", mode: "expert", help: "close.attest", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.reopen", mode: "expert", help: "close.reopen", guide: "accounting.periods#reopen-a-month" },
