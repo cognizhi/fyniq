@@ -77,23 +77,33 @@ Each slice below is one pull request that passes `make test` on its own. Slice 1
 
 ## 3. Bank, assets, close and planning (slice 3)
 
-- [ ] 3.1 C.1 #22 asset register problems (✖ and ⚠, INV-07); C.2 #2 every sub-ledger the modules built have
+- [x] 3.1 C.1 #22 asset register problems (✖ and ⚠, INV-07); C.2 #2 every sub-ledger the modules built have
   (AR, AP, deposits, fixed assets, prepayments, deferred revenue, expense claims; payroll liabilities and GST join
   with their modules). `// req: C.1 #22`, `// req: C.2 #2`, `// req: INV-07`
-- [ ] 3.2 C.1 #28, #29 recurring entries (the close's checks, through the catalogue); C.2 #56 to #59, the close's
+- [x] 3.2 C.1 #28, #29 recurring entries (the close's checks, through the catalogue); C.2 #56 to #59, the close's
   reversals, variances, checklist and revaluation. `// req: C.1 #28`, `// req: C.1 #29`, `// req: C.2 #56` …
   `// req: C.2 #59`
-- [ ] 3.3 C.1 #30 suspense not zero; #31 a bank or cash balance below zero at a month end; #32 reconciliations not
+- [x] 3.3 C.1 #30 suspense not zero; #31 a bank or cash balance below zero at a month end; #32 reconciliations not
   matching; C.2 #8 a feed stale for 3 days; #9 lines unreconciled after 30 days; #43 bank data sync failed (the
   payment providers' sweep joins with them); #49 settlement residuals over the cap, or a write-off approved by the
   receipt's recorder; #51 possible duplicate bank lines. `// req: C.1 #30` … `// req: C.2 #51`
-- [ ] 3.4 C.1 #33 a closed period changed after closing (against the close's recorded trial balance); C.2 #17
+- [x] 3.4 C.1 #33 a closed period changed after closing (against the close's recorded trial balance); C.2 #17
   foreign-currency items not revalued at the last month end; #18 a month ended over 15 days ago and not closed.
   `// req: C.1 #33`, `// req: C.2 #17`, `// req: C.2 #18`
-- [ ] 3.5 C.1 #36 cash runway below 6 months, from the KPIs' runway (not assessed without a month; passes when not
+- [x] 3.5 C.1 #36 cash runway below 6 months, from the KPIs' runway (not assessed without a month; passes when not
   burning). `// req: C.1 #36`
-- [ ] 3.6 FR-CTL-05 on Checks: the nightly verification group (C.2 #1, #2, #3 with when each ran). The Compliance
+- [x] 3.6 FR-CTL-05 on Checks: the nightly verification group (C.2 #1, #2, #3 with when each ran). The Compliance
   Center reads the nightly `check_run`. `// req: FR-CTL-05`
+  Built: the close's own checks are close-backed (`closeBacked`): each takes the close's findings of its keys for the
+  month to close next, an item each opening the month's close; C.2 #56 to #59 wait for the month to end. A unit test
+  feeds each its keys' findings (the close's own tests trigger them); the checklist, a month left open, a closed month
+  changed (C.1 #33, against the close's recorded trial balance), the runway, a feed behind and a balance not revalued
+  have database fixtures. The worker reads the KPIs' entered counts (migration 000195) for the runway. C.2 #49's
+  write-off half is a backstop for SOD-9, which the approval refuses (WRITEOFF-11): no fixture can reach it through the
+  application; its tolerance half is the close's. C.1 #22's ⚠ for an asset without its data, and its ✖ for depreciation
+  past a disposal or below the residual value, have nothing to find: the register refuses an asset without its account,
+  life or start, or with a residual outside its cost (ASSET-04 to ASSET-07), and straight-line depreciation stops at the
+  residual value and at a disposal (ASSET-17); the register against its accounts is the close's `assets`.
 
 ## 4. Controls and the platform (slice 4)
 

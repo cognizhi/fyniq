@@ -39,6 +39,8 @@ export function itemLink(item: CheckItem): { to: string; params?: Record<string,
   switch (item.kind) {
     case "period":
       return item.id ? { to: "/accounting/close/$periodId", params: { periodId: item.id } } : null;
+    case "close": // the close's own finding for a month: "<period>/<its key>"
+      return item.id ? { to: "/accounting/close/$periodId", params: { periodId: item.id.split("/")[0] ?? item.id } } : null;
     case "account":
     case "role":
       return { to: "/accounting/chart-of-accounts" };
