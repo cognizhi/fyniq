@@ -126,6 +126,7 @@ var fyCodes = map[string]string{
 	"FY243": storage.CodeReportExport,
 	"FY244": storage.CodeKPIInput,
 	"FY245": storage.CodeCheck,
+	"FY246": storage.CodeCheckReview,
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

@@ -48,6 +48,12 @@ Source: PRD-001 §8.15 · Priority M · Phase P1
 - **WHEN** the module a check guards is not built or not set up
 - **THEN** none of that module's checks is shown
 
+#### Scenario: A reviewed item leaves its check
+- **GIVEN** a check found an item to review (⚠)
+- **WHEN** someone with A on "Checks and books health" marks it reviewed, with an optional note (rev 0.164)
+- **THEN** the item leaves the check and the review is audited
+- **AND** the item returns if it changes
+
 ### Requirement: FR-CTL-02 Books health score
 The system SHALL show a books health score on Home (OK / review / problems) with counts by severity: problems when any check finds ✖, review when any finds ⚠ or ⏰, OK otherwise.
 
@@ -271,26 +277,30 @@ Source: PRD-001 §C.1
 - **THEN** the check passes
 
 ### Requirement: C.1 #10 Transactions that cannot post
-The system SHALL list, on every relevant change and nightly, the transactions that cannot post; any such item blocks the close.
+The system SHALL list, on every relevant change and nightly, the bank lines waiting in the queue that cannot post as they stand (rev 0.164); any such line blocks the close. A line merely waiting is not one.
 
 Source: PRD-001 §C.1
 
 #### Scenario: A transaction cannot post
-- **WHEN** a transaction cannot post
-- **THEN** the check lists it as unable to post
+- **WHEN** a waiting bank line is dated in a closed month or one with no period, has no exchange rate for its day, or is on a money account whose ledger account is inactive
+- **THEN** the check lists it as unable to post, with why
 - **AND** it blocks the close
+
+#### Scenario: A line only waiting
+- **WHEN** a bank line waits in the queue and could post
+- **THEN** this check does not list it
 
 #### Scenario: Every transaction can post
 - **WHEN** every transaction can post
 - **THEN** the check passes
 
 ### Requirement: C.1 #11 Transactions to review
-The system SHALL flag for review, on every relevant change and nightly, the transactions that need review.
+The system SHALL flag for review, on every relevant change and nightly, the bank lines posted to suspense and waiting to be classified (rev 0.164; FR-BNK-11).
 
 Source: PRD-001 §C.1
 
 #### Scenario: A transaction needs review
-- **WHEN** a transaction needs review
+- **WHEN** a bank line was posted to suspense and is not yet classified
 - **THEN** the check flags it for review
 
 #### Scenario: Nothing to review
@@ -303,7 +313,7 @@ The system SHALL flag for review, on every relevant change and nightly, transact
 Source: PRD-001 §C.1
 
 #### Scenario: A transaction is dated in the future
-- **WHEN** a transaction is dated after today
+- **WHEN** a bank line is booked after the organisation's today (rev 0.164)
 - **THEN** the check flags it for review
 
 #### Scenario: No future-dated transactions

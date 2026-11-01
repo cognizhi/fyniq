@@ -56,3 +56,13 @@ RETURNING *;
 
 -- name: OutboxWaiting :one
 SELECT EXISTS (SELECT 1 FROM fyniq.outbox WHERE kind = sqlc.arg(kind) AND state IN ('pending', 'dispatched')) AS waiting;
+
+-- name: ListCheckReviews :many
+SELECT * FROM fyniq.check_review ORDER BY key, reviewed_at;
+
+-- name: InsertCheckReview :one
+INSERT INTO fyniq.check_review (key, item_kind, item_id, item_version, note, reviewed_by, reviewed_at)
+VALUES (sqlc.arg(key), sqlc.arg(item_kind), sqlc.arg(item_id), sqlc.arg(item_version), sqlc.narg(note), sqlc.arg(reviewed_by),
+        sqlc.arg(reviewed_at))
+ON CONFLICT (organisation_id, key, item_kind, item_id, item_version) DO NOTHING
+RETURNING *;

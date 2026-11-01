@@ -27,6 +27,7 @@ import (
 const (
 	CodeUnknownCheck = "CHECK-01" // no such check, or its module is off
 	CodeCheckOwner   = "CHECK-02" // the person named cannot own the check
+	CodeNotToReview  = "CHECK-04" // the item is not one the check lists to review
 )
 
 // CheckHealth is books health (FR-CTL-02): from the worst status any check the caller sees found.
@@ -45,6 +46,9 @@ type CheckItem struct {
 	ID     string `json:"id,omitempty" doc:"Its ID, where it has one." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"`
 	Label  string `json:"label" doc:"Its name." example:"October 2026"`
 	Detail string `json:"detail,omitempty" doc:"What is wrong with it." example:"6900 Clearing: give each a cash-flow line of the standard chart in the chart of accounts"`
+	// Severity and Version (rev 0.164) let a reader mark an item to review as reviewed: until it changes.
+	Severity string `json:"severity,omitempty" enum:"error,warning" doc:"The item's own severity, for a check that finds both: error (✖, it cannot post) or warning (⚠, to review); left out for the check's own." example:"warning"`
+	Version  string `json:"version,omitempty" doc:"The item's version as a review names it: a review holds until the item changes." example:"3"`
 }
 
 // CheckOwnerOut is who owns a check: a person named for it, or the catalogue's role.
@@ -98,6 +102,7 @@ type ChecksOut struct {
 	LastNight  *CheckRunOut `json:"last_nightly_run,omitempty" doc:"The latest nightly run, whose results the Compliance Center reads (FR-CTL-05)."`
 	Requested  bool         `json:"run_requested" doc:"true while a Run now waits for the worker." example:"false"`
 	OwnerNames bool         `json:"may_name_owners" doc:"true when the caller may name a person as a check's owner (Appendix D: C)." example:"false"`
+	MayReview  bool         `json:"may_review" doc:"true when the caller may mark an item to review as reviewed (Appendix D: A; rev 0.164)." example:"true"`
 }
 
 type checksOutput struct{ Body ChecksOut }
@@ -190,7 +195,7 @@ func runOut(r storage.CheckRun) *CheckRunOut {
 }
 
 // checkOut is a definition with its state and owner, as the reader sees it.
-func checkOut(d checks.Definition, state *storage.CheckState, owner *storage.CheckOwner, s seer) (CheckOut, error) {
+func checkOut(d checks.Definition, state *storage.CheckState, owner *storage.CheckOwner, s seer, reviewed map[string]bool) (CheckOut, error) {
 	out := CheckOut{Key: d.Key, Ref: d.Ref, Area: d.Area, Worst: string(d.Worst), Title: d.Title, Explain: d.Explain, Rules: d.Rules,
 		Nightly: slices.Contains(nightlyGroup, d.Ref), Status: string(checks.NotAssessed), Items: []CheckItem{}, ItemsArea: d.View,
 		Owner: CheckOwnerOut{Role: RoleName(d.Owner)}}
@@ -203,6 +208,14 @@ func checkOut(d checks.Definition, state *storage.CheckState, owner *storage.Che
 		items, err := checks.ItemsOf(*state)
 		if err != nil {
 			return out, err
+		}
+		// Items marked reviewed since the run leave at once; the next run, which the review asked for, agrees (rev 0.164).
+		status, count, kept, dropped := checks.WithoutReviewed(d.Key, checks.Status(state.Status), state.Count, items, func(k string) bool { return reviewed[k] })
+		if dropped > 0 {
+			out.Status, out.Count, items = string(status), count, kept
+			if status == checks.OK {
+				out.Detail, out.Fix = fmt.Sprintf("Nothing left to review: %d item(s) marked reviewed", dropped), ""
+			}
 		}
 		if s.opens(d) {
 			for _, it := range items {
@@ -267,10 +280,14 @@ func (a *API) listChecks(ctx context.Context, u storage.UnitOfWork, s seer) (Che
 	for i := range owners {
 		byOwner[owners[i].Key] = &owners[i]
 	}
+	reviewed, err := reviewedSet(ctx, u)
+	if err != nil {
+		return out, err
+	}
 	var people []*Person
 	var statuses []checks.Status
 	for _, d := range defs {
-		c, err := checkOut(d, byState[d.Key], byOwner[d.Key], s)
+		c, err := checkOut(d, byState[d.Key], byOwner[d.Key], s, reviewed)
 		if err != nil {
 			return out, err
 		}
@@ -311,6 +328,20 @@ func (a *API) listChecks(ctx context.Context, u storage.UnitOfWork, s seer) (Che
 		return out, err
 	}
 	out.OwnerNames = authz.Decide(authz.SetCheckOwner, s.p.Roles, s.p.AI()).Allowed
+	out.MayReview = authz.Decide(authz.ReviewCheckItem, s.p.Roles, s.p.AI()).Allowed
+	return out, nil
+}
+
+// reviewedSet are the review keys of the items marked reviewed.
+func reviewedSet(ctx context.Context, u storage.UnitOfWork) (map[string]bool, error) {
+	reviews, err := u.Checks().Reviews(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]bool, len(reviews))
+	for _, r := range reviews {
+		out[checks.ReviewKey(r.Key, r.ItemKind, r.ItemID, r.ItemVersion)] = true
+	}
 	return out, nil
 }
 
@@ -357,11 +388,43 @@ func (a *API) readCheck(ctx context.Context, u storage.UnitOfWork, s seer, key s
 	if i := slices.IndexFunc(owners, func(x storage.CheckOwner) bool { return x.Key == key }); i >= 0 {
 		owner = &owners[i]
 	}
-	out, err := checkOut(d, state, owner, s)
+	reviewed, err := reviewedSet(ctx, u)
+	if err != nil {
+		return CheckOut{}, err
+	}
+	out, err := checkOut(d, state, owner, s, reviewed)
 	if err != nil {
 		return out, err
 	}
 	return out, a.name(ctx, u, out.Owner.Person)
+}
+
+// CheckReviewIn marks an item of a check reviewed.
+type CheckReviewIn struct {
+	Kind string `json:"kind" maxLength:"40" doc:"The item's kind, as the check lists it." example:"bill"`
+	ID   string `json:"id" maxLength:"100" doc:"The item's ID, as the check lists it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"`
+	Note string `json:"note,omitempty" maxLength:"500" doc:"What the review found, for the audit trail." example:"Checked with the supplier: two separate deliveries."`
+}
+
+type reviewCheckItemInput struct {
+	Key string `path:"key" pattern:"^[a-z][a-z0-9-]*(\\.[a-z0-9-]+)+$" maxLength:"100" doc:"The check." example:"purchases.bills-to-review"`
+	KeyHeader
+	PreferHeader
+	Body CheckReviewIn
+}
+
+type reviewCheckItemOutput struct {
+	Status   int
+	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
+	Body     CheckOut
+}
+
+// notToReview is CHECK-04.
+func notToReview(why string) error {
+	return problem(CodeNotToReview, "That item is not one this check lists to review: "+why+".",
+		"Pick an item to review (⚠) from the check as listChecks shows it", FieldProblem{Code: CodeNotToReview, Field: "body.id", Message: why,
+			Fix: "Pick an item the check lists to review"})
 }
 
 // ownerRefused is CHECK-02.
@@ -455,6 +518,73 @@ func registerChecks(a *API) {
 		}
 		return &runCatalogueOutput{Status: w.Status, Applied: applied(w), Body: w.Body}, nil
 	})
+
+	register(a, authz.ReviewCheckItem, exempt(huma.Operation{
+		OperationID: "reviewCheckItem", Method: http.MethodPost, Path: "/v1/checks/{key}/reviews", Tags: []string{"Checks"}, DefaultStatus: http.StatusCreated,
+		Summary: "Mark an item to review as reviewed",
+		Description: "Marks an item a check lists to review (⚠) as reviewed, with an optional note (FR-CTL-01, ENG-21; the owner's decision " +
+			"of 1 Nov 2026, rev 0.164): it leaves the check at once, and comes back if the item changes, as the review names its version. " +
+			"An item that cannot post (✖) is fixed, never reviewed; an item the check does not list to review, or that the caller's roles " +
+			"do not open, is CHECK-04. Marking it again at the same version records nothing more. Side effects: the review and its " +
+			"audit event, and the checks it concerns run again. Idempotent with Idempotency-Key; Prefer: return=preview checks it and " +
+			"saves nothing.",
+	}, "If-Match", "A review adds to the check and changes nothing of it: it names the item's version itself, and marking an item twice records nothing more."),
+		[]string{CodeUnknownCheck, CodeNotToReview, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeIdempotencyReused, CodeIdempotencyBusy,
+			CodeIdempotencyOld, storage.CodeCheckReview, storage.CodeRetry, storage.CodeLockTimeout},
+		func(ctx context.Context, in *reviewCheckItemInput) (*reviewCheckItemOutput, error) {
+			p, _ := authn.From(ctx)
+			s := seerOf(p)
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (CheckOut, error) {
+				d, err := a.checkOf(ctx, u, in.Key)
+				if err != nil {
+					return CheckOut{}, err
+				}
+				if !s.opens(d) {
+					return CheckOut{}, notToReview("your roles do not open its items")
+				}
+				// The item as the latest run found it, reviewed already or not: marking it again records nothing more.
+				states, err := u.Checks().States(ctx)
+				if err != nil {
+					return CheckOut{}, err
+				}
+				j := slices.IndexFunc(states, func(x storage.CheckState) bool { return x.Key == in.Key })
+				if j < 0 {
+					return CheckOut{}, notToReview("the check has not run yet")
+				}
+				items, err := checks.ItemsOf(states[j])
+				if err != nil {
+					return CheckOut{}, err
+				}
+				i := slices.IndexFunc(items, func(it checks.Item) bool { return it.Kind == in.Body.Kind && it.ID == in.Body.ID })
+				if i < 0 {
+					// A run since the review left it out: marking it again records nothing more.
+					reviews, err := u.Checks().Reviews(ctx)
+					if err != nil {
+						return CheckOut{}, err
+					}
+					if slices.ContainsFunc(reviews, func(r storage.CheckReview) bool {
+						return r.Key == in.Key && r.ItemKind == in.Body.Kind && r.ItemID == in.Body.ID
+					}) {
+						return a.readCheck(ctx, u, s, in.Key)
+					}
+				}
+				switch {
+				case i < 0:
+					return CheckOut{}, notToReview("the check does not list it now")
+				case items[i].Severity == string(checks.Error) || (items[i].Severity == "" && states[j].Status != string(checks.Warning)):
+					return CheckOut{}, notToReview("it is not one to review: an item that cannot post is fixed, not reviewed")
+				}
+				if _, _, err := u.Checks().Review(ctx, storage.NewCheckReview{Key: in.Key, ItemKind: in.Body.Kind, ItemID: in.Body.ID,
+					ItemVersion: items[i].Version, Note: strings.TrimSpace(in.Body.Note), ReviewedBy: uploader(ctx), ReviewedAt: a.deps.Clock.Now()}); err != nil {
+					return CheckOut{}, err
+				}
+				return a.readCheck(ctx, u, s, in.Key)
+			})
+			if err != nil {
+				return nil, err
+			}
+			return &reviewCheckItemOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
+		})
 
 	register(a, authz.SetCheckOwner, huma.Operation{
 		OperationID: "setCheckOwner", Method: http.MethodPut, Path: "/v1/checks/{key}/owner", Tags: []string{"Checks"},

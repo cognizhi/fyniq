@@ -11,6 +11,8 @@ package checks
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -54,6 +56,54 @@ type Item struct {
 	ID     string `json:"id,omitempty"`
 	Label  string `json:"label"`
 	Detail string `json:"detail,omitempty"`
+	// Severity is the item's own, for a check that finds both (C.1 #8, #18): error or warning; "" for the check's.
+	Severity string `json:"severity,omitempty"`
+	// Version is the item's version as a review names it (rev 0.164): a review holds until the item changes.
+	Version string `json:"version,omitempty"`
+}
+
+// severity is the item's severity within a result of status.
+func (it Item) severity(status Status) Status {
+	if it.Severity != "" {
+		return Status(it.Severity)
+	}
+	return status
+}
+
+// ReviewKey names an item of a check at its version, as a review records it.
+func ReviewKey(key, kind, id, version string) string { return key + "\x00" + kind + "\x00" + id + "\x00" + version }
+
+// WithoutReviewed takes the ⚠ items marked reviewed out of a result (FR-CTL-01, ENG-21; rev 0.164): what is left decides
+// its status, ✖ while an item that cannot post remains, ⚠ while one to review does, OK once every item found was
+// reviewed. reviewed reports whether the review key of an item is recorded.
+func WithoutReviewed(key string, status Status, count int, items []Item, reviewed func(string) bool) (Status, int, []Item, int) {
+	if status != Warning && status != Error {
+		return status, count, items, 0
+	}
+	kept := make([]Item, 0, len(items))
+	dropped, errs := 0, 0
+	for _, it := range items {
+		sev := it.severity(status)
+		if sev == Warning && it.ID != "" && reviewed(ReviewKey(key, it.Kind, it.ID, it.Version)) {
+			dropped++
+			continue
+		}
+		if sev == Error {
+			errs++
+		}
+		kept = append(kept, it)
+	}
+	if dropped == 0 {
+		return status, count, items, 0
+	}
+	count = max(count-dropped, len(kept))
+	switch {
+	case len(kept) == 0 && count == 0:
+		status = OK
+	case errs == 0 && status == Error:
+		status = Warning
+	}
+	return status, count, kept, dropped
 }
 
 // Result is a check's outcome.
@@ -75,11 +125,10 @@ func Missing(needs, setting string) Result {
 	return Result{Status: NotAssessed, Needs: needs, Setting: setting, Detail: "Not assessed: it needs " + needs}
 }
 
-// Found is a result with items: status, how to fix them, and the words for what was found.
+// Found is a result with items: status, how to fix them, and the words for what was found. It keeps every item; the
+// state keeps the first MaxItems once the reviewed ones are out.
 func Found(status Status, items []Item, detail, fix string) Result {
-	r := Result{Status: status, Count: len(items), Detail: detail, Fix: fix}
-	r.Items = items[:min(len(items), MaxItems)]
-	return r
+	return Result{Status: status, Count: len(items), Items: items, Detail: detail, Fix: fix}
 }
 
 // Definition is one check of the catalogue (design D1).
@@ -119,6 +168,8 @@ type Env struct {
 	Latest map[string]Event
 	// Prior is each check's latest state before this run, by key.
 	Prior map[string]storage.CheckState
+	// Reviewed are the review keys of the items marked reviewed (rev 0.164).
+	Reviewed map[string]bool
 
 	close      *closeRun
 	statements map[string]financials.Statement
@@ -209,25 +260,41 @@ func (e *Env) Close(ctx context.Context, u storage.UnitOfWork, keys ...string) (
 // Month is a period's month, as a check names it: October 2026.
 func Month(p storage.Period) string { return p.StartsOn.Format("January 2006") }
 
-// PeriodItem is an item naming a period.
+// PeriodItem is an item naming a period, whose version is what was found in it: a review of it holds until the finding
+// changes.
 func PeriodItem(p storage.Period, detail string) Item {
-	return Item{Kind: "period", ID: p.ID.String(), Label: Month(p), Detail: detail}
+	return Item{Kind: "period", ID: p.ID.String(), Label: Month(p), Detail: detail, Version: Fingerprint(detail)}
+}
+
+// Fingerprint is a short version of words that change when what they describe does.
+func Fingerprint(words string) string {
+	sum := sha256.Sum256([]byte(words))
+	return hex.EncodeToString(sum[:6])
+}
+
+// reviewType is the audit object type of an item marked reviewed: it reruns the checks that find items to review.
+const reviewType = "check_review"
+
+// reacts reports whether a change of any of types reruns d: one of its triggers, or a review for a check that finds
+// items to review.
+func (d Definition) reacts(types []string) bool {
+	if d.Triggers == nil {
+		return false
+	}
+	for _, t := range d.Triggers {
+		if slices.Contains(types, t) {
+			return true
+		}
+	}
+	return d.Worst != Due && slices.Contains(types, reviewType)
 }
 
 // Triggered are the definitions of defs that a change of any of types reruns, and those that never ran (no prior state).
 func Triggered(defs []Definition, types []string, prior map[string]storage.CheckState) []Definition {
 	var out []Definition
 	for _, d := range defs {
-		_, ran := prior[d.Key]
-		if !ran && d.Triggers != nil {
+		if _, ran := prior[d.Key]; (!ran && d.Triggers != nil) || d.reacts(types) {
 			out = append(out, d)
-			continue
-		}
-		for _, t := range d.Triggers {
-			if slices.Contains(types, t) {
-				out = append(out, d)
-				break
-			}
 		}
 	}
 	return out
@@ -236,12 +303,5 @@ func Triggered(defs []Definition, types []string, prior map[string]storage.Check
 // Reacts reports whether a change of any of types reruns a definition of defs: what decides a unit of work asks for a
 // refresh (design D5).
 func Reacts(defs []Definition, types []string) bool {
-	for _, d := range defs {
-		for _, t := range d.Triggers {
-			if slices.Contains(types, t) {
-				return true
-			}
-		}
-	}
-	return false
+	return slices.ContainsFunc(defs, func(d Definition) bool { return d.reacts(types) })
 }

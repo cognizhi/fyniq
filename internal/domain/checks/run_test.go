@@ -15,7 +15,9 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/pgtest"
+	"github.com/cognizhi/fyniq/internal/bankfile"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/checks"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
@@ -526,5 +528,97 @@ func TestTheCloseAndTheCatalogueAgree(t *testing.T) {
 	cc, err := closing.Service{Store: b.api, Clock: clock.NewFrozen(now), More: checks.ForClose}.RunChecks(ctx, b.org, b.oct.ID)
 	if err != nil || cc.Clean {
 		t.Errorf("the close ran clean with a system account missing: %+v, %v", cc, err)
+	}
+}
+
+// The checks of the bank's lines (rev 0.164): a waiting line that cannot post as it stands, dated where no period is or
+// with no rate for its day (C.1 #10); a line in suspense (C.1 #11); a line booked after today (C.1 #12). A line that
+// merely waits is none of them.
+// req: C.1 #10
+// req: C.1 #11
+// req: C.1 #12
+func TestTheBankLinesChecks(t *testing.T) {
+	b := newBooks(t, true)
+	at := time.Date(2026, 11, 10, 2, 0, 0, 0, time.UTC)
+	var sgd, usd storage.MoneyAccount
+	if err := b.api.Do(ctx, b.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, x := range []struct {
+			code, name, cur, ident string
+			dst                    *storage.MoneyAccount
+		}{{"1015", "DBS current", "SGD", "072-123456-7", &sgd}, {"1021", "DBS USD", "USD", "072-999999-9", &usd}} {
+			a, err := u.Accounts().Create(ctx, storage.NewAccount{Code: x.code, Name: x.name, Type: storage.Asset,
+				AccountAttributes: storage.AccountAttributes{MoneyAccount: true, Currency: x.cur, ReportGroup: "Cash & bank", CashFlowLine: "Cash & cash equivalents"}})
+			if err != nil {
+				return err
+			}
+			if *x.dst, err = u.Banking().CreateMoneyAccount(ctx, storage.NewMoneyAccount{AccountID: a.ID, Kind: storage.MoneyBank, Name: x.name,
+				Identifier: x.ident, Currency: x.cur, At: at}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"bank.lines-cannot-post", "bank.lines-in-suspense", "bank.lines-in-the-future"} {
+		want(t, b.run(t), key, checks.OK)
+	}
+	statement := func(account *uuid.UUID, file string) []storage.BankLine {
+		t.Helper()
+		var out []storage.BankLine
+		if err := b.api.Do(ctx, b.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			if _, err := banking.Import(ctx, u, banking.ImportRequest{Format: bankfile.FormatMT940, Data: []byte(file), Account: account,
+				Source: storage.MoneySourceFile, At: at}); err != nil {
+				return err
+			}
+			var err error
+			out, err = u.Banking().Lines(ctx, storage.BankLineFilter{MoneyAccountID: account})
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	mt := func(account, open, close string, lines ...string) string {
+		s := ":20:S\n:25:" + account + "\n:60F:" + open + "\n"
+		for i, l := range lines {
+			s += ":61:" + l + "NTRFNONREF//R" + fmt.Sprint(i) + "\n:86:LINE " + fmt.Sprint(i) + "\n"
+		}
+		return s + ":62F:" + close + "\n"
+	}
+	// SGD: one line in October (it can post once coded), one in September (no period), one in December (after today, and
+	// no period either).
+	sgdLines := statement(&sgd.ID, mt("0721234567", "C260901SGD1000,00", "C261231SGD1300,00", "260915C100,00", "261005C100,00", "261201C100,00"))
+	// USD: one line in October, and no USD rate for its day.
+	usdLines := statement(&usd.ID, mt("072-999999-9", "C261001USD0,00", "C261031USD50,00", "261006C50,00"))
+	byDay := map[string]storage.BankLine{}
+	for _, l := range append(sgdLines, usdLines...) {
+		byDay[l.Currency+" "+l.BookingDate.Format(time.DateOnly)] = l
+	}
+	states := b.run(t)
+	cannot := want(t, states, "bank.lines-cannot-post", checks.Error)
+	found := map[string]string{}
+	for _, it := range itemsOf(t, cannot) {
+		found[it.ID] = it.Detail
+	}
+	if !strings.Contains(found[byDay["SGD 2026-09-15"].ID.String()], "no period covers 2026-09-15") ||
+		!strings.Contains(found[byDay["USD 2026-10-06"].ID.String()], "there is no USD rate for 2026-10-06") ||
+		!strings.Contains(found[byDay["SGD 2026-12-01"].ID.String()], "no period covers 2026-12-01") {
+		t.Errorf("the lines that cannot post: %v", found)
+	}
+	if _, ok := found[byDay["SGD 2026-10-05"].ID.String()]; ok || len(found) != 3 {
+		t.Errorf("a line that merely waits is listed: %v", found)
+	}
+	future := want(t, states, "bank.lines-in-the-future", checks.Warning)
+	if items := itemsOf(t, future); len(items) != 1 || items[0].ID != byDay["SGD 2026-12-01"].ID.String() {
+		t.Errorf("the line after today: %+v", items)
+	}
+	// The October line posted to suspense waits there for review.
+	if _, err := (journal.BankTransactions{Store: b.api, Clock: clock.NewFrozen(now)}).Suspend(ctx, b.org, byDay["SGD 2026-10-05"].ID, at); err != nil {
+		t.Fatal(err)
+	}
+	suspense := want(t, b.run(t), "bank.lines-in-suspense", checks.Warning)
+	if items := itemsOf(t, suspense); len(items) != 1 || items[0].ID != byDay["SGD 2026-10-05"].ID.String() || !strings.HasPrefix(items[0].Label, "DBS current, 5 Oct 2026") {
+		t.Errorf("the line in suspense: %+v", items)
 	}
 }

@@ -199,6 +199,8 @@ var codeFacts = map[string]struct {
 	storage.CodeKPIInput:          {409, "A month's KPI counts change only as their next version"},
 	CodeUnknownCheck:              {404, "No such check"},
 	CodeCheckOwner:                {422, "That person cannot own the check"},
+	CodeNotToReview:               {422, "Not an item to review"},
+	storage.CodeCheckReview:       {409, "A review is never changed"},
 	storage.CodeCheck:             {409, "A check's state, run or owner cannot change that way"},
 	CodeReportRender:              {503, "The PDF could not be made now"},
 	closing.CodeStale:             {409, "The checks are stale"},

@@ -102,6 +102,49 @@ func (q *Queries) InsertCheckOwner(ctx context.Context, arg InsertCheckOwnerPara
 	return i, err
 }
 
+const insertCheckReview = `-- name: InsertCheckReview :one
+INSERT INTO fyniq.check_review (key, item_kind, item_id, item_version, note, reviewed_by, reviewed_at)
+VALUES ($1, $2, $3, $4, $5, $6,
+        $7)
+ON CONFLICT (organisation_id, key, item_kind, item_id, item_version) DO NOTHING
+RETURNING organisation_id, id, key, item_kind, item_id, item_version, note, reviewed_by, reviewed_at
+`
+
+type InsertCheckReviewParams struct {
+	Key         string
+	ItemKind    string
+	ItemID      string
+	ItemVersion string
+	Note        *string
+	ReviewedBy  string
+	ReviewedAt  time.Time
+}
+
+func (q *Queries) InsertCheckReview(ctx context.Context, arg InsertCheckReviewParams) (FyniqCheckReview, error) {
+	row := q.db.QueryRow(ctx, insertCheckReview,
+		arg.Key,
+		arg.ItemKind,
+		arg.ItemID,
+		arg.ItemVersion,
+		arg.Note,
+		arg.ReviewedBy,
+		arg.ReviewedAt,
+	)
+	var i FyniqCheckReview
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.Key,
+		&i.ItemKind,
+		&i.ItemID,
+		&i.ItemVersion,
+		&i.Note,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+	)
+	return i, err
+}
+
 const insertCheckRun = `-- name: InsertCheckRun :one
 INSERT INTO fyniq.check_run (run_trigger, requested_by, started_at, finished_at, ledger_revision, audit_seq, keys, results)
 VALUES ($1, $2, $3, $4, $5,
@@ -251,6 +294,40 @@ func (q *Queries) ListCheckOwners(ctx context.Context) ([]FyniqCheckOwner, error
 			&i.SetBy,
 			&i.SetAt,
 			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCheckReviews = `-- name: ListCheckReviews :many
+SELECT organisation_id, id, key, item_kind, item_id, item_version, note, reviewed_by, reviewed_at FROM fyniq.check_review ORDER BY key, reviewed_at
+`
+
+func (q *Queries) ListCheckReviews(ctx context.Context) ([]FyniqCheckReview, error) {
+	rows, err := q.db.Query(ctx, listCheckReviews)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqCheckReview
+	for rows.Next() {
+		var i FyniqCheckReview
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.Key,
+			&i.ItemKind,
+			&i.ItemID,
+			&i.ItemVersion,
+			&i.Note,
+			&i.ReviewedBy,
+			&i.ReviewedAt,
 		); err != nil {
 			return nil, err
 		}

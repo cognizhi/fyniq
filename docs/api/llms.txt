@@ -110,6 +110,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/checks/runs` (runChecks): Run every check now
 - `GET /v1/checks/{key}` (getCheck): Get a check
 - `PUT /v1/checks/{key}/owner` (setCheckOwner): Name a check's owner
+- `POST /v1/checks/{key}/reviews` (reviewCheckItem): Mark an item to review as reviewed
 - `GET /v1/claim-categories` (listClaimCategories): List the expense policy's categories
 - `POST /v1/claim-categories` (createClaimCategory): Add a category to the expense policy
 - `PUT /v1/claim-categories/{category_id}` (replaceClaimCategory): Change a category of the expense policy

@@ -422,6 +422,18 @@ type FyniqCheckOwner struct {
 	Version        int32
 }
 
+type FyniqCheckReview struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Key            string
+	ItemKind       string
+	ItemID         string
+	ItemVersion    string
+	Note           *string
+	ReviewedBy     string
+	ReviewedAt     time.Time
+}
+
 type FyniqCheckRun struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

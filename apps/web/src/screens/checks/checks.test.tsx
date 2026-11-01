@@ -41,6 +41,7 @@ const check = (key: string, area: string, status: CheckOut["status"], more: Part
 const answered: ChecksOut = {
   health: { score: "problems", problems: 1, warnings: 1, due: 0, ok: 4, not_assessed: 1 },
   may_name_owners: true,
+  may_review: true,
   run_requested: false,
   last_run: { trigger: "nightly", started_at: "2026-11-01T20:15:00Z", finished_at: "2026-11-01T20:15:03Z", ledger_revision: 42, checks: 7 },
   last_nightly_run: { trigger: "nightly", started_at: "2026-11-01T20:15:00Z", finished_at: "2026-11-01T20:15:03Z", ledger_revision: 42, checks: 7 },
@@ -66,6 +67,13 @@ const answered: ChecksOut = {
       owner: { role: "controller", version: 1, person: { kind: "user", id: "u-mei", name: "Mei Lin Tan" } },
     }),
     check("setup.opening-balances-balance", "Setup", "ok", { title: "The opening balances balance" }),
+    check("purchases.bills-to-review", "Purchases", "warning", {
+      title: "No posted bill waits for a review",
+      count: 1,
+      items_area: "Bills, vendor credits",
+      detail: "1 posted bill(s) to review",
+      items: [{ kind: "bill", id: "b1", label: "BL-0001 of 2026-10-14, Atlassian Pty Ltd", detail: "the stated GST 8.00 SGD differs by 1.00 SGD", version: "2" }],
+    }),
     check("ledger.balances-match-lines", "Ledger", "ok", { title: "The balances equal their lines", nightly: true, detail: "Every balance equals its recomputation" }),
     check("audit.chain-intact", "Audit", "not_assessed", {
       title: "The audit trail is intact and anchored",
@@ -123,7 +131,7 @@ describe("Books health and checks", () => {
     await screen.findByRole("region", { name: "Books health: problems" });
     fireEvent.click(screen.getByRole("radio", { name: "Needs action" }));
     const shown = Array.from(document.querySelectorAll("tr[data-check]")).map((r) => r.getAttribute("data-check"));
-    expect(shown).toEqual(["books.balance-sheet-balances", "setup.system-accounts-exist", "audit.chain-intact"]);
+    expect(shown).toEqual(["books.balance-sheet-balances", "setup.system-accounts-exist", "purchases.bills-to-review", "audit.chain-intact"]);
   });
 
   it("adds each check's Appendix C row and rules in Expert, and sends the same requests in both modes", async () => {
@@ -183,6 +191,32 @@ describe("Books health and checks", () => {
     const put = seen.find((s) => s.method === "PUT")!;
     expect(put.headers.get("If-Match")).toBe('"1"');
     expect(put.body).toEqual({ person_user_id: null });
+  });
+
+  // req: FR-CTL-01
+  it("marks an item to review as reviewed, with a note; offers it only on items to review", async () => {
+    answer({
+      "GET /v1/checks": { status: 200, body: answered },
+      "POST /v1/checks/purchases.bills-to-review/reviews": { status: 201, body: { ...answered.checks[5], status: "ok", items: [], count: 0 } },
+    });
+    renderPage(Checks, { path: "/checks", session: controller, mode: "basic" });
+    await screen.findByRole("region", { name: "Books health: problems" });
+    // ✖ items are fixed, never reviewed
+    expect(within(document.querySelector('tr[data-check="books.balance-sheet-balances"]') as HTMLElement).queryByRole("button", { name: /reviewed/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Mark BL-0001 of 2026-10-14, Atlassian Pty Ltd reviewed" }));
+    const dialog = await screen.findByRole("dialog", { name: "Mark BL-0001 of 2026-10-14, Atlassian Pty Ltd reviewed?" });
+    fireEvent.change(within(dialog).getByLabelText("What you found (optional)"), { target: { value: "Rounded by the supplier" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Mark reviewed" }));
+    await screen.findByRole("region", { name: "Books health: problems" });
+    expect(seen.find((s) => s.method === "POST")!.body).toEqual({ kind: "bill", id: "b1", note: "Rounded by the supplier" });
+    await noViolations(document.body);
+  });
+
+  it("offers no review to a role that may not mark items reviewed", async () => {
+    answer({ "GET /v1/checks": { status: 200, body: { ...answered, may_review: false } } });
+    renderPage(Checks, { path: "/checks", session: { ...ownerSession, roles: ["auditor"] } as Session, mode: "basic" });
+    await screen.findByRole("region", { name: "Books health: problems" });
+    expect(screen.queryByRole("button", { name: /reviewed/ })).toBeNull();
   });
 
   it("shows the API's refusal of an owner", async () => {

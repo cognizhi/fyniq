@@ -29,6 +29,24 @@
         "October 2026"
       ],
       "type": "string"
+    },
+    "severity": {
+      "description": "The item's own severity, for a check that finds both: error (✖, it cannot post) or warning (⚠, to review); left out for the check's own.",
+      "enum": [
+        "error",
+        "warning"
+      ],
+      "examples": [
+        "warning"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The item's version as a review names it: a review holds until the item changes.",
+      "examples": [
+        "3"
+      ],
+      "type": "string"
     }
   },
   "required": [

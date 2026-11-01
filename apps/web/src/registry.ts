@@ -367,6 +367,7 @@ export const actions = [
   { kind: "action", id: "opening.ask-change", mode: "expert", help: "opening.ask-change", guide: "accounting.opening-balances#change-posted-opening-balances" },
   { kind: "action", id: "checks.run", mode: "basic", help: "checks.run", guide: "checks.overview#run-the-checks-now" },
   { kind: "action", id: "checks.owner", mode: "basic", help: "checks.owner", guide: "checks.overview#name-a-checks-owner" },
+  { kind: "action", id: "checks.review", mode: "basic", help: "checks.review", guide: "checks.overview#mark-an-item-reviewed" },
   { kind: "action", id: "close.run-checks", mode: "expert", help: "close.run-checks", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.attest", mode: "expert", help: "close.attest", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.reopen", mode: "expert", help: "close.reopen", guide: "accounting.periods#reopen-a-month" },

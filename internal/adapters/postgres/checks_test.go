@@ -377,3 +377,68 @@ func TestAChangeTellsTheHookAndARefreshWaitsOnce(t *testing.T) {
 		t.Error("a running refresh still counts as waiting: a change now would be missed")
 	}
 }
+
+// FR-CTL-01, ENG-21 (rev 0.164): the API marks an item of a check reviewed at its version, once, audited; marking it again
+// at the same version records nothing more; a review is never changed or deleted (FY246), the worker never writes one,
+// and another organisation never sees it.
+// req: FR-CTL-01
+// req: QA-ENG-05
+// asvs: V8.2.2, V16.3.1
+func TestAReviewOfACheckItemIsKeptOnce(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "founder"}})
+	api := store(t, "fyniq_api")
+	b := books(t, "Check reviews Pte Ltd")
+	other := books(t, "Other reviews Pte Ltd")
+	n := storage.NewCheckReview{Key: "purchases.bills-to-review", ItemKind: "bill", ItemID: "b1", ItemVersion: "2", Note: "Rounded by the supplier",
+		ReviewedBy: "user:founder", ReviewedAt: time.Date(2026, 11, 2, 1, 0, 0, 0, time.UTC)}
+	review := func(org uuid.UUID, n storage.NewCheckReview) (bool, error) {
+		var added bool
+		err := api.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			_, added, err = u.Checks().Review(ctx, n)
+			return err
+		})
+		return added, err
+	}
+	if added, err := review(b.Org, n); err != nil || !added {
+		t.Fatalf("the first review: %v, %v", added, err)
+	}
+	if added, err := review(b.Org, n); err != nil || added {
+		t.Errorf("the same review again: %v, %v", added, err)
+	}
+	n.ItemVersion = "3"
+	if added, err := review(b.Org, n); err != nil || !added {
+		t.Errorf("a review of the item's next version: %v, %v", added, err)
+	}
+	if err := api.Do(ctx, other.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		rs, err := u.Checks().Reviews(ctx)
+		if len(rs) != 0 {
+			t.Errorf("another organisation reads the reviews: %+v", rs)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if tr := trail(t, b.Org); strings.Count(tr, `"action":"check.item_reviewed"`) != 2 || !strings.Contains(tr, "Rounded by the supplier") {
+		t.Errorf("the reviews' audit events: %s", tr)
+	}
+	for _, c := range []struct {
+		role, sql, code string
+	}{
+		{"fyniq_api", `UPDATE fyniq.check_review SET note = 'x'`, "42501"},
+		{"fyniq_migrator", `UPDATE fyniq.check_review SET note = 'x'`, "FY246"},
+		{"fyniq_migrator", `DELETE FROM fyniq.check_review`, "FY246"},
+		{"fyniq_worker", `INSERT INTO fyniq.check_review (key, item_kind, item_id, item_version, reviewed_by, reviewed_at) VALUES ('books.a', 'bill', 'x', '1', 'x', now())`, "42501"},
+		{"fyniq_api", `INSERT INTO fyniq.check_review (key, item_kind, item_id, item_version, reviewed_by, reviewed_at) VALUES ('books.a', 'bill', 'x', '1', 'x', now())`, "FY061"},
+	} {
+		err := asOrg(context.Background(), conn(t, c.role), b.Org, func(tx pgx.Tx) error {
+			_, err := tx.Exec(context.Background(), c.sql)
+			if err == nil {
+				_, err = tx.Exec(context.Background(), "SET CONSTRAINTS ALL IMMEDIATE")
+			}
+			return err
+		})
+		if err == nil || !strings.Contains(err.Error(), c.code) {
+			t.Errorf("%s: %s: want %s, got %v", c.role, c.sql, c.code, err)
+		}
+	}
+}

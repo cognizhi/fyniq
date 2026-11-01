@@ -87,10 +87,16 @@ func TestTheChecksAsEachReaderSeesThem(t *testing.T) {
 	if admin["count"] != float64(len(storage.SystemRoles)) || len(admin["items"].([]any)) != 0 || admin["items_hidden"] != true {
 		t.Errorf("the system accounts, as the Administrator sees them: %v", admin)
 	}
-	// The AR specialist's view is of sales: none of the books' checks in their list, none of their items when opened.
+	// The AR specialist's view is of sales: the sales checks only, their health from those, and no owner to name or item
+	// to review.
 	ar := e.call(http.MethodGet, "/v1/checks", e.as(authz.ARSpecialist), nil)
-	if len(ar.Body["checks"].([]any)) != 0 || ar.Body["health"].(map[string]any)["score"] != "ok" || ar.Body["may_name_owners"] != false {
+	if len(ar.Body["checks"].([]any)) == 0 || ar.Body["may_name_owners"] != false || ar.Body["may_review"] != false {
 		t.Errorf("the AR specialist's checks: %s", ar.Raw)
+	}
+	for _, x := range ar.Body["checks"].([]any) {
+		if c := x.(map[string]any); c["area"] != "Sales" {
+			t.Errorf("the AR specialist lists %s, of %s", c["key"], c["area"])
+		}
 	}
 	// Opened by its key, a check shows its items to the AR specialist where their own row allows: they view the chart.
 	one := e.call(http.MethodGet, "/v1/checks/setup.system-accounts-exist", e.as(authz.ARSpecialist), nil)

@@ -233,6 +233,7 @@ func balanceSheetIncludesEveryAccount(ctx context.Context, u storage.UnitOfWork,
 	}
 	var items []Item
 	for _, i := range months {
+		var found []string // the balance sheet's words, then the cash flow's: one item for the month
 		for _, kind := range []financials.Kind{financials.BalanceSheet, financials.CashFlow} {
 			s, err := e.statement(ctx, u, kind, i)
 			if err != nil {
@@ -240,15 +241,18 @@ func balanceSheetIncludesEveryAccount(ctx context.Context, u storage.UnitOfWork,
 			}
 			for _, c := range s.Checks {
 				if c.Key == "placed" && !c.OK {
-					items = append(items, PeriodItem(e.Periods[i], c.Detail))
+					found = append(found, c.Title+": "+c.Detail)
 				}
 			}
+		}
+		if len(found) > 0 {
+			items = append(items, PeriodItem(e.Periods[i], strings.Join(found, "; ")))
 		}
 	}
 	if len(items) == 0 {
 		return Fine("Every account with a balance sits in the balance sheet and the cash flow"), nil
 	}
-	return Found(Warning, items, fmt.Sprintf("%d finding(s) of accounts missing from the balance sheet or the cash flow", len(items)),
+	return Found(Warning, items, fmt.Sprintf("%d month(s) with accounts missing from the balance sheet or the cash flow", len(items)),
 		"Give each account named a cash-flow line of the standard chart in the chart of accounts"), nil
 }
 

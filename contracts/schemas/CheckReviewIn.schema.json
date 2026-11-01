@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The item's ID, as the check lists it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "kind": {
+      "description": "The item's kind, as the check lists it.",
+      "examples": [
+        "bill"
+      ],
+      "maxLength": 40,
+      "type": "string"
+    },
+    "note": {
+      "description": "What the review found, for the audit trail.",
+      "examples": [
+        "Checked with the supplier: two separate deliveries."
+      ],
+      "maxLength": 500,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "id"
+  ],
+  "title": "CheckReviewIn",
+  "type": "object"
+}

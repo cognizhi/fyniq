@@ -249,6 +249,19 @@ Every definition gets a domain test with a fixture that makes it fire and one th
 - a run with no change leaves `check_state` and the audit trail as they were;
 - books health is the worst status.
 
+### D12 Items marked reviewed (rev 0.164, the owner's decision of 1 Nov 2026)
+
+- ENG-21's "until acknowledged or fixed": an item a check lists to review (⚠) leaves the check once someone with A on
+  "Checks and books health" marks it reviewed, with an optional note (`check_review`, append-only, FY246, audited
+  `check.item_reviewed`).
+- A review names the check, the item's kind and ID, and the item's **version**: a document's version, or a fingerprint
+  of what was found in a month, so a changed item comes back.
+- The runner leaves reviewed items out before it keeps a result, and the API leaves them out when it reads, so the item
+  goes at once; a review asks for a refresh (`check_review` reruns the checks that find items to review).
+- A check that finds both ✖ and ⚠ (C.1 #8, #18) gives each item its own severity; only the ⚠ ones are reviewed, and the
+  check is ✖ while one that cannot post remains.
+- The alternatives were the month's close as the review, or drafts only.
+
 ## Risks / Trade-offs
 
 - **[A change run reads a lot]** Validating every open document on each change is heavy for a larger book.
