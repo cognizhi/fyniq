@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronRight, Info, RefreshCw, UserRoundPen } from "lucide-react";
+import { ChevronDown, ChevronRight, CircleCheck, Info, RefreshCw, UserRoundPen } from "lucide-react";
 import { Fragment, useId, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -11,7 +11,7 @@ import { dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { roleLabel } from "../approvals/words";
-import { itemLink, needsAction, readChecks, scores, statuses, type Check, type Checks as ChecksOut } from "./data";
+import { itemLink, needsAction, readChecks, scores, statuses, type Check, type CheckItem, type Checks as ChecksOut } from "./data";
 
 type Member = components["schemas"]["Member"];
 
@@ -143,6 +143,7 @@ function Areas({ c }: { c: ChecksOut }) {
   const [only, setOnly] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [owning, setOwning] = useState<Check | null>(null);
+  const [reviewing, setReviewing] = useState<{ c: Check; item: CheckItem } | null>(null);
   const id = useId();
   const areas: string[] = [];
   for (const x of c.checks) if (!areas.includes(x.area)) areas.push(x.area);
@@ -189,9 +190,9 @@ function Areas({ c }: { c: ChecksOut }) {
                     </td>
                   </tr>
                   {acting.map((x) => (
-                    <Row key={x.key} c={x} canName={c.may_name_owners} onName={() => setOwning(x)} />
+                    <Row key={x.key} c={x} canName={c.may_name_owners} onName={() => setOwning(x)} canReview={c.may_review} onReview={(item) => setReviewing({ c: x, item })} />
                   ))}
-                  {showFine && fine.map((x) => <Row key={x.key} c={x} canName={c.may_name_owners} onName={() => setOwning(x)} />)}
+                  {showFine && fine.map((x) => <Row key={x.key} c={x} canName={c.may_name_owners} onName={() => setOwning(x)} canReview={false} onReview={() => undefined} />)}
                   {!only && acting.length > 0 && fine.length > 0 && (
                     <tr>
                       <td data-card="title" colSpan={4}>
@@ -213,6 +214,7 @@ function Areas({ c }: { c: ChecksOut }) {
         Blocks the close stops the month closing until it is fixed. To review posts, but stays here until someone looks at it.
       </div>
       {owning && <OwnerDialog c={owning} onClose={() => setOwning(null)} />}
+      {reviewing && <ReviewDialog c={reviewing.c} item={reviewing.item} onClose={() => setReviewing(null)} />}
     </section>
   );
 }
@@ -228,7 +230,10 @@ function ownerName(c: Check): string {
 }
 
 // Row is one check: what it checks and found, its items, the fix, and in Expert its references.
-function Row({ c, canName, onName }: { c: Check; canName: boolean; onName: () => void }) {
+// toReview says whether an item is one to review (⚠, rev 0.164): its own severity, else its check's.
+const toReview = (c: Check, it: CheckItem) => (it.severity ?? (c.status === "warning" ? "warning" : "")) === "warning";
+
+function Row({ c, canName, onName, canReview, onReview }: { c: Check; canName: boolean; onName: () => void; canReview: boolean; onReview: (it: CheckItem) => void }) {
   const s = statuses[c.status];
   const more = c.count - c.items.length;
   return (
@@ -257,6 +262,16 @@ function Row({ c, canName, onName }: { c: Check; canName: boolean; onName: () =>
                       <span className="fy-strong">{it.label}</span>
                     )}
                     {it.detail ? `: ${it.detail}` : ""}
+                    {it.severity && <span className="fy-sr"> ({it.severity === "error" ? "blocks the close" : "to review"})</span>}
+                    {canReview && it.id && toReview(c, it) && (
+                      <>
+                        {" "}
+                        <Button variant="ghost" size="sm" className="h-6 px-1.5" title={helpText("checks.review").tooltip} aria-label={`Mark ${it.label} reviewed`} onClick={() => onReview(it)}>
+                          <Icon of={CircleCheck} />
+                          Mark reviewed
+                        </Button>
+                      </>
+                    )}
                   </li>
                 );
               })}
@@ -341,6 +356,59 @@ function Nightly({ c }: { c: ChecksOut }) {
         </div>
       </section>
     </aside>
+  );
+}
+
+// ReviewDialog marks an item to review as reviewed, with an optional note (FR-CTL-01, ENG-21; rev 0.164): it leaves the
+// check until the item changes.
+function ReviewDialog({ c, item, onClose }: { c: Check; item: CheckItem; onClose: () => void }) {
+  const qc = useQueryClient();
+  const id = useId();
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [refused, setRefused] = useState<ApiProblem | null>(null);
+  const save = async () => {
+    setBusy(true);
+    setRefused(null);
+    const { error } = await api.POST("/v1/checks/{key}/reviews", {
+      params: { path: { key: c.key } },
+      body: { kind: item.kind, id: item.id ?? "", note: note.trim() || undefined },
+    });
+    setBusy(false);
+    if (error) {
+      setRefused(problemOf(error));
+      return;
+    }
+    await qc.invalidateQueries({ queryKey: ["checks"] });
+    onClose();
+  };
+  return (
+    <Dialog
+      open
+      onOpenChange={(o) => !o && onClose()}
+      dismissible={!busy}
+      title={`Mark ${item.label} reviewed?`}
+      description={`It leaves "${c.title}" until it changes. The review, and your note, are kept in the audit trail.`}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={() => void save()} disabled={busy}>
+            Mark reviewed
+          </Button>
+        </>
+      }
+    >
+      {refused && <Refusal problem={refused} title="It was not marked reviewed" />}
+      <p className="fy-small fy-secondary">{item.detail}</p>
+      <div className="fy-field">
+        <label className="fy-label" htmlFor={`${id}-note`}>
+          What you found (optional)
+        </label>
+        <textarea className="fy-input min-h-20" id={`${id}-note`} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
+      </div>
+    </Dialog>
   );
 }
 

@@ -36,16 +36,26 @@ const (
 // to a change, as a burst of that size concerns most of them.
 const maxEvents = 20000
 
+// areas are the order the Checks page lists the areas in.
+var areas = []string{"Books", "Setup", "Bank", "Sales", "Purchases", "Journals", "Ledger", "Audit"}
+
+// catalogue is every check built: by area, then in its slice's order.
+var catalogue = func() []Definition {
+	out := slices.Concat(booksChecks, setupChecks, documentChecks)
+	slices.SortStableFunc(out, func(a, b Definition) int { return slices.Index(areas, a.Area) - slices.Index(areas, b.Area) })
+	return out
+}()
+
 // Catalogue is every check built, in the order the Checks page lists them in their areas.
-func Catalogue() []Definition { return slices.Clone(booksChecks) }
+func Catalogue() []Definition { return slices.Clone(catalogue) }
 
 // Find is the catalogue's definition of key.
 func Find(key string) (Definition, bool) {
-	i := slices.IndexFunc(booksChecks, func(d Definition) bool { return d.Key == key })
+	i := slices.IndexFunc(catalogue, func(d Definition) bool { return d.Key == key })
 	if i < 0 {
 		return Definition{}, false
 	}
-	return booksChecks[i], true
+	return catalogue[i], true
 }
 
 // RefreshItem is the outbox item a unit of work adds when it changed something the checks react to.
@@ -137,6 +147,14 @@ func (r Runner) prepare(ctx context.Context, org uuid.UUID) (prepared, error) {
 		}
 		for _, s := range states {
 			e.Prior[s.Key] = s
+		}
+		reviews, err := u.Checks().Reviews(ctx)
+		if err != nil {
+			return err
+		}
+		e.Reviewed = map[string]bool{}
+		for _, r := range reviews {
+			e.Reviewed[ReviewKey(r.Key, r.ItemKind, r.ItemID, r.ItemVersion)] = true
 		}
 		head, err := u.Audit().Head(ctx)
 		if err != nil {
@@ -257,7 +275,13 @@ func (r Runner) run(ctx context.Context, org uuid.UUID, trigger, by string, choo
 	defs := slices.DeleteFunc(slices.Clone(r.defs()), func(d Definition) bool { return d.Module != "" && p.off[d.Module] })
 	var results []result
 	for _, d := range choose(p, defs) {
-		results = append(results, result{d, r.one(ctx, org, d, p.env)})
+		res := r.one(ctx, org, d, p.env)
+		var dropped int
+		res.Status, res.Count, res.Items, dropped = WithoutReviewed(d.Key, res.Status, res.Count, res.Items, func(k string) bool { return p.env.Reviewed[k] })
+		if dropped > 0 && res.Status == OK {
+			res.Detail, res.Fix = fmt.Sprintf("Nothing left to review: %d item(s) marked reviewed", dropped), ""
+		}
+		results = append(results, result{d, res})
 	}
 	finished := r.Clock.Now()
 	rep := Report{Organisation: org}

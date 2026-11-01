@@ -225,7 +225,7 @@ var Grants = map[Capability]map[string]Cell{
 		"Owner": {"V", ""}, "Admin": {"V", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"CA", ""}, "AI": {},
 	},
 	ChecksHealth: {
-		"Owner": {"C", ""}, "Admin": {"V", ""}, "Controller": {"C", ""}, "Accountant": {"V", ""}, "Bookkeeper": {"V", ""}, "AR": {"V", "sales"}, "AP": {"V", "purchases"}, "Payroll": {"V", "payroll"}, "Releaser": {"V", ""}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {"V", ""},
+		"Owner": {"CA", ""}, "Admin": {"V", ""}, "Controller": {"CA", ""}, "Accountant": {"A", ""}, "Bookkeeper": {"A", ""}, "AR": {"V", "sales"}, "AP": {"V", "purchases"}, "Payroll": {"V", "payroll"}, "Releaser": {"V", ""}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {"V", ""},
 	},
 	TenantExport: {
 		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
@@ -459,7 +459,9 @@ var (
 	GetCheck      = Policy{Operation: "getCheck", Capability: ChecksHealth, Need: View}
 	RunChecks     = Policy{Operation: "runChecks", Capability: ChecksHealth, Need: View}
 	SetCheckOwner = Policy{Operation: "setCheckOwner", Capability: ChecksHealth, Need: Create}
-	SetKpiInput   = Policy{Operation: "setKpiInput", Capability: Budgets, Need: Create, Unqualified: true,
+	// Marking a ⚠ item reviewed (rev 0.164, ENG-21): A, which the whole books' roles hold; the AI holds V only.
+	ReviewCheckItem = Policy{Operation: "reviewCheckItem", Capability: ChecksHealth, Need: Approve, Unqualified: true}
+	SetKpiInput     = Policy{Operation: "setKpiInput", Capability: Budgets, Need: Create, Unqualified: true,
 		Note: "A department's budget holder (C dept) does not enter the company's counts."}
 	GetPeriodClose = Policy{Operation: "getPeriodClose", Capability: PeriodClose, Need: View}
 	RunCloseChecks = Policy{Operation: "runCloseChecks", Capability: PeriodClose, Need: Create}
@@ -1057,7 +1059,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
-	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetKpis, ListKpiInputs, SetKpiInput, ListChecks, GetCheck, RunChecks, SetCheckOwner, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
+	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetKpis, ListKpiInputs, SetKpiInput, ListChecks, GetCheck, RunChecks, SetCheckOwner, ReviewCheckItem, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence, AddBillEvidence, ListBillEvidence, GetBillEvidence, RemoveBillEvidence,

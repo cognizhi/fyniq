@@ -54,17 +54,26 @@ Each slice below is one pull request that passes `make test` on its own. Slice 1
 
 ## 2. Setup, transactions and documents (slice 2)
 
-- [ ] 2.1 C.1 #8 chart of accounts problems (✖ and ⚠ halves); #9 contacts and FX rates problems (the employees'
+- [x] 2.1 C.1 #8 chart of accounts problems (✖ and ⚠ halves); #9 contacts and FX rates problems (the employees'
   half joins with the payroll link). `// req: C.1 #8`, `// req: C.1 #9`
-- [ ] 2.2 C.1 #10, #11, #12: bank lines that cannot post, to review, dated in the future.
+- [x] 2.2 C.1 #10, #11, #12: bank lines that cannot post, to review, dated in the future.
   `// req: C.1 #10` … `// req: C.1 #12`
-- [ ] 2.3 C.1 #13, #14, #15: invoices that cannot post, to review, overdue more than 90 days.
+- [x] 2.3 C.1 #13, #14, #15: invoices that cannot post, to review, overdue more than 90 days.
   `// req: C.1 #13` … `// req: C.1 #15`
-- [ ] 2.4 C.1 #16, #17 bills; #18 journals (✖ and ⚠). `// req: C.1 #16` … `// req: C.1 #18`
-- [ ] 2.5 C.1 #24 sales document line problems; #25 quotes and orders to follow up. `// req: C.1 #24`,
+- [x] 2.4 C.1 #16, #17 bills; #18 journals (✖ and ⚠). `// req: C.1 #16` … `// req: C.1 #18`
+- [x] 2.5 C.1 #24 sales document line problems; #25 quotes and orders to follow up. `// req: C.1 #24`,
   `// req: C.1 #25`
-- [ ] 2.6 C.2 #10 possible duplicate bills; #20 posted bills or claims without a receipt; #48 input tax claimed on a
+- [x] 2.6 C.2 #10 possible duplicate bills; #20 posted bills or claims without a receipt; #48 input tax claimed on a
   bill unpaid 12 months after its due date. `// req: C.2 #10`, `// req: C.2 #20`, `// req: C.2 #48`
+- [x] 2.7 (PRD rev 0.164, the owner's decisions of 1 Nov 2026) A ⚠ item leaves its check once marked reviewed, until
+  it changes: migration 000194 `check_review` (FY246), `reviewCheckItem` (CHECK-04), the runner and the reads leaving
+  reviewed items out, Appendix D's A on "Checks and books health" for the Owner, the Controller, the Accountant and the
+  Bookkeeper, and **Mark reviewed** on the page (`checks.review`). The transaction checks flag only what cannot post
+  (C.1 #10), lines in suspense (#11) and lines booked after today (#12). `// req: FR-CTL-01`
+  Built: drafts count when dated by the end of the month to close next (else today), so a later draft never refuses an
+  earlier close; posted invoices and bills are reviewed in the open months (the closed ones at their close); C.1 #24 is a
+  line worth nothing or naming an item no longer sold; C.1 #25 a quote sent with no answer within 7 days of its validity
+  date, or accepted and not invoiced in full; C.2 #48 counts a bill with a claimable line [accountant to confirm].
 
 ## 3. Bank, assets, close and planning (slice 3)
 

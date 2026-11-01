@@ -8944,6 +8944,34 @@ Names a person as the owner of a check instead of the role the catalogue names, 
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `CHECK-01`, `CHECK-02`, `STORAGE-CHECK-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+### `POST /v1/checks/{key}/reviews`
+
+**Mark an item to review as reviewed** (`reviewCheckItem`)
+
+Marks an item a check lists to review (⚠) as reviewed, with an optional note (FR-CTL-01, ENG-21; the owner's decision of 1 Nov 2026, rev 0.164): it leaves the check at once, and comes back if the item changes, as the review names its version. An item that cannot post (✖) is fixed, never reviewed; an item the check does not list to review, or that the caller's roles do not open, is CHECK-04. Marking it again at the same version records nothing more. Side effects: the review and its audit event, and the checks it concerns run again. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Approve on Checks and books health (rev 0.163)
+- **Parameters:**
+  - `key` (path, required): The check.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`CheckReviewIn`](../../contracts/schemas/CheckReviewIn.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`CheckOut`](../../contracts/schemas/CheckOut.schema.json)
+  - `201` Created [`CheckOut`](../../contracts/schemas/CheckOut.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `CHECK-01` No such check.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-CHECK-02` A review is never changed; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CHECK-04` Not an item to review.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `CHECK-01`, `CHECK-04`, `STORAGE-CHECK-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ## Contacts
 
 Customers and vendors (FR-CT-01).

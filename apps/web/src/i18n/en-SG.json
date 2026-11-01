@@ -740,6 +740,10 @@
       "label": "Run all checks now",
       "tooltip": "Run every check now instead of waiting for the next change or the night's run. At most once a minute."
     },
+    "checks.review": {
+      "label": "Mark reviewed",
+      "tooltip": "Say you looked at this item: it leaves the check until it changes. Owners, Controllers, Accountants and Bookkeepers only."
+    },
     "checks.owner": {
       "label": "Name the owner",
       "tooltip": "Name the person who looks into what this check finds, instead of the role the catalogue gives it. Owners and Controllers only."

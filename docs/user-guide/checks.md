@@ -59,6 +59,15 @@ Select **Run all checks now** to run every check without waiting. The page says 
 until they have run, then shows what they found. The checks run at most once a minute; a second
 request in the same minute is refused with how long to wait.
 
+## Mark an item reviewed
+
+An item **to review** posted, or is in the books, but someone should look at it: a bill posted
+with GST that differs from the rounding rule, or an invoice issued late. Once you have looked,
+select **Mark reviewed** beside it and say what you found, if you like. It leaves the check until
+the item changes; a changed item comes back to be looked at again. An item that **blocks the
+close** is fixed, never reviewed. The Owner, the Controller, the Accountant and the Bookkeeper can
+mark items reviewed, and each review is kept in the audit trail.
+
 ## Name a check's owner
 
 An Owner or a Controller can name the person who owns a check: select the pencil beside its
@@ -68,8 +77,19 @@ trail.
 
 ## The checks so far
 
-The checks of the books and the ledger come first: debits equal credits, the balance sheet
-balances every month, the cash flow agrees to the bank accounts, the P&L and the balance sheet
-include every account, the opening balances balance, the system accounts exist, the movement in
-equity reconciles, the balances equal their lines, and the audit trail is intact. The checks of
-each module, such as invoices, bills or payroll, join as that module's checks are built.
+- **Books and ledger**: debits equal credits, the balance sheet balances every month, the cash
+  flow agrees to the bank accounts, the P&L and the balance sheet include every account, the
+  movement in equity reconciles, the balances equal their lines, and the audit trail is intact.
+- **Setup**: the opening balances balance, the system accounts exist, nothing that posts by itself
+  points at an account that cannot take postings, and no two contacts or monthly rates look
+  alike.
+- **Bank**: a waiting line that cannot post as it stands (dated in a closed month, with no rate,
+  or on an inactive account), a line in suspense, and a line booked after today. A line that only
+  waits in the queue is not a problem until it has waited 30 days.
+- **Sales**: a draft invoice that cannot be issued, an invoice issued late, one more than 90 days
+  overdue, a line worth nothing, and a quote to follow up.
+- **Purchases**: a draft bill that cannot post, a posted bill with a warning, two bills alike, a
+  bill or claim without its document, and an unpaid bill whose input tax is due back.
+- **Journals**: a draft journal that cannot post, and a reversal waiting for its month to open.
+
+The checks of each module still to come, such as payroll, join as that module is built.

@@ -1,10 +1,10 @@
 ---
 key: checks.overview
 type: task
-title: Read books health and the checks, run them now and name a check's owner
-summary: What books health and each check status mean, when the checks run, the nightly ledger verification, Run now, and naming a check's owner
+title: Read books health and the checks, run them now, mark items reviewed and name a check's owner
+summary: Books health and the check statuses, when checks run, nightly verification, Run now, marking items reviewed, and naming owners
 sources:
-  - docs/user-guide/checks.md sha256:39752601963080bbf2d47ac72db8a7507d8a039dd59df8d1f3c841690af52ea9
+  - docs/user-guide/checks.md sha256:46a68432c68371e5c299c07f0fcc71ec259f7674b4aba26064df4ca7d2b8239d
 data_class: general
 taint: trusted
 status: draft
@@ -20,11 +20,13 @@ aliases:
   - not assessed
   - run the checks
   - check owner
+  - mark reviewed
+  - acknowledge a warning
   - nightly verification
   - why can't I close the month
 ---
 
-# Read books health and the checks, run them now and name a check's owner
+# Read books health and the checks, run them now, mark items reviewed and name a check's owner
 
 ## What books health and the statuses mean
 
@@ -67,6 +69,15 @@ aliases:
 
 (src: docs/user-guide/checks.md#run-the-checks-now)
 
+## Mark an item reviewed
+
+- An item **to review** posted or is in the books, but someone should look at it, such as a bill posted with GST that differs from the rounding rule, or an invoice issued late.
+- **Mark reviewed** beside it, with an optional note, takes it off the check until the item changes; a changed item comes back.
+- An item that **blocks the close** is fixed, never reviewed.
+- The Owner, the Controller, the Accountant and the Bookkeeper can mark items reviewed; each review is kept in the audit trail.
+
+(src: docs/user-guide/checks.md#mark-an-item-reviewed)
+
 ## Name a check's owner
 
 - An Owner or a Controller selects the pencil beside a check's owner, picks a person and saves; the first choice gives the check back to its role.
@@ -76,7 +87,12 @@ aliases:
 
 ## The checks so far
 
-- The checks of the books and the ledger: debits equal credits, the balance sheet balances every month, the cash flow agrees to the bank accounts, the P&L and the balance sheet include every account, the opening balances balance, the system accounts exist, the movement in equity reconciles, the balances equal their lines, and the audit trail is intact.
-- The checks of each module, such as invoices, bills or payroll, join as that module's checks are built.
+- **Books and ledger**: debits equal credits, the balance sheet balances every month, the cash flow agrees to the bank accounts, the P&L and the balance sheet include every account, the movement in equity reconciles, the balances equal their lines, and the audit trail is intact.
+- **Setup**: the opening balances balance, the system accounts exist, nothing that posts by itself points at an account that cannot take postings, and no two contacts or monthly rates look alike.
+- **Bank**: a waiting line that cannot post as it stands (dated in a closed month, with no rate, or on an inactive account), a line in suspense, and a line booked after today; a line that only waits is not a problem until it has waited 30 days.
+- **Sales**: a draft invoice that cannot be issued, an invoice issued late, one more than 90 days overdue, a line worth nothing, and a quote to follow up.
+- **Purchases**: a draft bill that cannot post, a posted bill with a warning, two bills alike, a bill or claim without its document, and an unpaid bill whose input tax is due back.
+- **Journals**: a draft journal that cannot post, and a reversal waiting for its month to open.
+- The checks of each module still to come, such as payroll, join as that module is built.
 
 (src: docs/user-guide/checks.md#the-checks-so-far)

@@ -7,6 +7,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// CodeCheckReview is the database's refusal of a review changed or deleted (FY246).
+const CodeCheckReview = "STORAGE-CHECK-02"
+
 // CodeCheck is the database's refusal of a check's state or owner written other than at version 1, changed other than as
 // its next version, or deleted; and of a check run changed, or deleted within its retention (FY245).
 const CodeCheck = "STORAGE-CHECK-01"
@@ -90,6 +93,26 @@ type Checks interface {
 	// its next after version (CodeVersion when it changed since); audited check.owner_set with the person before and
 	// after.
 	SetOwner(ctx context.Context, key string, person *uuid.UUID, setBy string, at time.Time, version int) (CheckOwner, error)
+	// Reviews are the ⚠ items marked reviewed (rev 0.164), by key.
+	Reviews(ctx context.Context) ([]CheckReview, error)
+	// Review marks an item of a check reviewed at its version, audited check.item_reviewed; marking it again at the same
+	// version records nothing more and returns false.
+	Review(ctx context.Context, r NewCheckReview) (CheckReview, bool, error)
+}
+
+// NewCheckReview is a ⚠ item of a check marked reviewed (FR-CTL-01, ENG-21; rev 0.164): the check, the item as it names
+// it and its version, which the review holds until the item changes.
+type NewCheckReview struct {
+	Key, ItemKind, ItemID, ItemVersion string
+	Note                               string
+	ReviewedBy                         string // "type:id"
+	ReviewedAt                         time.Time
+}
+
+// CheckReview is a recorded review.
+type CheckReview struct {
+	ID uuid.UUID
+	NewCheckReview
 }
 
 // Changed is what a unit of work calls once its work is done, before its audit events are written, with its organisation

@@ -200,6 +200,43 @@ func (r checks) SetOwner(ctx context.Context, key string, person *uuid.UUID, set
 		"person": {personOf(before.PersonUserID), personOf(person)}})
 }
 
+func toCheckReview(r sqlcdb.FyniqCheckReview) storage.CheckReview {
+	return storage.CheckReview{ID: r.ID, NewCheckReview: storage.NewCheckReview{Key: r.Key, ItemKind: r.ItemKind, ItemID: r.ItemID, ItemVersion: r.ItemVersion,
+		Note: str(r.Note), ReviewedBy: r.ReviewedBy, ReviewedAt: r.ReviewedAt}}
+}
+
+func (r checks) Reviews(ctx context.Context) ([]storage.CheckReview, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.ListCheckReviews(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.CheckReview, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, toCheckReview(row))
+	}
+	return out, nil
+}
+
+func (r checks) Review(ctx context.Context, n storage.NewCheckReview) (storage.CheckReview, bool, error) {
+	if err := r.u.check(); err != nil {
+		return storage.CheckReview{}, false, err
+	}
+	row, err := r.u.q.InsertCheckReview(ctx, sqlcdb.InsertCheckReviewParams{Key: n.Key, ItemKind: n.ItemKind, ItemID: n.ItemID, ItemVersion: n.ItemVersion,
+		Note: opt(n.Note), ReviewedBy: n.ReviewedBy, ReviewedAt: n.ReviewedAt})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.CheckReview{NewCheckReview: n}, false, nil // reviewed at this version already
+	}
+	if err != nil {
+		return storage.CheckReview{}, false, mapError(err)
+	}
+	out := toCheckReview(row)
+	return out, true, r.u.event(ctx, "check.item_reviewed", "check_review", out.ID, nil, map[string][2]any{"key": {nil, n.Key},
+		"item": {nil, n.ItemKind + ":" + n.ItemID}, "item_version": {nil, n.ItemVersion}, "note": {nil, n.Note}})
+}
+
 func (r outbox) Waiting(ctx context.Context, kind string) (bool, error) {
 	if err := r.u.check(); err != nil {
 		return false, err

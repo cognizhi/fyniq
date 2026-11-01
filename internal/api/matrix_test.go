@@ -267,6 +267,9 @@ func matrixInvoiceEvidence(e *env) (invoiceID, evidenceID string) {
 // matrixKPIMonth numbers the months the matrix enters KPI counts for, one each.
 var matrixKPIMonth int
 
+// matrixReviewable says the checks of an environment found something to review.
+var matrixReviewable = map[*env]bool{}
+
 var matrixCalls = map[string]matrixCall{
 	"addInvoiceEvidence": func(e *env, tok string) (response, func() bool) {
 		id, _ := e.createInvoice("1", "10.00")
@@ -1308,6 +1311,16 @@ var matrixCalls = map[string]matrixCall{
 	// Run now joins the one still waiting: no worker runs here, so every allowed call after the first joins it.
 	"runChecks": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/checks/runs", tok, nil), nil
+	},
+	// A month whose accounts sit in no section of the balance sheet (C.1 #5, ⚠): the test books' bank has no cash-flow line.
+	"reviewCheckItem": func(e *env, tok string) (response, func() bool) {
+		if !matrixReviewable[e] {
+			e.postedJournal("100.00")
+			e.runCatalogue()
+			matrixReviewable[e] = true
+		}
+		return e.call(http.MethodPost, "/v1/checks/books.balance-sheet-includes-every-account/reviews", tok,
+			map[string]any{"kind": "period", "id": e.books.Oct.ID.String(), "note": "Seen"}), nil
 	},
 	"setCheckOwner": func(e *env, tok string) (response, func() bool) {
 		version := func() string {

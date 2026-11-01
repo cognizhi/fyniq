@@ -1364,13 +1364,17 @@ In Standard mode, each role SHALL hold only the rights over the checks and books
 
 Source: PRD-001 §D
 
-#### Scenario: Create or prepare
+#### Scenario: Create or prepare, and approve
 - **WHEN** a role acts on the checks and books health
-- **THEN** the Owner and the Finance controller can name a person as a check's owner (C), and view
+- **THEN** the Owner and the Finance controller can name a person as a check's owner (C) and mark a ⚠ item reviewed (A), never both for the same item
+
+#### Scenario: Approve
+- **WHEN** a role acts on the checks and books health
+- **THEN** the Accountant and the Bookkeeper can mark a ⚠ item reviewed (A, rev 0.164), and view
 
 #### Scenario: View
 - **WHEN** a role acts on the checks and books health
-- **THEN** the Administrator, the Accountant, the Bookkeeper, the Payment releaser, the Auditor, the Tax agent, the Compliance officer / DPO and the AI assistant can view (V)
+- **THEN** the Administrator, the Payment releaser, the Auditor, the Tax agent, the Compliance officer / DPO and the AI assistant can view (V)
 
 #### Scenario: View an area
 - **WHEN** a role acts on the checks and books health
