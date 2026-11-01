@@ -115,7 +115,7 @@ func TestAutoReconcileWithinItsLimits(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	run, err := banking.AutoReconcile(context.Background(), s, b.Org, nil, now)
+	run, err := banking.AutoReconcile(context.Background(), journal.BankTransactions{Store: s}, b.Org, nil, now)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +142,7 @@ func TestAutoReconcileWithinItsLimits(t *testing.T) {
 	if got := openOn(t, s, b.Org, b.AR.ID, inv1.ID, true); got != "closed" {
 		t.Fatalf("INV-0001 after the exact match: %s", got)
 	}
-	if again, err := banking.AutoReconcile(context.Background(), s, b.Org, nil, now); err != nil || len(again.Reconciled) != 0 {
+	if again, err := banking.AutoReconcile(context.Background(), journal.BankTransactions{Store: s}, b.Org, nil, now); err != nil || len(again.Reconciled) != 0 {
 		t.Fatalf("a second run: %+v %v", again.Reconciled, err)
 	}
 

@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "before": {
+      "$ref": "KPIFigure.schema.json",
+      "description": "Its value for the month before, when the books have it."
+    },
+    "date_basis": {
+      "description": "The dates it reads.",
+      "examples": [
+        "the month end and the last three months"
+      ],
+      "type": "string"
+    },
+    "formula": {
+      "description": "How it is worked out, in words, as its tile shows on hover.",
+      "examples": [
+        "Cash at month end ÷ the average net burn of the last three months of the financial year"
+      ],
+      "type": "string"
+    },
+    "key": {
+      "description": "The KPI.",
+      "examples": [
+        "runway"
+      ],
+      "type": "string"
+    },
+    "month": {
+      "$ref": "KPIFigure.schema.json",
+      "description": "Its value for the month."
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Runway"
+      ],
+      "type": "string"
+    },
+    "source": {
+      "description": "Where it comes from: ledger (the balance service), entered (counts a person entered), ledger and entered, or subscription data (P2).",
+      "examples": [
+        "ledger"
+      ],
+      "type": "string"
+    },
+    "unit": {
+      "description": "What its value measures, which decides its decimals (RND-KPI).",
+      "enum": [
+        "amount",
+        "percent",
+        "ratio",
+        "months",
+        "days",
+        "count"
+      ],
+      "examples": [
+        "months"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The definition's version: a change of formula is a new one (FR-KPI-03).",
+      "examples": [
+        "runway@1"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "name",
+    "version",
+    "unit",
+    "source",
+    "formula",
+    "date_basis",
+    "month"
+  ],
+  "title": "KPIItem",
+  "type": "object"
+}

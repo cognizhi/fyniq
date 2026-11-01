@@ -2,16 +2,16 @@
 key: home.overview
 type: task
 title: The Home page, search and commands, Settings, and signing out
-summary: What Home shows (what waits for you, the set-up steps), finding a page with Search and commands (Ctrl+K), Settings, and signing out
+summary: What Home shows (pulse card, tiles, charts, what waits, set-up steps), Search and commands (Ctrl+K), Settings, and signing out
 sources:
-  - docs/user-guide/home.md sha256:e956ab10d73c41be1a44aeff05709ec30eece1711e442911a657de187fe07359
+  - docs/user-guide/home.md sha256:ccc0277c2af42fe25b3cc9a37f9063a8f7e08aa82b8fc1870907fdb1ad76929e
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-20
+compiled_at: 2026-10-29
 aliases:
   - command palette
   - quick search
@@ -22,6 +22,10 @@ aliases:
   - preferences
   - getting started
   - set-up checklist
+  - dashboard
+  - how much cash do we have
+  - runway
+  - burn
 ---
 
 # The Home page, search and commands, Settings, and signing out
@@ -33,9 +37,20 @@ aliases:
 - **Waiting for you** counts requests waiting for the person's approval ([[approvals.decide]]) and high-risk actions they can review, with any overdue; it also counts the automatic reversals waiting for a month to be opened, which open **Journals** ([[accounting.journals]]).
 - **Set up the company** lists the first steps, **Done** or **To do**, with progress, and goes once all are done.
 - Workspace pages appear as each module arrives; a person only sees the pages their roles allow.
+- The pulse card, the tiles and the charts appear once the books have a month and the person's roles let them read the reports; see the next section.
 - Without a session Fyniq opens sign-in ([[auth.sign-in]]); a new installation opens setup ([[installation.setup]]).
 
 (src: docs/user-guide/home.md#what-it-is) (src: docs/user-guide/home.md#before-you-start)
+
+## The pulse card, tiles and charts
+
+- **The pulse card**: the cash in the bank at the end of this month; the **runway**, how many months that cash lasts at the average net burn of the last three months, or **Not burning** when those months brought in more cash than they used; and this month's **net burn**.
+- **The tiles**: what customers owe the company and what it owes. Expert mode adds the month's revenue, the gross margin and the net profit for the financial year so far.
+- Expert mode also draws three charts: revenue, costs and profit by month; cash by month; and costs by function, this month beside the last.
+- **ⓘ** beside a figure says how it is worked out, the dates it reads, its source and its definition's version; selecting the figure opens the report behind it. A figure the books cannot give shows **—** with the reason, never 0.
+- **All KPIs** opens the start-up KPIs ([[reports.kpis]]). Revenue and costs against the budget, the books' health, unbilled time and GST due join with their modules.
+
+(src: docs/user-guide/home.md#what-it-is)
 
 ## Set up the company
 

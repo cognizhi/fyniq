@@ -270,3 +270,142 @@ func TestARemittanceThatGaveUpShowsAsFailed(t *testing.T) {
 		t.Fatalf("Northwind's payment after its remittance gave up: %v", p)
 	}
 }
+
+// A batch payment voided after its match queued the remittance advice, and before the worker ran it, sends nothing:
+// no advice kept, no send recorded, no email; the job runs once and is done (FR-BNK-12, design D8). The void is a
+// person's direct one, so the organisation is in Standard mode (FM-1 asks for it in Founder mode).
+// req: FR-BNK-12
+// req: FR-AP-13
+func TestAPaymentVoidedBeforeItsRemittanceSendsNothing(t *testing.T) {
+	e := inStandardMode(newEnv(t))
+	accountant := e.as(authz.Accountant)
+	northwind := e.vendor("Northwind Analytics Pte Ltd")
+	if r := e.call(http.MethodPatch, "/v1/contacts/"+northwind, accountant, map[string]any{"remittance_email": "payments@northwind.example"}, "If-Match", "*"); r.Status != http.StatusOK {
+		t.Fatalf("setting the remittance email = %d: %s", r.Status, r.Raw)
+	}
+	e.vendorAccount(northwind, "0123456789")
+	rel, m := e.releasedBatch("bill:" + e.billOf(northwind, "100.00", "9.00"))
+	nw := paymentOf(t, rel, "Northwind Analytics Pte Ltd")["payment_id"].(string)
+	l := e.lineOn(m, "-109.00", nil)
+	if r := e.call(http.MethodPost, "/v1/bank-lines/"+l.ID.String()+"/match-recorded", accountant, map[string]any{"document_id": nw}, "If-Match", etag(l.Version)); r.Status != http.StatusOK {
+		t.Fatalf("matching = %d: %s", r.Status, r.Raw)
+	}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		l, err = u.Banking().Line(ctx, l.ID)
+		return err
+	})
+	if u := e.call(http.MethodPost, "/v1/bank-lines/"+l.ID.String()+"/unreconcile", accountant, map[string]any{"reason": "Not this payment"}, "If-Match", etag(l.Version)); u.Status != http.StatusOK {
+		t.Fatalf("undoing the match = %d: %s", u.Status, u.Raw)
+	}
+	g := e.call(http.MethodGet, "/v1/bill-payments/"+nw, accountant, nil)
+	if v := e.call(http.MethodPost, "/v1/bill-payments/"+nw+"/void", accountant, map[string]any{"date": "2026-10-21", "reason": "Returned by the bank"}, "If-Match", g.Header.Get("ETag")); v.Status != http.StatusOK {
+		t.Fatalf("voiding the payment = %d: %s", v.Status, v.Raw)
+	}
+	if n := e.runRemittances(); n != 1 {
+		t.Fatalf("%d remittance jobs ran, want the one the match queued", n)
+	}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		sent, err := u.DocumentSends().OfDocument(ctx, uuid.MustParse(nw))
+		if err != nil {
+			return err
+		}
+		files, err := u.Evidence().OfDocument(ctx, uuid.MustParse(nw), uuid.Nil, 10)
+		if err != nil {
+			return err
+		}
+		msgs, err := u.EmailMessages().List(ctx, storage.EmailMessageFilter{Purpose: "remittance", Limit: 10})
+		if len(sent) != 0 || len(files) != 0 || len(msgs) != 0 {
+			t.Errorf("a voided payment's remittance: sends %+v, evidence %+v, email %+v", sent, files, msgs)
+		}
+		return err
+	})
+	if n := e.runRemittances(); n != 0 {
+		t.Errorf("%d remittance jobs ran again", n)
+	}
+}
+
+// failedRemittance is a released batch's payment to a supplier whose remittance advice gave up after its attempts: the
+// batch, the payment and the bank line it was matched to.
+func (e *env) failedRemittance() (batch, payment string) {
+	e.t.Helper()
+	vendor := e.vendor("Remitted " + uuid.NewString()[:8] + " Pte Ltd")
+	if r := e.call(http.MethodPatch, "/v1/contacts/"+vendor, e.as(authz.Accountant), map[string]any{"remittance_email": "payments@remitted.example"}, "If-Match", "*"); r.Status != http.StatusOK {
+		e.t.Fatalf("setting the remittance email = %d: %s", r.Status, r.Raw)
+	}
+	e.vendorAccount(vendor, "0123456789")
+	rel, m := e.releasedBatch("bill:" + e.billOf(vendor, "100.00", "9.00"))
+	pay := rel.Body["payments"].([]any)[0].(map[string]any)["payment_id"].(string)
+	l := e.lineOn(m, "-109.00", nil)
+	if r := e.call(http.MethodPost, "/v1/bank-lines/"+l.ID.String()+"/match-recorded", e.as(authz.Accountant), map[string]any{"document_id": pay}, "If-Match", etag(l.Version)); r.Status != http.StatusOK {
+		e.t.Fatalf("matching = %d: %s", r.Status, r.Raw)
+	}
+	// Its attempts ran out: the queue's task is spent, and the job is dead.
+	for kind, _ := nextWorkRow(e.t, e); kind != ""; kind, _ = nextWorkRow(e.t, e) {
+	}
+	if err := workerStore(e.t).Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		row, err := u.Outbox().ByKey(ctx, remitmail.Kind, remitmail.Key(uuid.MustParse(pay)))
+		if err != nil || row == nil {
+			e.t.Fatalf("the remittance job: %+v, %v", row, err)
+		}
+		return u.Sweeping().MarkDead(ctx, row.ID, "the email service did not answer")
+	}); err != nil {
+		e.t.Fatal(err)
+	}
+	return rel.str("id"), pay
+}
+
+// A person who can prepare batches sends a failed advice again (FR-BNK-12, rev 0.160; design D2): one new job, audited
+// with the reason, which sends the advice once. An advice sent, or one not failed, is refused (PB-24), as is a payment
+// another batch made; a person who cannot prepare batches is refused, and the AI never may.
+// req: FR-BNK-12
+// req: banking/bank-transactions A failed advice is sent again by a person (rev 0.160)
+func TestAFailedRemittanceIsSentAgain(t *testing.T) {
+	e := newEnv(t)
+	accountant := e.as(authz.Accountant)
+	batch, pay := e.failedRemittance()
+	again := "/v1/payment-batches/" + batch + "/payments/" + pay + "/remittance-again"
+	if g := e.call(http.MethodGet, "/v1/payment-batches/"+batch, accountant, nil); paymentOfID(t, g, pay)["remittance"] != "failed" {
+		t.Fatalf("before: %s", g.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, again, e.as(authz.Auditor), map[string]any{"reason": "Try"}), "sendRemittanceAgain", 403, "API-AUTHZ-01")
+	other, _ := e.failedRemittance()
+	e.problemIs(e.call(http.MethodPost, "/v1/payment-batches/"+other+"/payments/"+pay+"/remittance-again", accountant, map[string]any{"reason": "Try"}),
+		"sendRemittanceAgain", 404, CodeNotFound)
+
+	r := e.call(http.MethodPost, again, accountant, map[string]any{"reason": "The email service was down on Tuesday"})
+	if r.Status != http.StatusOK || paymentOfID(t, r, pay)["remittance"] != "queued" {
+		t.Fatalf("sending it again = %d: %s", r.Status, r.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, again, accountant, map[string]any{"reason": "Twice"}), "sendRemittanceAgain", 409, CodeRemittanceNotFailed)
+	if trail := auditTrail(t, e); !strings.Contains(trail, `"action":"remittance.sent_again"`) || !strings.Contains(trail, "The email service was down on Tuesday") {
+		t.Errorf("the resend's audit event: %s", trail)
+	}
+	if n := e.runRemittances(); n != 1 {
+		t.Fatalf("%d remittance jobs ran, want the one sent again", n)
+	}
+	g := e.call(http.MethodGet, "/v1/payment-batches/"+batch, accountant, nil)
+	if paymentOfID(t, g, pay)["remittance"] != "sent" {
+		t.Fatalf("after it ran: %s", g.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, again, accountant, map[string]any{"reason": "Once more"}), "sendRemittanceAgain", 409, CodeRemittanceNotFailed)
+	var sent []storage.DocumentSend
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		sent, err = u.DocumentSends().OfDocument(ctx, uuid.MustParse(pay))
+		return err
+	})
+	if len(sent) != 1 {
+		t.Errorf("%d sends, want one", len(sent))
+	}
+}
+
+// paymentOfID is a batch's payment by its ID.
+func paymentOfID(t *testing.T, b response, id string) map[string]any {
+	t.Helper()
+	for _, x := range b.Body["payments"].([]any) {
+		if p := x.(map[string]any); p["payment_id"] == id {
+			return p
+		}
+	}
+	t.Fatalf("no payment %s in %s", id, b.Raw)
+	return nil
+}

@@ -1001,6 +1001,19 @@ type FyniqJournalLine struct {
 	RecordedAt     time.Time
 }
 
+type FyniqKpiInput struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	Month           time.Time
+	PayingCustomers *int64
+	NewCustomers    *int64
+	LostCustomers   *int64
+	Headcount       *int64
+	EnteredBy       string
+	EnteredAt       time.Time
+	Version         int32
+}
+
 type FyniqLedgerRevision struct {
 	OrganisationID uuid.UUID
 	Revision       int64
@@ -1405,6 +1418,26 @@ type FyniqRecurringJournalVersion struct {
 	Content            []byte
 	EditedBy           string
 	EditedAt           time.Time
+}
+
+type FyniqReportExport struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Report         string
+	Format         string
+	Parameters     []byte
+	RequestedBy    string
+	RequestedAt    time.Time
+	Status         string
+	LedgerRevision *int64
+	FileName       *string
+	MediaType      *string
+	SizeBytes      *int64
+	FileSha256     []byte
+	RowsCount      *int64
+	ReadyAt        *time.Time
+	ExpiresAt      *time.Time
+	Failure        *string
 }
 
 type FyniqReviewLogEntry struct {

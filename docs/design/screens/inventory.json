@@ -2625,7 +2625,7 @@
    "title": "Financial statement viewer",
    "canvas": "insight",
    "module": "Reports",
-   "route": "/reports/:statement",
+   "route": "/reports/statements/:kind",
    "kind": "page",
    "phase": "P1",
    "roles": [
@@ -2653,7 +2653,8 @@
     "Framework and edition shown; titled 'management statements' until policies are approved",
     "Basic: plain-English explanation under each section, no codes; Expert: codes, variance columns (amount and %), dimension pivots",
     "Budget vs Actual as a comparison with sign and arrow icons, never colour alone",
-    "Compact: statement scrolls inside its own region with sticky first column; figures never animate"
+    "Compact: statement scrolls inside its own region with sticky first column; figures never animate",
+    "A column per month (Expert): the P&L's trend above the statement, revenue, gross profit and net profit a line each, with Chart | Table, PNG and CSV (the Chart component; p1-reports 5.3)"
    ],
    "states": [
     "loading",
@@ -2702,7 +2703,7 @@
    "title": "Management report (ageing and analysis)",
    "canvas": "insight",
    "module": "Reports",
-   "route": "/reports/ageing",
+   "route": "/reports/management/:report",
    "kind": "page",
    "phase": "P1",
    "roles": [
@@ -2725,6 +2726,7 @@
     "AR ageing: Current, 1–30, 31–60, 61–90, 90+ by customer and currency; unapplied credits; unrealised FX exposure; P2 disputed and undisputed separately",
     "AP ageing and bills to pay by due date with cash requirement",
     "Variants on the same layout: sales by customer and item, spend by supplier, top expenses",
+    "Top expenses: horizontal bars of the ten largest and the rest, values on the bars, with Chart | Table (the Chart component; p1-reports 5.3)",
     "P2: deferral roll-forward and contribution margin by customer and product"
    ],
    "states": [
@@ -3397,7 +3399,7 @@
    "content": [
     "Due attestations with owner and due date",
     "Weekly review (Founder mode): self-approved and high-risk items, auto-reconciled sample, AI anomaly flags, break-glass post-review; mark reviewed",
-    "Quarterly access review: who has what, last sign-in, SoD conflicts, external users and their expiry, OAuth clients; attest",
+    "Quarterly access review: done in Settings › Access review (rev 0.162), listed here with its due date and attestation",
     "Sign-off with evidence"
    ],
    "states": [
@@ -3872,6 +3874,43 @@
    ]
   },
   {
+   "id": "access-review",
+   "file": "AccessReview",
+   "title": "Access review",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/access-review",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Controller",
+    "Auditor"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-CTL-06",
+    "SEC-06"
+   ],
+   "purpose": "Review who can do what each quarter and attest it (PRD-001 rev 0.162).",
+   "content": [
+    "Banner while the last quarter that ended is not attested, naming C.2 #7",
+    "Tiles: people with access, role conflicts, external access, integration clients",
+    "People and their access: roles, last sign-in, second factor (Expert), and a review chip (role conflict, external until a date or expired and still active, not signed in for 30 days)",
+    "Role conflicts with what the team mode allows and the compensating control",
+    "Integration clients with what they read and their health",
+    "Attest the quarter: an Owner, with an optional note; audited with the report seen",
+    "Earlier quarters with their attested reports; Download CSV"
+   ],
+   "states": [
+    "quarter not attested (warning banner)",
+    "attested",
+    "nothing to flag",
+    "read only (not an Owner)"
+   ]
+  },
+  {
    "id": "team-mode",
    "file": "TeamMode",
    "title": "Team mode and controls",
@@ -4291,7 +4330,7 @@
    "id": "auditor-workspace",
    "file": "AuditorWorkspace",
    "title": "Auditor workspace",
-   "canvas": "settings-admin",
+   "canvas": "roles",
    "module": "Portal",
    "route": "/auditor",
    "kind": "page",

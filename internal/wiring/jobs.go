@@ -26,6 +26,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/remitmail"
+	"github.com/cognizhi/fyniq/internal/reportexport"
 	"github.com/cognizhi/fyniq/internal/render"
 	"github.com/cognizhi/fyniq/internal/salesmail"
 )
@@ -165,6 +166,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := evidence.Verify(ctx, k.Store, k.Evidence)
 			return err
 		},
+		"reports.expire": func(ctx context.Context) error {
+			_, err := k.Exports(clock).Expire(ctx, clock.Now())
+			return err
+		},
 		"evidence.sweep": func(ctx context.Context) error {
 			if k.Staging == nil || k.Evidence == nil {
 				return nil
@@ -218,6 +223,11 @@ func (k *Kit) Remittances(clock ports.Clock) remitmail.Sender {
 		}
 	}
 	return out
+}
+
+// Exports prepare the exports that run in the background in the staging store, and expire them (FR-RPT-09).
+func (k *Kit) Exports(clock ports.Clock) reportexport.Preparer {
+	return reportexport.Preparer{Store: k.Store, Files: k.Staging, Outbox: k.dispatcher(clock), Clock: clock}
 }
 
 // Fetcher fetches, decides and keeps received mail (FR-INT-22), telling whoever decides of quarantined mail.

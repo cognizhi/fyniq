@@ -171,6 +171,9 @@ fyniq_api       INSERT    journal_entry (memo, posting_date, posting_identity, r
 fyniq_api       SELECT    journal_entry
 fyniq_api       INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no)
 fyniq_api       SELECT    journal_line
+fyniq_api       INSERT    kpi_input (entered_at, entered_by, headcount, lost_customers, month, new_customers, paying_customers)
+fyniq_api       SELECT    kpi_input
+fyniq_api       UPDATE    kpi_input (entered_at, entered_by, headcount, lost_customers, new_customers, paying_customers, version)
 fyniq_api       EXECUTE   latest_job_slot()
 fyniq_api       SELECT    ledger_revision
 fyniq_api       EXECUTE   lock_ledger()
@@ -249,6 +252,8 @@ fyniq_api       SELECT    recurring_journal
 fyniq_api       UPDATE    recurring_journal (content_version, day_of_month, ends_on, every_months, name, next_on, starts_on, status, version)
 fyniq_api       INSERT    recurring_journal_version (content, edited_by, recurring_journal_id, version)
 fyniq_api       SELECT    recurring_journal_version
+fyniq_api       INSERT    report_export (format, parameters, report, requested_at, requested_by)
+fyniq_api       SELECT    report_export
 fyniq_api       EXECUTE   request_installation_change()
 fyniq_api       INSERT    review_log_entry (actor, approval_id, kind, logged_at, object_key, object_type, summary)
 fyniq_api       SELECT    review_log_entry
@@ -431,6 +436,7 @@ fyniq_readonly  SELECT    item_price
 fyniq_readonly  SELECT    job_slots
 fyniq_readonly  SELECT    journal_entry
 fyniq_readonly  SELECT    journal_line
+fyniq_readonly  SELECT    kpi_input
 fyniq_readonly  SELECT    ledger_revision
 fyniq_readonly  SELECT    member_invitation
 fyniq_readonly  SELECT    money_account
@@ -461,6 +467,7 @@ fyniq_readonly  SELECT    recurring_invoice
 fyniq_readonly  SELECT    recurring_invoice_version
 fyniq_readonly  SELECT    recurring_journal
 fyniq_readonly  SELECT    recurring_journal_version
+fyniq_readonly  SELECT    report_export
 fyniq_readonly  SELECT    review_log_entry
 fyniq_readonly  SELECT    review_log_review
 fyniq_readonly  SELECT    role_assignment
@@ -624,6 +631,8 @@ fyniq_worker    SELECT    recurring_journal
 fyniq_worker    UPDATE    recurring_journal (next_on)
 fyniq_worker    SELECT    recurring_journal_version
 fyniq_worker    EXECUTE   remittance_allowed()
+fyniq_worker    SELECT    report_export
+fyniq_worker    UPDATE    report_export (expires_at, failure, file_name, file_sha256, ledger_revision, media_type, ready_at, rows_count, size_bytes, status)
 fyniq_worker    INSERT    review_log_entry (actor, approval_id, kind, logged_at, object_key, object_type, summary)
 fyniq_worker    SELECT    review_log_entry
 fyniq_worker    SELECT    review_log_review

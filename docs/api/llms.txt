@@ -255,6 +255,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/journals/{journal_id}/reverse` (reverseJournal): Reverse a posted journal
 - `POST /v1/journals/{journal_id}/reverse-approval` (requestJournalReversal): Ask for approval to reverse a journal
 - `POST /v1/journals:bulk` (bulkCreateJournals): Save up to 250 draft journals
+- `GET /v1/kpi-inputs` (listKpiInputs): List the KPIs' entered counts
+- `PUT /v1/kpi-inputs/{month}` (setKpiInput): Enter a month's KPI counts
+- `GET /v1/kpis` (getKpis): Get the KPIs of a month
 - `POST /v1/me/bank-changes` (createMyBankChange): Prepare a change of your bank account for reimbursements
 - `GET /v1/me/bank-changes/{change_id}` (getMyBankChange): Get a change of your bank account
 - `PUT /v1/me/bank-changes/{change_id}` (replaceMyBankChange): Change a draft change of your bank account
@@ -348,6 +351,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/payment-batches/{batch_id}/approval` (requestPaymentBatchApproval): Ask for approval of a payment batch
 - `POST /v1/payment-batches/{batch_id}/cancel` (cancelPaymentBatch): Cancel an approved payment batch
 - `GET /v1/payment-batches/{batch_id}/file` (getPaymentBatchFile): Download a released batch's payment list
+- `POST /v1/payment-batches/{batch_id}/payments/{payment_id}/remittance-again` (sendRemittanceAgain): Send a failed remittance advice again
 - `POST /v1/payment-batches/{batch_id}/reapproval` (requestPaymentBatchReapproval): Ask for a payment batch's approval again
 - `POST /v1/payment-batches/{batch_id}/release` (releasePaymentBatch): Release a payment batch
 - `GET /v1/periods` (listPeriods): List the periods
@@ -408,9 +412,18 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/recurring-journals/{recurring_journal_id}` (replaceRecurringJournal): Change a recurring journal
 - `POST /v1/recurring-journals/{recurring_journal_id}/pause` (pauseRecurringJournal): Pause a recurring journal
 - `POST /v1/recurring-journals/{recurring_journal_id}/resume` (resumeRecurringJournal): Resume a recurring journal
+- `GET /v1/report-exports` (listReportExports): List my exports
+- `POST /v1/report-exports` (requestReportExport): Ask for an accountant export
+- `GET /v1/report-exports/{export_id}` (getReportExport): Get one of my exports
+- `GET /v1/report-exports/{export_id}/file` (getReportExportFile): Download one of my exports
 - `GET /v1/reports/general-ledger` (getGeneralLedger): Get the general ledger report
+- `GET /v1/reports/sales-by-customer` (getSalesByCustomer): Get sales by customer
+- `GET /v1/reports/sales-by-item` (getSalesByItem): Get sales by item
 - `GET /v1/reports/schedules` (getSchedules): Get the prepayment and deferral schedules
+- `GET /v1/reports/spend-by-supplier` (getSpendBySupplier): Get spend by supplier
 - `GET /v1/reports/statements/{kind}` (getFinancialStatement): Get a financial statement
+- `GET /v1/reports/statements/{kind}/export` (exportFinancialStatement): Export a financial statement
+- `GET /v1/reports/top-expenses` (getTopExpenses): Get the top expenses
 - `GET /v1/review-log` (listReviewLog): List the review log
 - `POST /v1/review-log/reviews` (reviewLogEntries): Review high-risk actions
 - `GET /v1/sales-reminders` (listSalesReminders): List the reminders due to customers

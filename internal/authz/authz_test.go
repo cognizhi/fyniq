@@ -274,3 +274,38 @@ func TestOnlyStepUpAndRecoveryNeedNoSecondFactor(t *testing.T) {
 		t.Errorf("operations open to a session without a second factor: %v, want %v", got, want)
 	}
 }
+
+// A qualified view of the reports reads the management reports of its area only (p1-reports design D9): "V sales" the
+// sales reports, "V purchases" the spend by supplier; neither the top expenses, and payroll, a department and the board
+// pack none. Naming a qualifier never widens an operation that is not Unqualified.
+// req: FR-RPT-03
+// asvs: V8.2.1
+func TestAQualifiedViewReadsTheReportsOfItsArea(t *testing.T) {
+	for _, c := range []struct {
+		role                         authz.Role
+		sales, spend, top, statement bool
+	}{
+		{authz.Accountant, true, true, true, true},
+		{authz.ARSpecialist, true, false, false, false},
+		{authz.APSpecialist, false, true, false, false},
+		{authz.PayrollAdmin, false, false, false, false},
+		{authz.Approver, false, false, false, false},
+		{authz.BoardViewer, false, false, false, false},
+		{authz.Employee, false, false, false, false},
+	} {
+		for _, x := range []struct {
+			p    authz.Policy
+			want bool
+		}{{authz.GetSalesByCustomer, c.sales}, {authz.GetSalesByItem, c.sales}, {authz.GetSpendBySupplier, c.spend}, {authz.GetTopExpenses, c.top},
+			{authz.GetFinancialStatement, c.statement}} {
+			if got := authz.Decide(x.p, []authz.Role{c.role}, false).Allowed; got != x.want {
+				t.Errorf("%s on %s: %v, want %v", c.role, x.p.Operation, got, x.want)
+			}
+		}
+	}
+	for _, p := range authz.Policies {
+		if len(p.Qualified) > 0 && !p.Unqualified {
+			t.Errorf("%s names qualifiers but is not Unqualified: naming them would not narrow it", p.Operation)
+		}
+	}
+}

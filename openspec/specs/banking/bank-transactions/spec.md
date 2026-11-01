@@ -277,6 +277,11 @@ Source: PRD-001 §8.4 · Priority S · Phase P1 (file) / P2 (API)
 - **WHEN** a batch's payment to a supplier is matched to its bank statement line
 - **THEN** remittance advice is emailed to the supplier's remittance address
 
+#### Scenario: A failed advice is sent again by a person (rev 0.160)
+- **WHEN** a payment's remittance advice gave up after its attempts
+- **THEN** a person who can prepare the batch can send it again: one new attempt, audited
+- **AND** a payment still gets at most one advice
+
 ### Requirement: FR-BNK-13 Daily cash position
 The system SHALL show the daily cash position across accounts and currencies at the latest rates.
 
@@ -321,6 +326,11 @@ Source: PRD-001 §8.4 · Priority M · Phase P1 (imports) / P2 (feeds)
 - **THEN** it appears in an Auto-reconciled list with the rule or match that did it
 - **AND** it can be undone while the period is open
 - **AND** a sample enters the weekly review (FM-3)
+
+#### Scenario: A batch's payment matches by itself (rev 0.160)
+- **WHEN** a line names a released batch's number, and its amount and currency are those of exactly one unmatched payment of that batch, and nothing else could be it
+- **THEN** it is auto-reconciled to that payment, within the same limits
+- **AND** a line for a whole batch's total is not matched by itself
 
 #### Scenario: The recommended limits (rev 0.142)
 - **WHEN** an organisation has not changed them

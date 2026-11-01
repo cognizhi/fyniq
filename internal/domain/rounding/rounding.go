@@ -22,6 +22,7 @@ const (
 	AllocEvenName    = "ALLOC-EVEN"
 	AllocProRataName = "ALLOC-PRORATA"
 	PercentName      = "RND-PERCENT"
+	KPIName          = "RND-KPI"
 	RateName         = "RND-RATE"
 	GSTExclName      = "RND-GST-EXCL"
 	LineName         = "RND-LINE"
@@ -46,6 +47,14 @@ func halfAwayFromZero(d *apd.Decimal, places int) *apd.Decimal {
 		panic(fmt.Sprintf("rounding: quantize %s to %d places: %v", d, places, err))
 	}
 	return out
+}
+
+// KPI is RND-KPI (rev 0.161): a KPI's value = round(its exact value, places), half away from zero, once; a value that
+// rounds to zero shows as 0, never -0.
+func KPI(x *apd.Decimal, places int) string {
+	r := halfAwayFromZero(x, places)
+	r.Negative = r.Negative && !r.IsZero()
+	return r.Text('f')
 }
 
 // FX is RND-FX: base amount = round(foreign amount × rate, base minor units), half away from zero.

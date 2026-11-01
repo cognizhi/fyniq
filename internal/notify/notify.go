@@ -50,6 +50,9 @@ type Type struct {
 
 // Catalogue is every notification type, on the owner's decisions of 24 Oct 2026: approvals and security emailed at
 // once, the rest in the daily digest; in-app always. More types join as their events are emitted.
+// ExportReadyType tells a person their export is ready to download, or why it could not be made (FR-RPT-09).
+const ExportReadyType = "reports.export_ready"
+
 var Catalogue = []Type{
 	{Key: "security.sign_in", Label: "You signed in", Category: Security, Severity: "info", Email: storage.EmailOff, Locked: true,
 		Note: "Every sign-in is emailed at once by the sign-in alert, so it is not emailed again here"},
@@ -68,6 +71,7 @@ var Catalogue = []Type{
 	{Key: "recurring.made", Label: "A recurring journal or bill made a draft", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: "bills.due", Label: "Bills to pay soon", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: "jobs.failed", Label: "A background job failed", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
+	{Key: ExportReadyType, Label: "Your export is ready", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: TestType, Label: "A test notification you sent", Category: Operations, Severity: "info", Email: storage.EmailImmediate},
 }
 

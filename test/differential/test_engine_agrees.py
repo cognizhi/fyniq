@@ -8,7 +8,9 @@ public entry points and the engine's command line.
 
 It draws manual-journal scenarios, and also the P1 sources named in FYNIQ_DIFFERENTIAL_SOURCES
 (comma-separated, e.g. "bank"): an engine session names a source there once cmd/scenario-run reads
-its shapes (README, "P1 sources").
+its shapes (README, "P1 sources"). The name "statements" there also draws those scenarios asking for
+the statements, once cmd/scenario-run states them (README, "Statements"), and "kpis" those asking for the
+KPIs too (README, "KPIs").
 """
 
 import hashlib
@@ -27,6 +29,7 @@ from oracle.ledger import Ledger
 from oracle.scenario import ScenarioError, scenario_from_json
 from oracle.strategies import scenarios
 from oracle.strategies_p1 import p1_scenarios
+from oracle.strategies_statements import with_statements
 
 GOLDEN = Path(__file__).parent / "golden"
 EXAMPLES = int(os.environ.get("FYNIQ_DIFFERENTIAL_EXAMPLES", "1000"))
@@ -34,9 +37,15 @@ SOURCES = tuple(s.strip() for s in os.environ.get("FYNIQ_DIFFERENTIAL_SOURCES", 
 
 
 def strategy() -> st.SearchStrategy[dict]:
-    if not SOURCES:
-        return scenarios("differential")
-    return st.one_of(scenarios("differential"), p1_scenarios(SOURCES, "differential"))
+    p1 = tuple(s for s in SOURCES if s not in ("statements", "kpis"))
+    base = scenarios("differential")
+    if p1:
+        base = st.one_of(base, p1_scenarios(p1, "differential"))
+    if "kpis" in SOURCES:
+        return st.one_of(base, with_statements(base), with_statements(base, kpis=True))
+    if "statements" in SOURCES:
+        return st.one_of(base, with_statements(base))
+    return base
 
 
 def engine(scenario: dict) -> dict:
@@ -88,7 +97,44 @@ def difference(e: dict, o: dict) -> str | None:
         for account in sorted(set(ea) | set(oa)):
             if not same(ea.get(account), oa.get(account)):
                 return f"trial balance {month} account {account}: engine {ea.get(account, '0')}, oracle {oa.get(account, '0')}"
+    found = tree_difference(e.get("statements"), o.get("statements"), "statements")
+    if found is not None:
+        return found
+    return kpi_difference(e.get("kpis"), o.get("kpis"))
+
+
+def kpi_difference(e: dict | None, o: dict | None) -> str | None:
+    """Two sets of KPIs: each value to the cent or the decimal, and undefined (null) only matches null (FR-KPI-03)."""
+    if (e is None) != (o is None):
+        return f"kpis: engine {'none' if e is None else 'some'}, oracle {'none' if o is None else 'some'}"
+    for month in sorted(set(e or {}) | set(o or {})):
+        x, y = (e or {}).get(month), (o or {}).get(month)
+        if x is None or y is None:
+            return f"kpis/{month}: engine {'missing' if x is None else 'present'}, oracle {'missing' if y is None else 'present'}"
+        for key in sorted(set(x) | set(y)):
+            a, b = x.get(key), y.get(key)
+            if isinstance(a, dict) or isinstance(b, dict):
+                found = tree_difference(a, b, f"kpis/{month}/{key}")
+                if found is not None:
+                    return found
+            elif (a is None) != (b is None) or (a not in (None, "not-burning") and b not in (None, "not-burning")
+                                                 and not same(a, b)) or (("not-burning" in (a, b)) and a != b):
+                return f"kpis/{month}/{key}: engine {a}, oracle {b}"
     return None
+
+
+def tree_difference(e, o, where: str) -> str | None:
+    """Two statements to the cent: a missing report group, function or line reads as zero (README, "Statements");
+    a missing month or percent_of_revenue, a check or a non-cash list must match."""
+    if isinstance(e, dict) and isinstance(o, dict):
+        for key in sorted(set(e) | set(o)):
+            found = tree_difference(e.get(key), o.get(key), f"{where}/{key}")
+            if found is not None:
+                return found
+        return None
+    if isinstance(e, (dict, list, bool)) or isinstance(o, (dict, list, bool)):
+        return None if e == o else f"{where}: engine {repr(e)[:200]}, oracle {repr(o)[:200]}"
+    return None if same(e, o) else f"{where}: engine {e or '0'}, oracle {o or '0'}"
 
 
 def test_the_engine_and_the_oracle_agree() -> None:  # req: QA-ENG-02

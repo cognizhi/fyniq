@@ -1011,3 +1011,37 @@ func TestMileageProperties(t *testing.T) {
 		}
 	})
 }
+
+// RND-KPI rounds once, half away from zero, to the places its kind needs; a value that rounds to zero is 0, never -0.
+// req: RND-KPI
+func TestKPIRoundsOnceHalfAwayFromZero(t *testing.T) {
+	d := func(s string) *apd.Decimal { x, _, _ := apd.NewFromString(s); return x }
+	for _, c := range []struct {
+		in     string
+		places int
+		want   string
+	}{
+		{"10.25", 1, "10.3"}, {"-10.25", 1, "-10.3"}, {"10.24999", 1, "10.2"}, {"-0.04", 1, "0.0"}, {"2.5", 0, "3"}, {"-2.5", 0, "-3"},
+		{"1234.565", 2, "1234.57"}, {"0", 1, "0.0"},
+	} {
+		if got := KPI(d(c.in), c.places); got != c.want {
+			t.Errorf("RND-KPI(%s, %d) = %s, want %s", c.in, c.places, got, c.want)
+		}
+	}
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.Int64Range(-1_000_000_000, 1_000_000_000).Draw(t, "n")
+		places := rapid.IntRange(0, 2).Draw(t, "places")
+		x := apd.New(n, -4)
+		got, _, _ := apd.NewFromString(KPI(x, places))
+		var diff apd.Decimal
+		_, _ = work.Sub(&diff, got, x)
+		diff.Abs(&diff)
+		half := apd.New(5, int32(-places-1))
+		if diff.Cmp(half) > 0 {
+			t.Fatalf("RND-KPI(%s, %d) = %s, more than half a unit away", x, places, got)
+		}
+		if diff.Cmp(half) == 0 && got.Negative != x.Negative && !got.IsZero() {
+			t.Fatalf("RND-KPI(%s, %d) = %s: a half rounds away from zero", x, places, got)
+		}
+	})
+}

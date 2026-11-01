@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -15,14 +16,17 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/authz/authztest"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/reportexport"
 )
 
 // matrixCall makes one operation's request for a caller, with fresh records where it changes one, and
@@ -260,6 +264,9 @@ func matrixInvoiceEvidence(e *env) (invoiceID, evidenceID string) {
 }
 
 // matrixCalls has one request per operation; an operation without one fails the test.
+// matrixKPIMonth numbers the months the matrix enters KPI counts for, one each.
+var matrixKPIMonth int
+
 var matrixCalls = map[string]matrixCall{
 	"addInvoiceEvidence": func(e *env, tok string) (response, func() bool) {
 		id, _ := e.createInvoice("1", "10.00")
@@ -1249,8 +1256,51 @@ var matrixCalls = map[string]matrixCall{
 	"getSchedules": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/schedules?as_at=2026-10-31", tok, nil), nil
 	},
+	"requestReportExport": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/report-exports", tok, map[string]any{"report": "trial_balance", "to": "2026-10-31", "format": "csv"}), nil
+	},
+	"listReportExports": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/report-exports", tok, nil), nil
+	},
+	"getReportExport": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/report-exports/"+matrixExport(e, tok, false), tok, nil), nil
+	},
+	"getReportExportFile": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/report-exports/"+matrixExport(e, tok, true)+"/file", tok, nil), nil
+	},
+	"exportFinancialStatement": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/statements/bs/export?to=2026-10&format=csv", tok, nil), nil
+	},
 	"getFinancialStatement": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/statements/pl?from=2026-10&to=2026-11", tok, nil), nil
+	},
+	"getSalesByCustomer": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/sales-by-customer?from=2026-10&to=2026-11", tok, nil), nil
+	},
+	"getSalesByItem": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/sales-by-item?from=2026-10&to=2026-11", tok, nil), nil
+	},
+	"getSpendBySupplier": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/spend-by-supplier?from=2026-10&to=2026-11", tok, nil), nil
+	},
+	"getKpis": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/kpis?month=2026-10", tok, nil), nil
+	},
+	"listKpiInputs": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/kpi-inputs", tok, nil), nil
+	},
+	// Each call enters a month of its own, so each starts from no counts (If-Match "0").
+	"setKpiInput": func(e *env, tok string) (response, func() bool) {
+		matrixKPIMonth++
+		month := time.Date(2020, time.Month(matrixKPIMonth), 1, 0, 0, 0, 0, time.UTC).Format("2006-01")
+		r := e.call(http.MethodPut, "/v1/kpi-inputs/"+month, tok, map[string]any{"headcount": 3}, "If-Match", `"0"`)
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/kpi-inputs?from="+month+"&to="+month, e.as(authz.Accountant), nil)
+			return !strings.Contains(l.Raw, `"month":"`+month+`"`)
+		}
+	},
+	"getTopExpenses": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/top-expenses?from=2026-10&to=2026-11", tok, nil), nil
 	},
 	"listJournals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/journals", tok, nil), nil
@@ -2350,7 +2400,9 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 		t.Fatalf("Appendix D has no row %q", p.Capability)
 	}
 	allowed, masked = authztest.Allows(authztest.ParseCell(row[col]), p.Need)
-	if allowed && p.Unqualified && authztest.ParseCell(row[col]).Qualifier != "" { // such as Reports' "V sales" (rev 0.52)
+	// A qualified cell, such as Reports' "V sales" (rev 0.52), grants an Unqualified operation only when the operation reads
+	// that part of the books alone: the sales reports for "sales" (p1-reports design D9).
+	if q := authztest.ParseCell(row[col]).Qualifier; allowed && p.Unqualified && q != "" && !slices.Contains(p.Qualified, q) {
 		return false, false
 	}
 	if allowed && p.Parent != "" { // and the record it is under must be visible, unmasked
@@ -2440,4 +2492,24 @@ func matrixMemberUser(e *env) uuid.UUID {
 	}
 	e.t.Fatalf("the matrix member %s is not listed", id)
 	return uuid.Nil
+}
+
+// matrixExport is an export the token's own person asked for, prepared by the worker when ready is true, so that a role
+// the matrix allows reaches it; a role it refuses cannot ask, and is refused before the export is looked up, whatever
+// its ID.
+func matrixExport(e *env, tok string, ready bool) string {
+	r := e.call(http.MethodPost, "/v1/report-exports", tok, map[string]any{"report": "trial_balance", "to": "2026-10-31", "format": "csv"})
+	if r.Status != http.StatusAccepted {
+		return uuid.NewString()
+	}
+	id := r.str("id")
+	if ready {
+		worker := workerStore(e.t)
+		p := reportexport.Preparer{Store: worker, Files: e.blobs, Outbox: outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: e.clock}, Clock: e.clock}
+		payload, _ := json.Marshal(map[string]string{"export_id": id})
+		if err := p.Work()(context.Background(), e.books.Org, storage.OutboxRow{Kind: reportexport.Kind, Payload: payload}); err != nil {
+			e.t.Fatal(err)
+		}
+	}
+	return id
 }

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "headcount": {
+      "description": "People employed in the month.",
+      "examples": [
+        8
+      ],
+      "format": "int64",
+      "maximum": 1000000,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "lost_customers": {
+      "description": "Customers who stopped paying in the month.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "maximum": 10000000,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "new_customers": {
+      "description": "Customers who started paying in the month.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "maximum": 10000000,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "paying_customers": {
+      "description": "Paying customers at the month's end; with new_customers and lost_customers, or none of the three.",
+      "examples": [
+        10
+      ],
+      "format": "int64",
+      "maximum": 10000000,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "title": "KPICountsIn",
+  "type": "object"
+}

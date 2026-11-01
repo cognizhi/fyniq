@@ -307,3 +307,11 @@ def rnd_mileage(distance_km: Decimal, rate_per_km: Decimal, minor_units: int) ->
     half up, per trip. Half up is half away from zero, as everywhere in §10.4."""
     tenths = round_quotient(distance_km, Decimal(1), 1)
     return round_quotient(EXACT.multiply(tenths, rate_per_km), Decimal(1), minor_units)
+
+
+def rnd_percent(part: Decimal, whole: Decimal) -> Decimal | None:
+    """``RND-PERCENT`` (§10.4, rev 0.65): round(part ÷ the size of the whole × 100, 1 decimal), half-up,
+    with the part's sign; a whole of zero has no percentage. For showing only."""
+    if whole.is_zero():
+        return None
+    return round_quotient(EXACT.multiply(part, HUNDRED), whole.copy_abs(), 1)

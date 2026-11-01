@@ -4,14 +4,14 @@ type: task
 title: Pay suppliers and claims in a payment batch
 summary: Prepare a batch of approved bills and claims, have another person approve it, release it, pay it from the payment list, and see it paid
 sources:
-  - docs/user-guide/payment-batches.md sha256:c36ff1df40cae398119bb71544125e399e36edb952c2596d498d22cf80deee8e
+  - docs/user-guide/payment-batches.md sha256:f9a9ef741e3d1b059d4896544d8c64b3f2d8f908f4bd517dc78bb42aa2e3fd59
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-28
+compiled_at: 2026-10-29
 aliases:
   - payment batch
   - pay suppliers
@@ -89,7 +89,8 @@ aliases:
 
 - Matching a batch's payment to its bank statement line shows it **Paid**; the batch is paid once every payment is.
 - A supplier is then emailed remittance advice to its remittance address, once; one with no remittance email is warned of before release and sent nothing.
-- If sending the advice fails after several tries, the payment shows **Remittance not sent**: tell the supplier of the payment another way.
+- If sending the advice fails after several tries, the payment shows **Remittance not sent**: someone who prepares batches selects **Send again** with a reason (sent once more, still at most once), or tells the supplier another way.
+- When a statement line names the batch's number and its amount is one payment's alone, Fyniq matches the line to that payment by itself, within the limit for one line ([[banking.auto-reconciled]]), and the advice goes out as when a person matches it.
 - A payment the bank rejects is voided on its own, and its bills or claims are open again.
 
 (src: docs/user-guide/payment-batches.md#paid-and-remittance-advice)

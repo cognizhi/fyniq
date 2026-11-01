@@ -39,6 +39,10 @@ written in its canonical form (:func:`oracle.book.canonical`); a registered asse
 source schedules (a spread's releases, an asset's depreciation) posts after every document and
 reversal, when dated on or before ``as_of`` (ENG-05: up to "today", never the future), one entry per
 document, kind and date; a later document may end a schedule (a disposal ends its asset's).
+
+A scenario with ``"statements": true`` also gets every month's financial statements, read from the
+posted entries by :mod:`oracle.statements` (FR-RPT-01), and one with ``kpis`` every stated month's KPIs, read
+from those statements and the trial balance by :mod:`oracle.kpis` (FR-KPI-02).
 """
 
 from __future__ import annotations
@@ -53,6 +57,8 @@ from oracle.book import Entry, PostedLine, Rejected, Scheduled, canonical
 from oracle.rules import Rules
 from oracle.scenario import RESULT_SCHEMA, Document, Reversal, Scenario, Source, check_result
 from oracle.sources import RULE_SETS
+from oracle.kpis import kpis
+from oracle.statements import statements
 
 __all__ = ["Entry", "Ledger", "PostedLine", "Rejected", "period", "run"]
 
@@ -273,6 +279,10 @@ class Ledger:
                 for month, accounts in self.trial_balance().items()
             },
         }
+        if s.statements:
+            result["statements"] = statements(s, self.entries)
+        if s.kpis is not None:
+            result["kpis"] = kpis(s, result)
         check_result(result)
         return result
 

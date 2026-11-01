@@ -73,7 +73,7 @@ func (a *API) releasedPayments(ctx context.Context, u storage.UnitOfWork, posted
 			if err != nil {
 				return nil, Money{}, false, err
 			}
-			queued, err := u.Outbox().ByKey(ctx, remitmail.Kind, remitmail.Key(id))
+			queued, _, err := remitmail.Latest(ctx, u, id)
 			if err != nil {
 				return nil, Money{}, false, err
 			}
@@ -83,7 +83,7 @@ func (a *API) releasedPayments(ctx context.Context, u storage.UnitOfWork, posted
 			case strings.TrimSpace(c.RemittanceEmail) == "":
 				pay.Remittance = "no_email"
 			case queued != nil && queued.State == storage.OutboxDead:
-				pay.Remittance = "failed" // its attempts ran out; nothing queues it again
+				pay.Remittance = "failed" // its attempts ran out; a person may send it again (rev 0.160)
 			case queued != nil:
 				pay.Remittance = "queued"
 			default:
