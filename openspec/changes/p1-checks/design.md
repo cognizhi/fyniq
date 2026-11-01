@@ -91,6 +91,14 @@ The close keeps its `run` and its record (AUD-04), unchanged in behaviour.
   - `reversals` → C.2 #56.
 - The close's keys stay stable, so recorded closes still read.
 - New close-relevant checks (such as C.1 #33) are added to the close through the catalogue, not duplicated.
+- *As built (slice 1):*
+  - the period to close next is the earliest open period that has **started**, so a company in its first month is
+    assessed too;
+  - the statement checks (C.1 #2, #3, #4, #5, #23) read every open month that has started, through the statements
+    (`financials.Lay`), the close's own code path; C.1 #1 reads each month's trial balance from the balance service, as
+    the close's `trial-balance` does. Each definition names the close keys it is (`CloseKeys`);
+  - the close adds, through `closing.Service.More`, each catalogue check that can find ✖, is not one of its own, and found
+    ✖ at its latest run (`checks.ForClose`). A check not yet run, or not assessed, says nothing to the close.
 
 *Alternative:* move the close's code into `checks`. Rejected for now: it would rewrite tested code that the close's
 attestation records depend on, for no change in behaviour.
@@ -115,8 +123,10 @@ All ledger figures come from the balance service and the statements at one ledge
 
 - Every table carries `organisation_id` with RLS forced (INV-06).
 - Writes come from the worker role (`fyniq_worker`), except owners and attestations, which the API writes.
-- Change and request runs older than 90 days are purged by the nightly job, through a function only the worker may
-  call. Nightly runs are kept 13 months.
+- Change and request runs older than 90 days are purged by the nightly job. Nightly runs are kept 13 months.
+  *As built:* the worker deletes them, and the table's trigger refuses the delete of a run within its retention (FY245),
+  rather than a purge function.
+- *As built:* a rerun that finds the same status writes the state's new `run_at` and adds nothing to the audit trail.
 
 *Alternative:* every run's every result, append-only. Rejected: a busy day coalesces to hundreds of runs, about 60
 results each, for no reader. The status history lives in the audit trail.
@@ -127,8 +137,12 @@ results each, for no reader. The status history lives in the audit trail.
   - after a write commits, the command's unit of work enqueues an outbox item `checks.refresh`. Its key is per
     organisation and is free again once the item runs, so a burst of writes makes one run. It is delayed 20 seconds
     to coalesce;
+  - *as built:* there is no delay. A commit adds the item only when none of the organisation's is waiting (pending or
+    dispatched, `Outbox.Waiting`): a burst while one waits adds nothing, and a change committed while a refresh runs adds
+    the next, so none is missed;
   - the job reads the organisation's audit events since its watermark, takes their object types, and runs the
-    definitions whose `Triggers` name one, plus every definition that has never run;
+    definitions whose `Triggers` name one, plus every definition that has never run (past 20,000 events, every
+    definition with triggers);
   - writes from the scheduler and the worker (recurring entries, depreciation, revaluation, bank sync) enqueue it the
     same way, so no path is missed;
   - the enqueue sits in one place: `storage`'s audit recorder marks the unit of work, and the adapter adds the
@@ -143,6 +157,11 @@ results each, for no reader. The status history lives in the audit trail.
   - the page shows "Running…" until the run's `run_at` moves.
 
 ### D6 The verifying jobs feed their checks
+
+*As built (slice 1):* C.2 #1 recomputes the balances from the lines (`balance.Differences`, as `ledger.verify` and the
+close do), in the nightly run and on request only: `ledger.verify` records nothing for an organisation it found sound.
+C.2 #3 reads the newest `audit.verified` event since the watermark, which `audit.verify` records for every organisation
+each night; with none, it keeps what it found.
 
 C.2 #1, #3 and #31 do not recompute in a change run. Each reads the latest outcome its platform job recorded, and
 says when it ran:

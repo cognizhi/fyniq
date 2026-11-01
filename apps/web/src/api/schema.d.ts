@@ -1576,6 +1576,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the checks and books health
+         * @description Every check of the checks engine the caller sees (FR-CTL-01), by area, each with its Appendix C row, what it checks and why, its latest result (ok, ⚠ warning, ✖ error, ⏰ due, not assessed with the input it needs, or failed, which counts as ✖), the items it found, its owner and when it ran; and books health from them (FR-CTL-02). A check's items show only to a reader who may view their own row (Appendix D); a reader whose view is of an area (sales, purchases, payroll) sees that area's checks only. A module's checks show once the module is on (FR-ORG-06). Read-only; no side effects.
+         */
+        get: operations["listChecks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/checks/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run every check now
+         * @description Asks the worker to run every check of the organisation now (Run now; FR-CTL-01, design D5). The answer is 202: listChecks' last_run finishes after requested_at once it has run, and run_requested is true until then. A Run now asked while one waits joins it. At most one a minute for the organisation: 429 with Retry-After after that. Side effects: the background run, which records each check's result, audits each change of status and records the run. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.
+         */
+        post: operations["runChecks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/checks/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a check
+         * @description One check as listChecks shows it, with its owner's ETag for setCheckOwner; its items only when the caller may view their own row. A check that does not exist, or whose module is off, is CHECK-01. Read-only; no side effects.
+         */
+        get: operations["getCheck"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/checks/{key}/owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Name a check's owner
+         * @description Names a person as the owner of a check instead of the role the catalogue names, or gives it back to the role with null (FR-CTL-01, design D8). The person must be an active member whose roles open the check's items; otherwise CHECK-02. Side effects: the owner at its next version and its audit event, with the person before and after. Needs If-Match with the owner's ETag from getCheck. Prefer: return=preview checks it and saves nothing.
+         */
+        put: operations["setCheckOwner"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/claim-categories": {
         parameters: {
             query?: never;
@@ -5883,7 +5963,7 @@ export interface paths {
         put?: never;
         /**
          * Run a period's close checks
-         * @description Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Until the checks catalogue arrives they are: every earlier period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), draft journals dated in the period (⚠), automatic reversals not posted (⚠), recurring journals without their drafts (⚠, or ✖ when the scheduler failed) or with content the posting rules refuse (⚠), variances against the previous month above both thresholds with no explanation of their totals as they are (✖, FR-GL-14; listPeriodVariances), checklist tasks neither done nor skipped with a reason (✖, FR-GL-07; getPeriodChecklist) and, in the period the books start in, opening balances not posted (⚠). Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs them and records nothing.
+         * @description Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Besides each check of the checks engine that can find ✖ and found it at its latest run (FR-CTL-01; listChecks), they are: every earlier period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), draft journals dated in the period (⚠), automatic reversals not posted (⚠), recurring journals without their drafts (⚠, or ✖ when the scheduler failed) or with content the posting rules refuse (⚠), variances against the previous month above both thresholds with no explanation of their totals as they are (✖, FR-GL-14; listPeriodVariances), checklist tasks neither done nor skipped with a reason (✖, FR-GL-07; getPeriodChecklist) and, in the period the books start in, opening balances not posted (⚠). Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs them and records nothing.
          */
         post: operations["runCloseChecks"];
         delete?: never;
@@ -11514,6 +11594,247 @@ export interface components {
              */
             claim_categories: number;
         };
+        CheckHealth: {
+            /**
+             * Format: int64
+             * @description Checks that found ⏰.
+             * @example 0
+             */
+            due: number;
+            /**
+             * Format: int64
+             * @description Checks not assessed for want of an input, or not run yet: counted beside the score.
+             * @example 1
+             */
+            not_assessed: number;
+            /**
+             * Format: int64
+             * @description Checks that found nothing.
+             * @example 8
+             */
+            ok: number;
+            /**
+             * Format: int64
+             * @description Checks that found ✖, or whose run failed.
+             * @example 0
+             */
+            problems: number;
+            /**
+             * @description problems when any check found ✖ or could not run; review when any found ⚠ or ⏰; ok otherwise. Checks not assessed do not change it.
+             * @example review
+             * @enum {string}
+             */
+            score: "ok" | "review" | "problems";
+            /**
+             * Format: int64
+             * @description Checks that found ⚠.
+             * @example 1
+             */
+            warnings: number;
+        };
+        CheckItem: {
+            /**
+             * @description What is wrong with it.
+             * @example 6900 Clearing: give each a cash-flow line of the standard chart in the chart of accounts
+             */
+            detail?: string;
+            /**
+             * @description Its ID, where it has one.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02
+             */
+            id?: string;
+            /**
+             * @description What it is, which decides where it opens: period, account, opening_balances, role, audit_chain, and the documents later checks name.
+             * @example period
+             */
+            kind: string;
+            /**
+             * @description Its name.
+             * @example October 2026
+             */
+            label: string;
+        };
+        CheckOut: {
+            /**
+             * @description The area it belongs to.
+             * @example Books
+             */
+            area: string;
+            /**
+             * Format: date-time
+             * @description When its status last changed.
+             * @example 2026-10-31T09:12:00Z
+             */
+            changed_at?: string;
+            /**
+             * Format: int64
+             * @description How many items it found.
+             * @example 0
+             */
+            count: number;
+            /**
+             * @description What it found, in words.
+             * @example The balance sheet balances in every open month
+             */
+            detail?: string;
+            /**
+             * @description Why it matters, in plain words.
+             * @example Each month's assets equal its liabilities and equity.
+             */
+            explain: string;
+            /**
+             * @description How to fix what it found.
+             * @example Report it: the ledger's own checks should have refused this
+             */
+            fix?: string;
+            /** @description The first 50 items it found, each with what is wrong. Empty when the caller cannot open them (items_hidden). */
+            items: components["schemas"]["CheckItem"][];
+            /**
+             * @description The Appendix D row whose view opens its items.
+             * @example Reports, dashboards
+             */
+            items_area?: string;
+            /**
+             * @description true when it found items the caller cannot open: their area's right is another role's.
+             * @example false
+             */
+            items_hidden: boolean;
+            /**
+             * @description The check, stable.
+             * @example books.balance-sheet-balances
+             */
+            key: string;
+            /**
+             * Format: int64
+             * @description The ledger revision its last run read at.
+             * @example 42
+             */
+            ledger_revision: number;
+            /**
+             * @description For a check not assessed, the input it needs.
+             * @example an open month that has started
+             */
+            needs?: string;
+            /**
+             * @description true for the nightly ledger verification group (FR-CTL-05).
+             * @example false
+             */
+            nightly: boolean;
+            /** @description Who owns it. */
+            owner: components["schemas"]["CheckOwnerOut"];
+            /**
+             * @description Its row of PRD-001 Appendix C (Expert).
+             * @example C.1 #2
+             */
+            ref: string;
+            /**
+             * @description The rule IDs it checks (Expert).
+             * @example INV-10, BS_Chk
+             */
+            rules: string;
+            /**
+             * Format: date-time
+             * @description When it last ran.
+             * @example 2026-11-01T20:15:04Z
+             */
+            run_at?: string;
+            /**
+             * @description Where that input is set.
+             * @example Accounting › Periods
+             */
+            setting?: string;
+            /**
+             * @description What its latest run found; not_assessed before its first run, or for want of an input; failed when its run failed, which counts as ✖.
+             * @example ok
+             * @enum {string}
+             */
+            status: "ok" | "warning" | "error" | "due" | "not_assessed" | "failed";
+            /**
+             * @description What it checks.
+             * @example The balance sheet balances every month
+             */
+            title: string;
+            /**
+             * @description What ran it last: a change it reacts to, the nightly run, or Run now.
+             * @example nightly
+             * @enum {string}
+             */
+            trigger?: "change" | "nightly" | "request";
+            /**
+             * @description The worst it can find: error (✖) blocks the close, warning (⚠) asks for review, due (⏰) is a deadline.
+             * @example error
+             * @enum {string}
+             */
+            worst: "error" | "warning" | "due";
+        };
+        CheckOwnerIn: {
+            /**
+             * Format: uuid
+             * @description The member's user ID; null gives the check back to the catalogue's role.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            person_user_id: string | null;
+        };
+        CheckOwnerOut: {
+            /** @description The person named instead of the role, when one is. */
+            person?: components["schemas"]["Person"];
+            /**
+             * @description The role the catalogue names as its owner.
+             * @example owner
+             */
+            role: string;
+            /**
+             * Format: int64
+             * @description The owner's version: If-Match takes it as the ETag ("0" before anyone was named).
+             * @example 0
+             */
+            version: number;
+        };
+        CheckRunOut: {
+            /**
+             * Format: int64
+             * @description How many checks it ran.
+             * @example 10
+             */
+            checks: number;
+            /**
+             * Format: date-time
+             * @description When it finished.
+             * @example 2026-11-01T02:00:03Z
+             */
+            finished_at: string;
+            /**
+             * Format: int64
+             * @description The ledger revision it read at.
+             * @example 42
+             */
+            ledger_revision: number;
+            /**
+             * Format: date-time
+             * @description When it started.
+             * @example 2026-11-01T02:00:00Z
+             */
+            started_at: string;
+            /**
+             * @description What ran it.
+             * @example request
+             * @enum {string}
+             */
+            trigger: "change" | "nightly" | "request";
+        };
+        CheckRunRequest: {
+            /**
+             * @description true when an earlier Run now was still waiting, so this one joined it.
+             * @example false
+             */
+            already_waiting: boolean;
+            /**
+             * Format: date-time
+             * @description When it was asked for: the run that follows finishes after it.
+             * @example 2026-11-01T09:00:00Z
+             */
+            requested_at: string;
+        };
         ChecklistItem: {
             /**
              * Format: date-time
@@ -11658,6 +11979,26 @@ export interface components {
         ChecklistTemplateRequest: {
             /** @description Every task, in order: a task left out is no longer on the checklist. */
             tasks: components["schemas"]["ChecklistTaskInput"][] | null;
+        };
+        ChecksOut: {
+            /** @description Each check the caller sees, by area in the catalogue's order; within an area, those not assessed first. */
+            checks: components["schemas"]["CheckOut"][];
+            /** @description Books health from these checks (FR-CTL-02). */
+            health: components["schemas"]["CheckHealth"];
+            /** @description The latest nightly run, whose results the Compliance Center reads (FR-CTL-05). */
+            last_nightly_run?: components["schemas"]["CheckRunOut"];
+            /** @description The latest run of any kind. */
+            last_run?: components["schemas"]["CheckRunOut"];
+            /**
+             * @description true when the caller may name a person as a check's owner (Appendix D: C).
+             * @example false
+             */
+            may_name_owners: boolean;
+            /**
+             * @description true while a Run now waits for the worker.
+             * @example false
+             */
+            run_requested: boolean;
         };
         ChosenTemplate: {
             /**
@@ -36277,6 +36618,437 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listChecks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChecksOut"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    runChecks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckRunRequest"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckRunRequest"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The check. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckOut"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `CHECK-01` No such check. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setCheckOwner: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The check. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckOwnerIn"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckOut"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `CHECK-01` No such check. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-CHECK-01` A check's state, run or owner cannot change that way; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `CHECK-02` That person cannot own the check. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -64,7 +64,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Kit{
+	kit := &Kit{
 		// The connectors' keys in files under .data/secrets; their traffic through the guard, which lets the local
 		// substitutes (Mailpit, Prism) through on loopback and the Docker network, never the metadata service.
 		Connectors: catalogue, ConnectorSecrets: secrets, ConnectorNames: names, Egress: &egress.Guard{Local: true},
@@ -86,7 +86,9 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		// The render service beside it (`make dev`: :8086; the stack: render:8080), called with a task token.
 		Render: &render.Client{URL: cmp.Or(os.Getenv("FYNIQ_RENDER_URL"), "http://localhost:8086"),
 			Token: func(context.Context) (string, error) { return tokens.Token(render.Class) }},
-	}, nil
+	}
+	kit.watchChanges(clock)
+	return kit, nil
 }
 
 // scanner is clamd at FYNIQ_CLAMD_ADDR when it is set, else fallback.

@@ -125,6 +125,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		}
 	}
 	kit.Egress = &egress.Guard{Internal: c.internalHosts()}
+	kit.watchChanges(clock)
 	return kit, nil
 }
 

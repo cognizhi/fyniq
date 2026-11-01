@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "area": {
+      "description": "The area it belongs to.",
+      "examples": [
+        "Books"
+      ],
+      "type": "string"
+    },
+    "changed_at": {
+      "description": "When its status last changed.",
+      "examples": [
+        "2026-10-31T09:12:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "count": {
+      "description": "How many items it found.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "detail": {
+      "description": "What it found, in words.",
+      "examples": [
+        "The balance sheet balances in every open month"
+      ],
+      "type": "string"
+    },
+    "explain": {
+      "description": "Why it matters, in plain words.",
+      "examples": [
+        "Each month's assets equal its liabilities and equity."
+      ],
+      "type": "string"
+    },
+    "fix": {
+      "description": "How to fix what it found.",
+      "examples": [
+        "Report it: the ledger's own checks should have refused this"
+      ],
+      "type": "string"
+    },
+    "items": {
+      "description": "The first 50 items it found, each with what is wrong. Empty when the caller cannot open them (items_hidden).",
+      "items": {
+        "$ref": "CheckItem.schema.json"
+      },
+      "type": "array"
+    },
+    "items_area": {
+      "description": "The Appendix D row whose view opens its items.",
+      "examples": [
+        "Reports, dashboards"
+      ],
+      "type": "string"
+    },
+    "items_hidden": {
+      "description": "true when it found items the caller cannot open: their area's right is another role's.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "key": {
+      "description": "The check, stable.",
+      "examples": [
+        "books.balance-sheet-balances"
+      ],
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision its last run read at.",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "needs": {
+      "description": "For a check not assessed, the input it needs.",
+      "examples": [
+        "an open month that has started"
+      ],
+      "type": "string"
+    },
+    "nightly": {
+      "description": "true for the nightly ledger verification group (FR-CTL-05).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "owner": {
+      "$ref": "CheckOwnerOut.schema.json",
+      "description": "Who owns it."
+    },
+    "ref": {
+      "description": "Its row of PRD-001 Appendix C (Expert).",
+      "examples": [
+        "C.1 #2"
+      ],
+      "type": "string"
+    },
+    "rules": {
+      "description": "The rule IDs it checks (Expert).",
+      "examples": [
+        "INV-10, BS_Chk"
+      ],
+      "type": "string"
+    },
+    "run_at": {
+      "description": "When it last ran.",
+      "examples": [
+        "2026-11-01T20:15:04Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "setting": {
+      "description": "Where that input is set.",
+      "examples": [
+        "Accounting › Periods"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "What its latest run found; not_assessed before its first run, or for want of an input; failed when its run failed, which counts as ✖.",
+      "enum": [
+        "ok",
+        "warning",
+        "error",
+        "due",
+        "not_assessed",
+        "failed"
+      ],
+      "examples": [
+        "ok"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "What it checks.",
+      "examples": [
+        "The balance sheet balances every month"
+      ],
+      "type": "string"
+    },
+    "trigger": {
+      "description": "What ran it last: a change it reacts to, the nightly run, or Run now.",
+      "enum": [
+        "change",
+        "nightly",
+        "request"
+      ],
+      "examples": [
+        "nightly"
+      ],
+      "type": "string"
+    },
+    "worst": {
+      "description": "The worst it can find: error (✖) blocks the close, warning (⚠) asks for review, due (⏰) is a deadline.",
+      "enum": [
+        "error",
+        "warning",
+        "due"
+      ],
+      "examples": [
+        "error"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "ref",
+    "area",
+    "worst",
+    "title",
+    "explain",
+    "rules",
+    "nightly",
+    "status",
+    "count",
+    "items",
+    "items_hidden",
+    "ledger_revision",
+    "owner"
+  ],
+  "title": "CheckOut",
+  "type": "object"
+}

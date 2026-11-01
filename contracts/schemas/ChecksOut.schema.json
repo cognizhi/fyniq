@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checks": {
+      "description": "Each check the caller sees, by area in the catalogue's order; within an area, those not assessed first.",
+      "items": {
+        "$ref": "CheckOut.schema.json"
+      },
+      "type": "array"
+    },
+    "health": {
+      "$ref": "CheckHealth.schema.json",
+      "description": "Books health from these checks (FR-CTL-02)."
+    },
+    "last_nightly_run": {
+      "$ref": "CheckRunOut.schema.json",
+      "description": "The latest nightly run, whose results the Compliance Center reads (FR-CTL-05)."
+    },
+    "last_run": {
+      "$ref": "CheckRunOut.schema.json",
+      "description": "The latest run of any kind."
+    },
+    "may_name_owners": {
+      "description": "true when the caller may name a person as a check's owner (Appendix D: C).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "run_requested": {
+      "description": "true while a Run now waits for the worker.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "health",
+    "checks",
+    "run_requested",
+    "may_name_owners"
+  ],
+  "title": "ChecksOut",
+  "type": "object"
+}
