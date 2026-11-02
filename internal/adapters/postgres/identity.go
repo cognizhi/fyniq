@@ -387,7 +387,7 @@ func (r members) Remove(ctx context.Context, membershipID uuid.UUID, version int
 			return err
 		}
 	}
-	row, err := r.u.q.RemoveMembership(ctx, sqlcdb.RemoveMembershipParams{ID: membershipID, Version: int32(version)})
+	row, err := r.u.q.RemoveMembership(ctx, sqlcdb.RemoveMembershipParams{ID: membershipID, Version: small(version)})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return &storage.Error{Code: storage.CodeVersion, Message: "the membership changed since it was read, or was removed already"}
 	}
