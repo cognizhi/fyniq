@@ -816,12 +816,29 @@ var matrixCalls = map[string]matrixCall{
 		}
 		return r, func() bool { return held }
 	},
-	// A preview, so the matrix's own member stays: an allowed role is answered with what would happen.
+	// The matrix's organisation has one member, its last Owner, so the row asks, as a preview, to remove Ada from the
+	// organisation in Standard mode, as Bo, stepped up: an allowed role is answered with the request it would make.
 	"removeMember": func(e *env, tok string) (response, func() bool) {
-		id := matrixMember(e)
-		r := e.call(http.MethodDelete, "/v1/members/"+id, steppedUp(e, tok), nil, "Prefer", "return=preview")
+		s := inStandardMode(e)
+		var ada, bo string
+		for _, x := range s.call(http.MethodGet, "/v1/members", s.as(authz.Administrator), nil).Body["items"].([]any) {
+			switch m := x.(map[string]any); m["display_name"] {
+			case "Ada":
+				ada = m["id"].(string)
+			case "Bo":
+				bo = m["user_id"].(string)
+			}
+		}
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org && p.Class == authn.ClassUser {
+			p.Organisation, p.UserID, p.StepUpAt = s.books.Org, uuid.MustParse(bo), s.clock.Now()
+			tok = s.principal(p)
+		}
+		r := s.call(http.MethodDelete, "/v1/members/"+ada, tok, nil, "Prefer", "return=preview")
 		return r, func() bool {
-			return strings.Contains(e.call(http.MethodGet, "/v1/members", e.as(authz.Administrator), nil).Raw, id)
+			return strings.Contains(s.call(http.MethodGet, "/v1/members", s.as(authz.Administrator), nil).Raw, ada)
 		}
 	},
 	"getAccessReview": func(e *env, tok string) (response, func() bool) {
