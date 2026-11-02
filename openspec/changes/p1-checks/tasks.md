@@ -160,8 +160,11 @@ Each slice below is one pull request that passes `make test` on its own. Slice 1
 
 ## 5. Finish
 
-- [ ] 5.1 Republish the canvases `core` (Checks, Home), `settings-admin` (Access review) and `roles` (the auditor
+- [x] 5.1 Republish the canvases `core` (Checks, Home), `settings-admin` (Access review) and `roles` (the auditor
   workspace moved). The Checks and Home fragments are checked against the build.
+  *Done (2 Nov 2026):* settings-admin republished (Access review added, Users and roles, and three screens changed
+  since its last publish; Auditor workspace removed, as it moved), roles republished (Auditor workspace added); core
+  was already current: its Checks and Home artboards match the build.
 - [x] 5.2 The review register, for the checks whose rules were decided without an accountant (their own PR).
   *Done:* #358 adds the pending area `checks` (C.1 #5's ⚠ for an account with no cash-flow line, C.2 #48's input
   tax to repay after 12 months), stacked on #347; the Checks page shows its `ReviewBanner`.
