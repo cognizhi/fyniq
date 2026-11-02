@@ -170,3 +170,5 @@ Each slice below is one pull request that passes `make test` on its own. Slice 1
   tax to repay after 12 months), stacked on #347; the Checks page shows its `ReviewBanner`.
 - [ ] 5.3 `make check`, `make test`, `make test-e2e` (a journey: a check fires, its item opens, it is fixed and turns
   OK); archive.
+  *So far:* the journey is `e2e/checks.spec.ts` (C.2 #6's item opens Members and roles, the person is removed, the check
+  is OK); `make test-e2e` passes. Left: the archive, once slices 4a and 4b merge.
