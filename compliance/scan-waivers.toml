@@ -56,6 +56,13 @@ path = "openspec/sources/prd-001.lock.json"
 reason = "A SHA-256 of a PRD row in the OpenSpec conversion lock, which the generic rule mistakes for a key."
 expires = 2027-04-15
 
+[[waiver]]
+tool = "gitleaks"
+rule = "generic-api-key"
+path = "kb/pages/task/access-review.md"
+reason = "The SHA-256 of the guide page the knowledge-base page is compiled from (its sources line); the word access in the file's name makes the generic rule take it for a key."
+expires = 2027-04-15
+
 # ---------------------------------------------------------------- Checkov (container definitions)
 
 [[waiver]]
