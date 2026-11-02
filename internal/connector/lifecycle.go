@@ -55,6 +55,7 @@ type Input struct {
 	Configuration map[string]any
 	Secret        string
 	Ref           ports.SecretRef
+	ExpiresOn     *time.Time // the day the provider says the secret expires, for an organisation's connector (C.2 #38)
 	Position      int
 	Test          *storage.ConnectorTest
 }
@@ -628,7 +629,7 @@ func (s Organisations) Apply(ctx context.Context, u storage.UnitOfWork, id uuid.
 			return Result{}, refuse(CodeSecretUnknown, "%s has no secret %q", m.Name, in.Secret)
 		}
 		until := now.Add(time.Duration(sec.RotationOverlapHours) * time.Hour)
-		if err := u.Connectors().SetOrganisationSecret(ctx, c.ID, in.Secret, in.Ref, until, now); err != nil {
+		if err := u.Connectors().SetOrganisationSecret(ctx, c.ID, in.Secret, in.Ref, until, now, in.ExpiresOn); err != nil {
 			return Result{}, err
 		}
 		return Result{Connector: c}, nil

@@ -367,15 +367,30 @@ func TestOrganisationConnectorsKeepTheirLifecycle(t *testing.T) {
 	if err != nil || enabled.Test == nil || !enabled.Test.Passed {
 		t.Fatalf("enable: %+v, %v", enabled, err)
 	}
-	for _, ref := range []ports.SecretRef{"local:org-wise-api_token/1", "local:org-wise-api_token/2"} {
+	// The second version is given the day the provider says it expires (C.2 #38, rev 0.166).
+	expires := time.Date(2027, 3, 31, 0, 0, 0, 0, time.UTC)
+	for i, ref := range []ports.SecretRef{"local:org-wise-api_token/1", "local:org-wise-api_token/2"} {
+		var on *time.Time
+		if i == 1 {
+			on = &expires
+		}
 		if err := st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
-			return u.Connectors().SetOrganisationSecret(ctx, c.ID, "api_token", ref, now.Add(time.Hour), now)
+			return u.Connectors().SetOrganisationSecret(ctx, c.ID, "api_token", ref, now.Add(time.Hour), now, on)
 		}); err != nil {
 			t.Fatal(err)
 		}
 	}
 	if err := st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
-		return u.Connectors().SetOrganisationSecret(ctx, c.ID, "webhook_key", "local:org-wise-webhook_key/1", now, now)
+		secrets, err := u.Connectors().OrganisationSecrets(ctx)
+		if len(secrets) != 2 || secrets[0].ExpiresOn != nil || secrets[1].ExpiresOn == nil || !secrets[1].ExpiresOn.Equal(expires) {
+			t.Errorf("the secrets' expiry dates: %+v", secrets)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		return u.Connectors().SetOrganisationSecret(ctx, c.ID, "webhook_key", "local:org-wise-webhook_key/1", now, now, nil)
 	}); storage.CodeOf(err) != storage.CodeConnector {
 		t.Fatalf("a secret the manifest does not name: %v", err)
 	}
@@ -401,6 +416,7 @@ func TestOrganisationConnectorsKeepTheirLifecycle(t *testing.T) {
 		{"fyniq_migrator", "delete a connector as the migrator", "DELETE FROM fyniq.organisation_connector WHERE id = $1", "FY205"},
 		{"fyniq_api", "change a secret's reference", "UPDATE fyniq.organisation_connector_secret SET ref = 'local:x/1' WHERE connector_id = $1", "42501"},
 		{"fyniq_api", "extend a replaced version", "UPDATE fyniq.organisation_connector_secret SET valid_until = now() + interval '1 year' WHERE connector_id = $1 AND valid_until IS NOT NULL", "FY208"},
+		{"fyniq_migrator", "move a secret's expiry date", "UPDATE fyniq.organisation_connector_secret SET expires_on = '2028-01-01' WHERE connector_id = $1 AND expires_on IS NOT NULL", "FY208"},
 		{"fyniq_worker", "change a connector as the worker", "UPDATE fyniq.organisation_connector SET state = 'paused', version = version + 1 WHERE id = $1", "42501"},
 	} {
 		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, c.ID); return err })

@@ -13132,6 +13132,12 @@ export interface components {
             title: string;
         };
         ConnectorSecretState: {
+            /**
+             * Format: date
+             * @description The day the provider says the current value expires, when whoever set it said (C.2 #38).
+             * @example 2027-03-31
+             */
+            expires_on?: string;
             /** @example send_token */
             name: string;
             /**
@@ -22693,6 +22699,12 @@ export interface components {
             user_id?: string;
         };
         SetConnectorSecretRequest: {
+            /**
+             * Format: date
+             * @description For an organisation's connector: the day the provider says this value expires, such as an API key's or a bank certificate's; a check warns 14 days before (C.2 #38). Kept with the value, never changed; absent when it does not expire or nobody knows. An installation's connector takes none.
+             * @example 2027-03-31
+             */
+            expires_on?: string;
             /**
              * @description The secret's value. It goes to Secret Manager at once and is never shown again (FR-INT-20).
              * @example zepto-send-token-example

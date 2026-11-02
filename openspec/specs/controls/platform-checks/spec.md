@@ -445,6 +445,10 @@ Source: PRD-001 §C.2
 - **WHEN** a completed activity has the evidence its evidence rule recommends
 - **THEN** the check does not flag it
 
+#### Scenario: Built with the evidence rules (rev 0.166)
+- **WHEN** the evidence rules of FR-DOC-06 are built
+- **THEN** this check is built with them, on the checks engine, as a check is built with the module it guards (rev 0.162)
+
 ### Requirement: C.2 #31 Evidence hash re-verification failed
 The system SHALL re-verify evidence hashes nightly (FR-DOC-07); a failed re-verification blocks the close.
 
@@ -540,6 +544,15 @@ Source: PRD-001 §C.2
 - **WHEN** bounces or complaints exceed the threshold
 - **THEN** the check flags it for review
 
+#### Scenario: The threshold (rev 0.166)
+- **GIVEN** the organisation's messages taken by a provider over the last 30 days
+- **WHEN** 50 or more were sent and 2% or more bounced hard or 0.1% or more drew a complaint, or fewer were sent and any drew a complaint
+- **THEN** the check flags it for review
+
+#### Scenario: The domains as the night left them (rev 0.166)
+- **WHEN** the nightly check of the sending domains runs
+- **THEN** its outcome is recorded in each organisation's own trail, and the check shows each domain that failed until a later night passes it
+
 ### Requirement: C.2 #38 Integration connection failing or credentials expiring
 The system SHALL flag for review, on every relevant change and nightly, an integration connection failing its health check, or whose credentials expire within 14 days (FR-INT-20).
 
@@ -552,6 +565,11 @@ Source: PRD-001 §C.2
 #### Scenario: Credentials expire within 14 days
 - **WHEN** an integration connection's credentials expire within 14 days
 - **THEN** the check flags it for review
+
+#### Scenario: The expiry date given with the secret (rev 0.166)
+- **GIVEN** an enabled connector whose last connection test failed, or a current secret whose expiry date, given when it was set, is within 14 days or past
+- **WHEN** the check runs
+- **THEN** it flags each for review
 
 ### Requirement: C.2 #39 Cash advance unsettled by claim deadline
 The system SHALL flag for review, on every relevant change and nightly, a cash advance not settled by the claim deadline (FR-AP-17).

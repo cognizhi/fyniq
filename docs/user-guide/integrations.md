@@ -64,6 +64,10 @@ A secret goes straight to Secret Manager. Nobody can see it again: not you, not 
 A replaced secret stays valid for a while, so work already in progress still passes; each secret says for how
 long. If the change is rejected, the new value is destroyed.
 
+If the provider says when a key or certificate expires, give that day in **Expires on** beside it. The date is kept
+with that value and never changes; the secret shows it, and Books health warns 14 days before it, so you can replace
+the value in time. Give a new date with each new value.
+
 ## Test it
 
 - Choose **Test connection**. It runs the connector's test action: an email provider sends one message to the

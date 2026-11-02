@@ -1028,6 +1028,10 @@
       "label": "Set",
       "tooltip": "Store the value in Secret Manager at once; it is never shown again, and it is used once a second person approves."
     },
+    "connector.secret-expires": {
+      "label": "Expires on",
+      "tooltip": "The day the provider says this value expires, if it does. A check warns 14 days before; the date is kept with the value."
+    },
     "connector.test": {
       "label": "Test connection",
       "tooltip": "Run the connector's test action now and record whether it passed, with the reason; never what the provider sent back."

@@ -41,7 +41,7 @@ var areas = []string{"Books", "Setup", "Bank", "Sales", "Purchases", "Journals",
 
 // catalogue is every check built: by area, then in its slice's order.
 var catalogue = func() []Definition {
-	out := slices.Concat(booksChecks, setupChecks, documentChecks, closeChecks, controlChecks)
+	out := slices.Concat(booksChecks, setupChecks, documentChecks, closeChecks, controlChecks, paymentChecks, platformChecks)
 	slices.SortStableFunc(out, func(a, b Definition) int { return slices.Index(areas, a.Area) - slices.Index(areas, b.Area) })
 	return out
 }()
@@ -88,6 +88,17 @@ type Runner struct {
 	Defs []Definition
 	// Failed hears a check whose run failed, for the server's log; the result says only that it failed (SEC-15).
 	Failed func(ctx context.Context, org uuid.UUID, key string, err error)
+	// Platform reads the scheduler's heartbeats, and Jobs are the scheduled jobs C.2 #12 watches, with how long each may
+	// go without one; with no Platform, C.2 #12 is not assessed.
+	Platform storage.Platform
+	Jobs     []WatchedJob
+}
+
+// WatchedJob is a scheduled job C.2 #12 watches: its name, as the schedule and its heartbeat call it, and how long it
+// may go without a heartbeat before it is late (outbox.Schedule's Stale).
+type WatchedJob struct {
+	Name  string
+	Stale time.Duration
 }
 
 // Report says what a run did.
@@ -134,7 +145,13 @@ func (r Runner) prepare(ctx context.Context, org uuid.UUID) (prepared, error) {
 		if err != nil {
 			return err
 		}
-		e := &Env{Org: o, Base: base, Today: TodayOf(r.Clock.Now(), o), Now: r.Clock.Now(), Latest: map[string]Event{}, Prior: map[string]storage.CheckState{}}
+		e := &Env{Org: o, Base: base, Today: TodayOf(r.Clock.Now(), o), Now: r.Clock.Now(), Latest: map[string]Event{}, Prior: map[string]storage.CheckState{},
+			jobs: r.Jobs}
+		if r.Platform != nil {
+			if e.beats, err = r.Platform.Heartbeats(ctx); err != nil {
+				return err
+			}
+		}
 		if e.Periods, err = u.Periods().List(ctx); err != nil {
 			return err
 		}

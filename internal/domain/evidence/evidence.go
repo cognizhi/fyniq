@@ -297,9 +297,16 @@ type VerifyReport struct {
 	Mismatched []uuid.UUID // a locked copy missing, or with another hash: C.2 #31 ✖
 }
 
+// ActionVerified is the audit event of each organisation's re-verification, in its own trail: what C.2 #31 reads.
+const ActionVerified = "evidence.verification.completed"
+
+// maxMismatchedListed is how many mismatched files an organisation's event names; the count is always whole.
+const maxMismatchedListed = 50
+
 // Verify re-hashes every committed file of every organisation in the locked store and compares it with the
-// SHA-256 its row records (FR-DOC-07, CTL-AUD-06's nightly check). A mismatch fails the run, so the job's
-// failure and its missing heartbeat raise the alert; nothing is changed.
+// SHA-256 its row records (FR-DOC-07, CTL-AUD-06's nightly check), and records each organisation's outcome in its own
+// trail (C.2 #31). A mismatch fails the run, so the job's failure and its missing heartbeat raise the alert; nothing
+// else is changed.
 func Verify(ctx context.Context, store storage.Store, locked ports.BlobStore) (VerifyReport, error) {
 	var r VerifyReport
 	orgs, err := store.Organisations(ctx)
@@ -308,6 +315,8 @@ func Verify(ctx context.Context, store storage.Store, locked ports.BlobStore) (V
 	}
 	var errs []error
 	for _, org := range orgs {
+		checked, problem := 0, ""
+		var mismatched []string
 		for after := uuid.Nil; ; {
 			var page []storage.Evidence
 			if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
@@ -316,19 +325,34 @@ func Verify(ctx context.Context, store storage.Store, locked ports.BlobStore) (V
 				return err
 			}); err != nil {
 				errs = append(errs, err)
+				problem = "its files could not be listed"
 				break
 			}
 			for _, e := range page {
 				r.Checked++
+				checked++
 				data, err := read(ctx, locked, e.LockedKey)
 				if err != nil || hash(data) != e.SHA256 {
 					r.Mismatched = append(r.Mismatched, e.ID)
+					mismatched = append(mismatched, e.ID.String())
 				}
 			}
 			if len(page) < 500 {
 				break
 			}
 			after = page[len(page)-1].ID
+		}
+		status := "passed"
+		if problem != "" || len(mismatched) > 0 {
+			status = "failed"
+		}
+		listed := mismatched[:min(len(mismatched), maxMismatchedListed)]
+		if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionVerified, ObjectType: "evidence", ObjectID: org,
+				Changes: map[string][2]any{"status": {nil, status}, "checked": {nil, checked}, "mismatched": {nil, len(mismatched)},
+					"files": {nil, listed}, "problem": {nil, problem}}})
+		}); err != nil {
+			errs = append(errs, err)
 		}
 	}
 	if len(r.Mismatched) > 0 {

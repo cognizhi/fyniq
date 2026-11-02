@@ -76,3 +76,12 @@ RETURNING id, address, reason, event_id, suppressed_at, released_at, released_by
 
 -- name: EmailSuppressionByID :one
 SELECT id, address, reason, event_id, suppressed_at, released_at, released_by FROM fyniq.email_suppression WHERE id = sqlc.arg(id);
+
+-- name: EmailCounts :one
+-- The messages providers took since a time, and how many of them bounced hard or drew a complaint since: what C.2 #37's
+-- rates are of (FR-INT-21).
+SELECT (SELECT count(*) FROM fyniq.email_message m WHERE m.status = 'accepted' AND m.accepted_at >= sqlc.arg(since))::bigint AS sent,
+       (SELECT count(DISTINCT e.message_id) FROM fyniq.email_event e
+         WHERE e.kind = 'hard_bounce' AND e.occurred_at >= sqlc.arg(since))::bigint AS hard_bounces,
+       (SELECT count(DISTINCT e.message_id) FROM fyniq.email_event e
+         WHERE e.kind = 'complaint' AND e.occurred_at >= sqlc.arg(since))::bigint AS complaints;

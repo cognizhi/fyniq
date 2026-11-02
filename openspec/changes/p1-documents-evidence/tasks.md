@@ -14,7 +14,7 @@
 
 ## 3. Rules, classes and search
 
-- [ ] 3.1 Evidence rules per activity type as FR-ORG-08 settings. Required rules block and recommended rules warn. Test `// req: FR-DOC-06`, and the five defaults `// req: documents/attachments-and-evidence Default evidence for <area>`, each with a fixture per activity that exists today **Left**
+- [ ] 3.1 Evidence rules per activity type as FR-ORG-08 settings. Required rules block and recommended rules warn. Test `// req: FR-DOC-06`, and the five defaults `// req: documents/attachments-and-evidence Default evidence for <area>`, each with a fixture per activity that exists today; and C.2 #30, completed activities missing recommended evidence, on the checks engine (moved from p1-checks, rev 0.166: a check is built with the module it guards). Test `// req: C.2 #30` **Left**
 - [ ] 3.2 Data classes per file, with unmasked NRIC flagged. Test `// req: FR-DOC-09` (P1 part) (20 Oct 2026, part: a data class per file; payroll and identity refused until FR-PAY-13, rev 0.38. **Left:** the NRIC flag)
 - [ ] 3.3 Evidence search by activity, type, date and uploader, and the missing-evidence list, under the person's scope. Test `// req: FR-DOC-10` (P1 part) **Left**
 

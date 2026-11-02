@@ -258,6 +258,7 @@ func TestConnectorsThroughTheAPI(t *testing.T) {
 // req: FR-INT-26
 // req: FM-1
 // req: FR-INT-01
+// req: C.2 #38
 // asvs: V2.3.5
 func TestOrganisationConnectorsThroughTheAPI(t *testing.T) {
 	f := newFounders(t)
@@ -286,12 +287,23 @@ func TestOrganisationConnectorsThroughTheAPI(t *testing.T) {
 		t.Fatalf("approving the configuration: %d %s", d.Status, d.Raw)
 	}
 	const key = "org-key-never-shown"
-	r = e.call(http.MethodPut, path+"/secrets/key", ahkow, map[string]any{"value": key}, "If-Match", "*")
-	if r.Status != 202 || strings.Contains(r.Raw, key) {
+	// The key may carry the day its provider says it expires, after today (C.2 #38, rev 0.166).
+	e.problemIs(e.call(http.MethodPut, path+"/secrets/key", ahkow, map[string]any{"value": key, "expires_on": "2026-10-15"}, "If-Match", "*"),
+		"setOrganisationConnectorSecret", 422, CodeInvalid)
+	r = e.call(http.MethodPut, path+"/secrets/key", ahkow, map[string]any{"value": key, "expires_on": "2026-10-25"}, "If-Match", "*")
+	if r.Status != 202 || strings.Contains(r.Raw, key) || !strings.Contains(r.Raw, `"field":"secret.key.expires_on","before":"","after":"2026-10-25"`) {
 		t.Fatalf("asking to set the key: %d %s", r.Status, r.Raw)
 	}
 	if d := f.decide(weiling, r.str("id"), "approve", hashOf(r)); d.Status != 200 || strings.Contains(d.Raw, key) {
 		t.Fatalf("approving the key: %d %s", d.Status, d.Raw)
+	}
+	if got := e.call(http.MethodGet, path, ahkow, nil); !strings.Contains(got.Raw, `"name":"key","set":true`) || !strings.Contains(got.Raw, `"expires_on":"2026-10-25"`) {
+		t.Fatalf("the key's expiry date: %s", got.Raw)
+	}
+	c := e.checked("integrations.connections-healthy")
+	wantStatus(t, c, "warning")
+	if it := itemNamed(c, id+"/key"); it == nil || it["detail"] != "Its key expires on 25 Oct 2026" {
+		t.Fatalf("C.2 #38's item: %s", c.Raw)
 	}
 	matrixProfileEmail(e)
 	r = e.call(http.MethodPost, path+"/test", ahkow, nil, "If-Match", "*")

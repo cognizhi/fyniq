@@ -109,5 +109,14 @@ trail.
 - **Controls**: in Founder mode, a logged action another founder has not reviewed within 14 days; a
   person whose roles conflict with nothing to cover it; an external person still a member after
   their roles ended; and an access review not attested 14 days after its quarter ended.
+- **Payments**: a supplier whose bank details were added or changed in the last 30 days, with a bill
+  still to pay (confirm the new account with them on a number you already had before paying); and a
+  cash advance still open past the claim deadline.
+- **The platform**: a scheduled job, such as the recurring documents, depreciation or the month-end
+  revaluation, that has not run in its time; a statutory pack past its review date, or with a later
+  version not activated; an evidence file that no longer matches its fingerprint; the email Fyniq
+  sends, from the sending domains' records and, over 30 days, hard bounces at 2% or complaints at
+  0.1% with 50 or more sent, or any complaint with fewer; and an integration whose last test failed,
+  or whose key expires within 14 days.
 
 The checks of each module still to come, such as payroll, join as that module is built.

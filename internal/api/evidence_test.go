@@ -209,6 +209,7 @@ func TestEvidenceAIProposesAndIntegrationsUpload(t *testing.T) {
 // req: FR-DOC-07
 // req: FR-DOC-13
 // req: FR-DOC-02
+// req: C.2 #31
 // asvs: V16.2.1
 func TestEvidenceOnAPostedJournalIsCommitted(t *testing.T) {
 	e := newEnv(t)
@@ -286,6 +287,12 @@ func TestEvidenceOnAPostedJournalIsCommitted(t *testing.T) {
 	}
 	if rep, err := evidence.Verify(context.Background(), ws, locked); !mine(rep) || !errors.Is(err, evidence.ErrHashMismatch) {
 		t.Errorf("Verify of a changed file: %+v, %v", rep, err)
+	}
+	// C.2 #31 reads the night's outcome from the organisation's own trail: ✖, naming the file.
+	verified := e.checked("evidence.hashes-verified")
+	wantStatus(t, verified, "error")
+	if itemNamed(verified, firstID.String()) == nil {
+		t.Errorf("C.2 #31 does not name the changed file: %s", verified.Raw)
 	}
 	// The sweep deletes a day-old staged file no row uses, and reports a locked file no row knows.
 	stray := evidence.StagingKey(e.books.Org, uuidV7At(t, e.clock.Now().Add(-25*time.Hour)))

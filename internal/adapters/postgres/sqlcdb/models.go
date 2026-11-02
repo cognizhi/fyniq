@@ -1242,6 +1242,7 @@ type FyniqOrganisationConnectorSecret struct {
 	SetAt          time.Time
 	ValidUntil     *time.Time
 	DestroyedAt    *time.Time
+	ExpiresOn      pgtype.Date
 }
 
 type FyniqOrganisationSetting struct {

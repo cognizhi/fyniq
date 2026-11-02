@@ -305,3 +305,22 @@ Every definition gets a domain test with a fixture that makes it fire and one th
 
 - Which settings tab C.1 #9's employee half opens comes with the payroll link. Until then, its contacts and FX
   halves run alone.
+
+### D14 The platform's checks read what the platform recorded (rev 0.166, the owner's decisions of 2 Nov 2026)
+
+- **C.2 #12** reads the scheduler's heartbeats, which every successful run beats, through the runner's `Platform`, and
+  judges each watched job against its schedule's `Stale` (wiring passes the schedules of the jobs in
+  `checks.ScheduledJobs`). A failed run beats nothing, so it shows once its time has passed; the items say only which job
+  and when it last ran, never a run's detail, which may name another organisation.
+- **C.2 #31 and #37** follow D6: the nightly job records its outcome in each organisation's own trail, since an
+  organisation cannot read the installation's, and the check reads the newest. Between nights C.2 #37 keeps the last
+  night's domain items from its prior state, and recomputes the rates from the organisation's own messages.
+- **C.2 #37's rates** (the owner's decision): over 30 days, with at least 50 messages sent, hard bounces at 2% or more or
+  complaints at 0.1% or more (Google's and Yahoo's sender guidance, and common provider practice); with fewer, any
+  complaint. The alternatives were any bounce or complaint, the DNS half only, and Google's hard limit of 0.3%.
+- **C.2 #38's expiry** (the owner's decision): whoever sets an organisation connector's secret may give the day the
+  provider says it expires; it travels with the change through its approval, is kept with the secret's version
+  (`organisation_connector_secret.expires_on`, migration 000198) and never changes. The alternatives were health only
+  until connectors read their tokens' expiry (P2), and a reminder by the secret's age.
+- **C.2 #30** waits for the evidence rules (FR-DOC-06) in `p1-documents-evidence`, by rev 0.162's rule that a check is
+  built with the module it guards.

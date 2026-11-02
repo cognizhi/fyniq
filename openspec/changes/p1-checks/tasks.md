@@ -129,17 +129,46 @@ Each slice below is one pull request that passes `make test` on its own. Slice 1
   the review log and the access review (`ReviewedIn`); `reviewCheckItem` refuses them (CHECK-04). C.2 #5 is a
   backstop: the API refuses an uncovered conflict, so its fixture assigns the role through the store. Tests:
   `TestTheControlsChecks`, `TestRemovingAMember`, `TestAMemberIsRemovedAndMayJoinAgain`.
-- [ ] 4.3 C.2 #11 vendor bank details changed within 30 days with payments pending; #39 a cash advance not settled
+- [x] 4.3 C.2 #11 vendor bank details changed within 30 days with payments pending; #39 a cash advance not settled
   by the claim deadline. `// req: C.2 #11`, `// req: C.2 #39`
-- [ ] 4.4 C.2 #12 a scheduled job failed or late; #16 a statutory pack past its review date or older than the
+  *As built:* C.2 #11 takes a vendor's change approved in the last 30 days (its request's decision, the application's
+  clock) while a posted bill of the vendor is still open, "added" or "changed" as it replaced an account or not; a
+  person's own account is FR-AP-22's, not this check's. C.2 #39 reads `claim.AdvanceWarnings`, the advance's own ⚠.
+  Test: `TestThePaymentChecks`.
+- [x] 4.4 C.2 #12 a scheduled job failed or late; #16 a statutory pack past its review date or older than the
   latest; #30 completed activities missing recommended evidence; #31 an evidence hash failed re-verification; #37 the
   sending domain fails SPF, DKIM or DMARC; #38 an integration failing its health check or its credentials expiring
   within 14 days. `// req: C.2 #12` … `// req: C.2 #38`
+  *As built* (rev 0.166, the owner's decisions of 2 Nov 2026, design D14):
+  - C.2 #12 reads the scheduler's heartbeats (the runner's `Platform`) for the jobs of the recurring documents and their
+    releases, depreciation, the revaluation and the bills-due reminders, each against its schedule's `Stale`; a failed run
+    beats nothing, so it shows once its time passes.
+  - C.2 #16: of each pack activated, the version in force past its review date, and a later version loaded and not
+    activated.
+  - C.2 #31 and #37 read the night's outcome from the organisation's own trail (design D6): `evidence.Verify` and
+    `email.CheckDomains` now record it in each organisation's (`evidence.verification.completed`,
+    `email.domains.checked`). C.2 #37 adds the 30 days' rates: 2% hard bounces or 0.1% complaints with 50 or more sent,
+    any complaint with fewer.
+  - C.2 #38: an enabled connector whose last test failed, and a current secret expiring within 14 days, from the new
+    optional `expires_on` of `setOrganisationConnectorSecret` (migration 000198; never changed, FY208).
+  - **C.2 #30 moved to `p1-documents-evidence`** (its task 3.1): it needs the evidence rules (FR-DOC-06), not built yet.
+  - A fix on the way: C.2 #3 read `audit.verified`, but the nightly verification records
+    `audit.verification.completed`, so it would never have left "not assessed"; it now reads the audit package's name
+    (regression test `TestTheAuditChainCheckReadsTheNightlyVerification`).
+  Tests: `TestThePlatformChecks`, `TestTheEmailRates`, the connector test's expiry, the evidence test's C.2 #31, the
+  email adapter's counts, the domain job's records.
 
 ## 5. Finish
 
-- [ ] 5.1 Republish the canvases `core` (Checks, Home), `settings-admin` (Access review) and `roles` (the auditor
+- [x] 5.1 Republish the canvases `core` (Checks, Home), `settings-admin` (Access review) and `roles` (the auditor
   workspace moved). The Checks and Home fragments are checked against the build.
-- [ ] 5.2 The review register, for the checks whose rules were decided without an accountant (their own PR).
+  *Done (2 Nov 2026):* settings-admin republished (Access review added, Users and roles, and three screens changed
+  since its last publish; Auditor workspace removed, as it moved), roles republished (Auditor workspace added); core
+  was already current: its Checks and Home artboards match the build.
+- [x] 5.2 The review register, for the checks whose rules were decided without an accountant (their own PR).
+  *Done:* #358 adds the pending area `checks` (C.1 #5's ⚠ for an account with no cash-flow line, C.2 #48's input
+  tax to repay after 12 months), stacked on #347; the Checks page shows its `ReviewBanner`.
 - [ ] 5.3 `make check`, `make test`, `make test-e2e` (a journey: a check fires, its item opens, it is fixed and turns
   OK); archive.
+  *So far:* the journey is `e2e/checks.spec.ts` (C.2 #6's item opens Members and roles, the person is removed, the check
+  is OK); `make test-e2e` passes. Left: the archive, once slices 4a and 4b merge.

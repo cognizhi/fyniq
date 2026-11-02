@@ -152,6 +152,11 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **THEN** each record its providers asked for, as the deployment lists them, is found as listed, missing, wrong or failed, beside its DMARC policy
 - **AND** a domain is ok only when every record is there and its policy quarantines or rejects; one that is not is recorded as a failed check
 
+#### Scenario: Each organisation hears the night's check, and C.2 #37's threshold (rev 0.166)
+- **WHEN** the nightly check of the sending domains runs
+- **THEN** its outcome, with each failing domain, is recorded in every organisation's own trail for its checks
+- **AND** C.2 #37 warns at 2% hard bounces or 0.1% complaints over 30 days with 50 or more sent, or any complaint with fewer
+
 #### Scenario: Attachments as built (rev 0.133)
 - **WHEN** a message carries a stored PDF, such as an invoice sent
 - **THEN** the worker reads it from the evidence store and checks its SHA-256 before marking an attempt, and each adapter sends it as an attachment, up to 5 PDFs and 10 MB
