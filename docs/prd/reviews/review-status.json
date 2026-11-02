@@ -352,6 +352,25 @@
    "screens": [
     "kpis"
    ]
+  },
+  {
+   "id": "checks",
+   "title": "The checks' rules read without an accountant",
+   "reviewer": "an accountant or tax agent",
+   "status": "pending",
+   "pr": null,
+   "short": "Two of the checks' rules await review by an accountant or tax agent",
+   "message": "A balance-sheet account with no cash-flow line is flagged for review rather than blocking the close, and the input tax claimed on a bill still unpaid 12 months after its due date is flagged to be repaid, on our best current reading of IRAS's guidance. Check what they find before you rely on it.",
+   "sections": [
+    "PRD-001 §8.15",
+    "Appendix C (C.1 #5, C.2 #48)"
+   ],
+   "requirements": [
+    "FR-CTL-01"
+   ],
+   "screens": [
+    "checks"
+   ]
   }
  ]
 }
