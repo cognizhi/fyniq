@@ -4,14 +4,14 @@ type: task
 title: Invite someone, or join with an invitation
 summary: Create a one-time invitation with roles, give the code in person, withdraw it if unused, and join a company with a code
 sources:
-  - docs/user-guide/members-and-roles.md sha256:f790a365bb33fa449acb8257b213e2d16e211b8f1634c8c8207a4518fb0bed2a
+  - docs/user-guide/members-and-roles.md sha256:a5ef440ad5c2de54990e7d895bc9ba13f9932be7b21882574ec8311478762aba
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-20
+compiled_at: 2026-11-02
 aliases:
   - invitation code
   - add a user

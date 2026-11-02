@@ -280,3 +280,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-01] compile | checks.overview from docs/user-guide/checks.md: marking an item reviewed (rev 0.164) and the checks of the setup, bank, sales, purchases and journals
 
 ## [2026-11-02] compile | checks.overview from docs/user-guide/checks.md: the checks of the assets, recurring entries, bank at the month end, closing and planning (p1-checks slice 3)
+
+## [2026-11-02] compile | access-review.md, members-and-roles.md and checks.md (p1-checks slice 4, rev 0.165): new task pages settings.access-review and members.remove; checks.overview adds the Controls area and the two checks reviewed where their control lives; members pages re-hashed

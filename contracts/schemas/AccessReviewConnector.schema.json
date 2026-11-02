@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "connector": {
+      "description": "The connector's ID in the catalogue.",
+      "examples": [
+        "wise"
+      ],
+      "type": "string"
+    },
+    "data_classes": {
+      "description": "The data classes it may send out.",
+      "items": {
+        "description": "A class of data (AI-75).",
+        "enum": [
+          "know-how",
+          "business-figures",
+          "personal-data",
+          "payroll",
+          "restricted"
+        ],
+        "examples": [
+          "personal-data"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "fyniq_scopes": {
+      "description": "The Fyniq scopes it was granted.",
+      "items": {
+        "description": "A scope.",
+        "examples": [
+          "fyniq.read.banking"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "health": {
+      "description": "Its last connection test: ok, failing, or unknown until it is tested.",
+      "enum": [
+        "ok",
+        "failing",
+        "unknown"
+      ],
+      "examples": [
+        "ok"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The installed connector's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "installed_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-01T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "installed_by": {
+      "description": "Who installed it.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Wise"
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "Whether it is enabled.",
+      "examples": [
+        "enabled"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "connector",
+    "name",
+    "state",
+    "health",
+    "fyniq_scopes",
+    "data_classes",
+    "installed_by",
+    "installed_at"
+  ],
+  "title": "AccessReviewConnector",
+  "type": "object"
+}

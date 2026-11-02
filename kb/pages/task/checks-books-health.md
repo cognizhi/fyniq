@@ -4,14 +4,14 @@ type: task
 title: Read books health and the checks, run them now, mark items reviewed and name a check's owner
 summary: Books health and the check statuses, when checks run, nightly verification, Run now, marking items reviewed, and naming owners
 sources:
-  - docs/user-guide/checks.md sha256:a9bedd54e316137ec0ff75f8b114fb3129d6178476d0552c3e5e97b7f1f94b03
+  - docs/user-guide/checks.md sha256:5ee46ab6ae0c053752b1fbeec8554232719f03cf87bebe631f84e7f09f697d63
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-01
+compiled_at: 2026-11-02
 aliases:
   - books health
   - checks
@@ -26,6 +26,7 @@ aliases:
   - acknowledge a warning
   - nightly verification
   - why can't I close the month
+  - controls checks
 ---
 
 # Read books health and the checks, run them now, mark items reviewed and name a check's owner
@@ -77,6 +78,7 @@ aliases:
 - **Mark reviewed** beside it, with an optional note, takes it off the check until the item changes; a changed item comes back.
 - An item that **blocks the close** is fixed, never reviewed.
 - The Owner, the Controller, the Accountant and the Bookkeeper can mark items reviewed; each review is kept in the audit trail.
+- Two checks are reviewed only where their control lives: a logged action in the **review log**, and the quarter's access review on **Settings → Access review** ([[settings.access-review]]).
 
 (src: docs/user-guide/checks.md#mark-an-item-reviewed)
 
@@ -99,6 +101,7 @@ aliases:
 - **Bank at the month end**: suspense not at nothing, a bank or cash account below zero, a signed reconciliation that does not match, bank data more than 3 days old, lines waiting more than 30 days, possible duplicates, a connector's sync that failed, and settlement differences over the monthly cap.
 - **Closing**: the sub-ledgers against their control accounts, automatic reversals waiting, large variances without an explanation, the close checklist, the revaluation of foreign-currency balances, a closed month changed since its close, and a month still open 15 days after its end; the checks of a month's end wait until it has ended.
 - **Planning**: a runway below 6 months.
+- **Controls**: in Founder mode, a logged action not reviewed by another founder within 14 days; a person whose roles conflict with nothing to cover it; an external person still a member after their roles ended ([[members.remove]]); and an access review not attested 14 days after its quarter ended.
 - The checks of each module still to come, such as payroll, join as that module is built.
 
 (src: docs/user-guide/checks.md#the-checks-so-far)

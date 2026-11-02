@@ -127,6 +127,8 @@ var fyCodes = map[string]string{
 	"FY244": storage.CodeKPIInput,
 	"FY245": storage.CodeCheck,
 	"FY246": storage.CodeCheckReview,
+	"FY247": storage.CodeAccessReview,
+	"FY248": storage.CodeMembership,
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,
@@ -343,6 +345,10 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"evidence_data_class_known":                 {storage.CodeInvalid, "the data class is not general, personal, bank, payroll or identity"},
 	"evidence_key_format":                       {storage.CodeInvalid, "a store key is not where evidence is kept"},
 	"evidence_state_fields":                     {storage.CodeEvidence, "the evidence's state does not match its removal or its committed copy"},
+
+	// The access review's attestations (FR-CTL-06).
+	"access_review_attestation_quarter_key":       {storage.CodeDuplicate, "that quarter's access review is attested already"},
+	"access_review_attestation_after_its_quarter": {storage.CodeAccessReview, "a quarter's access review is attested only once the quarter has ended"},
 }
 
 // mapError turns database errors into storage errors with stable codes (ENG-23) and "no rows" into

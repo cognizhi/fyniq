@@ -54,6 +54,11 @@ Source: PRD-001 §8.15 · Priority M · Phase P1
 - **THEN** the item leaves the check and the review is audited
 - **AND** the item returns if it changes
 
+#### Scenario: A control's own items are reviewed where the control lives
+- **GIVEN** an item of C.2 #4 (a review log entry) or C.2 #7 (a quarter of the access review)
+- **WHEN** someone asks to mark it reviewed on Checks (rev 0.165)
+- **THEN** it is refused (CHECK-04): the entry is reviewed in the review log, and the quarter attested in the access review
+
 ### Requirement: FR-CTL-02 Books health score
 The system SHALL show a books health score on Home (OK / review / problems) with counts by severity: problems when any check finds ✖, review when any finds ⚠ or ⏰, OK otherwise.
 
@@ -148,6 +153,18 @@ Source: PRD-001 §8.15 · Priority S · Phase P1
 #### Scenario: An unattested quarter is flagged
 - **WHEN** a quarter ends without its attestation
 - **THEN** C.2 #7 flags the access review as overdue once 14 days have passed
+
+#### Scenario: What the review shows, as built
+- **WHEN** the review is read (rev 0.165)
+- **THEN** each member shows their roles, roles ended at their end dates, when they joined and last signed in, how that session passed its second factor (Expert), and whether no sign-in for 30 days makes them dormant
+- **AND** each conflict says what covers it: Founder mode, an override, or nothing
+- **AND** the pending invitations and the installed connectors with their scopes and health are listed
+
+#### Scenario: An Owner attests on the version read
+- **WHEN** an Owner attests the latest quarter that has ended, after step-up, with If-Match on the review's ETag (rev 0.165)
+- **THEN** the report is kept as canonical JSON with the SHA-256 the database computes, audited, and never changed (FY247)
+- **AND** a quarter attested already, or not the latest ended, is refused (CHECK-03), and a sign-in alone does not change the ETag
+- **AND** the CSV export is audited
 
 ### Requirement: C.1 #1 Debits equal credits
 The system SHALL check, on every relevant change and nightly, that debits equal credits in the books; a failure blocks the close.

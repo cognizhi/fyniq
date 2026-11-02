@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "attested_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-05T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "attested_by": {
+      "description": "Who attested it.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "type": "string"
+    },
+    "attested_by_name": {
+      "description": "Their name, while they are a member.",
+      "examples": [
+        "Wei Ling Tan"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "What they noted.",
+      "examples": [
+        "Ended the auditor's access."
+      ],
+      "type": "string"
+    },
+    "quarter": {
+      "$ref": "AccessReviewQuarter.schema.json",
+      "description": "The quarter attested."
+    },
+    "report_sha256": {
+      "description": "The SHA-256 of the report they attested, as the database recorded it, in hexadecimal.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "quarter",
+    "attested_by",
+    "attested_at",
+    "report_sha256"
+  ],
+  "title": "AccessReviewAttestation",
+  "type": "object"
+}

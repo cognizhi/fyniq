@@ -816,6 +816,47 @@ var matrixCalls = map[string]matrixCall{
 		}
 		return r, func() bool { return held }
 	},
+	// The matrix's organisation has one member, its last Owner, so the row asks, as a preview, to remove Ada from the
+	// organisation in Standard mode, as Bo, stepped up: an allowed role is answered with the request it would make.
+	"removeMember": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		var ada, bo string
+		for _, x := range s.call(http.MethodGet, "/v1/members", s.as(authz.Administrator), nil).Body["items"].([]any) {
+			switch m := x.(map[string]any); m["display_name"] {
+			case "Ada":
+				ada = m["id"].(string)
+			case "Bo":
+				bo = m["user_id"].(string)
+			}
+		}
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org && p.Class == authn.ClassUser {
+			p.Organisation, p.UserID, p.StepUpAt = s.books.Org, uuid.MustParse(bo), s.clock.Now()
+			tok = s.principal(p)
+		}
+		r := s.call(http.MethodDelete, "/v1/members/"+ada, tok, nil, "Prefer", "return=preview")
+		return r, func() bool {
+			return strings.Contains(s.call(http.MethodGet, "/v1/members", s.as(authz.Administrator), nil).Raw, ada)
+		}
+	},
+	"getAccessReview": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/access-review", tok, nil), nil
+	},
+	"exportAccessReview": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/access-review/export", tok, nil), nil
+	},
+	// A preview in January 2100, when a quarter is due whatever day the test runs (memberships carry the database's own
+	// time); the clock goes back after. access_review_test.go attests for real.
+	"attestAccessReview": func(e *env, tok string) (response, func() bool) {
+		was := e.clock.Now()
+		defer e.clock.Set(was)
+		e.clock.Set(time.Date(2100, 1, 5, 9, 0, 0, 0, time.UTC))
+		etag := e.call(http.MethodGet, "/v1/access-review", e.as(authz.Administrator), nil).Header.Get("ETag")
+		return e.call(http.MethodPost, "/v1/access-review/attestations", steppedUp(e, tok), map[string]any{"quarter": "2099-10-01"},
+			"If-Match", etag, "Prefer", "return=preview"), nil
+	},
 	// Each approval's own policy decides what a person sees and signs (rev 0.36), so the matrix asks for a request
 	// that does not exist: allowed means the API looked past the operation's policy (404, or step-up for a signature);
 	// approvals_test.go signs real ones.

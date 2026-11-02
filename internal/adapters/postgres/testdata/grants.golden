@@ -3,6 +3,8 @@
 fyniq_ai        USAGE     schema fyniq
 fyniq_api       EXECUTE   accept_member_invitation()
 fyniq_api       EXECUTE   accept_super_admin_invitation()
+fyniq_api       INSERT    access_review_attestation (attested_at, attested_by, note, quarter, report, report_hash)
+fyniq_api       SELECT    access_review_attestation
 fyniq_api       INSERT    account (cash_flow_line, code, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, revalue, role, type, useful_life_months)
 fyniq_api       SELECT    account
 fyniq_api       UPDATE    account (cash_flow_line, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, revalue, useful_life_months, version)
@@ -189,6 +191,7 @@ fyniq_api       INSERT    member_invitation (code_hash, created_at, display_name
 fyniq_api       SELECT    member_invitation
 fyniq_api       UPDATE    member_invitation (withdrawn_at)
 fyniq_api       EXECUTE   member_names()
+fyniq_api       EXECUTE   member_sign_ins()
 fyniq_api       INSERT    money_account (account_id, cardholder_id, changed_at, changed_by, created_at, created_by, currency, identifier, institution, kind, name, opened_on)
 fyniq_api       SELECT    money_account
 fyniq_api       UPDATE    money_account (cardholder_id, changed_at, changed_by, closed_on, identifier, institution, kind, name, opened_on, version)
@@ -381,6 +384,7 @@ fyniq_executor  SELECT    statutory_pack_rows
 fyniq_executor  SELECT    statutory_pack_versions
 fyniq_executor  SELECT    team_mode
 fyniq_executor  SELECT    withholding_decision
+fyniq_readonly  SELECT    access_review_attestation
 fyniq_readonly  SELECT    account
 fyniq_readonly  SELECT    accounting_framework
 fyniq_readonly  SELECT    accounting_policy
@@ -492,6 +496,7 @@ fyniq_readonly  SELECT    statutory_pack_versions
 fyniq_readonly  SELECT    team_mode
 fyniq_readonly  SELECT    user_membership
 fyniq_readonly  SELECT    withholding_decision
+fyniq_worker    SELECT    access_review_attestation
 fyniq_worker    SELECT    account
 fyniq_worker    SELECT    allocation
 fyniq_worker    SELECT    approval_policy
@@ -607,6 +612,7 @@ fyniq_worker    EXECUTE   lock_ledger()
 fyniq_worker    EXECUTE   member_emails()
 fyniq_worker    SELECT    member_invitation
 fyniq_worker    EXECUTE   member_names()
+fyniq_worker    EXECUTE   member_sign_ins()
 fyniq_worker    SELECT    money_account
 fyniq_worker    SELECT    money_account_source
 fyniq_worker    INSERT    notification (actionable, created_at, email, event_id, severity, type, user_id)

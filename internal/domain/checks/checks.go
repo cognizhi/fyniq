@@ -153,6 +153,9 @@ type Definition struct {
 	// CloseKeys are the period close's own checks this check is (design D2): the close runs them, so the catalogue's
 	// close hook does not add them again.
 	CloseKeys []string
+	// ReviewedIn is where its items are reviewed, such as the review log, when that is the control itself: they are
+	// never marked reviewed on Checks (rev 0.165, the owner's decision of 2 Nov 2026). "" for none.
+	ReviewedIn string
 	// Run works it out. An error records the check as failed; the error goes to the server's log, never the result.
 	Run func(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error)
 }

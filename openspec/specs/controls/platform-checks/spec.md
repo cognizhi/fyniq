@@ -71,6 +71,11 @@ Source: PRD-001 §C.2
 - **WHEN** a self-approved item is reviewed within 14 days
 - **THEN** the check does not flag it
 
+#### Scenario: Every overdue review log entry, in Founder mode (rev 0.165)
+- **GIVEN** the organisation is in Founder mode
+- **WHEN** any review log entry is unreviewed 14 days after it executed
+- **THEN** the check flags it, and it leaves only when reviewed in the review log, never marked reviewed on Checks
+
 ### Requirement: C.2 #5 SoD conflicts outside the team mode
 The system SHALL check, on every relevant change and nightly, for users with SoD conflicts not covered by the team mode; a finding blocks the close.
 
@@ -93,6 +98,12 @@ Source: PRD-001 §C.2
 - **WHEN** an external user is still active after their expiry date
 - **THEN** the check fails and blocks the close
 
+#### Scenario: Roles ended, still a member (rev 0.165)
+- **GIVEN** an active member whose roles have all ended at their end dates
+- **WHEN** the check runs
+- **THEN** it names them and the roles that ended
+- **AND** removing them, or giving a role again with a new end date, clears it
+
 #### Scenario: No expired external user is active
 - **WHEN** no external user past their expiry date is active
 - **THEN** the check passes
@@ -109,6 +120,12 @@ Source: PRD-001 §C.2
 #### Scenario: The access review is up to date
 - **WHEN** the last quarter that ended more than 14 days ago has been attested
 - **THEN** the check passes
+
+#### Scenario: A later attestation answers for an earlier quarter (rev 0.165)
+- **GIVEN** a quarter ended more than 14 days ago without its attestation
+- **WHEN** a later quarter is attested, or the organisation's first member joined after that quarter ended
+- **THEN** the check passes
+- **AND** an overdue quarter leaves only when attested in the access review, never marked reviewed on Checks
 
 ### Requirement: C.2 #8 Bank feed stale over 3 days
 The system SHALL flag for review, on every relevant change and nightly, a bank feed not updated for more than 3 days.

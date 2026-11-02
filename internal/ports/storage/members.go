@@ -12,6 +12,8 @@ type Member struct {
 	Membership
 	DisplayName string
 	Roles       []RoleAssignment // live: unrevoked and unexpired, by role
+	Since       time.Time        // when they joined
+	Expired     []RoleAssignment // past their expiry and never revoked, by role: they grant nothing (C.2 #6)
 }
 
 // MemberInvitation is an invitation to the organisation (FR-ADM-01). Its code is never stored: only its SHA-256.

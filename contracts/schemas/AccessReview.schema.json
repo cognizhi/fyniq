@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_at": {
+      "description": "When it was read.",
+      "examples": [
+        "2026-10-05T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "attestations": {
+      "description": "The quarters attested, latest first.",
+      "items": {
+        "$ref": "AccessReviewAttestation.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "connectors": {
+      "description": "The organisation's installed connectors. OAuth clients join with Connected apps (AI-46).",
+      "items": {
+        "$ref": "AccessReviewConnector.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "invitations": {
+      "description": "The pending invitations: who will join, with which roles.",
+      "items": {
+        "$ref": "MemberInvitation.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "members": {
+      "description": "The active members, in the order they joined.",
+      "items": {
+        "$ref": "AccessReviewMember.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "overdue": {
+      "$ref": "AccessReviewQuarter.schema.json",
+      "description": "A quarter whose review is past its due date with neither its attestation nor a later one (C.2 #7)."
+    },
+    "team_mode": {
+      "description": "The team mode in force (§6.4).",
+      "enum": [
+        "founder",
+        "standard",
+        "enterprise"
+      ],
+      "examples": [
+        "founder"
+      ],
+      "type": "string"
+    },
+    "to_attest": {
+      "$ref": "AccessReviewQuarter.schema.json",
+      "description": "The latest calendar quarter that has ended, while it is not attested; absent when it is, or no quarter has ended since the organisation began."
+    }
+  },
+  "required": [
+    "as_at",
+    "team_mode",
+    "members",
+    "invitations",
+    "connectors",
+    "attestations"
+  ],
+  "title": "AccessReview",
+  "type": "object"
+}
