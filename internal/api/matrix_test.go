@@ -816,9 +816,13 @@ var matrixCalls = map[string]matrixCall{
 		}
 		return r, func() bool { return held }
 	},
-	// A member who does not exist: allowed means the API looked past the policy (404), so the matrix's own member stays.
+	// A preview, so the matrix's own member stays: an allowed role is answered with what would happen.
 	"removeMember": func(e *env, tok string) (response, func() bool) {
-		return e.call(http.MethodDelete, "/v1/members/"+uuid.NewString(), tok, nil), nil
+		id := matrixMember(e)
+		r := e.call(http.MethodDelete, "/v1/members/"+id, steppedUp(e, tok), nil, "Prefer", "return=preview")
+		return r, func() bool {
+			return strings.Contains(e.call(http.MethodGet, "/v1/members", e.as(authz.Administrator), nil).Raw, id)
+		}
 	},
 	"getAccessReview": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/access-review", tok, nil), nil
@@ -826,10 +830,15 @@ var matrixCalls = map[string]matrixCall{
 	"exportAccessReview": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/access-review/export", tok, nil), nil
 	},
-	// A stale ETag: allowed means the API looked past the policy (412); access_review_test.go attests for real.
+	// A preview in January 2100, when a quarter is due whatever day the test runs (memberships carry the database's own
+	// time); the clock goes back after. access_review_test.go attests for real.
 	"attestAccessReview": func(e *env, tok string) (response, func() bool) {
-		return e.call(http.MethodPost, "/v1/access-review/attestations", steppedUp(e, tok), map[string]any{"quarter": "2026-07-01"},
-			"If-Match", `"stale"`), nil
+		was := e.clock.Now()
+		defer e.clock.Set(was)
+		e.clock.Set(time.Date(2100, 1, 5, 9, 0, 0, 0, time.UTC))
+		etag := e.call(http.MethodGet, "/v1/access-review", e.as(authz.Administrator), nil).Header.Get("ETag")
+		return e.call(http.MethodPost, "/v1/access-review/attestations", steppedUp(e, tok), map[string]any{"quarter": "2099-10-01"},
+			"If-Match", etag, "Prefer", "return=preview"), nil
 	},
 	// Each approval's own policy decides what a person sees and signs (rev 0.36), so the matrix asks for a request
 	// that does not exist: allowed means the API looked past the operation's policy (404, or step-up for a signature);
