@@ -5,6 +5,7 @@ import { Fragment, useId, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
+import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { dateTime } from "../../format/date";
@@ -68,6 +69,7 @@ export function Checks() {
           </div>
         )}
       </div>
+      <ReviewBanner screen="checks" />
       <p className="fy-sr" role="status">
         {said}
       </p>
