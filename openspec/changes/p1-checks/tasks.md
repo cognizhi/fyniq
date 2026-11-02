@@ -107,15 +107,28 @@ Each slice below is one pull request that passes `make test` on its own. Slice 1
 
 ## 4. Controls and the platform (slice 4)
 
-- [ ] 4.1 The access review (D10):
+- [x] 4.1 The access review (D10):
   - migration `access_review_attestation`;
   - `getAccessReview` and `attestAccessReview` (Owner, step-up, If-Match, CHECK-03), the CSV logged as an export;
   - the page `/settings/access-review` (`AccessReview.html`), its help key `settings.access-review`, and the guide
     page `access-review.md` compiled into `kb/`.
   Tests: the report as each role; attest once per quarter. `// req: FR-CTL-06`, `// req: SEC-06`
-- [ ] 4.2 C.2 #4 self-approved items not reviewed within 14 days (FM-3); #5 SoD conflicts not covered by the team
+  *As built:* migration 000196 (the attestation, FY247; `member_sign_ins()`, each active member's last sign-in and
+  second factor, read through the function only) and 000197 (its validation). The ETag covers who holds what, not
+  sign-ins, so the Owner's own step-up before attesting keeps it. An attestation answers for the quarters before it.
+  The integration clients are the installed connectors until Connected apps arrive (AI-46). `exportAccessReview`
+  is audited `access_review.exported`. The rules of the quarters are `internal/domain/accessreview`. Tests:
+  `TestTheAccessReview`, `TestAnAccessReviewIsAttestedOncePerQuarter`, the page's `accessReview.test.tsx`.
+- [x] 4.2 C.2 #4 self-approved items not reviewed within 14 days (FM-3); #5 SoD conflicts not covered by the team
   mode; #6 external users past their expiry still active; #7 access review overdue (rev 0.162).
   `// req: C.2 #4` … `// req: C.2 #7`
+  *As built* (rev 0.165, the owner's decisions of 2 Nov 2026, design D13): C.2 #6 is an active member whose roles
+  have all ended, fixed by **removing the member** (`removeMember`, new: FM-1 as a role change, never the last Owner,
+  FY248; a removed person may join again) or by giving a role again with a new end date, which now ends the expired
+  assignment first (it held the role's one live slot, so this was refused before). C.2 #4 and #7 are reviewed only in
+  the review log and the access review (`ReviewedIn`); `reviewCheckItem` refuses them (CHECK-04). C.2 #5 is a
+  backstop: the API refuses an uncovered conflict, so its fixture assigns the role through the store. Tests:
+  `TestTheControlsChecks`, `TestRemovingAMember`, `TestAMemberIsRemovedAndMayJoinAgain`.
 - [ ] 4.3 C.2 #11 vendor bank details changed within 30 days with payments pending; #39 a cash advance not settled
   by the claim deadline. `// req: C.2 #11`, `// req: C.2 #39`
 - [ ] 4.4 C.2 #12 a scheduled job failed or late; #16 a statutory pack past its review date or older than the

@@ -9,6 +9,16 @@
       ],
       "type": "string"
     },
+    "expired_roles": {
+      "description": "Roles that ended at their end date and that nobody ended: they grant nothing. Give the role again with a new end date, or remove the member (C.2 #6).",
+      "items": {
+        "$ref": "MemberRole.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "id": {
       "description": "The membership's ID.",
       "examples": [
@@ -16,6 +26,13 @@
       ],
       "format": "uuid",
       "type": "string"
+    },
+    "removed": {
+      "description": "true in the answer to removeMember: they are no longer a member.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
     },
     "roles": {
       "description": "Their live roles, by role.",
@@ -40,7 +57,8 @@
     "id",
     "user_id",
     "display_name",
-    "roles"
+    "roles",
+    "expired_roles"
   ],
   "title": "Member",
   "type": "object"

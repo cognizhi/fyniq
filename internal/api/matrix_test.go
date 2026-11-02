@@ -816,6 +816,21 @@ var matrixCalls = map[string]matrixCall{
 		}
 		return r, func() bool { return held }
 	},
+	// A member who does not exist: allowed means the API looked past the policy (404), so the matrix's own member stays.
+	"removeMember": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodDelete, "/v1/members/"+uuid.NewString(), tok, nil), nil
+	},
+	"getAccessReview": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/access-review", tok, nil), nil
+	},
+	"exportAccessReview": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/access-review/export", tok, nil), nil
+	},
+	// A stale ETag: allowed means the API looked past the policy (412); access_review_test.go attests for real.
+	"attestAccessReview": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/access-review/attestations", steppedUp(e, tok), map[string]any{"quarter": "2026-07-01"},
+			"If-Match", `"stale"`), nil
+	},
 	// Each approval's own policy decides what a person sees and signs (rev 0.36), so the matrix asks for a request
 	// that does not exist: allowed means the API looked past the operation's policy (404, or step-up for a signature);
 	// approvals_test.go signs real ones.

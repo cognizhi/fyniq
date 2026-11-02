@@ -68,6 +68,10 @@ the item changes; a changed item comes back to be looked at again. An item that 
 close** is fixed, never reviewed. The Owner, the Controller, the Accountant and the Bookkeeper can
 mark items reviewed, and each review is kept in the audit trail.
 
+Two checks are reviewed only where their control lives, so the people they watch cannot hide them
+with a click: a logged action is reviewed in the **review log**, and the quarter's access review is
+attested on **Settings → Access review**.
+
 ## Name a check's owner
 
 An Owner or a Controller can name the person who owns a check: select the pencil beside its
@@ -102,5 +106,8 @@ trail.
   balances, a closed month changed since its close, and a month still open 15 days after its end.
   The checks of a month's end wait until the month has ended.
 - **Planning**: a runway below 6 months.
+- **Controls**: in Founder mode, a logged action another founder has not reviewed within 14 days; a
+  person whose roles conflict with nothing to cover it; an external person still a member after
+  their roles ended; and an access review not attested 14 days after its quarter ended.
 
 The checks of each module still to come, such as payroll, join as that module is built.

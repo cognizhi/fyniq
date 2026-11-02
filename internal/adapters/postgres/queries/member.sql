@@ -1,5 +1,5 @@
 -- name: ListMembers :many
-SELECT m.id, m.user_id, m.status, m.version
+SELECT m.id, m.user_id, m.status, m.version, m.created_at
   FROM fyniq.user_membership m
  WHERE m.status = 'active'
  ORDER BY m.id;
@@ -12,6 +12,29 @@ SELECT a.id, a.membership_id, a.role, a.expires_at
   FROM fyniq.role_assignment a
  WHERE a.revoked_at IS NULL AND (a.expires_at IS NULL OR a.expires_at > sqlc.arg(now))
  ORDER BY a.membership_id, a.role;
+
+-- name: ExpiredRoleAssignments :many
+-- Roles past their expiry and never revoked: they grant nothing, and an external member who holds only those is still a
+-- member (C.2 #6).
+SELECT a.id, a.membership_id, a.role, a.expires_at
+  FROM fyniq.role_assignment a
+ WHERE a.revoked_at IS NULL AND a.expires_at <= sqlc.arg(now)
+ ORDER BY a.membership_id, a.role;
+
+-- name: UnrevokedRoleAssignments :many
+-- Every role a member holds or held that was never revoked, expired ones included: what removing them ends.
+SELECT a.id FROM fyniq.role_assignment a
+ WHERE a.membership_id = sqlc.arg(membership_id) AND a.revoked_at IS NULL
+ ORDER BY a.role;
+
+-- name: RemoveMembership :one
+UPDATE fyniq.user_membership SET status = 'removed', version = version + 1
+ WHERE id = sqlc.arg(id) AND version = sqlc.arg(version) AND status = 'active'
+RETURNING id, user_id, status, version;
+
+-- name: MemberSignIns :many
+SELECT s.user_id::uuid AS user_id, s.last_sign_in::timestamptz AS last_sign_in, s.step_up_method::text AS step_up_method
+  FROM fyniq.member_sign_ins() AS s;
 
 -- name: LockMembers :exec
 SELECT pg_advisory_xact_lock(hashtextextended('fyniq.members:' || fyniq.current_org()::text, 0));

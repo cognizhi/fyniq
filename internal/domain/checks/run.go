@@ -41,7 +41,7 @@ var areas = []string{"Books", "Setup", "Bank", "Sales", "Purchases", "Journals",
 
 // catalogue is every check built: by area, then in its slice's order.
 var catalogue = func() []Definition {
-	out := slices.Concat(booksChecks, setupChecks, documentChecks, closeChecks)
+	out := slices.Concat(booksChecks, setupChecks, documentChecks, closeChecks, controlChecks)
 	slices.SortStableFunc(out, func(a, b Definition) int { return slices.Index(areas, a.Area) - slices.Index(areas, b.Area) })
 	return out
 }()
@@ -277,7 +277,9 @@ func (r Runner) run(ctx context.Context, org uuid.UUID, trigger, by string, choo
 	for _, d := range choose(p, defs) {
 		res := r.one(ctx, org, d, p.env)
 		var dropped int
-		res.Status, res.Count, res.Items, dropped = WithoutReviewed(d.Key, res.Status, res.Count, res.Items, func(k string) bool { return p.env.Reviewed[k] })
+		res.Status, res.Count, res.Items, dropped = WithoutReviewed(d.Key, res.Status, res.Count, res.Items, func(k string) bool {
+			return d.ReviewedIn == "" && p.env.Reviewed[k]
+		})
 		if dropped > 0 && res.Status == OK {
 			res.Detail, res.Fix = fmt.Sprintf("Nothing left to review: %d item(s) marked reviewed", dropped), ""
 		}

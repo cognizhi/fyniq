@@ -9364,6 +9364,65 @@ Replaces a customer group's name, reminder schedule and whether it is active (FR
 
 Members of the organisation, their roles, and invitations to join it (FR-ADM-01).
 
+### `GET /v1/access-review`
+
+**Read the user access review** (`getAccessReview`)
+
+Who can do what in the organisation, live (FR-CTL-06, SEC-06; rev 0.162): each member's roles, an external user's end dates and roles that have ended, when they joined and last signed in and how that session passed its second factor, whether they are dormant (no sign-in for 30 days), and the segregation-of-duties conflicts their roles hold with what covers each under the team mode; the pending invitations; the organisation's connectors with their scopes and health. Also the latest calendar quarter to attest, a quarter overdue (C.2 #7), and every attestation. The ETag covers who holds what, not sign-ins, so an Owner's step-up before attesting keeps it. Read-only; no side effects.
+
+- **Permission:** View on Users, roles, team mode
+- **Responses:**
+  - `200` OK [`AccessReview`](../../contracts/schemas/AccessReview.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/access-review/attestations`
+
+**Attest the user access review for a quarter** (`attestAccessReview`)
+
+An Owner attests that they reviewed who can do what (FR-CTL-06, SEC-06; rev 0.162), for the latest calendar quarter that has ended, once; an attestation answers for the quarters before it too, so C.2 #7 stops warning. Needs a person who passed step-up in the last 5 minutes and If-Match with the review's ETag, so what is attested is what they saw. Side effects: the attestation with the report as canonical JSON, whose SHA-256 the database computes and keeps, never changed (FY247); its audit event. CHECK-03 when no quarter has ended since the organisation began, the quarter named is not the one to attest, or it is attested already. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Approve on Users, roles, team mode. An Owner, who holds A on the row, after step-up: the quarterly attestation of FR-CTL-06 (rev 0.162).
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AttestAccessReviewRequest`](../../contracts/schemas/AttestAccessReviewRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AccessReview`](../../contracts/schemas/AccessReview.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CHECK-03` There is no such quarter to attest; `STORAGE-ACCESS-01` An access review's attestation is made once a quarter has ended, and never changed; `STORAGE-DUPLICATE-01` Already done.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `CHECK-03`, `STORAGE-ACCESS-01`, `STORAGE-DUPLICATE-01`
+
+### `GET /v1/access-review/export`
+
+**Export the user access review** (`exportAccessReview`)
+
+The review getAccessReview gives, as CSV (FR-CTL-06): a row per member, pending invitation and connector; text cells quoted so none becomes a formula. Returned in base64 with its SHA-256. Side effects: the export's audit event (access_review.exported), as every export of personal data has.
+
+- **Permission:** View on Users, roles, team mode
+- **Responses:**
+  - `200` OK [`ReportFile`](../../contracts/schemas/ReportFile.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
 ### `GET /v1/members`
 
 **List the members** (`listMembers`)
@@ -9468,6 +9527,30 @@ Ends an unused invitation: its code stops working (FR-ADM-01). Withdrawing grant
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `DELETE /v1/members/{member_id}`
+
+**Remove a member from the organisation** (`removeMember`)
+
+Ends a person's membership and each of their roles, expired ones included; their next request no longer reaches the organisation (FR-ADM-01, SEC-06; rev 0.165). It is how an external user past their end date stops being a member (C.2 #6). The organisation's last Owner is never removed. Removing someone falls under FM-1 as a role change does: until the organisation has a second member its Owner acts alone; after that the answer is 202 with an approval request, and another Owner's approval removes them, if their roles did not change meanwhile; asking needs a person signed in who passed step-up in the last 5 minutes. A removed person can be invited again. Side effects: the end of each role and of the membership, with their audit events, or the approval request and its audit event; their OAuth tokens are revoked (AI-38) and they are told. Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Users, roles, team mode. Removing a member is a role change under FM-1 (rev 0.165): until a second member joins, the Owner acts alone; after that another Owner approves it, and the request needs step-up.
+- **Parameters:**
+  - `member_id` (path, required): The membership's ID.
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Member`](../../contracts/schemas/Member.schema.json)
+  - `202` Accepted: the change needs a second approver (FM-1) and waits for approval; nothing changed yet. The body is the approval request (rev 0.36). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way.
+  - `412` Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-06`, `MEM-07`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
 ### `POST /v1/members/{member_id}/roles`
 

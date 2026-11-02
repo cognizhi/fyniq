@@ -30,6 +30,10 @@ func (r members) List(ctx context.Context, now time.Time) ([]storage.Member, err
 	if err != nil {
 		return nil, mapError(err)
 	}
+	expired, err := r.u.q.ExpiredRoleAssignments(ctx, &now)
+	if err != nil {
+		return nil, mapError(err)
+	}
 	name := make(map[uuid.UUID]string, len(names))
 	for _, n := range names {
 		name[n.UserID] = n.DisplayName
@@ -37,10 +41,15 @@ func (r members) List(ctx context.Context, now time.Time) ([]storage.Member, err
 	out := make([]storage.Member, 0, len(rows))
 	for _, m := range rows {
 		mem := storage.Member{Membership: storage.Membership{ID: m.ID, UserID: m.UserID, Status: m.Status, Version: int(m.Version)},
-			DisplayName: name[m.UserID], Roles: []storage.RoleAssignment{}}
+			DisplayName: name[m.UserID], Roles: []storage.RoleAssignment{}, Since: m.CreatedAt}
 		for _, a := range roles {
 			if a.MembershipID == m.ID {
 				mem.Roles = append(mem.Roles, storage.RoleAssignment{ID: a.ID, MembershipID: a.MembershipID, Role: a.Role, ExpiresAt: a.ExpiresAt})
+			}
+		}
+		for _, a := range expired {
+			if a.MembershipID == m.ID {
+				mem.Expired = append(mem.Expired, storage.RoleAssignment{ID: a.ID, MembershipID: a.MembershipID, Role: a.Role, ExpiresAt: a.ExpiresAt})
 			}
 		}
 		out = append(out, mem)
@@ -152,9 +161,17 @@ func (s *Store) JoinOrganisation(ctx context.Context, j storage.NewJoin) (storag
 		if err != nil {
 			return mapError(err)
 		}
-		version := 1
-		if err := u.event(actx, "user_membership.created", "user_membership", row.MembershipID, &version, map[string][2]any{
-			"user_id": {nil, row.UserID}, "invitation_id": {nil, row.InvitationID}, "new_user": {nil, row.NewUser}}); err != nil {
+		m, err := q.GetMembershipByUser(ctx, row.UserID)
+		if err != nil {
+			return mapError(err)
+		}
+		version := int(m.Version)
+		changes := map[string][2]any{"user_id": {nil, row.UserID}, "invitation_id": {nil, row.InvitationID}, "new_user": {nil, row.NewUser}}
+		action := "user_membership.created"
+		if version > 1 { // a removed member, a member again (rev 0.165)
+			action, changes["status"] = "user_membership.rejoined", [2]any{"removed", "active"}
+		}
+		if err := u.event(actx, action, "user_membership", row.MembershipID, &version, changes); err != nil {
 			return err
 		}
 		for _, a := range roles {

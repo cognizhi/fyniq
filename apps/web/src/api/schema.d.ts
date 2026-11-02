@@ -4,6 +4,66 @@
  */
 
 export interface paths {
+    "/v1/access-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the user access review
+         * @description Who can do what in the organisation, live (FR-CTL-06, SEC-06; rev 0.162): each member's roles, an external user's end dates and roles that have ended, when they joined and last signed in and how that session passed its second factor, whether they are dormant (no sign-in for 30 days), and the segregation-of-duties conflicts their roles hold with what covers each under the team mode; the pending invitations; the organisation's connectors with their scopes and health. Also the latest calendar quarter to attest, a quarter overdue (C.2 #7), and every attestation. The ETag covers who holds what, not sign-ins, so an Owner's step-up before attesting keeps it. Read-only; no side effects.
+         */
+        get: operations["getAccessReview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/access-review/attestations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attest the user access review for a quarter
+         * @description An Owner attests that they reviewed who can do what (FR-CTL-06, SEC-06; rev 0.162), for the latest calendar quarter that has ended, once; an attestation answers for the quarters before it too, so C.2 #7 stops warning. Needs a person who passed step-up in the last 5 minutes and If-Match with the review's ETag, so what is attested is what they saw. Side effects: the attestation with the report as canonical JSON, whose SHA-256 the database computes and keeps, never changed (FY247); its audit event. CHECK-03 when no quarter has ended since the organisation began, the quarter named is not the one to attest, or it is attested already. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["attestAccessReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/access-review/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export the user access review
+         * @description The review getAccessReview gives, as CSV (FR-CTL-06): a row per member, pending invitation and connector; text cells quoted so none becomes a formula. Returned in base64 with its SHA-256. Side effects: the export's audit event (access_review.exported), as every export of personal data has.
+         */
+        get: operations["exportAccessReview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/accounts": {
         parameters: {
             query?: never;
@@ -4460,6 +4520,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/members/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a member from the organisation
+         * @description Ends a person's membership and each of their roles, expired ones included; their next request no longer reaches the organisation (FR-ADM-01, SEC-06; rev 0.165). It is how an external user past their end date stops being a member (C.2 #6). The organisation's last Owner is never removed. Removing someone falls under FM-1 as a role change does: until the organisation has a second member its Owner acts alone; after that the answer is 202 with an approval request, and another Owner's approval removes them, if their roles did not change meanwhile; asking needs a person signed in who passed step-up in the last 5 minutes. A removed person can be invited again. Side effects: the end of each role and of the membership, with their audit events, or the approval request and its audit event; their OAuth tokens are revoked (AI-38) and they are told. Prefer: return=preview checks it and saves nothing.
+         */
+        delete: operations["removeMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/members/{member_id}/roles": {
         parameters: {
             query?: never;
@@ -7892,6 +7972,203 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AccessReview: {
+            /**
+             * Format: date-time
+             * @description When it was read.
+             * @example 2026-10-05T10:00:00Z
+             */
+            as_at: string;
+            /** @description The quarters attested, latest first. */
+            attestations: components["schemas"]["AccessReviewAttestation"][] | null;
+            /** @description The organisation's installed connectors. OAuth clients join with Connected apps (AI-46). */
+            connectors: components["schemas"]["AccessReviewConnector"][] | null;
+            /** @description The pending invitations: who will join, with which roles. */
+            invitations: components["schemas"]["MemberInvitation"][] | null;
+            /** @description The active members, in the order they joined. */
+            members: components["schemas"]["AccessReviewMember"][] | null;
+            /** @description A quarter whose review is past its due date with neither its attestation nor a later one (C.2 #7). */
+            overdue?: components["schemas"]["AccessReviewQuarter"];
+            /**
+             * @description The team mode in force (§6.4).
+             * @example founder
+             * @enum {string}
+             */
+            team_mode: "founder" | "standard" | "enterprise";
+            /** @description The latest calendar quarter that has ended, while it is not attested; absent when it is, or no quarter has ended since the organisation began. */
+            to_attest?: components["schemas"]["AccessReviewQuarter"];
+        };
+        AccessReviewAttestation: {
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-10-05T10:00:00Z
+             */
+            attested_at: string;
+            /**
+             * @description Who attested it.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            attested_by: string;
+            /**
+             * @description Their name, while they are a member.
+             * @example Wei Ling Tan
+             */
+            attested_by_name?: string;
+            /**
+             * @description What they noted.
+             * @example Ended the auditor's access.
+             */
+            note?: string;
+            /** @description The quarter attested. */
+            quarter: components["schemas"]["AccessReviewQuarter"];
+            /**
+             * @description The SHA-256 of the report they attested, as the database recorded it, in hexadecimal.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            report_sha256: string;
+        };
+        AccessReviewConflict: {
+            /**
+             * @description founder_mode: Founder mode allows it with its compensating controls (§6.4); override: the team mode blocks it and an approved override lets this member keep it; no: nothing covers it (C.2 #5).
+             * @example founder_mode
+             * @enum {string}
+             */
+            covered: "founder_mode" | "override" | "no";
+            /**
+             * @description The override's reason, when one covers it.
+             * @example Two founders; reviewed weekly
+             */
+            override_reason?: string;
+            /** @description The roles that make it. */
+            roles: string[] | null;
+            /**
+             * @description The conflict of §6.3.
+             * @example SOD-6
+             */
+            sod: string;
+        };
+        AccessReviewConnector: {
+            /**
+             * @description The connector's ID in the catalogue.
+             * @example wise
+             */
+            connector: string;
+            /** @description The data classes it may send out. */
+            data_classes: ("know-how" | "business-figures" | "personal-data" | "payroll" | "restricted")[] | null;
+            /** @description The Fyniq scopes it was granted. */
+            fyniq_scopes: string[] | null;
+            /**
+             * @description Its last connection test: ok, failing, or unknown until it is tested.
+             * @example ok
+             * @enum {string}
+             */
+            health: "ok" | "failing" | "unknown";
+            /**
+             * Format: uuid
+             * @description The installed connector's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-10-01T09:00:00Z
+             */
+            installed_at: string;
+            /**
+             * @description Who installed it.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            installed_by: string;
+            /**
+             * @description Its name.
+             * @example Wise
+             */
+            name: string;
+            /**
+             * @description Whether it is enabled.
+             * @example enabled
+             */
+            state: string;
+        };
+        AccessReviewMember: {
+            /** @description The conflicts their live roles hold. */
+            conflicts: components["schemas"]["AccessReviewConflict"][] | null;
+            /**
+             * @description Their name.
+             * @example Wei Ling Tan
+             */
+            display_name: string;
+            /**
+             * @description true when they have not signed in for 30 days, counting from when they joined if never (FR-CTL-06).
+             * @example false
+             */
+            dormant: boolean;
+            /** @description Roles that ended at their end date and that nobody ended: they grant nothing. A member who holds only these is an external user past their expiry, still a member (C.2 #6): remove them, or give a new end date. */
+            expired_roles: components["schemas"]["MemberRole"][] | null;
+            /**
+             * @description true when a role they hold, or held until it expired, has an end date: an external user, reviewed each quarter (SEC-06).
+             * @example false
+             */
+            external: boolean;
+            /**
+             * Format: date-time
+             * @description When they joined.
+             * @example 2026-10-01T09:00:00Z
+             */
+            joined_at: string;
+            /**
+             * Format: date-time
+             * @description Their latest sign-in, by any of their identities; absent if they never signed in.
+             * @example 2026-10-30T08:15:00Z
+             */
+            last_sign_in?: string;
+            /**
+             * Format: uuid
+             * @description The membership's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+             */
+            member_id: string;
+            /**
+             * @description true for an external user whose roles have all ended while they are still a member (C.2 #6).
+             * @example false
+             */
+            past_expiry: boolean;
+            /** @description Their live roles, by role, with an external user's end date. */
+            roles: components["schemas"]["MemberRole"][] | null;
+            /**
+             * @description How their latest session passed its second factor: passkey, a passkey; sign_in, at the sign-in provider (an authenticator app); none, not yet, or never signed in.
+             * @example passkey
+             * @enum {string}
+             */
+            second_factor: "passkey" | "sign_in" | "none";
+            /**
+             * Format: uuid
+             * @description The member's user.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            user_id: string;
+        };
+        AccessReviewQuarter: {
+            /**
+             * Format: date
+             * @description The last day its review is on time: 14 days after it ends (C.2 #7).
+             * @example 2026-10-14
+             */
+            due_by: string;
+            /**
+             * @description Its name.
+             * @example Q3 2026
+             */
+            label: string;
+            /**
+             * Format: date
+             * @description Its first day.
+             * @example 2026-07-01
+             */
+            quarter: string;
+        };
         Account: {
             /**
              * @description An inactive account takes no new postings.
@@ -8650,7 +8927,7 @@ export interface components {
              * @example organisation_setting.change
              * @enum {string}
              */
-            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove";
+            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove";
             /**
              * @description The approval policy's version it keeps (G4-057).
              * @example founder/organisation_setting@2026-10-20.1
@@ -9155,6 +9432,19 @@ export interface components {
              * @example Registered from the wrong bill line
              */
             reason: string;
+        };
+        AttestAccessReviewRequest: {
+            /**
+             * @description What you found or changed, for the record.
+             * @example Ended the auditor's access.
+             */
+            note?: string;
+            /**
+             * Format: date
+             * @description The quarter's first day, as to_attest names it: what you attest.
+             * @example 2026-07-01
+             */
+            quarter: string;
         };
         AutoReconciled: {
             /**
@@ -11758,6 +12048,12 @@ export interface components {
              * @example C.1 #2
              */
             ref: string;
+            /**
+             * @description Where its items are reviewed when that is the control itself: they are never marked reviewed here (rev 0.165). Absent for the others.
+             * @example review_log
+             * @enum {string}
+             */
+            reviewed_in?: "review_log" | "access_review";
             /**
              * @description The rule IDs it checks (Expert).
              * @example INV-10, BS_Chk
@@ -17924,12 +18220,19 @@ export interface components {
              * @example Wei Ling Tan
              */
             display_name: string;
+            /** @description Roles that ended at their end date and that nobody ended: they grant nothing. Give the role again with a new end date, or remove the member (C.2 #6). */
+            expired_roles: components["schemas"]["MemberRole"][] | null;
             /**
              * Format: uuid
              * @description The membership's ID.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
              */
             id: string;
+            /**
+             * @description true in the answer to removeMember: they are no longer a member.
+             * @example false
+             */
+            removed?: boolean;
             /** @description Their live roles, by role. */
             roles: components["schemas"]["MemberRole"][] | null;
             /**
@@ -24260,6 +24563,301 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getAccessReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessReview"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    attestAccessReview: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttestAccessReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessReview"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CHECK-03` There is no such quarter to attest; `STORAGE-ACCESS-01` An access review's attestation is made once a quarter has ended, and never changed; `STORAGE-DUPLICATE-01` Already done. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    exportAccessReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportFile"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listAccounts: {
         parameters: {
             query?: {
@@ -59059,6 +59657,141 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    removeMember: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The membership's ID. */
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Member"];
+                };
+            };
+            /** @description Accepted: the change needs a second approver (FM-1) and waits for approval; nothing changed yet. The body is the approval request (rev 0.36). */
+            202: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles. */
             422: {
                 headers: {
                     [name: string]: unknown;

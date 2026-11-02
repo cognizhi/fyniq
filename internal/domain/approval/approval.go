@@ -105,6 +105,7 @@ const (
 	OpSettingChange   = "organisation_setting.change"
 	OpRoleAssign      = "role.assign"
 	OpRoleRevoke      = "role.revoke"
+	OpMemberRemove    = "member.remove" // rev 0.165: ends a membership, each of its roles with it
 	OpInvite          = "member_invitation.create"
 	OpPolicyChange    = "approval_policy.change"
 	OpPackActivate    = "statutory_pack.activate"
@@ -164,7 +165,7 @@ const (
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
 // allows, and what the API's enums list.
 var Operations = map[string]string{
-	OpSettingChange: ObjectSetting, OpRoleAssign: ObjectMembership, OpRoleRevoke: ObjectMembership, OpInvite: ObjectInvitation,
+	OpSettingChange: ObjectSetting, OpRoleAssign: ObjectMembership, OpRoleRevoke: ObjectMembership, OpMemberRemove: ObjectMembership, OpInvite: ObjectInvitation,
 	OpPolicyChange: ObjectPolicy, OpPackActivate: ObjectPack, OpTeamModeChange: ObjectTeamMode, OpPeriodReopen: ObjectPeriod,
 	OpJournalPost: ObjectJournal, OpJournalReverse: ObjectJournal, OpJournalEdit: ObjectJournal, OpOpeningEdit: ObjectOpening,
 	OpBillPost: ObjectBill, OpBillVoid: ObjectBill, OpBillEdit: ObjectBill, OpPaymentVoid: ObjectPayment, OpApplicationVoid: ObjectApplication,

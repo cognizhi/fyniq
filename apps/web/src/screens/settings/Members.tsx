@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarClock, Check, Copy, Hourglass, Mail, Plus, TriangleAlert, UserPlus, Users, X } from "lucide-react";
+import { CalendarClock, Check, ClockAlert, Copy, Hourglass, Mail, Plus, TriangleAlert, UserMinus, UserPlus, Users, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -309,6 +309,8 @@ function MemberRoles({ member, conflict, blocks, onClose }: { member: Member | n
   const [done, setDone] = useState("");
   const add = helpText("member.add-role");
   const end = helpText("member.end-role");
+  const leave = helpText("member.remove");
+  const [removing, setRemoving] = useState(false);
   const held = new Set((member?.roles ?? []).map((r) => r.role));
 
   const close = () => {
@@ -347,6 +349,23 @@ function MemberRoles({ member, conflict, blocks, onClose }: { member: Member | n
     );
     setBusy(false);
     await after(out, `${roleLabel(role)} added.`);
+  };
+
+  // removeMember asks to remove them (rev 0.165): at once during the founder bootstrap, else an approval request.
+  const removeMember = async () => {
+    if (!member) return;
+    setBusy(true);
+    setProblem(null);
+    setDone("");
+    const out = await guarded(confirm, () => api.DELETE("/v1/members/{member_id}", { params: { path: { member_id: member.id } } }));
+    setBusy(false);
+    setRemoving(false);
+    if (out.data && out.response.status !== 202) {
+      await Promise.all(["members", "approvals", "team-mode", "access-review"].map((k) => queries.invalidateQueries({ queryKey: [k] })));
+      close();
+      return;
+    }
+    await after(out, "");
   };
 
   const remove = async (r: string) => {
@@ -400,6 +419,18 @@ function MemberRoles({ member, conflict, blocks, onClose }: { member: Member | n
           </li>
         ))}
       </ul>
+      {(member?.expired_roles ?? []).length > 0 && (
+        <ul className="fy-list rounded-md border border-border" aria-label="Their roles that ended">
+          {(member?.expired_roles ?? []).map((r) => (
+            <li key={r.role} className="fy-list__item">
+              <span className="fy-list__main">
+                <span className="fy-list__title fy-secondary">{roleLabel(r.role)}</span>
+                <span className="fy-list__meta">Ended {date(r.expires_at)}: it grants nothing. Give it again with a new end date, or remove them.</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
       <form className="fy-stack fy-stack--3" onSubmit={give} noValidate>
         <div className="fy-form fy-form--2">
           <div className="fy-field">
@@ -445,6 +476,31 @@ function MemberRoles({ member, conflict, blocks, onClose }: { member: Member | n
           </Button>
         </div>
       </form>
+      <div className="fy-row fy-row--wrap justify-between gap-3 border-t border-border pt-3">
+        <span className="fy-small fy-secondary">Removing ends their membership and every role. The company always keeps an Owner.</span>
+        <Button variant="destructive" size="sm" onClick={() => setRemoving(true)} disabled={busy} title={leave.tooltip}>
+          <Icon of={UserMinus} />
+          {leave.label}
+        </Button>
+      </div>
+      <Dialog
+        open={removing}
+        onOpenChange={(o) => !o && setRemoving(false)}
+        dismissible={!busy}
+        title={member ? `Remove ${member.display_name} from the company?` : "Remove them?"}
+        description="Their next page no longer opens the company, and every role ends, ended ones too. You can invite them again later."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setRemoving(false)} disabled={busy}>
+              Keep them
+            </Button>
+            <Button variant="destructive" onClick={() => void removeMember()} disabled={busy}>
+              <Icon of={UserMinus} />
+              {leave.label}
+            </Button>
+          </>
+        }
+      />
     </Dialog>
   );
 }
@@ -560,6 +616,12 @@ export function Members() {
                     </span>
                     <Roles roles={m.roles ?? []} />
                   </span>
+                  {(m.roles ?? []).length === 0 && (m.expired_roles ?? []).length > 0 && (
+                    <span className="fy-chip fy-chip--critical" title={(m.expired_roles ?? []).map((r) => `${roleLabel(r.role)} ended ${date(r.expires_at)}`).join(", ")}>
+                      <Icon of={ClockAlert} />
+                      Roles ended
+                    </span>
+                  )}
                   {c && (
                     <span className={team.data?.blocks && !c.overridden ? "fy-chip fy-chip--warning" : "fy-chip fy-chip--neutral"} title={`${c.conflict}: ${c.roles?.map(roleLabel).join(" and ")}`}>
                       <Icon of={TriangleAlert} />

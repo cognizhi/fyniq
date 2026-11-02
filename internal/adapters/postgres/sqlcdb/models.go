@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type FyniqAccessReviewAttestation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Quarter        time.Time
+	AttestedBy     string
+	AttestedAt     time.Time
+	Note           *string
+	Report         string
+	ReportHash     []byte
+}
+
 type FyniqAccount struct {
 	OrganisationID   uuid.UUID
 	ID               uuid.UUID

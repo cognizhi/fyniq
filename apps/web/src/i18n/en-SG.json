@@ -128,6 +128,22 @@
       "label": "Withdraw",
       "tooltip": "Stop this invitation's code working."
     },
+    "member.remove": {
+      "label": "Remove from the company",
+      "tooltip": "End their membership and every role, expired ones too. Once the company has a second member, another Owner approves it."
+    },
+    "settings.access-review": {
+      "label": "Access review",
+      "tooltip": "Who can do what, live: roles, sign-ins, role conflicts, external users and integrations. An Owner attests it each quarter."
+    },
+    "access-review.attest": {
+      "label": "Attest",
+      "tooltip": "Record that you reviewed everyone's access for the quarter. Only an Owner, after confirming it's you."
+    },
+    "access-review.export": {
+      "label": "Download CSV",
+      "tooltip": "The review as a spreadsheet: one row per person, invitation and integration. The download is recorded."
+    },
     "settings.team-mode": {
       "label": "Team mode",
       "tooltip": "How strictly duties are separated: Founder or Standard mode, and the roles that conflict now."

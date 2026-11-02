@@ -263,7 +263,7 @@ function Row({ c, canName, onName, canReview, onReview }: { c: Check; canName: b
                     )}
                     {it.detail ? `: ${it.detail}` : ""}
                     {it.severity && <span className="fy-sr"> ({it.severity === "error" ? "blocks the close" : "to review"})</span>}
-                    {canReview && it.id && toReview(c, it) && (
+                    {canReview && !c.reviewed_in && it.id && toReview(c, it) && (
                       <>
                         {" "}
                         <Button variant="ghost" size="sm" className="h-6 px-1.5" title={helpText("checks.review").tooltip} aria-label={`Mark ${it.label} reviewed`} onClick={() => onReview(it)}>
@@ -284,6 +284,19 @@ function Row({ c, canName, onName, canReview, onReview }: { c: Check; canName: b
             </span>
           )}
           {c.fix && c.status !== "ok" && <span className="fy-small fy-secondary font-normal">To fix it: {c.fix}.</span>}
+          {c.reviewed_in && c.status !== "ok" && (
+            <span className="fy-small fy-secondary font-normal">
+              {c.reviewed_in === "review_log" ? (
+                <>
+                  Reviewed only in <Link to="/review-log">the review log</Link>, which is the control itself.
+                </>
+              ) : (
+                <>
+                  Attested only on <Link to="/settings/access-review">Settings › Access review</Link>, which is the control itself.
+                </>
+              )}
+            </span>
+          )}
           <span className="fy-small fy-mono fy-muted fy-expert-only font-normal">
             {c.ref} · {c.rules}
           </span>

@@ -74,6 +74,7 @@ type CheckOut struct {
 	Items       []CheckItem   `json:"items" nullable:"false" doc:"The first 50 items it found, each with what is wrong. Empty when the caller cannot open them (items_hidden)."`
 	ItemsHidden bool          `json:"items_hidden" doc:"true when it found items the caller cannot open: their area's right is another role's." example:"false"`
 	ItemsArea   string        `json:"items_area,omitempty" doc:"The Appendix D row whose view opens its items." example:"Reports, dashboards"`
+	ReviewedIn  string        `json:"reviewed_in,omitempty" enum:"review_log,access_review" doc:"Where its items are reviewed when that is the control itself: they are never marked reviewed here (rev 0.165). Absent for the others." example:"review_log"`
 	Detail      string        `json:"detail,omitempty" doc:"What it found, in words." example:"The balance sheet balances in every open month"`
 	Fix         string        `json:"fix,omitempty" doc:"How to fix what it found." example:"Report it: the ledger's own checks should have refused this"`
 	Needs       string        `json:"needs,omitempty" doc:"For a check not assessed, the input it needs." example:"an open month that has started"`
@@ -173,6 +174,9 @@ func seerOf(p authn.Principal) seer {
 	return s
 }
 
+// reviewedIn names, for the API, where a check's items are reviewed.
+var reviewedIn = map[string]string{"": "", checks.InReviewLog: "review_log", checks.InAccessReview: "access_review"}
+
 // sees reports whether the reader sees a check at all.
 func (s seer) sees(d checks.Definition) bool {
 	return s.all || (d.Qualifier != "" && s.areas[d.Qualifier])
@@ -197,7 +201,7 @@ func runOut(r storage.CheckRun) *CheckRunOut {
 // checkOut is a definition with its state and owner, as the reader sees it.
 func checkOut(d checks.Definition, state *storage.CheckState, owner *storage.CheckOwner, s seer, reviewed map[string]bool) (CheckOut, error) {
 	out := CheckOut{Key: d.Key, Ref: d.Ref, Area: d.Area, Worst: string(d.Worst), Title: d.Title, Explain: d.Explain, Rules: d.Rules,
-		Nightly: slices.Contains(nightlyGroup, d.Ref), Status: string(checks.NotAssessed), Items: []CheckItem{}, ItemsArea: d.View,
+		Nightly: slices.Contains(nightlyGroup, d.Ref), Status: string(checks.NotAssessed), Items: []CheckItem{}, ItemsArea: d.View, ReviewedIn: reviewedIn[d.ReviewedIn],
 		Owner: CheckOwnerOut{Role: RoleName(d.Owner)}}
 	if state == nil {
 		out.Needs, out.Detail = "its first run", "Not assessed: it has not run yet"
@@ -210,7 +214,9 @@ func checkOut(d checks.Definition, state *storage.CheckState, owner *storage.Che
 			return out, err
 		}
 		// Items marked reviewed since the run leave at once; the next run, which the review asked for, agrees (rev 0.164).
-		status, count, kept, dropped := checks.WithoutReviewed(d.Key, checks.Status(state.Status), state.Count, items, func(k string) bool { return reviewed[k] })
+		status, count, kept, dropped := checks.WithoutReviewed(d.Key, checks.Status(state.Status), state.Count, items, func(k string) bool {
+			return d.ReviewedIn == "" && reviewed[k]
+		})
 		if dropped > 0 {
 			out.Status, out.Count, items = string(status), count, kept
 			if status == checks.OK {
@@ -541,6 +547,9 @@ func registerChecks(a *API) {
 				}
 				if !s.opens(d) {
 					return CheckOut{}, notToReview("your roles do not open its items")
+				}
+				if d.ReviewedIn != "" {
+					return CheckOut{}, notToReview("its items are reviewed in " + d.ReviewedIn + ", which is the control itself")
 				}
 				// The item as the latest run found it, reviewed already or not: marking it again records nothing more.
 				states, err := u.Checks().States(ctx)

@@ -11,6 +11,7 @@ const operations: Record<Approval["operation"], string> = {
   "organisation_setting.change": "Change an organisation setting",
   "role.assign": "Give a role",
   "role.revoke": "End a role",
+  "member.remove": "Remove a member",
   "member_invitation.create": "Invite someone",
   "approval_policy.change": "Change an approval policy",
   "statutory_pack.activate": "Activate a statutory pack version",

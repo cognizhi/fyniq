@@ -3864,7 +3864,8 @@
     "Invite user dialog with role, scope, expiry and default experience mode (Basic or Expert by role; Owner wins)",
     "SoD conflict warnings per user under the current team mode",
     "Owner add, remove or transfer (dual-controlled); succession with evidence and waiting period",
-    "Role change approval-gated; P2 pin a role to Basic"
+    "Role change approval-gated; P2 pin a role to Basic",
+    "Remove from the company (rev 0.165): ends every role, ended ones too, and the membership; approval-gated as a role change; never the last Owner. An external user whose roles have all ended shows Roles ended (C.2 #6)"
    ],
    "states": [
     "invite pending",

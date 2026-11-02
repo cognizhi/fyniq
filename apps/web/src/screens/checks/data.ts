@@ -46,6 +46,12 @@ export function itemLink(item: CheckItem): { to: string; params?: Record<string,
       return { to: "/accounting/chart-of-accounts" };
     case "opening_balances":
       return { to: "/accounting/opening-balances" };
+    case "review_log":
+      return { to: "/review-log" };
+    case "member":
+      return { to: "/settings/members" };
+    case "access_review":
+      return { to: "/settings/access-review" };
     default:
       return null;
   }

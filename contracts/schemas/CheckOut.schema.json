@@ -107,6 +107,17 @@
       ],
       "type": "string"
     },
+    "reviewed_in": {
+      "description": "Where its items are reviewed when that is the control itself: they are never marked reviewed here (rev 0.165). Absent for the others.",
+      "enum": [
+        "review_log",
+        "access_review"
+      ],
+      "examples": [
+        "review_log"
+      ],
+      "type": "string"
+    },
     "rules": {
       "description": "The rule IDs it checks (Expert).",
       "examples": [

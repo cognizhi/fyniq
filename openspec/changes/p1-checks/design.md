@@ -262,6 +262,26 @@ Every definition gets a domain test with a fixture that makes it fire and one th
   check is ✖ while one that cannot post remains.
 - The alternatives were the month's close as the review, or drafts only.
 
+### D13 Removing a member, and controls reviewed where they live (rev 0.165, the owner's decisions of 2 Nov 2026)
+
+- A role with an end date stops granting at that date, but the membership stayed active and nothing could end it, so
+  C.2 #6 (✖) would have blocked every close after an external user's engagement ended. **`removeMember`** ends each
+  role not yet revoked, expired ones included, then the membership (`user_membership.removed`), and revokes the
+  person's OAuth tokens; sessions read the membership on every request, so the next one no longer reaches the
+  organisation. FM-1 applies as to a role change (`member.remove`, an approval request after the bootstrap); the last
+  Owner is refused (MEM-06) and the database refuses it too (FY093 on the role).
+- The database refuses a role for a removed member and a removal while a role has not ended (FY248).
+  `accept_member_invitation()` makes a removed person a member again on the same membership
+  (`user_membership.rejoined`).
+- Giving a role again with a new end date ends the expired assignment of that role first: the one-live-role index
+  counts an unrevoked assignment whatever its expiry.
+- C.2 #4's and #7's items are the control itself, so `Definition.ReviewedIn` names where they are reviewed (the review
+  log, the access review): the runner and the API never drop them for a check review, `reviewCheckItem` refuses them
+  (CHECK-04), and the page says where to go instead.
+- The alternatives were letting "End role" end an expired role (the person stays a member with nothing), reading
+  "still active" as a session after expiry (rarely true, since expired roles grant nothing), C.2 #6 as ⚠ until
+  removal existed; and one review rule for every ⚠ item.
+
 ## Risks / Trade-offs
 
 - **[A change run reads a lot]** Validating every open document on each change is heavy for a larger book.
