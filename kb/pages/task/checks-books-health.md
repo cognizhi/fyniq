@@ -4,7 +4,7 @@ type: task
 title: Read books health and the checks, run them now, mark items reviewed and name a check's owner
 summary: Books health and the check statuses, when checks run, nightly verification, Run now, marking items reviewed, and naming owners
 sources:
-  - docs/user-guide/checks.md sha256:46a68432c68371e5c299c07f0fcc71ec259f7674b4aba26064df4ca7d2b8239d
+  - docs/user-guide/checks.md sha256:a9bedd54e316137ec0ff75f8b114fb3129d6178476d0552c3e5e97b7f1f94b03
 data_class: general
 taint: trusted
 status: draft
@@ -21,6 +21,8 @@ aliases:
   - run the checks
   - check owner
   - mark reviewed
+  - close checklist
+  - runway warning
   - acknowledge a warning
   - nightly verification
   - why can't I close the month
@@ -93,6 +95,10 @@ aliases:
 - **Sales**: a draft invoice that cannot be issued, an invoice issued late, one more than 90 days overdue, a line worth nothing, and a quote to follow up.
 - **Purchases**: a draft bill that cannot post, a posted bill with a warning, two bills alike, a bill or claim without its document, and an unpaid bill whose input tax is due back.
 - **Journals**: a draft journal that cannot post, and a reversal waiting for its month to open.
+- **Assets and recurring entries**: the asset register against its accounts; recurring journals and bills whose drafts are late, or whose content cannot post.
+- **Bank at the month end**: suspense not at nothing, a bank or cash account below zero, a signed reconciliation that does not match, bank data more than 3 days old, lines waiting more than 30 days, possible duplicates, a connector's sync that failed, and settlement differences over the monthly cap.
+- **Closing**: the sub-ledgers against their control accounts, automatic reversals waiting, large variances without an explanation, the close checklist, the revaluation of foreign-currency balances, a closed month changed since its close, and a month still open 15 days after its end; the checks of a month's end wait until it has ended.
+- **Planning**: a runway below 6 months.
 - The checks of each module still to come, such as payroll, join as that module is built.
 
 (src: docs/user-guide/checks.md#the-checks-so-far)

@@ -188,7 +188,7 @@ func chartProblems(ctx context.Context, u storage.UnitOfWork, _ *Env) (Result, e
 			codes, versions = append(codes, a.Code), append(versions, fmt.Sprintf("%s@%d", a.ID, a.Version))
 		}
 		items = append(items, Item{Kind: "account", ID: as[0].ID.String(), Label: as[0].Name, Severity: string(Warning),
-			Detail: "Accounts " + strings.Join(codes, " and ") + " share this name: rename one so a choice of account is clear",
+			Detail:  "Accounts " + strings.Join(codes, " and ") + " share this name: rename one so a choice of account is clear",
 			Version: Fingerprint(strings.Join(versions, ","))})
 	}
 	if len(items) == 0 {
@@ -285,7 +285,7 @@ func contactsAndRates(ctx context.Context, u storage.UnitOfWork, _ *Env) (Result
 				}
 			}
 			items = append(items, Item{Kind: "fx_month", ID: cur + "-" + m.Format("2006-01"), Label: fmt.Sprintf("%s, %s", cur, m.Format("January 2006")),
-				Detail: fmt.Sprintf("%d current rates in the monthly table: they are averaged, which never sets a GST amount. Withdraw all but one", len(ids)),
+				Detail:  fmt.Sprintf("%d current rates in the monthly table: they are averaged, which never sets a GST amount. Withdraw all but one", len(ids)),
 				Version: Fingerprint(strings.Join(ids, ","))})
 		}
 	}

@@ -71,7 +71,9 @@ func (it Item) severity(status Status) Status {
 }
 
 // ReviewKey names an item of a check at its version, as a review records it.
-func ReviewKey(key, kind, id, version string) string { return key + "\x00" + kind + "\x00" + id + "\x00" + version }
+func ReviewKey(key, kind, id, version string) string {
+	return key + "\x00" + kind + "\x00" + id + "\x00" + version
+}
 
 // WithoutReviewed takes the ⚠ items marked reviewed out of a result (FR-CTL-01, ENG-21; rev 0.164): what is left decides
 // its status, ✖ while an item that cannot post remains, ⚠ while one to review does, OK once every item found was
@@ -161,6 +163,7 @@ type Env struct {
 	Org      storage.Organisation
 	Base     money.Currency
 	Today    time.Time        // the organisation's today, a date at UTC midnight
+	Now      time.Time        // when the run began
 	Periods  []storage.Period // earliest first
 	Revision int64
 	// Latest are the newest event of each audit action read since the last run, as their bodies: how the checks fed by

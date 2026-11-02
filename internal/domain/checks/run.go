@@ -37,11 +37,11 @@ const (
 const maxEvents = 20000
 
 // areas are the order the Checks page lists the areas in.
-var areas = []string{"Books", "Setup", "Bank", "Sales", "Purchases", "Journals", "Ledger", "Audit"}
+var areas = []string{"Books", "Setup", "Bank", "Sales", "Purchases", "Journals", "Assets", "Recurring", "Closing", "FX", "Planning", "Ledger", "Audit"}
 
 // catalogue is every check built: by area, then in its slice's order.
 var catalogue = func() []Definition {
-	out := slices.Concat(booksChecks, setupChecks, documentChecks)
+	out := slices.Concat(booksChecks, setupChecks, documentChecks, closeChecks)
 	slices.SortStableFunc(out, func(a, b Definition) int { return slices.Index(areas, a.Area) - slices.Index(areas, b.Area) })
 	return out
 }()
@@ -134,7 +134,7 @@ func (r Runner) prepare(ctx context.Context, org uuid.UUID) (prepared, error) {
 		if err != nil {
 			return err
 		}
-		e := &Env{Org: o, Base: base, Today: TodayOf(r.Clock.Now(), o), Latest: map[string]Event{}, Prior: map[string]storage.CheckState{}}
+		e := &Env{Org: o, Base: base, Today: TodayOf(r.Clock.Now(), o), Now: r.Clock.Now(), Latest: map[string]Event{}, Prior: map[string]storage.CheckState{}}
 		if e.Periods, err = u.Periods().List(ctx); err != nil {
 			return err
 		}

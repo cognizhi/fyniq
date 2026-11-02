@@ -4,6 +4,7 @@ package checks_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/pgtest"
 	"github.com/cognizhi/fyniq/internal/bankfile"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/checks"
@@ -620,5 +622,189 @@ func TestTheBankLinesChecks(t *testing.T) {
 	suspense := want(t, b.run(t), "bank.lines-in-suspense", checks.Warning)
 	if items := itemsOf(t, suspense); len(items) != 1 || items[0].ID != byDay["SGD 2026-10-05"].ID.String() || !strings.HasPrefix(items[0].Label, "DBS current, 5 Oct 2026") {
 		t.Errorf("the line in suspense: %+v", items)
+	}
+}
+
+// runAt runs every check on the business day at, as Run now does.
+func (b books) runAt(t *testing.T, at time.Time) map[string]storage.CheckState {
+	t.Helper()
+	r := b.runner()
+	r.Clock = clock.NewFrozen(at)
+	if _, err := r.Request(ctx, b.org, "user:founder"); err != nil {
+		t.Fatal(err)
+	}
+	return b.states(t)
+}
+
+// The close's checklist through the catalogue (C.2 #58): ✖ once October has ended with its tasks not done, OK once each
+// is done or skipped with a reason; a month open more than 15 days after its end (C.2 #18).
+// req: C.2 #58
+// req: C.2 #18
+// req: FR-GL-07
+func TestTheChecklistAndAMonthLeftOpen(t *testing.T) {
+	b := newBooks(t, true)
+	b.post(t, "sale-1", porttest.Day(10, 5), "1010", "4010", "100.00")
+	states := b.run(t)
+	list := want(t, states, "close.checklist", checks.Error)
+	if items := itemsOf(t, list); len(items) != 1 || items[0].Kind != "close" || items[0].ID != b.oct.ID.String()+"/checklist" ||
+		!strings.Contains(items[0].Detail, "6 of 6 checklist task(s) are neither done nor skipped") {
+		t.Errorf("the checklist: %+v", items)
+	}
+	want(t, states, "close.month-unclosed", checks.OK) // ten days after October's end
+	if err := b.api.Do(ctx, b.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		tmpl, err := closing.CurrentTemplate(ctx, u)
+		if err != nil {
+			return err
+		}
+		for _, task := range tmpl.Tasks {
+			if _, err := closing.MarkTask(ctx, u, b.oct.ID, task.Key, "skipped", "Nothing of this in October"); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	want(t, b.run(t), "close.checklist", checks.OK)
+	open := want(t, b.runAt(t, time.Date(2026, 11, 20, 2, 0, 0, 0, time.UTC)), "close.month-unclosed", checks.Warning)
+	if items := itemsOf(t, open); len(items) != 1 || items[0].ID != b.oct.ID.String() || !strings.Contains(items[0].Detail, "20 days ago, and still open") {
+		t.Errorf("the month left open: %+v", items)
+	}
+}
+
+// A closed month's trial balance against the one its close recorded (C.1 #33): equal, OK; different, ✖, which only a
+// change around the database's lock could make.
+// req: C.1 #33
+// req: INV-03
+func TestAClosedMonthChangedSinceItsClose(t *testing.T) {
+	closeOctober := func(t *testing.T, b books, off string) {
+		t.Helper()
+		var snap closing.Snapshot
+		if err := b.api.Do(ctx, b.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			all, err := u.Periods().List(ctx)
+			if err != nil {
+				return err
+			}
+			sgd, _ := money.Lookup("SGD")
+			tb, err := balance.Position(ctx, u, sgd, all, b.oct)
+			if err != nil {
+				return err
+			}
+			snap = closing.Snapshot{PeriodID: b.oct.ID.String(), Currency: "SGD", Accounts: []closing.SnapshotAccount{}}
+			for _, r := range tb.Rows {
+				v := r.Base.String()
+				if off != "" && r.AccountID == b.codes["1010"].ID {
+					v = off
+				}
+				snap.Accounts = append(snap.Accounts, closing.SnapshotAccount{AccountID: r.AccountID.String(), Balance: v})
+			}
+			return nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+		raw, _ := json.Marshal(snap)
+		checkID := uuid.New()
+		b.tamper(t, `INSERT INTO fyniq.period_close_check (organisation_id, id, period_id, checked_by, checked_at, ledger_revision, result, clean)
+			VALUES ($1, $2, $3, 'user:a', now(), 1, '[]', true)`, b.org, checkID, b.oct.ID)
+		b.tamper(t, `INSERT INTO fyniq.period_close (organisation_id, period_id, check_id, attested_by, attested_at, statement, closed_revision, snapshot, snapshot_hash)
+			VALUES ($1, $2, $3, 'user:b', now(), 'Closed', 1, $4, sha256(convert_to($4, 'UTF8')))`, b.org, b.oct.ID, checkID, string(raw))
+		b.tamper(t, `UPDATE fyniq.period SET status = 'closed', closed_revision = 1 WHERE organisation_id = $1 AND id = $2`, b.org, b.oct.ID)
+	}
+	sound := newBooks(t, true)
+	sound.post(t, "sale-1", porttest.Day(10, 5), "1010", "4010", "100.00")
+	closeOctober(t, sound, "")
+	want(t, sound.run(t), "close.closed-unchanged", checks.OK)
+	changed := newBooks(t, true)
+	changed.post(t, "sale-1", porttest.Day(10, 5), "1010", "4010", "100.00")
+	closeOctober(t, changed, "99.99")
+	s := want(t, changed.run(t), "close.closed-unchanged", checks.Error)
+	if items := itemsOf(t, s); len(items) != 1 || items[0].ID != changed.oct.ID.String() || !strings.Contains(items[0].Detail, "1 account(s) differ") {
+		t.Errorf("the closed month changed: %+v", items)
+	}
+}
+
+// The runway at the last month end (C.1 #36): Not burning passes; burning with less than 6 months of cash warns.
+// req: C.1 #36
+// req: FR-KPI-02
+func TestARunwayBelowSixMonths(t *testing.T) {
+	b := newBooks(t, true)
+	b.post(t, "sale-1", porttest.Day(10, 5), "1010", "4010", "100.00")
+	want(t, b.run(t), "planning.runway", checks.OK)
+	burning := newBooks(t, true)
+	if err := burning.api.Do(ctx, burning.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, a := range []storage.NewAccount{
+			{Code: "2610", Name: "Bank loan", Type: storage.Liability, AccountAttributes: storage.AccountAttributes{ReportGroup: "Borrowings", CashFlowLine: "Borrowings"}},
+			{Code: "6990", Name: "Office rent", Type: storage.Expense, AccountAttributes: storage.AccountAttributes{ReportGroup: "Premises & office", Function: "G&A"}},
+		} {
+			got, err := u.Accounts().Create(ctx, a)
+			if err != nil {
+				return err
+			}
+			burning.codes[got.Code] = got
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	burning.post(t, "loan", porttest.Day(10, 1), "1010", "2610", "1000.00")
+	burning.post(t, "rent", porttest.Day(10, 20), "6990", "1010", "600.00")
+	s := want(t, burning.run(t), "planning.runway", checks.Warning)
+	if items := itemsOf(t, s); len(items) != 1 || !strings.Contains(items[0].Detail, "months of runway") {
+		t.Errorf("the runway: %+v %s", items, s.Detail)
+	}
+}
+
+// A connector's feed whose last sync failed, or that is late (C.2 #43).
+// req: C.2 #43
+// req: FR-BNK-15
+func TestABankFeedBehindItsSchedule(t *testing.T) {
+	b := newBooks(t, true)
+	want(t, b.run(t), "bank.sync", checks.OK)
+	var m storage.MoneyAccount
+	if err := b.api.Do(ctx, b.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		a, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "1016", Name: "Wise SGD", Type: storage.Asset,
+			AccountAttributes: storage.AccountAttributes{MoneyAccount: true, Currency: "SGD", ReportGroup: "Cash & bank", CashFlowLine: "Cash & cash equivalents"}})
+		if err != nil {
+			return err
+		}
+		m, err = u.Banking().CreateMoneyAccount(ctx, storage.NewMoneyAccount{AccountID: a.ID, Kind: storage.MoneyBank, Name: "Wise SGD", Identifier: "P-1",
+			Currency: "SGD", At: now})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	b.tamper(t, `INSERT INTO fyniq.bank_feed (organisation_id, money_account_id, connector_id, provider_account, synced_at, last_error)
+		VALUES ($1, $2, $3, 'P-1', $4, 'the provider refused the token')`, b.org, m.ID, uuid.New(), now.Add(-time.Hour))
+	s := want(t, b.run(t), "bank.sync", checks.Warning)
+	if items := itemsOf(t, s); len(items) != 1 || items[0].Label != "Wise SGD" || items[0].Detail != "Its last sync failed: the provider refused the token" {
+		t.Errorf("the feed behind: %+v", items)
+	}
+}
+
+// A foreign-currency balance on an account marked revalue at the last month end, with no revaluation since (C.2 #17).
+// req: C.2 #17
+// req: FR-GL-04
+func TestForeignBalancesNotRevaluedAtTheLastMonthEnd(t *testing.T) {
+	b := newBooks(t, true)
+	want(t, b.run(t), "close.revalued", checks.OK)
+	if err := b.api.Do(ctx, b.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		a, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "1022", Name: "Wise USD", Type: storage.Asset,
+			AccountAttributes: storage.AccountAttributes{Currency: "USD", Revalue: true, ReportGroup: "Cash & bank", CashFlowLine: "Cash & cash equivalents"}})
+		if err != nil {
+			return err
+		}
+		_, err = u.Ledger().Append(ctx, storage.NewEntry{PostingDate: porttest.Day(10, 5), PostingIdentity: "usd-sale", RuleVersion: "test@1",
+			Source: storage.Source{Type: "manual_journal", ID: "usd-sale", Version: 1},
+			Lines: []storage.NewLine{
+				{AccountID: a.ID, Currency: "USD", Amount: "100.00", FXRate: "1.35", FXRateSource: "typed", BaseAmount: "135.00"},
+				{AccountID: b.codes["4010"].ID, Currency: "SGD", Amount: "-135.00", FXRate: "1", FXRateSource: "base", BaseAmount: "-135.00"},
+			}})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	s := want(t, b.run(t), "close.revalued", checks.Warning)
+	if items := itemsOf(t, s); len(items) != 1 || items[0].ID != b.oct.ID.String() || !strings.Contains(items[0].Detail, "not restated at the rate of 2026-10-31") {
+		t.Errorf("the balance not revalued: %+v", items)
 	}
 }

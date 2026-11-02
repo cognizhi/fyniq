@@ -601,6 +601,7 @@ fyniq_worker    INSERT    journal_entry (memo, posting_date, posting_identity, r
 fyniq_worker    SELECT    journal_entry
 fyniq_worker    INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no)
 fyniq_worker    SELECT    journal_line
+fyniq_worker    SELECT    kpi_input
 fyniq_worker    SELECT    ledger_revision
 fyniq_worker    EXECUTE   lock_ledger()
 fyniq_worker    EXECUTE   member_emails()
