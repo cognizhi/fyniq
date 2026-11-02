@@ -318,7 +318,7 @@ func accessReviewSheet(r AccessReview) sheet.Sheet {
 			sheet.Text(""), sheet.Text("")}})
 	}
 	for _, c := range r.Connectors {
-		s.Rows = append(s.Rows, sheet.Row{Cells: []sheet.Cell{sheet.Text("connector"), sheet.Text(c.Name), sheet.Text(joinNames(c.Scopes)),
+		s.Rows = append(s.Rows, sheet.Row{Cells: []sheet.Cell{sheet.Text("connector"), sheet.Text(c.Name), sheet.Text(joinScopes(c.Scopes)),
 			sheet.Text(""), sheet.Text(""), sheet.Text(c.InstalledAt.Format(time.RFC3339)), sheet.Text(""), sheet.Text(""), sheet.Text(""),
 			sheet.Text(""), sheet.Text(c.Health)}})
 	}
@@ -447,7 +447,8 @@ func registerAccessReview(a *API) {
 	})
 }
 
-func joinNames[T ~string](xs []T) string {
+// joinScopes are a connector's scopes as one cell.
+func joinScopes(xs []ScopeName) string {
 	out := make([]string, len(xs))
 	for i, x := range xs {
 		out[i] = string(x)
