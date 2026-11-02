@@ -213,7 +213,7 @@ fyniq_api       INSERT    organisation_connector (changed_at, changed_by, config
 fyniq_api       SELECT    organisation_connector
 fyniq_api       UPDATE    organisation_connector (changed_at, changed_by, configuration, consent, manifest_hash, manifest_version, position, secret_names, state, test_passed, test_reason, tested_at, version)
 fyniq_api       EXECUTE   organisation_connector_route()
-fyniq_api       INSERT    organisation_connector_secret (connector_id, name, ref, set_at, set_by)
+fyniq_api       INSERT    organisation_connector_secret (connector_id, expires_on, name, ref, set_at, set_by)
 fyniq_api       SELECT    organisation_connector_secret
 fyniq_api       UPDATE    organisation_connector_secret (valid_until)
 fyniq_api       INSERT    organisation_setting (effective_from, key, value, version)

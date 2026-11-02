@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/pgtest"
 	"github.com/cognizhi/fyniq/internal/bankfile"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
@@ -370,7 +371,8 @@ func TestTheAuditChainCheckReadsTheNightlyVerification(t *testing.T) {
 	b := newBooks(t, true)
 	verified := func(status, problem string) {
 		if err := b.worker.Do(ctx, b.org, func(ctx context.Context, u storage.UnitOfWork) error {
-			return u.Audit().Record(ctx, storage.AuditRecord{Action: "audit.verified", ObjectType: "audit_chain", ObjectID: b.org,
+			// The action the nightly job records (audit.VerifyAll): a regression test for C.2 #3 reading another name.
+			return u.Audit().Record(ctx, storage.AuditRecord{Action: audit.ActionVerified, ObjectType: "audit_chain", ObjectID: b.org,
 				Changes: map[string][2]any{"status": {nil, status}, "problem": {nil, problem}}})
 		}); err != nil {
 			t.Fatal(err)

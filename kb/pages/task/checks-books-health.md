@@ -4,7 +4,7 @@ type: task
 title: Read books health and the checks, run them now, mark items reviewed and name a check's owner
 summary: Books health and the check statuses, when checks run, nightly verification, Run now, marking items reviewed, and naming owners
 sources:
-  - docs/user-guide/checks.md sha256:5ee46ab6ae0c053752b1fbeec8554232719f03cf87bebe631f84e7f09f697d63
+  - docs/user-guide/checks.md sha256:918a4740e52edeeeab774ab24df4701e251d786ff1b9f12e5db471bbd90e987f
 data_class: general
 taint: trusted
 status: draft
@@ -102,6 +102,8 @@ aliases:
 - **Closing**: the sub-ledgers against their control accounts, automatic reversals waiting, large variances without an explanation, the close checklist, the revaluation of foreign-currency balances, a closed month changed since its close, and a month still open 15 days after its end; the checks of a month's end wait until it has ended.
 - **Planning**: a runway below 6 months.
 - **Controls**: in Founder mode, a logged action not reviewed by another founder within 14 days; a person whose roles conflict with nothing to cover it; an external person still a member after their roles ended ([[members.remove]]); and an access review not attested 14 days after its quarter ended.
+- **Payments**: a supplier whose bank details were added or changed in the last 30 days with a bill still to pay (confirm the new account on a number already known before paying), and a cash advance open past the claim deadline.
+- **The platform**: a scheduled job (recurring documents, depreciation, the month-end revaluation) that has not run in its time; a statutory pack past its review date or with a later version not activated; an evidence file that no longer matches its fingerprint; the email sent, from the sending domains' records and, over 30 days, 2% hard bounces or 0.1% complaints with 50 or more sent, or any complaint with fewer; and an integration whose last test failed or whose key expires within 14 days ([[settings.integrations]]).
 - The checks of each module still to come, such as payroll, join as that module is built.
 
 (src: docs/user-guide/checks.md#the-checks-so-far)

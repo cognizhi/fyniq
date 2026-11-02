@@ -245,10 +245,24 @@ function ConfigurationForm({ c, entry, busy, onSave }: { c: Connector; entry: Ca
 
 // Secret is one write-only secret: whether it is set and when it was replaced, and a field to set a new value, which
 // goes straight to Secret Manager and is never shown again (FR-INT-20).
-function Secret({ info, state, busy, onSet }: { info: components["schemas"]["ConnectorSecretInfo"]; state?: components["schemas"]["ConnectorSecretState"]; busy: boolean; onSet: (value: string) => Promise<boolean> }) {
+function Secret({
+  info,
+  state,
+  busy,
+  expires,
+  onSet,
+}: {
+  info: components["schemas"]["ConnectorSecretInfo"];
+  state?: components["schemas"]["ConnectorSecretState"];
+  busy: boolean;
+  expires: boolean; // an organisation's connector records when a value expires (C.2 #38, rev 0.166)
+  onSet: (value: string, expiresOn: string) => Promise<boolean>;
+}) {
   const id = useId();
   const [value, setValue] = useState("");
+  const [on, setOn] = useState("");
   const set = helpText("connector.secret");
+  const until = helpText("connector.secret-expires");
   return (
     <div className="fy-field">
       <label className="fy-label" htmlFor={id}>
@@ -256,9 +270,23 @@ function Secret({ info, state, busy, onSet }: { info: components["schemas"]["Con
       </label>
       <span className="fy-row fy-row--wrap gap-2">
         <input className="fy-input fy-mono min-w-0 flex-[1_1_200px]" id={id} type="password" autoComplete="new-password" value={value} aria-describedby={`${id}-help`} onChange={(e) => setValue(e.target.value)} />
+        {expires && (
+          <input
+            className="fy-input max-w-44"
+            id={`${id}-expires`}
+            type="date"
+            value={on}
+            aria-label={`${until.label}: ${info.title}`}
+            title={until.tooltip}
+            onChange={(e) => setOn(e.target.value)}
+          />
+        )}
         <Button
           onClick={async () => {
-            if (await onSet(value)) setValue("");
+            if (await onSet(value, on)) {
+              setValue("");
+              setOn("");
+            }
           }}
           disabled={busy || !value}
           title={set.tooltip}
@@ -270,6 +298,8 @@ function Secret({ info, state, busy, onSet }: { info: components["schemas"]["Con
       </span>
       <span className="fy-help" id={`${id}-help`}>
         {info.description} {state?.set ? `Set ${state.replaced_at ? dateTime(state.replaced_at) : ""}; never shown again.` : "Not set yet."}
+        {state?.expires_on && ` It expires on ${date(state.expires_on)}.`}
+        {expires && " Give the day the provider says a new value expires, if it does: a check warns 14 days before."}
         {info.rotation_overlap_hours > 0 && ` A replaced value stays valid for ${info.rotation_overlap_hours} ${info.rotation_overlap_hours === 1 ? "hour" : "hours"}.`}
       </span>
     </div>
@@ -812,12 +842,12 @@ export function IntegrationDetail() {
         ? api.PUT("/v1/installation/connectors/{connector_id}/configuration", { params, body: { configuration } })
         : api.PUT("/v1/organisation/connectors/{connector_id}/configuration", { params, body: { configuration } });
     });
-  const setSecret = (secret: string, value: string) =>
+  const setSecret = (secret: string, value: string, expiresOn: string) =>
     send("The secret was not set", (etag, key) => {
       const params = { path: { connector_id: id, secret }, header: { "If-Match": etag, "Idempotency-Key": key } };
       return scope === "installation"
         ? api.PUT("/v1/installation/connectors/{connector_id}/secrets/{secret}", { params, body: { value } })
-        : api.PUT("/v1/organisation/connectors/{connector_id}/secrets/{secret}", { params, body: { value } });
+        : api.PUT("/v1/organisation/connectors/{connector_id}/secrets/{secret}", { params, body: { value, ...(expiresOn ? { expires_on: expiresOn } : {}) } });
     });
 
   const kind = entry?.capabilities?.[0]?.kind;
@@ -990,7 +1020,7 @@ export function IntegrationDetail() {
                 <Card title="Secrets" aside={<span className="fy-small fy-secondary">Kept in Secret Manager; never shown again</span>}>
                   {(entry.secrets ?? []).length === 0 && <p className="fy-secondary">This connector needs no secret.</p>}
                   {(entry.secrets ?? []).map((s) => (
-                    <Secret key={s.name} info={s} state={(c.secrets ?? []).find((x) => x.name === s.name)} busy={busy} onSet={(v) => setSecret(s.name, v)} />
+                    <Secret key={s.name} info={s} state={(c.secrets ?? []).find((x) => x.name === s.name)} busy={busy} expires={scope === "organisation"} onSet={(v, on) => setSecret(s.name, v, on)} />
                   ))}
                 </Card>
               </>

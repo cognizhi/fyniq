@@ -179,6 +179,9 @@ type Env struct {
 
 	close      *closeRun
 	statements map[string]financials.Statement
+	// beats are the scheduler's heartbeats by job, nil when the runner reads none; jobs the jobs C.2 #12 watches.
+	beats map[string]time.Time
+	jobs  []WatchedJob
 }
 
 // Event is an audit event as a check reads it.

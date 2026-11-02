@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/checks"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -14,7 +15,13 @@ import (
 // Checks is the checks engine's runner (FR-CTL-01, p1-checks design D5): a check whose run fails is logged here, and its
 // result only says it failed (SEC-15).
 func (k *Kit) Checks(clock ports.Clock) checks.Runner {
-	return checks.Runner{Store: k.Store, Clock: clock, Failed: func(ctx context.Context, org uuid.UUID, key string, err error) {
+	var jobs []checks.WatchedJob
+	for _, s := range outbox.PlatformSchedules {
+		if _, ok := checks.ScheduledJobs[s.Job]; ok {
+			jobs = append(jobs, checks.WatchedJob{Name: s.Job, Stale: s.Stale})
+		}
+	}
+	return checks.Runner{Store: k.Store, Clock: clock, Platform: k.Store, Jobs: jobs, Failed: func(ctx context.Context, org uuid.UUID, key string, err error) {
 		slog.Default().ErrorContext(ctx, "checks.failed", "organisation", org.String(), "check", key, "error", err.Error())
 	}}
 }

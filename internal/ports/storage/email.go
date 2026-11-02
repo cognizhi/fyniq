@@ -66,6 +66,14 @@ type EmailMessages interface {
 	RecordEvent(ctx context.Context, e EmailEvent) (EmailEvent, bool, error)
 	// Events are a message's events, oldest first.
 	Events(ctx context.Context, message uuid.UUID) ([]EmailEvent, error)
+	// Counts are the messages providers took since a time, and how many of them bounced hard or drew a complaint since
+	// (C.2 #37).
+	Counts(ctx context.Context, since time.Time) (EmailCounts, error)
+}
+
+// EmailCounts are the messages taken since a time and those of them that bounced hard or drew a complaint.
+type EmailCounts struct {
+	Sent, HardBounces, Complaints int
 }
 
 // The kinds of event a provider reports about a message it took (FR-INT-21; PRD-001 rev 0.103).

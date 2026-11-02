@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/financials"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
@@ -337,7 +338,7 @@ func balancesMatchLines(ctx context.Context, u storage.UnitOfWork, _ *Env) (Resu
 }
 
 // actionVerified is the audit event of the audit trail's nightly verification (audit.VerifyAll).
-const actionVerified = "audit.verified"
+const actionVerified = audit.ActionVerified
 
 // auditChainIntact reads the latest outcome of the nightly verification of the audit trail (C.2 #3, design D6): it does
 // not verify the chain itself.

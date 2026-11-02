@@ -224,6 +224,8 @@ CHECKS_WITH_MODULES = {
     "p1-ai-providers": "C.2 #55",
     "p1-payment-providers": "C.2 #42|C.2 #50",
     "p1-approval-engine": "C.2 #53",
+    # C.2 #30 needs the evidence rules (FR-DOC-06), which p1-documents-evidence builds (its task 3.1; rev 0.166).
+    "p1-documents-evidence": "C.2 #30",
     "p2-mobile-approvals-automation": "C.2 #52",
 }
 BY_ID.update({i: c for c, ids in CHECKS_WITH_MODULES.items() for i in ids.split("|")})

@@ -52,6 +52,12 @@ export function itemLink(item: CheckItem): { to: string; params?: Record<string,
       return { to: "/settings/members" };
     case "access_review":
       return { to: "/settings/access-review" };
+    case "statutory_pack":
+      return { to: "/settings/statutory-packs" };
+    case "connector":
+      return item.id ? { to: "/settings/integrations/$connector", params: { connector: item.id } } : null;
+    case "connector_secret": // "<connector>/<its secret's name>"
+      return item.id ? { to: "/settings/integrations/$connector", params: { connector: item.id.split("/")[0] ?? item.id } } : null;
     default:
       return null;
   }

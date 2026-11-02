@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { answer, ownerSession } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
-import type { Session } from "../../session";
+import type { Session } from "../../api/client";
 import { AccessReview } from "./AccessReview";
 
 const ann = {

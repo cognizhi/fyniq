@@ -190,6 +190,7 @@ export const actions = [
   { kind: "action", id: "connector.data-classes", mode: "expert", help: "connector.data-classes", guide: "settings.integrations#what-a-connector-sends-out" },
   { kind: "action", id: "connector.configure", mode: "expert", help: "connector.configure", guide: "settings.integrations#configure-it-and-set-its-secrets" },
   { kind: "action", id: "connector.secret", mode: "expert", help: "connector.secret", guide: "settings.integrations#configure-it-and-set-its-secrets" },
+  { kind: "action", id: "connector.secret-expires", mode: "expert", help: "connector.secret-expires", guide: "settings.integrations#configure-it-and-set-its-secrets" },
   { kind: "action", id: "connector.test", mode: "expert", help: "connector.test", guide: "settings.integrations#test-it" },
   { kind: "action", id: "connector.enable", mode: "expert", help: "connector.enable", guide: "settings.integrations#turn-it-on-or-off" },
   { kind: "action", id: "connector.pause", mode: "expert", help: "connector.pause", guide: "settings.integrations#turn-it-on-or-off" },
