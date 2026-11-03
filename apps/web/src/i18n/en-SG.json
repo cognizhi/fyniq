@@ -160,6 +160,22 @@
       "label": "Attach",
       "tooltip": "Attach the agreement the settlement rests on: the loan note or board minute, or the deed of waiver."
     },
+    "director-settlement.acra-step": {
+      "label": "Record the step",
+      "tooltip": "Record a conversion's ACRA step as it happens: the resolution, the approval lodged within 14 days, the AGM date, the return of allotment."
+    },
+    "equity.share-issues": {
+      "label": "Register of share issues",
+      "tooltip": "Every allotment of shares, with its holder, class, number, price, consideration, resolutions and ACRA reference."
+    },
+    "share-issues.record-before-books": {
+      "label": "Record shares issued before the books start",
+      "tooltip": "Record the incorporation subscription and any other shares issued before the books start; no entry posts, as the opening balances hold their share capital."
+    },
+    "director-accounts.share-issues": {
+      "label": "Register of share issues",
+      "tooltip": "Every allotment of shares, the shares issued before the books start and the conversions ACRA registered."
+    },
     "director-settlement.effective": {
       "label": "Record as registered",
       "tooltip": "Record ACRA's lodgement reference and the day its register of members shows the allotment: the conversion posts on that day, never backdated."

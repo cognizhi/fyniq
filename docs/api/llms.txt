@@ -197,6 +197,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/director-settlements` (createDirectorSettlement): Draft a settlement of a founder's balance
 - `GET /v1/director-settlements/{settlement_id}` (getDirectorSettlement): Get a settlement of a founder's balance
 - `PUT /v1/director-settlements/{settlement_id}` (replaceDirectorSettlement): Change a drafted settlement
+- `POST /v1/director-settlements/{settlement_id}/acra-steps` (recordConversionStep): Record an ACRA step of a conversion
 - `POST /v1/director-settlements/{settlement_id}/approval` (requestDirectorSettlementApproval): Ask for approval of a settlement
 - `POST /v1/director-settlements/{settlement_id}/effective` (recordConversionEffective): Record a conversion as registered by ACRA
 - `GET /v1/director-settlements/{settlement_id}/evidence` (listDirectorSettlementEvidence): List a settlement's files

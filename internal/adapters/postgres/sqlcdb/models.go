@@ -577,6 +577,17 @@ type FyniqContactDocumentTemplate struct {
 	SetAt          time.Time
 }
 
+type FyniqConversionStep struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	SettlementID   uuid.UUID
+	Kind           string
+	OnDate         time.Time
+	Reference      *string
+	RecordedBy     uuid.UUID
+	RecordedAt     time.Time
+}
+
 type FyniqCurrencies struct {
 	Code       string
 	MinorUnits int16

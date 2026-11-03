@@ -8148,6 +8148,157 @@ components:
       required:
         - items
       type: object
+    ConversionACRA:
+      additionalProperties: false
+      properties:
+        agm_due_on:
+          description: "The date by which the next AGM must be held, when the approval lapses: as recorded, or worked out from the financial years [verify]."
+          examples:
+            - "2027-06-30"
+          format: date
+          type: string
+        allotment_lodged_on:
+          description: The day the return of allotment was lodged with the conversion agreement (s63, s63B).
+          examples:
+            - "2026-10-20"
+          format: date
+          type: string
+        approval_lodged_on:
+          description: "The day their approval was lodged with ACRA: due within 14 days of the resolution (s161(5), s186)."
+          examples:
+            - "2026-10-12"
+          format: date
+          type: string
+        flags:
+          description: "What the steps raise today: ⏰ due, or ⚠ warning. Empty once effective."
+          items:
+            $ref: "#/components/schemas/ConversionFlag"
+          type: array
+        resolved_on:
+          description: The day the shareholders resolved to issue the shares.
+          examples:
+            - "2026-10-06"
+          format: date
+          type: string
+        steps:
+          description: "Every step recorded, earliest first: a later one of a kind supersedes the earlier."
+          items:
+            $ref: "#/components/schemas/ConversionStep"
+          type: array
+      required:
+        - agm_due_on
+        - steps
+        - flags
+      type: object
+    ConversionFlag:
+      additionalProperties: false
+      properties:
+        code:
+          description: The flag's stable code.
+          examples:
+            - FOUNDER-38
+          type: string
+        due_on:
+          description: The day it is due, or lapses.
+          examples:
+            - "2026-10-20"
+          format: date
+          type: string
+        fix:
+          description: What to do.
+          examples:
+            - Lodge it, attach ACRA's acknowledgement and record the day it was lodged
+          type: string
+        kind:
+          description: "due (⏰): a statutory step is due; warning (⚠): please review."
+          enum:
+            - due
+            - warning
+          examples:
+            - due
+          type: string
+        message:
+          description: What it says.
+          examples:
+            - the shareholders' approval to issue the shares is due to be lodged with ACRA by 20 Oct 2026
+          type: string
+      required:
+        - code
+        - kind
+        - message
+        - fix
+      type: object
+    ConversionStep:
+      additionalProperties: false
+      properties:
+        id:
+          description: The step's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f40
+          format: uuid
+          type: string
+        kind:
+          description: Which step.
+          enum:
+            - resolved
+            - approval_lodged
+            - agm_due
+            - allotment_lodged
+          examples:
+            - approval_lodged
+          type: string
+        "on":
+          description: Its day.
+          examples:
+            - "2026-10-12"
+          format: date
+          type: string
+        recorded_at:
+          description: When it was recorded.
+          examples:
+            - "2026-10-12T09:30:00Z"
+          format: date-time
+          type: string
+        reference:
+          description: ACRA's transaction number, or what it rests on.
+          examples:
+            - T26ACRA00123
+          type: string
+      required:
+        - id
+        - kind
+        - "on"
+        - recorded_at
+      type: object
+    ConversionStepRequest:
+      additionalProperties: false
+      properties:
+        kind:
+          description: Which step.
+          enum:
+            - resolved
+            - approval_lodged
+            - agm_due
+            - allotment_lodged
+          examples:
+            - approval_lodged
+          type: string
+        "on":
+          description: "Its day: no later than today, except the AGM date."
+          examples:
+            - "2026-10-12"
+          format: date
+          type: string
+        reference:
+          description: ACRA's transaction number, or what it rests on.
+          examples:
+            - T26ACRA00123
+          maxLength: 200
+          type: string
+      required:
+        - kind
+        - "on"
+      type: object
     CreditApplication:
       additionalProperties: false
       properties:
@@ -10224,6 +10375,9 @@ components:
           examples:
             - false
           type: boolean
+        acra:
+          $ref: "#/components/schemas/ConversionACRA"
+          description: "An approved conversion: its ACRA steps and what they raise (FR-EQ-09)."
         agreements:
           description: "How many files are attached and not removed: asking for approval needs one, the loan note, minute or deed."
           examples:
@@ -60301,6 +60455,219 @@ paths:
       x-fyniq-permission:
         capability: Director accounts, settlements, share issues (rev 0.3)
         right: A
+  /v1/director-settlements/{settlement_id}/acra-steps:
+    post:
+      description: "Records one ACRA step of an approved conversion not yet effective (FR-EQ-09, design D12): the day the shareholders resolved; the day their approval was lodged with ACRA, due within 14 days of the resolution (s161(5), s186; ⏰ until it is); the date by which the next AGM must be held, when it differs from the one worked out [verify], which is when the approval lapses; or the day the return of allotment was lodged. Attach ACRA's acknowledgement with addDirectorSettlementEvidence. A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up. Side effects: the step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: recordConversionStep
+      parameters:
+        - description: The settlement's ID.
+          in: path
+          name: settlement_id
+          required: true
+          schema:
+            description: The settlement's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa9
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversionStepRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectorSettlement"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectorSettlement"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: Its version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `FOUNDER-35` Not an approved conversion waiting for ACRA; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SHARE-02` A conversion's ACRA steps do not change that way."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-37` The ACRA step does not fit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Record an ACRA step of a conversion
+      tags:
+        - Founders
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - FOUNDER-35
+        - FOUNDER-37
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-SHARE-02
+      x-fyniq-permission:
+        capability: Director accounts, settlements, share issues (rev 0.3)
+        note: The caller must have stepped up in the last 5 minutes.
+        right: A
   /v1/director-settlements/{settlement_id}/approval:
     post:
       description: "Asks another person to approve a drafted settlement at the version read (FR-EQ-05, FR-APR-01), in every team mode. It needs its loan note, minute or deed attached (FOUNDER-30) and must fit what is owed now. The answer is 202 with an approval request, which a person who holds A on \"Director accounts, settlements, share issues\" approves, stepped up: never the one who asked, nor the person settled (APR-15, FM-9; the database's FY253); when every member who could sign is a director with a settlement of their own waiting or decided in the last 30 days, a final step the Accountant signs records their review [accountant to confirm]. The envelope carries the ledger impact (FR-APR-02). On the approval a loan kept is decided with no entry, a repayment becomes payable by the next payment batch, into the person's account in force (repay_to in the diff), and a waiver posts director_settlement@1 on that day: Dr 2500 or 2120 naming the person (waived), Cr the account chosen; a waiver of 2120 is tagged deducted earlier [verify]. The request holds the settlement's version, status, amount and what is owed, so a change voids it. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing."
@@ -60916,7 +61283,7 @@ paths:
         capability: Director accounts, settlements, share issues (rev 0.3)
         right: V
     post:
-      description: "Attaches a file, such as the loan note, board minute or deed of waiver, to a drafted settlement (FR-EQ-05, FR-DOC-05), as multipart/form-data: asking for its approval needs one. The file's type is decided from its content; it is scanned for malware and its image metadata, such as location, is stripped before it is stored (FR-DOC-08). Side effects: the file in the staging store, its evidence row and its audit event with the SHA-256 of the file as received and as stored (FR-DOC-07); once the settlement is decided its files are committed to the retention-locked store (FR-DOC-13). An Owner or the Controller attaches. Needs If-Match with the settlement's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing."
+      description: "Attaches a file, such as the loan note, board minute or deed of waiver, to a drafted settlement (FR-EQ-05, FR-DOC-05), or ACRA's acknowledgement to an approved conversion waiting for ACRA (FR-EQ-09), as multipart/form-data: asking for its approval needs one. The file's type is decided from its content; it is scanned for malware and its image metadata, such as location, is stripped before it is stored (FR-DOC-08). Side effects: the file in the staging store, its evidence row and its audit event with the SHA-256 of the file as received and as stored (FR-DOC-07); once the settlement is decided its files are committed to the retention-locked store (FR-DOC-13). An Owner or the Controller attaches. Needs If-Match with the settlement's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing."
       operationId: addDirectorSettlementEvidence
       parameters:
         - description: The settlement's ID.

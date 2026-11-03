@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { CircleCheck, Clock, ClockAlert, PencilLine, Plus, Send } from "lucide-react";
+import { CircleCheck, Clock, ClockAlert, PencilLine, Plus, Send, TriangleAlert } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -177,6 +177,103 @@ function Impact({ s, codes, name }: { s: Settlement; codes: Map<string, Account>
           </table>
         )}
       </div>
+    </section>
+  );
+}
+
+// The ACRA steps of a conversion (FR-EQ-09), in their order and plain words.
+const stepWords: Record<NonNullable<Settlement["acra"]>["steps"][number]["kind"], string> = {
+  resolved: "Shareholders resolved",
+  approval_lodged: "Approval lodged with ACRA",
+  agm_due: "Next AGM due by",
+  allotment_lodged: "Return of allotment lodged",
+};
+
+// AcraSteps shows an approved conversion's ACRA steps and what they raise (⏰ due, ⚠ warning), and records the next one,
+// with ACRA's acknowledgement attached through the evidence panel (FR-EQ-09; design D12).
+function AcraSteps({ s, onDone, onRead }: { s: Settlement; onDone: (text: string) => void; onRead: () => void }) {
+  const id = useId();
+  const confirm = useConfirm();
+  const [form, setForm] = useState<{ kind: keyof typeof stepWords; on: string; reference: string }>({ kind: "approval_lodged", on: "", reference: "" });
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const acra = s.acra;
+  if (!acra) return null;
+  const record = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setProblem(null);
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/director-settlements/{settlement_id}/acra-steps", {
+        params: { path: { settlement_id: s.id }, header: { "Idempotency-Key": newKey() } },
+        body: { kind: form.kind, on: form.on, ...(form.reference.trim() ? { reference: form.reference.trim() } : {}) },
+      }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    onDone(`Recorded: ${stepWords[form.kind].toLowerCase()} on ${date(form.on)}.`);
+    setForm({ ...form, on: "", reference: "" });
+    onRead();
+  };
+  const latest = (kind: keyof typeof stepWords) => acra.steps.filter((x) => x.kind === kind).at(-1);
+  return (
+    <section className="fy-stack fy-stack--3" aria-labelledby={`${id}-title`}>
+      <h3 className="fy-h3" id={`${id}-title`} title={helpText("director-settlement.acra-step").tooltip}>
+        ACRA steps
+      </h3>
+      {acra.flags.map((f) => (
+        <p key={f.code} className="fy-row fy-row--wrap gap-2">
+          <span className={f.kind === "due" ? "fy-chip fy-chip--serious" : "fy-chip fy-chip--warning"}>
+            <Icon of={f.kind === "due" ? ClockAlert : TriangleAlert} />
+            {f.kind === "due" ? "Due" : "Review"}
+          </span>
+          <span className="fy-small fy-wrap">
+            {f.message[0]?.toUpperCase() + f.message.slice(1)}. {f.fix}.
+          </span>
+        </p>
+      ))}
+      <dl className="fy-dl">
+        {(Object.keys(stepWords) as (keyof typeof stepWords)[]).map((k) => {
+          const x = latest(k);
+          const shown = k === "agm_due" ? acra.agm_due_on : x?.on;
+          return (
+            <div key={k}>
+              <dt>{stepWords[k]}</dt>
+              <dd>{shown ? `${date(shown)}${x?.reference ? ` · ${x.reference}` : ""}` : "Not yet"}</dd>
+            </div>
+          );
+        })}
+      </dl>
+      {problem && <Refusal problem={problem} title="The step was not recorded" />}
+      <form className="fy-form fy-form--2" onSubmit={(e) => void record(e)} noValidate>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-kind`}>
+            Step
+          </label>
+          <select className="fy-input" id={`${id}-kind`} value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value as keyof typeof stepWords })}>
+            {(Object.keys(stepWords) as (keyof typeof stepWords)[]).map((k) => (
+              <option key={k} value={k}>
+                {stepWords[k]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-on`}>
+            On
+          </label>
+          <input className="fy-input" type="date" id={`${id}-on`} value={form.on} onChange={(e) => setForm({ ...form, on: e.target.value })} />
+        </div>
+        <div className="fy-field fy-span-2">
+          <label className="fy-label" htmlFor={`${id}-ref`}>
+            ACRA reference (optional)
+          </label>
+          <input className="fy-input" id={`${id}-ref`} maxLength={200} value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} />
+        </div>
+        <Button variant="secondary" type="submit" disabled={busy || !form.on}>
+          {busy ? "Recording…" : "Record the step"}
+        </Button>
+      </form>
     </section>
   );
 }
@@ -705,7 +802,10 @@ export function DirectorSettlement() {
                 )}
                 {open.s.status === "decided" && open.s.route !== "convert" && <p className="fy-small">Decided as {open.s.number}.</p>}
                 {open.s.status === "decided" && open.s.route === "convert" && mayDraft && (
-                  <EffectiveForm s={open.s} etag={open.etag} name={name} onDone={(text) => setStatus({ text })} onRead={() => void read(open.s.id)} />
+                  <>
+                    <AcraSteps s={open.s} onDone={(text) => setStatus({ text })} onRead={() => void read(open.s.id)} />
+                    <EffectiveForm s={open.s} etag={open.etag} name={name} onDone={(text) => setStatus({ text })} onRead={() => void read(open.s.id)} />
+                  </>
                 )}
                 {open.s.status === "effective" && open.s.share_issue && (
                   <p className="fy-small">

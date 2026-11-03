@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings and recommended values: features, terms, GST, tolerances, banking, claims, mileage, thresholds, asset disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:cb241a84e299896f9bced191896355bee18827b14322f388d715df6b693f85b6
+  - docs/user-guide/organisation-settings.md sha256:d755185d56dce817cada7d3fb8fdb699e4d30467d4a60656518e9bad6d97f5d1
 data_class: general
 taint: trusted
 status: draft
@@ -214,6 +214,9 @@ aliases:
 - **Default route:** recommended *keep*, an interest-free loan repayable on demand until the first
   priced round. **Default price basis** to convert: recommended *latest priced round*, or
   *valuation* when there is none. Each change needs a second approver.
+  (src: docs/user-guide/organisation-settings.md#founders-money)
+- **Flag a conversion not registered by ACRA after:** recommended 14 days, matching ACRA's guidance
+  for a return of allotment; no second approver.
   (src: docs/user-guide/organisation-settings.md#founders-money)
 
 ## Data region and retention

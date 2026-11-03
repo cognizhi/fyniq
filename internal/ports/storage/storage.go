@@ -115,6 +115,7 @@ type UnitOfWork interface {
 	PayeeBankAccounts() PayeeBankAccounts
 	PaymentBatches() PaymentBatches
 	ShareIssues() ShareIssues
+	ConversionSteps() ConversionSteps
 	// ReportExports are the exports that run in the background (FR-RPT-09).
 	ReportExports() ReportExports
 	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).
@@ -721,6 +722,9 @@ const (
 	// CodeShareIssue: the register of share issues is append-only, its classes share capital and its holders directors
 	// or shareholders, and share capital moves only with it (FR-EQ-08, INV-13).
 	CodeShareIssue = "STORAGE-SHARE-01"
+	// CodeConversionStep: a conversion's ACRA steps are recorded between its approval and its effective date, and never
+	// changed (FR-EQ-09).
+	CodeConversionStep = "STORAGE-SHARE-02"
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
 	CodeBanner         = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends

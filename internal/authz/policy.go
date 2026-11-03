@@ -666,6 +666,8 @@ var (
 	ReplaceDirectorSettlement         = Policy{Operation: "replaceDirectorSettlement", Capability: DirectorAccounts, Need: Approve}
 	RequestDirectorSettlementApproval = Policy{Operation: "requestDirectorSettlementApproval", Capability: DirectorAccounts, Need: Approve,
 		Note: "Another person approves it, never the person settled; the Accountant too when every available approver benefits."}
+	RecordConversionStep = Policy{Operation: "recordConversionStep", Capability: DirectorAccounts, Need: Approve,
+		Note: "The caller must have stepped up in the last 5 minutes."}
 	RecordConversionEffective = Policy{Operation: "recordConversionEffective", Capability: DirectorAccounts, Need: Approve,
 		Note: "The caller must have stepped up in the last 5 minutes, and is never the person converting."}
 	AddDirectorSettlementEvidence    = Policy{Operation: "addDirectorSettlementEvidence", Capability: DirectorAccounts, Need: Approve}
@@ -1182,7 +1184,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListExemptStatuses, GetExemptStatus, CreateExemptStatus, ReplaceExemptStatus, RecordExemptStatus,
 	AddExemptStatusEvidence, ListExemptStatusEvidence, GetExemptStatusEvidence, RemoveExemptStatusEvidence,
 	ConfirmMyDirectorAccount,
-	ListDirectorSettlements, GetDirectorSettlement, CreateDirectorSettlement, ReplaceDirectorSettlement, RequestDirectorSettlementApproval, RecordConversionEffective,
+	ListDirectorSettlements, GetDirectorSettlement, CreateDirectorSettlement, ReplaceDirectorSettlement, RequestDirectorSettlementApproval, RecordConversionEffective, RecordConversionStep,
 	AddDirectorSettlementEvidence, ListDirectorSettlementEvidence, GetDirectorSettlementEvidence, RemoveDirectorSettlementEvidence,
 	GetDirectorRepayment, RequestDirectorRepaymentVoid, ListShareIssues, RecordShareIssueBeforeBooks,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,

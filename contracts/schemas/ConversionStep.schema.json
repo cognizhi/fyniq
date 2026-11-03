@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The step's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "Which step.",
+      "enum": [
+        "resolved",
+        "approval_lodged",
+        "agm_due",
+        "allotment_lodged"
+      ],
+      "examples": [
+        "approval_lodged"
+      ],
+      "type": "string"
+    },
+    "on": {
+      "description": "Its day.",
+      "examples": [
+        "2026-10-12"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2026-10-12T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "reference": {
+      "description": "ACRA's transaction number, or what it rests on.",
+      "examples": [
+        "T26ACRA00123"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "on",
+    "recorded_at"
+  ],
+  "title": "ConversionStep",
+  "type": "object"
+}
