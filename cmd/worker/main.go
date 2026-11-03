@@ -51,7 +51,7 @@ func main() {
 		// FR-INT-21: send queued mail once, through the email connectors enabled when each send starts, or the deployment's
 		// providers until the first-start bootstrap has installed them (rev 0.139); none enabled: the message waits.
 		kinds[remitmail.Kind] = kit.Remittances(deps.Clock).Work() // FR-BNK-12: a batch's supplier payment matched, its remittance advice sent
-		kinds[reportexport.Kind] = kit.Exports(deps.Clock).Work() // FR-RPT-09: an accountant export prepared in the background
+		kinds[reportexport.Kind] = kit.Exports(deps.Clock).Work()  // FR-RPT-09: an accountant export prepared in the background
 		kinds[email.Kind] = email.WorkFrom(kit.EmailProviders(kit.Runtime(deps.Clock)), kit.Store, kit.Mail.From, deps.Clock, files)
 		if kit.Staging != nil && kit.Scanner != nil { // FR-INT-22: fetch, decide and keep received mail
 			fetcher := kit.Fetcher(deps.Clock)
@@ -62,6 +62,9 @@ func main() {
 		kinds[bankfeed.Kind] = kit.BankFeeds(deps.Clock).Work()  // FR-BNK-15: an early sync a bank's verified webhook asked for
 		kinds[notify.FanoutKind] = kit.Fanout(deps.Clock).Work() // FR-NTF-05: one event, every person it concerns
 		kinds[notify.RelayKind] = kit.Relays(deps.Clock).Work()  // FR-ADM-07: the installation's notices, in each Super admin's organisation
+		for kind, work := range kit.CheckKinds(deps.Clock) {     // FR-CTL-01: the checks after a change, and Run now
+			kinds[kind] = work
+		}
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassWorker, Store: kit.Store, Tokens: kit.Tokens,
 			Clock: deps.Clock, Holder: app.Holder("worker"), Kinds: kinds, Dead: kit.JobDead(deps.Clock)})
 		s.Handle("POST /jobs", &outbox.JobsHandler{Tokens: kit.Tokens, Platform: kit.Store, Clock: deps.Clock,

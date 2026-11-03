@@ -41,6 +41,22 @@ Source: PRD-001 §8.21 · Priority M · Phase P1
 - **AND** withdrawing grants nothing, so it stays open to the Owner and the Administrator after the bootstrap
 - **AND** the organisation always keeps an Owner
 
+#### Scenario: A member is removed from the organisation
+- **WHEN** a member is removed, by the Owner alone during the bootstrap or on another Owner's approval after it (rev 0.165)
+- **THEN** each of their roles ends, expired ones included, then the membership, audited, and their OAuth tokens are revoked
+- **AND** their next request no longer reaches the organisation
+- **AND** the last Owner is never removed, and the database refuses a role for a removed member (FY248)
+
+#### Scenario: A removed person joins again
+- **GIVEN** a person was removed from the organisation
+- **WHEN** they accept a new invitation (rev 0.165)
+- **THEN** they are a member again on the same membership, with the new invitation's roles
+
+#### Scenario: An external user is given a new end date
+- **GIVEN** an external user's role ended at its end date and was never ended by hand
+- **WHEN** the role is given again with a new end date (rev 0.165)
+- **THEN** the expired assignment ends first, and the role is given again
+
 ### Requirement: FR-ADM-02 Authentication with mandatory MFA
 The system SHALL make MFA (TOTP or passkey) mandatory for every user, use passkeys (WebAuthn) for step-up and approvals, allow Google sign-in with MFA, and offer SSO (SAML/OIDC) and SCIM in Enterprise mode.
 

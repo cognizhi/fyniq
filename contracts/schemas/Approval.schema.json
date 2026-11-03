@@ -119,6 +119,7 @@
         "organisation_setting.change",
         "role.assign",
         "role.revoke",
+        "member.remove",
         "member_invitation.create",
         "approval_policy.change",
         "statutory_pack.activate",

@@ -51,7 +51,7 @@ FROM fyniq.organisation_connector c
 ORDER BY c.position, c.installed_at, c.id;
 
 -- name: OrganisationConnectorSecrets :many
-SELECT s.id, s.connector_id, s.name, s.ref, s.set_by, s.set_at, s.valid_until, s.destroyed_at
+SELECT s.id, s.connector_id, s.name, s.ref, s.set_by, s.set_at, s.valid_until, s.destroyed_at, s.expires_on
 FROM fyniq.organisation_connector_secret s
 ORDER BY s.connector_id, s.name, s.set_at, s.id;
 
@@ -75,8 +75,8 @@ UPDATE fyniq.organisation_connector_secret SET valid_until = sqlc.arg(valid_unti
 WHERE connector_id = sqlc.arg(connector_id) AND name = sqlc.arg(name) AND valid_until IS NULL AND destroyed_at IS NULL;
 
 -- name: InsertOrganisationConnectorSecret :exec
-INSERT INTO fyniq.organisation_connector_secret (connector_id, name, ref, set_by, set_at)
-VALUES (sqlc.arg(connector_id), sqlc.arg(name), sqlc.arg(ref), sqlc.arg(by), sqlc.arg(at));
+INSERT INTO fyniq.organisation_connector_secret (connector_id, name, ref, set_by, set_at, expires_on)
+VALUES (sqlc.arg(connector_id), sqlc.arg(name), sqlc.arg(ref), sqlc.arg(by), sqlc.arg(at), sqlc.narg(expires_on));
 
 -- name: DestroyedOrganisationConnectorSecret :execrows
 UPDATE fyniq.organisation_connector_secret s SET destroyed_at = sqlc.arg(at)

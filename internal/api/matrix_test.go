@@ -267,6 +267,9 @@ func matrixInvoiceEvidence(e *env) (invoiceID, evidenceID string) {
 // matrixKPIMonth numbers the months the matrix enters KPI counts for, one each.
 var matrixKPIMonth int
 
+// matrixReviewable says the checks of an environment found something to review.
+var matrixReviewable = map[*env]bool{}
+
 var matrixCalls = map[string]matrixCall{
 	"addInvoiceEvidence": func(e *env, tok string) (response, func() bool) {
 		id, _ := e.createInvoice("1", "10.00")
@@ -813,6 +816,47 @@ var matrixCalls = map[string]matrixCall{
 		}
 		return r, func() bool { return held }
 	},
+	// The matrix's organisation has one member, its last Owner, so the row asks, as a preview, to remove Ada from the
+	// organisation in Standard mode, as Bo, stepped up: an allowed role is answered with the request it would make.
+	"removeMember": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		var ada, bo string
+		for _, x := range s.call(http.MethodGet, "/v1/members", s.as(authz.Administrator), nil).Body["items"].([]any) {
+			switch m := x.(map[string]any); m["display_name"] {
+			case "Ada":
+				ada = m["id"].(string)
+			case "Bo":
+				bo = m["user_id"].(string)
+			}
+		}
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org && p.Class == authn.ClassUser {
+			p.Organisation, p.UserID, p.StepUpAt = s.books.Org, uuid.MustParse(bo), s.clock.Now()
+			tok = s.principal(p)
+		}
+		r := s.call(http.MethodDelete, "/v1/members/"+ada, tok, nil, "Prefer", "return=preview")
+		return r, func() bool {
+			return strings.Contains(s.call(http.MethodGet, "/v1/members", s.as(authz.Administrator), nil).Raw, ada)
+		}
+	},
+	"getAccessReview": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/access-review", tok, nil), nil
+	},
+	"exportAccessReview": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/access-review/export", tok, nil), nil
+	},
+	// A preview in January 2100, when a quarter is due whatever day the test runs (memberships carry the database's own
+	// time); the clock goes back after. access_review_test.go attests for real.
+	"attestAccessReview": func(e *env, tok string) (response, func() bool) {
+		was := e.clock.Now()
+		defer e.clock.Set(was)
+		e.clock.Set(time.Date(2100, 1, 5, 9, 0, 0, 0, time.UTC))
+		etag := e.call(http.MethodGet, "/v1/access-review", e.as(authz.Administrator), nil).Header.Get("ETag")
+		return e.call(http.MethodPost, "/v1/access-review/attestations", steppedUp(e, tok), map[string]any{"quarter": "2099-10-01"},
+			"If-Match", etag, "Prefer", "return=preview"), nil
+	},
 	// Each approval's own policy decides what a person sees and signs (rev 0.36), so the matrix asks for a request
 	// that does not exist: allowed means the API looked past the operation's policy (404, or step-up for a signature);
 	// approvals_test.go signs real ones.
@@ -1298,6 +1342,35 @@ var matrixCalls = map[string]matrixCall{
 			l := e.call(http.MethodGet, "/v1/kpi-inputs?from="+month+"&to="+month, e.as(authz.Accountant), nil)
 			return !strings.Contains(l.Raw, `"month":"`+month+`"`)
 		}
+	},
+	"listChecks": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/checks", tok, nil), nil
+	},
+	"getCheck": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/checks/books.debits-equal-credits", tok, nil), nil
+	},
+	// Run now joins the one still waiting: no worker runs here, so every allowed call after the first joins it.
+	"runChecks": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/checks/runs", tok, nil), nil
+	},
+	// A month whose accounts sit in no section of the balance sheet (C.1 #5, ⚠): the test books' bank has no cash-flow line.
+	"reviewCheckItem": func(e *env, tok string) (response, func() bool) {
+		if !matrixReviewable[e] {
+			e.postedJournal("100.00")
+			e.runCatalogue()
+			matrixReviewable[e] = true
+		}
+		return e.call(http.MethodPost, "/v1/checks/books.balance-sheet-includes-every-account/reviews", tok,
+			map[string]any{"kind": "period", "id": e.books.Oct.ID.String(), "note": "Seen"}), nil
+	},
+	"setCheckOwner": func(e *env, tok string) (response, func() bool) {
+		version := func() string {
+			r := e.call(http.MethodGet, "/v1/checks/setup.system-accounts-exist", e.as(authz.Controller), nil)
+			return fmt.Sprint(r.Body["owner"].(map[string]any)["version"])
+		}
+		before := version()
+		r := e.call(http.MethodPut, "/v1/checks/setup.system-accounts-exist/owner", tok, map[string]any{"person_user_id": nil}, "If-Match", `"`+before+`"`)
+		return r, func() bool { return version() == before }
 	},
 	"getTopExpenses": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/top-expenses?from=2026-10&to=2026-11", tok, nil), nil

@@ -71,6 +71,9 @@ type Outbox interface {
 	// ByKey is the row of a kind written with a business key, nil when there is none: what a job keyed once checks before
 	// it is written, so asking again in a later unit of work does nothing.
 	ByKey(ctx context.Context, kind, key string) (*OutboxRow, error)
+	// Waiting says whether a row of a kind is waiting to run: pending or dispatched, not yet running. Work that a burst
+	// of changes would ask for many times is asked for once while a row waits (the checks' refresh, FR-CTL-01).
+	Waiting(ctx context.Context, kind string) (bool, error)
 	// MarkDispatched records the task a row was sent as, and when it is overdue.
 	MarkDispatched(ctx context.Context, id uuid.UUID, taskName string, deadline time.Time) error
 	// Lease gives the row to holder until until, counting an attempt. ok is false when the row is

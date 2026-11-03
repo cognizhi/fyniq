@@ -374,6 +374,31 @@ func (r members) Revoke(ctx context.Context, assignmentID uuid.UUID) error {
 		"membership_id": {row.MembershipID, row.MembershipID}, "role": {row.Role, nil}})
 }
 
+func (r members) Remove(ctx context.Context, membershipID uuid.UUID, version int) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	ids, err := r.u.q.UnrevokedRoleAssignments(ctx, membershipID)
+	if err != nil {
+		return mapError(err)
+	}
+	for _, id := range ids {
+		if err := r.Revoke(ctx, id); err != nil {
+			return err
+		}
+	}
+	row, err := r.u.q.RemoveMembership(ctx, sqlcdb.RemoveMembershipParams{ID: membershipID, Version: small(version)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return &storage.Error{Code: storage.CodeVersion, Message: "the membership changed since it was read, or was removed already"}
+	}
+	if err != nil {
+		return mapError(err)
+	}
+	v := int(row.Version)
+	return r.u.event(ctx, "user_membership.removed", "user_membership", row.ID, &v, map[string][2]any{
+		"user_id": {row.UserID, row.UserID}, "status": {"active", row.Status}})
+}
+
 func (r members) Roles(ctx context.Context, userID uuid.UUID, now time.Time) ([]storage.RoleAssignment, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err

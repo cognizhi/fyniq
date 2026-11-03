@@ -198,7 +198,7 @@ BY_ID.update({
     "FR-ADM-08": "p1-users-roles", "AI-15": "p1-mcp-first-party", "FR-INT-02": "p1-public-api",
     "RND-RATE": "p1-multi-currency-fx", "RND-GST-EXCL": "p1-statutory-packs", "RND-GST-INCL": "p1-statutory-packs",
     "RND-CPF": "p1-nemura-payroll", "RND-CPF-GRAD": "p1-nemura-payroll", "RND-SDL": "p1-nemura-payroll",
-    "RND-SHARE": "p1-equity-register", "RND-MILEAGE": "p1-expense-claims", "RND-DISPLAY": "p1-app-shell",
+    "RND-SHARE": "p1-founders-money", "RND-MILEAGE": "p1-expense-claims", "RND-DISPLAY": "p1-app-shell",
     "RND-PERCENT": "p1-general-ledger-close", "RND-KPI": "p1-dashboard-kpis",
     "INV-07": "p1-checks", "INV-10": "p1-reports", "INV-11": "p1-reports", "ENG-45": "p1-statutory-packs",
     "ENG-40": "p1-multi-currency-fx", "ENG-41": "p1-multi-currency-fx", "ENG-42": "p1-multi-currency-fx",
@@ -212,11 +212,11 @@ BY_ID.update({
 # The checks of Appendix C are built with the module each guards, on the checks engine of p1-checks (the owner's
 # decision of 29 Oct 2026, PRD-001 rev 0.162): those of modules after p1-checks sit with those modules' changes.
 CHECKS_WITH_MODULES = {
-    "p1-payroll-link": "C.1 #19|C.1 #20|C.1 #21|C.2 #14|C.2 #44|C.2 #45",
+    "p1-payroll-link": "C.1 #19|C.1 #20|C.1 #21|C.2 #14|C.2 #24|C.2 #44|C.2 #45",
     "p1-projects": "C.1 #26|C.1 #27|C.2 #40|C.2 #41",
     "p1-planning": "C.1 #35",
     "p1-gst": "C.1 #37|C.2 #13|C.2 #15|C.2 #46|C.2 #47",
-    "p1-founders-money": "C.2 #21|C.2 #22|C.2 #23|C.2 #24|C.2 #25",
+    "p1-founders-money": "C.2 #21|C.2 #22|C.2 #23|C.2 #25",
     "p1-equity-register": "C.2 #26|C.2 #27|C.2 #28|C.2 #29",
     "p1-company-secretary": "C.2 #32|C.2 #33|C.2 #34|C.2 #35|C.2 #54",
     "p1-ai-proposals": "C.2 #19",
@@ -224,6 +224,8 @@ CHECKS_WITH_MODULES = {
     "p1-ai-providers": "C.2 #55",
     "p1-payment-providers": "C.2 #42|C.2 #50",
     "p1-approval-engine": "C.2 #53",
+    # C.2 #30 needs the evidence rules (FR-DOC-06), which p1-documents-evidence builds (its task 3.1; rev 0.166).
+    "p1-documents-evidence": "C.2 #30",
     "p2-mobile-approvals-automation": "C.2 #52",
 }
 BY_ID.update({i: c for c, ids in CHECKS_WITH_MODULES.items() for i in ids.split("|")})

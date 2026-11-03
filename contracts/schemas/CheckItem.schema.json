@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "description": "What is wrong with it.",
+      "examples": [
+        "6900 Clearing: give each a cash-flow line of the standard chart in the chart of accounts"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "Its ID, where it has one.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "What it is, which decides where it opens: period, account, opening_balances, role, audit_chain, and the documents later checks name.",
+      "examples": [
+        "period"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "Its name.",
+      "examples": [
+        "October 2026"
+      ],
+      "type": "string"
+    },
+    "severity": {
+      "description": "The item's own severity, for a check that finds both: error (✖, it cannot post) or warning (⚠, to review); left out for the check's own.",
+      "enum": [
+        "error",
+        "warning"
+      ],
+      "examples": [
+        "warning"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The item's version as a review names it: a review holds until the item changes.",
+      "examples": [
+        "3"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "label"
+  ],
+  "title": "CheckItem",
+  "type": "object"
+}

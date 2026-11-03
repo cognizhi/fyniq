@@ -11,21 +11,26 @@ import { month as monthName } from "../format/date";
 import { useSignedIn } from "../session";
 import { Icon } from "../ui";
 import { listPeriods } from "./accounting/data";
+import { readChecks, scores, statuses, type Checks } from "./checks/data";
 import { About, figureOf, figureText, find, lastMonths, previous, Tile, useKpis, type KPI, type KPIs } from "./reports/kpi";
 import { runOf } from "./reports/Statement";
 
 type Statement = components["schemas"]["FinancialStatement"];
+type Health = Checks["health"];
 
 // Dashboard is Home's view of the money (docs/design/screens Home; FR-KPI-01, design D5 of p1-dashboard-kpis): the
-// pulse card with cash, runway and net burn; the tiles, Basic's two (owed to us, we owe) and Expert's revenue, gross
-// margin and net profit for the year; and in Expert the charts of revenue, costs and profit, cash, and costs by function.
-// Every figure is the server's (FR-UX-22), each tile has its definition and opens what is behind it (FR-UX-04). It is
-// left out when the person's roles may not read the reports, or the books have no month yet (the set-up checklist
-// says what to do). Revenue and cost against budget, books health, unbilled time and GST due join with their changes.
+// pulse card with cash, runway and books health (FR-CTL-02; p1-checks design D9), or net burn for someone who may not
+// read the checks; the tiles, Basic's (owed to us, we owe, and net burn once books health took its place) and Expert's
+// revenue, gross margin and net profit for the year; and in Expert the charts of revenue, costs and profit, cash, and
+// costs by function. Every figure is the server's (FR-UX-22), each tile has its definition and opens what is behind it
+// (FR-UX-04). It is left out when the person's roles may not read the reports, or the books have no month yet (the
+// set-up checklist says what to do). Revenue and cost against budget, unbilled time and GST due join with their changes.
 export function Dashboard() {
   const periods = useQuery({ queryKey: ["periods"], queryFn: listPeriods, retry: false, staleTime: 30_000 });
   const month = useMemo(() => runOf("month", periods.data?.items ?? [], { from: "", to: "" })?.to ?? null, [periods.data]);
   const kpis = useKpis(month);
+  const checks = useQuery({ queryKey: ["checks"], queryFn: readChecks, retry: false, staleTime: 30_000 });
+  const health = checks.data?.health ?? null;
   if (month === null || kpis.isError) return null;
   if (!kpis.data) return <div className="fy-skeleton h-40" aria-hidden="true" />;
   const k = kpis.data;
@@ -35,13 +40,14 @@ export function Dashboard() {
   };
   return (
     <>
-      <Pulse kpis={k} />
+      <Pulse kpis={k} health={health} />
       <div className="fy-grid fy-grid--3">
         {tile("revenue", "/reports/statements/pl", "fy-expert-only")}
         {tile("gross_margin", "/reports/statements/pl", "fy-expert-only")}
         {tile("net_profit_ytd", "/reports/statements/pl", "fy-expert-only")}
         {tile("owed_to_us", "/sales/statements")}
         {tile("owed_by_us", "/purchases/bills")}
+        {health && tile("net_burn", "/reports/statements/cf")}
         <Link className="fy-tile text-foreground" to="/reports/kpis">
           <span className="fy-tile__label">
             <Icon of={Gauge} />
@@ -60,8 +66,9 @@ export function Dashboard() {
 }
 
 // Pulse is the pulse card (MASTER.md: the only place besides the AI panel's header with the gradient band): cash at the
-// month end, the runway or "Not burning", and the month's net burn.
-function Pulse({ kpis }: { kpis: KPIs }) {
+// month end, the runway or "Not burning", and books health with its counts by severity; the month's net burn instead
+// when the person may not read the checks.
+function Pulse({ kpis, health }: { kpis: KPIs; health: Health | null }) {
   const cell = (key: string, label: string, to: string, meta: (k: KPI) => string) => {
     const k = find(kpis, key);
     if (!k) return null;
@@ -93,11 +100,46 @@ function Pulse({ kpis }: { kpis: KPIs }) {
       <div className="fy-pulse__body">
         {cell("cash", "Cash in the bank", "/reports/statements/bs", () => `At the end of ${at}, in the money accounts`)}
         {cell("runway", "Runway", "/reports/statements/cf", (k) => (k.month.words ? "The last three months brought in more cash than they used" : "At the average net burn of the last three months"))}
-        {cell("net_burn", "Net burn", "/reports/statements/cf", (k) =>
-          k.before ? `${monthName(previous(kpis.month))}: ${figureText(k, k.before, kpis.currency)}` : `The cash ${at}'s operations and investments used`,
+        {health ? (
+          <BooksHealth health={health} />
+        ) : (
+          cell("net_burn", "Net burn", "/reports/statements/cf", (k) =>
+            k.before ? `${monthName(previous(kpis.month))}: ${figureText(k, k.before, kpis.currency)}` : `The cash ${at}'s operations and investments used`,
+          )
         )}
       </div>
     </section>
+  );
+}
+
+// BooksHealth is the pulse card's books health (FR-CTL-02): the score, opening the checks, and the count of each severity
+// found, with the checks not assessed beside it. It shows in Basic and Expert alike: safety is never hidden (§7.8).
+function BooksHealth({ health: h }: { health: Health }) {
+  const score = scores[h.score];
+  const chip = (status: keyof typeof statuses, n: number, words: string) => {
+    if (n === 0) return null;
+    const s = statuses[status];
+    return (
+      <span className={`fy-chip ${s.tone}`}>
+        <Icon of={s.icon} />
+        {n} {words}
+      </span>
+    );
+  };
+  return (
+    <div className="fy-stack fy-stack--2" data-health={h.score}>
+      <div className="fy-tile__label">Books health</div>
+      <Link className="fy-pulse__figure text-foreground" to="/checks">
+        {score.label}
+      </Link>
+      <div className="fy-tile__meta fy-row fy-row--wrap gap-1">
+        {chip("error", h.problems, "blocking the close")}
+        {chip("warning", h.warnings, "to review")}
+        {chip("due", h.due, "due")}
+        {h.problems + h.warnings + h.due === 0 && <span>Every check that ran is OK</span>}
+        {chip("not_assessed", h.not_assessed, "not assessed")}
+      </div>
+    </div>
   );
 }
 

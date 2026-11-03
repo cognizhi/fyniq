@@ -40,6 +40,11 @@ func TestConventionExemptions(t *testing.T) {
 	for _, op := range []string{"revealMyBankAccount", "revealClaimantBankAccount"} {
 		want = append(want, op+" Idempotency-Key", op+" Prefer", op+" If-Match")
 	}
+	// The checks are read whole, books health worked out from all of them; one check's items are its findings, not a list
+	// (FR-CTL-01, FR-CTL-02).
+	want = append(want, "listChecks cursor", "getCheck cursor")
+	// A review names the item's version itself and changes nothing of the check (rev 0.164).
+	want = append(want, "reviewCheckItem If-Match")
 	slices.Sort(want)
 	var got []string
 	for _, op := range operations(testAPI(t)) {

@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, ChartColumn, Contact, House, Inbox, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, ChartColumn, ClipboardCheck, Contact, House, Inbox, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -119,6 +119,8 @@ export const routes = [
   { kind: "route", id: "reports", path: "/reports", mode: "basic", signedIn: true, help: "reports.index", guide: "reports.statements" },
   { kind: "route", id: "financial-statement", path: "/reports/statements/$kind", mode: "basic", signedIn: true, help: "reports.statement", guide: "reports.statements" },
   { kind: "route", id: "kpis", path: "/reports/kpis", mode: "basic", signedIn: true, help: "reports.kpis", guide: "reports.kpis" },
+  // Books health and checks (FR-CTL-01, FR-CTL-02, FR-CTL-05; p1-checks task 1.7): Basic; the statuses show in both modes.
+  { kind: "route", id: "checks", path: "/checks", mode: "basic", signedIn: true, help: "checks.overview", guide: "checks.overview" },
   { kind: "route", id: "management-report", path: "/reports/management/$report", mode: "expert", signedIn: true, help: "reports.management", guide: "reports.management" },
   { kind: "route", id: "general-ledger", path: "/reports/general-ledger", mode: "expert", signedIn: true, help: "reports.general-ledger", guide: "reports.general-ledger" },
   { kind: "route", id: "chart-of-accounts", path: "/accounting/chart-of-accounts", mode: "expert", signedIn: true, help: "accounting.chart", guide: "accounting.chart" },
@@ -131,6 +133,7 @@ export const routes = [
   { kind: "route", id: "settings-accounting", path: "/settings/accounting", mode: "expert", signedIn: true, help: "settings.accounting", guide: "settings.accounting" },
   { kind: "route", id: "settings-statutory-packs", path: "/settings/statutory-packs", mode: "expert", signedIn: true, help: "settings.statutory-packs", guide: "settings.statutory-packs" },
   { kind: "route", id: "settings-members", path: "/settings/members", mode: "expert", signedIn: true, help: "settings.members", guide: "settings.members" },
+  { kind: "route", id: "settings-access-review", path: "/settings/access-review", mode: "expert", signedIn: true, help: "settings.access-review", guide: "settings.access-review" },
   { kind: "route", id: "settings-team-mode", path: "/settings/team-mode", mode: "expert", signedIn: true, help: "settings.team-mode", guide: "settings.team-mode" },
   { kind: "route", id: "settings-approval-policies", path: "/settings/approval-policies", mode: "expert", signedIn: true, help: "settings.approval-policies", guide: "approvals.policies" },
   { kind: "route", id: "settings-expense-policy", path: "/settings/expense-policy", mode: "expert", signedIn: true, help: "settings.expense-policy", guide: "claims.approve-team#set-the-expense-policy" },
@@ -160,6 +163,9 @@ export const actions = [
   { kind: "action", id: "member.add-role", mode: "expert", help: "member.add-role", guide: "settings.members#change-someones-roles" },
   { kind: "action", id: "member.end-role", mode: "expert", help: "member.end-role", guide: "settings.members#change-someones-roles" },
   { kind: "action", id: "member.withdraw-invitation", mode: "expert", help: "member.withdraw-invitation", guide: "settings.members#invite-someone" },
+  { kind: "action", id: "member.remove", mode: "expert", help: "member.remove", guide: "settings.members#remove-someone" },
+  { kind: "action", id: "access-review.attest", mode: "expert", help: "access-review.attest", guide: "settings.access-review#attest-the-quarter" },
+  { kind: "action", id: "access-review.export", mode: "expert", help: "access-review.export", guide: "settings.access-review#download-it" },
   { kind: "action", id: "team-mode.switch", mode: "expert", help: "team-mode.switch", guide: "settings.team-mode#switch-the-team-mode" },
   { kind: "action", id: "approval-policy.change", mode: "expert", help: "approval-policy.change", guide: "approvals.policies#change-a-policy" },
   { kind: "action", id: "setting.change", mode: "expert", help: "setting.change", guide: "settings.organisation#change-a-setting" },
@@ -184,6 +190,7 @@ export const actions = [
   { kind: "action", id: "connector.data-classes", mode: "expert", help: "connector.data-classes", guide: "settings.integrations#what-a-connector-sends-out" },
   { kind: "action", id: "connector.configure", mode: "expert", help: "connector.configure", guide: "settings.integrations#configure-it-and-set-its-secrets" },
   { kind: "action", id: "connector.secret", mode: "expert", help: "connector.secret", guide: "settings.integrations#configure-it-and-set-its-secrets" },
+  { kind: "action", id: "connector.secret-expires", mode: "expert", help: "connector.secret-expires", guide: "settings.integrations#configure-it-and-set-its-secrets" },
   { kind: "action", id: "connector.test", mode: "expert", help: "connector.test", guide: "settings.integrations#test-it" },
   { kind: "action", id: "connector.enable", mode: "expert", help: "connector.enable", guide: "settings.integrations#turn-it-on-or-off" },
   { kind: "action", id: "connector.pause", mode: "expert", help: "connector.pause", guide: "settings.integrations#turn-it-on-or-off" },
@@ -363,6 +370,9 @@ export const actions = [
   { kind: "action", id: "opening.check", mode: "expert", help: "opening.check", guide: "accounting.opening-balances#check-and-post-them" },
   { kind: "action", id: "opening.post", mode: "expert", help: "opening.post", guide: "accounting.opening-balances#check-and-post-them" },
   { kind: "action", id: "opening.ask-change", mode: "expert", help: "opening.ask-change", guide: "accounting.opening-balances#change-posted-opening-balances" },
+  { kind: "action", id: "checks.run", mode: "basic", help: "checks.run", guide: "checks.overview#run-the-checks-now" },
+  { kind: "action", id: "checks.owner", mode: "basic", help: "checks.owner", guide: "checks.overview#name-a-checks-owner" },
+  { kind: "action", id: "checks.review", mode: "basic", help: "checks.review", guide: "checks.overview#mark-an-item-reviewed" },
   { kind: "action", id: "close.run-checks", mode: "expert", help: "close.run-checks", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.attest", mode: "expert", help: "close.attest", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.reopen", mode: "expert", help: "close.reopen", guide: "accounting.periods#reopen-a-month" },
@@ -416,6 +426,7 @@ export const settingsNav = [
   { kind: "nav", id: "settings.organisation", route: "/settings/organisation", icon: Building, group: "organisation", roles: "all", mode: "expert", help: "settings.organisation", guide: "settings.organisation" },
   { kind: "nav", id: "settings.accounting", route: "/settings/accounting", icon: BookCheck, group: "organisation", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "ar_specialist", "ap_specialist", "payroll_administrator", "payment_releaser", "approver", "auditor", "tax_agent", "board_viewer", "company_secretary", "dpo"], mode: "expert", help: "settings.accounting", guide: "settings.accounting" },
   { kind: "nav", id: "settings.members", route: "/settings/members", icon: Users, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.members", guide: "settings.members" },
+  { kind: "nav", id: "settings.access-review", route: "/settings/access-review", icon: ClipboardCheck, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.access-review", guide: "settings.access-review" },
   { kind: "nav", id: "settings.team-mode", route: "/settings/team-mode", icon: ShieldCheck, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.team-mode", guide: "settings.team-mode" },
   { kind: "nav", id: "settings.approval-policies", route: "/settings/approval-policies", icon: Stamp, group: "organisation", roles: ["owner", "administrator", "controller", "accountant", "auditor", "dpo"], mode: "expert", help: "settings.approval-policies", guide: "approvals.policies" },
   { kind: "nav", id: "settings.statutory-packs", route: "/settings/statutory-packs", icon: Scale, group: "organisation", roles: ["owner", "controller", "accountant", "tax_agent", "payroll_administrator", "auditor"], mode: "expert", help: "settings.statutory-packs", guide: "settings.statutory-packs" },

@@ -4,6 +4,337 @@
 # info.version follows the platform version (release-please updates it).
 components:
   schemas:
+    AccessReview:
+      additionalProperties: false
+      properties:
+        as_at:
+          description: When it was read.
+          examples:
+            - "2026-10-05T10:00:00Z"
+          format: date-time
+          type: string
+        attestations:
+          description: The quarters attested, latest first.
+          items:
+            $ref: "#/components/schemas/AccessReviewAttestation"
+          type:
+            - array
+            - "null"
+        connectors:
+          description: The organisation's installed connectors. OAuth clients join with Connected apps (AI-46).
+          items:
+            $ref: "#/components/schemas/AccessReviewConnector"
+          type:
+            - array
+            - "null"
+        invitations:
+          description: "The pending invitations: who will join, with which roles."
+          items:
+            $ref: "#/components/schemas/MemberInvitation"
+          type:
+            - array
+            - "null"
+        members:
+          description: The active members, in the order they joined.
+          items:
+            $ref: "#/components/schemas/AccessReviewMember"
+          type:
+            - array
+            - "null"
+        overdue:
+          $ref: "#/components/schemas/AccessReviewQuarter"
+          description: "A quarter whose review is past its due date with neither its attestation nor a later one (C.2 #7)."
+        team_mode:
+          description: The team mode in force (§6.4).
+          enum:
+            - founder
+            - standard
+            - enterprise
+          examples:
+            - founder
+          type: string
+        to_attest:
+          $ref: "#/components/schemas/AccessReviewQuarter"
+          description: The latest calendar quarter that has ended, while it is not attested; absent when it is, or no quarter has ended since the organisation began.
+      required:
+        - as_at
+        - team_mode
+        - members
+        - invitations
+        - connectors
+        - attestations
+      type: object
+    AccessReviewAttestation:
+      additionalProperties: false
+      properties:
+        attested_at:
+          description: When.
+          examples:
+            - "2026-10-05T10:00:00Z"
+          format: date-time
+          type: string
+        attested_by:
+          description: Who attested it.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          type: string
+        attested_by_name:
+          description: Their name, while they are a member.
+          examples:
+            - Wei Ling Tan
+          type: string
+        note:
+          description: What they noted.
+          examples:
+            - Ended the auditor's access.
+          type: string
+        quarter:
+          $ref: "#/components/schemas/AccessReviewQuarter"
+          description: The quarter attested.
+        report_sha256:
+          description: The SHA-256 of the report they attested, as the database recorded it, in hexadecimal.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+      required:
+        - quarter
+        - attested_by
+        - attested_at
+        - report_sha256
+      type: object
+    AccessReviewConflict:
+      additionalProperties: false
+      properties:
+        covered:
+          description: "founder_mode: Founder mode allows it with its compensating controls (§6.4); override: the team mode blocks it and an approved override lets this member keep it; no: nothing covers it (C.2 #5)."
+          enum:
+            - founder_mode
+            - override
+            - "no"
+          examples:
+            - founder_mode
+          type: string
+        override_reason:
+          description: The override's reason, when one covers it.
+          examples:
+            - Two founders; reviewed weekly
+          type: string
+        roles:
+          description: The roles that make it.
+          items:
+            description: A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.
+            examples:
+              - owner
+            type: string
+          type:
+            - array
+            - "null"
+        sod:
+          description: The conflict of §6.3.
+          examples:
+            - SOD-6
+          type: string
+      required:
+        - sod
+        - roles
+        - covered
+      type: object
+    AccessReviewConnector:
+      additionalProperties: false
+      properties:
+        connector:
+          description: The connector's ID in the catalogue.
+          examples:
+            - wise
+          type: string
+        data_classes:
+          description: The data classes it may send out.
+          items:
+            description: A class of data (AI-75).
+            enum:
+              - know-how
+              - business-figures
+              - personal-data
+              - payroll
+              - restricted
+            examples:
+              - personal-data
+            type: string
+          type:
+            - array
+            - "null"
+        fyniq_scopes:
+          description: The Fyniq scopes it was granted.
+          items:
+            description: A scope.
+            examples:
+              - fyniq.read.banking
+            type: string
+          type:
+            - array
+            - "null"
+        health:
+          description: "Its last connection test: ok, failing, or unknown until it is tested."
+          enum:
+            - ok
+            - failing
+            - unknown
+          examples:
+            - ok
+          type: string
+        id:
+          description: The installed connector's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40
+          format: uuid
+          type: string
+        installed_at:
+          description: When.
+          examples:
+            - "2026-10-01T09:00:00Z"
+          format: date-time
+          type: string
+        installed_by:
+          description: Who installed it.
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Wise
+          type: string
+        state:
+          description: Whether it is enabled.
+          examples:
+            - enabled
+          type: string
+      required:
+        - id
+        - connector
+        - name
+        - state
+        - health
+        - fyniq_scopes
+        - data_classes
+        - installed_by
+        - installed_at
+      type: object
+    AccessReviewMember:
+      additionalProperties: false
+      properties:
+        conflicts:
+          description: The conflicts their live roles hold.
+          items:
+            $ref: "#/components/schemas/AccessReviewConflict"
+          type:
+            - array
+            - "null"
+        display_name:
+          description: Their name.
+          examples:
+            - Wei Ling Tan
+          type: string
+        dormant:
+          description: true when they have not signed in for 30 days, counting from when they joined if never (FR-CTL-06).
+          examples:
+            - false
+          type: boolean
+        expired_roles:
+          description: "Roles that ended at their end date and that nobody ended: they grant nothing. A member who holds only these is an external user past their expiry, still a member (C.2 #6): remove them, or give a new end date."
+          items:
+            $ref: "#/components/schemas/MemberRole"
+          type:
+            - array
+            - "null"
+        external:
+          description: "true when a role they hold, or held until it expired, has an end date: an external user, reviewed each quarter (SEC-06)."
+          examples:
+            - false
+          type: boolean
+        joined_at:
+          description: When they joined.
+          examples:
+            - "2026-10-01T09:00:00Z"
+          format: date-time
+          type: string
+        last_sign_in:
+          description: Their latest sign-in, by any of their identities; absent if they never signed in.
+          examples:
+            - "2026-10-30T08:15:00Z"
+          format: date-time
+          type: string
+        member_id:
+          description: The membership's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+          format: uuid
+          type: string
+        past_expiry:
+          description: "true for an external user whose roles have all ended while they are still a member (C.2 #6)."
+          examples:
+            - false
+          type: boolean
+        roles:
+          description: Their live roles, by role, with an external user's end date.
+          items:
+            $ref: "#/components/schemas/MemberRole"
+          type:
+            - array
+            - "null"
+        second_factor:
+          description: "How their latest session passed its second factor: passkey, a passkey; sign_in, at the sign-in provider (an authenticator app); none, not yet, or never signed in."
+          enum:
+            - passkey
+            - sign_in
+            - none
+          examples:
+            - passkey
+          type: string
+        user_id:
+          description: The member's user.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+      required:
+        - member_id
+        - user_id
+        - display_name
+        - roles
+        - expired_roles
+        - external
+        - past_expiry
+        - joined_at
+        - second_factor
+        - dormant
+        - conflicts
+      type: object
+    AccessReviewQuarter:
+      additionalProperties: false
+      properties:
+        due_by:
+          description: "The last day its review is on time: 14 days after it ends (C.2 #7)."
+          examples:
+            - "2026-10-14"
+          format: date
+          type: string
+        label:
+          description: Its name.
+          examples:
+            - Q3 2026
+          type: string
+        quarter:
+          description: Its first day.
+          examples:
+            - "2026-07-01"
+          format: date
+          type: string
+      required:
+        - quarter
+        - label
+        - due_by
+      type: object
     Account:
       additionalProperties: false
       properties:
@@ -1043,6 +1374,7 @@ components:
             - organisation_setting.change
             - role.assign
             - role.revoke
+            - member.remove
             - member_invitation.create
             - approval_policy.change
             - statutory_pack.activate
@@ -1931,6 +2263,24 @@ components:
           type: string
       required:
         - reason
+      type: object
+    AttestAccessReviewRequest:
+      additionalProperties: false
+      properties:
+        note:
+          description: What you found or changed, for the record.
+          examples:
+            - Ended the auditor's access.
+          maxLength: 1000
+          type: string
+        quarter:
+          description: "The quarter's first day, as to_attest names it: what you attest."
+          examples:
+            - "2026-07-01"
+          format: date
+          type: string
+      required:
+        - quarter
       type: object
     AutoReconciled:
       additionalProperties: false
@@ -5441,6 +5791,371 @@ components:
         - accounts
         - claim_categories
       type: object
+    CheckHealth:
+      additionalProperties: false
+      properties:
+        due:
+          description: Checks that found ⏰.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        not_assessed:
+          description: "Checks not assessed for want of an input, or not run yet: counted beside the score."
+          examples:
+            - 1
+          format: int64
+          type: integer
+        ok:
+          description: Checks that found nothing.
+          examples:
+            - 8
+          format: int64
+          type: integer
+        problems:
+          description: Checks that found ✖, or whose run failed.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        score:
+          description: problems when any check found ✖ or could not run; review when any found ⚠ or ⏰; ok otherwise. Checks not assessed do not change it.
+          enum:
+            - ok
+            - review
+            - problems
+          examples:
+            - review
+          type: string
+        warnings:
+          description: Checks that found ⚠.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - score
+        - problems
+        - warnings
+        - due
+        - ok
+        - not_assessed
+      type: object
+    CheckItem:
+      additionalProperties: false
+      properties:
+        detail:
+          description: What is wrong with it.
+          examples:
+            - "6900 Clearing: give each a cash-flow line of the standard chart in the chart of accounts"
+          type: string
+        id:
+          description: Its ID, where it has one.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02
+          type: string
+        kind:
+          description: "What it is, which decides where it opens: period, account, opening_balances, role, audit_chain, and the documents later checks name."
+          examples:
+            - period
+          type: string
+        label:
+          description: Its name.
+          examples:
+            - October 2026
+          type: string
+        severity:
+          description: "The item's own severity, for a check that finds both: error (✖, it cannot post) or warning (⚠, to review); left out for the check's own."
+          enum:
+            - error
+            - warning
+          examples:
+            - warning
+          type: string
+        version:
+          description: "The item's version as a review names it: a review holds until the item changes."
+          examples:
+            - "3"
+          type: string
+      required:
+        - kind
+        - label
+      type: object
+    CheckOut:
+      additionalProperties: false
+      properties:
+        area:
+          description: The area it belongs to.
+          examples:
+            - Books
+          type: string
+        changed_at:
+          description: When its status last changed.
+          examples:
+            - "2026-10-31T09:12:00Z"
+          format: date-time
+          type: string
+        count:
+          description: How many items it found.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        detail:
+          description: What it found, in words.
+          examples:
+            - The balance sheet balances in every open month
+          type: string
+        explain:
+          description: Why it matters, in plain words.
+          examples:
+            - Each month's assets equal its liabilities and equity.
+          type: string
+        fix:
+          description: How to fix what it found.
+          examples:
+            - "Report it: the ledger's own checks should have refused this"
+          type: string
+        items:
+          description: The first 50 items it found, each with what is wrong. Empty when the caller cannot open them (items_hidden).
+          items:
+            $ref: "#/components/schemas/CheckItem"
+          type: array
+        items_area:
+          description: The Appendix D row whose view opens its items.
+          examples:
+            - Reports, dashboards
+          type: string
+        items_hidden:
+          description: "true when it found items the caller cannot open: their area's right is another role's."
+          examples:
+            - false
+          type: boolean
+        key:
+          description: The check, stable.
+          examples:
+            - books.balance-sheet-balances
+          type: string
+        ledger_revision:
+          description: The ledger revision its last run read at.
+          examples:
+            - 42
+          format: int64
+          type: integer
+        needs:
+          description: For a check not assessed, the input it needs.
+          examples:
+            - an open month that has started
+          type: string
+        nightly:
+          description: true for the nightly ledger verification group (FR-CTL-05).
+          examples:
+            - false
+          type: boolean
+        owner:
+          $ref: "#/components/schemas/CheckOwnerOut"
+          description: Who owns it.
+        ref:
+          description: Its row of PRD-001 Appendix C (Expert).
+          examples:
+            - "C.1 #2"
+          type: string
+        reviewed_in:
+          description: "Where its items are reviewed when that is the control itself: they are never marked reviewed here (rev 0.165). Absent for the others."
+          enum:
+            - review_log
+            - access_review
+          examples:
+            - review_log
+          type: string
+        rules:
+          description: The rule IDs it checks (Expert).
+          examples:
+            - INV-10, BS_Chk
+          type: string
+        run_at:
+          description: When it last ran.
+          examples:
+            - "2026-11-01T20:15:04Z"
+          format: date-time
+          type: string
+        setting:
+          description: Where that input is set.
+          examples:
+            - Accounting › Periods
+          type: string
+        status:
+          description: What its latest run found; not_assessed before its first run, or for want of an input; failed when its run failed, which counts as ✖.
+          enum:
+            - ok
+            - warning
+            - error
+            - due
+            - not_assessed
+            - failed
+          examples:
+            - ok
+          type: string
+        title:
+          description: What it checks.
+          examples:
+            - The balance sheet balances every month
+          type: string
+        trigger:
+          description: "What ran it last: a change it reacts to, the nightly run, or Run now."
+          enum:
+            - change
+            - nightly
+            - request
+          examples:
+            - nightly
+          type: string
+        worst:
+          description: "The worst it can find: error (✖) blocks the close, warning (⚠) asks for review, due (⏰) is a deadline."
+          enum:
+            - error
+            - warning
+            - due
+          examples:
+            - error
+          type: string
+      required:
+        - key
+        - ref
+        - area
+        - worst
+        - title
+        - explain
+        - rules
+        - nightly
+        - status
+        - count
+        - items
+        - items_hidden
+        - ledger_revision
+        - owner
+      type: object
+    CheckOwnerIn:
+      additionalProperties: false
+      properties:
+        person_user_id:
+          description: The member's user ID; null gives the check back to the catalogue's role.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type:
+            - string
+            - "null"
+      required:
+        - person_user_id
+      type: object
+    CheckOwnerOut:
+      additionalProperties: false
+      properties:
+        person:
+          $ref: "#/components/schemas/Person"
+          description: The person named instead of the role, when one is.
+        role:
+          description: The role the catalogue names as its owner.
+          examples:
+            - owner
+          type: string
+        version:
+          description: "The owner's version: If-Match takes it as the ETag (\"0\" before anyone was named)."
+          examples:
+            - 0
+          format: int64
+          type: integer
+      required:
+        - role
+        - version
+      type: object
+    CheckReviewIn:
+      additionalProperties: false
+      properties:
+        id:
+          description: The item's ID, as the check lists it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+          maxLength: 100
+          type: string
+        kind:
+          description: The item's kind, as the check lists it.
+          examples:
+            - bill
+          maxLength: 40
+          type: string
+        note:
+          description: What the review found, for the audit trail.
+          examples:
+            - "Checked with the supplier: two separate deliveries."
+          maxLength: 500
+          type: string
+      required:
+        - kind
+        - id
+      type: object
+    CheckRunOut:
+      additionalProperties: false
+      properties:
+        checks:
+          description: How many checks it ran.
+          examples:
+            - 10
+          format: int64
+          type: integer
+        finished_at:
+          description: When it finished.
+          examples:
+            - "2026-11-01T02:00:03Z"
+          format: date-time
+          type: string
+        ledger_revision:
+          description: The ledger revision it read at.
+          examples:
+            - 42
+          format: int64
+          type: integer
+        started_at:
+          description: When it started.
+          examples:
+            - "2026-11-01T02:00:00Z"
+          format: date-time
+          type: string
+        trigger:
+          description: What ran it.
+          enum:
+            - change
+            - nightly
+            - request
+          examples:
+            - request
+          type: string
+      required:
+        - trigger
+        - started_at
+        - finished_at
+        - ledger_revision
+        - checks
+      type: object
+    CheckRunRequest:
+      additionalProperties: false
+      properties:
+        already_waiting:
+          description: true when an earlier Run now was still waiting, so this one joined it.
+          examples:
+            - false
+          type: boolean
+        requested_at:
+          description: "When it was asked for: the run that follows finishes after it."
+          examples:
+            - "2026-11-01T09:00:00Z"
+          format: date-time
+          type: string
+      required:
+        - requested_at
+        - already_waiting
+      type: object
     ChecklistItem:
       additionalProperties: false
       properties:
@@ -5660,6 +6375,45 @@ components:
             - "null"
       required:
         - tasks
+      type: object
+    ChecksOut:
+      additionalProperties: false
+      properties:
+        checks:
+          description: Each check the caller sees, by area in the catalogue's order; within an area, those not assessed first.
+          items:
+            $ref: "#/components/schemas/CheckOut"
+          type: array
+        health:
+          $ref: "#/components/schemas/CheckHealth"
+          description: Books health from these checks (FR-CTL-02).
+        last_nightly_run:
+          $ref: "#/components/schemas/CheckRunOut"
+          description: The latest nightly run, whose results the Compliance Center reads (FR-CTL-05).
+        last_run:
+          $ref: "#/components/schemas/CheckRunOut"
+          description: The latest run of any kind.
+        may_name_owners:
+          description: "true when the caller may name a person as a check's owner (Appendix D: C)."
+          examples:
+            - false
+          type: boolean
+        may_review:
+          description: "true when the caller may mark an item to review as reviewed (Appendix D: A; rev 0.164)."
+          examples:
+            - true
+          type: boolean
+        run_requested:
+          description: true while a Run now waits for the worker.
+          examples:
+            - false
+          type: boolean
+      required:
+        - health
+        - checks
+        - run_requested
+        - may_name_owners
+        - may_review
       type: object
     ChosenTemplate:
       additionalProperties: false
@@ -6789,6 +7543,12 @@ components:
     ConnectorSecretState:
       additionalProperties: false
       properties:
+        expires_on:
+          description: "The day the provider says the current value expires, when whoever set it said (C.2 #38)."
+          examples:
+            - "2027-03-31"
+          format: date
+          type: string
         name:
           examples:
             - send_token
@@ -14070,12 +14830,24 @@ components:
           examples:
             - Wei Ling Tan
           type: string
+        expired_roles:
+          description: "Roles that ended at their end date and that nobody ended: they grant nothing. Give the role again with a new end date, or remove the member (C.2 #6)."
+          items:
+            $ref: "#/components/schemas/MemberRole"
+          type:
+            - array
+            - "null"
         id:
           description: The membership's ID.
           examples:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
           format: uuid
           type: string
+        removed:
+          description: "true in the answer to removeMember: they are no longer a member."
+          examples:
+            - false
+          type: boolean
         roles:
           description: Their live roles, by role.
           items:
@@ -14094,6 +14866,7 @@ components:
         - user_id
         - display_name
         - roles
+        - expired_roles
       type: object
     MemberInvitation:
       additionalProperties: false
@@ -20541,6 +21314,12 @@ components:
     SetConnectorSecretRequest:
       additionalProperties: false
       properties:
+        expires_on:
+          description: "For an organisation's connector: the day the provider says this value expires, such as an API key's or a bank certificate's; a check warns 14 days before (C.2 #38). Kept with the value, never changed; absent when it does not expire or nobody knows. An installation's connector takes none."
+          examples:
+            - "2027-03-31"
+          format: date
+          type: string
         value:
           description: The secret's value. It goes to Secret Manager at once and is never shown again (FR-INT-20).
           examples:
@@ -23384,6 +24163,373 @@ info:
   version: 0.0.0 # x-release-please-version
 openapi: 3.1.0
 paths:
+  /v1/access-review:
+    get:
+      description: "Who can do what in the organisation, live (FR-CTL-06, SEC-06; rev 0.162): each member's roles, an external user's end dates and roles that have ended, when they joined and last signed in and how that session passed its second factor, whether they are dormant (no sign-in for 30 days), and the segregation-of-duties conflicts their roles hold with what covers each under the team mode; the pending invitations; the organisation's connectors with their scopes and health. Also the latest calendar quarter to attest, a quarter overdue (C.2 #7), and every attestation. The ETag covers who holds what, not sign-ins, so an Owner's step-up before attesting keeps it. Read-only; no side effects."
+      operationId: getAccessReview
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessReview"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: "The review's version: who holds which roles, the conflicts, the external users, the invitations and the connectors, for If-Match. Sign-ins do not change it."
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Read the user access review
+      tags:
+        - Members
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Users, roles, team mode
+        right: V
+  /v1/access-review/attestations:
+    post:
+      description: "An Owner attests that they reviewed who can do what (FR-CTL-06, SEC-06; rev 0.162), for the latest calendar quarter that has ended, once; an attestation answers for the quarters before it too, so C.2 #7 stops warning. Needs a person who passed step-up in the last 5 minutes and If-Match with the review's ETag, so what is attested is what they saw. Side effects: the attestation with the report as canonical JSON, whose SHA-256 the database computes and keeps, never changed (FY247); its audit event. CHECK-03 when no quarter has ended since the organisation began, the quarter named is not the one to attest, or it is attested already. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: attestAccessReview
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttestAccessReviewRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessReview"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The review's version after the command, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CHECK-03` There is no such quarter to attest; `STORAGE-ACCESS-01` An access review's attestation is made once a quarter has ended, and never changed; `STORAGE-DUPLICATE-01` Already done."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Attest the user access review for a quarter
+      tags:
+        - Members
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - CHECK-03
+        - STORAGE-ACCESS-01
+        - STORAGE-DUPLICATE-01
+      x-fyniq-permission:
+        capability: Users, roles, team mode
+        note: "An Owner, who holds A on the row, after step-up: the quarterly attestation of FR-CTL-06 (rev 0.162)."
+        right: A
+  /v1/access-review/export:
+    get:
+      description: "The review getAccessReview gives, as CSV (FR-CTL-06): a row per member, pending invitation and connector; text cells quoted so none becomes a formula. Returned in base64 with its SHA-256. Side effects: the export's audit event (access_review.exported), as every export of personal data has."
+      operationId: exportAccessReview
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportFile"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Export the user access review
+      tags:
+        - Members
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Users, roles, team mode
+        right: V
   /v1/accounts:
     get:
       description: Returns the organisation's accounts by code, a page at a time (cursor pagination). Read-only; no side effects.
@@ -40868,6 +42014,754 @@ paths:
       x-fyniq-permission:
         capability: Bank transactions, categorise
         right: V
+  /v1/checks:
+    get:
+      description: Every check of the checks engine the caller sees (FR-CTL-01), by area, each with its Appendix C row, what it checks and why, its latest result (ok, ⚠ warning, ✖ error, ⏰ due, not assessed with the input it needs, or failed, which counts as ✖), the items it found, its owner and when it ran; and books health from them (FR-CTL-02). A check's items show only to a reader who may view their own row (Appendix D); a reader whose view is of an area (sales, purchases, payroll) sees that area's checks only. A module's checks show once the module is on (FR-ORG-06). Read-only; no side effects.
+      operationId: listChecks
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecksOut"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the checks and books health
+      tags:
+        - Checks
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-exempt:
+        cursor: "The catalogue's checks, a hundred at most, are read whole: books health is worked out from all of them (FR-CTL-02)."
+      x-fyniq-permission:
+        capability: Checks and books health (rev 0.163)
+        right: V
+  /v1/checks/runs:
+    post:
+      description: "Asks the worker to run every check of the organisation now (Run now; FR-CTL-01, design D5). The answer is 202: listChecks' last_run finishes after requested_at once it has run, and run_requested is true until then. A Run now asked while one waits joins it. At most one a minute for the organisation: 429 with Retry-After after that. Side effects: the background run, which records each check's result, audits each change of status and records the run. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing."
+      operationId: runChecks
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckRunRequest"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckRunRequest"
+          description: Accepted
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Run every check now
+      tags:
+        - Checks
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Checks and books health (rev 0.163)
+        right: V
+  /v1/checks/{key}:
+    get:
+      description: One check as listChecks shows it, with its owner's ETag for setCheckOwner; its items only when the caller may view their own row. A check that does not exist, or whose module is off, is CHECK-01. Read-only; no side effects.
+      operationId: getCheck
+      parameters:
+        - description: The check.
+          in: path
+          name: key
+          required: true
+          schema:
+            description: The check.
+            examples:
+              - books.balance-sheet-balances
+            maxLength: 100
+            pattern: ^[a-z][a-z0-9-]*(\.[a-z0-9-]+)+$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckOut"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The owner's version, for If-Match on setCheckOwner.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `CHECK-01` No such check."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get a check
+      tags:
+        - Checks
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - CHECK-01
+      x-fyniq-exempt:
+        cursor: "One check, not a list: its items are the first 50 it found, beside the count of all it found."
+      x-fyniq-permission:
+        capability: Checks and books health (rev 0.163)
+        right: V
+  /v1/checks/{key}/owner:
+    put:
+      description: "Names a person as the owner of a check instead of the role the catalogue names, or gives it back to the role with null (FR-CTL-01, design D8). The person must be an active member whose roles open the check's items; otherwise CHECK-02. Side effects: the owner at its next version and its audit event, with the person before and after. Needs If-Match with the owner's ETag from getCheck. Prefer: return=preview checks it and saves nothing."
+      operationId: setCheckOwner
+      parameters:
+        - description: The check.
+          in: path
+          name: key
+          required: true
+          schema:
+            description: The check.
+            examples:
+              - setup.system-accounts-exist
+            maxLength: 100
+            pattern: ^[a-z][a-z0-9-]*(\.[a-z0-9-]+)+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckOwnerIn"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckOut"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The owner's version, for If-Match on setCheckOwner.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `CHECK-01` No such check."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-CHECK-01` A check's state, run or owner cannot change that way; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `CHECK-02` That person cannot own the check."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Name a check's owner
+      tags:
+        - Checks
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - CHECK-01
+        - CHECK-02
+        - STORAGE-CHECK-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: Checks and books health (rev 0.163)
+        right: C
+  /v1/checks/{key}/reviews:
+    post:
+      description: "Marks an item a check lists to review (⚠) as reviewed, with an optional note (FR-CTL-01, ENG-21; the owner's decision of 1 Nov 2026, rev 0.164): it leaves the check at once, and comes back if the item changes, as the review names its version. An item that cannot post (✖) is fixed, never reviewed; an item the check does not list to review, or that the caller's roles do not open, is CHECK-04. Marking it again at the same version records nothing more. Side effects: the review and its audit event, and the checks it concerns run again. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: reviewCheckItem
+      parameters:
+        - description: The check.
+          in: path
+          name: key
+          required: true
+          schema:
+            description: The check.
+            examples:
+              - purchases.bills-to-review
+            maxLength: 100
+            pattern: ^[a-z][a-z0-9-]*(\.[a-z0-9-]+)+$
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckReviewIn"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckOut"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckOut"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `CHECK-01` No such check."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-CHECK-02` A review is never changed; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CHECK-04` Not an item to review."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Mark an item to review as reviewed
+      tags:
+        - Checks
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - CHECK-01
+        - CHECK-04
+        - STORAGE-CHECK-02
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        If-Match: "A review adds to the check and changes nothing of it: it names the item's version itself, and marking an item twice records nothing more."
+      x-fyniq-permission:
+        capability: Checks and books health (rev 0.163)
+        right: A
   /v1/claim-categories:
     get:
       description: "The categories a claim line is for (FR-AP-15), those in use first, by name, a page at a time: each with the account it costs and its limits in the base currency. Read-only; no side effects."
@@ -70809,6 +72703,189 @@ paths:
       x-fyniq-permission:
         capability: Users, roles, team mode
         right: C
+  /v1/members/{member_id}:
+    delete:
+      description: "Ends a person's membership and each of their roles, expired ones included; their next request no longer reaches the organisation (FR-ADM-01, SEC-06; rev 0.165). It is how an external user past their end date stops being a member (C.2 #6). The organisation's last Owner is never removed. Removing someone falls under FM-1 as a role change does: until the organisation has a second member its Owner acts alone; after that the answer is 202 with an approval request, and another Owner's approval removes them, if their roles did not change meanwhile; asking needs a person signed in who passed step-up in the last 5 minutes. A removed person can be invited again. Side effects: the end of each role and of the membership, with their audit events, or the approval request and its audit event; their OAuth tokens are revoked (AI-38) and they are told. Prefer: return=preview checks it and saves nothing."
+      operationId: removeMember
+      parameters:
+        - description: The membership's ID.
+          in: path
+          name: member_id
+          required: true
+          schema:
+            description: The membership's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+            format: uuid
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: "Accepted: the change needs a second approver (FM-1) and waits for approval; nothing changed yet. The body is the approval request (rev 0.36)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Remove a member from the organisation
+      tags:
+        - Members
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - APR-06
+        - MEM-01
+        - MEM-02
+        - MEM-03
+        - MEM-04
+        - MEM-06
+        - MEM-07
+        - STORAGE-APPROVAL-01
+        - STORAGE-LOCK-01
+        - STORAGE-MEMBER-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: Users, roles, team mode
+        note: "Removing a member is a role change under FM-1 (rev 0.165): until a second member joins, the Owner acts alone; after that another Owner approves it, and the request needs step-up."
+        right: C
   /v1/members/{member_id}/roles:
     post:
       description: "Gives a member a role, theirs until it is revoked or, for an external user, until it expires (FR-ADM-01). A role change falls under FM-1: until the organisation has a second member its Owner acts alone, their own roles included (the founder bootstrap, rev 0.35); after that the answer is 202 with an approval request, and another Owner's approval makes the change, if the member's roles did not change meanwhile (rev 0.36); asking needs a person signed in who passed step-up in the last 5 minutes. Side effects: the role and its audit event, or the approval request and its audit event; the member's next request holds the role, and their OAuth tokens are revoked (AI-38). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
@@ -84922,7 +86999,7 @@ paths:
         right: A
   /v1/periods/{period_id}/close-checks:
     post:
-      description: "Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Until the checks catalogue arrives they are: every earlier period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), draft journals dated in the period (⚠), automatic reversals not posted (⚠), recurring journals without their drafts (⚠, or ✖ when the scheduler failed) or with content the posting rules refuse (⚠), variances against the previous month above both thresholds with no explanation of their totals as they are (✖, FR-GL-14; listPeriodVariances), checklist tasks neither done nor skipped with a reason (✖, FR-GL-07; getPeriodChecklist) and, in the period the books start in, opening balances not posted (⚠). Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs them and records nothing."
+      description: "Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Besides each check of the checks engine that can find ✖ and found it at its latest run (FR-CTL-01; listChecks), they are: every earlier period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), draft journals dated in the period (⚠), automatic reversals not posted (⚠), recurring journals without their drafts (⚠, or ✖ when the scheduler failed) or with content the posting rules refuse (⚠), variances against the previous month above both thresholds with no explanation of their totals as they are (✖, FR-GL-14; listPeriodVariances), checklist tasks neither done nor skipped with a reason (✖, FR-GL-07; getPeriodChecklist) and, in the period the books start in, opening balances not posted (⚠). Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs them and records nothing."
       operationId: runCloseChecks
       parameters:
         - description: The period's ID.
@@ -102477,6 +104554,8 @@ tags:
     name: Exchange rates
   - description: "Reports read from the ledger at one revision: the general ledger (FR-GL-11), and the statements as they arrive."
     name: Reports
+  - description: "The checks engine: every check of the books with what it found, books health from them, Run now, and each check's owner (FR-CTL-01, FR-CTL-02, FR-CTL-05)."
+    name: Checks
   - description: Customers and vendors (FR-CT-01).
     name: Contacts
   - description: Members of the organisation, their roles, and invitations to join it (FR-ADM-01).

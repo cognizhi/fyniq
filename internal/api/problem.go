@@ -15,6 +15,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/bankfile"
 	"github.com/cognizhi/fyniq/internal/connector"
+	"github.com/cognizhi/fyniq/internal/domain/accessreview"
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
@@ -197,6 +198,13 @@ var codeFacts = map[string]struct {
 	CodeExportExpired:             {410, "The export has expired"},
 	CodeExportNotYours:            {403, "Another person's export"},
 	storage.CodeKPIInput:          {409, "A month's KPI counts change only as their next version"},
+	CodeUnknownCheck:              {404, "No such check"},
+	CodeCheckOwner:                {422, "That person cannot own the check"},
+	CodeNotToReview:               {422, "Not an item to review"},
+	storage.CodeCheckReview:       {409, "A review is never changed"},
+	storage.CodeCheck:             {409, "A check's state, run or owner cannot change that way"},
+	accessreview.CodeAttest:       {409, "There is no such quarter to attest"},
+	storage.CodeAccessReview:      {409, "An access review's attestation is made once a quarter has ended, and never changed"},
 	CodeReportRender:              {503, "The PDF could not be made now"},
 	closing.CodeStale:             {409, "The checks are stale"},
 	closing.CodeOrder:             {409, "An earlier period is open"},

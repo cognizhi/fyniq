@@ -128,6 +128,22 @@
       "label": "Withdraw",
       "tooltip": "Stop this invitation's code working."
     },
+    "member.remove": {
+      "label": "Remove from the company",
+      "tooltip": "End their membership and every role, expired ones too. Once the company has a second member, another Owner approves it."
+    },
+    "settings.access-review": {
+      "label": "Access review",
+      "tooltip": "Who can do what, live: roles, sign-ins, role conflicts, external users and integrations. An Owner attests it each quarter."
+    },
+    "access-review.attest": {
+      "label": "Attest",
+      "tooltip": "Record that you reviewed everyone's access for the quarter. Only an Owner, after confirming it's you."
+    },
+    "access-review.export": {
+      "label": "Download CSV",
+      "tooltip": "The review as a spreadsheet: one row per person, invitation and integration. The download is recorded."
+    },
     "settings.team-mode": {
       "label": "Team mode",
       "tooltip": "How strictly duties are separated: Founder or Standard mode, and the roles that conflict now."
@@ -732,6 +748,22 @@
       "label": "Close a month",
       "tooltip": "Run the close checks, then another founder attests and closes the month, which then refuses every posting."
     },
+    "checks.overview": {
+      "label": "Books health",
+      "tooltip": "Every check of the books in one place: OK, to review, blocking the close, due, or not assessed for want of an input, each with what it found and who owns it."
+    },
+    "checks.run": {
+      "label": "Run all checks now",
+      "tooltip": "Run every check now instead of waiting for the next change or the night's run. At most once a minute."
+    },
+    "checks.review": {
+      "label": "Mark reviewed",
+      "tooltip": "Say you looked at this item: it leaves the check until it changes. Owners, Controllers, Accountants and Bookkeepers only."
+    },
+    "checks.owner": {
+      "label": "Name the owner",
+      "tooltip": "Name the person who looks into what this check finds, instead of the role the catalogue gives it. Owners and Controllers only."
+    },
     "close.run-checks": {
       "label": "Run the checks",
       "tooltip": "Check the month can close, recording the ledger as the checks find it. Another founder attests them."
@@ -995,6 +1027,10 @@
     "connector.secret": {
       "label": "Set",
       "tooltip": "Store the value in Secret Manager at once; it is never shown again, and it is used once a second person approves."
+    },
+    "connector.secret-expires": {
+      "label": "Expires on",
+      "tooltip": "The day the provider says this value expires, if it does. A check warns 14 days before; the date is kept with the value."
     },
     "connector.test": {
       "label": "Test connection",

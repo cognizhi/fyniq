@@ -484,7 +484,10 @@ func (r connectors) OrganisationSecrets(ctx context.Context) ([]storage.Connecto
 	}
 	out := make([]storage.ConnectorSecret, 0, len(rows))
 	for _, x := range rows {
-		out = append(out, toConnectorSecret(sqlcdb.FyniqInstallationConnectorSecret(x)))
+		s := toConnectorSecret(sqlcdb.FyniqInstallationConnectorSecret{ID: x.ID, ConnectorID: x.ConnectorID, Name: x.Name, Ref: x.Ref,
+			SetBy: x.SetBy, SetAt: x.SetAt, ValidUntil: x.ValidUntil, DestroyedAt: x.DestroyedAt})
+		s.ExpiresOn = nullDate(x.ExpiresOn)
+		out = append(out, s)
 	}
 	return out, nil
 }
@@ -546,7 +549,7 @@ func (r connectors) ChangeOrganisation(ctx context.Context, id uuid.UUID, versio
 	return after, r.u.event(ctx, "organisation_connector."+stepEvents[c.Step], "organisation_connector", id, &after.Version, connectorChanges(before, after))
 }
 
-func (r connectors) SetOrganisationSecret(ctx context.Context, id uuid.UUID, name string, ref ports.SecretRef, validUntil, at time.Time) error {
+func (r connectors) SetOrganisationSecret(ctx context.Context, id uuid.UUID, name string, ref ports.SecretRef, validUntil, at time.Time, expiresOn *time.Time) error {
 	if err := r.u.check(); err != nil {
 		return err
 	}
@@ -556,10 +559,13 @@ func (r connectors) SetOrganisationSecret(ctx context.Context, id uuid.UUID, nam
 		return mapError(err)
 	}
 	if err := r.u.q.InsertOrganisationConnectorSecret(ctx, sqlcdb.InsertOrganisationConnectorSecretParams{ConnectorID: id, Name: name,
-		Ref: string(ref), By: r.u.actor(ctx), At: at}); err != nil {
+		Ref: string(ref), By: r.u.actor(ctx), At: at, ExpiresOn: pgDate(expiresOn)}); err != nil {
 		return mapError(err)
 	}
 	changes := map[string][2]any{"secret." + name: {previous, string(ref)}}
+	if expiresOn != nil {
+		changes["expires_on"] = [2]any{nil, expiresOn.Format(time.DateOnly)}
+	}
 	if previous != nil {
 		changes["valid_until"] = [2]any{nil, validUntil.UTC().Format(time.RFC3339)}
 	}

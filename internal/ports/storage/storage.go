@@ -118,6 +118,10 @@ type UnitOfWork interface {
 	ReportExports() ReportExports
 	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).
 	KPIInputs() KPIInputs
+	// Checks are the checks' latest results, their runs and their owners (FR-CTL-01, FR-CTL-05).
+	Checks() Checks
+	// AccessReviews are the quarterly access review's attestations and the members' sign-ins (FR-CTL-06).
+	AccessReviews() AccessReviews
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))

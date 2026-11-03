@@ -4,14 +4,14 @@ type: task
 title: Install, configure, test and run connectors, such as the email providers
 summary: Connectors and the catalogue; install, configure, set secrets, test, enable, pause, upgrade, approve changes; email senders, domains, failover, suppressions
 sources:
-  - docs/user-guide/integrations.md sha256:e79fadc5c4ef308cccb9451270a1fdfca8337285e1718208593bc22ed7b37aa3
+  - docs/user-guide/integrations.md sha256:5eb9db500200fb0e5e2303344a6cb56d78556051704d42204a2b70c7b28c75c3
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-25
+compiled_at: 2026-11-02
 aliases:
   - connector
   - integration
@@ -75,6 +75,8 @@ aliases:
   person, and a changed configuration is tested again before the connector is enabled.
 - Under **Secrets**, **Set** (or **Replace**) sends the value straight to Secret Manager: nobody can see it again. A
   replaced secret stays valid for a while, as each secret says; a rejected change destroys the new value.
+- If the provider says when a key or certificate expires, give that day in **Expires on**: it is kept with that value,
+  never changes, and Books health warns 14 days before it ([[checks.overview]]). Give a new date with each new value.
 
 (src: docs/user-guide/integrations.md#configure-it-and-set-its-secrets)
 

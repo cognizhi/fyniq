@@ -40,6 +40,9 @@ type Member struct {
 	UserID      string       `json:"user_id" format:"uuid" doc:"The member's user." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	DisplayName string       `json:"display_name" doc:"Their name." example:"Wei Ling Tan"`
 	Roles       []MemberRole `json:"roles" doc:"Their live roles, by role."`
+	// rev 0.165
+	ExpiredRoles []MemberRole `json:"expired_roles" doc:"Roles that ended at their end date and that nobody ended: they grant nothing. Give the role again with a new end date, or remove the member (C.2 #6)."`
+	Removed      bool         `json:"removed,omitempty" doc:"true in the answer to removeMember: they are no longer a member." example:"false"`
 }
 
 // MemberPage is a page of members, in the order they joined.
@@ -127,6 +130,11 @@ type roleAssignInput struct {
 	Body RoleGrant
 }
 
+type memberRemoveInput struct {
+	MemberPath
+	PreferHeader
+}
+
 type roleRevokeInput struct {
 	MemberPath
 	Role string `path:"role" maxLength:"40" doc:"The role to end." example:"bookkeeper"`
@@ -181,9 +189,22 @@ func invitationConflict(ctx context.Context, u storage.UnitOfWork, name string, 
 var approvalCodes = []string{CodeSessionRequired, CodeStepUpRequired, approval.CodePending, storage.CodeApproval}
 
 func memberOf(m storage.Member) Member {
-	out := Member{ID: m.ID.String(), UserID: m.UserID.String(), DisplayName: m.DisplayName, Roles: []MemberRole{}}
+	out := Member{ID: m.ID.String(), UserID: m.UserID.String(), DisplayName: m.DisplayName, Roles: []MemberRole{}, ExpiredRoles: []MemberRole{}}
 	for _, r := range m.Roles {
-		out.Roles = append(out.Roles, MemberRole{Role: RoleName(r.Role), ExpiresAt: r.ExpiresAt})
+		out.Roles = append(out.Roles, roleOut(r))
+	}
+	for _, r := range m.Expired {
+		out.ExpiredRoles = append(out.ExpiredRoles, roleOut(r))
+	}
+	return out
+}
+
+// roleOut is a role assignment as the API shows it, its end date in UTC.
+func roleOut(r storage.RoleAssignment) MemberRole {
+	out := MemberRole{Role: RoleName(r.Role)}
+	if r.ExpiresAt != nil {
+		at := r.ExpiresAt.UTC()
+		out.ExpiresAt = &at
 	}
 	return out
 }
@@ -253,6 +274,13 @@ func (a *API) assignRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.U
 	if slices.ContainsFunc(m.Roles, func(r storage.RoleAssignment) bool { return r.Role == role }) {
 		return Member{}, problem(member.CodeHeld, m.DisplayName+" holds the role "+role+" already.", "Nothing to do; revoke it first to change its expiry")
 	}
+	// A role that ended at its end date still holds its place until it is ended: end it, so the role can be given again
+	// with a new end date (rev 0.165).
+	if i := slices.IndexFunc(m.Expired, func(r storage.RoleAssignment) bool { return r.Role == role }); i >= 0 {
+		if err := u.Members().Revoke(ctx, m.Expired[i].ID); err != nil {
+			return Member{}, err
+		}
+	}
 	if _, err := u.Members().Assign(ctx, id, role, expires); err != nil {
 		return Member{}, err
 	}
@@ -291,6 +319,43 @@ func (a *API) revokeRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.U
 	}
 	m, err = findMember(ctx, u, id, now)
 	return memberOf(m), err
+}
+
+// lastOwner reports whether m is the organisation's only Owner among all, the active members.
+func lastOwner(all []storage.Member, m storage.Member) bool {
+	owner := func(r storage.RoleAssignment) bool { return r.Role == "owner" }
+	return slices.ContainsFunc(m.Roles, owner) &&
+		!slices.ContainsFunc(all, func(o storage.Member) bool { return o.ID != m.ID && slices.ContainsFunc(o.Roles, owner) })
+}
+
+// removeMemberNow ends member id's membership and each of their roles, expired ones included, and revokes their OAuth
+// tokens (rev 0.165). The last Owner is never removed. Their next request no longer reaches the organisation.
+func (a *API) removeMemberNow(ctx context.Context, u storage.UnitOfWork, id uuid.UUID) (Member, error) {
+	now := a.deps.Clock.Now()
+	all, err := u.Members().List(ctx, now)
+	if err != nil {
+		return Member{}, err
+	}
+	i := slices.IndexFunc(all, func(m storage.Member) bool { return m.ID == id })
+	if i < 0 {
+		return Member{}, problem(CodeNotFound, "No member with that ID exists in this organisation.", "List the members to find their IDs")
+	}
+	m := all[i]
+	if lastOwner(all, m) {
+		return Member{}, problem(member.CodeLastOwner, "The organisation's last Owner is never removed.", "Make someone else Owner first")
+	}
+	if err := a.notifyRoles(ctx, u, m, "removed from the organisation"); err != nil {
+		return Member{}, err
+	}
+	if err := u.Members().Remove(ctx, m.ID, m.Version); err != nil {
+		return Member{}, err
+	}
+	if err := a.endTokens(ctx, u, m, "removed from the organisation"); err != nil {
+		return Member{}, err
+	}
+	out := memberOf(m)
+	out.Roles, out.ExpiredRoles, out.Removed = []MemberRole{}, []MemberRole{}, true
+	return out, nil
 }
 
 // notifyRoles tells a member their roles changed: a security notice, always on (FR-NTF-02).
@@ -535,6 +600,57 @@ func registerMembers(a *API) {
 				return nil, err
 			}
 			return &memberWriteOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
+		})
+
+	register(a, authz.RemoveMember, pendsApproval(a, huma.Operation{
+		OperationID: "removeMember", Method: http.MethodDelete, Path: "/v1/members/{member_id}", Tags: []string{"Members"},
+		Summary: "Remove a member from the organisation",
+		Description: "Ends a person's membership and each of their roles, expired ones included; their next request no longer reaches " +
+			"the organisation (FR-ADM-01, SEC-06; rev 0.165). It is how an external user past their end date stops being a member " +
+			"(C.2 #6). The organisation's last Owner is never removed. Removing someone falls under FM-1 as a role change does: until " +
+			"the organisation has a second member its Owner acts alone; after that the answer is 202 with an approval request, and " +
+			"another Owner's approval removes them, if their roles did not change meanwhile; asking needs a person signed in who passed " +
+			"step-up in the last 5 minutes. A removed person can be invited again. Side effects: the end of each role and of the " +
+			"membership, with their audit events, or the approval request and its audit event; their OAuth tokens are revoked (AI-38) " +
+			"and they are told. Prefer: return=preview checks it and saves nothing.",
+	}, reflect.TypeFor[Member]()), append([]string{CodeNotFound, storage.CodeMembership, storage.CodeVersion}, append(append(locks, approvalCodes...), MemberCodes...)...),
+		func(ctx context.Context, in *memberRemoveInput) (*memberWriteOutput, error) {
+			id, err := parseID("member_id", in.MemberID)
+			if err != nil {
+				return nil, err
+			}
+			w, err := write(ctx, a, "", in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (any, error) {
+				wait, err := needsApproval(ctx, u)
+				if err != nil {
+					return nil, err
+				}
+				if !wait {
+					mm, err := a.removeMemberNow(ctx, u, id)
+					if err != nil {
+						return nil, err
+					}
+					return mm, a.logBootstrap(ctx, u, approval.ObjectMembership, id.String(), "Remove "+mm.DisplayName+" from the organisation")
+				}
+				all, err := u.Members().List(ctx, a.deps.Clock.Now())
+				if err != nil {
+					return nil, err
+				}
+				i := slices.IndexFunc(all, func(m storage.Member) bool { return m.ID == id })
+				if i < 0 {
+					return nil, problem(CodeNotFound, "No member with that ID exists in this organisation.", "List the members to find their IDs")
+				}
+				m := all[i]
+				if lastOwner(all, m) {
+					return nil, problem(member.CodeLastOwner, "The organisation's last Owner is never removed.", "Make someone else Owner first")
+				}
+				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectMembership, ObjectKey: id.String(), Operation: approval.OpMemberRemove,
+					Summary: "Remove " + m.DisplayName + " from the organisation", Execute: map[string]any{"member_id": id.String()},
+					Diff: []ApprovalDiff{{Field: "member", Before: m.DisplayName + " (" + cmpOr(liveRoles(m), "no live role") + ")", After: "removed"}}})
+			})
+			if err != nil {
+				return nil, err
+			}
+			return &memberWriteOutput{Status: w.Status, Applied: applied(w), Body: w.Body}, nil
 		})
 
 	register(a, authz.RevokeRole, pendsApproval(a, huma.Operation{

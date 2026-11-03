@@ -28,7 +28,8 @@ type Schedule struct {
 // comparison of every organisation's balances
 // with its journal lines at 02:30 (CTL-FIN-01), the nightly replay of every entry under the rule version that posted
 // it at 02:45 (ENG-06, QA-ENG-06), the nightly count of Super admins at 03:00 (CTL-IAM-07),
-// and the night's control evidence at 04:00, after them (compliance/, PRD-001 §14.1), the sending domains' check at
+// and the night's control evidence at 04:00, after them (compliance/, PRD-001 §14.1), every check of every organisation at
+// 04:15 (FR-CTL-01), the sending domains' check at
 // 04:30 (FR-INT-21) and the end of expired quarantined mail at 04:45 (FR-INT-22); every hour, the
 // commit and the sweep of evidence files (FR-DOC-13), and at 03:30 the re-verification of their hashes.
 var PlatformSchedules = []Schedule{
@@ -41,6 +42,9 @@ var PlatformSchedules = []Schedule{
 	{Job: "ledger.replay", Every: 24 * time.Hour, Offset: 18*time.Hour + 45*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},
 	{Job: "superadmins.verify", Every: 24 * time.Hour, Offset: 19 * time.Hour, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	{Job: "compliance.evidence", Every: 24 * time.Hour, Offset: 20 * time.Hour, Lease: time.Hour, Stale: 26 * time.Hour},
+	// Nightly at 04:15, every check of every organisation, after the night's verifications whose outcomes some of them read
+	// (FR-CTL-01, FR-CTL-05; p1-checks design D5).
+	{Job: "checks.run", Every: 24 * time.Hour, Offset: 20*time.Hour + 15*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},
 	// Nightly at 04:30, the sending domains' DNS records and DMARC policy (FR-INT-21, rev 0.104).
 	{Job: "email.domains", Every: 24 * time.Hour, Offset: 20*time.Hour + 30*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Hourly at :50, the connectors' clean-up: replaced keys past their overlap, an uninstalled connector's keys, a refused

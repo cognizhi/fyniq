@@ -3,7 +3,7 @@ key: settings.members
 title: Invite people and give them roles
 mode: basic
 roles: [owner, admin, controller, auditor, dpo]
-requirements: [FR-ADM-01, FM-1]
+requirements: [FR-ADM-01, FM-1, SEC-06]
 ---
 
 # Invite people and give them roles
@@ -61,3 +61,21 @@ A wrong, used, withdrawn or expired code is refused, and nothing changes. Ask fo
   invitation is approved.
 - In Standard mode, a role that conflicts with the person's other roles needs a reason, and an
   invitation cannot give roles that conflict ([Choose how strictly duties are separated](team-mode.md)).
+
+## When an external person's roles end
+
+A role given with an end date, such as an auditor's, stops working by itself at the end of that day.
+The person stays a member with nothing to do: **Settings → Members and roles** shows **Roles
+ended**, and the check "No external user stays a member past their end date" blocks the month's
+close until you act. Either give them a role again with a new end date (**Change roles**, then
+**Add role**), or remove them.
+
+## Remove someone
+
+- In **Settings → Members and roles**, select **Change roles** next to the person, then **Remove
+  from the company**, and confirm.
+- Every role they hold ends, ended ones too, and their next page no longer opens the company.
+- The company always keeps an Owner: the last Owner cannot be removed.
+- Before the second person joins, the Owner removes someone at once. After that, removing someone
+  waits for another Owner's approval, as a role change does.
+- A person you removed can be invited again later: they join with the new invitation's roles.

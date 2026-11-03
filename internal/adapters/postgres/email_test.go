@@ -448,14 +448,29 @@ func TestAnEmailToASuppressedAddressIsNotSent(t *testing.T) {
 }
 
 // A provider's event is recorded once per delivery and never changes or goes (FY180); a suppression is only ever
-// released, once (FY181); only the API records them.
+// released, once (FY181); only the API records them. The messages taken and those that bounced hard or drew a
+// complaint are counted for C.2 #37 (rev 0.166).
 // req: FR-INT-21
+// req: C.2 #37
 func TestEmailEventsAndSuppressionsKeepTheirHistory(t *testing.T) {
 	ctx := context.Background()
 	b := books(t, "Email events record Pte Ltd")
 	h, _ := mailHarness(t, &fakeMail{})
 	m := queueMail(t, h, b.Org)
 	ev, s := suppress(t, b.Org, m.ID, "accounts@example.com")
+	if err := store(t, "fyniq_worker").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		c, err := u.EmailMessages().Counts(ctx, time.Time{}) // the harness's clock sent it; the provider's event is today
+		if c != (storage.EmailCounts{Sent: 1, HardBounces: 1}) {
+			t.Errorf("the counts: %+v", c)
+		}
+		later, err2 := u.EmailMessages().Counts(ctx, time.Date(2999, 1, 1, 0, 0, 0, 0, time.UTC))
+		if later != (storage.EmailCounts{}) {
+			t.Errorf("the counts from 2999 on: %+v", later)
+		}
+		return errors.Join(err, err2)
+	}); err != nil {
+		t.Fatal(err)
+	}
 	if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
 		again := ev
 		_, created, err := u.EmailMessages().RecordEvent(ctx, again)

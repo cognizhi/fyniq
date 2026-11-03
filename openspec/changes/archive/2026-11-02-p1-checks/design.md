@@ -91,6 +91,14 @@ The close keeps its `run` and its record (AUD-04), unchanged in behaviour.
   - `reversals` → C.2 #56.
 - The close's keys stay stable, so recorded closes still read.
 - New close-relevant checks (such as C.1 #33) are added to the close through the catalogue, not duplicated.
+- *As built (slice 1):*
+  - the period to close next is the earliest open period that has **started**, so a company in its first month is
+    assessed too;
+  - the statement checks (C.1 #2, #3, #4, #5, #23) read every open month that has started, through the statements
+    (`financials.Lay`), the close's own code path; C.1 #1 reads each month's trial balance from the balance service, as
+    the close's `trial-balance` does. Each definition names the close keys it is (`CloseKeys`);
+  - the close adds, through `closing.Service.More`, each catalogue check that can find ✖, is not one of its own, and found
+    ✖ at its latest run (`checks.ForClose`). A check not yet run, or not assessed, says nothing to the close.
 
 *Alternative:* move the close's code into `checks`. Rejected for now: it would rewrite tested code that the close's
 attestation records depend on, for no change in behaviour.
@@ -115,8 +123,10 @@ All ledger figures come from the balance service and the statements at one ledge
 
 - Every table carries `organisation_id` with RLS forced (INV-06).
 - Writes come from the worker role (`fyniq_worker`), except owners and attestations, which the API writes.
-- Change and request runs older than 90 days are purged by the nightly job, through a function only the worker may
-  call. Nightly runs are kept 13 months.
+- Change and request runs older than 90 days are purged by the nightly job. Nightly runs are kept 13 months.
+  *As built:* the worker deletes them, and the table's trigger refuses the delete of a run within its retention (FY245),
+  rather than a purge function.
+- *As built:* a rerun that finds the same status writes the state's new `run_at` and adds nothing to the audit trail.
 
 *Alternative:* every run's every result, append-only. Rejected: a busy day coalesces to hundreds of runs, about 60
 results each, for no reader. The status history lives in the audit trail.
@@ -127,8 +137,12 @@ results each, for no reader. The status history lives in the audit trail.
   - after a write commits, the command's unit of work enqueues an outbox item `checks.refresh`. Its key is per
     organisation and is free again once the item runs, so a burst of writes makes one run. It is delayed 20 seconds
     to coalesce;
+  - *as built:* there is no delay. A commit adds the item only when none of the organisation's is waiting (pending or
+    dispatched, `Outbox.Waiting`): a burst while one waits adds nothing, and a change committed while a refresh runs adds
+    the next, so none is missed;
   - the job reads the organisation's audit events since its watermark, takes their object types, and runs the
-    definitions whose `Triggers` name one, plus every definition that has never run;
+    definitions whose `Triggers` name one, plus every definition that has never run (past 20,000 events, every
+    definition with triggers);
   - writes from the scheduler and the worker (recurring entries, depreciation, revaluation, bank sync) enqueue it the
     same way, so no path is missed;
   - the enqueue sits in one place: `storage`'s audit recorder marks the unit of work, and the adapter adds the
@@ -143,6 +157,11 @@ results each, for no reader. The status history lives in the audit trail.
   - the page shows "Running…" until the run's `run_at` moves.
 
 ### D6 The verifying jobs feed their checks
+
+*As built (slice 1):* C.2 #1 recomputes the balances from the lines (`balance.Differences`, as `ledger.verify` and the
+close do), in the nightly run and on request only: `ledger.verify` records nothing for an organisation it found sound.
+C.2 #3 reads the newest `audit.verified` event since the watermark, which `audit.verify` records for every organisation
+each night; with none, it keeps what it found.
 
 C.2 #1, #3 and #31 do not recompute in a change run. Each reads the latest outcome its platform job recorded, and
 says when it ran:
@@ -230,6 +249,39 @@ Every definition gets a domain test with a fixture that makes it fire and one th
 - a run with no change leaves `check_state` and the audit trail as they were;
 - books health is the worst status.
 
+### D12 Items marked reviewed (rev 0.164, the owner's decision of 1 Nov 2026)
+
+- ENG-21's "until acknowledged or fixed": an item a check lists to review (⚠) leaves the check once someone with A on
+  "Checks and books health" marks it reviewed, with an optional note (`check_review`, append-only, FY246, audited
+  `check.item_reviewed`).
+- A review names the check, the item's kind and ID, and the item's **version**: a document's version, or a fingerprint
+  of what was found in a month, so a changed item comes back.
+- The runner leaves reviewed items out before it keeps a result, and the API leaves them out when it reads, so the item
+  goes at once; a review asks for a refresh (`check_review` reruns the checks that find items to review).
+- A check that finds both ✖ and ⚠ (C.1 #8, #18) gives each item its own severity; only the ⚠ ones are reviewed, and the
+  check is ✖ while one that cannot post remains.
+- The alternatives were the month's close as the review, or drafts only.
+
+### D13 Removing a member, and controls reviewed where they live (rev 0.165, the owner's decisions of 2 Nov 2026)
+
+- A role with an end date stops granting at that date, but the membership stayed active and nothing could end it, so
+  C.2 #6 (✖) would have blocked every close after an external user's engagement ended. **`removeMember`** ends each
+  role not yet revoked, expired ones included, then the membership (`user_membership.removed`), and revokes the
+  person's OAuth tokens; sessions read the membership on every request, so the next one no longer reaches the
+  organisation. FM-1 applies as to a role change (`member.remove`, an approval request after the bootstrap); the last
+  Owner is refused (MEM-06) and the database refuses it too (FY093 on the role).
+- The database refuses a role for a removed member and a removal while a role has not ended (FY248).
+  `accept_member_invitation()` makes a removed person a member again on the same membership
+  (`user_membership.rejoined`).
+- Giving a role again with a new end date ends the expired assignment of that role first: the one-live-role index
+  counts an unrevoked assignment whatever its expiry.
+- C.2 #4's and #7's items are the control itself, so `Definition.ReviewedIn` names where they are reviewed (the review
+  log, the access review): the runner and the API never drop them for a check review, `reviewCheckItem` refuses them
+  (CHECK-04), and the page says where to go instead.
+- The alternatives were letting "End role" end an expired role (the person stays a member with nothing), reading
+  "still active" as a session after expiry (rarely true, since expired roles grant nothing), C.2 #6 as ⚠ until
+  removal existed; and one review rule for every ⚠ item.
+
 ## Risks / Trade-offs
 
 - **[A change run reads a lot]** Validating every open document on each change is heavy for a larger book.
@@ -253,3 +305,22 @@ Every definition gets a domain test with a fixture that makes it fire and one th
 
 - Which settings tab C.1 #9's employee half opens comes with the payroll link. Until then, its contacts and FX
   halves run alone.
+
+### D14 The platform's checks read what the platform recorded (rev 0.166, the owner's decisions of 2 Nov 2026)
+
+- **C.2 #12** reads the scheduler's heartbeats, which every successful run beats, through the runner's `Platform`, and
+  judges each watched job against its schedule's `Stale` (wiring passes the schedules of the jobs in
+  `checks.ScheduledJobs`). A failed run beats nothing, so it shows once its time has passed; the items say only which job
+  and when it last ran, never a run's detail, which may name another organisation.
+- **C.2 #31 and #37** follow D6: the nightly job records its outcome in each organisation's own trail, since an
+  organisation cannot read the installation's, and the check reads the newest. Between nights C.2 #37 keeps the last
+  night's domain items from its prior state, and recomputes the rates from the organisation's own messages.
+- **C.2 #37's rates** (the owner's decision): over 30 days, with at least 50 messages sent, hard bounces at 2% or more or
+  complaints at 0.1% or more (Google's and Yahoo's sender guidance, and common provider practice); with fewer, any
+  complaint. The alternatives were any bounce or complaint, the DNS half only, and Google's hard limit of 0.3%.
+- **C.2 #38's expiry** (the owner's decision): whoever sets an organisation connector's secret may give the day the
+  provider says it expires; it travels with the change through its approval, is kept with the secret's version
+  (`organisation_connector_secret.expires_on`, migration 000198) and never changes. The alternatives were health only
+  until connectors read their tokens' expiry (P2), and a reminder by the secret's age.
+- **C.2 #30** waits for the evidence rules (FR-DOC-06) in `p1-documents-evidence`, by rev 0.162's rule that a check is
+  built with the module it guards.

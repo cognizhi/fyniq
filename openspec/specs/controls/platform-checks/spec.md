@@ -71,6 +71,11 @@ Source: PRD-001 §C.2
 - **WHEN** a self-approved item is reviewed within 14 days
 - **THEN** the check does not flag it
 
+#### Scenario: Every overdue review log entry, in Founder mode (rev 0.165)
+- **GIVEN** the organisation is in Founder mode
+- **WHEN** any review log entry is unreviewed 14 days after it executed
+- **THEN** the check flags it, and it leaves only when reviewed in the review log, never marked reviewed on Checks
+
 ### Requirement: C.2 #5 SoD conflicts outside the team mode
 The system SHALL check, on every relevant change and nightly, for users with SoD conflicts not covered by the team mode; a finding blocks the close.
 
@@ -93,6 +98,12 @@ Source: PRD-001 §C.2
 - **WHEN** an external user is still active after their expiry date
 - **THEN** the check fails and blocks the close
 
+#### Scenario: Roles ended, still a member (rev 0.165)
+- **GIVEN** an active member whose roles have all ended at their end dates
+- **WHEN** the check runs
+- **THEN** it names them and the roles that ended
+- **AND** removing them, or giving a role again with a new end date, clears it
+
 #### Scenario: No expired external user is active
 - **WHEN** no external user past their expiry date is active
 - **THEN** the check passes
@@ -109,6 +120,12 @@ Source: PRD-001 §C.2
 #### Scenario: The access review is up to date
 - **WHEN** the last quarter that ended more than 14 days ago has been attested
 - **THEN** the check passes
+
+#### Scenario: A later attestation answers for an earlier quarter (rev 0.165)
+- **GIVEN** a quarter ended more than 14 days ago without its attestation
+- **WHEN** a later quarter is attested, or the organisation's first member joined after that quarter ended
+- **THEN** the check passes
+- **AND** an overdue quarter leaves only when attested in the access review, never marked reviewed on Checks
 
 ### Requirement: C.2 #8 Bank feed stale over 3 days
 The system SHALL flag for review, on every relevant change and nightly, a bank feed not updated for more than 3 days.
@@ -428,6 +445,10 @@ Source: PRD-001 §C.2
 - **WHEN** a completed activity has the evidence its evidence rule recommends
 - **THEN** the check does not flag it
 
+#### Scenario: Built with the evidence rules (rev 0.166)
+- **WHEN** the evidence rules of FR-DOC-06 are built
+- **THEN** this check is built with them, on the checks engine, as a check is built with the module it guards (rev 0.162)
+
 ### Requirement: C.2 #31 Evidence hash re-verification failed
 The system SHALL re-verify evidence hashes nightly (FR-DOC-07); a failed re-verification blocks the close.
 
@@ -523,6 +544,15 @@ Source: PRD-001 §C.2
 - **WHEN** bounces or complaints exceed the threshold
 - **THEN** the check flags it for review
 
+#### Scenario: The threshold (rev 0.166)
+- **GIVEN** the organisation's messages taken by a provider over the last 30 days
+- **WHEN** 50 or more were sent and 2% or more bounced hard or 0.1% or more drew a complaint, or fewer were sent and any drew a complaint
+- **THEN** the check flags it for review
+
+#### Scenario: The domains as the night left them (rev 0.166)
+- **WHEN** the nightly check of the sending domains runs
+- **THEN** its outcome is recorded in each organisation's own trail, and the check shows each domain that failed until a later night passes it
+
 ### Requirement: C.2 #38 Integration connection failing or credentials expiring
 The system SHALL flag for review, on every relevant change and nightly, an integration connection failing its health check, or whose credentials expire within 14 days (FR-INT-20).
 
@@ -535,6 +565,11 @@ Source: PRD-001 §C.2
 #### Scenario: Credentials expire within 14 days
 - **WHEN** an integration connection's credentials expire within 14 days
 - **THEN** the check flags it for review
+
+#### Scenario: The expiry date given with the secret (rev 0.166)
+- **GIVEN** an enabled connector whose last connection test failed, or a current secret whose expiry date, given when it was set, is within 14 days or past
+- **WHEN** the check runs
+- **THEN** it flags each for review
 
 ### Requirement: C.2 #39 Cash advance unsettled by claim deadline
 The system SHALL flag for review, on every relevant change and nightly, a cash advance not settled by the claim deadline (FR-AP-17).

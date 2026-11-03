@@ -65,6 +65,47 @@ func (q *Queries) CountActiveMembers(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const expiredRoleAssignments = `-- name: ExpiredRoleAssignments :many
+SELECT a.id, a.membership_id, a.role, a.expires_at
+  FROM fyniq.role_assignment a
+ WHERE a.revoked_at IS NULL AND a.expires_at <= $1
+ ORDER BY a.membership_id, a.role
+`
+
+type ExpiredRoleAssignmentsRow struct {
+	ID           uuid.UUID
+	MembershipID uuid.UUID
+	Role         string
+	ExpiresAt    *time.Time
+}
+
+// Roles past their expiry and never revoked: they grant nothing, and an external member who holds only those is still a
+// member (C.2 #6).
+func (q *Queries) ExpiredRoleAssignments(ctx context.Context, now *time.Time) ([]ExpiredRoleAssignmentsRow, error) {
+	rows, err := q.db.Query(ctx, expiredRoleAssignments, now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ExpiredRoleAssignmentsRow
+	for rows.Next() {
+		var i ExpiredRoleAssignmentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MembershipID,
+			&i.Role,
+			&i.ExpiresAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getMemberInvitation = `-- name: GetMemberInvitation :one
 SELECT id, display_name, roles, roles_expire_at, created_at, expires_at, accepted_at, withdrawn_at
   FROM fyniq.member_invitation WHERE id = $1
@@ -148,17 +189,18 @@ func (q *Queries) InsertMemberInvitation(ctx context.Context, arg InsertMemberIn
 }
 
 const listMembers = `-- name: ListMembers :many
-SELECT m.id, m.user_id, m.status, m.version
+SELECT m.id, m.user_id, m.status, m.version, m.created_at
   FROM fyniq.user_membership m
  WHERE m.status = 'active'
  ORDER BY m.id
 `
 
 type ListMembersRow struct {
-	ID      uuid.UUID
-	UserID  uuid.UUID
-	Status  string
-	Version int32
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	Status    string
+	Version   int32
+	CreatedAt time.Time
 }
 
 func (q *Queries) ListMembers(ctx context.Context) ([]ListMembersRow, error) {
@@ -175,6 +217,7 @@ func (q *Queries) ListMembers(ctx context.Context) ([]ListMembersRow, error) {
 			&i.UserID,
 			&i.Status,
 			&i.Version,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -263,6 +306,37 @@ func (q *Queries) MemberNames(ctx context.Context) ([]MemberNamesRow, error) {
 	return items, nil
 }
 
+const memberSignIns = `-- name: MemberSignIns :many
+SELECT s.user_id::uuid AS user_id, s.last_sign_in::timestamptz AS last_sign_in, s.step_up_method::text AS step_up_method
+  FROM fyniq.member_sign_ins() AS s
+`
+
+type MemberSignInsRow struct {
+	UserID       uuid.UUID
+	LastSignIn   time.Time
+	StepUpMethod string
+}
+
+func (q *Queries) MemberSignIns(ctx context.Context) ([]MemberSignInsRow, error) {
+	rows, err := q.db.Query(ctx, memberSignIns)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MemberSignInsRow
+	for rows.Next() {
+		var i MemberSignInsRow
+		if err := rows.Scan(&i.UserID, &i.LastSignIn, &i.StepUpMethod); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const pendingMemberInvitations = `-- name: PendingMemberInvitations :many
 SELECT id, display_name, roles, roles_expire_at, created_at, expires_at, accepted_at, withdrawn_at
   FROM fyniq.member_invitation
@@ -303,6 +377,63 @@ func (q *Queries) PendingMemberInvitations(ctx context.Context, now time.Time) (
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const removeMembership = `-- name: RemoveMembership :one
+UPDATE fyniq.user_membership SET status = 'removed', version = version + 1
+ WHERE id = $1 AND version = $2 AND status = 'active'
+RETURNING id, user_id, status, version
+`
+
+type RemoveMembershipParams struct {
+	ID      uuid.UUID
+	Version int32
+}
+
+type RemoveMembershipRow struct {
+	ID      uuid.UUID
+	UserID  uuid.UUID
+	Status  string
+	Version int32
+}
+
+func (q *Queries) RemoveMembership(ctx context.Context, arg RemoveMembershipParams) (RemoveMembershipRow, error) {
+	row := q.db.QueryRow(ctx, removeMembership, arg.ID, arg.Version)
+	var i RemoveMembershipRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Status,
+		&i.Version,
+	)
+	return i, err
+}
+
+const unrevokedRoleAssignments = `-- name: UnrevokedRoleAssignments :many
+SELECT a.id FROM fyniq.role_assignment a
+ WHERE a.membership_id = $1 AND a.revoked_at IS NULL
+ ORDER BY a.role
+`
+
+// Every role a member holds or held that was never revoked, expired ones included: what removing them ends.
+func (q *Queries) UnrevokedRoleAssignments(ctx context.Context, membershipID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, unrevokedRoleAssignments, membershipID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "due_by": {
+      "description": "The last day its review is on time: 14 days after it ends (C.2 #7).",
+      "examples": [
+        "2026-10-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "label": {
+      "description": "Its name.",
+      "examples": [
+        "Q3 2026"
+      ],
+      "type": "string"
+    },
+    "quarter": {
+      "description": "Its first day.",
+      "examples": [
+        "2026-07-01"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "quarter",
+    "label",
+    "due_by"
+  ],
+  "title": "AccessReviewQuarter",
+  "type": "object"
+}

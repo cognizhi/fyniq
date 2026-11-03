@@ -64,6 +64,11 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **WHEN** the platform goes live
 - **THEN** the number of adapters shipped per capability is the one decided under open question 45
 
+#### Scenario: A secret's expiry date (rev 0.166)
+- **WHEN** someone sets an organisation connector's secret and gives the day the provider says it expires
+- **THEN** the date travels with the secret through its approval, is kept with that version, and never changes
+- **AND** a day that is not after today is refused, and an installation's connector takes none
+
 ### Requirement: FR-INT-23 Ticketing connections
 The system SHALL create a ticket in a connected ticketing system from any task, check, finding of the AI company secretary, security alert or "Report a problem", by hand or by routing rules.
 

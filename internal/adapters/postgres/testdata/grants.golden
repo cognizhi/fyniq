@@ -3,6 +3,8 @@
 fyniq_ai        USAGE     schema fyniq
 fyniq_api       EXECUTE   accept_member_invitation()
 fyniq_api       EXECUTE   accept_super_admin_invitation()
+fyniq_api       INSERT    access_review_attestation (attested_at, attested_by, note, quarter, report, report_hash)
+fyniq_api       SELECT    access_review_attestation
 fyniq_api       INSERT    account (cash_flow_line, code, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, revalue, role, type, useful_life_months)
 fyniq_api       SELECT    account
 fyniq_api       UPDATE    account (cash_flow_line, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, revalue, useful_life_months, version)
@@ -69,6 +71,13 @@ fyniq_api       EXECUTE   capture_route()
 fyniq_api       INSERT    capture_sender (address, decided_at, decided_by, decision, kind, user_id)
 fyniq_api       SELECT    capture_sender
 fyniq_api       EXECUTE   change_installation_connector()
+fyniq_api       INSERT    check_owner (key, person_user_id, set_at, set_by)
+fyniq_api       SELECT    check_owner
+fyniq_api       UPDATE    check_owner (person_user_id, set_at, set_by, version)
+fyniq_api       INSERT    check_review (item_id, item_kind, item_version, key, note, reviewed_at, reviewed_by)
+fyniq_api       SELECT    check_review
+fyniq_api       SELECT    check_run
+fyniq_api       SELECT    check_state
 fyniq_api       INSERT    claim_category (account_id, attendees_above, changed_at, changed_by, created_at, created_by, currency, line_limit, mileage, minor_units, name, receipt_above)
 fyniq_api       SELECT    claim_category
 fyniq_api       UPDATE    claim_category (account_id, active, attendees_above, changed_at, changed_by, line_limit, name, receipt_above, version)
@@ -182,6 +191,7 @@ fyniq_api       INSERT    member_invitation (code_hash, created_at, display_name
 fyniq_api       SELECT    member_invitation
 fyniq_api       UPDATE    member_invitation (withdrawn_at)
 fyniq_api       EXECUTE   member_names()
+fyniq_api       EXECUTE   member_sign_ins()
 fyniq_api       INSERT    money_account (account_id, cardholder_id, changed_at, changed_by, created_at, created_by, currency, identifier, institution, kind, name, opened_on)
 fyniq_api       SELECT    money_account
 fyniq_api       UPDATE    money_account (cardholder_id, changed_at, changed_by, closed_on, identifier, institution, kind, name, opened_on, version)
@@ -203,7 +213,7 @@ fyniq_api       INSERT    organisation_connector (changed_at, changed_by, config
 fyniq_api       SELECT    organisation_connector
 fyniq_api       UPDATE    organisation_connector (changed_at, changed_by, configuration, consent, manifest_hash, manifest_version, position, secret_names, state, test_passed, test_reason, tested_at, version)
 fyniq_api       EXECUTE   organisation_connector_route()
-fyniq_api       INSERT    organisation_connector_secret (connector_id, name, ref, set_at, set_by)
+fyniq_api       INSERT    organisation_connector_secret (connector_id, expires_on, name, ref, set_at, set_by)
 fyniq_api       SELECT    organisation_connector_secret
 fyniq_api       UPDATE    organisation_connector_secret (valid_until)
 fyniq_api       INSERT    organisation_setting (effective_from, key, value, version)
@@ -374,6 +384,7 @@ fyniq_executor  SELECT    statutory_pack_rows
 fyniq_executor  SELECT    statutory_pack_versions
 fyniq_executor  SELECT    team_mode
 fyniq_executor  SELECT    withholding_decision
+fyniq_readonly  SELECT    access_review_attestation
 fyniq_readonly  SELECT    account
 fyniq_readonly  SELECT    accounting_framework
 fyniq_readonly  SELECT    accounting_policy
@@ -400,6 +411,10 @@ fyniq_readonly  SELECT    bank_transfer
 fyniq_readonly  SELECT    bill_payment_plan
 fyniq_readonly  SELECT    capture_address
 fyniq_readonly  SELECT    capture_sender
+fyniq_readonly  SELECT    check_owner
+fyniq_readonly  SELECT    check_review
+fyniq_readonly  SELECT    check_run
+fyniq_readonly  SELECT    check_state
 fyniq_readonly  SELECT    claim_category
 fyniq_readonly  SELECT    claim_place
 fyniq_readonly  SELECT    close_checklist_entry
@@ -481,6 +496,7 @@ fyniq_readonly  SELECT    statutory_pack_versions
 fyniq_readonly  SELECT    team_mode
 fyniq_readonly  SELECT    user_membership
 fyniq_readonly  SELECT    withholding_decision
+fyniq_worker    SELECT    access_review_attestation
 fyniq_worker    SELECT    account
 fyniq_worker    SELECT    allocation
 fyniq_worker    SELECT    approval_policy
@@ -517,6 +533,14 @@ fyniq_worker    SELECT    bill_payment_plan
 fyniq_worker    SELECT    capture_address
 fyniq_worker    EXECUTE   capture_route()
 fyniq_worker    SELECT    capture_sender
+fyniq_worker    SELECT    check_owner
+fyniq_worker    SELECT    check_review
+fyniq_worker    DELETE    check_run
+fyniq_worker    INSERT    check_run (audit_seq, finished_at, keys, ledger_revision, requested_by, results, run_trigger, started_at)
+fyniq_worker    SELECT    check_run
+fyniq_worker    INSERT    check_state (changed_at, detail, fix, item_count, items, key, ledger_revision, needs, run_at, run_trigger, setting, status)
+fyniq_worker    SELECT    check_state
+fyniq_worker    UPDATE    check_state (changed_at, detail, fix, item_count, items, ledger_revision, needs, run_at, run_trigger, setting, status, version)
 fyniq_worker    SELECT    claim_category
 fyniq_worker    SELECT    claim_place
 fyniq_worker    SELECT    close_checklist_entry
@@ -582,11 +606,13 @@ fyniq_worker    INSERT    journal_entry (memo, posting_date, posting_identity, r
 fyniq_worker    SELECT    journal_entry
 fyniq_worker    INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no)
 fyniq_worker    SELECT    journal_line
+fyniq_worker    SELECT    kpi_input
 fyniq_worker    SELECT    ledger_revision
 fyniq_worker    EXECUTE   lock_ledger()
 fyniq_worker    EXECUTE   member_emails()
 fyniq_worker    SELECT    member_invitation
 fyniq_worker    EXECUTE   member_names()
+fyniq_worker    EXECUTE   member_sign_ins()
 fyniq_worker    SELECT    money_account
 fyniq_worker    SELECT    money_account_source
 fyniq_worker    INSERT    notification (actionable, created_at, email, event_id, severity, type, user_id)

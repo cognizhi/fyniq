@@ -274,3 +274,13 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-29] compile | financial-statements.md → reports.statements, management-reports.md → reports.management (the P&L's monthly trend and the top expenses drawn as charts, p1-reports 5.3)
 
 ## [2026-10-29] compile | reports.kpis from docs/user-guide/kpis.md (new); home.overview recompiled for the pulse card, tiles and charts
+
+## [2026-11-01] compile | checks.overview from docs/user-guide/checks.md (new: books health, the statuses, when the checks run, Run now, a check's owner); home.overview recompiled for books health on the pulse card
+
+## [2026-11-01] compile | checks.overview from docs/user-guide/checks.md: marking an item reviewed (rev 0.164) and the checks of the setup, bank, sales, purchases and journals
+
+## [2026-11-02] compile | checks.overview from docs/user-guide/checks.md: the checks of the assets, recurring entries, bank at the month end, closing and planning (p1-checks slice 3)
+
+## [2026-11-02] compile | access-review.md, members-and-roles.md and checks.md (p1-checks slice 4, rev 0.165): new task pages settings.access-review and members.remove; checks.overview adds the Controls area and the two checks reviewed where their control lives; members pages re-hashed
+
+## [2026-11-02] compile | integrations.md and checks.md (p1-checks slice 4b, rev 0.166): settings.integrations adds a secret's expiry date; checks.overview adds the payments' and the platform's checks

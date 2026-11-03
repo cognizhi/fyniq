@@ -125,6 +125,10 @@ var fyCodes = map[string]string{
 	"FY242": storage.CodeBatch,
 	"FY243": storage.CodeReportExport,
 	"FY244": storage.CodeKPIInput,
+	"FY245": storage.CodeCheck,
+	"FY246": storage.CodeCheckReview,
+	"FY247": storage.CodeAccessReview,
+	"FY248": storage.CodeMembership,
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,
@@ -172,6 +176,9 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"journal_entry_posting_identity_key":        {storage.CodeDuplicate, "this posting was already made: its posting identity is in use"},
 	"quote_outcome_once":                        {storage.CodeQuoteOutcome, "the quote has an outcome already"},
 	"kpi_input_pkey":                            {storage.CodeVersion, "the month's counts were entered meanwhile"},
+	"check_state_pkey":                          {storage.CodeVersion, "another run wrote the check meanwhile"},
+	"check_owner_pkey":                          {storage.CodeVersion, "the check's owner was named meanwhile"},
+	"check_owner_person_fkey":                   {storage.CodeInvalid, "the person named is not a member of the organisation"},
 	"sales_reminder_once":                       {storage.CodeReminder, "that reminder was sent or skipped already"},
 	"installation_connector_live":               {storage.CodeDuplicate, "that connector is installed already: configure it, or uninstall it first"},
 	"organisation_connector_live":               {storage.CodeDuplicate, "that connector is installed already: configure it, or uninstall it first"},
@@ -338,6 +345,10 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"evidence_data_class_known":                 {storage.CodeInvalid, "the data class is not general, personal, bank, payroll or identity"},
 	"evidence_key_format":                       {storage.CodeInvalid, "a store key is not where evidence is kept"},
 	"evidence_state_fields":                     {storage.CodeEvidence, "the evidence's state does not match its removal or its committed copy"},
+
+	// The access review's attestations (FR-CTL-06).
+	"access_review_attestation_quarter_key":       {storage.CodeDuplicate, "that quarter's access review is attested already"},
+	"access_review_attestation_after_its_quarter": {storage.CodeAccessReview, "a quarter's access review is attested only once the quarter has ended"},
 }
 
 // mapError turns database errors into storage errors with stable codes (ENG-23) and "no rows" into

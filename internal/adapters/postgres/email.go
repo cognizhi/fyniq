@@ -215,6 +215,17 @@ func (r emails) Events(ctx context.Context, message uuid.UUID) ([]storage.EmailE
 	return out, nil
 }
 
+func (r emails) Counts(ctx context.Context, since time.Time) (storage.EmailCounts, error) {
+	if err := r.u.check(); err != nil {
+		return storage.EmailCounts{}, err
+	}
+	row, err := r.u.q.EmailCounts(ctx, &since)
+	if err != nil {
+		return storage.EmailCounts{}, mapError(err)
+	}
+	return storage.EmailCounts{Sent: int(row.Sent), HardBounces: int(row.HardBounces), Complaints: int(row.Complaints)}, nil
+}
+
 func (u *unitOfWork) EmailSuppressions() storage.EmailSuppressions { return suppressions{u} }
 
 type suppressions struct{ u *unitOfWork }

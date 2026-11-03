@@ -1313,7 +1313,8 @@
     "FR-CT-03",
     "FR-AP-19",
     "FR-AP-10",
-    "FR-AR-18"
+    "FR-AR-18",
+    "FR-EQ-01"
    ],
    "purpose": "Everything about one customer or supplier: details, balances, ageing, activity and payment details.",
    "content": [
@@ -1321,7 +1322,8 @@
     "Tabs: Details (legal name, UEN, Peppol ID, billing and remittance emails, terms, currency, default category and GST code, tax residence), Documents, Ageing, Activity timeline (sent, opened, paid), Bank details, Unapplied credits",
     "Bank details shown masked with 'Change bank details' (dual-controlled) and change history",
     "Withholding-tax decisions by nature of payment for non-resident suppliers",
-    "P2: vendor statement reconciliation"
+    "P2: vendor statement reconciliation",
+    "Director or shareholder role, with the member it belongs to and its director account (FR-EQ-01; rev 0.167)"
    ],
    "states": [
     "bank change pending (payments frozen)",
@@ -1529,7 +1531,8 @@
     "FR-BNK-06",
     "FR-BNK-07",
     "FR-BNK-04",
-    "FR-UX-24"
+    "FR-UX-24",
+    "FR-EQ-01"
    ],
    "purpose": "Clear the bank queue one line at a time by accepting or changing a suggestion.",
    "content": [
@@ -1538,7 +1541,8 @@
     "Accept (one click), Change (short form: category, contact, GST code), Skip",
     "Progress '12 of 40 done'",
     "Duplicates and mirrored transfers flagged ⚠ with an explanation; contextual hint 'You can split this line in Expert mode'",
-    "Accepting a batch of AI suggestions creates a tier-1 proposal to approve"
+    "Accepting a batch of AI suggestions creates a tier-1 proposal to approve",
+    "A category on a director's account (2500, 2120) asks whose, from the directors and shareholders (FR-EQ-01; rev 0.167)"
    ],
    "states": [
     "queue empty ('all caught up')",
@@ -1569,7 +1573,8 @@
     "FR-UX-07",
     "FR-UX-05",
     "FR-BNK-08",
-    "FR-UX-08"
+    "FR-UX-08",
+    "FR-EQ-01"
    ],
    "purpose": "Work the unreconciled queue in bulk: categorise, split, transfer and match payments to documents.",
    "content": [
@@ -1577,7 +1582,8 @@
     "Split view for matching: bank line left, candidate invoices and bills right with amount difference and tolerance; one payment to many documents and many to one",
     "Actions: split line, mark as transfer (matched on both sides), post to suspense 2999 ⚠",
     "Rules editor opens in a side-peek with back-test",
-    "Accountant view toggle (Debit / Credit / Account) vs Plain view"
+    "Accountant view toggle (Debit / Credit / Account) vs Plain view",
+    "A category on a director's account (2500, 2120) asks whose, from the directors and shareholders (FR-EQ-01; rev 0.167)"
    ],
    "states": [
     "empty queue",
@@ -2281,7 +2287,8 @@
     "FR-UX-20",
     "FR-INT-14",
     "FR-DIM-02",
-    "FR-GL-13"
+    "FR-GL-13",
+    "FR-EQ-01"
    ],
    "purpose": "Prepare a balanced journal with dimensions and evidence, preview it and send it for approval.",
    "content": [
@@ -2290,7 +2297,8 @@
     "Auto-reverse date; recurring option",
     "Evidence required above S$1,000 (supporting calculation or document)",
     "Preview (dry run) then submit; approval needed above the threshold (S$5,000 for AI-prepared)",
-    "P3: intercompany journal with eliminations"
+    "P3: intercompany journal with eliminations",
+    "A line on 2500 or 2120 names whose account it is (FR-EQ-01; rev 0.167)"
    ],
    "states": [
     "unbalanced",
@@ -2494,13 +2502,15 @@
    "requirements": [
     "FR-GL-06",
     "FR-UX-07",
-    "FR-MIG-01"
+    "FR-MIG-01",
+    "FR-EQ-01"
    ],
    "purpose": "Enter or import balances at the books start date, with open invoices and bills in their currencies.",
    "content": [
     "Grid of accounts with debit and credit at books start; balance check",
     "Open items tab: opening invoices and bills with currency and rate",
-    "Editing after posting is high-risk (FM-1: second approver)"
+    "Editing after posting is high-risk (FM-1: second approver)",
+    "A line on 2500 or 2120 names whose account it is (FR-EQ-01; rev 0.167)"
    ],
    "states": [
     "unbalanced",
@@ -2536,7 +2546,10 @@
     "Statement per person (opening, movements, repayments, conversions, waivers, closing) with PDF for balance confirmations",
     "Director's account in debit ⚠, citing s162 when the company is not exempt private",
     "Year-end confirmation by passkey; unconfirmed ⚠",
-    "Related-party schedule for the notes"
+    "Related-party schedule for the notes",
+    "Each person is a contact marked director or shareholder, linked to the member who signs in as them (rev 0.167)",
+    "Pay choice per director per period, 'No salary' by default, with the signed decision; directors' fees approved by the shareholders (rev 0.167)",
+    "Exempt-private-company status recorded with its date and evidence until the corporate profile takes it over; none recorded cites s162 (rev 0.167)"
    ],
    "states": [
     "in debit (⚠)",
@@ -2573,7 +2586,8 @@
     "Required evidence: shareholders' approval, board resolution, conversion agreement, founder's balance confirmation",
     "Two steps: Approve (no posting) then Effective (ACRA lodgement reference and register date; posts on that date, never backdated)",
     "Waive: Cr 3300 capital contribution or other income with reason",
-    "Approver excludes the beneficiary; accountant review added when every approver benefits"
+    "Approver excludes the beneficiary; accountant review added when every approver benefits",
+    "Convert to a SAFE or note waits for the equity register's instruments (FR-EQ-18; rev 0.167)"
    ],
    "states": [
     "evidence missing",
@@ -3864,7 +3878,8 @@
     "Invite user dialog with role, scope, expiry and default experience mode (Basic or Expert by role; Owner wins)",
     "SoD conflict warnings per user under the current team mode",
     "Owner add, remove or transfer (dual-controlled); succession with evidence and waiting period",
-    "Role change approval-gated; P2 pin a role to Basic"
+    "Role change approval-gated; P2 pin a role to Basic",
+    "Remove from the company (rev 0.165): ends every role, ended ones too, and the membership; approval-gated as a role change; never the last Owner. An external user whose roles have all ended shows Roles ended (C.2 #6)"
    ],
    "states": [
     "invite pending",

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "covered": {
+      "description": "founder_mode: Founder mode allows it with its compensating controls (§6.4); override: the team mode blocks it and an approved override lets this member keep it; no: nothing covers it (C.2 #5).",
+      "enum": [
+        "founder_mode",
+        "override",
+        "no"
+      ],
+      "examples": [
+        "founder_mode"
+      ],
+      "type": "string"
+    },
+    "override_reason": {
+      "description": "The override's reason, when one covers it.",
+      "examples": [
+        "Two founders; reviewed weekly"
+      ],
+      "type": "string"
+    },
+    "roles": {
+      "description": "The roles that make it.",
+      "items": {
+        "description": "A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.",
+        "examples": [
+          "owner"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "sod": {
+      "description": "The conflict of §6.3.",
+      "examples": [
+        "SOD-6"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "sod",
+    "roles",
+    "covered"
+  ],
+  "title": "AccessReviewConflict",
+  "type": "object"
+}

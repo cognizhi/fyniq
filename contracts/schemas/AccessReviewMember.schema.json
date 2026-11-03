@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "conflicts": {
+      "description": "The conflicts their live roles hold.",
+      "items": {
+        "$ref": "AccessReviewConflict.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "display_name": {
+      "description": "Their name.",
+      "examples": [
+        "Wei Ling Tan"
+      ],
+      "type": "string"
+    },
+    "dormant": {
+      "description": "true when they have not signed in for 30 days, counting from when they joined if never (FR-CTL-06).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "expired_roles": {
+      "description": "Roles that ended at their end date and that nobody ended: they grant nothing. A member who holds only these is an external user past their expiry, still a member (C.2 #6): remove them, or give a new end date.",
+      "items": {
+        "$ref": "MemberRole.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "external": {
+      "description": "true when a role they hold, or held until it expired, has an end date: an external user, reviewed each quarter (SEC-06).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "joined_at": {
+      "description": "When they joined.",
+      "examples": [
+        "2026-10-01T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "last_sign_in": {
+      "description": "Their latest sign-in, by any of their identities; absent if they never signed in.",
+      "examples": [
+        "2026-10-30T08:15:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "member_id": {
+      "description": "The membership's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "past_expiry": {
+      "description": "true for an external user whose roles have all ended while they are still a member (C.2 #6).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "roles": {
+      "description": "Their live roles, by role, with an external user's end date.",
+      "items": {
+        "$ref": "MemberRole.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "second_factor": {
+      "description": "How their latest session passed its second factor: passkey, a passkey; sign_in, at the sign-in provider (an authenticator app); none, not yet, or never signed in.",
+      "enum": [
+        "passkey",
+        "sign_in",
+        "none"
+      ],
+      "examples": [
+        "passkey"
+      ],
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The member's user.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "member_id",
+    "user_id",
+    "display_name",
+    "roles",
+    "expired_roles",
+    "external",
+    "past_expiry",
+    "joined_at",
+    "second_factor",
+    "dormant",
+    "conflicts"
+  ],
+  "title": "AccessReviewMember",
+  "type": "object"
+}

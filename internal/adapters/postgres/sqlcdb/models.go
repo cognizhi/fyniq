@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type FyniqAccessReviewAttestation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Quarter        time.Time
+	AttestedBy     string
+	AttestedAt     time.Time
+	Note           *string
+	Report         string
+	ReportHash     []byte
+}
+
 type FyniqAccount struct {
 	OrganisationID   uuid.UUID
 	ID               uuid.UUID
@@ -410,6 +421,59 @@ type FyniqCaptureSender struct {
 	DecidedBy      string
 	DecidedAt      time.Time
 	Kind           string
+}
+
+type FyniqCheckOwner struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Key            string
+	PersonUserID   *uuid.UUID
+	SetBy          string
+	SetAt          time.Time
+	Version        int32
+}
+
+type FyniqCheckReview struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Key            string
+	ItemKind       string
+	ItemID         string
+	ItemVersion    string
+	Note           *string
+	ReviewedBy     string
+	ReviewedAt     time.Time
+}
+
+type FyniqCheckRun struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunTrigger     string
+	RequestedBy    *string
+	StartedAt      time.Time
+	FinishedAt     time.Time
+	LedgerRevision int64
+	AuditSeq       int64
+	Keys           []string
+	Results        []byte
+}
+
+type FyniqCheckState struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Key            string
+	Status         string
+	ItemCount      int32
+	Items          []byte
+	Detail         *string
+	Fix            *string
+	Needs          *string
+	Setting        *string
+	RunAt          time.Time
+	RunTrigger     string
+	LedgerRevision int64
+	ChangedAt      time.Time
+	Version        int32
 }
 
 type FyniqClaimCategory struct {
@@ -1178,6 +1242,7 @@ type FyniqOrganisationConnectorSecret struct {
 	SetAt          time.Time
 	ValidUntil     *time.Time
 	DestroyedAt    *time.Time
+	ExpiresOn      pgtype.Date
 }
 
 type FyniqOrganisationSetting struct {

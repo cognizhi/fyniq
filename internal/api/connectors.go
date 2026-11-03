@@ -169,6 +169,7 @@ type ConnectorSecretState struct {
 	Name       string     `json:"name" example:"send_token"`
 	Set        bool       `json:"set" doc:"Whether a value is set." example:"true"`
 	ReplacedAt *time.Time `json:"replaced_at,omitempty" doc:"When the current value was set." example:"2026-10-25T09:00:00Z"`
+	ExpiresOn  string     `json:"expires_on,omitempty" format:"date" doc:"The day the provider says the current value expires, when whoever set it said (C.2 #38)." example:"2027-03-31"`
 }
 
 // ConnectorTestResult is a connection test's result, in Fyniq's words, never the provider's answer.
@@ -268,6 +269,8 @@ type ConfigureConnectorRequest struct {
 // SetConnectorSecretRequest is a secret's new value: write-only.
 type SetConnectorSecretRequest struct {
 	Value string `json:"value" minLength:"1" maxLength:"8192" writeOnly:"true" doc:"The secret's value. It goes to Secret Manager at once and is never shown again (FR-INT-20)." example:"zepto-send-token-example"`
+	// rev 0.166
+	ExpiresOn string `json:"expires_on,omitempty" format:"date" doc:"For an organisation's connector: the day the provider says this value expires, such as an API key's or a bank certificate's; a check warns 14 days before (C.2 #38). Kept with the value, never changed; absent when it does not expire or nobody knows. An installation's connector takes none." example:"2027-03-31"`
 }
 
 // ConnectorStepRequest is a step of the lifecycle.
@@ -437,6 +440,9 @@ func (a *API) connectorOf(c storage.InstalledConnector, secrets []storage.Connec
 			if s.ConnectorID == c.ID && s.Name == name && s.ValidUntil == nil && s.DestroyedAt == nil {
 				at := s.SetAt.UTC()
 				st.Set, st.ReplacedAt = true, &at
+				if s.ExpiresOn != nil {
+					st.ExpiresOn = s.ExpiresOn.Format(time.DateOnly)
+				}
 			}
 		}
 		out.Secrets = append(out.Secrets, st)
@@ -726,6 +732,10 @@ func registerConnectors(a *API) {
 			if err != nil {
 				return nil, err
 			}
+			if in.Body.ExpiresOn != "" {
+				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.expires_on", Message: "is for an organisation's connector only",
+					Fix: "Leave it out"}})
+			}
 			return installationWrite(ctx, in, in.IdempotencyKey, in.Prefer, in.IfMatch, id, "Setting a connector's secret", http.StatusOK,
 				func(ctx context.Context, by uuid.UUID, mfaAt time.Time, u storage.UnitOfWork, c storage.InstalledConnector) (connector.Result, error) {
 					return a.installations().Step(ctx, u, by, mfaAt, c.ID, c.Version, storage.StepSecret, connector.Input{Secret: in.Secret}, in.Body.Value)
@@ -918,6 +928,7 @@ type connectorChange struct {
 	Configuration map[string]any  `json:"configuration,omitempty"`
 	Slot          string          `json:"slot,omitempty"`
 	Ref           ports.SecretRef `json:"ref,omitempty"`
+	ExpiresOn     string          `json:"expires_on,omitempty"` // a secret's, as a date
 	Position      int             `json:"position,omitempty"`
 }
 
@@ -1084,13 +1095,26 @@ func registerOrganisationConnectors(a *API, writes, versioned, locks []string) {
 	}, reflect.TypeFor[Connector]()), orgCodes, func(ctx context.Context, in *setConnectorSecretInput) (*connectorWriteOutput, error) {
 		p, _ := authn.From(ctx)
 		return orgStep(ctx, in, in.IdempotencyKey, in.Prefer, in.IfMatch, in.ID, func(ctx context.Context, u storage.UnitOfWork, c storage.InstalledConnector) (any, error) {
+			diff := []ApprovalDiff{{Field: "secret." + in.Secret, After: "replaced"}}
+			if on := in.Body.ExpiresOn; on != "" {
+				d, err := time.Parse(time.DateOnly, on)
+				today, err2 := orgToday(ctx, a, u)
+				if err2 != nil {
+					return nil, err2
+				}
+				if err != nil || !d.After(today) {
+					return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.expires_on", Message: "is not a day after today",
+						Fix: "Give the day the provider says the value expires, as YYYY-MM-DD, or leave it out"}})
+				}
+				diff = append(diff, ApprovalDiff{Field: "secret." + in.Secret + ".expires_on", After: on})
+			}
 			ref, err := a.organisations().PutSecret(ctx, u, p.Organisation, c, in.Secret, in.Body.Value)
 			if err != nil {
 				return nil, err
 			}
 			b, _ := a.deps.Connectors.Catalogue.Get(c.Connector)
 			return ask(ctx, u, connectorChange{Step: storage.StepSecret, Connector: c.Connector, Installed: c.ID.String(), Version: c.Version,
-				Slot: in.Secret, Ref: ref}, c.ID.String(), "Replace "+b.Manifest.Name+"'s "+in.Secret, []ApprovalDiff{{Field: "secret." + in.Secret, After: "replaced"}})
+				Slot: in.Secret, Ref: ref, ExpiresOn: in.Body.ExpiresOn}, c.ID.String(), "Replace "+b.Manifest.Name+"'s "+in.Secret, diff)
 		})
 	})
 
@@ -1210,8 +1234,15 @@ func (a *API) executeConnector(ctx context.Context, u storage.UnitOfWork, s stor
 	if err != nil {
 		return err
 	}
-	_, err = a.organisations().Apply(ctx, u, id, ch.Version, ch.Step, connector.Input{Configuration: ch.Configuration, Secret: ch.Slot,
-		Ref: ch.Ref, Position: ch.Position})
+	in := connector.Input{Configuration: ch.Configuration, Secret: ch.Slot, Ref: ch.Ref, Position: ch.Position}
+	if ch.ExpiresOn != "" {
+		on, err := time.Parse(time.DateOnly, ch.ExpiresOn)
+		if err != nil {
+			return err
+		}
+		in.ExpiresOn = &on
+	}
+	_, err = a.organisations().Apply(ctx, u, id, ch.Version, ch.Step, in)
 	return err
 }
 

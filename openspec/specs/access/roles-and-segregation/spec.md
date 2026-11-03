@@ -1359,6 +1359,36 @@ Source: PRD-001 §D
 - **WHEN** a role acts on the Compliance Center
 - **THEN** the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer and the AI assistant have no right over it (—)
 
+### Requirement: Permission matrix: Checks and books health
+In Standard mode, each role SHALL hold only the rights over the checks and books health that the permission matrix gives it (rev 0.163).
+
+Source: PRD-001 §D
+
+#### Scenario: Create or prepare, and approve
+- **WHEN** a role acts on the checks and books health
+- **THEN** the Owner and the Finance controller can name a person as a check's owner (C) and mark a ⚠ item reviewed (A), never both for the same item
+
+#### Scenario: Approve
+- **WHEN** a role acts on the checks and books health
+- **THEN** the Accountant and the Bookkeeper can mark a ⚠ item reviewed (A, rev 0.164), and view
+
+#### Scenario: View
+- **WHEN** a role acts on the checks and books health
+- **THEN** the Administrator, the Payment releaser, the Auditor, the Tax agent, the Compliance officer / DPO and the AI assistant can view (V)
+
+#### Scenario: View an area
+- **WHEN** a role acts on the checks and books health
+- **THEN** the AR specialist, the AP specialist and the Payroll administrator can view the checks of their area: sales, purchases or payroll (V)
+
+#### Scenario: Items only where their own row allows
+- **WHEN** a reader opens a check
+- **THEN** its status, count and words show
+- **AND** its offending items show only when the reader holds the right the check names on the items' own row
+
+#### Scenario: No access
+- **WHEN** a role acts on the checks and books health
+- **THEN** the Approver, the Employee and the Board viewer have no right over it (—)
+
 ### Requirement: Permission matrix: Tenant export
 In Standard mode, each role SHALL hold only the rights over tenant export that the permission matrix gives it.
 

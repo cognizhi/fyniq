@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const bootstrapInstallationConnectors = `-- name: BootstrapInstallationConnectors :one
@@ -202,8 +203,8 @@ func (q *Queries) InsertOrganisationConnector(ctx context.Context, arg InsertOrg
 }
 
 const insertOrganisationConnectorSecret = `-- name: InsertOrganisationConnectorSecret :exec
-INSERT INTO fyniq.organisation_connector_secret (connector_id, name, ref, set_by, set_at)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO fyniq.organisation_connector_secret (connector_id, name, ref, set_by, set_at, expires_on)
+VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type InsertOrganisationConnectorSecretParams struct {
@@ -212,6 +213,7 @@ type InsertOrganisationConnectorSecretParams struct {
 	Ref         string
 	By          string
 	At          time.Time
+	ExpiresOn   pgtype.Date
 }
 
 func (q *Queries) InsertOrganisationConnectorSecret(ctx context.Context, arg InsertOrganisationConnectorSecretParams) error {
@@ -221,6 +223,7 @@ func (q *Queries) InsertOrganisationConnectorSecret(ctx context.Context, arg Ins
 		arg.Ref,
 		arg.By,
 		arg.At,
+		arg.ExpiresOn,
 	)
 	return err
 }
@@ -386,7 +389,7 @@ func (q *Queries) InstallationConnectors(ctx context.Context) ([]FyniqInstallati
 }
 
 const organisationConnectorSecrets = `-- name: OrganisationConnectorSecrets :many
-SELECT s.id, s.connector_id, s.name, s.ref, s.set_by, s.set_at, s.valid_until, s.destroyed_at
+SELECT s.id, s.connector_id, s.name, s.ref, s.set_by, s.set_at, s.valid_until, s.destroyed_at, s.expires_on
 FROM fyniq.organisation_connector_secret s
 ORDER BY s.connector_id, s.name, s.set_at, s.id
 `
@@ -400,6 +403,7 @@ type OrganisationConnectorSecretsRow struct {
 	SetAt       time.Time
 	ValidUntil  *time.Time
 	DestroyedAt *time.Time
+	ExpiresOn   pgtype.Date
 }
 
 func (q *Queries) OrganisationConnectorSecrets(ctx context.Context) ([]OrganisationConnectorSecretsRow, error) {
@@ -420,6 +424,7 @@ func (q *Queries) OrganisationConnectorSecrets(ctx context.Context) ([]Organisat
 			&i.SetAt,
 			&i.ValidUntil,
 			&i.DestroyedAt,
+			&i.ExpiresOn,
 		); err != nil {
 			return nil, err
 		}

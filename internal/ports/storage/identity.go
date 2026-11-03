@@ -187,6 +187,10 @@ type Members interface {
 	// Count returns how many active members the organisation has, under the members' lock for the rest of the
 	// unit of work: someone joining waits for it, so a role change sees the count it is decided on.
 	Count(ctx context.Context) (int, error)
+	// Remove ends a membership at its version (rev 0.165): each role not yet revoked, expired ones included, then the
+	// membership, audited user_membership.removed. The last Owner keeps the role (CodeMembership); another version is
+	// CodeVersion. A removed person who accepts a new invitation is a member again.
+	Remove(ctx context.Context, membershipID uuid.UUID, version int) error
 }
 
 // Membership is a user's membership of the organisation.

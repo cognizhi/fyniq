@@ -12,6 +12,29 @@ import (
 	"github.com/google/uuid"
 )
 
+const emailCounts = `-- name: EmailCounts :one
+SELECT (SELECT count(*) FROM fyniq.email_message m WHERE m.status = 'accepted' AND m.accepted_at >= $1)::bigint AS sent,
+       (SELECT count(DISTINCT e.message_id) FROM fyniq.email_event e
+         WHERE e.kind = 'hard_bounce' AND e.occurred_at >= $1)::bigint AS hard_bounces,
+       (SELECT count(DISTINCT e.message_id) FROM fyniq.email_event e
+         WHERE e.kind = 'complaint' AND e.occurred_at >= $1)::bigint AS complaints
+`
+
+type EmailCountsRow struct {
+	Sent        int64
+	HardBounces int64
+	Complaints  int64
+}
+
+// The messages providers took since a time, and how many of them bounced hard or drew a complaint since: what C.2 #37's
+// rates are of (FR-INT-21).
+func (q *Queries) EmailCounts(ctx context.Context, since *time.Time) (EmailCountsRow, error) {
+	row := q.db.QueryRow(ctx, emailCounts, since)
+	var i EmailCountsRow
+	err := row.Scan(&i.Sent, &i.HardBounces, &i.Complaints)
+	return i, err
+}
+
 const emailEvents = `-- name: EmailEvents :many
 SELECT id, message_id, provider, delivery_id, kind, recipient, detail, occurred_at, received_at FROM fyniq.email_event
 WHERE message_id = $1 ORDER BY occurred_at, id

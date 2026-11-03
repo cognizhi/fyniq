@@ -93,6 +93,9 @@ type ConnectorSecret struct {
 	SetAt       time.Time
 	ValidUntil  *time.Time
 	DestroyedAt *time.Time
+	// ExpiresOn is the day the provider says it expires, when whoever set it gave one (an organisation's connector only;
+	// C.2 #38, rev 0.166).
+	ExpiresOn *time.Time
 }
 
 // NewConnector is a connector to install.
@@ -203,6 +206,6 @@ type Connectors interface {
 	OrganisationSecrets(ctx context.Context) ([]ConnectorSecret, error)
 	InstallOrganisation(ctx context.Context, n NewConnector) (InstalledConnector, error)
 	ChangeOrganisation(ctx context.Context, id uuid.UUID, version int, c ConnectorChange) (InstalledConnector, error)
-	SetOrganisationSecret(ctx context.Context, id uuid.UUID, name string, ref ports.SecretRef, validUntil, at time.Time) error
+	SetOrganisationSecret(ctx context.Context, id uuid.UUID, name string, ref ports.SecretRef, validUntil, at time.Time, expiresOn *time.Time) error
 	DestroyedOrganisationSecret(ctx context.Context, ref ports.SecretRef, at time.Time) error
 }
