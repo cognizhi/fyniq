@@ -122,6 +122,11 @@ Source: PRD-001 §8.22 · Priority M · Phase P1
 - **THEN** it carries the person's contact as its sub-ledger key
 - **AND** the database refuses the line without one (B.7)
 
+#### Scenario: Built: director accounts by person (rev 0.168)
+- **WHEN** a line posts to 2500 or 2120
+- **THEN** it names a contact marked director or shareholder and where it came from, and the database refuses it without one (FY250)
+- **AND** each person's balances and statement come from the balance service, the statement as a PDF or CSV, and their member is linked under dual control (FM-1)
+
 ### Requirement: FR-EQ-02 "Paid personally"
 When the claimant on an expense claim (FR-AP-07) is a director, the system SHALL let each claim settle either to 2150 (reimburse) or to the director's account on 2500 (keep as a loan).
 
@@ -145,6 +150,11 @@ Source: PRD-001 §8.22 · Priority M · Phase P1
 - **WHEN** a director's claim is approved
 - **THEN** another founder approves it (FM-2/FM-3 apply below the self-approval threshold)
 
+#### Scenario: Built: a claim kept as a loan (rev 0.168)
+- **WHEN** a linked director keeps a claim as a loan
+- **THEN** it posts `expense_claim@2`, crediting 2500 with the gross and the person instead of 2150
+- **AND** it is never reimbursed
+
 ### Requirement: FR-EQ-03 Costs before incorporation or before GST registration
 The system SHALL record costs from before incorporation or before GST registration with their original date, flag them for the accountant's decision, and post them at the books start or the adoption date.
 
@@ -163,6 +173,11 @@ Source: PRD-001 §8.22 · Priority S · Phase P1
 - **WHEN** input tax from before incorporation is considered
 - **THEN** it is claimable in the first GST return with IRAS's approval when the payer became a member, officer or employee, was reimbursed (or holds a written undertaking), was not GST-registered and bought only for the business
 - **AND** the pre-registration rules hold (services within 6 months; goods still held)
+
+#### Scenario: Built: costs before the books start (rev 0.168)
+- **WHEN** a founder's cost before the books start is recorded with its receipt and the accountant decides it
+- **THEN** it posts `pre_incorporation_cost@1` on the books' start or the decision date, owed to the person
+- **AND** the "before GST registration" flag comes with `p1-gst`
 
 ### Requirement: FR-EQ-04 Founder pay choice
 The system SHALL record a founder pay choice per director per period (no salary, salary paid, salary deferred, director's fee, shares instead of pay), effective-dated and stored with the signed decision, and the pay run SHALL apply it.
@@ -203,6 +218,11 @@ Source: PRD-001 §8.22 · Priority M · Phase P1 (with payroll)
 - **WHEN** a director's fee approved by the shareholders is recorded
 - **THEN** it posts Dr 6050 / Cr 2120 to that person (§10.2)
 
+#### Scenario: Built: pay choices and directors' fees (rev 0.168)
+- **WHEN** a pay choice is recorded with its signed decision, or a fee the shareholders voted is approved by another person
+- **THEN** the choice applies by month, "No salary" by default, posting nothing; the fee posts `director_fee@1`, Dr 6050 / Cr 2120
+- **AND** the pay run's part and C.2 #24 come with `p1-payroll-link`
+
 ### Requirement: FR-EQ-05 Settlement routes
 The system SHALL offer settlement routes for a director's balance on 2500 or 2120, each an approval object (FR-APR-01) that shows its ledger impact before approval (FR-APR-02), with FM-9 applying.
 
@@ -226,6 +246,11 @@ Source: PRD-001 §8.22 · Priority M · Phase P1
 - **WHEN** the settlement routes are offered
 - **THEN** repay, keep, convert to shares and waive are offered
 - **AND** converting to a SAFE or convertible note comes with the instruments
+
+#### Scenario: Built: settlements (rev 0.168)
+- **WHEN** a founder's balance is settled from the Settle page
+- **THEN** keep records its terms with no entry, repay becomes a payment batch item of kind `director` posting `director_repayment@1` on release, and convert and waive post as FR-EQ-06 and FR-EQ-07 say
+- **AND** the approval shows the ledger impact; the SAFE or note route comes with `p1-equity-register`
 
 ### Requirement: FR-EQ-06 Conversion to share capital
 The system SHALL convert a director's balance to share capital in two steps, approve and then effective, posting only on the effective date and never backdating.
@@ -265,6 +290,11 @@ Source: PRD-001 §8.22 · Priority M · Phase P1
 - **THEN** it is the carrying amount (the default, when the founder converts as a shareholder) or the shares' fair value with the difference in profit or loss (IFRIC 19 ¶9 and its Singapore equivalents; SFRS for Small Entities ¶22.15A–C)
 - **AND** a basis other than the default needs a note
 
+#### Scenario: Built: conversion to shares (rev 0.168)
+- **WHEN** a conversion is approved with its four documents, then recorded as registered on the day ACRA's register shows it
+- **THEN** the approval posts nothing, and the effective step posts `share_issue@1` from the register, the shares by `RND-SHARE`
+- **AND** it is refused in a closed period or after the approval lapses
+
 ### Requirement: FR-EQ-07 Waiver
 The system SHALL post a waiver of a director's balance as Dr 2500/2120 and, as the accountant chooses with a reason, Cr 3300 Capital contribution (equity) or Cr other income.
 
@@ -286,6 +316,11 @@ Source: PRD-001 §8.22 · Priority M · Phase P1
 - **WHEN** a waived amount was deducted by the company earlier (pay, fees)
 - **THEN** it is tagged for the tax computation [verify taxability]
 
+#### Scenario: Built: waiver (rev 0.168)
+- **WHEN** a waiver is approved
+- **THEN** it posts `director_settlement@1` that day, Dr 2500 or 2120 naming the person, Cr the account chosen
+- **AND** a waiver of 2120 is tagged "deducted earlier" [verify]
+
 ### Requirement: FR-EQ-08 Register of share issues
 The system SHALL keep a register of share issues with every allotment, for cash or not; it is the issues part of the equity register (§8.23), from which the cap table is computed.
 
@@ -302,6 +337,11 @@ Source: PRD-001 §8.22 · Priority M · Phase P1
 #### Scenario: Cap table computed from the register
 - **WHEN** the cap table is produced
 - **THEN** its issues come from this register, as part of the equity register (§8.23)
+
+#### Scenario: Built: the register of share issues (rev 0.168)
+- **WHEN** shares are issued by conversion, or recorded as issued before the books start
+- **THEN** the register keeps the issue, append-only, and share capital posts only with it or from the opening balances (FY255, INV-13)
+- **AND** cash issues come with `p1-equity-register`
 
 ### Requirement: FR-EQ-09 ACRA steps
 The system SHALL track the ACRA steps of a share issue with their evidence; Fyniq does not lodge (§4.2, §9.6).
@@ -331,6 +371,11 @@ Source: PRD-001 §8.22 · Priority M · Phase P1
 - **WHEN** the checks run
 - **THEN** it raises a please-review warning
 
+#### Scenario: Built: a conversion's ACRA steps (rev 0.168)
+- **WHEN** an approved conversion waits for ACRA
+- **THEN** its steps are recorded as they happen, append-only (FY256), with the approval due 14 days after the resolution and a warning when it is not registered or near its lapse
+- **AND** C.2 #22 reads them
+
 ### Requirement: FR-EQ-10 Presentation
 The system SHALL present conversions, waivers and other non-cash movements as non-cash in the financial statements and feed a related-party schedule into the notes (FR-RPT-11).
 
@@ -348,6 +393,11 @@ Source: PRD-001 §8.22 · Priority M · Phase P1
 #### Scenario: Related-party schedule
 - **WHEN** the notes are prepared
 - **THEN** a related-party schedule of balances with directors, their pay and fees, conversions and waivers feeds them (FR-RPT-11)
+
+#### Scenario: Built: the founders' money in the statements (rev 0.168)
+- **WHEN** the statements cover a conversion or a waiver
+- **THEN** the cash flow lists them as non-cash, labelled "Converted to shares" and "Waived", and the movement in equity shows shares issued for cash and for non-cash consideration apart
+- **AND** Director accounts shows the related-party schedule, exported as CSV
 
 ### Requirement: FR-EQ-11 Director's account in debit
 The system SHALL raise a please-review warning on Checks when a director's net balance (2500 and 2120 together) is in debit at a month end, and the balance sheet SHALL present it in 1250 Staff & director advances.
@@ -383,6 +433,11 @@ Source: PRD-001 §8.22 · Priority M · Phase P1
 - **WHEN** a director's account is in debit
 - **THEN** the message cites s162 as for a company that is not exempt
 
+#### Scenario: Built: an account in debit (rev 0.168)
+- **WHEN** a person's net balance on 2500 and 2120 is a debit
+- **THEN** C.2 #21 warns in the words of the exempt-private-company status recorded with its evidence
+- **AND** the balance sheet shows the debit under 1250 with no posting
+
 ### Requirement: FR-EQ-12 Year-end confirmation
 Each director SHALL confirm their closing balance in the app with a passkey.
 
@@ -396,6 +451,11 @@ Source: PRD-001 §8.22 · Priority S · Phase P1
 - **GIVEN** a director has not confirmed their closing balance
 - **WHEN** the year-end close checklist is viewed
 - **THEN** it shows a please-review warning for that balance
+
+#### Scenario: Built: year-end confirmation (rev 0.168)
+- **WHEN** a financial year ends
+- **THEN** the linked member confirms their balances with a passkey
+- **AND** the close's `directors-confirmed` and C.2 #23 name a balance not confirmed or changed since
 
 ### Requirement: FR-EQ-13 Shares for services
 The system SHALL record shares for services as an equity-settled share-based payment: a grant record with the grant-date fair value (SFRS(I) 2 / IFRS 2; SFRS for Small Entities section 26), vesting, and the expense recognised over the service period.
@@ -431,3 +491,9 @@ Source: PRD-001 §8.22 · Priority S · Phase P1
 #### Scenario: Warnings and due items in both modes
 - **WHEN** an item of FR-EQ-09 or FR-EQ-11 is a please-review warning or due or overdue
 - **THEN** it shows in Basic mode and in Expert mode
+
+#### Scenario: Built: Money I put in (rev 0.168)
+- **WHEN** a founder opens Money I put in in Basic mode
+- **THEN** it shows their own account, the debit's warning and the year-end confirmation
+- **AND** their claims offer Keep as a loan
+
