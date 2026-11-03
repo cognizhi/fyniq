@@ -254,3 +254,51 @@ def test_rnd_share_is_the_largest_whole_number_that_fits(cents, micros):
     assert worth(n) == converted <= amount
     assert worth(n + 1) > amount
     assert converted + remainder == amount
+
+
+# req: FR-EQ-06
+# req: RND-SHARE
+def test_a_conversion_allots_whole_shares_and_leaves_the_rest_owed():
+    # Appendix G.3: 12,345.67 at 1.20 a share is 10,288 shares; Dr 2500 12,345.60 naming P0001, Cr 3010 12,345.60, and
+    # 0.07 stays owed on 2500.
+    loan = {"type": "manual_journal", "id": "JNL-1", "version": 1, "date": "2026-03-01", "memo": "",
+            "lines": [{"account": "1010", "currency": "SGD", "amount": "12345.67"},
+                      {"account": "2500", "currency": "SGD", "amount": "-12345.67", "party": "P0001", "origin": "lent"}]}
+    converted = {"type": "director_conversion", "id": "SI-1", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500",
+                 "class": "3010", "amount": "12345.67", "price": "1.20"}
+    result, ledger = p1_post(loan, converted)
+    assert ledger.reasons == []
+    entry = next(e for e in result["entries"] if e["document"] == "SI-1")
+    assert [(ln["account"], ln["amount"], ln.get("party")) for ln in entry["lines"]] == [("2500", "12345.60", "P0001"), ("3010", "-12345.60", None)]
+    assert result["people"] == {"P0001": {"2500": "-0.07"}}
+
+
+# req: FR-EQ-06
+def test_a_conversion_at_fair_value_puts_the_difference_in_profit_or_loss():
+    # 10,288 shares at a fair value of 1.25 is 12,860.00: Cr 3010 12,860.00 and Dr 6010 514.40, the loss.
+    converted = {"type": "director_conversion", "id": "SI-2", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500",
+                 "class": "3010", "amount": "12345.67", "price": "1.20", "fair_value_price": "1.25", "difference": "6010"}
+    result, ledger = p1_post(converted)
+    assert ledger.reasons == []
+    entry = next(e for e in result["entries"] if e["document"] == "SI-2")
+    assert [(ln["account"], ln["amount"]) for ln in entry["lines"]] == [("2500", "12345.60"), ("3010", "-12860.00"), ("6010", "514.40")]
+
+
+# req: FR-EQ-06
+@pytest.mark.parametrize(
+    ("change", "reason"),
+    [
+        ({"person": "P0009"}, "not-a-director"),
+        ({"class": "6010"}, "not-share-capital"),
+        ({"account": "6010"}, "not-a-directors-account"),
+        ({"amount": "0.50"}, "no-whole-share"),
+        ({"fair_value_price": "1.25"}, "unknown-account"),
+        ({"fair_value_price": "1.25", "difference": "1010"}, "account-not-allowed"),
+    ],
+)
+def test_a_conversion_that_breaks_a_rule_is_rejected(change, reason):
+    converted = {"type": "director_conversion", "id": "SI-9", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500",
+                 "class": "3010", "amount": "10.00", "price": "1.00"}
+    converted.update(change)
+    _, ledger = p1_post(converted)
+    assert ledger.reasons == [("SI-9", reason)]

@@ -71,16 +71,31 @@ type Waiver struct {
 // and its details, and the day it was drafted. Another person approves it (director_settlement.approve), never the
 // person, and the accountant too when every available approver benefits (FM-9).
 type Settlement struct {
-	Date      time.Time
-	ContactID uuid.UUID
-	AccountID uuid.UUID
-	Amount    money.Money
-	Route     string
-	Terms     *Terms
-	Waiver    *Waiver
+	Date       time.Time
+	ContactID  uuid.UUID
+	AccountID  uuid.UUID
+	Amount     money.Money
+	Route      string
+	Terms      *Terms
+	Waiver     *Waiver
+	Conversion *Conversion
 	// DeductedEarlier tags a waiver of amounts the company deducted as costs earlier (pay or fees on 2120), for the tax
 	// computation: the waiver may be taxable to the company [verify]. Set when it is approved.
 	DeductedEarlier bool
+	// ApprovedOn is the organisation's day a conversion was approved: no effective date is earlier, and the shareholders'
+	// approval lapses from it (D12). Set when it is approved.
+	ApprovedOn *time.Time
+}
+
+type conversionPayload struct {
+	ClassAccountID      uuid.UUID `json:"class_account_id"`
+	Price               string    `json:"price"`
+	PriceBasis          string    `json:"price_basis"`
+	Capacity            string    `json:"capacity"`
+	Measurement         string    `json:"measurement"`
+	FairValuePrice      string    `json:"fair_value_price,omitempty"`
+	DifferenceAccountID uuid.UUID `json:"difference_account_id"`
+	Note                string    `json:"note,omitempty"`
 }
 
 type termsPayload struct {
@@ -102,8 +117,10 @@ type settlementPayload struct {
 	Amount          *money.Money   `json:"amount"`
 	Route           string         `json:"route"`
 	Terms           *termsPayload  `json:"terms,omitempty"`
-	Waiver          *waiverPayload `json:"waiver,omitempty"`
-	DeductedEarlier bool           `json:"deducted_earlier,omitempty"`
+	Waiver          *waiverPayload     `json:"waiver,omitempty"`
+	Conversion      *conversionPayload `json:"conversion,omitempty"`
+	DeductedEarlier bool               `json:"deducted_earlier,omitempty"`
+	ApprovedOn      string             `json:"approved_on,omitempty"`
 }
 
 // EncodeSettlement is a settlement as a document version stores it.
@@ -118,6 +135,13 @@ func EncodeSettlement(s Settlement) ([]byte, error) {
 	}
 	if w := s.Waiver; w != nil {
 		p.Waiver = &waiverPayload{CreditAccountID: w.CreditAccountID, Capacity: w.Capacity, Reason: w.Reason}
+	}
+	if c := s.Conversion; c != nil {
+		x := conversionPayload(*c)
+		p.Conversion = &x
+	}
+	if s.ApprovedOn != nil {
+		p.ApprovedOn = dayOf(*s.ApprovedOn)
 	}
 	return json.Marshal(p)
 }
@@ -155,6 +179,17 @@ func ReadSettlement(doc storage.Document) (Settlement, error) {
 	}
 	if w := p.Waiver; w != nil {
 		s.Waiver = &Waiver{CreditAccountID: w.CreditAccountID, Capacity: w.Capacity, Reason: w.Reason}
+	}
+	if c := p.Conversion; c != nil {
+		x := Conversion(*c)
+		s.Conversion = &x
+	}
+	if p.ApprovedOn != "" {
+		on, err := time.Parse(time.DateOnly, p.ApprovedOn)
+		if err != nil {
+			return Settlement{}, bad(fmt.Sprintf("the approval day %q", p.ApprovedOn))
+		}
+		s.ApprovedOn = &on
 	}
 	return s, nil
 }
@@ -272,8 +307,7 @@ func CheckSettlement(ctx context.Context, u storage.UnitOfWork, s Settlement, s2
 			probs = append(probs, noRepayTo(ct.LegalName))
 		}
 	case RouteConvert:
-		add(CodeSettlement, "route", "the convert route is not built yet",
-			"Keep it as a loan, repay it or waive it for now; converting comes with the register of share issues")
+		probs = append(probs, checkConversion(s, s2)...)
 	default:
 		add(CodeSettlement, "route", fmt.Sprintf("the route %q is not one Fyniq knows", s.Route), "Choose keep, repay, convert or waive")
 	}
@@ -303,6 +337,17 @@ func DefaultRoute(ctx context.Context, u storage.UnitOfWork, on time.Time) (stri
 		return "", err
 	}
 	def, _ := settings.Lookup(RouteSetting)
+	return settings.On(def, changes, on).Value, nil
+}
+
+// DefaultPriceBasis is the price basis a conversion is offered first, in force on a day: the latest priced round by
+// default.
+func DefaultPriceBasis(ctx context.Context, u storage.UnitOfWork, on time.Time) (string, error) {
+	changes, err := u.Settings().Changes(ctx, PriceBasisSetting)
+	if err != nil {
+		return "", err
+	}
+	def, _ := settings.Lookup(PriceBasisSetting)
 	return settings.On(def, changes, on).Value, nil
 }
 

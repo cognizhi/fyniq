@@ -264,6 +264,7 @@ export const actions = [
   { kind: "action", id: "director-accounts.fees", mode: "expert", help: "director-accounts.fees", guide: "equity.director-accounts#record-a-directors-fee" },
   { kind: "action", id: "director-accounts.settle", mode: "expert", help: "director-accounts.settle", guide: "equity.director-accounts#settle-a-balance" },
   { kind: "action", id: "director-settlement.ask", mode: "expert", help: "director-settlement.ask", guide: "equity.director-accounts#settle-a-balance" },
+  { kind: "action", id: "director-settlement.effective", mode: "expert", help: "director-settlement.effective", guide: "equity.director-accounts#convert-a-balance-to-shares" },
   { kind: "action", id: "director-settlement.attach-evidence", mode: "expert", help: "director-settlement.attach-evidence", guide: "equity.director-accounts#settle-a-balance" },
   { kind: "action", id: "director-fee.attach-evidence", mode: "expert", help: "director-fee.attach-evidence", guide: "equity.director-accounts#record-a-directors-fee" },
   { kind: "action", id: "pay-choice.attach-evidence", mode: "expert", help: "pay-choice.attach-evidence", guide: "equity.director-accounts#record-a-pay-choice" },

@@ -4,7 +4,7 @@ type: task
 title: Settle what the company owes a founder
 summary: The five ways to settle a founder's balance, the recommended default (a loan, converted at the first priced round), and repaying through a batch
 sources:
-  - docs/user-guide/founders-money.md sha256:7d21d8283fa211183260553e55d5e768914135c591f1c08100c79dbf0bdb9594
+  - docs/user-guide/founders-money.md sha256:5bb0d08e258456d44a69cfe4b4347560673bfae95b5661de6b8e3777804096c8
 data_class: general
 taint: trusted
 status: draft
@@ -46,9 +46,9 @@ compiled_at: 2026-11-03
 2. Another founder approves, never the founder settled; if every founder benefits, the accountant also reviews.
    (src: docs/user-guide/founders-money.md#steps)
 3. Attach the resolutions and the agreement. (src: docs/user-guide/founders-money.md#steps)
-4. For a conversion: after approval the company secretary files with ACRA; attach the ACRA
-   acknowledgement; Fyniq posts the conversion on the date ACRA registered it.
-   (src: docs/user-guide/founders-money.md#steps)
+4. For a conversion: after approval the company secretary files with ACRA; record ACRA's
+   lodgement reference and the date its register shows the shares; Fyniq posts the conversion on
+   that date ([[founders.director-accounts]]). (src: docs/user-guide/founders-money.md#steps)
 
 ## Repaid through a payment batch
 

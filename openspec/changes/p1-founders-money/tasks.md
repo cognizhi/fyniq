@@ -202,11 +202,31 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
   - **Not built.** A cash allotment after the books start: how its money is received and matched is not designed
     (FR-EQ-08 lists cash among the considerations). It waits for the owner's decision. The register's page and its
     guide come with 5.4.
-- [ ] 5.3 The convert route (D11):
+- [x] 5.3 The convert route (D11):
   - approve with the four documents, the price basis, the capacity and the measurement basis;
   - effective on the date ACRA registered it, posting from the register, refused in a closed period or after the
     approval lapsed.
   The oracle states both bases. `// req: FR-EQ-06`
+  Built:
+  - **The route.** A settlement converts with the class, the price per share and its basis (the latest priced round
+    by default, from `founders.price_basis`; a valuation; or a price every shareholder approves), the capacity
+    (lender, employee or shareholder), and the measurement basis. Fair value needs its price, the profit-or-loss
+    account and the accountant's note. RND-SHARE gives the shares, the converted amount and the remainder, shown on
+    the draft and in the approval's diff with the entry's legs.
+  - **The documents.** Asking needs all four, each by its evidence type (FOUNDER-30 names the missing ones). The
+    approval records the organisation's day it was approved and posts nothing.
+  - **Effective.** `recordConversionEffective` (Owner, Controller, stepped up, never the person) takes ACRA's
+    lodgement reference, the resolutions and the effective date. The date is no later than today, no earlier than the
+    approval, and no later than the lapse date (FOUNDER-36). It posts `share_issue@1` (LEDGER-46): Dr 2500/2120
+    naming the person (converted), Cr the class, and under fair value the difference to the account chosen. The issue
+    is recorded with its entry, refused in a closed period. The replay check rebuilds it from the issue and its
+    settlement.
+  - **The lapse.** `lapses_on` is the date by which the next AGM must be held, six months after the end of the latest
+    year ended, or else of the year it falls in [verify]. Editing it with evidence comes with 5.4.
+  - **The oracle.** `director_conversion` states both bases with RND-SHARE.
+  - **The Settle page.** It takes the conversion's fields, shows the shares and what stays owed, and records it as
+    registered.
+
 - [ ] 5.4 The ACRA steps (D12) and the register's page on the equity register's screen. `// req: FR-EQ-09`
 
 ## 6. Presentation, checks and the canvases (slice 6)

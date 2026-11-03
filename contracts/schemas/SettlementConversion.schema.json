@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "capacity": {
+      "description": "The capacity in which the founder converts.",
+      "enum": [
+        "lender",
+        "employee",
+        "shareholder"
+      ],
+      "examples": [
+        "lender"
+      ],
+      "type": "string"
+    },
+    "class_account_id": {
+      "description": "The class: its share-capital account, 3010 ordinary or 3020 preference.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "difference_account_id": {
+      "description": "Under fair value: the profit-or-loss account the difference goes to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d71"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "fair_value_price": {
+      "description": "Under fair value: the shares' fair value per share.",
+      "examples": [
+        "1.25"
+      ],
+      "type": "string"
+    },
+    "measurement": {
+      "description": "The measurement basis the accountant picks: the carrying amount (the default) or the shares' fair value with the difference in profit or loss.",
+      "enum": [
+        "carrying",
+        "fair_value"
+      ],
+      "examples": [
+        "carrying"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "Under fair value: the accountant's note on the basis.",
+      "examples": [
+        "Measured at the seed round's price, as the founder converts as a lender"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "price": {
+      "description": "The price per share in the base currency, a decimal string with at most 6 decimals.",
+      "examples": [
+        "1.20"
+      ],
+      "type": "string"
+    },
+    "price_basis": {
+      "description": "Where the price comes from: the latest priced round, an independent valuation, or a price every shareholder approves. Left out, the setting founders.price_basis.",
+      "enum": [
+        "latest_priced_round",
+        "valuation",
+        "unanimous"
+      ],
+      "examples": [
+        "latest_priced_round"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "class_account_id",
+    "price",
+    "capacity"
+  ],
+  "title": "SettlementConversion",
+  "type": "object"
+}

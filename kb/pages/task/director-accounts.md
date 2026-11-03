@@ -4,7 +4,7 @@ type: task
 title: Director accounts, each founder's statement, and naming the person on 2500 and 2120
 summary: 2500 and 2120 by person; marking directors, linking their member, naming the person on journal lines; statements and their PDF
 sources:
-  - docs/user-guide/director-accounts.md sha256:726649b27589db2b6585cd5ad8bbdbcc6ebba34fc0ffc6893fa12e419c950ef1
+  - docs/user-guide/director-accounts.md sha256:1783e426a7f77a15656ab35858cb8818614e8daa636194d39a014dada003a7c9
 data_class: general
 taint: trusted
 status: published
@@ -24,6 +24,8 @@ aliases:
   - exempt private company
   - section 162
   - settle a balance
+  - convert to shares
+  - share issue
 ---
 
 # Director accounts, each founder's statement, and naming the person on 2500 and 2120
@@ -89,8 +91,8 @@ aliases:
 
 ## Settle a balance
 
-- **Settle** on a person's card: choose **Repay in cash**, **Keep as a loan** or **Waive**
-  (converting to shares comes with the register of share issues), the account it is owed on and the
+- **Settle** on a person's card: choose **Repay in cash**, **Keep as a loan**, **Convert to
+  shares** or **Waive** (a SAFE or note comes later), the account it is owed on and the
   amount, at most what is owed, then the details: a loan's interest and repayment day, or the
   account a waiver credits, the capacity and why; **Save the draft**.
   (src: docs/user-guide/director-accounts.md#settle-a-balance)
@@ -100,6 +102,22 @@ aliases:
   the person settled, and the accountant too when every other approver benefits. A loan kept posts
   nothing; a repayment goes in the next payment batch ([[founders.settle-balance]]); a waiver posts
   on the day approved. (src: docs/user-guide/director-accounts.md#settle-a-balance)
+
+## Convert a balance to shares
+
+- In **Settle**, **Convert to shares**: the class, the price per share and its basis, and the
+  capacity; whole shares only, the rest stays owed. Attach all four documents, each as its type:
+  the shareholders' approval, the board resolution, the conversion agreement and the balance
+  confirmation; **Ask for approval**, which posts nothing.
+  (src: docs/user-guide/director-accounts.md#convert-a-balance-to-shares)
+- Once ACRA's register of members shows the allotment: the lodgement reference, the resolutions
+  and the day registered, then **Record as registered**; it posts on that day, never earlier,
+  and the shares join the register of share issues.
+  (src: docs/user-guide/director-accounts.md#convert-a-balance-to-shares)
+- The shareholders' approval lapses on the date by which the next AGM must be held; a closed
+  period is reopened rather than a later date chosen; the measurement basis is the carrying
+  amount unless the accountant notes the shares' fair value.
+  (src: docs/user-guide/director-accounts.md#convert-a-balance-to-shares)
 
 ## Name the person on a line
 

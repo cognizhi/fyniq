@@ -437,6 +437,21 @@ What a payment batch's release repaid a director or shareholder, posted on `date
 of `settlements` Dr its `account` (2500 or 2120, a director's account) with its `amount`, the line naming `person`, one
 of `people`; Cr `account`, a money account in the base currency, with the total.
 
+### Conversions of founders' balances to shares (`director_conversion`, `share_issue@1`)
+
+From FR-EQ-06, FR-EQ-08, Appendix B.7, `RND-SHARE` and the founders' money design D11 (rev 0.167).
+
+```json
+{"type": "director_conversion", "id": "SI-0001", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500",
+ "class": "3010", "amount": "100.00", "price": "1.20"}
+```
+
+A founder's balance converted to shares, posted on `date`, the day ACRA's register shows the allotment. `RND-SHARE`
+allots n whole shares for `amount` at `price` (83 shares here, 99.60 converted, 0.40 left owed): Dr `account` (2500 or
+2120, a director's account) with round(n × `price`), the line naming `person`; Cr `class` (a share-capital account) with
+the same, or, when `fair_value_price` is given, with round(n × `fair_value_price`) and the difference to `difference`, an
+income or expense account (Dr a loss, Cr a gain).
+
 ### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
 
 From Appendix B.4, §10.2, FR-FA-01, FR-FA-02, FR-FA-03 and the rows of rev 0.149, 0.150 and 0.151.

@@ -3,7 +3,7 @@ key: equity.director-accounts
 title: Director accounts
 mode: expert
 roles: [owner, controller, accountant, bookkeeper, auditor, tax_agent]
-requirements: [FR-EQ-01, FR-EQ-04, FR-EQ-05, FR-EQ-07, FR-EQ-11, FR-EQ-12, FR-EQ-14, FM-9]
+requirements: [FR-EQ-01, FR-EQ-04, FR-EQ-05, FR-EQ-06, FR-EQ-07, FR-EQ-08, FR-EQ-11, FR-EQ-12, FR-EQ-14, FM-9]
 ---
 
 # Director accounts
@@ -93,8 +93,8 @@ never changes: correct it with a journal to the director's account.
 
 What the company owes a director or shareholder is settled from their card:
 
-1. Select **Settle**, then choose how: **Repay in cash**, **Keep as a loan** or **Waive**.
-   Converting to shares comes with the register of share issues.
+1. Select **Settle**, then choose how: **Repay in cash**, **Keep as a loan**, **Convert to
+   shares** or **Waive**. Converting to a SAFE or note comes later.
 2. Choose the account it is owed on and the amount, at most what the company owes them, then
    the details: a loan's interest and repayment day, or the account a waiver credits, the
    capacity they waive it in and why. Select **Save the draft**.
@@ -107,6 +107,27 @@ it, never the person settled. If every other person who could approve also benef
 settlement of their own, the accountant reviews it as well. A loan kept posts nothing. A
 repayment is paid by the next payment batch into the person's approved bank account. A waiver
 posts on the day it is approved.
+
+## Convert a balance to shares
+
+Converting is approved first and becomes effective once ACRA registers the shares:
+
+1. In **Settle**, choose **Convert to shares**, the class, the price per share and its basis,
+   and the capacity they convert in. Fyniq rounds down to whole shares, and what is left stays
+   owed to them.
+2. Attach all four documents, each as its type: the shareholders' approval, the board
+   resolution, the conversion agreement and their balance confirmation. Then select **Ask for
+   approval**. Approving it posts nothing.
+3. Once ACRA's register of members shows the allotment, enter ACRA's lodgement reference, the
+   resolutions and the day it was registered, and select **Record as registered**. The
+   conversion posts on that day, never earlier, and the shares join the register of share
+   issues.
+
+The shareholders' approval lapses on the date by which the next AGM must be held. After that
+day, a conversion not yet registered needs a new approval. A day in a closed period is refused:
+reopen the period rather than choose a later date. The accountant chooses the measurement
+basis. The default is the carrying amount; the shares' fair value, with the difference in profit
+or loss, needs their note.
 
 ## Name the person on a journal or opening balance
 

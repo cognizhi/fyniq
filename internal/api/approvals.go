@@ -1818,7 +1818,7 @@ func registerApprovals(a *API) {
 		CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale, CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion, storage.CodeMembership,
 		storage.CodeParty, CodeOwnLink, director.CodeOwnFee, director.CodeFeePosted, director.CodeNoVote, director.CodeNotFee, director.CodeFee,
 		ledger.CodeDirectorFee, approval.CodeBeneficiary, director.CodeSettled, director.CodeNoAgreement, director.CodeSettlement, director.CodeNotSettlement,
-		ledger.CodeWaiver, ledger.CodeRepayment, director.CodeNotRepayment, director.CodeNotPosted, director.CodeNotRepaid},
+		ledger.CodeWaiver, ledger.CodeRepayment, director.CodeNotRepayment, director.CodeNotPosted, director.CodeNotRepaid, ledger.CodeConversion},
 		append(append(append(append(append(append(append(locks, ApprovalCodes...), MemberCodes...), SettingCodes...), PolicyCodes...), PackCodes...), PasskeyCodes...),
 			append(append(append(append(JournalApprovalCodes(), PayeeApprovalCodes()...), BillApprovalCodes()...), PaymentApprovalCodes()...), append(append(append(ApplicationApprovalCodes(), RefundApprovalCodes()...), OrderApprovalCodes()...), append(append(append(TemplateApprovalCodes(), InvoiceApprovalCodes()...), ReceiptApprovalCodes()...), append(append(append(WriteOffApprovalCodes(), CustomerApplicationApprovalCodes()...), CustomerRefundApprovalCodes()...), append(append(append(DepositApprovalCodes(), ClaimApprovalCodes()...), ReimbursementApprovalCodes()...), AdvanceApprovalCodes()...)...)...)...)...)...)...),
 		func(ctx context.Context, in *approvalDecideInput) (*approvalWriteOutput, error) {

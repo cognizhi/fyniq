@@ -160,6 +160,10 @@
       "label": "Attach",
       "tooltip": "Attach the agreement the settlement rests on: the loan note or board minute, or the deed of waiver."
     },
+    "director-settlement.effective": {
+      "label": "Record as registered",
+      "tooltip": "Record ACRA's lodgement reference and the day its register of members shows the allotment: the conversion posts on that day, never backdated."
+    },
     "director-settlement.ask": {
       "label": "Ask for approval",
       "tooltip": "Send the settlement to another person who holds the approval right on director accounts; never the person settled."

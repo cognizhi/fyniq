@@ -59,6 +59,10 @@
       "format": "uuid",
       "type": "string"
     },
+    "conversion": {
+      "$ref": "SettlementConversion.schema.json",
+      "description": "A conversion's class, price and basis, capacity and measurement basis."
+    },
     "date": {
       "description": "The day it was last drafted.",
       "examples": [
@@ -80,6 +84,14 @@
         "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa9"
       ],
       "format": "uuid",
+      "type": "string"
+    },
+    "lapses_on": {
+      "description": "An approved conversion not yet effective: the day the shareholders' approval lapses, the date by which the next AGM must be held [verify]; after it a new approval is needed.",
+      "examples": [
+        "2027-06-30"
+      ],
+      "format": "date",
       "type": "string"
     },
     "ledger_impact": {
@@ -128,12 +140,21 @@
       ],
       "type": "string"
     },
+    "share_issue": {
+      "$ref": "ShareIssue.schema.json",
+      "description": "An effective conversion: its share issue in the register."
+    },
+    "shares": {
+      "$ref": "SettlementShares.schema.json",
+      "description": "A conversion: the whole shares RND-SHARE allots, what they convert and what stays owed."
+    },
     "status": {
-      "description": "draft; waiting for another person's approval; or decided: the loan kept, the repayment payable by a payment batch, or the waiver posted.",
+      "description": "draft; waiting for another person's approval; decided: the loan kept, the repayment payable by a payment batch, the waiver posted, or the conversion approved and pending ACRA's register; or effective: the conversion's shares in the register and posted.",
       "enum": [
         "draft",
         "waiting",
-        "decided"
+        "decided",
+        "effective"
       ],
       "examples": [
         "waiting"
