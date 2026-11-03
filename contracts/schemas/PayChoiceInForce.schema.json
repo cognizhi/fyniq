@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "choice": {
+      "description": "The choice in force.",
+      "enum": [
+        "no_salary",
+        "salary_paid",
+        "salary_deferred",
+        "director_fee",
+        "shares_instead_of_pay"
+      ],
+      "examples": [
+        "no_salary"
+      ],
+      "type": "string"
+    },
+    "choice_id": {
+      "description": "The recorded choice.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fc1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "default": {
+      "description": "No choice is recorded for the month, so it is the default, no salary (FR-ORG-08).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "from": {
+      "description": "The month the recorded choice applies from.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2026-01-02T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "choice",
+    "default"
+  ],
+  "title": "PayChoiceInForce",
+  "type": "object"
+}

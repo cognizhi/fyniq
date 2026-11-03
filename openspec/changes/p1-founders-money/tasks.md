@@ -90,8 +90,13 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
 
 ## 3. Pay choices, fees, exempt status and confirmations (slice 3)
 
-- [ ] 3.1 Pay choices (D8): `director_pay_choice` (evidence required, append-only, "No salary" when none), its API
+- [x] 3.1 Pay choices (D8): `director_pay_choice` (evidence required, append-only, "No salary" when none), its API
   and the Director accounts' pay choice. Tests: the choice in force by month, and the default. `// req: FR-EQ-04`
+  Built: a pay choice is a document (migrations 000204 and 000205), drafted by an Owner or the Controller (A on the row),
+  recorded once its signed decision is attached (FOUNDER-13) and posting no entry; recorded, it changes no more
+  (FOUNDER-14). The choice in force is the latest month on or before the day, the later recording winning within a
+  month; each director account shows it as `pay_choice`, "No salary" by default. The guide's pay choice moved from a
+  setting to the Director accounts' card.
 - [ ] 3.2 Directors' fees (D8): the `director_fee` document as an approval object the person paid never signs,
   posting Dr 6050 / Cr 2120 on the entitlement date. The oracle states the legs. `// req: FR-EQ-04`
 - [ ] 3.3 Exempt status (D9): `exempt_status`, its API and the Director accounts' banner. Tests: the status in force

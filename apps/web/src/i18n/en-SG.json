@@ -136,6 +136,14 @@
       "label": "Director accounts",
       "tooltip": "What the company owes each director and shareholder on 2500 and 2120, and what they owe it, by where each amount came from."
     },
+    "director-accounts.pay-choice": {
+      "label": "Change pay choice",
+      "tooltip": "Record the person's pay choice from a month on, with the signed decision: no salary, salary paid, salary deferred, director's fee, or shares instead of pay."
+    },
+    "pay-choice.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the signed decision: the board minute or directors' resolution that sets the pay choice."
+    },
     "accounting.pre-incorporation": {
       "label": "Costs before incorporation",
       "tooltip": "Costs the founders paid themselves before the books start, each waiting for the accountant's decision, then owed to them on 2500."

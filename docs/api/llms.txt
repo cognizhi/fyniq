@@ -173,6 +173,15 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/director-accounts` (listDirectorAccounts): List the director accounts
 - `GET /v1/director-accounts/{contact_id}/statement` (getDirectorStatement): Work out a director's statement
 - `GET /v1/director-accounts/{contact_id}/statement/export` (exportDirectorStatement): Export a director's statement
+- `GET /v1/director-pay-choices` (listDirectorPayChoices): List directors' pay choices
+- `POST /v1/director-pay-choices` (createDirectorPayChoice): Draft a director's pay choice
+- `GET /v1/director-pay-choices/{choice_id}` (getDirectorPayChoice): Get a director's pay choice
+- `PUT /v1/director-pay-choices/{choice_id}` (replaceDirectorPayChoice): Change a drafted pay choice
+- `GET /v1/director-pay-choices/{choice_id}/evidence` (listDirectorPayChoiceEvidence): List a pay choice's files
+- `POST /v1/director-pay-choices/{choice_id}/evidence` (addDirectorPayChoiceEvidence): Attach the signed decision to a pay choice
+- `GET /v1/director-pay-choices/{choice_id}/evidence/{evidence_id}` (getDirectorPayChoiceEvidence): Get a pay choice's file
+- `DELETE /v1/director-pay-choices/{choice_id}/evidence/{evidence_id}` (removeDirectorPayChoiceEvidence): Remove a file from a drafted pay choice
+- `POST /v1/director-pay-choices/{choice_id}/record` (recordDirectorPayChoice): Record a director's pay choice
 - `POST /v1/document-links/{link_id}/revoke` (revokeDocumentLink): Revoke a quote's or invoice's online link
 - `GET /v1/document-template-bundle` (exportDocumentTemplates): Export templates as a bundle
 - `POST /v1/document-template-bundles` (importDocumentTemplates): Import templates from a bundle

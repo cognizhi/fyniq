@@ -24,7 +24,7 @@ Settings lets you change them.
 | Question | Recommended default | Where to change it |
 |---|---|---|
 | What happens to what the company owes me? | Keep it as an **interest-free loan, repayable on demand**, recorded by a board minute. At the **first priced funding round**, convert it into ordinary shares **at the round price** | Settings → Founders' money → Default settlement route |
-| Should I take a salary? | **No salary**, agreed in writing before go-live and reviewed each financial year, until the company can pay you in cash. Then start a normal salary through payroll | Settings → Founders' money → Pay choice per director |
+| Should I take a salary? | **No salary**, agreed in writing before go-live and reviewed each financial year, until the company can pay you in cash. Then start a normal salary through payroll | Accounting › Director accounts → Change pay choice |
 | Exception | If you hold an **Employment Pass**, its conditions may require your declared salary to be paid. Ask your accountant before choosing "no salary" | — |
 
 Why: you keep your claim, nobody's ownership moves at an arbitrary price, there is no CPF or tax

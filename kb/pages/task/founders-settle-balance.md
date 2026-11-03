@@ -4,7 +4,7 @@ type: task
 title: Settle what the company owes a founder
 summary: The five ways to settle a founder's balance, the recommended default (keep as a loan, convert at the first priced round) and the steps
 sources:
-  - docs/user-guide/founders-money.md sha256:5d254093cd738b24f7963eb1b767a766271f5a587178e7ec76a4ee03eedf4320
+  - docs/user-guide/founders-money.md sha256:3fee41697faa10d7801395b2ba9c3f20be8c81e257aeee8290edb0832ae08a27
 data_class: general
 taint: trusted
 status: draft

@@ -1,20 +1,21 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { FileDown, Handshake, Link2, ScrollText, TriangleAlert, UserRound } from "lucide-react";
+import { FileDown, Handshake, Link2, ScrollText, Stamp, TriangleAlert, UserRound, Wallet } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { formatAmount } from "../../format/amount";
-import { date } from "../../format/date";
+import { date, month } from "../../format/date";
 import { isZero, negate, sign } from "../../format/decimal";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { save } from "../reports/AccountantExports";
-import { originLabel, type DirectorAccount, type DirectorStatement } from "./data";
+import { EvidencePanel } from "../accounting/JournalEvidence";
+import { originLabel, payChoiceLabel, payChoices, payChoiceWords, type DirectorAccount, type DirectorStatement, type PayChoice } from "./data";
 
 // The roles that link a director or shareholder to the member who signs in as them: A on "Director accounts,
 // settlements, share issues" (Appendix D). Another of them approves it (FM-1).
@@ -51,7 +52,7 @@ async function accounts(asAt: string): Promise<{ as_at: string; currency: string
   return { ...head, items };
 }
 
-function PersonCard({ p, onStatement, onLink, mayLink }: { p: DirectorAccount; onStatement: () => void; onLink: () => void; mayLink: boolean }) {
+function PersonCard({ p, onStatement, onLink, onPay, mayLink }: { p: DirectorAccount; onStatement: () => void; onLink: () => void; onPay: () => void; mayLink: boolean }) {
   const roles = [p.director && "Director", p.shareholder && "Shareholder"].filter(Boolean).join(", ");
   const statement = helpText("director-accounts.statement");
   const link = helpText("director-accounts.link-member");
@@ -96,6 +97,20 @@ function PersonCard({ p, onStatement, onLink, mayLink }: { p: DirectorAccount; o
           </span>
           <span className="fy-small fy-wrap">A loan to a director is restricted unless the company is an exempt private company. Ask your accountant.</span>
         </div>
+      )}
+      {p.pay_choice && (
+        <p className="fy-row fy-row--wrap fy-row--between gap-2">
+          <span className="fy-small">
+            <span className="fy-strong">Pay: {payChoiceLabel(p.pay_choice.choice)}</span>
+            {p.pay_choice.default ? " · the default: no choice recorded" : ` · from ${month((p.pay_choice.from ?? "").slice(0, 7))}, signed decision recorded ${date(p.pay_choice.recorded_at ?? "")}`}
+          </span>
+          {mayLink && (
+            <Button variant="ghost" size="sm" type="button" onClick={onPay} title={helpText("director-accounts.pay-choice").tooltip}>
+              <Icon of={Wallet} />
+              {helpText("director-accounts.pay-choice").label}
+            </Button>
+          )}
+        </p>
       )}
       <div className="fy-row fy-row--wrap fy-row--between gap-2">
         <span className="fy-small fy-muted">{p.member_user_id ? "Signs in as a member: sees their own account" : "No member signs in as them"}</span>
@@ -337,6 +352,139 @@ function LinkMember({ person, onClose, onAsked }: { person: DirectorAccount | nu
   );
 }
 
+// PayChoiceDialog drafts a person's pay choice from a month on, takes the signed decision as its evidence, and records
+// it (FR-EQ-04): append-only, superseding the one before from its month.
+function PayChoiceDialog({ person, onClose, onDone }: { person: DirectorAccount | null; onClose: () => void; onDone: (said: string) => void }) {
+  const id = useId();
+  const confirm = useConfirm();
+  const queries = useQueryClient();
+  const [from, setFrom] = useState("");
+  const [choice, setChoice] = useState<PayChoice | "">("");
+  const [note, setNote] = useState("");
+  const [draft, setDraft] = useState<{ id: string; etag: string; decisions: number } | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const [key] = useState(newKey);
+  if (!person) return null;
+  const close = () => {
+    setDraft(null);
+    setProblem(null);
+    onClose();
+  };
+  const reread = async (choiceId: string) => {
+    const r = await api.GET("/v1/director-pay-choices/{choice_id}", { params: { path: { choice_id: choiceId } } });
+    if (r.error) return setProblem(problemOf(r.error));
+    setDraft({ id: choiceId, etag: etagOf(r.response), decisions: r.data.decisions });
+  };
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!/^\d{4}-\d{2}$/.test(from)) errs.from = "Choose the month it applies from.";
+    if (!choice) errs.choice = "Choose the pay choice.";
+    setErrors(errs);
+    if (!choice || Object.keys(errs).length > 0) return;
+    setBusy(true);
+    setProblem(null);
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/director-pay-choices", {
+        params: { header: { "Idempotency-Key": key } },
+        body: { contact_id: person.contact_id, from: `${from}-01`, choice, ...(note.trim() ? { note: note.trim() } : {}) },
+      }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    setDraft({ id: out.data.id, etag: etagOf(out.response), decisions: out.data.decisions });
+  };
+  const record = async () => {
+    if (!draft) return;
+    setBusy(true);
+    setProblem(null);
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/director-pay-choices/{choice_id}/record", { params: { path: { choice_id: draft.id }, header: { "If-Match": draft.etag, "Idempotency-Key": newKey() } } }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    await queries.invalidateQueries({ queryKey: ["director-accounts"] });
+    onDone(`Recorded ${person.legal_name}'s pay choice: ${payChoiceLabel(out.data.choice)} from ${month(out.data.from.slice(0, 7))}.`);
+    close();
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && close()} title={`${person.legal_name}'s pay choice`} description="From a month on, with the signed decision. It supersedes the choice before it from that month; with none recorded, it is no salary.">
+      <div className="fy-stack fy-stack--3">
+        {problem && <Refusal problem={problem} title="The pay choice was not saved" />}
+        {!draft ? (
+          <form className="fy-stack fy-stack--3" onSubmit={save} noValidate>
+            <div className="fy-form fy-form--2">
+              <div className="fy-field">
+                <label className="fy-label" htmlFor={`${id}-from`}>
+                  From the month
+                </label>
+                <input className="fy-input" type="month" id={`${id}-from`} value={from} onChange={(e) => setFrom(e.target.value)} aria-invalid={errors.from ? true : undefined} aria-describedby={errors.from ? `${id}-from-error` : undefined} />
+                {errors.from && (
+                  <span className="fy-error" id={`${id}-from-error`}>
+                    {errors.from}
+                  </span>
+                )}
+              </div>
+              <div className="fy-field">
+                <label className="fy-label" htmlFor={`${id}-choice`}>
+                  Pay choice
+                </label>
+                <select className="fy-select" id={`${id}-choice`} value={choice} onChange={(e) => setChoice(e.target.value as PayChoice)} aria-invalid={errors.choice ? true : undefined} aria-describedby={errors.choice ? `${id}-choice-error` : undefined}>
+                  <option value="">Choose a pay choice</option>
+                  {payChoices.map((c) => (
+                    <option key={c} value={c}>
+                      {payChoiceWords[c]}
+                    </option>
+                  ))}
+                </select>
+                {errors.choice && (
+                  <span className="fy-error" id={`${id}-choice-error`}>
+                    {errors.choice}
+                  </span>
+                )}
+              </div>
+            </div>
+            {choice === "salary_deferred" && (
+              <p className="fy-small fy-wrap">
+                <Icon of={TriangleAlert} /> CPF is still due at the end of each month, and the salary is taxed, even though it is not paid. Ask your accountant first.
+              </p>
+            )}
+            <div className="fy-field">
+              <label className="fy-label" htmlFor={`${id}-note`}>
+                Note (optional)
+              </label>
+              <textarea className="fy-textarea" rows={2} maxLength={1000} id={`${id}-note`} value={note} onChange={(e) => setNote(e.target.value)} />
+            </div>
+            <div className="fy-row justify-end gap-2">
+              <Button variant="ghost" type="button" onClick={close}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" disabled={busy}>
+                {busy ? "Saving…" : "Next: attach the signed decision"}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <EvidencePanel record={{ kind: "pay-choice", id: draft.id, etag: draft.etag }} draft mayAttach onChanged={() => void reread(draft.id)} />
+            <div className="fy-row justify-end gap-2">
+              <Button variant="ghost" type="button" onClick={close}>
+                Later
+              </Button>
+              <Button variant="primary" type="button" disabled={busy || draft.decisions === 0} onClick={record}>
+                <Icon of={Stamp} />
+                {busy ? "Recording…" : "Record the pay choice"}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </Dialog>
+  );
+}
+
 // DirectorAccounts is Accounting › Director accounts (docs/design/screens DirectorAccounts; FR-EQ-01, FR-EQ-11,
 // FR-EQ-14): what the company owes each director and shareholder on 2500 and 2120, and what they owe it, from the
 // balance service; each person's statement by where the amounts came from; and the member who signs in as each.
@@ -345,6 +493,7 @@ export function DirectorAccounts() {
   const [asAt, setAsAt] = useState("");
   const [shown, setShown] = useState<string | null>(null);
   const [linking, setLinking] = useState<DirectorAccount | null>(null);
+  const [paying, setPaying] = useState<DirectorAccount | null>(null);
   const [status, setStatus] = useState<{ text: string; approval?: string } | null>(null);
   const q = useQuery({ queryKey: ["director-accounts", asAt], queryFn: () => accounts(asAt) });
   const mayLink = (session.roles ?? []).some((r) => linkers.includes(r));
@@ -405,12 +554,13 @@ export function DirectorAccounts() {
       {people.length > 0 && (
         <div className="fy-grid fy-grid--2 fy-stagger">
           {people.map((p) => (
-            <PersonCard key={p.contact_id} p={p} mayLink={mayLink} onStatement={() => setShown(p.contact_id)} onLink={() => setLinking(p)} />
+            <PersonCard key={p.contact_id} p={p} mayLink={mayLink} onStatement={() => setShown(p.contact_id)} onLink={() => setLinking(p)} onPay={() => setPaying(p)} />
           ))}
         </div>
       )}
       {selected && q.data && <Statement key={selected.contact_id} person={selected} until={q.data.as_at} />}
       <LinkMember person={linking} onClose={() => setLinking(null)} onAsked={(text, approval) => setStatus({ text, approval })} />
+      <PayChoiceDialog key={paying?.contact_id ?? "none"} person={paying} onClose={() => setPaying(null)} onDone={(text) => setStatus({ text })} />
     </div>
   );
 }

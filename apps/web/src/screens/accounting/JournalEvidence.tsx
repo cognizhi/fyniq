@@ -17,7 +17,8 @@ type Evidence =
   | components["schemas"]["ClaimEvidence"]
   | components["schemas"]["CardEvidence"]
   | components["schemas"]["PayeeBankChangeEvidence"]
-  | components["schemas"]["PreIncorporationCostEvidence"];
+  | components["schemas"]["PreIncorporationCostEvidence"]
+  | components["schemas"]["DirectorPayChoiceEvidence"];
 type DataClass = "general" | "personal" | "bank";
 
 // Who attaches evidence to a journal: C on "Evidence: add, supersede" and a view of the journal (Appendix D): the Owner,
@@ -33,9 +34,10 @@ export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeepe
 // A record evidence goes on: a journal, a bill or vendor credit, an invoice or credit note, an expense claim, a
 // completed line of a company card, a change of a vendor's bank details, or a change of a person's own bank account, as
 // the person sees it (my-bank-change) or its approver does (claimant-bank-change), or a cost a founder paid before the
-// books start (FR-DOC-05, FR-AP-14, FR-AP-18, FR-CT-03, FR-AP-22, FR-EQ-03), at its ETag.
+// books start, or a director's pay choice (FR-DOC-05, FR-AP-14, FR-AP-18, FR-CT-03, FR-AP-22, FR-EQ-03, FR-EQ-04), at its
+// ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost";
+  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice";
   id: string;
   etag: string;
 }
@@ -53,6 +55,7 @@ const kindsOf = {
   "my-bank-change": ["bank_app_screenshot", "bank_statement"],
   "claimant-bank-change": ["bank_app_screenshot", "bank_statement"],
   "pre-incorporation-cost": ["receipt", "invoice", "card statement", "screenshot"],
+  "pay-choice": ["board minute", "directors' resolution", "signed letter"],
 };
 
 // nouns name each record in the panel's words.
@@ -66,6 +69,7 @@ const nouns = {
   "my-bank-change": "change of your bank account",
   "claimant-bank-change": "change of bank account",
   "pre-incorporation-cost": "cost",
+  "pay-choice": "pay choice",
 };
 
 // Result is an evidence call's answer, whichever record it went to.
@@ -90,6 +94,8 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
                   ? await api.GET("/v1/claimant-bank-changes/{change_id}/evidence", { params: { path: { change_id: r.id }, query: { page_size: 100 } } })
                   : r.kind === "pre-incorporation-cost"
                     ? await api.GET("/v1/pre-incorporation-costs/{cost_id}/evidence", { params: { path: { cost_id: r.id }, query: { page_size: 100 } } })
+                    : r.kind === "pay-choice"
+                      ? await api.GET("/v1/director-pay-choices/{choice_id}/evidence", { params: { path: { choice_id: r.id }, query: { page_size: 100 } } })
                     : await api.GET("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: r.id }, query: { page_size: 100 } } });
   if (out.error) throw out.error;
   return out.data.items ?? [];
@@ -192,6 +198,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                   ? api.POST("/v1/me/bank-changes/{change_id}/evidence", { params: { path: { change_id: record.id }, header }, body, bodySerializer })
                   : record.kind === "pre-incorporation-cost"
                     ? api.POST("/v1/pre-incorporation-costs/{cost_id}/evidence", { params: { path: { cost_id: record.id }, header }, body, bodySerializer })
+                    : record.kind === "pay-choice"
+                      ? api.POST("/v1/director-pay-choices/{choice_id}/evidence", { params: { path: { choice_id: record.id }, header }, body, bodySerializer })
                     : api.POST("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: record.id }, header }, body, bodySerializer });
     const out = await guarded(confirm, post);
     setBusy(false);
@@ -223,6 +231,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                 ? await api.GET("/v1/me/bank-changes/{change_id}/evidence/{evidence_id}", { params: { path: { change_id: record.id, evidence_id: e.id } } })
                 : record.kind === "pre-incorporation-cost"
                   ? await api.GET("/v1/pre-incorporation-costs/{cost_id}/evidence/{evidence_id}", { params: { path: { cost_id: record.id, evidence_id: e.id } } })
+                  : record.kind === "pay-choice"
+                    ? await api.GET("/v1/director-pay-choices/{choice_id}/evidence/{evidence_id}", { params: { path: { choice_id: record.id, evidence_id: e.id } } })
                   : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
     const header = { "If-Match": etagOf(read.response) };
     const del = (): Promise<Result> =>
@@ -238,6 +248,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                 ? api.DELETE("/v1/me/bank-changes/{change_id}/evidence/{evidence_id}", { params: { path: { change_id: record.id, evidence_id: e.id }, header } })
                 : record.kind === "pre-incorporation-cost"
                   ? api.DELETE("/v1/pre-incorporation-costs/{cost_id}/evidence/{evidence_id}", { params: { path: { cost_id: record.id, evidence_id: e.id }, header } })
+                  : record.kind === "pay-choice"
+                    ? api.DELETE("/v1/director-pay-choices/{choice_id}/evidence/{evidence_id}", { params: { path: { choice_id: record.id, evidence_id: e.id }, header } })
                   : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
     const out = read.error ? read : await guarded(confirm, del);
     setBusy(false);
@@ -265,6 +277,10 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
             : "The receipts the claim rests on. Once it is approved they are kept, and never deleted, for as long as the records are."
           : record.kind === "card-line"
           ? "The receipt for what you paid with the card. It is kept, and never deleted, for as long as the records are."
+          : record.kind === "pay-choice"
+          ? draft
+            ? "The signed decision: the board minute or directors' resolution that sets the pay choice. It is needed before the choice is recorded; until then a file can come off again."
+            : "The signed decision the choice rests on. Once recorded it is kept, and never deleted, for as long as the records are."
           : record.kind === "pre-incorporation-cost"
           ? draft
             ? "The receipt or invoice the person paid. The accountant decides the cost only once it is attached; until then a file can come off again."

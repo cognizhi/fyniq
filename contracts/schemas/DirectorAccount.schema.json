@@ -60,6 +60,10 @@
       "$ref": "Money.schema.json",
       "description": "Their balances together, as the ledger holds them: negative is owed to the person; positive means the person owes the company, which the balance sheet shows under 1250 Staff \u0026 director advances (FR-EQ-11)."
     },
+    "pay_choice": {
+      "$ref": "PayChoiceInForce.schema.json",
+      "description": "Their pay choice in force in the month of the day the balances are at (FR-EQ-04): no salary by default."
+    },
     "shareholder": {
       "description": "A shareholder.",
       "examples": [
@@ -76,7 +80,8 @@
     "active",
     "balances",
     "net",
-    "in_debit"
+    "in_debit",
+    "pay_choice"
   ],
   "title": "DirectorAccount",
   "type": "object"

@@ -4,7 +4,7 @@ type: task
 title: Director accounts, each founder's statement, and naming the person on 2500 and 2120
 summary: 2500 and 2120 by person; marking directors, linking their member, naming the person on journal lines; statements and their PDF
 sources:
-  - docs/user-guide/director-accounts.md sha256:ab8ff2f359ac9a50a890ea6171e1893cbab0f50a6955627d8ff34fd849976750
+  - docs/user-guide/director-accounts.md sha256:49955797e9ba427632e1691c13085302fe53c08dbff5cdd825ea0bb90967577b
 data_class: general
 taint: trusted
 status: published
@@ -56,6 +56,13 @@ aliases:
 - The linked member sees their own account in **Money I put in** and never approves their own
   settlement; a member signs in as one director or shareholder at most; **Nobody** unlinks them.
   (src: docs/user-guide/director-accounts.md#link-each-director-to-the-member-who-signs-in-as-them)
+
+## Pay choices
+
+- Each card shows the person's pay choice in force this month, **No salary** when none is
+  recorded; **Change pay choice** records a new one from a month, with the signed decision
+  attached. Details: [[founders.pay-choice]].
+  (src: docs/user-guide/director-accounts.md#record-a-pay-choice)
 
 ## Name the person on a line
 

@@ -28,6 +28,22 @@ export const originWords: Record<Origin, string> = {
   other: "Other",
 };
 
+// The pay choices of a director or shareholder (FR-EQ-04), in the PRD's order; with none recorded, no salary.
+export const payChoices = ["no_salary", "salary_paid", "salary_deferred", "director_fee", "shares_instead_of_pay"] as const;
+export type PayChoice = (typeof payChoices)[number];
+
+export const payChoiceWords: Record<PayChoice, string> = {
+  no_salary: "No salary",
+  salary_paid: "Salary paid",
+  salary_deferred: "Salary deferred",
+  director_fee: "Director's fee",
+  shares_instead_of_pay: "Shares instead of pay",
+};
+
+export function payChoiceLabel(c: string): string {
+  return payChoiceWords[c as PayChoice] ?? c;
+}
+
 export function originLabel(o: string): string {
   return originWords[o as Origin] ?? o;
 }

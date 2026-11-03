@@ -172,3 +172,32 @@ describe("the journal line's pickers", () => {
     await waitFor(() => noViolations(document.body));
   });
 });
+
+// req: FR-EQ-04
+// req: equity/founders-money Choice recorded with the signed decision
+describe("a director's pay choice", () => {
+  it("shows the choice in force, drafts a new one, and records it once the signed decision is attached", async () => {
+    const withChoice = { ...list, items: [{ ...mei, pay_choice: { choice: "no_salary", default: true } }] };
+    const drafted = { id: "pc-1", status: "draft", version: 1, contact_id: "c-mei", legal_name: "Mei Lin Tan", from: "2026-11-01", choice: "salary_deferred", decisions: 1, checks: [] };
+    const seen = answer({
+      "GET /v1/director-accounts": { status: 200, body: withChoice },
+      "POST /v1/director-pay-choices": { status: 201, body: drafted, headers: { ETag: '"1-draft"' } },
+      "GET /v1/director-pay-choices/pc-1/evidence": { status: 200, body: { items: [] } },
+      "POST /v1/director-pay-choices/pc-1/record": { status: 200, body: { ...drafted, status: "recorded" } },
+    });
+    renderPage(DirectorAccounts, { path: "/accounting/directors" });
+    const card = (await screen.findByRole("heading", { name: "Mei Lin Tan" })).closest("section") as HTMLElement;
+    expect(within(card).getByText("Pay: No salary")).toBeTruthy();
+    fireEvent.click(within(card).getByRole("button", { name: "Change pay choice" }));
+    fireEvent.change(await screen.findByLabelText("From the month"), { target: { value: "2026-11" } });
+    fireEvent.change(screen.getByLabelText("Pay choice"), { target: { value: "salary_deferred" } });
+    expect(screen.getByText(/CPF is still due at the end of each month/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Next: attach the signed decision" }));
+    const record = await screen.findByRole("button", { name: "Record the pay choice" });
+    fireEvent.click(record);
+    expect(await screen.findByText(/Recorded Mei Lin Tan's pay choice: Salary deferred from Nov 2026/)).toBeTruthy();
+    const post = seen.find((s) => s.method === "POST" && s.path === "/v1/director-pay-choices");
+    expect(post?.body).toEqual({ contact_id: "c-mei", from: "2026-11-01", choice: "salary_deferred" });
+    expect(seen.find((s) => s.path === "/v1/director-pay-choices/pc-1/record")?.headers.get("If-Match")).toBe('"1-draft"');
+  });
+});
