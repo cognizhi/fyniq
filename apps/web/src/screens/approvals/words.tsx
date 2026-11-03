@@ -50,6 +50,7 @@ const operations: Record<Approval["operation"], string> = {
   "claimant_bank_change.approve": "Change a person's bank account for reimbursements",
   "payment_batch.approve": "Approve a payment batch",
   "payment_batch.reapprove": "Approve a payment batch again after a payee's account changed",
+  "contact_member_link.change": "Link a director or shareholder to the member who signs in as them",
 };
 
 export function operationLabel(op: string): string {
@@ -89,6 +90,7 @@ const objects: Record<string, string> = {
   payee_bank_change: "Supplier's bank details",
   claimant_bank_change: "Bank account for reimbursements",
   payment_batch: "Payment batch",
+  contact_member_link: "Director's or shareholder's member",
 };
 
 export function objectLabel(t: string): string {
