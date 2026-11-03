@@ -343,18 +343,28 @@ function RelatedParties({ asAt }: { asAt: string }) {
     save(r.data.file_name, r.data.media_type, r.data.content_base64);
   };
   const s = q.data;
-  const natures = [
-    ["loan", "Loan"],
-    ["deferred_pay", "Deferred pay"],
-    ["fees_for_year", "Fees for the year"],
-    ["converted", "Converted to shares"],
-    ["waived", "Waived"],
-  ] as const;
+  // A row per person and nature with something to disclose, as the notes list them.
+  const rows = (s?.rows ?? []).flatMap((r) => {
+    const party = `${r.legal_name}, ${r.director ? "director" : "shareholder"}`;
+    const f = r.figures;
+    const loanWords = sign(f.loan.amount) < 0 ? "Advance owed to the company" : "Loan to the company";
+    return (
+      [
+        [loanWords, f.loan.amount],
+        ["Remuneration deferred", f.deferred_pay.amount],
+        ["Directors' fees for the year", f.fees_for_year.amount],
+        ["Converted to shares in the year", f.converted.amount],
+        ["Waived in the year", f.waived.amount],
+      ] as const
+    )
+      .filter(([, amount]) => !isZero(amount))
+      .map(([nature, amount]) => ({ key: `${r.contact_id}-${nature}`, party, nature, amount }));
+  });
   return (
     <section className="fy-card" aria-labelledby={`${id}-title`}>
       <div className="fy-card__head" style={{ flexWrap: "wrap" }}>
         <h2 className="fy-h3" id={`${id}-title`} title={h.tooltip}>
-          {h.label}
+          Related-party schedule for the notes
         </h2>
         <Button variant="ghost" size="sm" type="button" disabled={busy || !s || (s.rows ?? []).length === 0} onClick={() => void download()}>
           <Icon of={FileDown} />
@@ -371,42 +381,30 @@ function RelatedParties({ asAt }: { asAt: string }) {
         )}
         {s && (s.rows ?? []).length === 0 && <p className="fy-small fy-muted">Nothing to disclose: no balance and no fee, conversion or waiver this year.</p>}
       </div>
-      {s && (s.rows ?? []).length > 0 && (
+      {rows.length > 0 && s && (
         <div className="fy-tablewrap" style={{ border: 0, borderRadius: 0 }}>
-          <table className="fy-table">
+          <table className="fy-table fy-table--cards">
             <caption className="fy-sr">Related parties as at {date(s.as_at)}</caption>
             <thead>
               <tr>
-                <th scope="col">Person ({s.currency})</th>
-                {natures.map(([k, label]) => (
-                  <th key={k} scope="col" className="fy-num">
-                    {label}
-                  </th>
-                ))}
+                <th scope="col">Party</th>
+                <th scope="col">Nature</th>
+                <th scope="col" className="fy-num">
+                  Amount ({s.currency})
+                </th>
               </tr>
             </thead>
             <tbody>
-              {(s.rows ?? []).map((r) => (
-                <tr key={r.contact_id}>
-                  <td data-card="title">{r.legal_name}</td>
-                  {natures.map(([k]) => (
-                    <td key={k} data-card="amount" className="fy-num">
-                      {formatAmount(r.figures[k].amount)}
-                    </td>
-                  ))}
+              {rows.map((r) => (
+                <tr key={r.key}>
+                  <td data-card="title">{r.party}</td>
+                  <td data-card="meta">{r.nature}</td>
+                  <td data-card="amount" className="fy-num">
+                    {formatAmount(r.amount)}
+                  </td>
                 </tr>
               ))}
             </tbody>
-            <tfoot>
-              <tr>
-                <td>Total</td>
-                {natures.map(([k]) => (
-                  <td key={k} className="fy-num">
-                    {formatAmount(s.totals[k].amount)}
-                  </td>
-                ))}
-              </tr>
-            </tfoot>
           </table>
         </div>
       )}

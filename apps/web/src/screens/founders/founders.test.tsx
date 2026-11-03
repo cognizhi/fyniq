@@ -97,9 +97,12 @@ describe("Director accounts", () => {
     renderPage(DirectorAccounts, { path: "/accounting/directors" });
     fireEvent.click(await screen.findByRole("button", { name: "Related parties" }));
     const table = await screen.findByRole("table", { name: "Related parties as at 31 Oct 2026" });
-    const arjunRow = within(table).getByText("Arjun Rao").closest("tr") as HTMLElement;
+    const arjunRow = within(table).getByText("Advance owed to the company").closest("tr") as HTMLElement;
+    expect(within(arjunRow).getByText("Arjun Rao, director")).toBeTruthy();
     expect(within(arjunRow).getByText(/−200.00|-200.00/)).toBeTruthy();
-    expect(within(table).getByText("900.00")).toBeTruthy();
+    const fees = within(table).getByText("Directors' fees for the year").closest("tr") as HTMLElement;
+    expect(within(fees).getByText("800.00")).toBeTruthy();
+    expect(within(table).queryByText("Waived in the year")).toBeNull(); // nothing waived: no row
     expect(screen.getByText(/fees, conversions and waivers from 1 Jan 2026/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "CSV" }));
     await waitFor(() => expect(seen.some((x) => x.path === "/v1/director-accounts/related-parties/export" && x.query.includes("as_at=2026-10-31"))).toBe(true));
