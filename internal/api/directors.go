@@ -60,6 +60,7 @@ type DirectorAccount struct {
 	Balances     []DirectorBalance `json:"balances" doc:"One per director's account of the chart, in code order."`
 	Net          Money             `json:"net" doc:"Their balances together, as the ledger holds them: negative is owed to the person; positive means the person owes the company, which the balance sheet shows under 1250 Staff & director advances (FR-EQ-11)."`
 	InDebit      bool              `json:"in_debit" doc:"The net is a debit: the person owes the company (FR-EQ-11)." example:"false"`
+	PayChoice    PayChoiceInForce  `json:"pay_choice" doc:"Their pay choice in force in the month of the day the balances are at (FR-EQ-04): no salary by default."`
 }
 
 // DirectorAccountList is every director's and shareholder's account as at a day.
@@ -163,10 +164,13 @@ type directorStatementOutput struct{ Body DirectorStatement }
 var DirectorCodes = []string{director.CodeNotPerson, director.CodeDates, CodeNotLinked}
 
 
-func directorAccountOf(p director.Person, accounts []storage.Account, base money.Currency) DirectorAccount {
+// directorAccountOf is a person's director account as the API shows it, with the pay choice in force in asAt's month
+// among choices, their recorded pay choices.
+func directorAccountOf(p director.Person, accounts []storage.Account, base money.Currency, choices []director.RecordedChoice, asAt time.Time) DirectorAccount {
 	out := DirectorAccount{ContactID: p.Contact.ID.String(), LegalName: p.Contact.LegalName, Director: p.Contact.Director,
 		Shareholder: p.Contact.Shareholder, MemberUserID: idOrEmpty(p.Contact.MemberUserID), Active: p.Contact.Active,
-		Balances: make([]DirectorBalance, 0, len(accounts)), Net: moneyAmount(p.Net), InDebit: p.Net.Sign() > 0}
+		Balances: make([]DirectorBalance, 0, len(accounts)), Net: moneyAmount(p.Net), InDebit: p.Net.Sign() > 0,
+		PayChoice: payChoiceInForce(choices, asAt)}
 	for _, a := range accounts {
 		b, ok := p.Balances[a.ID]
 		if !ok {
@@ -305,8 +309,12 @@ func registerDirectors(a *API) {
 			}
 			out.Body = DirectorAccountList{AsAt: dateOf(asAt), Currency: base.Code, Items: make([]DirectorAccount, 0, len(page)),
 				Unkeyed: moneyAmount(unkeyed), NextCursor: next}
+			choices, err := director.PayChoicesOf(ctx, u)
+			if err != nil {
+				return err
+			}
 			for _, x := range page {
-				out.Body.Items = append(out.Body.Items, directorAccountOf(x, accounts, base))
+				out.Body.Items = append(out.Body.Items, directorAccountOf(x, accounts, base, choices[x.Contact.ID], asAt))
 			}
 			return nil
 		})
@@ -346,7 +354,11 @@ func registerDirectors(a *API) {
 			if err != nil {
 				return directorProblem(err)
 			}
-			x := directorAccountOf(person, accounts, base)
+			choices, err := director.PayChoicesOf(ctx, u)
+			if err != nil {
+				return err
+			}
+			x := directorAccountOf(person, accounts, base, choices[c.ID], asAt)
 			out.Body = MyDirectorAccount{Linked: true, Account: &x}
 			return nil
 		})

@@ -513,6 +513,9 @@ const (
 	// DocumentPreIncorporationCost is a cost a director or shareholder paid before the books start, which the accountant
 	// decides and which posts to their account on 2500 (FR-EQ-03; p1-founders-money design D7).
 	DocumentPreIncorporationCost DocumentType = "pre_incorporation_cost"
+	// DocumentDirectorPayChoice is a director's or shareholder's pay choice from a month on, recorded with the signed
+	// decision and posting no entry; append-only, a later one supersedes it from its month (FR-EQ-04; design D8).
+	DocumentDirectorPayChoice DocumentType = "director_pay_choice"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).

@@ -257,6 +257,8 @@ export const actions = [
   { kind: "action", id: "claim.submit", mode: "basic", help: "claim.submit", guide: "claims.my-claims#submit-a-claim" },
   { kind: "action", id: "claim.withdraw", mode: "basic", help: "claim.withdraw", guide: "claims.my-claims#submit-a-claim" },
   { kind: "action", id: "claim.attach-evidence", mode: "basic", help: "claim.attach-evidence", guide: "claims.my-claims#attach-the-receipt" },
+  { kind: "action", id: "director-accounts.pay-choice", mode: "expert", help: "director-accounts.pay-choice", guide: "equity.director-accounts#record-a-pay-choice" },
+  { kind: "action", id: "pay-choice.attach-evidence", mode: "expert", help: "pay-choice.attach-evidence", guide: "equity.director-accounts#record-a-pay-choice" },
   { kind: "action", id: "pre-incorporation.add", mode: "basic", help: "pre-incorporation.add", guide: "equity.pre-incorporation-costs#record-a-cost" },
   { kind: "action", id: "pre-incorporation.change", mode: "basic", help: "pre-incorporation.change", guide: "equity.pre-incorporation-costs#record-a-cost" },
   { kind: "action", id: "pre-incorporation.decide", mode: "basic", help: "pre-incorporation.decide", guide: "equity.pre-incorporation-costs#what-the-accountant-decides" },

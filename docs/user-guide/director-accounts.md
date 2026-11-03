@@ -3,7 +3,7 @@ key: equity.director-accounts
 title: Director accounts
 mode: expert
 roles: [owner, controller, accountant, bookkeeper, auditor, tax_agent]
-requirements: [FR-EQ-01, FR-EQ-11, FR-EQ-14]
+requirements: [FR-EQ-01, FR-EQ-04, FR-EQ-11, FR-EQ-14]
 ---
 
 # Director accounts
@@ -41,6 +41,20 @@ linked. Once linked, the member sees their own account in **Money I put in**, an
 their own settlement. A member signs in as one director or shareholder at most. To unlink them,
 choose **Nobody**.
 
+## Record a pay choice
+
+Each card shows the person's **pay choice** in force this month: no salary, salary paid, salary
+deferred, director's fee, or shares instead of pay. With none recorded, it is **No salary**.
+
+1. Select **Change pay choice**, then the month it applies from and the choice.
+2. Attach the signed decision: the board minute or directors' resolution.
+3. Select **Record the pay choice**.
+
+An Owner or the Controller records it. A recorded choice never changes: to change it, record a new
+one from the month it changes, and the new one applies from then. Salary deferred still means CPF
+is due at the end of each month and the salary is taxed, though it is not paid, so ask your
+accountant first. Payroll applies the choice once it is built.
+
 ## Name the person on a journal or opening balance
 
 On a journal line or an opening balance on 2500 or 2120, choose **Whose account** and **Where it
@@ -70,6 +84,8 @@ Select **PDF for confirmation** to download the statement as a PDF to send to th
 | Account is not a director's account, so the line names no person | Leave the person out, or post to the director's account |
 | Amounts on 2500 and 2120 name no director or shareholder | Reverse those journals and post them again with the person each amount belongs to |
 | You are the member being linked, so another person approves it | Ask another Owner or the Controller to approve the link |
+| The pay choice has no signed decision attached | Attach the board minute or resolution, then record it |
+| The pay choice is recorded, so it changes no more | Record a new choice from the month it changes |
 
 ## Related
 

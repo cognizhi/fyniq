@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "choice": {
+      "description": "no_salary; salary_paid through payroll; salary_deferred: pay owed on 2120 instead of paid, with CPF and tax still due; director_fee voted by the shareholders; shares_instead_of_pay, whose equity transaction comes with FR-EQ-17.",
+      "enum": [
+        "no_salary",
+        "salary_paid",
+        "salary_deferred",
+        "director_fee",
+        "shares_instead_of_pay"
+      ],
+      "examples": [
+        "no_salary"
+      ],
+      "type": "string"
+    },
+    "contact_id": {
+      "description": "The director or shareholder: a contact marked so.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "from": {
+      "description": "The month it applies from: any day of it; it is kept as the month's first day.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "note": {
+      "description": "Why, or what the decision says.",
+      "examples": [
+        "Board minute of 2 Jan 2026: no salary until the seed round."
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    }
+  },
+  "required": [
+    "contact_id",
+    "from",
+    "choice"
+  ],
+  "title": "DirectorPayChoiceDraft",
+  "type": "object"
+}

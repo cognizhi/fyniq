@@ -4,7 +4,8 @@ type: concept
 title: Founder pay choices
 summary: No salary (the recommended default), salary paid, deferred, director's fee or shares; deferral still triggers CPF and tax
 sources:
-  - docs/user-guide/founders-money.md sha256:5d254093cd738b24f7963eb1b767a766271f5a587178e7ec76a4ee03eedf4320
+  - docs/user-guide/founders-money.md sha256:3fee41697faa10d7801395b2ba9c3f20be8c81e257aeee8290edb0832ae08a27
+  - docs/user-guide/director-accounts.md sha256:49955797e9ba427632e1691c13085302fe53c08dbff5cdd825ea0bb90967577b
 data_class: general
 taint: trusted
 status: draft
@@ -25,8 +26,18 @@ compiled_at: 2026-11-03
 - Exception: a founder holding an **Employment Pass** may be required by its conditions to be
   paid the declared salary; ask the accountant before choosing "no salary".
   (src: docs/user-guide/founders-money.md#the-recommended-defaults)
-- It is a setting: Settings → Founders' money → Pay choice per director.
+- It is changed in Accounting › Director accounts → Change pay choice.
   (src: docs/user-guide/founders-money.md#the-recommended-defaults)
+
+## Record a pay choice
+
+- Each person's card shows the choice in force this month; with none recorded, **No salary**.
+  (src: docs/user-guide/director-accounts.md#record-a-pay-choice)
+- **Change pay choice**: the month it applies from and the choice, then the signed decision (board
+  minute or directors' resolution) attached, then **Record the pay choice**; an Owner or the
+  Controller records it. (src: docs/user-guide/director-accounts.md#record-a-pay-choice)
+- A recorded choice never changes: a new one from a later month applies from then. Payroll
+  applies the choice once it is built. (src: docs/user-guide/director-accounts.md#record-a-pay-choice)
 
 ## The choices
 
@@ -46,3 +57,6 @@ Unpaid pay becomes part of the founder's balance: [[founders.balance]].
 
 - **✖ Pay deferred without a recorded pay choice**: record the pay choice for that director and
   month, or pay the salary. (src: docs/user-guide/founders-money.md#common-problems)
+- **The pay choice has no signed decision attached**: attach the minute or resolution, then record
+  it; **the pay choice is recorded, so it changes no more**: record a new choice from the month it
+  changes. (src: docs/user-guide/director-accounts.md#common-problems)
