@@ -4,7 +4,7 @@ type: task
 title: Settle what the company owes a founder
 summary: The five ways to settle a founder's balance, the recommended default (a loan, converted at the first priced round), and repaying through a batch
 sources:
-  - docs/user-guide/founders-money.md sha256:4640be34c6917a4441918136b0947d142d0389bbaafcb147cc22e0e0b4a13e2b
+  - docs/user-guide/founders-money.md sha256:7d21d8283fa211183260553e55d5e768914135c591f1c08100c79dbf0bdb9594
 data_class: general
 taint: trusted
 status: draft
@@ -41,8 +41,9 @@ compiled_at: 2026-11-03
 
 ## Steps
 
-1. Equity → *Money I put in* → **Settle**, then choose an option. (src: docs/user-guide/founders-money.md#steps)
-2. The other founder approves; if every founder benefits, the accountant also reviews.
+1. An Owner or the Controller selects **Settle** on the founder's card in Accounting › Director
+   accounts, then chooses an option ([[founders.director-accounts]]). (src: docs/user-guide/founders-money.md#steps)
+2. Another founder approves, never the founder settled; if every founder benefits, the accountant also reviews.
    (src: docs/user-guide/founders-money.md#steps)
 3. Attach the resolutions and the agreement. (src: docs/user-guide/founders-money.md#steps)
 4. For a conversion: after approval the company secretary files with ACRA; attach the ACRA

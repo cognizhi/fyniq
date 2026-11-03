@@ -2,6 +2,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "default_route": {
+      "description": "The route a new settlement starts with: the setting founders.default_route in force today (FR-EQ-05, recommended default 15).",
+      "enum": [
+        "keep",
+        "repay",
+        "convert",
+        "waive"
+      ],
+      "examples": [
+        "keep"
+      ],
+      "type": "string"
+    },
     "items": {
       "items": {
         "$ref": "DirectorSettlement.schema.json"
@@ -17,7 +30,8 @@
     }
   },
   "required": [
-    "items"
+    "items",
+    "default_route"
   ],
   "title": "DirectorSettlementPage",
   "type": "object"

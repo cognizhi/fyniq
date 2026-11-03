@@ -118,6 +118,7 @@ export const routes = [
   // Director accounts (FR-EQ-01, FR-EQ-11, FR-EQ-14; p1-founders-money task 1.6): Expert, as the settlement routes are;
   // a founder's own account, Money I put in, is Basic.
   { kind: "route", id: "director-accounts", path: "/accounting/directors", mode: "expert", signedIn: true, help: "accounting.directors", guide: "equity.director-accounts" },
+  { kind: "route", id: "director-settlement", path: "/accounting/directors/$contactId/settle", mode: "expert", signedIn: true, help: "accounting.director-settlement", guide: "equity.director-accounts#settle-a-balance" },
   { kind: "route", id: "money-i-put-in", path: "/me/money-i-put-in", mode: "basic", signedIn: true, help: "founders.money-i-put-in", guide: "equity.founders-money#see-what-the-company-owes-you" },
   // Costs before the books start (FR-EQ-03; p1-founders-money task 2.2): Basic, as the founders record their own costs.
   { kind: "route", id: "pre-incorporation-costs", path: "/accounting/pre-incorporation", mode: "basic", signedIn: true, help: "accounting.pre-incorporation", guide: "equity.pre-incorporation-costs" },
@@ -261,6 +262,9 @@ export const actions = [
   { kind: "action", id: "director-accounts.exempt", mode: "expert", help: "director-accounts.exempt", guide: "equity.director-accounts#record-the-exempt-private-company-status" },
   { kind: "action", id: "exempt-status.attach-evidence", mode: "expert", help: "exempt-status.attach-evidence", guide: "equity.director-accounts#record-the-exempt-private-company-status" },
   { kind: "action", id: "director-accounts.fees", mode: "expert", help: "director-accounts.fees", guide: "equity.director-accounts#record-a-directors-fee" },
+  { kind: "action", id: "director-accounts.settle", mode: "expert", help: "director-accounts.settle", guide: "equity.director-accounts#settle-a-balance" },
+  { kind: "action", id: "director-settlement.ask", mode: "expert", help: "director-settlement.ask", guide: "equity.director-accounts#settle-a-balance" },
+  { kind: "action", id: "director-settlement.attach-evidence", mode: "expert", help: "director-settlement.attach-evidence", guide: "equity.director-accounts#settle-a-balance" },
   { kind: "action", id: "director-fee.attach-evidence", mode: "expert", help: "director-fee.attach-evidence", guide: "equity.director-accounts#record-a-directors-fee" },
   { kind: "action", id: "pay-choice.attach-evidence", mode: "expert", help: "pay-choice.attach-evidence", guide: "equity.director-accounts#record-a-pay-choice" },
   { kind: "action", id: "pre-incorporation.add", mode: "basic", help: "pre-incorporation.add", guide: "equity.pre-incorporation-costs#record-a-cost" },

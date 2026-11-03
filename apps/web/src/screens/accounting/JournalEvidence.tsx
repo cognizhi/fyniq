@@ -20,7 +20,8 @@ type Evidence =
   | components["schemas"]["PreIncorporationCostEvidence"]
   | components["schemas"]["DirectorPayChoiceEvidence"]
   | components["schemas"]["DirectorFeeEvidence"]
-  | components["schemas"]["ExemptStatusEvidence"];
+  | components["schemas"]["ExemptStatusEvidence"]
+  | components["schemas"]["DirectorSettlementEvidence"];
 type DataClass = "general" | "personal" | "bank";
 
 // Who attaches evidence to a journal: C on "Evidence: add, supersede" and a view of the journal (Appendix D): the Owner,
@@ -39,7 +40,7 @@ export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeepe
 // books start, a director's pay choice or fee, or the exempt-private-company status (FR-DOC-05, FR-AP-14, FR-AP-18,
 // FR-CT-03, FR-AP-22, FR-EQ-03, FR-EQ-04, FR-EQ-11), at its ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status";
+  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement";
   id: string;
   etag: string;
 }
@@ -60,6 +61,7 @@ const kindsOf = {
   "pay-choice": ["board minute", "directors' resolution", "signed letter"],
   "director-fee": ["shareholders' resolution", "AGM minutes", "written resolution"],
   "exempt-status": ["ACRA business profile", "register of members"],
+  "director-settlement": ["loan note", "board minute", "deed of waiver", "directors' resolution"],
 };
 
 // nouns name each record in the panel's words.
@@ -76,6 +78,7 @@ const nouns = {
   "pay-choice": "pay choice",
   "director-fee": "director's fee",
   "exempt-status": "exempt status",
+  "director-settlement": "settlement",
 };
 
 // Result is an evidence call's answer, whichever record it went to.
@@ -106,6 +109,8 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
                         ? await api.GET("/v1/director-fees/{fee_id}/evidence", { params: { path: { fee_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "exempt-status"
                           ? await api.GET("/v1/exempt-statuses/{status_id}/evidence", { params: { path: { status_id: r.id }, query: { page_size: 100 } } })
+                        : r.kind === "director-settlement"
+                          ? await api.GET("/v1/director-settlements/{settlement_id}/evidence", { params: { path: { settlement_id: r.id }, query: { page_size: 100 } } })
                     : await api.GET("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: r.id }, query: { page_size: 100 } } });
   if (out.error) throw out.error;
   return out.data.items ?? [];
@@ -214,6 +219,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                         ? api.POST("/v1/director-fees/{fee_id}/evidence", { params: { path: { fee_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "exempt-status"
                           ? api.POST("/v1/exempt-statuses/{status_id}/evidence", { params: { path: { status_id: record.id }, header }, body, bodySerializer })
+                        : record.kind === "director-settlement"
+                          ? api.POST("/v1/director-settlements/{settlement_id}/evidence", { params: { path: { settlement_id: record.id }, header }, body, bodySerializer })
                     : api.POST("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: record.id }, header }, body, bodySerializer });
     const out = await guarded(confirm, post);
     setBusy(false);
@@ -251,6 +258,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                       ? await api.GET("/v1/director-fees/{fee_id}/evidence/{evidence_id}", { params: { path: { fee_id: record.id, evidence_id: e.id } } })
                       : record.kind === "exempt-status"
                         ? await api.GET("/v1/exempt-statuses/{status_id}/evidence/{evidence_id}", { params: { path: { status_id: record.id, evidence_id: e.id } } })
+                      : record.kind === "director-settlement"
+                        ? await api.GET("/v1/director-settlements/{settlement_id}/evidence/{evidence_id}", { params: { path: { settlement_id: record.id, evidence_id: e.id } } })
                   : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
     const header = { "If-Match": etagOf(read.response) };
     const del = (): Promise<Result> =>
@@ -272,6 +281,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                       ? api.DELETE("/v1/director-fees/{fee_id}/evidence/{evidence_id}", { params: { path: { fee_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "exempt-status"
                         ? api.DELETE("/v1/exempt-statuses/{status_id}/evidence/{evidence_id}", { params: { path: { status_id: record.id, evidence_id: e.id }, header } })
+                      : record.kind === "director-settlement"
+                        ? api.DELETE("/v1/director-settlements/{settlement_id}/evidence/{evidence_id}", { params: { path: { settlement_id: record.id, evidence_id: e.id }, header } })
                   : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
     const out = read.error ? read : await guarded(confirm, del);
     setBusy(false);
@@ -299,6 +310,10 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
             : "The receipts the claim rests on. Once it is approved they are kept, and never deleted, for as long as the records are."
           : record.kind === "card-line"
           ? "The receipt for what you paid with the card. It is kept, and never deleted, for as long as the records are."
+          : record.kind === "director-settlement"
+          ? draft
+            ? "The agreement the settlement rests on: the loan note or board minute for a loan kept or repaid, the deed or minute of a waiver. It is needed before you ask for approval; until then a file can come off again."
+            : "The agreement the settlement rests on. Once decided it is kept, and never deleted, for as long as the records are."
           : record.kind === "exempt-status"
           ? draft
             ? "The ACRA business profile that shows the status. It is needed before the status is recorded; until then a file can come off again."

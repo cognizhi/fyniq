@@ -4,7 +4,7 @@ type: task
 title: Director accounts, each founder's statement, and naming the person on 2500 and 2120
 summary: 2500 and 2120 by person; marking directors, linking their member, naming the person on journal lines; statements and their PDF
 sources:
-  - docs/user-guide/director-accounts.md sha256:7f7c765c06f7ab9b62e4b56deed903eee4c975fcb607ceddfe389964702249a2
+  - docs/user-guide/director-accounts.md sha256:726649b27589db2b6585cd5ad8bbdbcc6ebba34fc0ffc6893fa12e419c950ef1
 data_class: general
 taint: trusted
 status: published
@@ -23,6 +23,7 @@ aliases:
   - account in debit
   - exempt private company
   - section 162
+  - settle a balance
 ---
 
 # Director accounts, each founder's statement, and naming the person on 2500 and 2120
@@ -85,6 +86,20 @@ aliases:
   to 6050 Directors' fees on the day voted, owed to the director on 2120 until paid. A posted fee
   never changes: a journal to the director's account corrects it.
   (src: docs/user-guide/director-accounts.md#record-a-directors-fee)
+
+## Settle a balance
+
+- **Settle** on a person's card: choose **Repay in cash**, **Keep as a loan** or **Waive**
+  (converting to shares comes with the register of share issues), the account it is owed on and the
+  amount, at most what is owed, then the details: a loan's interest and repayment day, or the
+  account a waiver credits, the capacity and why; **Save the draft**.
+  (src: docs/user-guide/director-accounts.md#settle-a-balance)
+- Check what it posts, attach the loan note, board minute or deed of waiver, then **Ask for
+  approval**. (src: docs/user-guide/director-accounts.md#settle-a-balance)
+- An Owner or the Controller settles; another person who holds the approval right approves, never
+  the person settled, and the accountant too when every other approver benefits. A loan kept posts
+  nothing; a repayment goes in the next payment batch ([[founders.settle-balance]]); a waiver posts
+  on the day approved. (src: docs/user-guide/director-accounts.md#settle-a-balance)
 
 ## Name the person on a line
 

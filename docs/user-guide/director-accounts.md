@@ -3,7 +3,7 @@ key: equity.director-accounts
 title: Director accounts
 mode: expert
 roles: [owner, controller, accountant, bookkeeper, auditor, tax_agent]
-requirements: [FR-EQ-01, FR-EQ-04, FR-EQ-11, FR-EQ-12, FR-EQ-14]
+requirements: [FR-EQ-01, FR-EQ-04, FR-EQ-05, FR-EQ-07, FR-EQ-11, FR-EQ-12, FR-EQ-14, FM-9]
 ---
 
 # Director accounts
@@ -88,6 +88,25 @@ An Owner or the Controller records it. Another person who holds the approval rig
 never the director it is paid to. On approval it posts to 6050 Directors' fees on the day it was
 voted, and the director's account on 2120 shows it as owed to them until it is paid. A posted fee
 never changes: correct it with a journal to the director's account.
+
+## Settle a balance
+
+What the company owes a director or shareholder is settled from their card:
+
+1. Select **Settle**, then choose how: **Repay in cash**, **Keep as a loan** or **Waive**.
+   Converting to shares comes with the register of share issues.
+2. Choose the account it is owed on and the amount, at most what the company owes them, then
+   the details: a loan's interest and repayment day, or the account a waiver credits, the
+   capacity they waive it in and why. Select **Save the draft**.
+3. Check what it posts, then attach the agreement: the loan note or board minute, or the deed of
+   waiver.
+4. Select **Ask for approval**.
+
+An Owner or the Controller settles a balance. Another person who holds the approval right approves
+it, never the person settled. If every other person who could approve also benefits from a
+settlement of their own, the accountant reviews it as well. A loan kept posts nothing. A
+repayment is paid by the next payment batch into the person's approved bank account. A waiver
+posts on the day it is approved.
 
 ## Name the person on a journal or opening balance
 

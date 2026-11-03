@@ -148,6 +148,22 @@
       "label": "Attach",
       "tooltip": "Attach the ACRA business profile that shows the status."
     },
+    "accounting.director-settlement": {
+      "label": "Settle a balance",
+      "tooltip": "Choose how what the company owes a director or shareholder is settled: repay it through a payment batch, keep it as a loan, or waive it; another person approves it."
+    },
+    "director-accounts.settle": {
+      "label": "Settle",
+      "tooltip": "Repay, keep as a loan or waive what the company owes this person, with the agreement attached; another person approves it, never them."
+    },
+    "director-settlement.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the agreement the settlement rests on: the loan note or board minute, or the deed of waiver."
+    },
+    "director-settlement.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Send the settlement to another person who holds the approval right on director accounts; never the person settled."
+    },
     "director-accounts.fees": {
       "label": "Fees",
       "tooltip": "Record a director's fee the shareholders voted, with their resolution, for another person to approve; it is then owed to the director on 2120."

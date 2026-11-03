@@ -90,7 +90,8 @@ type DirectorSettlement struct {
 
 // DirectorSettlementPage is a page of settlements, the latest first.
 type DirectorSettlementPage struct {
-	Items      []DirectorSettlement `json:"items" nullable:"false"`
+	Items        []DirectorSettlement `json:"items" nullable:"false"`
+	DefaultRoute string               `json:"default_route" enum:"keep,repay,convert,waive" doc:"The route a new settlement starts with: the setting founders.default_route in force today (FR-EQ-05, recommended default 15)." example:"keep"`
 	NextCursor string               `json:"next_cursor,omitempty" doc:"Pass it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjIwMjYtMTEtMDN8MDE5MiJ9"`
 }
 
@@ -439,8 +440,8 @@ func registerSettlements(a *API) {
 		OperationID: "listDirectorSettlements", Method: http.MethodGet, Path: "/v1/director-settlements", Tags: []string{"Founders"},
 		Summary: "List settlements of founders' balances",
 		Description: "The settlements of what the company owes directors and shareholders, drafted, waiting for approval and decided, the " +
-			"latest first, a page at a time, narrowed by person (FR-EQ-05). Needs the right to read every director's account. Read-only; " +
-			"no side effects.",
+			"latest first, a page at a time, narrowed by person (FR-EQ-05), with the route a new one starts with (founders.default_route). " +
+			"Needs the right to read every director's account. Read-only; no side effects.",
 	}, append([]string{CodeCursor, CodeInvalid}, readCodes...), func(ctx context.Context, in *settlementListInput) (*settlementListOutput, error) {
 		after, err := decodeCursor(in.Cursor)
 		if err != nil {
@@ -455,6 +456,9 @@ func registerSettlements(a *API) {
 		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			v, err := a.settlementView(ctx, u)
 			if err != nil {
+				return err
+			}
+			if out.Body.DefaultRoute, err = director.DefaultRoute(ctx, u, v.today); err != nil {
 				return err
 			}
 			for {
@@ -547,8 +551,9 @@ func registerSettlements(a *API) {
 		OperationID: "createDirectorSettlement", Method: http.MethodPost, Path: "/v1/director-settlements", Tags: []string{"Founders"},
 		DefaultStatus: http.StatusCreated, Summary: "Draft a settlement of a founder's balance",
 		Description: "Drafts a settlement of what the company owes a director or shareholder on 2500 or 2120 (FR-EQ-05): at most what is owed " +
-			"today, by a route (keep as a loan on terms, or waive with the account it credits, the capacity and the reason; the default " +
-			"route is the setting founders.default_route). Attach the loan note, minute or deed with addDirectorSettlementEvidence, then " +
+			"today less what other settlements approved to be repaid still have open, by a route (keep as a loan on terms; repay through " +
+			"a payment batch, into the person's approved account (FOUNDER-32 while there is none); or waive with the account it credits, " +
+			"the capacity and the reason; the default route is the setting founders.default_route). Attach the loan note, minute or deed with addDirectorSettlementEvidence, then " +
 			"ask for approval with requestDirectorSettlementApproval. Side effects: the draft, audit events. Every problem comes back " +
 			"together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.",
 	}, writeCodes, func(ctx context.Context, in *createSettlementInput) (*settlementOutput, error) {

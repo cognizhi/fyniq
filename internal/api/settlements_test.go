@@ -76,6 +76,9 @@ func TestDirectorSettlements(t *testing.T) {
 	if keep.Status != http.StatusCreated || keep.str("route") != director.RouteKeep || keep.str("terms", "interest_rate") != "0" || keep.str("owed", "amount") != "1000.00" {
 		t.Fatalf("drafting keep: %d %s", keep.Status, keep.Raw)
 	}
+	if l := e.call(http.MethodGet, "/v1/director-settlements?contact_id="+kow, weiling, nil); l.str("default_route") != director.RouteKeep || !strings.Contains(l.Raw, keep.str("id")) {
+		t.Errorf("the list, with the route a new settlement starts with: %s", l.Raw)
+	}
 	keepPath := "/v1/director-settlements/" + keep.str("id")
 	e.problemIs(ask(keepPath, keep.Header.Get("ETag")), "requestDirectorSettlementApproval", 422, director.CodeNoAgreement)
 	attach(keepPath, keep.Header.Get("ETag"))

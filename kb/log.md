@@ -302,3 +302,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-03] compile | docs/user-guide/organisation-settings.md (Founders' money) → settings.organisation; settings.change re-hashed (p1-founders-money task 4.1)
 
 ## [2026-11-03] compile | docs/user-guide/payment-batches.md, founders-money.md → purchases.payment-batches, founders.settle-balance, founders.balance, founders.pay-choice (directors repaid through payment batches, p1-founders-money 4.3)
+
+## [2026-11-03] compile | docs/user-guide/director-accounts.md, founders-money.md → founders.director-accounts, founders.settle-balance, founders.balance, founders.pay-choice (the Settle a balance page, p1-founders-money 4.4)

@@ -163,7 +163,20 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
     on "Payment batches", never the person (APR-15); the settlement is open again.
   - **Oracle.** `director_repayment` states the legs.
   - **Not tested yet:** releasing in Standard mode with a director paid; the founder-facing Settle page (4.4).
-- [ ] 4.4 The Settle a balance page, with the routes, the ledger impact and the approvals. `// req: FR-EQ-05`
+- [x] 4.4 The Settle a balance page, with the routes, the ledger impact and the approvals. `// req: FR-EQ-05`
+  Built: **Settle** on a person's card in Accounting › Director accounts (Owner, Controller) opens
+  `/accounting/directors/$contactId/settle`:
+  - **Routes.** Repay, keep or waive, starting on `founders.default_route`, which `listDirectorSettlements` now
+    answers. Convert and SAFE are shown with when they come.
+  - **Details.** The account owed on and the amount; a loan's terms; a waiver's credit account (equity or income,
+    never money, a director's account, share capital or GST), capacity and reason.
+  - **Ledger impact.** What it posts: plain words, and the lines in Expert mode.
+  - **Evidence and approval.** The agreement attached, then Ask for approval, never the person settled, with the
+    accountant's review when every approver benefits.
+  - **The person's settlements.** Each one opens read-only once asked or decided; a repayment shows its account and
+    what batches repaid.
+  - **Help.** The help keys and the guide section "Settle a balance".
+  - **Canvas.** The screen follows the `director-settlement` fragment; republishing the canvases is task 6.3.
 
 ## 5. Conversion and the register of share issues (slice 5)
 
