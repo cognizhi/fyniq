@@ -16,7 +16,8 @@ type Evidence =
   | components["schemas"]["InvoiceEvidence"]
   | components["schemas"]["ClaimEvidence"]
   | components["schemas"]["CardEvidence"]
-  | components["schemas"]["PayeeBankChangeEvidence"];
+  | components["schemas"]["PayeeBankChangeEvidence"]
+  | components["schemas"]["PreIncorporationCostEvidence"];
 type DataClass = "general" | "personal" | "bank";
 
 // Who attaches evidence to a journal: C on "Evidence: add, supersede" and a view of the journal (Appendix D): the Owner,
@@ -31,10 +32,10 @@ export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeepe
 
 // A record evidence goes on: a journal, a bill or vendor credit, an invoice or credit note, an expense claim, a
 // completed line of a company card, a change of a vendor's bank details, or a change of a person's own bank account, as
-// the person sees it (my-bank-change) or its approver does (claimant-bank-change) (FR-DOC-05, FR-AP-14, FR-AP-18,
-// FR-CT-03, FR-AP-22), at its ETag.
+// the person sees it (my-bank-change) or its approver does (claimant-bank-change), or a cost a founder paid before the
+// books start (FR-DOC-05, FR-AP-14, FR-AP-18, FR-CT-03, FR-AP-22, FR-EQ-03), at its ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change";
+  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost";
   id: string;
   etag: string;
 }
@@ -51,6 +52,7 @@ const kindsOf = {
   // bank_app_screenshot or bank_statement meets a person's change's required evidence (FR-AP-22)
   "my-bank-change": ["bank_app_screenshot", "bank_statement"],
   "claimant-bank-change": ["bank_app_screenshot", "bank_statement"],
+  "pre-incorporation-cost": ["receipt", "invoice", "card statement", "screenshot"],
 };
 
 // nouns name each record in the panel's words.
@@ -63,6 +65,7 @@ const nouns = {
   "bank-change": "change of bank details",
   "my-bank-change": "change of your bank account",
   "claimant-bank-change": "change of bank account",
+  "pre-incorporation-cost": "cost",
 };
 
 // Result is an evidence call's answer, whichever record it went to.
@@ -85,7 +88,9 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
                 ? await api.GET("/v1/me/bank-changes/{change_id}/evidence", { params: { path: { change_id: r.id }, query: { page_size: 100 } } })
                 : r.kind === "claimant-bank-change"
                   ? await api.GET("/v1/claimant-bank-changes/{change_id}/evidence", { params: { path: { change_id: r.id }, query: { page_size: 100 } } })
-                  : await api.GET("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: r.id }, query: { page_size: 100 } } });
+                  : r.kind === "pre-incorporation-cost"
+                    ? await api.GET("/v1/pre-incorporation-costs/{cost_id}/evidence", { params: { path: { cost_id: r.id }, query: { page_size: 100 } } })
+                    : await api.GET("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: r.id }, query: { page_size: 100 } } });
   if (out.error) throw out.error;
   return out.data.items ?? [];
 }
@@ -149,7 +154,7 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
   const choose = (f: File) => {
     setFile(f);
     setMissing({ ...missing, file: false });
-    if (!kind.trim() && (record.kind === "claim" || record.kind === "card-line")) setKind("receipt");
+    if (!kind.trim() && (record.kind === "claim" || record.kind === "card-line" || record.kind === "pre-incorporation-cost")) setKind("receipt");
     if (input.current) input.current.value = "";
   };
 
@@ -185,7 +190,9 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                 ? api.POST("/v1/bank-changes/{change_id}/evidence", { params: { path: { change_id: record.id }, header }, body, bodySerializer })
                 : record.kind === "my-bank-change"
                   ? api.POST("/v1/me/bank-changes/{change_id}/evidence", { params: { path: { change_id: record.id }, header }, body, bodySerializer })
-                  : api.POST("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: record.id }, header }, body, bodySerializer });
+                  : record.kind === "pre-incorporation-cost"
+                    ? api.POST("/v1/pre-incorporation-costs/{cost_id}/evidence", { params: { path: { cost_id: record.id }, header }, body, bodySerializer })
+                    : api.POST("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: record.id }, header }, body, bodySerializer });
     const out = await guarded(confirm, post);
     setBusy(false);
     setFailed("The file was not attached");
@@ -214,7 +221,9 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
               ? await api.GET("/v1/bank-changes/{change_id}/evidence/{evidence_id}", { params: { path: { change_id: record.id, evidence_id: e.id } } })
               : record.kind === "my-bank-change"
                 ? await api.GET("/v1/me/bank-changes/{change_id}/evidence/{evidence_id}", { params: { path: { change_id: record.id, evidence_id: e.id } } })
-                : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
+                : record.kind === "pre-incorporation-cost"
+                  ? await api.GET("/v1/pre-incorporation-costs/{cost_id}/evidence/{evidence_id}", { params: { path: { cost_id: record.id, evidence_id: e.id } } })
+                  : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
     const header = { "If-Match": etagOf(read.response) };
     const del = (): Promise<Result> =>
       record.kind === "bill"
@@ -227,7 +236,9 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
               ? api.DELETE("/v1/bank-changes/{change_id}/evidence/{evidence_id}", { params: { path: { change_id: record.id, evidence_id: e.id }, header } })
               : record.kind === "my-bank-change"
                 ? api.DELETE("/v1/me/bank-changes/{change_id}/evidence/{evidence_id}", { params: { path: { change_id: record.id, evidence_id: e.id }, header } })
-                : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
+                : record.kind === "pre-incorporation-cost"
+                  ? api.DELETE("/v1/pre-incorporation-costs/{cost_id}/evidence/{evidence_id}", { params: { path: { cost_id: record.id, evidence_id: e.id }, header } })
+                  : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
     const out = read.error ? read : await guarded(confirm, del);
     setBusy(false);
     setFailed("The file was not removed");
@@ -254,6 +265,10 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
             : "The receipts the claim rests on. Once it is approved they are kept, and never deleted, for as long as the records are."
           : record.kind === "card-line"
           ? "The receipt for what you paid with the card. It is kept, and never deleted, for as long as the records are."
+          : record.kind === "pre-incorporation-cost"
+          ? draft
+            ? "The receipt or invoice the person paid. The accountant decides the cost only once it is attached; until then a file can come off again."
+            : "The receipt the cost rests on. Once decided it is kept, and never deleted, for as long as the records are."
           : record.kind === "bill"
           ? draft
             ? "The supplier's invoice, and any other file the bill rests on. While it is a draft, a file can come off again."

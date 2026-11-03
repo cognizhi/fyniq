@@ -597,11 +597,26 @@ var (
 	// under any right, which the handler narrows to the caller's own. The member a director or shareholder signs in as is
 	// linked by a holder of A (the Owner, the Controller) through the approval engine, approved by another, never the
 	// member (FM-1).
-	ListDirectorAccounts           = Policy{Operation: "listDirectorAccounts", Capability: DirectorAccounts, Need: View, Unqualified: true}
-	GetDirectorStatement           = Policy{Operation: "getDirectorStatement", Capability: DirectorAccounts, Need: View, Unqualified: true}
-	ExportDirectorStatement        = Policy{Operation: "exportDirectorStatement", Capability: DirectorAccounts, Need: View, Unqualified: true}
-	GetMyDirectorAccount           = Policy{Operation: "getMyDirectorAccount", Capability: DirectorAccounts, Need: View}
-	LinkContactMember              = Policy{Operation: "linkContactMember", Capability: DirectorAccounts, Need: Approve}
+	ListDirectorAccounts    = Policy{Operation: "listDirectorAccounts", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetDirectorStatement    = Policy{Operation: "getDirectorStatement", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	ExportDirectorStatement = Policy{Operation: "exportDirectorStatement", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetMyDirectorAccount    = Policy{Operation: "getMyDirectorAccount", Capability: DirectorAccounts, Need: View}
+	LinkContactMember       = Policy{Operation: "linkContactMember", Capability: DirectorAccounts, Need: Approve}
+	// Costs before the books start (FR-EQ-03; design D7): an Owner or the Controller records a founder's cost (A on the
+	// row), and the accountant, who posts on it (P), decides it; reading needs the whole row, not an Employee's own.
+	ListPreIncorporationCosts   = Policy{Operation: "listPreIncorporationCosts", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetPreIncorporationCost     = Policy{Operation: "getPreIncorporationCost", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	RecordPreIncorporationCost  = Policy{Operation: "recordPreIncorporationCost", Capability: DirectorAccounts, Need: Approve}
+	ReplacePreIncorporationCost = Policy{Operation: "replacePreIncorporationCost", Capability: DirectorAccounts, Need: Approve}
+	DecidePreIncorporationCost  = Policy{Operation: "decidePreIncorporationCost", Capability: DirectorAccounts, Need: Post,
+		Note: "The person who paid the cost never decides it."}
+	// A cost's receipt (FR-EQ-03, FR-DOC-05), on the cost's own row, as a card line's is: whoever records costs attaches
+	// and removes them, and whoever reads every director's account reads them.
+	AddPreIncorporationCostEvidence    = Policy{Operation: "addPreIncorporationCostEvidence", Capability: DirectorAccounts, Need: Approve}
+	ListPreIncorporationCostEvidence   = Policy{Operation: "listPreIncorporationCostEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetPreIncorporationCostEvidence    = Policy{Operation: "getPreIncorporationCostEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	RemovePreIncorporationCostEvidence = Policy{Operation: "removePreIncorporationCostEvidence", Capability: DirectorAccounts, Need: Approve,
+		Note: "Only while the cost needs a decision (FR-DOC-07)."}
 	GetPayeeBankDetails            = Policy{Operation: "getPayeeBankDetails", Capability: VendorBankDetails, Need: View}
 	GetPayeeBankChange             = Policy{Operation: "getPayeeBankChange", Capability: VendorBankDetails, Need: View}
 	CreatePayeeBankChange          = Policy{Operation: "createPayeeBankChange", Capability: VendorBankDetails, Need: Create}
@@ -1091,6 +1106,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid, VoidFixedAsset, RequestFixedAssetVoid,
 	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,
 	ListDirectorAccounts, GetDirectorStatement, ExportDirectorStatement, GetMyDirectorAccount, LinkContactMember,
+	ListPreIncorporationCosts, GetPreIncorporationCost, RecordPreIncorporationCost, ReplacePreIncorporationCost, DecidePreIncorporationCost,
+	AddPreIncorporationCostEvidence, ListPreIncorporationCostEvidence, GetPreIncorporationCostEvidence, RemovePreIncorporationCostEvidence,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
 	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, SendRemittanceAgain, ReleasePaymentBatch, GetPaymentBatchFile,

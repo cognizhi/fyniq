@@ -510,6 +510,9 @@ const (
 	// (FR-BNK-12; rev 0.154): approved by a second person, whose approval posts it (numbered PB-) with no entry, and
 	// released once, which records its payments.
 	DocumentPaymentBatch DocumentType = "payment_batch"
+	// DocumentPreIncorporationCost is a cost a director or shareholder paid before the books start, which the accountant
+	// decides and which posts to their account on 2500 (FR-EQ-03; p1-founders-money design D7).
+	DocumentPreIncorporationCost DocumentType = "pre_incorporation_cost"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).

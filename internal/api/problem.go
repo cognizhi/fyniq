@@ -749,6 +749,13 @@ var codeFacts = map[string]struct {
 	storage.CodeBatch:             {409, "A payment batch does not change that way"},
 	storage.CodeBatchHeld:         {409, "The item is paid by an approved payment batch"},
 	ledger.CodeParty:              {422, "A director's account line needs its person"},
+	ledger.CodePreIncorporationCost: {422, "The cost before the books start does not fit"},
+	director.CodeNotPreCost:        {422, "Not a cost before the books start"},
+	director.CodePreCost:           {422, "The cost before the books start does not fit"},
+	director.CodePreCostDone:       {409, "The cost is decided"},
+	director.CodeNoReceipt:         {422, "The cost has no receipt"},
+	director.CodeTreatment:         {422, "Unknown treatment"},
+	CodeOwnCost:                    {403, "The person who paid it does not decide it"},
 	claim.CodeSettleTo:            {422, "The claim cannot be kept as a loan"},
 	director.CodeNotPerson:        {422, "Not a director or shareholder"},
 	director.CodeDates:            {422, "The statement's dates do not fit"},
@@ -920,6 +927,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		cne *connector.Error
 		bke *banking.Error
 		cle *claim.Error
+		dre *director.Error
 		ase *asset.Error
 		pye *payee.Error
 		pyp payee.Problems
@@ -980,6 +988,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(bfe.Code, sentence(bfe.Error()[len(bfe.Code)+2:]), sentence(bfe.Fix))
 	case errors.As(err, &cle):
 		return problem(cle.Code, sentence(cle.Message), sentence(cle.Fix))
+	case errors.As(err, &dre):
+		return problem(dre.Code, sentence(dre.Message), sentence(dre.Fix))
 	case errors.As(err, &ase):
 		return problem(ase.Code, sentence(ase.Message), sentence(ase.Fix))
 	case errors.As(err, &pye):

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "books_start": {
+      "description": "The books start: every cost is dated before it, and a decided one posts on it.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "items": {
+      "items": {
+        "$ref": "PreIncorporationCost.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Pass it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjIwMjUtMDgtMjh8MDE5MiJ9"
+      ],
+      "type": "string"
+    },
+    "owed": {
+      "description": "Every cost, whatever the page or filter, by the person who paid it, in the order they were added.",
+      "items": {
+        "$ref": "PreIncorporationCostOwed.schema.json"
+      },
+      "type": "array"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "Every cost the founders paid, whatever the page or filter."
+    }
+  },
+  "required": [
+    "items",
+    "owed",
+    "total"
+  ],
+  "title": "PreIncorporationCostPage",
+  "type": "object"
+}
