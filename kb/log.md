@@ -285,4 +285,6 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-02] compile | integrations.md and checks.md (p1-checks slice 4b, rev 0.166): settings.integrations adds a secret's expiry date; checks.overview adds the payments' and the platform's checks
 
+## [2026-11-03] compile | docs/user-guide/director-accounts.md (new), docs/user-guide/founders-money.md (Money I put in, steps) → founders.director-accounts (new), founders.balance; founders.pay-choice and founders.settle-balance re-hashed (p1-founders-money task 1.6)
+
 ## [2026-11-03] compile | docs/user-guide/claims-my-claims.md (Keep it as a loan to the company) → claims.make-a-claim (p1-founders-money task 2.1)

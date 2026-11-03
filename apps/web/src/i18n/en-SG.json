@@ -132,6 +132,30 @@
       "label": "Remove from the company",
       "tooltip": "End their membership and every role, expired ones too. Once the company has a second member, another Owner approves it."
     },
+    "accounting.directors": {
+      "label": "Director accounts",
+      "tooltip": "What the company owes each director and shareholder on 2500 and 2120, and what they owe it, by where each amount came from."
+    },
+    "founders.money-i-put-in": {
+      "label": "Money I put in",
+      "tooltip": "What the company owes you for money you lent, costs you paid and pay or fees not yet paid."
+    },
+    "director-accounts.statement": {
+      "label": "Statement",
+      "tooltip": "The person's account from one day to another: the opening balance, the amounts by where they came from, and the closing balance."
+    },
+    "director-accounts.export": {
+      "label": "PDF for confirmation",
+      "tooltip": "The statement as a PDF to send for a balance confirmation, what the company owes the person shown positive; or its movements as CSV."
+    },
+    "director-accounts.link-member": {
+      "label": "Link member",
+      "tooltip": "Choose the member who signs in as this director or shareholder: they see their own account and never approve their own settlement. Another person approves it."
+    },
+    "journal.line-person": {
+      "label": "Whose account",
+      "tooltip": "On a director's account (2500, 2120), the director or shareholder the amount belongs to, and where it came from."
+    },
     "settings.access-review": {
       "label": "Access review",
       "tooltip": "Who can do what, live: roles, sign-ins, role conflicts, external users and integrations. An Owner attests it each quarter."

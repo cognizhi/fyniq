@@ -3,7 +3,7 @@ key: equity.founders-money
 title: "Founders' money: what the company owes you, and the options"
 mode: basic
 roles: [owner, accountant, tax_agent]
-requirements: [FR-EQ-01, FR-EQ-02, FR-EQ-04, FR-EQ-05, FR-EQ-06, FR-EQ-07, FR-ORG-08]
+requirements: [FR-EQ-01, FR-EQ-02, FR-EQ-04, FR-EQ-05, FR-EQ-06, FR-EQ-07, FR-EQ-14, FR-ORG-08]
 status: draft            # accountant review pending (README: statutory pages are reviewed before release)
 ---
 
@@ -55,13 +55,22 @@ on money you never received, and investors see a clean balance sheet at the roun
 1. **Paid for something yourself?** Create an expense claim, attach the receipt, and choose
    **Paid personally → Keep as a loan to the company**. Another founder approves it. To claim
    GST, the receipt or invoice must be addressed to the company.
-2. **Lent the company money?** Record the bank transfer as *Money in → Loan from me*.
-3. **See your balance:** Equity → *Money I put in*, or Home → the *Money I put in* card.
+2. **Lent the company money?** In Banking › Categorise, give the bank line the category *Loan from
+   director / shareholder* and yourself as its contact.
+3. **See your balance:** *Money I put in*, under your name in the menu (below).
 4. **Settle it:** Equity → *Money I put in* → **Settle**, then choose an option. The other
    founder approves it. If every founder benefits, your accountant also reviews it. Attach the
    resolutions and the agreement.
 5. **Converting to shares:** after approval, your company secretary files with ACRA. Attach the
    ACRA acknowledgement. Fyniq then posts the conversion on the date ACRA registered it.
+
+## See what the company owes you
+
+**Money I put in** shows what the company owes you: money you lent and costs you paid, then pay and
+fees not yet paid, with the latest amounts and where each came from. If it says no director account
+is linked to you, ask an Owner to link your contact to you in Accounting › Director accounts;
+another person approves the link. If you owe the company instead, it says **In debit**: repay it,
+or ask your accountant.
 
 ## Common problems
 

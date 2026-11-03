@@ -14,6 +14,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { enteredOrigins, isDirectorAccount, originLabel, originWords, useDirectors, type Contact } from "../founders/data";
 import { listAccounts, postable, type Account } from "./data";
 import { preparers, who } from "./Journals";
 
@@ -35,14 +36,25 @@ const balanceSheet = new Set<Account["type"]>(["asset", "liability", "equity"]);
 export interface Cell {
   debit: string;
   credit: string;
+  origin?: string; // a director's balance's: where it came from (FR-EQ-01)
 }
 
-// cellsOf is the saved balances by account: a positive amount is a debit balance, a negative one a credit balance.
+// A director's account holds one balance per person (FR-EQ-01, B.7; question 15): its cells are keyed by the account
+// and the person, "<account>:<person>"; every other account's by the account alone.
+export const personKey = (account: string, person: string) => `${account}:${person}`;
+const splitKey = (key: string): [string, string | undefined] => {
+  const [account = key, person] = key.split(":");
+  return [account, person];
+};
+
+// cellsOf is the saved balances by account, and by person on a director's account: a positive amount is a debit
+// balance, a negative one a credit balance.
 export function cellsOf(o: Opening | undefined): Record<string, Cell> {
   const out: Record<string, Cell> = {};
   for (const l of o?.lines ?? []) {
     const credit = l.amount.amount.startsWith("-");
-    out[l.account_id] = { debit: credit ? "" : l.amount.amount, credit: credit ? l.amount.amount.slice(1) : "" };
+    const key = l.party_id ? personKey(l.account_id, l.party_id) : l.account_id;
+    out[key] = { debit: credit ? "" : l.amount.amount, credit: credit ? l.amount.amount.slice(1) : "", ...(l.origin ? { origin: l.origin } : {}) };
   }
   return out;
 }
@@ -51,21 +63,99 @@ export function cellsOf(o: Opening | undefined): Record<string, Cell> {
 export function draftOf(cells: Record<string, Cell>, base: string, memo: string): { draft?: Draft; errors: Record<string, string> } {
   const errors: Record<string, string> = {};
   const lines: Draft["lines"] = [];
-  for (const [account, c] of Object.entries(cells)) {
+  for (const [key, c] of Object.entries(cells)) {
+    const [account, person] = splitKey(key);
     const d = typed(c.debit);
     const cr = typed(c.credit);
     if (d === null || cr === null) {
-      errors[account] = "Enter an amount, such as 1,200.00.";
+      errors[key] = "Enter an amount, such as 1,200.00.";
       continue;
     }
     const hasD = d !== "" && !isZero(d);
     const hasC = cr !== "" && !isZero(cr);
-    if (sign(d || "0") < 0 || sign(cr || "0") < 0) errors[account] = "Enter the balance without a minus sign: a credit balance goes under Credit.";
-    else if (hasD && hasC) errors[account] = "Enter a debit or a credit balance, not both.";
-    else if (hasD || hasC) lines.push({ account_id: account, amount: { amount: hasD ? d : `-${cr}`, currency: base } });
+    if (sign(d || "0") < 0 || sign(cr || "0") < 0) errors[key] = "Enter the balance without a minus sign: a credit balance goes under Credit.";
+    else if (hasD && hasC) errors[key] = "Enter a debit or a credit balance, not both.";
+    else if ((hasD || hasC) && person && !c.origin) errors[key] = "Choose where the balance came from.";
+    else if (hasD || hasC)
+      lines.push({
+        account_id: account,
+        amount: { amount: hasD ? d : `-${cr}`, currency: base },
+        ...(person ? { party_id: person, origin: c.origin as NonNullable<Draft["lines"]>[number]["origin"] } : {}),
+      });
   }
   if (Object.keys(errors).length > 0) return { errors };
   return { draft: { memo: memo.trim() || undefined, lines }, errors };
+}
+
+// DirectorRows are a director's account's balances, one row per director or shareholder (FR-EQ-01; question 15: the
+// founders' balances at the books start), each with where it came from: the people marked director or shareholder,
+// and any person a saved balance names.
+function DirectorRows({ account: a, cells, people, editing, errors, id, set }: { account: Account; cells: Record<string, Cell>; people: Contact[]; editing: boolean; errors: Record<string, string>; id: string; set: (key: string, side: keyof Cell, value: string) => void }) {
+  const named = Object.keys(cells)
+    .map(splitKey)
+    .filter(([account, person]) => account === a.id && person)
+    .map(([, person]) => person as string);
+  const persons = [...people.map((p) => ({ id: p.id, name: p.legal_name })), ...named.filter((n) => !people.some((p) => p.id === n)).map((n) => ({ id: n, name: "A person no longer marked director" }))];
+  const shown = editing ? persons : persons.filter((p) => cells[personKey(a.id, p.id)]);
+  return (
+    <>
+      <tr>
+        <td colSpan={3}>
+          <span className="fy-mono">{a.code}</span> {a.name}
+          {editing && persons.length === 0 && <span className="fy-small fy-muted block">Mark the founders' contacts director or shareholder first: each one's balance is entered on its own line.</span>}
+        </td>
+      </tr>
+      {shown.map((p) => {
+        const key = personKey(a.id, p.id);
+        const cell = cells[key] ?? { debit: "", credit: "" };
+        const label = `${a.code} ${a.name}, ${p.name}`;
+        return (
+          <tr key={key}>
+            <td className="pl-6">
+              {p.name}
+              {editing ? (
+                <select className="fy-select mt-1 block w-full max-w-xs" aria-label={`${label}: where it came from`} value={cell.origin ?? ""} onChange={(e) => set(key, "origin", e.target.value)}>
+                  <option value="">Where it came from</option>
+                  {enteredOrigins.map((o) => (
+                    <option key={o} value={o}>
+                      {originWords[o]}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                cell.origin && <span className="fy-small fy-muted block">{originLabel(cell.origin)}</span>
+              )}
+              {errors[key] && (
+                <span className="fy-error block" id={`${id}-${key}-error`}>
+                  {errors[key]}
+                </span>
+              )}
+            </td>
+            {editing ? (
+              (["debit", "credit"] as const).map((side) => (
+                <td key={side} className="fy-num">
+                  <input
+                    className="fy-input fy-num w-32 medium:w-40"
+                    inputMode="decimal"
+                    aria-label={`${label}: ${side}`}
+                    value={cell[side]}
+                    onChange={(e) => set(key, side, e.target.value)}
+                    aria-invalid={errors[key] ? true : undefined}
+                    aria-describedby={errors[key] ? `${id}-${key}-error` : undefined}
+                  />
+                </td>
+              ))
+            ) : (
+              <>
+                <td className="fy-num">{cell.debit ? formatAmount(cell.debit) : ""}</td>
+                <td className="fy-num">{cell.credit ? formatAmount(cell.credit) : ""}</td>
+              </>
+            )}
+          </tr>
+        );
+      })}
+    </>
+  );
 }
 
 function totals(cells: Record<string, Cell>) {
@@ -127,7 +217,9 @@ export function OpeningBalances() {
   const dirty = cells !== null || memo !== null;
   const t = totals(c);
   const chart = postable(accounts.data ?? []);
-  const shown = chart.filter((a) => all || balanceSheet.has(a.type) || c[a.id]);
+  const held = (a: Account) => !!c[a.id] || Object.keys(c).some((k) => k.startsWith(`${a.id}:`));
+  const shown = chart.filter((a) => all || balanceSheet.has(a.type) || held(a));
+  const people = useDirectors(chart.some(isDirectorAccount));
   const byId = new Map((accounts.data ?? []).map((a) => [a.id, a]));
   const save = helpText("opening.save");
   const check = helpText("opening.check");
@@ -392,7 +484,9 @@ export function OpeningBalances() {
                 </tr>
               </thead>
               {types.map(([type, label]) => {
-                const rows = editing ? shown.filter((a) => a.type === type) : (o?.lines ?? []).filter((l) => byId.get(l.account_id)?.type === type).map((l) => byId.get(l.account_id) as Account);
+                const rows = editing
+                  ? shown.filter((a) => a.type === type)
+                  : [...new Set((o?.lines ?? []).map((l) => l.account_id))].map((id) => byId.get(id)).filter((a): a is Account => a?.type === type);
                 if (rows.length === 0) return null;
                 return (
                   <tbody key={type}>
@@ -400,6 +494,8 @@ export function OpeningBalances() {
                       <td colSpan={3}>{label}</td>
                     </tr>
                     {rows.map((a) => {
+                      if (isDirectorAccount(a))
+                        return <DirectorRows key={a.id} account={a} cells={c} people={people.data ?? []} editing={editing} errors={errors} id={id} set={set} />;
                       const cell = c[a.id] ?? { debit: "", credit: "" };
                       return (
                         <tr key={a.id}>
