@@ -283,7 +283,10 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
   The register's area `founders` is #378, stacked on #358: FM-9's accountant step, the waiver's tax tag and the
   approval's lapse date. Director accounts, Settle and Money I put in render `ReviewBanner`; the two screens it lists
   get their canvas banners when it merges.
-- [ ] 6.4 `make test` and `make check` green. The build plan and the PRD rows say what was built.
+- [x] 6.4 `make test` and `make check` green. The build plan and the PRD rows say what was built.
+  *Done (3 Nov 2026):* every slice merged through CI's `make test` (#363 to #380). PRD-001 rev 0.168 gives FR-EQ-01 to
+  FR-EQ-12, FR-EQ-14 and C.2 #21, #22, #23 and #25 what was built and what waits; the specs `equity/founders-money` and
+  `controls/platform-checks` gain a Built scenario each, stamped; the build plan records it. Archived the same day.
 
 ## Workflow follow-up
 
