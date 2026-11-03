@@ -292,3 +292,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-03] compile | docs/user-guide/pre-incorporation-costs.md (new) → founders.pre-incorporation-costs (new) (p1-founders-money task 2.2)
 
 ## [2026-11-03] compile | docs/user-guide/director-accounts.md (Record a pay choice), founders-money.md (where the pay choice changes) → founders.pay-choice, founders.director-accounts; founders.balance and founders.settle-balance re-hashed (p1-founders-money task 3.1)
+
+## [2026-11-03] compile | docs/user-guide/director-accounts.md (Record a director's fee) → founders.director-accounts; founders.pay-choice re-hashed (p1-founders-money task 3.2)

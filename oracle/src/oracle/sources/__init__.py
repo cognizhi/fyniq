@@ -35,4 +35,5 @@ RULE_SETS: dict[str, RuleSet] = {
     "fixed_asset": assets.fixed_asset,
     "asset_disposal": assets.asset_disposal,
     "pre_incorporation_cost": founders.pre_incorporation_cost,
+    "director_fee": founders.director_fee,
 }

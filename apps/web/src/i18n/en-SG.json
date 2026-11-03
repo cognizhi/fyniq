@@ -140,6 +140,14 @@
       "label": "Change pay choice",
       "tooltip": "Record the person's pay choice from a month on, with the signed decision: no salary, salary paid, salary deferred, director's fee, or shares instead of pay."
     },
+    "director-accounts.fees": {
+      "label": "Fees",
+      "tooltip": "Record a director's fee the shareholders voted, with their resolution, for another person to approve; it is then owed to the director on 2120."
+    },
+    "director-fee.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the shareholders' resolution, or the minutes of the general meeting that voted the fee."
+    },
     "pay-choice.attach-evidence": {
       "label": "Attach",
       "tooltip": "Attach the signed decision: the board minute or directors' resolution that sets the pay choice."

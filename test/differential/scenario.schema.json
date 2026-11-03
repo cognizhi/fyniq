@@ -150,7 +150,8 @@
       "properties": {"type": {"enum": ["manual_journal", "bank_transaction", "bank_transfer", "bill", "vendor_credit",
                                          "bill_payment", "invoice", "credit_note", "customer_receipt", "customer_deposit",
                                          "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
-                                         "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost"]}},
+                                         "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost",
+                                         "director_fee"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "bank_transaction"}}}, "then": {"$ref": "#/$defs/bankTransaction"}},
@@ -166,7 +167,8 @@
         {"if": {"properties": {"type": {"const": "customer_deposit"}}}, "then": {"$ref": "#/$defs/customerDeposit"}},
         {"if": {"properties": {"type": {"const": "deposit_refund"}}}, "then": {"$ref": "#/$defs/depositRefund"}},
         {"if": {"properties": {"type": {"const": "write_off"}}}, "then": {"$ref": "#/$defs/writeOff"}},
-        {"if": {"properties": {"type": {"const": "pre_incorporation_cost"}}}, "then": {"$ref": "#/$defs/preIncorporationCost"}}
+        {"if": {"properties": {"type": {"const": "pre_incorporation_cost"}}}, "then": {"$ref": "#/$defs/preIncorporationCost"}},
+        {"if": {"properties": {"type": {"const": "director_fee"}}}, "then": {"$ref": "#/$defs/directorFee"}}
       ]
     },
     "settings": {
@@ -179,7 +181,7 @@
           "description": "System accounts by key (Appendix B.5). Each must be in accounts.",
           "type": "object",
           "propertyNames": {"enum": ["receivable", "payable", "gst", "prepayments", "deferred_revenue", "fx", "bank_charges",
-                                     "withholding_tax", "customer_deposits", "claims_payable", "advances", "director_loan",
+                                     "withholding_tax", "customer_deposits", "claims_payable", "advances", "director_loan", "deferred_remuneration",
                                      "depreciation", "accumulated_depreciation", "disposal", "disposal_clearing"]},
           "additionalProperties": {"$ref": "#/$defs/accountCode"}
         },
@@ -443,6 +445,21 @@
             "oneOf": [{"required": ["distance", "vehicle"]}, {"required": ["gst_code"]}]
           }
         }
+      }
+    },
+    "directorFee": {
+      "description": "A director's fee the shareholders voted (director_fee@1, FR-EQ-04, §10.2).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "person", "account", "amount"],
+      "properties": {
+        "type": {"const": "director_fee"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day the director became entitled to it: the general meeting that voted it.", "$ref": "#/$defs/date"},
+        "person": {"description": "The director, one of people.", "$ref": "#/$defs/documentId"},
+        "account": {"description": "Its cost account, 6050 Directors' fees by default: not a director's account, a money account or GST control.", "type": "string"},
+        "amount": {"description": "In the base currency.", "$ref": "#/$defs/money"}
       }
     },
     "preIncorporationCost": {

@@ -69,7 +69,8 @@
         "payee_bank_change",
         "claimant_bank_change",
         "payment_batch",
-        "contact_member_link"
+        "contact_member_link",
+        "director_fee"
       ],
       "examples": [
         "organisation_setting"

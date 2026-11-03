@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "That account's code.",
+      "examples": [
+        "6050"
+      ],
+      "type": "string"
+    },
+    "account_id": {
+      "description": "The account it is a cost on.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "account_name": {
+      "description": "That account's name.",
+      "examples": [
+        "Directors' fees"
+      ],
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "The fee."
+    },
+    "approval_asked": {
+      "description": "The pending request to post it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "checks": {
+      "description": "A draft's status: ✖ while no shareholders' resolution is attached.",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "contact_id": {
+      "description": "The director.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "entitled_on": {
+      "description": "The day they became entitled to it, which it posts on.",
+      "examples": [
+        "2026-11-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "Its ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fd1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ledger_impact": {
+      "description": "getDirectorFee only, once posted: the lines its entry wrote, debits positive.",
+      "items": {
+        "$ref": "EntryLine.schema.json"
+      },
+      "type": "array"
+    },
+    "legal_name": {
+      "description": "Their name.",
+      "examples": [
+        "Mei Lin Tan"
+      ],
+      "type": "string"
+    },
+    "memo": {
+      "description": "Its memo.",
+      "examples": [
+        "Directors' fee 2026, voted at the AGM"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number, once posted (FR-ORG-04).",
+      "examples": [
+        "DF-0001"
+      ],
+      "type": "string"
+    },
+    "period_from": {
+      "description": "The first day of the period it is for.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "period_to": {
+      "description": "The last day of that period.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "resolutions": {
+      "description": "How many files are attached and not removed: asking for approval needs one, the shareholders' resolution.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "status": {
+      "description": "draft; waiting for another person's approval; or posted to the director's account on 2120.",
+      "enum": [
+        "draft",
+        "waiting",
+        "posted"
+      ],
+      "examples": [
+        "waiting"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The version of its content; with its status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "version",
+    "contact_id",
+    "legal_name",
+    "entitled_on",
+    "period_from",
+    "period_to",
+    "amount",
+    "account_id",
+    "resolutions",
+    "checks",
+    "ledger_impact"
+  ],
+  "title": "DirectorFee",
+  "type": "object"
+}

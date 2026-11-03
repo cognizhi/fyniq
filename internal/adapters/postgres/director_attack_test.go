@@ -176,3 +176,25 @@ func TestAttackAContactsMemberChangesOnlyByApproval(t *testing.T) {
 	})
 	wantState(t, "a customer signing in as a member", err, "23514", "FY251")
 }
+
+// A director's fee posts only under an approved director_fee.post request that neither its requester nor the director
+// paid signed: posting a draft fee with no request at all is refused at commit (FR-EQ-04, FM-9; FY252).
+// req: FR-EQ-04
+// req: QA-ENG-05
+// asvs: V2.2.3
+func TestAttackADirectorsFeePostsOnlyByApproval(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack director fee Pte Ltd")
+	payload := []byte(`{"date":"2026-10-15","contact_id":"` + d.director.ID.String() + `","period_from":"2026-01-01","period_to":"2026-12-31",` +
+		`"amount":{"amount":"6000.00","currency":"SGD"},"account_id":"` + d.sales.String() + `"}`)
+	err := store(t, "fyniq_api").Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentDirectorFee, Payload: payload})
+		if err != nil {
+			return err
+		}
+		return u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted)
+	})
+	if storage.CodeOf(err) != storage.CodeParty {
+		t.Errorf("a director's fee posted with no approved request: %v", err)
+	}
+}

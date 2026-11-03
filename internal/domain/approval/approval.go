@@ -100,6 +100,10 @@ const (
 	// A on "Director accounts, settlements, share issues" approves it, never the member linked or unlinked, in every team
 	// mode; its key is the contact's id.
 	ObjectContactMemberLink = "contact_member_link"
+	// ObjectDirectorFee is a director's fee the shareholders voted, to post (FR-EQ-04, FM-9; rev 0.167): another person
+	// who holds A on "Director accounts, settlements, share issues" approves it, never the director it is paid to, nor
+	// whoever asked; its key is its id.
+	ObjectDirectorFee = "director_fee"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -167,6 +171,8 @@ const (
 	OpBatchReapprove = "payment_batch.reapprove"
 	// OpContactMemberLink links a director or shareholder to the member who signs in as them, or unlinks them.
 	OpContactMemberLink = "contact_member_link.change"
+	// OpDirectorFeePost posts a director's fee: Dr 6050 · Cr 2120 to the director (director_fee@1).
+	OpDirectorFeePost = "director_fee.post"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -190,6 +196,7 @@ var Operations = map[string]string{
 	OpBatchApprove:       ObjectPaymentBatch,
 	OpBatchReapprove:     ObjectPaymentBatch,
 	OpContactMemberLink:  ObjectContactMemberLink,
+	OpDirectorFeePost:    ObjectDirectorFee,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -262,6 +269,8 @@ var Dependencies = map[string][]string{
 	ObjectPaymentBatch: {"status", "total", "accounts"},
 	// the contact's version and its member now: the link changes from them
 	ObjectContactMemberLink: {"contact_version", "member"},
+	// the fee's version and status, and its amount: what it posts
+	ObjectDirectorFee: {"status", "amount"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -301,6 +310,7 @@ var Rows = map[string]string{
 	ObjectClaimantBankChange:  "Payment batches",
 	ObjectPaymentBatch:        "Payment batches",
 	ObjectContactMemberLink:   "Director accounts, settlements, share issues (rev 0.3)",
+	ObjectDirectorFee:         "Director accounts, settlements, share issues (rev 0.3)",
 }
 
 // The limits of a policy.
@@ -369,6 +379,7 @@ var Policies = map[string]Policy{
 	ObjectClaimantBankChange:  {ObjectType: ObjectClaimantBankChange, Version: "founder/claimant_bank_change@2026-10-28.1", Steps: []Step{{Quorum: 1}}},
 	ObjectPaymentBatch:        {ObjectType: ObjectPaymentBatch, Version: "founder/payment_batch@2026-10-28.1", Steps: []Step{{Quorum: 1}}},
 	ObjectContactMemberLink:   {ObjectType: ObjectContactMemberLink, Version: "founder/contact_member_link@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
+	ObjectDirectorFee:         {ObjectType: ObjectDirectorFee, Version: "founder/director_fee@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

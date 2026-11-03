@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { FileDown, Handshake, Link2, ScrollText, Stamp, TriangleAlert, UserRound, Wallet } from "lucide-react";
+import { BadgeDollarSign, FileDown, Handshake, Link2, ScrollText, Send, Stamp, TriangleAlert, UserRound, Wallet } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
@@ -8,7 +8,7 @@ import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { formatAmount } from "../../format/amount";
 import { date, month } from "../../format/date";
-import { isZero, negate, sign } from "../../format/decimal";
+import { isZero, negate, sign, typed } from "../../format/decimal";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
@@ -52,7 +52,7 @@ async function accounts(asAt: string): Promise<{ as_at: string; currency: string
   return { ...head, items };
 }
 
-function PersonCard({ p, onStatement, onLink, onPay, mayLink }: { p: DirectorAccount; onStatement: () => void; onLink: () => void; onPay: () => void; mayLink: boolean }) {
+function PersonCard({ p, onStatement, onLink, onPay, onFees, mayLink }: { p: DirectorAccount; onStatement: () => void; onLink: () => void; onPay: () => void; onFees: () => void; mayLink: boolean }) {
   const roles = [p.director && "Director", p.shareholder && "Shareholder"].filter(Boolean).join(", ");
   const statement = helpText("director-accounts.statement");
   const link = helpText("director-accounts.link-member");
@@ -115,6 +115,12 @@ function PersonCard({ p, onStatement, onLink, onPay, mayLink }: { p: DirectorAcc
       <div className="fy-row fy-row--wrap fy-row--between gap-2">
         <span className="fy-small fy-muted">{p.member_user_id ? "Signs in as a member: sees their own account" : "No member signs in as them"}</span>
         <span className="fy-row gap-2">
+          {mayLink && p.director && (
+            <Button variant="ghost" size="sm" type="button" onClick={onFees} title={helpText("director-accounts.fees").tooltip}>
+              <Icon of={BadgeDollarSign} />
+              {helpText("director-accounts.fees").label}
+            </Button>
+          )}
           {mayLink && (
             <Button variant="ghost" size="sm" type="button" onClick={onLink} title={link.tooltip}>
               <Icon of={Link2} />
@@ -485,6 +491,172 @@ function PayChoiceDialog({ person, onClose, onDone }: { person: DirectorAccount 
   );
 }
 
+// FeesDialog lists a director's fees and records a new one (FR-EQ-04): drafted with the shareholders' resolution
+// attached, then sent for another person's approval, which posts it Dr 6050 · Cr 2120 to the director; never the
+// director's own approval.
+function FeesDialog({ person, base, onClose, onAsked }: { person: DirectorAccount | null; base: string; onClose: () => void; onAsked: (text: string, approval: string) => void }) {
+  const id = useId();
+  const confirm = useConfirm();
+  const queries = useQueryClient();
+  const [form, setForm] = useState({ entitled_on: "", period_from: "", period_to: "", amount: "", memo: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [draft, setDraft] = useState<{ id: string; etag: string; resolutions: number } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const [key] = useState(newKey);
+  const fees = useQuery({
+    queryKey: ["director-fees", person?.contact_id],
+    enabled: !!person,
+    queryFn: async () => {
+      const r = await api.GET("/v1/director-fees", { params: { query: { contact_id: person?.contact_id, page_size: 500 } } });
+      if (r.error) throw r.error;
+      return r.data.items ?? [];
+    },
+  });
+  if (!person) return null;
+  const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm({ ...form, [k]: e.target.value });
+  const reread = async (feeId: string) => {
+    const r = await api.GET("/v1/director-fees/{fee_id}", { params: { path: { fee_id: feeId } } });
+    if (r.error) return setProblem(problemOf(r.error));
+    setDraft({ id: feeId, etag: etagOf(r.response), resolutions: r.data.resolutions });
+  };
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    const errs: Record<string, string> = {};
+    const day = /^\d{4}-\d{2}-\d{2}$/;
+    if (!day.test(form.entitled_on)) errs.entitled_on = "Enter the day of the general meeting that voted it.";
+    if (!day.test(form.period_from) || !day.test(form.period_to)) errs.period = "Enter the first and last day of the period it is for.";
+    else if (form.period_to < form.period_from) errs.period = "The period ends before it starts.";
+    const amount = typed(form.amount);
+    if (!amount || amount.startsWith("-") || isZero(amount)) errs.amount = `Enter the fee in ${base}, more than zero.`;
+    setErrors(errs);
+    if (Object.keys(errs).length > 0 || !amount) return;
+    setBusy(true);
+    setProblem(null);
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/director-fees", {
+        params: { header: { "Idempotency-Key": key } },
+        body: {
+          contact_id: person.contact_id,
+          entitled_on: form.entitled_on,
+          period_from: form.period_from,
+          period_to: form.period_to,
+          amount: { amount, currency: base },
+          ...(form.memo.trim() ? { memo: form.memo.trim() } : {}),
+        },
+      }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    setDraft({ id: out.data.id, etag: etagOf(out.response), resolutions: out.data.resolutions });
+  };
+  const ask = async () => {
+    if (!draft) return;
+    setBusy(true);
+    setProblem(null);
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/director-fees/{fee_id}/post-approval", { params: { path: { fee_id: draft.id }, header: { "If-Match": draft.etag, "Idempotency-Key": newKey() } } }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    await queries.invalidateQueries({ queryKey: ["director-fees"] });
+    await queries.invalidateQueries({ queryKey: ["approvals"] });
+    onAsked(`Asked for approval of ${person.legal_name}'s fee. Another person approves it, never ${person.legal_name}.`, out.data.id);
+    onClose();
+  };
+  const error = (k: string) =>
+    errors[k] && (
+      <span className="fy-error" id={`${id}-${k}-error`}>
+        {errors[k]}
+      </span>
+    );
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()} title={`${person.legal_name}'s directors' fees`} description="A fee the shareholders voted posts to 6050 Directors' fees and is owed to the director on 2120, once another person approves it.">
+      <div className="fy-stack fy-stack--3">
+        {problem && <Refusal problem={problem} title="The fee was not saved" />}
+        {fees.isError && <Refusal problem={problemOf(fees.error)} title="The fees could not be listed" />}
+        {(fees.data ?? []).length > 0 && (
+          <ul className="fy-list" aria-label="Fees">
+            {(fees.data ?? []).map((f) => (
+              <li key={f.id} className="fy-list__item">
+                <span className="fy-list__main">
+                  <span className="fy-list__title whitespace-normal">
+                    {f.number ?? "Draft"} · {f.memo || `Fee for ${date(f.period_from)} to ${date(f.period_to)}`}
+                  </span>
+                  <span className="fy-list__meta">
+                    Voted {date(f.entitled_on)} · {f.status === "posted" ? "Posted" : f.status === "waiting" ? "Waiting for approval" : "Draft"}
+                  </span>
+                </span>
+                <span className="fy-num">{formatAmount(f.amount.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {!draft ? (
+          <form className="fy-stack fy-stack--3" onSubmit={save} noValidate>
+            <div className="fy-form fy-form--2">
+              <div className="fy-field">
+                <label className="fy-label" htmlFor={`${id}-entitled`}>
+                  Voted on
+                </label>
+                <input className="fy-input" type="date" id={`${id}-entitled`} value={form.entitled_on} onChange={set("entitled_on")} aria-invalid={errors.entitled_on ? true : undefined} aria-describedby={errors.entitled_on ? `${id}-entitled_on-error` : undefined} />
+                {error("entitled_on")}
+              </div>
+              <div className="fy-field">
+                <label className="fy-label" htmlFor={`${id}-amount`}>
+                  Fee ({base})
+                </label>
+                <input className="fy-input fy-num" inputMode="decimal" id={`${id}-amount`} value={form.amount} onChange={set("amount")} aria-invalid={errors.amount ? true : undefined} aria-describedby={errors.amount ? `${id}-amount-error` : undefined} />
+                {error("amount")}
+              </div>
+              <div className="fy-field">
+                <label className="fy-label" htmlFor={`${id}-from`}>
+                  For the period from
+                </label>
+                <input className="fy-input" type="date" id={`${id}-from`} value={form.period_from} onChange={set("period_from")} aria-invalid={errors.period ? true : undefined} aria-describedby={errors.period ? `${id}-period-error` : undefined} />
+              </div>
+              <div className="fy-field">
+                <label className="fy-label" htmlFor={`${id}-to`}>
+                  To
+                </label>
+                <input className="fy-input" type="date" id={`${id}-to`} value={form.period_to} onChange={set("period_to")} aria-invalid={errors.period ? true : undefined} aria-describedby={errors.period ? `${id}-period-error` : undefined} />
+                {error("period")}
+              </div>
+            </div>
+            <div className="fy-field">
+              <label className="fy-label" htmlFor={`${id}-memo`}>
+                Memo (optional)
+              </label>
+              <input className="fy-input" id={`${id}-memo`} maxLength={500} value={form.memo} onChange={set("memo")} />
+            </div>
+            <div className="fy-row justify-end gap-2">
+              <Button variant="ghost" type="button" onClick={onClose}>
+                Close
+              </Button>
+              <Button variant="primary" type="submit" disabled={busy}>
+                {busy ? "Saving…" : "Next: attach the resolution"}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <EvidencePanel record={{ kind: "director-fee", id: draft.id, etag: draft.etag }} draft mayAttach onChanged={() => void reread(draft.id)} />
+            <div className="fy-row justify-end gap-2">
+              <Button variant="ghost" type="button" onClick={onClose}>
+                Later
+              </Button>
+              <Button variant="primary" type="button" disabled={busy || draft.resolutions === 0} onClick={ask}>
+                <Icon of={Send} />
+                {busy ? "Asking…" : "Ask for approval"}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </Dialog>
+  );
+}
+
 // DirectorAccounts is Accounting › Director accounts (docs/design/screens DirectorAccounts; FR-EQ-01, FR-EQ-11,
 // FR-EQ-14): what the company owes each director and shareholder on 2500 and 2120, and what they owe it, from the
 // balance service; each person's statement by where the amounts came from; and the member who signs in as each.
@@ -494,6 +666,7 @@ export function DirectorAccounts() {
   const [shown, setShown] = useState<string | null>(null);
   const [linking, setLinking] = useState<DirectorAccount | null>(null);
   const [paying, setPaying] = useState<DirectorAccount | null>(null);
+  const [feeing, setFeeing] = useState<DirectorAccount | null>(null);
   const [status, setStatus] = useState<{ text: string; approval?: string } | null>(null);
   const q = useQuery({ queryKey: ["director-accounts", asAt], queryFn: () => accounts(asAt) });
   const mayLink = (session.roles ?? []).some((r) => linkers.includes(r));
@@ -554,13 +727,20 @@ export function DirectorAccounts() {
       {people.length > 0 && (
         <div className="fy-grid fy-grid--2 fy-stagger">
           {people.map((p) => (
-            <PersonCard key={p.contact_id} p={p} mayLink={mayLink} onStatement={() => setShown(p.contact_id)} onLink={() => setLinking(p)} onPay={() => setPaying(p)} />
+            <PersonCard key={p.contact_id} p={p} mayLink={mayLink} onStatement={() => setShown(p.contact_id)} onLink={() => setLinking(p)} onPay={() => setPaying(p)} onFees={() => setFeeing(p)} />
           ))}
         </div>
       )}
       {selected && q.data && <Statement key={selected.contact_id} person={selected} until={q.data.as_at} />}
       <LinkMember person={linking} onClose={() => setLinking(null)} onAsked={(text, approval) => setStatus({ text, approval })} />
       <PayChoiceDialog key={paying?.contact_id ?? "none"} person={paying} onClose={() => setPaying(null)} onDone={(text) => setStatus({ text })} />
+      <FeesDialog
+        key={feeing?.contact_id ?? "no-fees"}
+        person={feeing}
+        base={q.data?.currency ?? "SGD"}
+        onClose={() => setFeeing(null)}
+        onAsked={(text, approval) => setStatus({ text, approval })}
+      />
     </div>
   );
 }

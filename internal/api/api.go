@@ -96,6 +96,7 @@ type API struct {
 	reimbursements       journal.ClaimReimbursements // claims paid back, recorded by hand (FR-AP-07)
 	advances             journal.CashAdvances        // cash advances to members and their refunds (FR-AP-17)
 	preCosts             journal.PreCosts            // costs founders paid before the books start (FR-EQ-03)
+	fees                 journal.DirectorFees        // directors' fees, posted on another person's approval (FR-EQ-04)
 	assets               journal.FixedAssets         // the fixed asset register (FR-FA-01…03)
 	disposals            journal.AssetDisposals      // disposals of fixed assets (FR-FA-03)
 }
@@ -237,6 +238,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.reimbursements.AfterPosting = a.afterPosting
 	a.advances.AfterPosting = a.afterPosting
 	a.preCosts.AfterPosting = a.afterPosting
+	a.fees.AfterPosting = a.afterPosting
 	a.disposals.AfterPosting = a.afterPosting
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
@@ -312,6 +314,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerDirectors(a)
 	registerPreCosts(a)
 	registerPayChoices(a)
+	registerFees(a)
 	registerPublicDocuments(a)
 	registerInvoiceEvidence(a)
 	registerReceivables(a)

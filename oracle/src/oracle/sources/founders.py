@@ -1,5 +1,6 @@
 """A cost a founder paid before the books start (``pre_incorporation_cost@1``), from PRD-001 FR-EQ-03 and Appendix B.7
-("Cost a founder paid personally, kept as a loan") and the founders' money design D7 (rev 0.167).
+("Cost a founder paid personally, kept as a loan") and the founders' money design D7 (rev 0.167); and a director's fee
+(``director_fee@1``), from FR-EQ-04, §10.2 and design D8.
 
 The document is the cost as the accountant decided it: the date it posts on (``date``: the books start, or the day of
 the decision when the books start's month is closed), the day it was paid (``incurred``, before the books start), the
@@ -55,3 +56,24 @@ def pre_incorporation_cost(r: Rules, doc: Source, books: dict[str, Any]) -> Post
         lines.append(r.base_line(r.system("gst"), gst))
     lines.append(r.line(r.system("director_loan"), r.base, money.negate(gross), money.negate(gross), party=person))
     return Posting(lines)
+
+
+def director_fee(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
+    """A director's fee the shareholders voted, posted on ``date``, the day the director became entitled to it.
+
+    Dr ``account`` (6050 Directors' fees) with ``amount``, Cr ``deferred_remuneration`` (2120) with ``amount``, the line
+    naming ``person``, a director, one of the scenario's ``people`` (FR-EQ-04, §10.2: "Dr 6050 / Cr 2120 to that person").
+    """
+    d = doc.data
+    person = d["person"]
+    if person not in r.scenario.people:
+        raise Rejected("not-a-director")
+    account = r.account(d["account"])
+    if (account.role in DIRECTOR_ROLES or d["account"] in r.settings.money_accounts
+            or r.is_system(d["account"], "gst")):
+        raise Rejected("account-not-allowed")
+    amount = r.amount(d["amount"], r.base, sign=1)
+    return Posting([
+        r.base_line(d["account"], amount),
+        r.line(r.system("deferred_remuneration"), r.base, money.negate(amount), money.negate(amount), party=person),
+    ])

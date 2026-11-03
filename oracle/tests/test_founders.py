@@ -119,3 +119,31 @@ def test_a_cost_before_the_books_start_that_breaks_a_rule_is_rejected(change, se
     # not a director's account, a money account or GST control; its GST claimed only while registered and when shown.
     _, ledger = p1_post(_cost(**change), settings={**P1_SETTINGS, **settings})
     assert ledger.reasons == [("PIC-9", reason)]
+
+
+# req: FR-EQ-04
+def test_a_directors_fee_is_owed_to_the_director_on_2120():
+    # §10.2: a S$6,000.00 fee voted on 30 Nov: Dr 6050 6,000.00, Cr 2120 6,000.00 naming P0001.
+    fee = {"type": "director_fee", "id": "DF-1", "version": 1, "date": "2026-11-30", "person": "P0001", "account": "6050", "amount": "6000.00"}
+    result, _ = p1_post(fee)
+    entry = next(e for e in result["entries"] if e["document"] == "DF-1")
+    assert [(ln["account"], ln["amount"], ln.get("party")) for ln in entry["lines"]] == [("2120", "-6000.00", "P0001"), ("6050", "6000.00", None)]
+    assert result["people"] == {"P0001": {"2120": "-6000.00"}}
+
+
+# req: FR-EQ-04
+@pytest.mark.parametrize(
+    ("change", "reason"),
+    [
+        ({"person": "P0009"}, "not-a-director"),
+        ({"account": "2120"}, "account-not-allowed"),
+        ({"account": "1010"}, "account-not-allowed"),
+        ({"amount": "0.00"}, "zero-amount"),
+        ({"amount": "-5.00"}, "wrong-sign"),
+    ],
+)
+def test_a_directors_fee_that_breaks_a_rule_is_rejected(change, reason):
+    fee = {"type": "director_fee", "id": "DF-9", "version": 1, "date": "2026-11-30", "person": "P0001", "account": "6050", "amount": "6000.00"}
+    fee.update(change)
+    _, ledger = p1_post(fee)
+    assert ledger.reasons == [("DF-9", reason)]

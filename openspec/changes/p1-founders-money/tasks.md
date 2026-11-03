@@ -97,8 +97,15 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
   (FOUNDER-14). The choice in force is the latest month on or before the day, the later recording winning within a
   month; each director account shows it as `pay_choice`, "No salary" by default. The guide's pay choice moved from a
   setting to the Director accounts' card.
-- [ ] 3.2 Directors' fees (D8): the `director_fee` document as an approval object the person paid never signs,
+- [x] 3.2 Directors' fees (D8): the `director_fee` document as an approval object the person paid never signs,
   posting Dr 6050 / Cr 2120 on the entitlement date. The oracle states the legs. `// req: FR-EQ-04`
+  Built: the fee (migrations 000206 and 000207) is recorded by an Owner or the Controller (A on the row) with the
+  shareholders' resolution attached (FOUNDER-17), and `requestDirectorFeePost` asks another person who holds A to
+  approve it, never the requester nor the member linked to the director paid (FOUNDER-19; the database's
+  `director_fee_approved`, FY252). The approval posts it under `director_fee@1` (LEDGER-43), numbered DF-; the account
+  defaults to 6050; a posted fee changes no more (FOUNDER-18). The oracle's scenario format gains `director_fee` and
+  the `deferred_remuneration` key (`pending/founders.json`). `db/README.md` now lists the founders' backstops, FY249 to
+  FY252.
 - [ ] 3.3 Exempt status (D9): `exempt_status`, its API and the Director accounts' banner. Tests: the status in force
   on a date, and the words of the warning. `// req: FR-EQ-11`
 - [ ] 3.4 Year-end confirmation (D13): `director_confirmation` with a passkey step-up by the linked member, and the

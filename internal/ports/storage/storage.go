@@ -516,6 +516,9 @@ const (
 	// DocumentDirectorPayChoice is a director's or shareholder's pay choice from a month on, recorded with the signed
 	// decision and posting no entry; append-only, a later one supersedes it from its month (FR-EQ-04; design D8).
 	DocumentDirectorPayChoice DocumentType = "director_pay_choice"
+	// DocumentDirectorFee is a director's fee the shareholders voted: posted Dr 6050 · Cr 2120 to the director once
+	// another person approves it, never the director (FR-EQ-04; design D8).
+	DocumentDirectorFee DocumentType = "director_fee"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).

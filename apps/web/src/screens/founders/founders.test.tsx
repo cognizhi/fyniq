@@ -201,3 +201,33 @@ describe("a director's pay choice", () => {
     expect(seen.find((s) => s.path === "/v1/director-pay-choices/pc-1/record")?.headers.get("If-Match")).toBe('"1-draft"');
   });
 });
+
+// req: FR-EQ-04
+// req: equity/founders-money A director's fee posts to the person (rev 0.167)
+describe("a director's fee", () => {
+  it("records the fee voted, then asks another person to approve it over its version", async () => {
+    const drafted = { id: "df-1", status: "draft", version: 1, contact_id: "c-mei", legal_name: "Mei Lin Tan", entitled_on: "2026-11-30", period_from: "2026-01-01",
+      period_to: "2026-12-31", amount: sgd("6000.00"), account_id: "acc-6050", resolutions: 1, checks: [], ledger_impact: [] };
+    const seen = answer({
+      "GET /v1/director-accounts": { status: 200, body: list },
+      "GET /v1/director-fees": { status: 200, body: { items: [] } },
+      "POST /v1/director-fees": { status: 201, body: drafted, headers: { ETag: '"1-draft"' } },
+      "GET /v1/director-fees/df-1/evidence": { status: 200, body: { items: [] } },
+      "POST /v1/director-fees/df-1/post-approval": { status: 202, body: { id: "apr-9", object_type: "director_fee", status: "pending" } },
+    });
+    renderPage(DirectorAccounts, { path: "/accounting/directors" });
+    const card = (await screen.findByRole("heading", { name: "Mei Lin Tan" })).closest("section") as HTMLElement;
+    fireEvent.click(within(card).getByRole("button", { name: "Fees" }));
+    fireEvent.change(await screen.findByLabelText("Voted on"), { target: { value: "2026-11-30" } });
+    fireEvent.change(screen.getByLabelText("Fee (SGD)"), { target: { value: "6,000" } });
+    fireEvent.change(screen.getByLabelText("For the period from"), { target: { value: "2026-01-01" } });
+    fireEvent.change(screen.getByLabelText("To"), { target: { value: "2026-12-31" } });
+    fireEvent.click(screen.getByRole("button", { name: "Next: attach the resolution" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Ask for approval" }));
+    expect(await screen.findByText(/Asked for approval of Mei Lin Tan's fee/)).toBeTruthy();
+    expect(seen.find((s) => s.method === "POST" && s.path === "/v1/director-fees")?.body).toEqual({
+      contact_id: "c-mei", entitled_on: "2026-11-30", period_from: "2026-01-01", period_to: "2026-12-31", amount: sgd("6000"),
+    });
+    expect(seen.find((s) => s.path === "/v1/director-fees/df-1/post-approval")?.headers.get("If-Match")).toBe('"1-draft"');
+  });
+});

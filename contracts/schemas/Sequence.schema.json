@@ -34,7 +34,8 @@
         "fixed_asset",
         "asset_disposal",
         "payment_batch",
-        "pre_incorporation_cost"
+        "pre_incorporation_cost",
+        "director_fee"
       ],
       "examples": [
         "journal"

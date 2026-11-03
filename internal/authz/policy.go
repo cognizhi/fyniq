@@ -629,6 +629,19 @@ var (
 	GetDirectorPayChoiceEvidence    = Policy{Operation: "getDirectorPayChoiceEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
 	RemoveDirectorPayChoiceEvidence = Policy{Operation: "removeDirectorPayChoiceEvidence", Capability: DirectorAccounts, Need: Approve,
 		Note: "Only while the pay choice is a draft (FR-DOC-07)."}
+	// Directors' fees (FR-EQ-04, FM-9; design D8): an Owner or the Controller records one with the shareholders' resolution
+	// and asks another person to approve its post (A on "Director accounts"); never the director paid (FY252).
+	ListDirectorFees       = Policy{Operation: "listDirectorFees", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetDirectorFee         = Policy{Operation: "getDirectorFee", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	CreateDirectorFee      = Policy{Operation: "createDirectorFee", Capability: DirectorAccounts, Need: Approve}
+	ReplaceDirectorFee     = Policy{Operation: "replaceDirectorFee", Capability: DirectorAccounts, Need: Approve}
+	RequestDirectorFeePost = Policy{Operation: "requestDirectorFeePost", Capability: DirectorAccounts, Need: Approve,
+		Note: "Another person approves it, never the director the fee is paid to."}
+	AddDirectorFeeEvidence    = Policy{Operation: "addDirectorFeeEvidence", Capability: DirectorAccounts, Need: Approve}
+	ListDirectorFeeEvidence   = Policy{Operation: "listDirectorFeeEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetDirectorFeeEvidence    = Policy{Operation: "getDirectorFeeEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	RemoveDirectorFeeEvidence = Policy{Operation: "removeDirectorFeeEvidence", Capability: DirectorAccounts, Need: Approve,
+		Note: "Only while the fee is a draft (FR-DOC-07)."}
 	GetPayeeBankDetails            = Policy{Operation: "getPayeeBankDetails", Capability: VendorBankDetails, Need: View}
 	GetPayeeBankChange             = Policy{Operation: "getPayeeBankChange", Capability: VendorBankDetails, Need: View}
 	CreatePayeeBankChange          = Policy{Operation: "createPayeeBankChange", Capability: VendorBankDetails, Need: Create}
@@ -1122,6 +1135,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	AddPreIncorporationCostEvidence, ListPreIncorporationCostEvidence, GetPreIncorporationCostEvidence, RemovePreIncorporationCostEvidence,
 	ListDirectorPayChoices, GetDirectorPayChoice, CreateDirectorPayChoice, ReplaceDirectorPayChoice, RecordDirectorPayChoice,
 	AddDirectorPayChoiceEvidence, ListDirectorPayChoiceEvidence, GetDirectorPayChoiceEvidence, RemoveDirectorPayChoiceEvidence,
+	ListDirectorFees, GetDirectorFee, CreateDirectorFee, ReplaceDirectorFee, RequestDirectorFeePost,
+	AddDirectorFeeEvidence, ListDirectorFeeEvidence, GetDirectorFeeEvidence, RemoveDirectorFeeEvidence,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
 	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, SendRemittanceAgain, ReleasePaymentBatch, GetPaymentBatchFile,
