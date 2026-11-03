@@ -59,7 +59,13 @@ type ShareIssueRequest struct {
 
 // ShareIssuePage is the register, earliest effective date first.
 type ShareIssuePage struct {
-	Items []ShareIssue `json:"items" nullable:"false"`
+	Items []ShareIssue `json:"items" nullable:"false" doc:"The issues on this page, earliest effective date first."`
+	// NextCursor is the next page's cursor (FR-INT-10).
+	NextCursor string `json:"next_cursor,omitempty" doc:"Send it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjAxOTI4ZjZlIn0"`
+}
+
+type shareIssueListInput struct {
+	PageQuery
 }
 
 type shareIssueRecordInput struct {
@@ -129,13 +135,20 @@ func registerShareIssues(a *API) {
 		Summary: "List the register of share issues",
 		Description: "Every allotment of shares, earliest effective date first (FR-EQ-08): the holder, class, number, price, amount, " +
 			"consideration, resolutions, ACRA's lodgement reference and effective date, and the entry it posted, if any. Share capital " +
-			"moves only with the register or the opening balances (INV-13). Read-only; no side effects.",
-	}, []string{}, func(ctx context.Context, _ *struct{}) (*shareIssueListOutput, error) {
+			"moves only with the register or the opening balances (INV-13). A page at a time. Read-only; no side effects.",
+	}, []string{CodeCursor, CodeInvalid}, func(ctx context.Context, in *shareIssueListInput) (*shareIssueListOutput, error) {
 		p, _ := authn.From(ctx)
 		var out shareIssueListOutput
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			items, err := shareIssuesOf(ctx, u)
-			out.Body.Items = items
+			if err != nil {
+				return err
+			}
+			page, next, err := pageOf(items, func(x ShareIssue) string { return x.ID }, in.PageQuery)
+			out.Body = ShareIssuePage{Items: page, NextCursor: next}
+			if out.Body.Items == nil {
+				out.Body.Items = []ShareIssue{}
+			}
 			return err
 		})
 		return &out, err
