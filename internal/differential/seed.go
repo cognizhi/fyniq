@@ -31,6 +31,11 @@ func FromSeed(c seed.Company, name string) Scenario {
 	for _, a := range c.Accounts {
 		s.Accounts = append(s.Accounts, Account{Code: a.Code, Type: accountType(a.Code), Active: true, Role: a.Role})
 	}
+	for _, p := range c.People { // the directors, whom a line on a director's account names (FR-EQ-01)
+		if p.Director {
+			s.People = append(s.People, p.ID)
+		}
+	}
 	for _, j := range c.Journals {
 		d := Document{Type: "manual_journal", ID: j.ID, Version: 1, Date: j.Date}
 		for _, l := range j.Lines {
@@ -38,7 +43,8 @@ func FromSeed(c seed.Company, name string) Scenario {
 			if l.Debit == "0.00" {
 				amount = "-" + l.Credit
 			}
-			d.Lines = append(d.Lines, Line{Account: l.Account, Currency: c.Organisation.BaseCurrency, Amount: strings.TrimPrefix(amount, "+")})
+			d.Lines = append(d.Lines, Line{Account: l.Account, Currency: c.Organisation.BaseCurrency, Amount: strings.TrimPrefix(amount, "+"),
+				Party: l.Person, Origin: l.Origin})
 		}
 		s.Documents = append(s.Documents, d)
 	}

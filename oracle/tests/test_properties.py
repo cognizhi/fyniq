@@ -141,10 +141,10 @@ def test_the_generator_is_reproducible_and_covers_its_targets():
     # Hypothesis also draws on constants in the oracle's own modules (5% of draws), so what a seed
     # gives changes with the oracle's source and with the modules a process has loaded. The targets
     # are checked on enough scenarios not to hinge on that.
-    first = generate(seed=11, count=120)
-    assert first == generate(seed=11, count=120)
+    first = generate(seed=11, count=200)
+    assert first == generate(seed=11, count=200)
     assert first != generate(seed=12, count=40)
-    assert [s["name"] for s in first] == [f"gen-11-{i:04d}" for i in range(120)]
+    assert [s["name"] for s in first] == [f"gen-11-{i:04d}" for i in range(200)]
 
     bases = {s["base_currency"] for s in first}
     minors = {minor for s in first for minor in s["currencies"].values()}
@@ -162,6 +162,10 @@ def test_the_generator_is_reproducible_and_covers_its_targets():
     reasons = {reason for ledger in ledgers for _, reason in ledger.reasons}
     decided = {"rate-on-base-line", "base-out-of-range", "reversal-before-entry", "share-capital-account"}
     assert decided <= reasons
+    # (PRD-001 rev 0.167) The director's accounts: a line naming its person posts, and both ways of breaking rule 9 are
+    # generated (FR-EQ-01).
+    assert {"director-line-without-person", "person-on-another-account"} <= reasons
+    assert any(r.get("people") for r in results)
     zero_base = [ln for ledger in ledgers for e in ledger.entries for ln in e.lines if ln.base_amount.is_zero()]
     assert zero_base and all(not ln.amount.is_zero() for ln in zero_base)
 
@@ -171,7 +175,8 @@ def test_the_generator_is_reproducible_and_covers_its_targets():
 def test_the_generator_writes_version_1_and_a_rate_source_only_where_it_means_to(data):
     # test/differential/README.md, "Decided in PRD-001 rev 0.24": the version is always 1, and a
     # rate always comes with its source, "document", or "base" on a base-currency line (rejected).
-    # A share-capital account is active, not a group, and equity.
+    # A share-capital account is active, not a group, and equity; a director's account (rev 0.167) is a liability, with the
+    # people a line on it may name.
     base = data["base_currency"]
     for doc in data["documents"]:
         assert doc["version"] == 1
@@ -183,6 +188,9 @@ def test_the_generator_writes_version_1_and_a_rate_source_only_where_it_means_to
             else:
                 assert ln.get("fx_rate_source", "base") in ("document", "base")
     for account in data["accounts"]:
-        if "role" in account:
-            assert account["role"] == "share-capital"
+        if account.get("role") == "share-capital":
             assert (account["type"], account["group"], account["active"]) == ("equity", False, True)
+        elif "role" in account:  # a director's account (FR-EQ-01), with the people it may name
+            assert account["role"] in ("director-loan", "deferred-remuneration")
+            assert (account["type"], account["group"], account["active"]) == ("liability", False, True)
+            assert data["people"]

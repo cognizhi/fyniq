@@ -28,13 +28,15 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
   production. The replay compares each line's person. The sample company names Mei Lin Tan and Arjun Rao in turn on
   its 2500 and 2120 lines, drawing no random number, so the rest of the company is unchanged; `seedload` adds them as
   contacts.
-- [ ] 1.3 The balance service (D4): `balance.People` and `balance.PersonLedger`; the close's sub-ledger check names
+- [x] 1.3 The balance service (D4): `balance.People` and `balance.PersonLedger`; the close's sub-ledger check names
   lines with no person. The oracle states the per-person sub-ledger independently, and the scenario format gains
   `party` (D16). Tests: property tests (the sum by person is the control account) and a differential golden case.
   `// req: FR-EQ-01`, `// req: INV-07`, `// req: QA-ENG-02`
   Built, with the API slice: `balance.People`, `balance.PersonLines`, `director.Accounts` and `director.StatementOf`, and
-  the close's check "directors", which C.2 #2 reads with the other sub-ledgers. The oracle's half follows in its own pull
-  request, so this task stays open until it merges.
+  the close's check "directors", which C.2 #2 reads with the other sub-ledgers. The oracle's half, in its own pull
+  request: the scenario format's `people`, a line's `party` and `origin` and the two roles; the result's line `party` and
+  `people` totals; rule 9 on both sides, the generator drawing director's accounts in half of its charts, and the seed's
+  golden scenarios regenerated. Tests: `oracle/tests/test_founders.py` worked by hand, and the gate (`make differential`).
 - [x] 1.4 The member link under dual control (D1): the approval object `contact_member_link`, never signed by the
   member linked. Contacts' roles in `createContact` and `updateContact`. Tests: through the API as each matrix role,
   and the authorisation matrix rows. `// req: FR-EQ-01`, `// req: QA-SEC-03`

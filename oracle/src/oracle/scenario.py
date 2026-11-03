@@ -80,6 +80,8 @@ class Line:
     amount: str
     fx_rate: str | None
     fx_rate_source: str | None
+    party: str | None = None  # the person of a line on a director's account (FR-EQ-01, B.7)
+    origin: str | None = None  # where that amount came from
 
 
 @dataclass(frozen=True)
@@ -156,6 +158,7 @@ class Scenario:
     settings: Settings | None = None
     statements: bool = False
     kpis: KpiSettings | None = None
+    people: frozenset[str] = frozenset()  # the directors and shareholders a director's account may name (FR-EQ-01)
 
 
 # A role the statements read belongs to at most one account, of this type (README, "Statements").
@@ -344,6 +347,8 @@ def scenario_from_json(data: Any) -> Scenario:
                 amount=ln["amount"],
                 fx_rate=ln.get("fx_rate"),
                 fx_rate_source=ln.get("fx_rate_source"),
+                party=ln.get("party"),
+                origin=ln.get("origin"),
             )
             for ln in raw["lines"]
         )
@@ -375,8 +380,11 @@ def scenario_from_json(data: Any) -> Scenario:
                     f"reversals/{i}: {reversal.document} is a {types[reversal.document]}; a reversal names a "
                     "manual journal (voids of P1 documents are not in the format yet)"
                 )
+    people = frozenset(data.get("people", ()))
+    for i, person in enumerate(data.get("people", ())):
+        _shape(_DOCUMENT_ID, person, f"people/{i}")
     return Scenario(data["name"], base, currencies, accounts, tuple(documents), reversals, as_of, settings, statements,
-                    kpis)
+                    kpis, people)
 
 
 def load_scenario(path: str | Path) -> Scenario:

@@ -32,12 +32,15 @@ type Scenario struct {
 	BaseCurrency string         `json:"base_currency"`
 	Currencies   map[string]int `json:"currencies"`
 	Accounts     []Account      `json:"accounts"`
-	Documents    []Document     `json:"documents"`
-	Reversals    []Reversal     `json:"reversals"`
+	// People are the directors and shareholders a line on a director's account may name (FR-EQ-01).
+	People    []string   `json:"people,omitempty"`
+	Documents []Document `json:"documents"`
+	Reversals []Reversal `json:"reversals"`
 }
 
 // Account is one account of the scenario's chart. Role "share-capital" marks an account a manual
-// journal may not post to (INV-13).
+// journal may not post to (INV-13); "director-loan" and "deferred-remuneration" a director's account,
+// whose lines name their person and origin (FR-EQ-01, B.7).
 type Account struct {
 	Code   string `json:"code"`
 	Type   string `json:"type"`
@@ -63,6 +66,8 @@ type Line struct {
 	Amount       string `json:"amount"`
 	FXRate       string `json:"fx_rate,omitempty"`
 	FXRateSource string `json:"fx_rate_source,omitempty"`
+	Party        string `json:"party,omitempty"`  // a director's account's person, one of the scenario's people
+	Origin       string `json:"origin,omitempty"` // where that amount came from
 }
 
 // Reversal reverses the posted entry of a document on a date.
@@ -78,6 +83,8 @@ type Result struct {
 	Entries      []Entry                      `json:"entries"`
 	Rejected     []string                     `json:"rejected"`
 	TrialBalance map[string]map[string]string `json:"trial_balance"` // month → account → base total
+	// People is each person's base total on each director's account (FR-EQ-01); absent when no line names one.
+	People map[string]map[string]string `json:"people,omitempty"`
 }
 
 // Entry is one posted entry.
@@ -94,6 +101,7 @@ type EntryLine struct {
 	Currency   string `json:"currency"`
 	Amount     string `json:"amount"`
 	BaseAmount string `json:"base_amount"`
+	Party      string `json:"party,omitempty"`
 }
 
 // stableID turns a scenario's name for something into a fixed UUID.
@@ -120,16 +128,22 @@ func RunEngine(s Scenario) (Result, error) {
 	if err != nil {
 		return Result{}, fmt.Errorf("scenario %q: base currency: %w", s.Name, err)
 	}
-	settings := ledger.Settings{Base: base, Accounts: map[uuid.UUID]ledger.Account{}}
-	codeOf := map[uuid.UUID]string{}
+	settings := ledger.Settings{Base: base, Accounts: map[uuid.UUID]ledger.Account{}, People: map[uuid.UUID]bool{}}
+	codeOf, personOf := map[uuid.UUID]string{}, map[uuid.UUID]string{}
 	for _, a := range s.Accounts {
 		id := stableID("account", a.Code)
-		settings.Accounts[id] = ledger.Account{ID: id, Code: a.Code, Group: a.Group, Active: a.Active, ShareCapital: a.Role == "share-capital"}
+		settings.Accounts[id] = ledger.Account{ID: id, Code: a.Code, Group: a.Group, Active: a.Active, ShareCapital: a.Role == "share-capital",
+			Role: a.Role}
 		codeOf[id] = a.Code
+	}
+	for _, p := range s.People {
+		id := stableID("party", p)
+		settings.People[id], personOf[id] = true, p
 	}
 
 	res := Result{Schema: ResultSchema, Name: s.Name, Entries: []Entry{}, Rejected: []string{}, TrialBalance: map[string]map[string]string{}}
 	totals := map[string]map[string]money.Money{}
+	people := map[string]map[string]money.Money{}
 	record := func(doc, kind string, e ledger.Entry) {
 		out := Entry{Document: doc, Kind: kind, PostingDate: e.PostingDate.Format(time.DateOnly)}
 		month := e.PostingDate.Format("2006-01")
@@ -138,7 +152,19 @@ func RunEngine(s Scenario) (Result, error) {
 		}
 		for _, l := range e.Lines {
 			code := codeOf[l.AccountID]
-			out.Lines = append(out.Lines, EntryLine{Account: code, Currency: l.Amount.Currency().Code, Amount: l.Amount.String(), BaseAmount: l.Base.String()})
+			line := EntryLine{Account: code, Currency: l.Amount.Currency().Code, Amount: l.Amount.String(), BaseAmount: l.Base.String()}
+			if l.Party != uuid.Nil {
+				line.Party = personOf[l.Party]
+				if people[line.Party] == nil {
+					people[line.Party] = map[string]money.Money{}
+				}
+				sum, ok := people[line.Party][code]
+				if !ok {
+					sum = money.Zero(base)
+				}
+				people[line.Party][code], _ = sum.Add(l.Base)
+			}
+			out.Lines = append(out.Lines, line)
 			cur, ok := totals[month][code]
 			if !ok {
 				cur = money.Zero(base)
@@ -186,6 +212,20 @@ func RunEngine(s Scenario) (Result, error) {
 			}
 		}
 	}
+	for person, accounts := range people {
+		for code, total := range accounts {
+			if total.IsZero() {
+				continue
+			}
+			if res.People == nil {
+				res.People = map[string]map[string]string{}
+			}
+			if res.People[person] == nil {
+				res.People[person] = map[string]string{}
+			}
+			res.People[person][code] = total.String()
+		}
+	}
 	return res, nil
 }
 
@@ -216,7 +256,10 @@ func journalOf(d Document, base money.Currency, declared map[string]int) (ledger
 		if err != nil {
 			return ledger.Journal{}, false
 		}
-		line := ledger.JournalLine{AccountID: stableID("account", l.Account), Amount: amount}
+		line := ledger.JournalLine{AccountID: stableID("account", l.Account), Amount: amount, Origin: l.Origin}
+		if l.Party != "" {
+			line.Party = stableID("party", l.Party)
+		}
 		if l.FXRate != "" {
 			r, err := money.ParseRate(l.FXRate, cur, base, l.FXRateSource)
 			if err != nil {
@@ -250,8 +293,8 @@ func Compare(engine, oracle Result) error {
 		}
 		for k, l := range e.Lines {
 			if ol := o.Lines[k]; !sameLine(l, ol) {
-				return fmt.Errorf("%s line %d: engine %s %s %s base %s, oracle %s %s %s base %s",
-					at, k+1, l.Account, l.Currency, l.Amount, l.BaseAmount, ol.Account, ol.Currency, ol.Amount, ol.BaseAmount)
+				return fmt.Errorf("%s line %d: engine %s %s %s base %s person %q, oracle %s %s %s base %s person %q",
+					at, k+1, l.Account, l.Currency, l.Amount, l.BaseAmount, l.Party, ol.Account, ol.Currency, ol.Amount, ol.BaseAmount, ol.Party)
 			}
 		}
 	}
@@ -277,11 +320,34 @@ func Compare(engine, oracle Result) error {
 			}
 		}
 	}
+	// Each person's totals on the director's accounts (FR-EQ-01): a missing person or account reads as zero.
+	persons := map[string]bool{}
+	for p := range engine.People {
+		persons[p] = true
+	}
+	for p := range oracle.People {
+		persons[p] = true
+	}
+	for _, p := range sortedKeys(persons) {
+		accounts := map[string]bool{}
+		for a := range engine.People[p] {
+			accounts[a] = true
+		}
+		for a := range oracle.People[p] {
+			accounts[a] = true
+		}
+		for _, a := range sortedKeys(accounts) {
+			if ev, ov := engine.People[p][a], oracle.People[p][a]; !sameAmount(ev, ov) {
+				return fmt.Errorf("person %s account %s: engine %s, oracle %s", p, a, cmp.Or(ev, "0"), cmp.Or(ov, "0"))
+			}
+		}
+	}
 	return nil
 }
 
 func sameLine(a, b EntryLine) bool {
-	return a.Account == b.Account && a.Currency == b.Currency && sameAmount(a.Amount, b.Amount) && sameAmount(a.BaseAmount, b.BaseAmount)
+	return a.Account == b.Account && a.Currency == b.Currency && sameAmount(a.Amount, b.Amount) && sameAmount(a.BaseAmount, b.BaseAmount) &&
+		a.Party == b.Party
 }
 
 // sameAmount compares two decimal strings exactly, so "1.50" equals "1.5" and "" equals "0".

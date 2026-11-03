@@ -31,7 +31,8 @@
                 "account": {"type": "string"},
                 "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
                 "amount": {"description": "At the line currency's minor units.", "$ref": "#/$defs/decimal"},
-                "base_amount": {"description": "At the base currency's minor units.", "$ref": "#/$defs/decimal"}
+                "base_amount": {"description": "At the base currency's minor units.", "$ref": "#/$defs/decimal"},
+                "party": {"description": "Only on a line on a director's account: its person (FR-EQ-01, B.7). A reversal's line keeps it.", "type": "string"}
               }
             }
           }
@@ -52,6 +53,14 @@
           "type": "object",
           "additionalProperties": {"$ref": "#/$defs/decimal"}
         }
+      }
+    },
+    "people": {
+      "description": "Present only when a posted line names a person. Person -> director's account -> base-currency total of every posted line naming that person on that account (FR-EQ-01; the sub-ledger of 2500 and 2120). A total of zero may be left out; a comparator reads a missing person or account as zero.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {"$ref": "#/$defs/decimal"}
       }
     },
     "statements": {

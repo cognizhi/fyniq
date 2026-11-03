@@ -47,7 +47,10 @@ from `cmd/seed` (2.4) and the merge gate (3.1).
   (INV-13; 3010 and 3020 in the default chart). Both sides refuse those lines (change
   `p0-manual-journal-rules`); half of the generated charts have such an account. The statements read
   three more roles, `retained-earnings`, `depreciation` and `income-tax-expense`, and the attributes
-  `report_group`, `function` and `cash_flow_line` (section "Statements").
+  `report_group`, `function` and `cash_flow_line` (section "Statements"). (PRD-001 rev 0.167)
+  `director-loan` (2500) and `deferred-remuneration` (2120) mark the director's accounts: each line on
+  one names its `party`, one of the scenario's `people`, and its `origin` (rule 9; FR-EQ-01, B.7). The
+  generator gives half of its charts one, with the people `P0001` and `P0002`.
 - Documents post in array order; then each reversal reverses the posted entry of its document on
   its date. Every date falls in a calendar-month period, and all periods are open.
 
@@ -92,6 +95,9 @@ only when it meets every rule:
 7. The base amounts, each computed by `RND-FX` (round(amount × rate, the base currency's minor units),
    half away from zero), sum to zero. A base-currency line's base amount is its amount.
 8. When every line shares one currency, the amounts also sum to zero in that currency.
+9. (PRD-001 rev 0.167) Every line on a director's account has a `party` that is one of `people` and an
+   `origin` that is one of `lent`, `paid_personally`, `pay`, `fee`, `paid_out` and `other`; no other line
+   has either (FR-EQ-01, Appendix B.7). A scenario with no `people` has none, so any `party` is refused.
 
 A reversal is rejected when its document is unknown or was rejected, when the document was
 already reversed (a document is reversed at most once), or when it is dated before the document's
@@ -128,6 +134,11 @@ the original entry as stored (amount and base amount; never re-converted, ENG-14
 - `trial_balance`: each posting month (`YYYY-MM`) maps each account to its base-currency total for
   that month. The oracle leaves out accounts whose total is zero and keeps a month in which every
   account nets to zero (`{}`). **A comparator reads a missing account, or a missing month, as zero.**
+- (PRD-001 rev 0.167) A posted line on a director's account carries its `party`, and a reversal's line
+  keeps it; the comparator compares it with the line. `people`, present only when a posted line names
+  a person, maps each person to each director's account to the base-currency total of every posted
+  line naming them there: the sub-ledger of 2500 and 2120 (FR-EQ-01). Totals of zero are left out, and
+  a comparator reads a missing person or account as zero.
 
 ## Decided in PRD-001 rev 0.24
 

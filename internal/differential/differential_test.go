@@ -140,13 +140,13 @@ func TestEngineOnTheHandWorkedScenario(t *testing.T) {
 			"JNL-0004/reversal", "JNL-0001/reversal"},
 		Entries: []Entry{
 			{Document: "JNL-0001", Kind: "post", PostingDate: "2026-01-05", Lines: []EntryLine{
-				{"1020", "USD", "100.00", "134.72"}, {"4010", "SGD", "-134.72", "-134.72"}}},
+				el("1020", "USD", "100.00", "134.72"), el("4010", "SGD", "-134.72", "-134.72")}},
 			{Document: "JNL-0002", Kind: "post", PostingDate: "2026-01-20", Lines: []EntryLine{
-				{"1020", "USD", "-0.05", "-0.13"}, {"7030", "SGD", "0.13", "0.13"}}}, // −0.125 → −0.13
+				el("1020", "USD", "-0.05", "-0.13"), el("7030", "SGD", "0.13", "0.13")}}, // −0.125 → −0.13
 			{Document: "JNL-0003", Kind: "post", PostingDate: "2026-02-02", Lines: []EntryLine{
-				{"6110", "JPY", "10000", "91.00"}, {"6110", "KWD", "1.005", "4.45"}, {"1010", "SGD", "-95.45", "-95.45"}}},
+				el("6110", "JPY", "10000", "91.00"), el("6110", "KWD", "1.005", "4.45"), el("1010", "SGD", "-95.45", "-95.45")}},
 			{Document: "JNL-0001", Kind: "reversal", PostingDate: "2026-02-01", Lines: []EntryLine{
-				{"1020", "USD", "-100.00", "-134.72"}, {"4010", "SGD", "134.72", "134.72"}}},
+				el("1020", "USD", "-100.00", "-134.72"), el("4010", "SGD", "134.72", "134.72")}},
 		},
 		TrialBalance: map[string]map[string]string{
 			"2026-01": {"1020": "134.59", "4010": "-134.72", "7030": "0.13"},
@@ -257,4 +257,9 @@ func TestScenarioRoundTrip(t *testing.T) {
 	if err := json.Unmarshal(b, &back); err != nil || !reflect.DeepEqual(s, back) {
 		t.Fatalf("round trip changed the scenario: %v", err)
 	}
+}
+
+// el is a posted line naming no person.
+func el(account, currency, amount, base string) EntryLine {
+	return EntryLine{Account: account, Currency: currency, Amount: amount, BaseAmount: base}
 }
