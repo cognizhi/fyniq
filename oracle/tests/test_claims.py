@@ -1,8 +1,8 @@
-"""Expense claims, mileage, reimbursements and cash advances, worked by hand (expense_claim@1,
+"""Expense claims, mileage, reimbursements and cash advances, worked by hand (expense_claim@1 and @2,
 claim_reimbursement@1, cash_advance@1, RND-MILEAGE).
 
-Every expected figure is worked out in the comment beside it from PRD-001 §10.2, §10.4, FR-AP-07,
-FR-AP-16, FR-AP-17 and FR-AP-20, never by running the oracle or the engine (QA-ENG-01). The mileage
+Every expected figure is worked out in the comment beside it from PRD-001 §10.2, §10.4, Appendix B.7,
+FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20 and FR-EQ-02, never by running the oracle or the engine (QA-ENG-01). The mileage
 rates are the recommended S$0.60 a km for a car and S$0.25 for a motorcycle (rev 0.151) [verify].
 """
 
@@ -113,6 +113,41 @@ def test_a_reimbursement_pays_what_is_owed():
     assert lines_of(result, "RE-1") == [("1010", "SGD", "-60.00", "-60.00"), ("2150", "SGD", "60.00", "60.00")]
 
 
+# req: FR-EQ-02
+def test_a_claim_kept_as_a_loan_credits_the_directors_account():
+    # B.7: Dr 6010 100.00, Dr 2200 9.00 and a 12.35 km trip, 7.44 to 6110, as any claim; Cr 2500 116.44 (gross)
+    # naming P0001 instead of 2150. Nothing is open on 2150, so nothing reimburses it.
+    result, ledger = p1_post(
+        claim("EC-1", "2026-03-05", "SGD", bill_line("6010", "100.00", "TX", "9.00"), trip("6110", "12.35"), loan="P0001"),
+        settlement("claim_reimbursement", "RE-1", "2026-03-31", "1010", "SGD", ("EC-1", "116.44")),
+    )
+    assert lines_of(result, "EC-1") == [
+        ("2200", "SGD", "9.00", "9.00"),
+        ("2500", "SGD", "-116.44", "-116.44"),
+        ("6010", "SGD", "100.00", "100.00"),
+        ("6110", "SGD", "7.44", "7.44"),
+    ]
+    entry = next(e for e in result["entries"] if e["document"] == "EC-1")
+    assert [ln.get("party") for ln in entry["lines"]] == [None, "P0001", None, None]
+    assert result["people"] == {"P0001": {"2500": "-116.44"}}
+    assert ledger.reasons == [("RE-1", "not-a-posted-expense-claim")]
+
+
+# req: FR-EQ-02
+def test_a_claim_kept_as_a_loan_without_claimable_input_tax():
+    # B.7: on BL (GST Regulations 26-27) no input tax is claimed and the GST is part of the cost: 6010 109.00;
+    # 2500 109.00 (gross) naming P0001.
+    result, _ = p1_post(claim("EC-1", "2026-03-05", "SGD", bill_line("6010", "100.00", "BL", "9.00"), loan="P0001"))
+    assert lines_of(result, "EC-1") == [("2500", "SGD", "-109.00", "-109.00"), ("6010", "SGD", "109.00", "109.00")]
+
+
+# req: FR-EQ-02
+def test_a_usd_claim_kept_as_a_loan():
+    # USD 50.00 at 1.35: 6010 USD 50.00 (67.50); 2500 USD -50.00 (-67.50) naming P0001, as 2150 would take it.
+    result, _ = p1_post(claim("EC-1", "2026-03-10", "USD", bill_line("6010", "50.00", "OP"), rate="1.35", loan="P0001"))
+    assert lines_of(result, "EC-1") == [("2500", "USD", "-50.00", "-67.50"), ("6010", "USD", "50.00", "67.50")]
+
+
 def _refused(documents, doc_id, reason):
     result, ledger = p1_post(*documents)
     assert doc_id in result["rejected"]
@@ -143,6 +178,9 @@ EC = claim("EC-1", "2026-03-05", "SGD", trip("6110", "100"))
         (settlement("claim_reimbursement", "RE-9", "2026-03-31", "1010", "SGD", ("EC-1", "50.00"), unapplied="1.00"),
          "unapplied-not-allowed"),
         (settlement("claim_reimbursement", "RE-9", "2026-03-31", "1010", "SGD", ("EC-1", "60.01")), "more-than-open"),
+        # FR-EQ-02 (design D6): a loan names a director or shareholder, and settles no cash advance.
+        (claim("EC-9", "2026-03-05", "SGD", trip("6110", "10"), loan="P0009"), "loan-not-a-director"),
+        (claim("EC-9", "2026-03-05", "SGD", trip("6110", "10"), loan="P0001", advance="ADV-1"), "loan-with-advance"),
     ],
 )
 def test_a_claim_document_that_breaks_a_rule_is_rejected(document, reason):

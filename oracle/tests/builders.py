@@ -79,6 +79,7 @@ P1_ACCOUNTS = [
     {"code": "2330", "type": "liability", "group": False, "active": True},
     {"code": "2400", "type": "liability", "group": False, "active": True},
     {"code": "2410", "type": "liability", "group": False, "active": True},
+    {"code": "2500", "type": "liability", "group": False, "active": True, "role": "director-loan"},
     {"code": "2999", "type": "liability", "group": False, "active": True},
     {"code": "3010", "type": "equity", "group": False, "active": True, "role": "share-capital"},
     {"code": "4000", "type": "revenue", "group": True, "active": True},
@@ -107,6 +108,7 @@ P1_SETTINGS = {
         "customer_deposits": "2410",
         "claims_payable": "2150",
         "advances": "1250",
+        "director_loan": "2500",
         "depreciation": "6610",
         "accumulated_depreciation": "1590",
         "disposal": "7050",
@@ -126,6 +128,7 @@ def p1_scenario(
     accounts: list[dict] | None = None,
     currencies: dict | None = None,
     base: str = "SGD",
+    people: tuple[str, ...] = ("P0001",),
 ) -> dict[str, Any]:
     return {
         "schema": "fyniq-scenario@1",
@@ -135,6 +138,7 @@ def p1_scenario(
         "as_of": as_of,
         "settings": settings if settings is not None else P1_SETTINGS,
         "accounts": accounts if accounts is not None else P1_ACCOUNTS,
+        "people": list(people),
         "documents": list(documents),
         "reversals": [],
     }

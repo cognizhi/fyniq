@@ -180,7 +180,7 @@ A scenario with a P1 document must have `settings` and `as_of`, or it is invalid
 - `settings.accounts` names the system accounts by key (Appendix B.5): `receivable` (1100), `payable`
   (2010), `gst` (2200), `prepayments` (1210), `deferred_revenue` (2400), `fx` (7030), `bank_charges`
   (6460, a setting), `withholding_tax` (2330), `customer_deposits` (2410), `claims_payable` (2150),
-  `advances` (1250), `depreciation` (6610), `accumulated_depreciation` (1590), `disposal` (7050, a setting)
+  `advances` (1250), `director_loan` (2500), `depreciation` (6610), `accumulated_depreciation` (1590), `disposal` (7050, a setting)
   and `disposal_clearing` (1160, a setting). Each named account must be in `accounts`. A document that
   needs a key the organisation has not set is rejected.
 - `settings.books_start` is the first day of the books: an asset's depreciation posts from the later of
@@ -354,9 +354,10 @@ stays a credit with the customer. A `write_off` (`invoice`, `amount` at most wha
 reason's) credits 1100 at the invoice's stored rate (all that is left of its line when it takes all that
 is open) and debits the account with that carrying amount, in the base currency.
 
-### Expense claims (`expense_claim`, `expense_claim@1`), reimbursements (`claim_reimbursement`, `claim_reimbursement@1`) and cash advances (`cash_advance`, `cash_advance@1`)
+### Expense claims (`expense_claim`, `expense_claim@1` and `@2`), reimbursements (`claim_reimbursement`, `claim_reimbursement@1`) and cash advances (`cash_advance`, `cash_advance@1`)
 
-From §10.2, §10.4, FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20 and the rows of rev 0.147, 0.148 and 0.151.
+From §10.2, §10.4, Appendix B.7, FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20, FR-EQ-02 and the rows of rev 0.147,
+0.148, 0.151 and 0.167.
 
 ```json
 {"type": "expense_claim", "id": "EC-0001", "version": 1, "date": "2026-03-05", "currency": "SGD",
@@ -375,6 +376,11 @@ reimbursing a claim in another currency gives the rate (the cascade's), the diff
 `cash_advance` (a base-currency money account and an amount) posts Dr 1250, Cr the money account; with
 `refund_of` it is what is left of that advance coming back, at most what is left: Dr the money account,
 Cr 1250.
+
+A claim kept as a loan to the company (`"loan": "<person>"`, one of `people`; FR-EQ-02, `expense_claim@2`)
+credits `director_loan` (2500) instead of 2150, as 2150 would be credited, and the line names the person
+(`party`): what the director paid stays owed to them there. It settles no `advance`, and no reimbursement
+settles it.
 
 ### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
 

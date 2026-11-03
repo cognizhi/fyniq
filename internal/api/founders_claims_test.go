@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 )
@@ -15,7 +16,7 @@ import (
 // FR-EQ-02 (PRD-001 rev 0.167; p1-founders-money design D6), worked by hand: Ah Kow, a director whose contact is linked
 // to him, keeps his S$27.30 taxi as a loan to the company. Another founder approves it as any claim; it posts under
 // expense_claim@2, Dr Rent (the taxi's category) 27.30, Cr 2500 27.30 naming him; his director account says the company
-// owes him S$27.30, paid personally; and nothing reimburses it. Mei, who signs in as no director, cannot keep a claim as
+// owes him S$27.30, paid personally; and nothing reimburses it. He never approves it himself. Mei, who signs in as no director, cannot keep a claim as
 // a loan, nor can a claim that settles a cash advance.
 // req: FR-EQ-02
 // req: equity/founders-money Reimburse or keep as a loan
@@ -52,6 +53,9 @@ func TestAClaimKeptAsALoanToTheCompany(t *testing.T) {
 	if sub.Status != http.StatusAccepted {
 		t.Fatalf("submitting: %d %s", sub.Status, sub.Raw)
 	}
+	// He never approves his own claim, even as an Owner and the Controller (FR-AP-17).
+	e.problemIs(e.call(http.MethodPost, "/v1/approvals/"+sub.str("id")+"/approve", c.as(c.ahkow, authz.Owner, authz.Controller), hashOf(sub),
+		"If-Match", `"1"`), "approveApproval", 403, approval.CodeOwnRequest)
 	if a := e.call(http.MethodPost, "/v1/approvals/"+sub.str("id")+"/approve", weiling, hashOf(sub), "If-Match", `"1"`); a.Status != http.StatusOK {
 		t.Fatalf("Wei Ling approving: %d %s", a.Status, a.Raw)
 	}
