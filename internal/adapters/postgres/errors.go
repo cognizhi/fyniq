@@ -135,6 +135,7 @@ var fyCodes = map[string]string{
 	"FY252": storage.CodeParty,
 	"FY253": storage.CodeParty,
 	"FY254": storage.CodeBatch,
+	"FY255": storage.CodeShareIssue,
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

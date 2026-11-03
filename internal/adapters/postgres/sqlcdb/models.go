@@ -1552,6 +1552,26 @@ type FyniqSalesReminder struct {
 	DecidedAt      time.Time
 }
 
+type FyniqShareIssue struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	HolderID       uuid.UUID
+	ClassAccountID uuid.UUID
+	Shares         string
+	Price          string
+	Currency       string
+	MinorUnits     int16
+	Amount         string
+	Consideration  string
+	ResolutionRefs string
+	LodgementRef   *string
+	EffectiveOn    time.Time
+	SettlementID   *uuid.UUID
+	EntryID        *uuid.UUID
+	RecordedBy     uuid.UUID
+	RecordedAt     time.Time
+}
+
 type FyniqSodOverride struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID

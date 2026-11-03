@@ -180,13 +180,28 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
 
 ## 5. Conversion and the register of share issues (slice 5)
 
-- [ ] 5.1 `RND-SHARE` in `internal/domain/rounding`, with property tests, stated independently in the oracle (D11).
+- [x] 5.1 `RND-SHARE` in `internal/domain/rounding`, with property tests, stated independently in the oracle (D11).
   `// req: FR-EQ-06`
-- [ ] 5.2 The register of share issues (D11):
+  Built: `rounding.Share` is the largest whole n with n × price < amount + half a minor unit. It has the two pinned
+  figures of Appendix G.3, properties (whole, at most the amount, one more share rounds past it, converted plus remainder
+  is the amount) and a mutation efficacy of 97%. The oracle's `rnd_share` finds n by search, from the rule, not by the
+  formula.
+- [x] 5.2 The register of share issues (D11):
   - `share_issue`, append-only, with RLS forced;
   - the source `share_issue` allowed on share capital (INV-13, extended in the database);
   - issues before the books start recorded without an entry.
   Tests: attack tests that no other source posts share capital. `// req: FR-EQ-08`, `// req: INV-13`
+  Built:
+  - **The table.** `share_issue` (migration 000216), append-only under FORCE RLS and audited. FY255 checks the class is
+    share capital, the holder a director or shareholder, and the shares whole.
+  - **The backstop.** An entry from the source `share_issue` commits only with the row that names it. A row with an entry
+    must be posted on its effective date and credit its class with its amount (FY255, deferred). INV-13's source check
+    already allowed `share_issue`.
+  - **Before the books start.** `recordShareIssueBeforeBooks` (Owner, Controller, stepped up) records an issue with no
+    entry, its amount shares × price (RND-LINE). `listShareIssues` reads the register, the Board viewer included.
+  - **Not built.** A cash allotment after the books start: how its money is received and matched is not designed
+    (FR-EQ-08 lists cash among the considerations). It waits for the owner's decision. The register's page and its
+    guide come with 5.4.
 - [ ] 5.3 The convert route (D11):
   - approve with the four documents, the price basis, the capacity and the measurement basis;
   - effective on the date ACRA registered it, posting from the register, refused in a closed period or after the

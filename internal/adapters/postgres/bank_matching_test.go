@@ -151,10 +151,10 @@ func TestBankMatchingKeepsWhatItRecorded(t *testing.T) {
 		t.Fatalf("a second live match of a line: %v", err)
 	}
 	for name, n := range map[string]storage.NewBankMatch{
-		"another line's transaction":   {LineID: a.lines[0].ID, Kind: storage.MatchCategorised, DocumentID: &txn.ID, EntryID: &entry.ID},
-		"no transaction":               {LineID: a.lines[0].ID, Kind: storage.MatchCategorised, EntryID: &entry.ID},
-		"another entry than its own":   {LineID: line.ID, Kind: storage.MatchSuspense, DocumentID: &txn.ID, EntryID: &a.lines[0].ID},
-		"a categorisation, no entry":   {LineID: a.lines[0].ID, Kind: storage.MatchCategorised, DocumentID: &txn.ID},
+		"another line's transaction": {LineID: a.lines[0].ID, Kind: storage.MatchCategorised, DocumentID: &txn.ID, EntryID: &entry.ID},
+		"no transaction":             {LineID: a.lines[0].ID, Kind: storage.MatchCategorised, EntryID: &entry.ID},
+		"another entry than its own": {LineID: line.ID, Kind: storage.MatchSuspense, DocumentID: &txn.ID, EntryID: &a.lines[0].ID},
+		"a categorisation, no entry": {LineID: a.lines[0].ID, Kind: storage.MatchCategorised, DocumentID: &txn.ID},
 	} {
 		n.Basis, n.At = storage.BasisPerson, now
 		if err := do(func(ctx context.Context, u storage.UnitOfWork) error {

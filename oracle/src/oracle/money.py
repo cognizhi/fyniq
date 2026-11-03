@@ -31,6 +31,7 @@ from decimal import (
     Subnormal,
     Underflow,
 )
+from fractions import Fraction
 
 # 80 significant digits hold every product and sum the oracle forms: an amount has at most
 # 16 + 4 digits (NUMERIC(20,4)), a rate at most 10 + 10 (NUMERIC(20,10)), so a product has at most
@@ -307,6 +308,29 @@ def rnd_mileage(distance_km: Decimal, rate_per_km: Decimal, minor_units: int) ->
     half up, per trip. Half up is half away from zero, as everywhere in §10.4."""
     tenths = round_quotient(distance_km, Decimal(1), 1)
     return round_quotient(EXACT.multiply(tenths, rate_per_km), Decimal(1), minor_units)
+
+
+def rnd_share(amount: Decimal, price: Decimal, minor_units: int) -> tuple[int, Decimal, Decimal]:
+    """``RND-SHARE`` (§10.4, rev 0.3; FR-EQ-06): the largest whole number of shares n for which round(n × price, the
+    currency's minor units), half up, is at most ``amount``; returns n, the converted amount round(n × price) and the
+    remainder left on the source balance. Never fractional shares.
+
+    Worked from the rule by search, not by formula: start at the whole part of amount ÷ price, step up while one more
+    share still rounds to at most the amount, and down while the shares round to more than it."""
+    if not amount > ZERO or not price > ZERO:
+        raise ValueError("RND-SHARE needs an amount and a price above zero")
+
+    def worth(n: int) -> Decimal:
+        return round_quotient(EXACT.multiply(Decimal(n), price), Decimal(1), minor_units)
+
+    ratio = Fraction(amount) / Fraction(price)
+    n = ratio.numerator // ratio.denominator
+    while worth(n + 1) <= amount:
+        n += 1
+    while n > 0 and worth(n) > amount:
+        n -= 1
+    converted = worth(n)
+    return n, converted, EXACT.subtract(amount, converted)
 
 
 def rnd_percent(part: Decimal, whole: Decimal) -> Decimal | None:

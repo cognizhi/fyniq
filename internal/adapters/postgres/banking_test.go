@@ -114,7 +114,10 @@ func TestBankingStoreKeepsWhatTheBankSaid(t *testing.T) {
 		{MoneyAccountID: acct.ID, Kind: storage.MoneySourceFile, ReportFormat: storage.FormatMT940, FromDate: porttest.Day(10, 1), At: now},
 		{MoneyAccountID: acct.ID, Kind: storage.MoneySourceEmail, Senders: []string{"ideal@dbs.example"}, ReportFormat: storage.FormatCSV, FromDate: porttest.Day(10, 15), At: now},
 	} {
-		if err := do(func(ctx context.Context, u storage.UnitOfWork) error { _, err := u.Banking().AddSource(ctx, src); return err }); err != nil {
+		if err := do(func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Banking().AddSource(ctx, src)
+			return err
+		}); err != nil {
 			t.Fatalf("source %d: %v", i, err)
 		}
 	}

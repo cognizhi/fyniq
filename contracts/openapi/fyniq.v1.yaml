@@ -24046,6 +24046,192 @@ components:
       required:
         - done
       type: object
+    ShareIssue:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "What the shares are paid up with: shares × price for cash, RND-SHARE's converted amount for a conversion."
+        before_books:
+          description: "Issued before the books start, so recorded without an entry: the opening balances hold its share capital."
+          examples:
+            - true
+          type: boolean
+        class_account_id:
+          description: "The class: its share-capital account."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30
+          format: uuid
+          type: string
+        class_code:
+          description: "The account's code: 3010 ordinary, 3020 preference."
+          examples:
+            - "3010"
+          type: string
+        consideration:
+          description: What paid for them.
+          enum:
+            - cash
+            - debt_capitalised
+            - services
+            - safe_or_note
+          examples:
+            - cash
+          type: string
+        effective_on:
+          description: The day ACRA's register of members shows the allotment.
+          examples:
+            - "2025-01-02"
+          format: date
+          type: string
+        entry_id:
+          description: The entry it posted, from the source share_issue.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f20
+          format: uuid
+          type: string
+        holder_id:
+          description: The contact the shares were allotted to.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+          format: uuid
+          type: string
+        holder_name:
+          description: Their name.
+          examples:
+            - Mei Lin Tan
+          type: string
+        id:
+          description: The issue's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f10
+          format: uuid
+          type: string
+        lodgement_ref:
+          description: ACRA's lodgement reference for the allotment.
+          examples:
+            - AA2025010200123
+          type: string
+        price:
+          description: The price per share, in the currency, as a decimal string.
+          examples:
+            - "1.00"
+          type: string
+        recorded_at:
+          description: When it was recorded.
+          examples:
+            - "2026-11-03T09:30:00Z"
+          format: date-time
+          type: string
+        resolution_refs:
+          description: The shareholders' approval and the board resolution, by reference.
+          examples:
+            - Incorporation subscription, 2 Jan 2025
+          type: string
+        settlement_id:
+          description: "A conversion: the settlement it decides."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa9
+          format: uuid
+          type: string
+        shares:
+          description: The number of shares, a whole number.
+          examples:
+            - "10000"
+          pattern: ^[1-9][0-9]*$
+          type: string
+      required:
+        - id
+        - holder_id
+        - holder_name
+        - class_account_id
+        - shares
+        - price
+        - amount
+        - consideration
+        - resolution_refs
+        - effective_on
+        - before_books
+        - recorded_at
+      type: object
+    ShareIssuePage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The issues on this page, earliest effective date first.
+          items:
+            $ref: "#/components/schemas/ShareIssue"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTI4ZjZlIn0
+          type: string
+      required:
+        - items
+      type: object
+    ShareIssueRequest:
+      additionalProperties: false
+      properties:
+        class_account_id:
+          description: "The class: an active share-capital account (3010 ordinary or 3020 preference)."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30
+          format: uuid
+          type: string
+        consideration:
+          description: What paid for them.
+          enum:
+            - cash
+            - debt_capitalised
+            - services
+            - safe_or_note
+          examples:
+            - cash
+          type: string
+        effective_on:
+          description: "The day ACRA's register of members shows the allotment: before the books start."
+          examples:
+            - "2025-01-02"
+          format: date
+          type: string
+        holder_id:
+          description: "The contact the shares were allotted to: a director or shareholder."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+          format: uuid
+          type: string
+        lodgement_ref:
+          description: ACRA's lodgement reference, if any.
+          examples:
+            - AA2025010200123
+          maxLength: 100
+          type: string
+        price:
+          description: The price per share in the base currency, a decimal string above zero with at most 6 decimals.
+          examples:
+            - "1.00"
+          type: string
+        resolution_refs:
+          description: The resolutions or subscription that allotted them, by reference.
+          examples:
+            - Incorporation subscription, 2 Jan 2025
+          maxLength: 500
+          type: string
+        shares:
+          description: The number of shares, a whole number above zero.
+          examples:
+            - "10000"
+          type: string
+      required:
+        - holder_id
+        - class_account_id
+        - shares
+        - price
+        - consideration
+        - resolution_refs
+        - effective_on
+      type: object
     SignInProvider:
       additionalProperties: false
       properties:
@@ -111567,6 +111753,305 @@ paths:
         capability: (installation setup)
         note: Needs the one-time setup code and a first-party sign-in; an OAuth client or the AI is refused.
         right: C
+  /v1/share-issues:
+    get:
+      description: "Every allotment of shares, earliest effective date first (FR-EQ-08): the holder, class, number, price, amount, consideration, resolutions, ACRA's lodgement reference and effective date, and the entry it posted, if any. Share capital moves only with the register or the opening balances (INV-13). A page at a time. Read-only; no side effects."
+      operationId: listShareIssues
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareIssuePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the register of share issues
+      tags:
+        - Founders
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Director accounts, settlements, share issues (rev 0.3)
+        right: V
+    post:
+      description: "Records in the register an allotment made before the books start, such as the incorporation subscription (FR-EQ-08, design D11): the holder, a director or shareholder; the class, an active share-capital account; the whole number of shares; the price per share in the base currency; the consideration; the resolutions; ACRA's lodgement reference; and the effective date, before the books start. Its amount is shares × price under RND-LINE. It posts no entry: the opening balances hold its share capital. Later allotments come from the register when a conversion becomes effective. Needs a person signed in who passed step-up. Side effects: the issue, append-only, and its audit event. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: recordShareIssueBeforeBooks
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShareIssueRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareIssue"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareIssue"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SHARE-01` The register of share issues does not change that way."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-01` The share issue does not fit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Record shares issued before the books start
+      tags:
+        - Founders
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - EQUITY-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-SHARE-01
+      x-fyniq-permission:
+        capability: Director accounts, settlements, share issues (rev 0.3)
+        note: The caller must have stepped up in the last 5 minutes; only an issue before the books start, which posts no entry.
+        right: A
   /v1/sign-in-providers:
     get:
       description: "The providers people may sign in to the web app with (FR-ADM-08): Google and Zoho through Identity Platform, or the local sign-in page in local mode, a page at a time (cursor pagination). Public: the sign-in page needs it before anyone is signed in. Read-only; no side effects."
