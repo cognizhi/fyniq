@@ -7608,17 +7608,20 @@ Records the accountant's decision on a cost (FR-EQ-03): its income-tax treatment
 
 **List the register of share issues** (`listShareIssues`)
 
-Every allotment of shares, earliest effective date first (FR-EQ-08): the holder, class, number, price, amount, consideration, resolutions, ACRA's lodgement reference and effective date, and the entry it posted, if any. Share capital moves only with the register or the opening balances (INV-13). Read-only; no side effects.
+Every allotment of shares, earliest effective date first (FR-EQ-08): the holder, class, number, price, amount, consideration, resolutions, ACRA's lodgement reference and effective date, and the entry it posted, if any. Share capital moves only with the register or the opening balances (INV-13). A page at a time. Read-only; no side effects.
 
 - **Permission:** View on Director accounts, settlements, share issues (rev 0.3)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
 - **Responses:**
   - `200` OK [`ShareIssuePage`](../../contracts/schemas/ShareIssuePage.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
-  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
-- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
 
 ### `POST /v1/share-issues`
 

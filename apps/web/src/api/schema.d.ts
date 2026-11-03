@@ -8257,7 +8257,7 @@ export interface paths {
         };
         /**
          * List the register of share issues
-         * @description Every allotment of shares, earliest effective date first (FR-EQ-08): the holder, class, number, price, amount, consideration, resolutions, ACRA's lodgement reference and effective date, and the entry it posted, if any. Share capital moves only with the register or the opening balances (INV-13). Read-only; no side effects.
+         * @description Every allotment of shares, earliest effective date first (FR-EQ-08): the holder, class, number, price, amount, consideration, resolutions, ACRA's lodgement reference and effective date, and the entry it posted, if any. Share capital moves only with the register or the opening balances (INV-13). A page at a time. Read-only; no side effects.
          */
         get: operations["listShareIssues"];
         put?: never;
@@ -25738,7 +25738,13 @@ export interface components {
             shares: string;
         };
         ShareIssuePage: {
+            /** @description The issues on this page, earliest effective date first. */
             items: components["schemas"]["ShareIssue"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjAxOTI4ZjZlIn0
+             */
+            next_cursor?: string;
         };
         ShareIssueRequest: {
             /**
@@ -89981,7 +89987,12 @@ export interface operations {
     };
     listShareIssues: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -90019,7 +90030,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
