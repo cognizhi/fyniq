@@ -107,6 +107,17 @@
       "$ref": "ExpenseClaimReturn.schema.json",
       "description": "Its latest return, while it is returned."
     },
+    "settle_to": {
+      "description": "How what the company owes is settled: reimbursed from 2150, or kept as a loan to the company on the claimant's director account, 2500 (FR-EQ-02).",
+      "enum": [
+        "reimburse",
+        "loan"
+      ],
+      "examples": [
+        "reimburse"
+      ],
+      "type": "string"
+    },
     "settles": {
       "$ref": "Money.schema.json",
       "description": "What it settles of the advance, in the base currency: as posted, or as posting would settle it now (the least of its total and what is open on the advance). The rest of its total is reimbursed."
@@ -164,6 +175,7 @@
     "version",
     "claimant",
     "stage",
+    "settle_to",
     "lines",
     "input_tax_decisions",
     "checks",

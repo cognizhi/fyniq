@@ -181,8 +181,9 @@ class Rules:
         return in_force[-1]
 
     # ---------------------------------------------------------------- lines
-    def line(self, account: str, currency: str, amount: Decimal, base_amount: Decimal) -> PostedLine:
-        return PostedLine(account, currency, amount, base_amount)
+    def line(self, account: str, currency: str, amount: Decimal, base_amount: Decimal,
+             party: str | None = None) -> PostedLine:
+        return PostedLine(account, currency, amount, base_amount, party)
 
     def base_line(self, account: str, base_amount: Decimal) -> PostedLine:
         """A line in the base currency: its amount is its base amount."""

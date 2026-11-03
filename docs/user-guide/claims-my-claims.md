@@ -101,6 +101,14 @@ open. Choose it under **Settles a cash advance** on your claims for the trip: th
 what is open, and anything above it is paid back to you. Refund what is left by bank transfer;
 finance records it. An advance still open after the claim deadline is flagged for review.
 
+## Keep it as a loan to the company
+
+If you are a director or shareholder and your contact is linked to you, the claim also asks how
+the company settles it under **Paid personally**. **Reimburse me** pays it back as usual. **Keep it
+as a loan to the company** leaves it owed to you on your director account instead, in **Money I put
+in**, until it is repaid or settled another way. Another founder approves it as any claim, and such
+a claim settles no cash advance. To claim GST, the receipt must still be addressed to the company.
+
 ## What happens next
 
 - Once approved, the claim is paid back by bank transfer, and later in the next payment batch.

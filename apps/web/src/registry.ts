@@ -168,6 +168,7 @@ export const actions = [
   { kind: "action", id: "member.end-role", mode: "expert", help: "member.end-role", guide: "settings.members#change-someones-roles" },
   { kind: "action", id: "member.withdraw-invitation", mode: "expert", help: "member.withdraw-invitation", guide: "settings.members#invite-someone" },
   { kind: "action", id: "member.remove", mode: "expert", help: "member.remove", guide: "settings.members#remove-someone" },
+  { kind: "action", id: "claim.keep-as-loan", mode: "basic", help: "claim.keep-as-loan", guide: "claims.my-claims#keep-it-as-a-loan-to-the-company" },
   { kind: "action", id: "access-review.attest", mode: "expert", help: "access-review.attest", guide: "settings.access-review#attest-the-quarter" },
   { kind: "action", id: "director-accounts.statement", mode: "expert", help: "director-accounts.statement", guide: "equity.director-accounts#read-a-statement" },
   { kind: "action", id: "director-accounts.export", mode: "expert", help: "director-accounts.export", guide: "equity.director-accounts#send-it-for-a-balance-confirmation" },

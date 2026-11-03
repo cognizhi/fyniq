@@ -749,6 +749,7 @@ var codeFacts = map[string]struct {
 	storage.CodeBatch:             {409, "A payment batch does not change that way"},
 	storage.CodeBatchHeld:         {409, "The item is paid by an approved payment batch"},
 	ledger.CodeParty:              {422, "A director's account line needs its person"},
+	claim.CodeSettleTo:            {422, "The claim cannot be kept as a loan"},
 	director.CodeNotPerson:        {422, "Not a director or shareholder"},
 	director.CodeDates:            {422, "The statement's dates do not fit"},
 	CodeNotLinked:                 {403, "Only a person has their own director account"},

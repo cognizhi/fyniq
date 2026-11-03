@@ -5,7 +5,8 @@
  "currencies": {"SGD": 2, "USD": 2},
  "as_of": "2026-04-30",
  "settings": {
-  "accounts": {"gst": "2200", "fx": "7030", "claims_payable": "2150", "advances": "1250"},
+  "accounts": {"gst": "2200", "fx": "7030", "claims_payable": "2150", "advances": "1250",
+               "director_loan": "2500"},
   "money_accounts": {"1010": "SGD", "1011": "SGD"},
   "gst": {"registered_from": "2025-01-01", "rates": [{"from": "2024-01-01", "percent": "9"}]},
   "mileage_rates": [{"vehicle": "car", "from": "2026-01-01", "rate": "0.60"},
@@ -17,10 +18,12 @@
   {"code": "1250", "type": "asset", "group": false, "active": true},
   {"code": "2150", "type": "liability", "group": false, "active": true},
   {"code": "2200", "type": "liability", "group": false, "active": true},
+  {"code": "2500", "type": "liability", "group": false, "active": true, "role": "director-loan"},
   {"code": "6010", "type": "expense", "group": false, "active": true},
   {"code": "6110", "type": "expense", "group": false, "active": true},
   {"code": "7030", "type": "expense", "group": false, "active": true}
  ],
+ "people": ["P0001"],
  "documents": [
   {"type": "cash_advance", "id": "ADV-0001", "version": 1, "date": "2026-03-01", "account": "1010", "amount": "500.00"},
   {"type": "expense_claim", "id": "EC-0001", "version": 1, "date": "2026-03-05", "currency": "SGD", "advance": "ADV-0001",
@@ -43,7 +46,15 @@
    "fx_rate": "1.35", "fx_rate_source": "document", "lines": [{"account": "6110", "distance": "10", "vehicle": "car"}]},
   {"type": "cash_advance", "id": "ADV-0002", "version": 1, "date": "2026-04-05", "account": "1011", "amount": "300.00"},
   {"type": "cash_advance", "id": "ADV-0002R", "version": 1, "date": "2026-04-20", "account": "1011", "amount": "300.00",
-   "refund_of": "ADV-0002"}
+   "refund_of": "ADV-0002"},
+  {"type": "expense_claim", "id": "EC-0006", "version": 1, "date": "2026-04-08", "currency": "SGD", "loan": "P0001",
+   "lines": [{"account": "6010", "amount": "200.00", "gst_code": "TX", "gst": "18.00"}]},
+  {"type": "expense_claim", "id": "EC-0007", "version": 1, "date": "2026-04-09", "currency": "SGD", "loan": "P0001",
+   "advance": "ADV-0002", "lines": [{"account": "6010", "amount": "10.00", "gst_code": "OP"}]},
+  {"type": "expense_claim", "id": "EC-0008", "version": 1, "date": "2026-04-10", "currency": "SGD", "loan": "P0002",
+   "lines": [{"account": "6010", "amount": "10.00", "gst_code": "OP"}]},
+  {"type": "claim_reimbursement", "id": "RE-0004", "version": 1, "date": "2026-04-30", "account": "1010", "currency": "SGD",
+   "parts": [{"document": "EC-0006", "amount": "218.00"}]}
  ],
  "reversals": []
 }

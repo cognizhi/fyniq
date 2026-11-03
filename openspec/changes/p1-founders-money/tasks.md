@@ -66,12 +66,17 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
 
 ## 2. Paid personally and costs before the books start (slice 2)
 
-- [ ] 2.1 Paid personally (D6):
-  - a claim's `settle_to`, refused for a claimant who is not a linked director, or with an advance (`CLAIM-33`);
+- [x] 2.1 Paid personally (D6):
+  - a claim's `settle_to`, refused for a claimant who is not a linked director, or with an advance (`CLAIM-36`);
   - the rule `claim@2` crediting 2500 with the gross and the person;
   - the claim editor's choice.
   The oracle states the legs. Tests: the legs with and without claimable input tax, and that the claimant never
   approves. `// req: FR-EQ-02`
+  Built: the rule is `expense_claim@2`, and `expense_claim@1` refuses a claim kept as a loan. The claimant's person is
+  the contact linked to them, read when the claim is prepared; a director's account is refused as a claim's category;
+  `recordClaimReimbursement` refuses a claim kept as a loan (it owes nothing on 2150); the draft's ledger impact names
+  the person. The oracle's scenario format gains `loan` on `expense_claim` and the `director_loan` key, with a golden
+  case in `pending/claims.json` (claims still wait for `cmd/scenario-run`); each side credits 2500 as it credits 2150.
 - [ ] 2.2 Costs before the books start (D7): the `pre_incorporation_cost` document (receipt required, needs decision
   ⚠, the accountant's decision, posting at the books start or the decision date), its API and the Costs before
   incorporation page. Tests: posted legs, refused dates, and the decision by role. `// req: FR-EQ-03`

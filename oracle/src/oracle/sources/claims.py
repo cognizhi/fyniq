@@ -1,7 +1,7 @@
-"""Expense claims, their reimbursements and cash advances (``expense_claim@1``,
+"""Expense claims, their reimbursements and cash advances (``expense_claim@1`` and ``@2``,
 ``claim_reimbursement@1``, ``cash_advance@1``) and ``RND-MILEAGE``, from PRD-001 §10.2 ("Expense
-claim", "Mileage claim", "Cash advance to an employee"), §10.4, FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20
-and the rows of rev 0.147, 0.148 and 0.151.
+claim", "Mileage claim", "Cash advance to an employee"), §10.4, FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20,
+FR-EQ-02, Appendix B.7 and the rows of rev 0.147, 0.148, 0.151 and 0.167.
 
 **A claim** has a currency (and its rate) and lines of two kinds:
 
@@ -16,6 +16,11 @@ and the rows of rev 0.147, 0.148 and 0.151.
 It posts each line's cost to its account at ``RND-FX`` and 2200 the input tax, and credits what the
 employee is owed: 1250 first, up to what is left of the cash advance it settles (in the base currency),
 then 2150 with the rest at ``RND-FX``; 7030 takes what balances.
+
+**A claim kept as a loan** (``loan``: a director or shareholder, one of the scenario's ``people``;
+FR-EQ-02, B.7 "Cost a founder paid personally, kept as a loan") credits the director's loan account
+(2500) instead of 2150, naming the person: what the claimant paid stays owed to them there. It settles
+no cash advance, and nothing reimburses it (it leaves no open item on 2150).
 
 **A reimbursement** pays claims from a money account: the settlement of :mod:`oracle.sources.settle` on
 2150, never in full and with nothing unapplied; a claim in another currency paid from a base-currency
@@ -86,6 +91,19 @@ def expense_claim(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
         owed = money.EXACT.add(owed, money.EXACT.add(net, gst))
     if not owed > 0:
         raise Rejected("total-not-positive")
+
+    loan = d.get("loan")
+    if loan is not None:
+        if loan not in r.scenario.people:
+            raise Rejected("loan-not-a-director")
+        if "advance" in d:
+            raise Rejected("loan-with-advance")
+        payable = r.system("director_loan")
+        owed_base = r.fx(owed, rate)
+        lines.append(r.line(payable, currency, money.negate(owed), money.negate(owed_base), party=loan))
+        if not money.total([ln.base_amount for ln in lines]).is_zero():
+            lines.append(r.balance(r.system("fx"), lines))
+        return Posting(lines)
 
     advance, from_advance = None, money.ZERO
     if "advance" in d:

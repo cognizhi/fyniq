@@ -463,3 +463,53 @@ func TestPostCashAdvance(t *testing.T) {
 		t.Errorf("the longest memo: %v", err)
 	}
 }
+
+// Worked by hand (FR-EQ-02, Appendix B.7 "Cost a founder paid personally, kept as a loan"): Mei Ling, a director, keeps
+// her S$109.00 meal as a loan to the company. With its S$9.00 GST claimable: Dr 6530 100.00, Dr 2200 9.00, Cr 2500
+// 109.00 naming her, under expense_claim@2. Not claimable, the GST stays in the cost: Dr 6530 109.00, Cr 2500 109.00.
+// It settles no cash advance, and expense_claim@1 posts no claim kept as a loan.
+// req: FR-EQ-02
+// req: ledger/posting-rules Cost a founder paid personally, kept as a loan
+func TestPostExpenseClaimKeptAsALoan(t *testing.T) {
+	s := claiming()
+	loanAcc := Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000002500"), Code: "2500", Active: true, Type: "liability", Role: RoleDirectorLoan}
+	meiLing := uuid.MustParse("0192f1a0-0000-7000-8000-0000000c0011")
+	s.Accounts[loanAcc.ID] = loanAcc
+	s.People = map[uuid.UUID]bool{meiLing: true}
+	for _, c := range []struct {
+		name      string
+		claimable bool
+		want      string
+	}{
+		{"claimable", true, "6530 100.00 SGD = 100.00; 2200 9.00 SGD = 9.00; 2500 -109.00 SGD = -109.00"},
+		{"not claimable", false, "6530 109.00 SGD = 109.00; 2500 -109.00 SGD = -109.00"},
+	} {
+		claim := aClaim(claimLine(t, meals, "109.00", "9.00", sgd, c.claimable))
+		claim.Loan = meiLing
+		e, err := PostExpenseClaimLoan(claim, s)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if got := legs(s, e); got != c.want {
+			t.Errorf("%s: %s, want %s", c.name, got, c.want)
+		}
+		if e.RuleVersion != RuleExpenseClaimLoan || e.Lines[len(e.Lines)-1].Party != meiLing {
+			t.Errorf("%s: rule %s, the loan line's person %v", c.name, e.RuleVersion, e.Lines[len(e.Lines)-1].Party)
+		}
+		if _, err := PostExpenseClaim(claim, s); err == nil {
+			t.Errorf("%s: expense_claim@1 posted a claim kept as a loan", c.name)
+		}
+	}
+	withAdvance := aClaim(claimLine(t, meals, "109.00", "0.00", sgd, false))
+	withAdvance.Loan = meiLing
+	settles := amt(t, "50.00", sgd)
+	withAdvance.Settles = &settles
+	if _, err := PostExpenseClaimLoan(withAdvance, s); err == nil || !err.(Problems).Has(CodeClaimPaid) {
+		t.Errorf("a claim kept as a loan settled an advance: %v", err)
+	}
+	stranger := aClaim(claimLine(t, meals, "109.00", "0.00", sgd, false))
+	stranger.Loan = uuid.MustParse("0192f1a0-0000-7000-8000-0000000c0099")
+	if _, err := PostExpenseClaimLoan(stranger, s); err == nil || !err.(Problems).Has(CodeParty) {
+		t.Errorf("a claim kept as a loan named someone who is not a director: %v", err)
+	}
+}

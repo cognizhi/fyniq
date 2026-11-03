@@ -128,7 +128,8 @@ func payableAccount(ctx context.Context, u storage.UnitOfWork) (uuid.UUID, error
 
 // Balances are where posted claims stand (design D4) as at asAt: what each owes on 2150 as its entry credited it, less
 // what reimbursements dated by then settled of it, net of their voids by then. A claim that is not posted, or is dated
-// after asAt, is not in it; a zero asAt counts everything recorded, whatever its date.
+// after asAt, is not in it; a zero asAt counts everything recorded, whatever its date. Nor is a claim kept as a loan to
+// the company (FR-EQ-02): it owes nothing on 2150, and nothing reimburses it.
 func Balances(ctx context.Context, u storage.UnitOfWork, docs []storage.Document, base money.Currency, asAt time.Time) (map[uuid.UUID]Balance, error) {
 	payable, err := payableAccount(ctx, u)
 	if err != nil {
@@ -137,6 +138,9 @@ func Balances(ctx context.Context, u storage.UnitOfWork, docs []storage.Document
 	out := map[uuid.UUID]Balance{}
 	for _, d := range docs {
 		if d.Type != storage.DocumentExpenseClaim || d.Status != storage.DocumentPosted || !asAt.IsZero() && d.Date > day(asAt) {
+			continue
+		}
+		if KeptAsLoan(d) {
 			continue
 		}
 		e, err := u.Ledger().ByIdentity(ctx, ledger.ExpenseClaimIdentity(d.ID, d.Version, ledger.RuleExpenseClaim))
@@ -222,6 +226,11 @@ func PrepareReimbursement(ctx context.Context, u storage.UnitOfWork, doc storage
 		}
 		if draft.ClaimantID != r.ClaimantID {
 			add(CodeNotOwed, f, fmt.Sprintf("claim %s is another person's", d.Number), "Pay each person back on their own reimbursement")
+			continue
+		}
+		if KeptAsLoan(d) { // FR-EQ-02: kept as a loan to the company, it owes nothing on 2150
+			add(CodeNotOwed, f, fmt.Sprintf("claim %s is kept as a loan to the company, so nothing reimburses it", d.Number),
+				"Settle it from the director's account instead")
 			continue
 		}
 		docs = append(docs, d)

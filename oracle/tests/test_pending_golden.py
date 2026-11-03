@@ -196,11 +196,13 @@ def test_pending_sales():
 
 
 # req: QA-ENG-02
+# req: FR-EQ-02
 def test_pending_claims():
     r = _run("claims")
-    assert r["rejected"] == ["RE-0003", "EC-0005"]  # EC-0004 is paid; a trip in USD
+    # EC-0004 is paid; a trip in USD; a loan settling an advance; a loan to no director; a loan reimbursed.
+    assert r["rejected"] == ["RE-0003", "EC-0005", "EC-0007", "EC-0008", "RE-0004"]
     assert [e["document"] for e in r["entries"]] == ["ADV-0001", "EC-0001", "EC-0002", "EC-0003", "EC-0004", "RE-0001",
-                                                     "RE-0002", "ADV-0002", "ADV-0002R"]
+                                                     "RE-0002", "ADV-0002", "ADV-0002R", "EC-0006"]
     # 100.00 + 9.00 GST and 12.35 km -> 12.4 × 0.60 = 7.44: 116.44 taken from the 500.00 advance.
     assert _lines(r, "EC-0001") == [("1250", "SGD", "-116.44", "-116.44"), ("2200", "SGD", "9.00", "9.00"),
                                     ("6010", "SGD", "100.00", "100.00"), ("6110", "SGD", "7.44", "7.44")]
@@ -220,8 +222,14 @@ def test_pending_claims():
             "6110": "69.27",  # 7.44 + 61.83
             "7030": "-1.00",
         },
-        "2026-04": {},  # 300.00 advanced and refunded
+        # 300.00 advanced and refunded; P0001 paid 200.00 + 18.00 GST and keeps it as a loan (FR-EQ-02, B.7).
+        "2026-04": {"2200": "18.00", "2500": "-218.00", "6010": "200.00"},
     }
+    # The 2500 line names the person; what the company owes them stays there.
+    entry = next(e for e in r["entries"] if e["document"] == "EC-0006")
+    assert [(ln["account"], ln.get("party")) for ln in entry["lines"]] == [("2200", None), ("2500", "P0001"),
+                                                                          ("6010", None)]
+    assert r["people"] == {"P0001": {"2500": "-218.00"}}
 
 
 # req: QA-ENG-02

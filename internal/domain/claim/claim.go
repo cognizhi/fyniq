@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/bill"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -26,6 +27,7 @@ const (
 	CodeNotDraft = "CLAIM-02" // only a draft changes or is submitted
 	CodeBadDraft = "CLAIM-03" // the saved claim cannot be read
 	CodeClaimant = "CLAIM-04" // no claimant, or one who is not an active member
+	CodeSettleTo = "CLAIM-36" // a claim kept as a loan by a claimant who signs in as no director or shareholder, or with an advance
 	CodeCategory = "CLAIM-05" // a receipt's category that does not exist, is inactive, or is the mileage category
 	CodeTooLong  = "CLAIM-06" // a title, merchant, description, attendees or notes longer than the most kept
 	CodeReceipt  = "CLAIM-07" // a receipt without its date or merchant, dated after the claim, or with facts Fyniq cannot read
@@ -75,6 +77,33 @@ type Draft struct {
 	Notes      string
 	LateReason string     // why a line past the claim deadline is claimed late (FR-AP-15)
 	AdvanceID  *uuid.UUID // the claimant's cash advance it settles, up to what is open on it (FR-AP-17); nil: none
+	// SettleTo is how what the company owes is settled (FR-EQ-02, rev 0.167): SettleReimburse (or empty), on 2150, or
+	// SettleLoan, kept as a loan to the company on the claimant's director account, 2500, when they sign in as a
+	// director or shareholder.
+	SettleTo string
+}
+
+// How a claim is settled (FR-EQ-02).
+const (
+	SettleReimburse = "reimburse"
+	SettleLoan      = "loan"
+)
+
+// KeptAsLoan says whether a claim's version is kept as a loan to the company (FR-EQ-02): it posts under
+// expense_claim@2, to the claimant's director account, and nothing reimburses it.
+func KeptAsLoan(doc storage.Document) bool {
+	var p struct {
+		SettleTo string `json:"settle_to"`
+	}
+	return json.Unmarshal(doc.Payload, &p) == nil && p.SettleTo == SettleLoan
+}
+
+// Rule is the rule version a claim's version posts under: expense_claim@2 when it is kept as a loan, else @1.
+func Rule(doc storage.Document) string {
+	if KeptAsLoan(doc) {
+		return ledger.RuleExpenseClaimLoan
+	}
+	return ledger.RuleExpenseClaim
 }
 
 // Line is one line of a claim. A mileage line (Kind LineMileage) is a trip: its date, its category (the mileage
@@ -121,6 +150,7 @@ type payload struct {
 	Notes      string        `json:"notes,omitempty"`
 	LateReason string        `json:"late_reason,omitempty"`
 	AdvanceID  *uuid.UUID    `json:"advance_id,omitempty"`
+	SettleTo   string        `json:"settle_to,omitempty"`
 }
 
 type payloadLine struct {
@@ -167,7 +197,7 @@ func Encode(d Draft) ([]byte, error) {
 		}
 	}
 	p := payload{ClaimantID: d.ClaimantID, Date: day(d.Date), Title: d.Title, Notes: d.Notes, LateReason: d.LateReason, AdvanceID: d.AdvanceID,
-		Lines: []payloadLine{}}
+		SettleTo: d.SettleTo, Lines: []payloadLine{}}
 	for i, r := range d.Lines {
 		f := func(name string) string { return fmt.Sprintf("lines[%d].%s", i+1, name) }
 		if r.Kind == LineMileage {
@@ -242,7 +272,7 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 	if err := json.Unmarshal(doc.Payload, &p); err != nil {
 		return Draft{}, bad(err.Error())
 	}
-	d := Draft{ClaimantID: p.ClaimantID, Title: p.Title, Notes: p.Notes, LateReason: p.LateReason, AdvanceID: p.AdvanceID}
+	d := Draft{ClaimantID: p.ClaimantID, Title: p.Title, Notes: p.Notes, LateReason: p.LateReason, AdvanceID: p.AdvanceID, SettleTo: p.SettleTo}
 	var err error
 	if p.Date != "" {
 		if d.Date, err = time.Parse(time.DateOnly, p.Date); err != nil {

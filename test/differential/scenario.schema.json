@@ -178,7 +178,7 @@
           "description": "System accounts by key (Appendix B.5). Each must be in accounts.",
           "type": "object",
           "propertyNames": {"enum": ["receivable", "payable", "gst", "prepayments", "deferred_revenue", "fx", "bank_charges",
-                                     "withholding_tax", "customer_deposits", "claims_payable", "advances",
+                                     "withholding_tax", "customer_deposits", "claims_payable", "advances", "director_loan",
                                      "depreciation", "accumulated_depreciation", "disposal", "disposal_clearing"]},
           "additionalProperties": {"$ref": "#/$defs/accountCode"}
         },
@@ -406,7 +406,7 @@
       }
     },
     "expenseClaim": {
-      "description": "An expense claim (expense_claim@1): receipt lines and trips (FR-AP-07, FR-AP-16).",
+      "description": "An expense claim (expense_claim@1; @2 kept as a loan): receipt lines and trips (FR-AP-07, FR-AP-16, FR-EQ-02).",
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "id", "version", "date", "currency", "lines"],
@@ -420,6 +420,7 @@
         "fx_rate": {"$ref": "#/$defs/rate"},
         "fx_rate_source": {"$ref": "#/$defs/rateSource"},
         "advance": {"description": "The cash advance it settles first (FR-AP-17).", "type": "string"},
+        "loan": {"description": "Kept as a loan to the company (FR-EQ-02): the director or shareholder, one of people, whose account on settings.accounts.director_loan it credits instead of claims_payable; never with advance.", "$ref": "#/$defs/documentId"},
         "lines": {
           "type": "array",
           "items": {
