@@ -492,7 +492,9 @@ func TestAttackTheReviewLogNeverChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	review := func(by uuid.UUID, at time.Time) error {
-		return st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error { return u.ReviewLog().Review(ctx, entry, by, at, "") })
+		return st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			return u.ReviewLog().Review(ctx, entry, by, at, "")
+		})
 	}
 	wantState(t, "the one who acted reviewing", review(actor, now), "FY151")
 	wantState(t, "a review before the action", review(reviewer, now.Add(-time.Hour)), "FY151")

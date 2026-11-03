@@ -243,3 +243,86 @@ func TestAttackARepaymentIsPostedOnlyByABatch(t *testing.T) {
 		t.Errorf("a repayment posted with no release linking it: %v", err)
 	}
 }
+
+// shareCapital gives d's books 3010 Ordinary share capital, and returns its ID.
+func shareCapital(t *testing.T, d directorBooks) uuid.UUID {
+	t.Helper()
+	var id uuid.UUID
+	if err := store(t, "fyniq_api").Do(context.Background(), d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		a, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "3010", Name: "Ordinary share capital", Type: storage.Equity, Role: storage.RoleShareCapital})
+		id = a.ID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
+// rawShareIssue posts, as the API with raw SQL, an entry from the source share_issue on 2026-10-14 (Dr the bank, Cr
+// class with amount) and, when register is true, the register's row for it with credited as its amount.
+func rawShareIssue(t *testing.T, d directorBooks, class uuid.UUID, amount, credited string, register bool) error {
+	t.Helper()
+	ctx := context.Background()
+	return asOrg(ctx, conn(t, "fyniq_api"), d.org, func(tx pgx.Tx) error {
+		issue := uuid.Must(uuid.NewV7())
+		var entryID uuid.UUID
+		if err := tx.QueryRow(ctx, `
+INSERT INTO fyniq.journal_entry (posting_date, posting_identity, source_type, source_id, source_version, rule_version)
+VALUES ('2026-10-14', $1, 'share_issue', $1, 1, 'share_issue@1') RETURNING id`, issue.String()).Scan(&entryID); err != nil {
+			return err
+		}
+		if err := auditRaw(ctx, tx, "journal_entry.posted", "journal_entry", entryID); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `
+INSERT INTO fyniq.journal_line (entry_id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_amount)
+VALUES ($1, 1, $2, 'SGD', $4::numeric, 1, 'attack', $4::numeric), ($1, 2, $3, 'SGD', -$4::numeric, 1, 'attack', -$4::numeric)`, entryID, d.bank, class, amount); err != nil {
+			return err
+		}
+		if !register {
+			return nil
+		}
+		if _, err := tx.Exec(ctx, `
+INSERT INTO fyniq.share_issue (id, holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration, resolution_refs,
+                               effective_on, entry_id, recorded_by, recorded_at)
+VALUES ($1, $2, $3, 100, 1, 'SGD', 2, $4::numeric, 'cash', 'Board resolution 14 Oct 2026', '2026-10-14', $5, $6, now())`,
+			issue, d.director.ID, class, credited, entryID, d.member); err != nil {
+			return err
+		}
+		return auditRaw(ctx, tx, "share_issue.recorded", "share_issue", issue)
+	})
+}
+
+// Share capital moves only with the register of share issues (FR-EQ-08, INV-13; FY255): an entry from the source
+// share_issue that no issue names is refused at commit, and so is an issue whose entry credits its class with another
+// amount; one that matches commits. An issue with no entry before the books start are set is refused, an issue of a
+// class that is not share capital is refused, and an issue never changes.
+// req: FR-EQ-08
+// req: INV-13
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackShareCapitalMovesOnlyWithTheRegister(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack share issues Pte Ltd")
+	class := shareCapital(t, d)
+	wantState(t, "a share_issue entry no issue names", rawShareIssue(t, d, class, "100", "100", false), "FY255")
+	wantState(t, "an issue whose entry credits another amount", rawShareIssue(t, d, class, "100", "90", true), "FY255")
+	wantState(t, "an issue of a class that is not share capital", rawShareIssue(t, d, d.loan, "100", "100", true), "FY255", "FY007", "FY250")
+	if err := rawShareIssue(t, d, class, "100", "100", true); err != nil {
+		t.Fatalf("an issue posted from the register: %v", err)
+	}
+	wantState(t, "an issue with no entry and no books start", asOrg(ctx, conn(t, "fyniq_api"), d.org, func(tx pgx.Tx) error {
+		id := uuid.Must(uuid.NewV7())
+		if _, err := tx.Exec(ctx, `
+INSERT INTO fyniq.share_issue (id, holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration, resolution_refs,
+                               effective_on, recorded_by, recorded_at)
+VALUES ($1, $2, $3, 100, 1, 'SGD', 2, 100, 'cash', 'Incorporation subscription', '2025-01-02', $4, now())`, id, d.director.ID, class, d.member); err != nil {
+			return err
+		}
+		return auditRaw(ctx, tx, "share_issue.recorded", "share_issue", id)
+	}), "FY255")
+	wantState(t, "changing an issue", asOrg(ctx, conn(t, "fyniq_api"), d.org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `UPDATE fyniq.share_issue SET shares = 1000`)
+		return err
+	}), "FY255", "42501")
+}

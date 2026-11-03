@@ -504,6 +504,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/session/step-up/challenge` (startStepUp): Start confirming it's you with a passkey
 - `GET /v1/setup` (getSetupStatus): Get the setup status
 - `POST /v1/setup` (completeSetup): Complete first-run setup
+- `GET /v1/share-issues` (listShareIssues): List the register of share issues
+- `POST /v1/share-issues` (recordShareIssueBeforeBooks): Record shares issued before the books start
 - `GET /v1/sign-in-providers` (listSignInProviders): List the sign-in providers
 - `GET /v1/statement-mappings` (listStatementMappings): List the saved column mappings
 - `POST /v1/statement-mappings` (createStatementMapping): Save a column mapping

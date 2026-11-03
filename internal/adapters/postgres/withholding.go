@@ -14,7 +14,9 @@ import (
 // latest for a supplier and nature in force from when it is recorded.
 type withholdingDecisions struct{ u *unitOfWork }
 
-func (u *unitOfWork) WithholdingDecisions() storage.WithholdingDecisions { return withholdingDecisions{u} }
+func (u *unitOfWork) WithholdingDecisions() storage.WithholdingDecisions {
+	return withholdingDecisions{u}
+}
 
 func toWithholdingDecision(r sqlcdb.WithholdingDecisionInForceRow) storage.WithholdingDecision {
 	return storage.WithholdingDecision{ID: r.ID, RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt,

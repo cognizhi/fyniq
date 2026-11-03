@@ -7,9 +7,15 @@ S$250.00 of fees owed on 2120 (−250.00). Mei Lin's loan journal is then revers
 total is +400.00: she owes the company S$400.00.
 """
 
+from decimal import ROUND_HALF_UP
+from decimal import Decimal as D
+
 import pytest
 from builders import P1_SETTINGS, journal, line, p1_post, scenario
+from hypothesis import given
+from hypothesis import strategies as st
 
+from oracle import money
 from oracle.ledger import Ledger
 from oracle.scenario import scenario_from_json
 
@@ -219,3 +225,32 @@ def test_a_repayment_that_breaks_a_rule_is_rejected(change, reason):
     repaid.update(change)
     _, ledger = p1_post(repaid)
     assert ledger.reasons == [("DR-9", reason)]
+
+
+# req: RND-SHARE
+# req: FR-EQ-06
+@pytest.mark.parametrize(
+    ("amount", "price", "shares", "converted", "remainder"),
+    [
+        # Appendix G.3: 12,345.67 at 1.20 is 10,288 shares, 12,345.60 converted, 0.07 left owed; at 0.0375, 329,217
+        # shares, 12,345.64 converted (329,217 x 0.0375 = 12,345.6375), 0.03 left, as 329,218 would round to 12,345.68.
+        ("12345.67", "1.20", 10288, "12345.60", "0.07"),
+        ("12345.67", "0.0375", 329217, "12345.64", "0.03"),
+        # One more share that rounds down to the amount still fits: 3 x 0.333334 = 1.000002, which is 1.00.
+        ("1.00", "0.333334", 3, "1.00", "0.00"),
+        ("0.50", "1.00", 0, "0.00", "0.50"),
+    ],
+)
+def test_rnd_share_allots_whole_shares_and_leaves_the_rest_owed(amount, price, shares, converted, remainder):
+    assert money.rnd_share(D(amount), D(price), 2) == (shares, D(converted), D(remainder))
+
+
+# req: RND-SHARE
+@given(cents=st.integers(min_value=1, max_value=10**10), micros=st.integers(min_value=1, max_value=10**8))
+def test_rnd_share_is_the_largest_whole_number_that_fits(cents, micros):
+    amount, price = D(cents).scaleb(-2), D(micros).scaleb(-6)
+    n, converted, remainder = money.rnd_share(amount, price, 2)
+    worth = lambda k: (D(k) * price).quantize(D("0.01"), rounding=ROUND_HALF_UP)  # noqa: E731
+    assert worth(n) == converted <= amount
+    assert worth(n + 1) > amount
+    assert converted + remainder == amount

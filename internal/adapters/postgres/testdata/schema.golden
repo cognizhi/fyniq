@@ -1203,6 +1203,23 @@ sales_reminder | send_id | uuid | null |
 sales_reminder | reason | text | null | 
 sales_reminder | decided_by | text | not null | 
 sales_reminder | decided_at | timestamp with time zone | not null | now()
+share_issue | organisation_id | uuid | not null | current_org()
+share_issue | id | uuid | not null | uuidv7()
+share_issue | holder_id | uuid | not null | 
+share_issue | class_account_id | uuid | not null | 
+share_issue | shares | numeric(16,0) | not null | 
+share_issue | price | numeric(20,6) | not null | 
+share_issue | currency | text | not null | 
+share_issue | minor_units | smallint | not null | 
+share_issue | amount | numeric(20,4) | not null | 
+share_issue | consideration | text | not null | 
+share_issue | resolution_refs | text | not null | 
+share_issue | lodgement_ref | text | null | 
+share_issue | effective_on | date | not null | 
+share_issue | settlement_id | uuid | null | 
+share_issue | entry_id | uuid | null | 
+share_issue | recorded_by | uuid | not null | 
+share_issue | recorded_at | timestamp with time zone | not null | 
 sod_override | organisation_id | uuid | not null | current_org()
 sod_override | id | uuid | not null | uuidv7()
 sod_override | team_mode_version | integer | not null | 
@@ -2638,6 +2655,7 @@ journal_entry | journal_entry_source_type_not_null | NOT NULL source_type
 journal_entry | journal_entry_source_version_not_null | NOT NULL source_version
 journal_entry | journal_entry_source_version_positive | CHECK ((source_version > 0))
 journal_entry | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+journal_entry | share_issue_entry_registered | TRIGGER DEFERRABLE INITIALLY DEFERRED
 journal_line | journal_line_account_fkey | FOREIGN KEY (organisation_id, account_id) REFERENCES account(organisation_id, id)
 journal_line | journal_line_account_id_not_null | NOT NULL account_id
 journal_line | journal_line_amount_not_null | NOT NULL amount
@@ -3277,6 +3295,37 @@ sales_reminder | sales_reminder_reason_length | CHECK (((reason IS NULL) OR ((le
 sales_reminder | sales_reminder_send_fkey | FOREIGN KEY (organisation_id, send_id) REFERENCES document_send(organisation_id, id)
 sales_reminder | sales_reminder_step_not_null | NOT NULL step
 sales_reminder | sales_reminder_step_range | CHECK (((step >= '-30'::integer) AND (step <= 365)))
+share_issue | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+share_issue | share_issue_amount_not_null | NOT NULL amount
+share_issue | share_issue_amount_scale | CHECK (((amount <> 'NaN'::numeric) AND (amount = trunc(amount, (minor_units)::integer)) AND (amount > (0)::numeric)))
+share_issue | share_issue_class_account_id_not_null | NOT NULL class_account_id
+share_issue | share_issue_class_fkey | FOREIGN KEY (organisation_id, class_account_id) REFERENCES account(organisation_id, id)
+share_issue | share_issue_consideration_known | CHECK ((consideration = ANY (ARRAY['cash'::text, 'debt_capitalised'::text, 'services'::text, 'safe_or_note'::text])))
+share_issue | share_issue_consideration_not_null | NOT NULL consideration
+share_issue | share_issue_conversion_names_settlement | CHECK (((settlement_id IS NULL) OR (consideration = 'debt_capitalised'::text)))
+share_issue | share_issue_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+share_issue | share_issue_currency_not_null | NOT NULL currency
+share_issue | share_issue_effective_on_not_null | NOT NULL effective_on
+share_issue | share_issue_entry_fkey | FOREIGN KEY (organisation_id, entry_id) REFERENCES journal_entry(organisation_id, id)
+share_issue | share_issue_entry_once | UNIQUE (organisation_id, entry_id)
+share_issue | share_issue_holder_fkey | FOREIGN KEY (organisation_id, holder_id) REFERENCES contact(organisation_id, id)
+share_issue | share_issue_holder_id_not_null | NOT NULL holder_id
+share_issue | share_issue_id_not_null | NOT NULL id
+share_issue | share_issue_lodgement_length | CHECK (((lodgement_ref IS NULL) OR ((length(btrim(lodgement_ref)) >= 1) AND (length(btrim(lodgement_ref)) <= 100))))
+share_issue | share_issue_minor_units | CHECK (((minor_units >= 0) AND (minor_units <= 4)))
+share_issue | share_issue_minor_units_not_null | NOT NULL minor_units
+share_issue | share_issue_organisation_id_not_null | NOT NULL organisation_id
+share_issue | share_issue_pkey | PRIMARY KEY (organisation_id, id)
+share_issue | share_issue_price_not_null | NOT NULL price
+share_issue | share_issue_price_positive | CHECK (((price <> 'NaN'::numeric) AND (price > (0)::numeric)))
+share_issue | share_issue_recorded_at_not_null | NOT NULL recorded_at
+share_issue | share_issue_recorded_by_fkey | FOREIGN KEY (recorded_by) REFERENCES app_user(user_id)
+share_issue | share_issue_recorded_by_not_null | NOT NULL recorded_by
+share_issue | share_issue_resolution_length | CHECK (((length(btrim(resolution_refs)) >= 1) AND (length(btrim(resolution_refs)) <= 500)))
+share_issue | share_issue_resolution_refs_not_null | NOT NULL resolution_refs
+share_issue | share_issue_settlement_fkey | FOREIGN KEY (organisation_id, settlement_id) REFERENCES document(organisation_id, id)
+share_issue | share_issue_shares_not_null | NOT NULL shares
+share_issue | share_issue_shares_positive | CHECK (((shares <> 'NaN'::numeric) AND (shares > (0)::numeric)))
 sod_override | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 sod_override | sod_override_conflict_known | CHECK ((conflict ~ '^SOD-([1-9]|10)$'::text))
 sod_override | sod_override_conflict_not_null | NOT NULL conflict
@@ -3562,6 +3611,8 @@ CREATE INDEX report_export_expiring ON fyniq.report_export USING btree (organisa
 CREATE INDEX report_export_requested ON fyniq.report_export USING btree (organisation_id, requested_by, requested_at DESC)
 CREATE INDEX review_log_entry_logged ON fyniq.review_log_entry USING btree (organisation_id, logged_at)
 CREATE INDEX role_assignment_membership_idx ON fyniq.role_assignment USING btree (organisation_id, membership_id)
+CREATE INDEX share_issue_holder ON fyniq.share_issue USING btree (organisation_id, holder_id)
+CREATE INDEX share_issue_settlement ON fyniq.share_issue USING btree (organisation_id, settlement_id)
 CREATE INDEX sod_override_lookup ON fyniq.sod_override USING btree (organisation_id, team_mode_version, user_id, conflict)
 CREATE INDEX super_admin_grant_created_by_idx ON fyniq.super_admin_grant USING btree (created_by)
 CREATE INDEX super_admin_grant_used_by_idx ON fyniq.super_admin_grant USING btree (used_by)
@@ -3759,6 +3810,8 @@ CREATE UNIQUE INDEX role_assignment_one_live ON fyniq.role_assignment USING btre
 CREATE UNIQUE INDEX role_assignment_pkey ON fyniq.role_assignment USING btree (organisation_id, id)
 CREATE UNIQUE INDEX sales_reminder_once ON fyniq.sales_reminder USING btree (organisation_id, document_id, step)
 CREATE UNIQUE INDEX sales_reminder_pkey ON fyniq.sales_reminder USING btree (organisation_id, id)
+CREATE UNIQUE INDEX share_issue_entry_once ON fyniq.share_issue USING btree (organisation_id, entry_id)
+CREATE UNIQUE INDEX share_issue_pkey ON fyniq.share_issue USING btree (organisation_id, id)
 CREATE UNIQUE INDEX sod_override_once ON fyniq.sod_override USING btree (organisation_id, request_id, user_id, conflict)
 CREATE UNIQUE INDEX sod_override_pkey ON fyniq.sod_override USING btree (organisation_id, id)
 CREATE UNIQUE INDEX statement_mapping_name_key ON fyniq.statement_mapping USING btree (organisation_id, name)
@@ -3838,6 +3891,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_journal_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_review', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sales_reminder DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sales_reminder', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.share_issue DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('share_issue', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sod_override DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sod_override', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.statutory_pack_activation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statutory_pack_activation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.team_mode DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('team_mode', 'id')
@@ -3893,6 +3947,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_ad
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.user_membership DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('user_membership', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER UPDATE ON fyniq.bank_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_line', 'id')
 CREATE CONSTRAINT TRIGGER require_audit_status AFTER UPDATE ON fyniq.check_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION require_audit('check_state', 'id')
+CREATE CONSTRAINT TRIGGER share_issue_entry_registered AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((new.source_type = 'share_issue'::text)) EXECUTE FUNCTION share_issue_entry_registered()
 CREATE TRIGGER access_review_attestation_guard BEFORE DELETE OR UPDATE ON fyniq.access_review_attestation FOR EACH ROW EXECUTE FUNCTION access_review_attestation_guard()
 CREATE TRIGGER access_review_attestation_no_truncate BEFORE TRUNCATE ON fyniq.access_review_attestation FOR EACH STATEMENT EXECUTE FUNCTION access_review_attestation_guard()
 CREATE TRIGGER account_changed_at BEFORE UPDATE ON fyniq.account FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION account_changed_at()
@@ -4082,6 +4137,8 @@ CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.evidence FOR EACH RO
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT OR UPDATE ON fyniq.document_sequence FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
+CREATE TRIGGER share_issue_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.share_issue FOR EACH ROW EXECUTE FUNCTION share_issue_guard()
+CREATE TRIGGER share_issue_no_truncate BEFORE TRUNCATE ON fyniq.share_issue FOR EACH STATEMENT EXECUTE FUNCTION share_issue_guard()
 CREATE TRIGGER sod_override_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.sod_override FOR EACH ROW EXECUTE FUNCTION sod_override_guard()
 CREATE TRIGGER statement_guard BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN ((new.type = 'statement'::text)) EXECUTE FUNCTION statement_guard()
 CREATE TRIGGER statement_mapping_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.statement_mapping FOR EACH ROW EXECUTE FUNCTION statement_mapping_guard()
@@ -4193,6 +4250,7 @@ review_log_entry | tenant_isolation | * | (organisation_id = current_org()) | (o
 review_log_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 role_assignment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 sales_reminder | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+share_issue | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 sod_override | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 statement_mapping | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 statutory_pack_activation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -4396,6 +4454,8 @@ set_installation_connector_secret(p_by uuid, p_change uuid, p_id uuid, p_name te
 set_recovery_codes(p_user uuid, p_hashes bytea[], p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | fa0ec035edd7677410f7fb3b8de88b51
 set_setup_code(p_hash bytea) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1401833c664206cef80dad827e0bd549
 setup_done() → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 3872e1ae6024a26a11ca317f9463791c
+share_issue_entry_registered() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ecc9f7f60072d3973908c00c944e5815
+share_issue_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 61dc3a208f7d88e0269a6cd0b117c760
 skip_job_slots(p_job text, p_slots timestamp with time zone[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8f2a4dc16b9baa48f2314e6e58698273
 sod_override_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e021a424a2fa6f356b652fb6b46c466d
 start_session(p_hash bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone, p_expires timestamp with time zone, p_step_up_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 74b70160438f9f79c162de86f4e58276

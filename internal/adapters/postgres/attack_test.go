@@ -305,11 +305,12 @@ VALUES ('2026-10-14', $1, $2, $1, 1, 'attack@1') RETURNING id`, uuid.NewString()
 	// INV-13 is an allow list since 000054: only the register of share issues and the opening balances reach share
 	// capital; any other source is refused, a new one included (rev 0.49).
 	wantState(t, "an invoice line to share capital", post("invoice"), "FY007")
-	for _, source := range []string{"share_issue", "opening_balance"} {
-		if err := post(source); err != nil {
-			t.Errorf("%s could not post to share capital: %v", source, err)
-		}
+	if err := post("opening_balance"); err != nil {
+		t.Errorf("the opening balances could not post to share capital: %v", err)
 	}
+	// Since 000216 the source share_issue commits only with the register's row that names it (FY255): the allotment
+	// that posts from the register is TestAttackShareCapitalMovesOnlyWithTheRegister's.
+	wantState(t, "a share_issue entry no issue names", post("share_issue"), "FY255")
 	err := asOrg(ctx, conn(t, "fyniq_migrator"), b.Org, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, "UPDATE fyniq.account SET role = NULL WHERE id = $1", capital.ID)
 		return err
@@ -450,6 +451,9 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"bank_transfer.fee":            func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "fee", v) },
 	"bank_signal.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawSignal(t, b, v) },
 	"payment_batch_release.total":  func(t *testing.T, b porttest.Books, v string) error { return rawRelease(t, b, v) },
+	"share_issue.shares":           func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "shares", v) },
+	"share_issue.price":            func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "price", v) },
+	"share_issue.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "amount", v) },
 	"claim_category.line_limit":    func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "limit", v) },
 	"claim_category.receipt_above": func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "receipt", v) },
 	"claim_category.attendees_above": func(t *testing.T, b porttest.Books, v string) error {
@@ -1220,6 +1224,24 @@ func rawRelease(t *testing.T, b porttest.Books, value string) error {
 file_name, media_type, file_sealed, file_sha256, payments, currency, minor_units, total)
 VALUES ($1, 1, $2, $3, now(), 'payment-list@1', 'PB-0001.csv', 'text/csv', $4, $5, 1, 'SGD', 2, $6::numeric)`,
 			uuid.New(), uuid.New(), uuid.New(), make([]byte, 64), make([]byte, 32), value)
+		return err
+	})
+}
+
+func rawShareIssueValue(t *testing.T, b porttest.Books, target, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	pick := func(name, valid string) string {
+		if name == target {
+			return value
+		}
+		return valid
+	}
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.share_issue (holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration,
+resolution_refs, effective_on, recorded_by, recorded_at)
+VALUES ($1, $2, $3::numeric, $4::numeric, 'SGD', 2, $5::numeric, 'cash', 'Incorporation subscription', '2025-01-02', $6, now())`,
+			uuid.New(), uuid.New(), pick("shares", "100"), pick("price", "1"), pick("amount", "100.00"), uuid.New())
 		return err
 	})
 }

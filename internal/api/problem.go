@@ -33,6 +33,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/deposit"
 	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
+	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
@@ -748,6 +749,7 @@ var codeFacts = map[string]struct {
 	CodeRemittanceNotFailed:         {409, "The remittance advice did not fail"},
 	storage.CodePayee:               {409, "Bank details do not change that way"},
 	storage.CodeBatch:               {409, "A payment batch does not change that way"},
+	storage.CodeShareIssue:          {409, "The register of share issues does not change that way"},
 	storage.CodeBatchHeld:           {409, "The item is paid by an approved payment batch"},
 	ledger.CodeParty:                {422, "A director's account line needs its person"},
 	ledger.CodePreIncorporationCost: {422, "The cost before the books start does not fit"},
@@ -784,6 +786,7 @@ var codeFacts = map[string]struct {
 	director.CodeNotRepaid:          {409, "Not an approved repayment with that much open"},
 	director.CodeNotPosted:          {409, "The repayment is not posted"},
 	ledger.CodeRepayment:            {422, "The repayment does not fit the rule"},
+	equity.CodeIssue:                {422, "The share issue does not fit"},
 	CodeOwnCost:                     {403, "The person who paid it does not decide it"},
 	claim.CodeSettleTo:              {422, "The claim cannot be kept as a loan"},
 	director.CodeNotPerson:          {422, "Not a director or shareholder"},
@@ -818,9 +821,10 @@ var storageFixes = map[string]string{
 	storage.CodeReminder:  "Read the reminders again: this one was sent or skipped already",
 	storage.CodeStatement: "Make and send a new statement instead",
 
-	storage.CodePayee:     "Prepare a change of the bank details and ask for approval: a second person, who neither prepared nor asked for it, approves it, which puts its account in force",
-	storage.CodeBatch:     "A batch is approved by a second person, released once, and never changed after; a payment the bank rejects is voided on its own",
-	storage.CodeBatchHeld: "Release the approved batch that holds it, or cancel the batch first and then record the payment",
+	storage.CodePayee:      "Prepare a change of the bank details and ask for approval: a second person, who neither prepared nor asked for it, approves it, which puts its account in force",
+	storage.CodeBatch:      "A batch is approved by a second person, released once, and never changed after; a payment the bank rejects is voided on its own",
+	storage.CodeShareIssue: "An allotment is recorded once and never changed; share capital moves only with the register or the opening balances",
+	storage.CodeBatchHeld:  "Release the approved batch that holds it, or cancel the batch first and then record the payment",
 
 	storage.CodeParty: "Name the director or shareholder on each line of 2500 and 2120 and on no other line; a person with amounts stays a director or shareholder, and their member is linked only by another person's approval",
 

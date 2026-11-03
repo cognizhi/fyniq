@@ -8208,6 +8208,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/share-issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the register of share issues
+         * @description Every allotment of shares, earliest effective date first (FR-EQ-08): the holder, class, number, price, amount, consideration, resolutions, ACRA's lodgement reference and effective date, and the entry it posted, if any. Share capital moves only with the register or the opening balances (INV-13). Read-only; no side effects.
+         */
+        get: operations["listShareIssues"];
+        put?: never;
+        /**
+         * Record shares issued before the books start
+         * @description Records in the register an allotment made before the books start, such as the incorporation subscription (FR-EQ-08, design D11): the holder, a director or shareholder; the class, an active share-capital account; the whole number of shares; the price per share in the base currency; the consideration; the resolutions; ACRA's lodgement reference; and the effective date, before the books start. Its amount is shares × price under RND-LINE. It posts no entry: the opening balances hold its share capital. Later allotments come from the register when a conversion becomes effective. Needs a person signed in who passed step-up. Side effects: the issue, append-only, and its audit event. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["recordShareIssueBeforeBooks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sign-in-providers": {
         parameters: {
             query?: never;
@@ -25384,6 +25408,142 @@ export interface components {
              * @example false
              */
             done: boolean;
+        };
+        ShareIssue: {
+            /** @description What the shares are paid up with: shares × price for cash, RND-SHARE's converted amount for a conversion. */
+            amount: components["schemas"]["Money"];
+            /**
+             * @description Issued before the books start, so recorded without an entry: the opening balances hold its share capital.
+             * @example true
+             */
+            before_books: boolean;
+            /**
+             * Format: uuid
+             * @description The class: its share-capital account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30
+             */
+            class_account_id: string;
+            /**
+             * @description The account's code: 3010 ordinary, 3020 preference.
+             * @example 3010
+             */
+            class_code?: string;
+            /**
+             * @description What paid for them.
+             * @example cash
+             * @enum {string}
+             */
+            consideration: "cash" | "debt_capitalised" | "services" | "safe_or_note";
+            /**
+             * Format: date
+             * @description The day ACRA's register of members shows the allotment.
+             * @example 2025-01-02
+             */
+            effective_on: string;
+            /**
+             * Format: uuid
+             * @description The entry it posted, from the source share_issue.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f20
+             */
+            entry_id?: string;
+            /**
+             * Format: uuid
+             * @description The contact the shares were allotted to.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+             */
+            holder_id: string;
+            /**
+             * @description Their name.
+             * @example Mei Lin Tan
+             */
+            holder_name: string;
+            /**
+             * Format: uuid
+             * @description The issue's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f10
+             */
+            id: string;
+            /**
+             * @description ACRA's lodgement reference for the allotment.
+             * @example AA2025010200123
+             */
+            lodgement_ref?: string;
+            /**
+             * @description The price per share, in the currency, as a decimal string.
+             * @example 1.00
+             */
+            price: string;
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-11-03T09:30:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description The shareholders' approval and the board resolution, by reference.
+             * @example Incorporation subscription, 2 Jan 2025
+             */
+            resolution_refs: string;
+            /**
+             * Format: uuid
+             * @description A conversion: the settlement it decides.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa9
+             */
+            settlement_id?: string;
+            /**
+             * @description The number of shares, a whole number.
+             * @example 10000
+             */
+            shares: string;
+        };
+        ShareIssuePage: {
+            items: components["schemas"]["ShareIssue"][];
+        };
+        ShareIssueRequest: {
+            /**
+             * Format: uuid
+             * @description The class: an active share-capital account (3010 ordinary or 3020 preference).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30
+             */
+            class_account_id: string;
+            /**
+             * @description What paid for them.
+             * @example cash
+             * @enum {string}
+             */
+            consideration: "cash" | "debt_capitalised" | "services" | "safe_or_note";
+            /**
+             * Format: date
+             * @description The day ACRA's register of members shows the allotment: before the books start.
+             * @example 2025-01-02
+             */
+            effective_on: string;
+            /**
+             * Format: uuid
+             * @description The contact the shares were allotted to: a director or shareholder.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+             */
+            holder_id: string;
+            /**
+             * @description ACRA's lodgement reference, if any.
+             * @example AA2025010200123
+             */
+            lodgement_ref?: string;
+            /**
+             * @description The price per share in the base currency, a decimal string above zero with at most 6 decimals.
+             * @example 1.00
+             */
+            price: string;
+            /**
+             * @description The resolutions or subscription that allotted them, by reference.
+             * @example Incorporation subscription, 2 Jan 2025
+             */
+            resolution_refs: string;
+            /**
+             * @description The number of shares, a whole number above zero.
+             * @example 10000
+             */
+            shares: string;
         };
         SignInProvider: {
             /**
@@ -89243,6 +89403,226 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listShareIssues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareIssuePage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordShareIssueBeforeBooks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShareIssueRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareIssue"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareIssue"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SHARE-01` The register of share issues does not change that way. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-01` The share issue does not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;

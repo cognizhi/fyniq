@@ -92,7 +92,7 @@ type DirectorSettlement struct {
 type DirectorSettlementPage struct {
 	Items        []DirectorSettlement `json:"items" nullable:"false"`
 	DefaultRoute string               `json:"default_route" enum:"keep,repay,convert,waive" doc:"The route a new settlement starts with: the setting founders.default_route in force today (FR-EQ-05, recommended default 15)." example:"keep"`
-	NextCursor string               `json:"next_cursor,omitempty" doc:"Pass it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjIwMjYtMTEtMDN8MDE5MiJ9"`
+	NextCursor   string               `json:"next_cursor,omitempty" doc:"Pass it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjIwMjYtMTEtMDN8MDE5MiJ9"`
 }
 
 // DirectorSettlementPath names a settlement in the path.
@@ -422,7 +422,9 @@ func (a *API) everyApproverBenefits(ctx context.Context, u storage.UnitOfWork, v
 		if m.UserID == requester || c.MemberUserID != nil && m.UserID == *c.MemberUserID {
 			continue
 		}
-		if slices.ContainsFunc(m.Roles, func(r storage.RoleAssignment) bool { return r.Role == string(authz.Owner) || r.Role == string(authz.Controller) }) {
+		if slices.ContainsFunc(m.Roles, func(r storage.RoleAssignment) bool {
+			return r.Role == string(authz.Owner) || r.Role == string(authz.Controller)
+		}) {
 			candidates = append(candidates, m.UserID)
 		}
 	}

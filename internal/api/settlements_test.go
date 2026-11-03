@@ -64,7 +64,9 @@ func TestDirectorSettlements(t *testing.T) {
 			t.Fatalf("attaching to %s: %d %s", path, f.Status, f.Raw)
 		}
 	}
-	ask := func(path, etag string) response { return e.call(http.MethodPost, path+"/approval", weiling, nil, "If-Match", etag) }
+	ask := func(path, etag string) response {
+		return e.call(http.MethodPost, path+"/approval", weiling, nil, "If-Match", etag)
+	}
 	approve := func(req response, token string) response {
 		return e.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/approve", token, hashOf(req), "If-Match", `"1"`)
 	}

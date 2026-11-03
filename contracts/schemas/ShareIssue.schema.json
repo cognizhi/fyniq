@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What the shares are paid up with: shares × price for cash, RND-SHARE's converted amount for a conversion."
+    },
+    "before_books": {
+      "description": "Issued before the books start, so recorded without an entry: the opening balances hold its share capital.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "class_account_id": {
+      "description": "The class: its share-capital account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "class_code": {
+      "description": "The account's code: 3010 ordinary, 3020 preference.",
+      "examples": [
+        "3010"
+      ],
+      "type": "string"
+    },
+    "consideration": {
+      "description": "What paid for them.",
+      "enum": [
+        "cash",
+        "debt_capitalised",
+        "services",
+        "safe_or_note"
+      ],
+      "examples": [
+        "cash"
+      ],
+      "type": "string"
+    },
+    "effective_on": {
+      "description": "The day ACRA's register of members shows the allotment.",
+      "examples": [
+        "2025-01-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "entry_id": {
+      "description": "The entry it posted, from the source share_issue.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "The contact the shares were allotted to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "holder_name": {
+      "description": "Their name.",
+      "examples": [
+        "Mei Lin Tan"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The issue's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "lodgement_ref": {
+      "description": "ACRA's lodgement reference for the allotment.",
+      "examples": [
+        "AA2025010200123"
+      ],
+      "type": "string"
+    },
+    "price": {
+      "description": "The price per share, in the currency, as a decimal string.",
+      "examples": [
+        "1.00"
+      ],
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2026-11-03T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "resolution_refs": {
+      "description": "The shareholders' approval and the board resolution, by reference.",
+      "examples": [
+        "Incorporation subscription, 2 Jan 2025"
+      ],
+      "type": "string"
+    },
+    "settlement_id": {
+      "description": "A conversion: the settlement it decides.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa9"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "shares": {
+      "description": "The number of shares, a whole number.",
+      "examples": [
+        "10000"
+      ],
+      "pattern": "^[1-9][0-9]*$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "holder_id",
+    "holder_name",
+    "class_account_id",
+    "shares",
+    "price",
+    "amount",
+    "consideration",
+    "resolution_refs",
+    "effective_on",
+    "before_books",
+    "recorded_at"
+  ],
+  "title": "ShareIssue",
+  "type": "object"
+}

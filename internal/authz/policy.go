@@ -673,6 +673,12 @@ var (
 		Note: "Only while the settlement is a draft (FR-DOC-07)."}
 	// A director's repayment (FR-EQ-05, FR-BNK-12; design D10): recorded only by a payment batch's release, read as the
 	// batch's payments are, and voided when the bank rejected it on another person's approval, never the person's own.
+	// The register of share issues (FR-EQ-08; design D11): read by whoever reads the founders' accounts or the share issues
+	// (the Board viewer, qualified "share issues"); shares issued before the books start recorded by an Owner or the
+	// Controller.
+	ListShareIssues             = Policy{Operation: "listShareIssues", Capability: DirectorAccounts, Need: View}
+	RecordShareIssueBeforeBooks = Policy{Operation: "recordShareIssueBeforeBooks", Capability: DirectorAccounts, Need: Approve,
+		Note: "The caller must have stepped up in the last 5 minutes; only an issue before the books start, which posts no entry."}
 	GetDirectorRepayment         = Policy{Operation: "getDirectorRepayment", Capability: PaymentBatches, Need: View, Unqualified: true}
 	RequestDirectorRepaymentVoid = Policy{Operation: "requestDirectorRepaymentVoid", Capability: PaymentBatches, Need: Create, Unqualified: true,
 		Note: "Another person who holds A on \"Payment batches\" approves it, never the person repaid."}
@@ -1176,7 +1182,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ConfirmMyDirectorAccount,
 	ListDirectorSettlements, GetDirectorSettlement, CreateDirectorSettlement, ReplaceDirectorSettlement, RequestDirectorSettlementApproval,
 	AddDirectorSettlementEvidence, ListDirectorSettlementEvidence, GetDirectorSettlementEvidence, RemoveDirectorSettlementEvidence,
-	GetDirectorRepayment, RequestDirectorRepaymentVoid,
+	GetDirectorRepayment, RequestDirectorRepaymentVoid, ListShareIssues, RecordShareIssueBeforeBooks,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
 	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, SendRemittanceAgain, ReleasePaymentBatch, GetPaymentBatchFile,

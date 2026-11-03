@@ -1045,3 +1045,83 @@ func TestKPIRoundsOnceHalfAwayFromZero(t *testing.T) {
 		}
 	})
 }
+
+// Appendix G.3 (rev 0.3): a balance of S$12,345.67 converted at S$1.20 a share is 10,288 shares, S$12,345.60 converted
+// and S$0.07 left owed; at S$0.0375 a share, 329,217 shares, S$12,345.64 converted (329,217 × 0.0375 = 12,345.6375) and
+// S$0.03 left owed, since 329,218 shares would round up to S$12,345.68. One more case of the half-up edge: S$1.00 at
+// S$0.333334 is 3 shares (1.000002 rounds to 1.00). Too small an amount allots none.
+// req: RND-SHARE
+// req: FR-EQ-06
+// req: ledger/money-and-rounding Pinned conversion at S$1.20 a share
+// req: ledger/money-and-rounding Pinned conversion at S$0.0375 a share
+func TestSharePinnedCases(t *testing.T) {
+	for _, c := range []struct{ amount, price, shares, converted, remainder string }{
+		{"12345.67", "1.20", "10288", "12345.60", "0.07"},
+		{"12345.67", "0.0375", "329217", "12345.64", "0.03"},
+		{"1.00", "0.333334", "3", "1.00", "0.00"},
+		{"0.50", "1.00", "0", "0.00", "0.50"},
+	} {
+		s, err := Share(m(t, c.amount, sgd), price(t, c.price, sgd))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := fmt.Sprintf("%s %s %s", s.Count.Text('f'), s.Converted, s.Remainder); got != c.shares+" "+c.converted+" "+c.remainder {
+			t.Errorf("Share(%s at %s) = %s, want %s %s %s", c.amount, c.price, got, c.shares, c.converted, c.remainder)
+		}
+	}
+	for _, bad := range []struct{ amount, price string }{{"0.00", "1.00"}, {"-1.00", "1.00"}} {
+		if _, err := Share(m(t, bad.amount, sgd), price(t, bad.price, sgd)); err == nil {
+			t.Errorf("Share(%s at %s) was not refused", bad.amount, bad.price)
+		}
+	}
+	if _, err := Share(m(t, "1.00", sgd), price(t, "1.00", usd)); err == nil {
+		t.Error("a price in another currency was not refused")
+	}
+}
+
+// RND-SHARE's properties: the shares are whole; what they convert is round(n × price) and never more than the amount;
+// one more share would round past it; and converted plus the remainder is the amount.
+// req: RND-SHARE
+// req: ledger/money-and-rounding Share formula
+func TestShareProperties(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		cents := rapid.Int64Range(1, 1_000_000_000_00).Draw(t, "cents")
+		micros := rapid.Int64Range(1, 100_000_000).Draw(t, "price µ")
+		amount := money.FromMinor(cents, sgd)
+		p := price(t, fmt.Sprintf("%d.%06d", micros/1_000_000, micros%1_000_000), sgd)
+		s, err := Share(amount, p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if s.Count.Exponent != 0 || s.Count.Negative {
+			t.Fatalf("the shares %s are not a whole number", s.Count.Text('f'))
+		}
+		at := func(n *apd.Decimal) money.Money {
+			var x apd.Decimal
+			if _, err := work.Mul(&x, n, p.Decimal()); err != nil {
+				t.Fatal(err)
+			}
+			r, err := money.FromRounded(halfAwayFromZero(&x, 2), sgd)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return r
+		}
+		if !at(&s.Count).Equal(s.Converted) {
+			t.Fatalf("converted %s is not round(%s × %s)", s.Converted, s.Count.Text('f'), p)
+		}
+		if c, _ := s.Converted.Cmp(amount); c > 0 {
+			t.Fatalf("converted %s is more than %s", s.Converted, amount)
+		}
+		var next apd.Decimal
+		if _, err := work.Add(&next, &s.Count, apd.New(1, 0)); err != nil {
+			t.Fatal(err)
+		}
+		if c, _ := at(&next).Cmp(amount); c <= 0 {
+			t.Fatalf("%s shares would still fit in %s at %s", next.Text('f'), amount, p)
+		}
+		if sum, _ := s.Converted.Add(s.Remainder); !sum.Equal(amount) {
+			t.Fatalf("%s + %s is not %s", s.Converted, s.Remainder, amount)
+		}
+	})
+}
