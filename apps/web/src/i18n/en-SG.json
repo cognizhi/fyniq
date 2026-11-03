@@ -136,6 +136,26 @@
       "label": "Director accounts",
       "tooltip": "What the company owes each director and shareholder on 2500 and 2120, and what they owe it, by where each amount came from."
     },
+    "accounting.pre-incorporation": {
+      "label": "Costs before incorporation",
+      "tooltip": "Costs the founders paid themselves before the books start, each waiting for the accountant's decision, then owed to them on 2500."
+    },
+    "pre-incorporation.add": {
+      "label": "Add a cost",
+      "tooltip": "Record a cost a director or shareholder paid before the books start, with its receipt, for the accountant to decide."
+    },
+    "pre-incorporation.change": {
+      "label": "Change",
+      "tooltip": "Correct the cost while it still needs a decision."
+    },
+    "pre-incorporation.decide": {
+      "label": "Decide",
+      "tooltip": "Choose the treatment, the account and whether its GST is claimed. The decision posts the cost to the person's account at once."
+    },
+    "pre-incorporation-cost.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the receipt or invoice the person paid. The accountant decides the cost only once it is attached."
+    },
     "founders.money-i-put-in": {
       "label": "Money I put in",
       "tooltip": "What the company owes you for money you lent, costs you paid and pay or fees not yet paid."

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account the cost posts to: an active account that is not a group, share capital, a money account, a director's account or GST control.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "claim_gst": {
+      "description": "Claim the GST shown as input tax: only while the organisation is GST-registered on the posting date. A claim from before registration is made in the first GST return with IRAS's approval [verify]; otherwise the GST stays in the cost.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "note": {
+      "description": "Why, in the accountant's words.",
+      "examples": [
+        "Incorporation cost: capital, not deductible."
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "treatment": {
+      "description": "The income-tax treatment: deductible (a revenue cost from up to 12 months before the deemed start of business, Income Tax Act s14R), capital (such as incorporation costs or equipment), or not_deductible.",
+      "enum": [
+        "deductible",
+        "capital",
+        "not_deductible"
+      ],
+      "examples": [
+        "capital"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "treatment",
+    "account_id"
+  ],
+  "title": "PreIncorporationCostDecisionDraft",
+  "type": "object"
+}

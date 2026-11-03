@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contact_id": {
+      "description": "The director or shareholder who paid it: a contact marked so.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "date": {
+      "description": "The date on the receipt: before the books start.",
+      "examples": [
+        "2025-08-28"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "description": {
+      "description": "What it was for.",
+      "examples": [
+        "Incorporation: ACRA fee and constitution"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "gross": {
+      "$ref": "Money.schema.json",
+      "description": "What they paid, GST included, in the base currency."
+    },
+    "gst": {
+      "$ref": "Money.schema.json",
+      "description": "The GST the receipt shows, in the base currency; left out when it shows none."
+    },
+    "supplier": {
+      "description": "Who it was paid to.",
+      "examples": [
+        "Corporate secretary"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    }
+  },
+  "required": [
+    "date",
+    "supplier",
+    "description",
+    "contact_id",
+    "gross"
+  ],
+  "title": "PreIncorporationCostDraft",
+  "type": "object"
+}

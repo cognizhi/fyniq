@@ -77,9 +77,16 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
   `recordClaimReimbursement` refuses a claim kept as a loan (it owes nothing on 2150); the draft's ledger impact names
   the person. The oracle's scenario format gains `loan` on `expense_claim` and the `director_loan` key, with a golden
   case in `pending/claims.json` (claims still wait for `cmd/scenario-run`); each side credits 2500 as it credits 2150.
-- [ ] 2.2 Costs before the books start (D7): the `pre_incorporation_cost` document (receipt required, needs decision
+- [x] 2.2 Costs before the books start (D7): the `pre_incorporation_cost` document (receipt required, needs decision
   ⚠, the accountant's decision, posting at the books start or the decision date), its API and the Costs before
   incorporation page. Tests: posted legs, refused dates, and the decision by role. `// req: FR-EQ-03`
+  Built: the document is numbered PIC- (migrations 000202 and 000203). An Owner or the Controller records and changes it
+  (A on "Director accounts"), and the accountant decides it (P on the row): D7 named the Controller too, whom Appendix D
+  gives A, not P, on that row. The member linked to the person who paid it never decides it (FOUNDER-10). The decision
+  needs a receipt (FOUNDER-08) and posts under `pre_incorporation_cost@1` (LEDGER-42); a decided cost changes no more
+  (FOUNDER-07), so a correction is a journal to the person's account. Its receipts sit on the cost's own row, as a card
+  line's do. The oracle states the legs (`pending/founders.json`). The "before GST registration" flag waits for
+  `p1-gst`, as D7 says.
 
 ## 3. Pay choices, fees, exempt status and confirmations (slice 3)
 

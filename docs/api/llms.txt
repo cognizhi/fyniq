@@ -382,6 +382,15 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/periods/{period_id}/variances/{account_id}/explanation` (explainVariance): Explain a variance
 - `GET /v1/periods/{period_id}/year-end` (getYearEnd): Get the year end of a period's financial year
 - `POST /v1/periods:open-year` (openFinancialYear): Open the next financial year
+- `GET /v1/pre-incorporation-costs` (listPreIncorporationCosts): List costs paid before the books start
+- `POST /v1/pre-incorporation-costs` (recordPreIncorporationCost): Record a cost paid before the books start
+- `GET /v1/pre-incorporation-costs/{cost_id}` (getPreIncorporationCost): Get a cost paid before the books start
+- `PUT /v1/pre-incorporation-costs/{cost_id}` (replacePreIncorporationCost): Change a cost that needs a decision
+- `POST /v1/pre-incorporation-costs/{cost_id}/decide` (decidePreIncorporationCost): Decide a cost paid before the books start, and post it
+- `GET /v1/pre-incorporation-costs/{cost_id}/evidence` (listPreIncorporationCostEvidence): List a cost's receipts
+- `POST /v1/pre-incorporation-costs/{cost_id}/evidence` (addPreIncorporationCostEvidence): Attach a receipt to a cost paid before the books start
+- `GET /v1/pre-incorporation-costs/{cost_id}/evidence/{evidence_id}` (getPreIncorporationCostEvidence): Get a cost's receipt file
+- `DELETE /v1/pre-incorporation-costs/{cost_id}/evidence/{evidence_id}` (removePreIncorporationCostEvidence): Remove a receipt from a cost that needs a decision
 - `GET /v1/public/document` (getPublicDocument): Open a quote or invoice through its link
 - `POST /v1/public/document/accept` (acceptQuoteByLink): Accept a quote through its link
 - `POST /v1/public/document/decline` (declineQuoteByLink): Decline a quote through its link

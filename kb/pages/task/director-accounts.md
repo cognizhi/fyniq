@@ -38,7 +38,8 @@ aliases:
 - **Account in debit**: the person owes the company; a loan to a director is restricted unless the
   company is an exempt private company, so the accountant is asked.
   (src: docs/user-guide/director-accounts.md#what-it-is)
-- A founder's own view: [[founders.balance]]; settling a balance: [[founders.settle-balance]].
+- A founder's own view: [[founders.balance]]; settling a balance: [[founders.settle-balance]]; costs
+  paid before the books start: [[founders.pre-incorporation-costs]].
 
 ## Mark the directors and shareholders
 

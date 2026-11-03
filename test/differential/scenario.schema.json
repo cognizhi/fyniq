@@ -150,7 +150,7 @@
       "properties": {"type": {"enum": ["manual_journal", "bank_transaction", "bank_transfer", "bill", "vendor_credit",
                                          "bill_payment", "invoice", "credit_note", "customer_receipt", "customer_deposit",
                                          "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
-                                         "cash_advance", "fixed_asset", "asset_disposal"]}},
+                                         "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "bank_transaction"}}}, "then": {"$ref": "#/$defs/bankTransaction"}},
@@ -165,7 +165,8 @@
         {"if": {"properties": {"type": {"enum": ["invoice", "credit_note"]}}}, "then": {"$ref": "#/$defs/invoice"}},
         {"if": {"properties": {"type": {"const": "customer_deposit"}}}, "then": {"$ref": "#/$defs/customerDeposit"}},
         {"if": {"properties": {"type": {"const": "deposit_refund"}}}, "then": {"$ref": "#/$defs/depositRefund"}},
-        {"if": {"properties": {"type": {"const": "write_off"}}}, "then": {"$ref": "#/$defs/writeOff"}}
+        {"if": {"properties": {"type": {"const": "write_off"}}}, "then": {"$ref": "#/$defs/writeOff"}},
+        {"if": {"properties": {"type": {"const": "pre_incorporation_cost"}}}, "then": {"$ref": "#/$defs/preIncorporationCost"}}
       ]
     },
     "settings": {
@@ -442,6 +443,24 @@
             "oneOf": [{"required": ["distance", "vehicle"]}, {"required": ["gst_code"]}]
           }
         }
+      }
+    },
+    "preIncorporationCost": {
+      "description": "A cost a founder paid before the books start, as the accountant decided it (pre_incorporation_cost@1, FR-EQ-03, B.7).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "incurred", "person", "account", "gross"],
+      "properties": {
+        "type": {"const": "pre_incorporation_cost"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day it posts: on or after settings.books_start.", "$ref": "#/$defs/date"},
+        "incurred": {"description": "The day it was paid: before settings.books_start.", "$ref": "#/$defs/date"},
+        "person": {"description": "The director or shareholder who paid it, one of people.", "$ref": "#/$defs/documentId"},
+        "account": {"description": "The account the accountant chose: not a director's account, a money account or GST control.", "type": "string"},
+        "gross": {"description": "What they paid, GST included, in the base currency.", "$ref": "#/$defs/money"},
+        "gst": {"description": "The GST the receipt shows, less than gross.", "$ref": "#/$defs/money"},
+        "claim_gst": {"description": "Claim the GST as input tax: only while GST-registered on date.", "type": "boolean"}
       }
     },
     "cashAdvance": {

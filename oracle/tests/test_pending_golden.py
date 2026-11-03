@@ -233,6 +233,27 @@ def test_pending_claims():
 
 
 # req: QA-ENG-02
+# req: FR-EQ-03
+def test_pending_founders():
+    r = _run("founders")
+    # On the books start; a person who is not a director; on a director's account; posted before the books start; GST
+    # claimed when the receipt shows none.
+    assert r["rejected"] == ["PIC-0004", "PIC-0005", "PIC-0006", "PIC-0007", "PIC-0008"]
+    # 1,315.00 with no GST shown: all to 6910, owed to P0001 on 2500.
+    assert _lines(r, "PIC-0001") == [("2500", "SGD", "-1315.00", "-1315.00"), ("6910", "SGD", "1315.00", "1315.00")]
+    # 3,815.00 with 315.00 GST claimed while registered from the books start: 3,500.00 to 1600, 315.00 to 2200.
+    assert _lines(r, "PIC-0002") == [("1600", "SGD", "3500.00", "3500.00"), ("2200", "SGD", "315.00", "315.00"),
+                                     ("2500", "SGD", "-3815.00", "-3815.00")]
+    # 763.00 with 63.00 GST not claimed, decided on 3 Feb: the GST stays in the cost.
+    assert _lines(r, "PIC-0003") == [("2500", "SGD", "-763.00", "-763.00"), ("6400", "SGD", "763.00", "763.00")]
+    assert r["trial_balance"] == {
+        "2026-01": {"1600": "3500.00", "2200": "315.00", "2500": "-5130.00", "6910": "1315.00"},  # 1,315.00 + 3,815.00
+        "2026-02": {"2500": "-763.00", "6400": "763.00"},
+    }
+    assert r["people"] == {"P0001": {"2500": "-2078.00"}, "P0002": {"2500": "-3815.00"}}  # 1,315.00 + 763.00
+
+
+# req: QA-ENG-02
 def test_pending_assets():
     r = _run("assets")
     assert r["rejected"] == ["AD-0003", "FA-0005"]  # FA-0001 is gone; 6010 is not an asset account

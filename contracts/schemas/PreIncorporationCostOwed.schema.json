@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contact_id": {
+      "description": "The director or shareholder.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "decided": {
+      "$ref": "Money.schema.json",
+      "description": "The costs decided and posted to their account on 2500."
+    },
+    "legal_name": {
+      "description": "Their legal name.",
+      "examples": [
+        "Mei Lin Tan"
+      ],
+      "type": "string"
+    },
+    "needs_decision": {
+      "$ref": "Money.schema.json",
+      "description": "The costs still waiting for the accountant."
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "Both together."
+    }
+  },
+  "required": [
+    "contact_id",
+    "legal_name",
+    "decided",
+    "needs_decision",
+    "total"
+  ],
+  "title": "PreIncorporationCostOwed",
+  "type": "object"
+}

@@ -12,6 +12,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
+	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -226,6 +227,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 	}
 	if asset.IsDisposal(doc) { // the sale or write-off of an asset, from what its version kept (FR-FA-03)
 		want, err := replayAssetDisposal(ctx, u, doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
+	if director.IsPreCost(doc) { // a cost a director paid before the books start, as the accountant decided it (FR-EQ-03)
+		want, err := replayPreCost(doc, s, e)
 		if err != nil {
 			return err.Error(), nil
 		}

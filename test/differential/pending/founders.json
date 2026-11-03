@@ -1,0 +1,41 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "pending-founders",
+ "base_currency": "SGD",
+ "currencies": {"SGD": 2},
+ "as_of": "2026-03-31",
+ "settings": {
+  "accounts": {"gst": "2200", "director_loan": "2500"},
+  "money_accounts": {"1010": "SGD"},
+  "books_start": "2026-01-01",
+  "gst": {"registered_from": "2026-01-01", "rates": [{"from": "2024-01-01", "percent": "9"}]}
+ },
+ "accounts": [
+  {"code": "1010", "type": "asset", "group": false, "active": true},
+  {"code": "1600", "type": "asset", "group": false, "active": true},
+  {"code": "2200", "type": "liability", "group": false, "active": true},
+  {"code": "2500", "type": "liability", "group": false, "active": true, "role": "director-loan"},
+  {"code": "6400", "type": "expense", "group": false, "active": true},
+  {"code": "6910", "type": "expense", "group": false, "active": true}
+ ],
+ "people": ["P0001", "P0002"],
+ "documents": [
+  {"type": "pre_incorporation_cost", "id": "PIC-0001", "version": 1, "date": "2026-01-01", "incurred": "2025-08-28", "person": "P0001",
+   "account": "6910", "gross": "1315.00"},
+  {"type": "pre_incorporation_cost", "id": "PIC-0002", "version": 1, "date": "2026-01-01", "incurred": "2025-11-03", "person": "P0002",
+   "account": "1600", "gross": "3815.00", "gst": "315.00", "claim_gst": true},
+  {"type": "pre_incorporation_cost", "id": "PIC-0003", "version": 1, "date": "2026-02-03", "incurred": "2025-06-15", "person": "P0001",
+   "account": "6400", "gross": "763.00", "gst": "63.00"},
+  {"type": "pre_incorporation_cost", "id": "PIC-0004", "version": 1, "date": "2026-01-01", "incurred": "2026-01-01", "person": "P0001",
+   "account": "6400", "gross": "10.00"},
+  {"type": "pre_incorporation_cost", "id": "PIC-0005", "version": 1, "date": "2026-01-01", "incurred": "2025-12-01", "person": "P0009",
+   "account": "6400", "gross": "10.00"},
+  {"type": "pre_incorporation_cost", "id": "PIC-0006", "version": 1, "date": "2026-01-01", "incurred": "2025-12-01", "person": "P0001",
+   "account": "2500", "gross": "10.00"},
+  {"type": "pre_incorporation_cost", "id": "PIC-0007", "version": 1, "date": "2025-12-31", "incurred": "2025-12-01", "person": "P0001",
+   "account": "6400", "gross": "10.00"},
+  {"type": "pre_incorporation_cost", "id": "PIC-0008", "version": 1, "date": "2026-01-01", "incurred": "2025-12-01", "person": "P0001",
+   "account": "6400", "gross": "10.00", "claim_gst": true}
+ ],
+ "reversals": []
+}

@@ -382,6 +382,21 @@ credits `director_loan` (2500) instead of 2150, as 2150 would be credited, and t
 (`party`): what the director paid stays owed to them there. It settles no `advance`, and no reimbursement
 settles it.
 
+### Costs before the books start (`pre_incorporation_cost`, `pre_incorporation_cost@1`)
+
+From FR-EQ-03, Appendix B.7 and the founders' money design D7 (rev 0.167).
+
+```json
+{"type": "pre_incorporation_cost", "id": "PIC-0001", "version": 1, "date": "2026-01-01", "incurred": "2025-11-03",
+ "person": "P0001", "account": "1500", "gross": "3815.00", "gst": "315.00", "claim_gst": true}
+```
+
+The cost as the accountant decided it: `date` is the day it posts (on or after `settings.books_start`), `incurred` the
+day the person paid it (before the books start), `person` one of `people`. It posts Dr `account` with `gross`, or with
+`gross` less `gst` when `claim_gst` (only while GST-registered on `date`), Dr `gst` (2200) with the GST claimed, and Cr
+`director_loan` (2500) with `gross`, the line naming the person. The account is not a director's account, a money
+account or GST control.
+
 ### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
 
 From Appendix B.4, §10.2, FR-FA-01, FR-FA-02, FR-FA-03 and the rows of rev 0.149, 0.150 and 0.151.

@@ -33,7 +33,8 @@
         "cash_advance",
         "fixed_asset",
         "asset_disposal",
-        "payment_batch"
+        "payment_batch",
+        "pre_incorporation_cost"
       ],
       "examples": [
         "journal"

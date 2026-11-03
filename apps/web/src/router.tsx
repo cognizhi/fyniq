@@ -100,6 +100,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "settings-access-review": lazyRouteComponent(() => import("./screens/settings/AccessReview"), "AccessReview"),
   "director-accounts": lazyRouteComponent(() => import("./screens/founders/DirectorAccounts"), "DirectorAccounts"),
   "money-i-put-in": lazyRouteComponent(() => import("./screens/founders/MoneyIPutIn"), "MoneyIPutIn"),
+  "pre-incorporation-costs": lazyRouteComponent(() => import("./screens/founders/PreIncorporationCosts"), "PreIncorporationCosts"),
   "settings-team-mode": lazyRouteComponent(() => import("./screens/settings/TeamMode"), "TeamMode"),
   "settings-approval-policies": lazyRouteComponent(() => import("./screens/settings/ApprovalPolicies"), "ApprovalPolicies"),
   "settings-templates": lazyRouteComponent(() => import("./screens/settings/Templates"), "Templates"),

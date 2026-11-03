@@ -119,6 +119,8 @@ export const routes = [
   // a founder's own account, Money I put in, is Basic.
   { kind: "route", id: "director-accounts", path: "/accounting/directors", mode: "expert", signedIn: true, help: "accounting.directors", guide: "equity.director-accounts" },
   { kind: "route", id: "money-i-put-in", path: "/me/money-i-put-in", mode: "basic", signedIn: true, help: "founders.money-i-put-in", guide: "equity.founders-money#see-what-the-company-owes-you" },
+  // Costs before the books start (FR-EQ-03; p1-founders-money task 2.2): Basic, as the founders record their own costs.
+  { kind: "route", id: "pre-incorporation-costs", path: "/accounting/pre-incorporation", mode: "basic", signedIn: true, help: "accounting.pre-incorporation", guide: "equity.pre-incorporation-costs" },
   { kind: "route", id: "period-close", path: "/accounting/close/$periodId", mode: "expert", signedIn: true, help: "accounting.period-close", guide: "accounting.periods#close-a-month" },
   { kind: "route", id: "reports", path: "/reports", mode: "basic", signedIn: true, help: "reports.index", guide: "reports.statements" },
   { kind: "route", id: "financial-statement", path: "/reports/statements/$kind", mode: "basic", signedIn: true, help: "reports.statement", guide: "reports.statements" },
@@ -255,6 +257,10 @@ export const actions = [
   { kind: "action", id: "claim.submit", mode: "basic", help: "claim.submit", guide: "claims.my-claims#submit-a-claim" },
   { kind: "action", id: "claim.withdraw", mode: "basic", help: "claim.withdraw", guide: "claims.my-claims#submit-a-claim" },
   { kind: "action", id: "claim.attach-evidence", mode: "basic", help: "claim.attach-evidence", guide: "claims.my-claims#attach-the-receipt" },
+  { kind: "action", id: "pre-incorporation.add", mode: "basic", help: "pre-incorporation.add", guide: "equity.pre-incorporation-costs#record-a-cost" },
+  { kind: "action", id: "pre-incorporation.change", mode: "basic", help: "pre-incorporation.change", guide: "equity.pre-incorporation-costs#record-a-cost" },
+  { kind: "action", id: "pre-incorporation.decide", mode: "basic", help: "pre-incorporation.decide", guide: "equity.pre-incorporation-costs#what-the-accountant-decides" },
+  { kind: "action", id: "pre-incorporation-cost.attach-evidence", mode: "basic", help: "pre-incorporation-cost.attach-evidence", guide: "equity.pre-incorporation-costs#record-a-cost" },
   { kind: "action", id: "card-line.complete", mode: "basic", help: "card-line.complete", guide: "claims.my-claims#complete-your-company-card-lines" },
   { kind: "action", id: "card-line.attach-evidence", mode: "basic", help: "card-line.attach-evidence", guide: "claims.my-claims#complete-your-company-card-lines" },
   { kind: "action", id: "bill.post", mode: "basic", help: "bill.post", guide: "purchases.bills#check-and-post-a-bill" },

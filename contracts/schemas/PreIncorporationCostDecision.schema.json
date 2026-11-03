@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "That account's code.",
+      "examples": [
+        "6910"
+      ],
+      "type": "string"
+    },
+    "account_id": {
+      "description": "The account it posted to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "account_name": {
+      "description": "That account's name.",
+      "examples": [
+        "Incorporation costs"
+      ],
+      "type": "string"
+    },
+    "claim_gst": {
+      "description": "Whether the GST shown was claimed as input tax.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "decided_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who decided it."
+    },
+    "decided_on": {
+      "description": "The day it was decided.",
+      "examples": [
+        "2026-11-03"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "note": {
+      "description": "The accountant's note.",
+      "examples": [
+        "Incorporation cost: capital, not deductible."
+      ],
+      "type": "string"
+    },
+    "post_on": {
+      "description": "The day it posted: the books start, or the day of the decision when the books start's period was closed.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "treatment": {
+      "description": "The income-tax treatment.",
+      "enum": [
+        "deductible",
+        "capital",
+        "not_deductible"
+      ],
+      "examples": [
+        "capital"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "treatment",
+    "account_id",
+    "claim_gst",
+    "post_on",
+    "decided_on"
+  ],
+  "title": "PreIncorporationCostDecision",
+  "type": "object"
+}

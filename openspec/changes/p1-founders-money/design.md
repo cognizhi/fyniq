@@ -160,7 +160,8 @@ What exists that the founders' money builds on:
     first GST return);
   - **posted:** at the books start, or on the decision date when the books start's period is closed. It posts
     Dr the account (gross, or net and 2200 when claimed), Cr 2500 (the person, paid personally).
-- **Who:** the Accountant or the Controller decides; an Owner or Controller records. The "before GST registration"
+- **Who:** the Accountant or the Controller decides; an Owner or Controller records. (Built: the accountant alone
+  decides, as Appendix D gives P on "Director accounts" to the Accountant and A to the Controller; task 2.2.) The "before GST registration"
   flag on ordinary claims comes with GST registration (`p1-gst`; question 2: not registered).
 
 ### D8 Pay choices and directors' fees (FR-EQ-04, part)
