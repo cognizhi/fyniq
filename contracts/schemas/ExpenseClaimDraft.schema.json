@@ -42,6 +42,17 @@
       "maxLength": 2000,
       "type": "string"
     },
+    "settle_to": {
+      "description": "How what the company owes is settled (FR-EQ-02; PRD-001 rev 0.167): reimburse, the default, owes it on 2150 Expense claims payable; loan keeps it as a loan to the company on the claimant's director account, 2500, when they sign in as a director or shareholder (getMyDirectorAccount). A claim kept as a loan settles no cash advance (CLAIM-36), and another person approves it as any claim.",
+      "enum": [
+        "reimburse",
+        "loan"
+      ],
+      "examples": [
+        "reimburse"
+      ],
+      "type": "string"
+    },
     "title": {
       "description": "What the claim is for.",
       "examples": [

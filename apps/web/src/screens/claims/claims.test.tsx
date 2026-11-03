@@ -23,6 +23,7 @@ const claim = (extra: Partial<Claim> = {}): Claim => ({
   status: "draft",
   version: 1,
   claimant: { kind: "user", id: me, name: "Ah Kow" },
+  settle_to: "reimburse",
   stage: "draft",
   date: "2026-10-15",
   title: "Acme visit",
@@ -176,7 +177,7 @@ describe("my claims", () => {
 // req: FR-AP-17
 describe("the claim editor", () => {
   it("checks the form before it is sent: every field at once", () => {
-    const f: ClaimForm = { date: "2026-10-15", title: "", notes: "", late_reason: "", advance_id: "", trips: [], lines: [{ ...newReceipt("SGD", "2026-10-14"), amount: "abc", gst: "x", currency: "sg" }] };
+    const f: ClaimForm = { date: "2026-10-15", title: "", notes: "", late_reason: "", advance_id: "", settle_to: "reimburse", trips: [], lines: [{ ...newReceipt("SGD", "2026-10-14"), amount: "abc", gst: "x", currency: "sg" }] };
     const { draft, errors } = checkClaim(f, "SGD");
     expect(draft).toBeUndefined();
     expect(Object.keys(errors).sort()).toEqual(["lines.0.amount", "lines.0.category_id", "lines.0.currency", "lines.0.gst"]);
@@ -204,6 +205,42 @@ describe("the claim editor", () => {
     const sent = seen.find((s) => s.method === "POST" && s.path === "/v1/expense-claims");
     expect(sent?.headers.get("Idempotency-Key")).toBeTruthy();
     expect(sent?.body).toMatchObject({ title: "Acme visit", advance_id: "a1", lines: [{ kind: "receipt", merchant: "ComfortDelGro", category_id: "travel", amount: { amount: "27.30", currency: "SGD" }, gst_code: "NR" }] });
+  });
+
+  // req: FR-EQ-02
+  it("lets a director keep what they paid as a loan to the company, and offers it to no one else", async () => {
+    const seen = answer({
+      "GET /v1/claim-categories": { status: 200, body: categories },
+      "GET /v1/expense-claims/gst-codes": { status: 200, body: codes },
+      "GET /v1/cash-advances": { status: 200, body: { items: [] } },
+      "GET /v1/me/director-account": { status: 200, body: { linked: true } },
+      "POST /v1/expense-claims": { status: 201, body: claim({ settle_to: "loan" }), headers: { ETag: '"1-draft"' } },
+    });
+    renderPage(ClaimEditor, { path: "/me/claims/new", session: employee, organisation, mode: "basic" });
+    fireEvent.change(await screen.findByLabelText("What it is for"), { target: { value: "Domain renewal" } });
+    fireEvent.change(screen.getByLabelText("Paid to"), { target: { value: "Namecheap" } });
+    await screen.findByRole("option", { name: "Local travel" });
+    fireEvent.change(screen.getByLabelText("Category"), { target: { value: "travel" } });
+    fireEvent.change(screen.getByLabelText("Amount on the receipt (SGD)"), { target: { value: "20.00" } });
+    await screen.findByRole("option", { name: /^NR:/ });
+    fireEvent.change(screen.getByLabelText("GST on the receipt"), { target: { value: "NR" } });
+    fireEvent.click(await screen.findByLabelText("Keep it as a loan to the company"));
+    expect(screen.getByText(/owes it to you on your director account/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/expense-claims")).toBe(true));
+    expect(seen.find((x) => x.method === "POST")?.body).toMatchObject({ settle_to: "loan", title: "Domain renewal" });
+  });
+
+  it("offers no loan to a claimant who signs in as no director", async () => {
+    answer({
+      "GET /v1/claim-categories": { status: 200, body: categories },
+      "GET /v1/expense-claims/gst-codes": { status: 200, body: codes },
+      "GET /v1/cash-advances": { status: 200, body: { items: [] } },
+      "GET /v1/me/director-account": { status: 200, body: { linked: false } },
+    });
+    renderPage(ClaimEditor, { path: "/me/claims/new", session: employee, organisation, mode: "basic" });
+    await screen.findByLabelText("What it is for");
+    expect(screen.queryByText("Paid personally")).toBeNull();
   });
 
   it("shows a returned claim's checks, submits it once fixed and withdraws it", async () => {

@@ -1292,6 +1292,10 @@
       "label": "Download the PDF",
       "tooltip": "Save the document as the sender issued it, to keep for your records."
     },
+    "claim.keep-as-loan": {
+      "label": "Keep it as a loan to the company",
+      "tooltip": "For a director or shareholder: what you paid stays owed to you on your director account, in Money I put in, instead of being paid back now."
+    },
     "claims.my-claims": {
       "label": "My claims",
       "tooltip": "Costs you paid for the company: your claims by stage, what the company still owes you, your company-card lines and your cash advances."

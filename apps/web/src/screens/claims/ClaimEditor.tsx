@@ -42,6 +42,7 @@ export interface ClaimForm {
   notes: string;
   late_reason: string;
   advance_id: string;
+  settle_to: "reimburse" | "loan"; // paid personally by a director or shareholder: reimbursed, or kept as a loan (FR-EQ-02)
   lines: ReceiptForm[];
   trips: ClaimLine[]; // mileage lines, kept as they are (the mileage screen changes them)
 }
@@ -58,6 +59,7 @@ export function formOf(c: Claim, base: string): ClaimForm {
     notes: c.notes ?? "",
     late_reason: c.late_reason ?? "",
     advance_id: c.advance_id ?? "",
+    settle_to: c.settle_to === "loan" ? "loan" : "reimburse",
     trips: c.lines.filter((l) => l.kind === "mileage"),
     lines: c.lines
       .filter((l) => l.kind !== "mileage")
@@ -120,6 +122,7 @@ export function checkClaim(f: ClaimForm, base: string): { draft?: Draft; errors:
       notes: f.notes || undefined,
       late_reason: f.late_reason.trim() || undefined,
       advance_id: f.advance_id || undefined,
+      settle_to: f.settle_to === "loan" ? "loan" : undefined,
       lines,
     },
   };
@@ -139,7 +142,7 @@ export function ClaimEditor() {
   const confirm = useConfirm();
   const id = useId();
   const today = new Date().toISOString().slice(0, 10);
-  const [form, setForm] = useState<ClaimForm | null>(claimId ? null : { date: today, title: "", notes: "", late_reason: "", advance_id: "", lines: [newReceipt(base, today)], trips: [] });
+  const [form, setForm] = useState<ClaimForm | null>(claimId ? null : { date: today, title: "", notes: "", late_reason: "", advance_id: "", settle_to: "reimburse", lines: [newReceipt(base, today)], trips: [] });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
@@ -157,6 +160,17 @@ export function ClaimEditor() {
   const claim = loaded.data?.claim;
   const categories = useCategories();
   const codes = useClaimGSTCodes(form?.date ?? today);
+  // A claimant who signs in as a director or shareholder may keep what they paid as a loan to the company (FR-EQ-02).
+  const director = useQuery({
+    queryKey: ["my-director-account"],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/me/director-account");
+      if (error) throw error;
+      return data;
+    },
+    retry: false,
+  });
+  const mayLend = director.data?.linked === true || form?.settle_to === "loan";
   const advances = useQuery({
     queryKey: ["cash-advances", "open", session.user_id],
     queryFn: async () => {
@@ -337,6 +351,26 @@ export function ClaimEditor() {
                 </span>
               </div>
             ) : null}
+            {mayLend && (
+              <fieldset className="fy-fieldset" aria-describedby={`${id}-settle-help`}>
+                <legend className="fy-label">Paid personally</legend>
+                <div className="fy-row fy-row--wrap gap-4">
+                  <label className="fy-row gap-2">
+                    <input type="radio" name={`${id}-settle`} checked={form.settle_to === "reimburse"} onChange={() => set({ settle_to: "reimburse" })} />
+                    Reimburse me
+                  </label>
+                  <label className="fy-row gap-2">
+                    <input type="radio" name={`${id}-settle`} checked={form.settle_to === "loan"} onChange={() => set({ settle_to: "loan", advance_id: "" })} />
+                    Keep it as a loan to the company
+                  </label>
+                </div>
+                <span className="fy-help" id={`${id}-settle-help`}>
+                  {form.settle_to === "loan"
+                    ? "The company owes it to you on your director account, in Money I put in, instead of paying it back now. Another founder approves the claim."
+                    : "The company pays it back to your bank account. To keep it as a loan to the company instead, choose the other."}
+                </span>
+              </fieldset>
+            )}
           </fieldset>
 
           {form.lines.map((l, i) => (

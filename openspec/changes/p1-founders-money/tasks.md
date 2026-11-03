@@ -57,7 +57,7 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
 ## 2. Paid personally and costs before the books start (slice 2)
 
 - [ ] 2.1 Paid personally (D6):
-  - a claim's `settle_to`, refused for a claimant who is not a linked director, or with an advance (`CLAIM-33`);
+  - a claim's `settle_to`, refused for a claimant who is not a linked director, or with an advance (`CLAIM-36`);
   - the rule `claim@2` crediting 2500 with the gross and the person;
   - the claim editor's choice.
   The oracle states the legs. Tests: the legs with and without claimable input tax, and that the claimant never

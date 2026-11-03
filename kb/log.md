@@ -284,3 +284,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-02] compile | access-review.md, members-and-roles.md and checks.md (p1-checks slice 4, rev 0.165): new task pages settings.access-review and members.remove; checks.overview adds the Controls area and the two checks reviewed where their control lives; members pages re-hashed
 
 ## [2026-11-02] compile | integrations.md and checks.md (p1-checks slice 4b, rev 0.166): settings.integrations adds a secret's expiry date; checks.overview adds the payments' and the platform's checks
+
+## [2026-11-03] compile | docs/user-guide/claims-my-claims.md (Keep it as a loan to the company) → claims.make-a-claim (p1-founders-money task 2.1)

@@ -839,9 +839,17 @@ func impactOf(e ledger.Entry) []EntryLine {
 	for i, l := range e.Lines {
 		out = append(out, EntryLine{LineNo: i + 1, AccountID: l.AccountID.String(), Amount: Money{Amount: l.Amount.String(), Currency: l.Amount.Currency().Code},
 			FXRate: l.Rate.String(), FXRateSource: l.Rate.Source, BaseAmount: Money{Amount: l.Base.String(), Currency: l.Base.Currency().Code},
-			Description: l.Description})
+			Description: l.Description, PartyID: partyOrEmpty(l.Party)})
 	}
 	return out
+}
+
+// partyOrEmpty is a line's person as the API shows it: empty on a line that names none (FR-EQ-01).
+func partyOrEmpty(p uuid.UUID) string {
+	if p == uuid.Nil {
+		return ""
+	}
+	return p.String()
 }
 
 func dayText(t time.Time) string {

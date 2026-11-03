@@ -164,6 +164,7 @@ export const actions = [
   { kind: "action", id: "member.end-role", mode: "expert", help: "member.end-role", guide: "settings.members#change-someones-roles" },
   { kind: "action", id: "member.withdraw-invitation", mode: "expert", help: "member.withdraw-invitation", guide: "settings.members#invite-someone" },
   { kind: "action", id: "member.remove", mode: "expert", help: "member.remove", guide: "settings.members#remove-someone" },
+  { kind: "action", id: "claim.keep-as-loan", mode: "basic", help: "claim.keep-as-loan", guide: "claims.my-claims#keep-it-as-a-loan-to-the-company" },
   { kind: "action", id: "access-review.attest", mode: "expert", help: "access-review.attest", guide: "settings.access-review#attest-the-quarter" },
   { kind: "action", id: "access-review.export", mode: "expert", help: "access-review.export", guide: "settings.access-review#download-it" },
   { kind: "action", id: "team-mode.switch", mode: "expert", help: "team-mode.switch", guide: "settings.team-mode#switch-the-team-mode" },

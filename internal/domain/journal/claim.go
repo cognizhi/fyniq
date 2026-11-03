@@ -43,7 +43,11 @@ func checkClaim(ctx context.Context, u storage.UnitOfWork, doc storage.Document,
 	if err != nil {
 		return CheckedClaim{}, err
 	}
-	entry, err := ledger.PostExpenseClaim(p.Claim, s)
+	post := ledger.PostExpenseClaim
+	if p.Claim.Loan != uuid.Nil { // kept as a loan to the company (FR-EQ-02): expense_claim@2
+		post = ledger.PostExpenseClaimLoan
+	}
+	entry, err := post(p.Claim, s)
 	if err == nil && p.Advance != nil { // what it settles of the advance: the least of what it owes and what is open (FR-AP-17)
 		owed := money.Zero(s.Base)
 		for _, l := range entry.Lines {
@@ -52,7 +56,7 @@ func checkClaim(ctx context.Context, u storage.UnitOfWork, doc storage.Document,
 			}
 		}
 		if p.Claim.Settles = p.Settle(owed); p.Claim.Settles != nil {
-			entry, err = ledger.PostExpenseClaim(p.Claim, s)
+			entry, err = post(p.Claim, s)
 		}
 	}
 	out := CheckedClaim{Prepared: p, Problems: probs, Owed: money.Zero(s.Base)}
@@ -75,7 +79,8 @@ func checkClaim(ctx context.Context, u storage.UnitOfWork, doc storage.Document,
 	if len(out.Problems) == 0 {
 		out.Entry = entry
 		for _, l := range entry.Lines {
-			if s.Accounts[l.AccountID].Role == ledger.RoleExpenseClaimsPayable || l.AccountID == p.Claim.Advances && p.Claim.Advances != uuid.Nil {
+			acc := s.Accounts[l.AccountID]
+			if acc.Role == ledger.RoleExpenseClaimsPayable || acc.DirectorAccount() || l.AccountID == p.Claim.Advances && p.Claim.Advances != uuid.Nil {
 				out.Owed, _ = out.Owed.Add(l.Base.Neg())
 			}
 		}

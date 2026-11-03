@@ -235,6 +235,8 @@ func (r originReader) of(l balance.PersonLine, amount money.Money) (string, erro
 			return entered[i], nil
 		}
 		return ledger.OriginOther, nil
+	case ledger.SourceExpenseClaim: // a claim kept as a loan to the company (FR-EQ-02)
+		return ledger.OriginPaidPersonally, nil
 	case ledger.SourceBankTransaction:
 		// Money in credits the person (lent), money out debits them (paid out); a reversal undoes the one it reverses.
 		if credit := amount.Sign() < 0; credit != (l.ReversesEntryID != nil) {
