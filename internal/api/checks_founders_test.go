@@ -104,7 +104,9 @@ func TestTheFoundersChecks(t *testing.T) {
 	if !strings.Contains(r.Raw, "The shareholders' approval to issue the shares is due to be lodged with ACRA by 29 Oct 2026") {
 		t.Errorf("C.2 #22's item: %s", r.Raw)
 	}
-	if s := e.call(http.MethodPost, path+"/acra-steps", weiling, map[string]any{"kind": "approval_lodged", "on": "2026-10-15", "reference": "T26A009"}); s.Status != http.StatusCreated {
+	g := e.call(http.MethodGet, path, weiling, nil)
+	if s := e.call(http.MethodPost, path+"/acra-steps", weiling, map[string]any{"kind": "approval_lodged", "on": "2026-10-15", "reference": "T26A009"},
+		"If-Match", g.Header.Get("ETag")); s.Status != http.StatusCreated {
 		t.Fatalf("recording the approval lodged: %d %s", s.Status, s.Raw)
 	}
 	wantStatus(t, e.checked("founders.conversion-registered"), "ok")
