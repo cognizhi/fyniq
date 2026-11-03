@@ -106,8 +106,13 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
   defaults to 6050; a posted fee changes no more (FOUNDER-18). The oracle's scenario format gains `director_fee` and
   the `deferred_remuneration` key (`pending/founders.json`). `db/README.md` now lists the founders' backstops, FY249 to
   FY252.
-- [ ] 3.3 Exempt status (D9): `exempt_status`, its API and the Director accounts' banner. Tests: the status in force
+- [x] 3.3 Exempt status (D9): `exempt_status`, its API and the Director accounts' banner. Tests: the status in force
   on a date, and the words of the warning. `// req: FR-EQ-11`
+  Built: the status is a document (migrations 000208 and 000209), drafted by an Owner or the Controller, recorded once
+  its evidence is attached (FOUNDER-22) and posting no entry; recorded, it changes no more (FOUNDER-23). The director
+  accounts show the status in force (`exempt_status`, "not_recorded" when none) and, on an account in debit, the
+  warning in words (`debit_warning`), which Money I put in shows too. C.2 #21 and its re-run on a new status come with
+  the checks in task 6.2.
 - [ ] 3.4 Year-end confirmation (D13): `director_confirmation` with a passkey step-up by the linked member, and the
   year-end close checklist's item. Tests: confirmed, changed since and unlinked. `// req: FR-EQ-12`
 

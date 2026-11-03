@@ -642,6 +642,18 @@ var (
 	GetDirectorFeeEvidence    = Policy{Operation: "getDirectorFeeEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
 	RemoveDirectorFeeEvidence = Policy{Operation: "removeDirectorFeeEvidence", Capability: DirectorAccounts, Need: Approve,
 		Note: "Only while the fee is a draft (FR-DOC-07)."}
+	// The exempt-private-company status (FR-EQ-11; design D9): an Owner or the Controller records it with its evidence (A
+	// on "Director accounts"); reading needs the whole row.
+	ListExemptStatuses         = Policy{Operation: "listExemptStatuses", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetExemptStatus            = Policy{Operation: "getExemptStatus", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	CreateExemptStatus         = Policy{Operation: "createExemptStatus", Capability: DirectorAccounts, Need: Approve}
+	ReplaceExemptStatus        = Policy{Operation: "replaceExemptStatus", Capability: DirectorAccounts, Need: Approve}
+	RecordExemptStatus         = Policy{Operation: "recordExemptStatus", Capability: DirectorAccounts, Need: Approve}
+	AddExemptStatusEvidence    = Policy{Operation: "addExemptStatusEvidence", Capability: DirectorAccounts, Need: Approve}
+	ListExemptStatusEvidence   = Policy{Operation: "listExemptStatusEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetExemptStatusEvidence    = Policy{Operation: "getExemptStatusEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	RemoveExemptStatusEvidence = Policy{Operation: "removeExemptStatusEvidence", Capability: DirectorAccounts, Need: Approve,
+		Note: "Only while the status is a draft (FR-DOC-07)."}
 	GetPayeeBankDetails            = Policy{Operation: "getPayeeBankDetails", Capability: VendorBankDetails, Need: View}
 	GetPayeeBankChange             = Policy{Operation: "getPayeeBankChange", Capability: VendorBankDetails, Need: View}
 	CreatePayeeBankChange          = Policy{Operation: "createPayeeBankChange", Capability: VendorBankDetails, Need: Create}
@@ -1137,6 +1149,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	AddDirectorPayChoiceEvidence, ListDirectorPayChoiceEvidence, GetDirectorPayChoiceEvidence, RemoveDirectorPayChoiceEvidence,
 	ListDirectorFees, GetDirectorFee, CreateDirectorFee, ReplaceDirectorFee, RequestDirectorFeePost,
 	AddDirectorFeeEvidence, ListDirectorFeeEvidence, GetDirectorFeeEvidence, RemoveDirectorFeeEvidence,
+	ListExemptStatuses, GetExemptStatus, CreateExemptStatus, ReplaceExemptStatus, RecordExemptStatus,
+	AddExemptStatusEvidence, ListExemptStatusEvidence, GetExemptStatusEvidence, RemoveExemptStatusEvidence,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
 	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, SendRemittanceAgain, ReleasePaymentBatch, GetPaymentBatchFile,

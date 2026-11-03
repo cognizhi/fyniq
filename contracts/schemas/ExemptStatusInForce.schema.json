@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "description": "The day the recorded status applies from.",
+      "examples": [
+        "2025-03-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2025-03-15T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "status": {
+      "description": "exempt; not_exempt; or not_recorded, which is warned of as not exempt (rev 0.167).",
+      "enum": [
+        "exempt",
+        "not_exempt",
+        "not_recorded"
+      ],
+      "examples": [
+        "exempt"
+      ],
+      "type": "string"
+    },
+    "status_id": {
+      "description": "The recorded status.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fe1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status"
+  ],
+  "title": "ExemptStatusInForce",
+  "type": "object"
+}

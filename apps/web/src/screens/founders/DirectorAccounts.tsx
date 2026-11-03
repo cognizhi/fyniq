@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BadgeDollarSign, FileDown, Handshake, Link2, ScrollText, Send, Stamp, TriangleAlert, UserRound, Wallet } from "lucide-react";
+import { BadgeDollarSign, Building2, FileDown, Handshake, Link2, ScrollText, Send, Stamp, TriangleAlert, UserRound, Wallet } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
+import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
@@ -38,14 +39,16 @@ const initials = (name: string) =>
     .map((w) => w[0]?.toUpperCase())
     .join("");
 
-async function accounts(asAt: string): Promise<{ as_at: string; currency: string; items: DirectorAccount[]; unkeyed: string }> {
+type ExemptInForce = components["schemas"]["ExemptStatusInForce"];
+
+async function accounts(asAt: string): Promise<{ as_at: string; currency: string; items: DirectorAccount[]; unkeyed: string; exempt_status?: ExemptInForce }> {
   const items: DirectorAccount[] = [];
   let cursor: string | undefined;
-  let head = { as_at: asAt, currency: "", unkeyed: "0.00" };
+  let head: { as_at: string; currency: string; unkeyed: string; exempt_status?: ExemptInForce } = { as_at: asAt, currency: "", unkeyed: "0.00" };
   do {
     const r = await api.GET("/v1/director-accounts", { params: { query: { as_at: asAt || undefined, page_size: 500, cursor } } });
     if (r.error) throw r.error;
-    head = { as_at: r.data.as_at, currency: r.data.currency, unkeyed: r.data.unkeyed.amount };
+    head = { as_at: r.data.as_at, currency: r.data.currency, unkeyed: r.data.unkeyed.amount, exempt_status: r.data.exempt_status };
     items.push(...(r.data.items ?? []));
     cursor = r.data.next_cursor;
   } while (cursor);
@@ -95,7 +98,7 @@ function PersonCard({ p, onStatement, onLink, onPay, onFees, mayLink }: { p: Dir
             <Icon of={TriangleAlert} />
             Account in debit
           </span>
-          <span className="fy-small fy-wrap">A loan to a director is restricted unless the company is an exempt private company. Ask your accountant.</span>
+          <span className="fy-small fy-wrap">{p.debit_warning ?? "A loan to a director is restricted unless the company is an exempt private company. Ask your accountant."}</span>
         </div>
       )}
       {p.pay_choice && (
@@ -657,6 +660,139 @@ function FeesDialog({ person, base, onClose, onAsked }: { person: DirectorAccoun
   );
 }
 
+// ExemptDialog records the organisation's exempt-private-company status from a day on, with the ACRA business profile
+// as its evidence (FR-EQ-11): append-only, superseding the one before from its day.
+function ExemptDialog({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: (said: string) => void }) {
+  const id = useId();
+  const confirm = useConfirm();
+  const queries = useQueryClient();
+  const [from, setFrom] = useState("");
+  const [exempt, setExempt] = useState<"yes" | "no" | "">("");
+  const [note, setNote] = useState("");
+  const [draft, setDraft] = useState<{ id: string; etag: string; evidence: number } | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const [key] = useState(newKey);
+  if (!open) return null;
+  const close = () => {
+    setDraft(null);
+    setProblem(null);
+    onClose();
+  };
+  const reread = async (statusId: string) => {
+    const r = await api.GET("/v1/exempt-statuses/{status_id}", { params: { path: { status_id: statusId } } });
+    if (r.error) return setProblem(problemOf(r.error));
+    setDraft({ id: statusId, etag: etagOf(r.response), evidence: r.data.evidence });
+  };
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) errs.from = "Enter the day it applies from.";
+    if (!exempt) errs.exempt = "Say whether the company is exempt from that day.";
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+    setBusy(true);
+    setProblem(null);
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/exempt-statuses", { params: { header: { "Idempotency-Key": key } }, body: { from, exempt: exempt === "yes", ...(note.trim() ? { note: note.trim() } : {}) } }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    setDraft({ id: out.data.id, etag: etagOf(out.response), evidence: out.data.evidence });
+  };
+  const record = async () => {
+    if (!draft) return;
+    setBusy(true);
+    setProblem(null);
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/exempt-statuses/{status_id}/record", { params: { path: { status_id: draft.id }, header: { "If-Match": draft.etag, "Idempotency-Key": newKey() } } }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    await queries.invalidateQueries({ queryKey: ["director-accounts"] });
+    onDone(`Recorded the company as ${out.data.exempt ? "an exempt private company" : "not an exempt private company"} from ${date(out.data.from)}.`);
+    close();
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && close()} title="Exempt private company" description="An exempt private company has no corporate shareholder and at most 20 members. Record the status from the day it applies, with the ACRA business profile.">
+      <div className="fy-stack fy-stack--3">
+        {problem && <Refusal problem={problem} title="The status was not saved" />}
+        {!draft ? (
+          <form className="fy-stack fy-stack--3" onSubmit={save} noValidate>
+            <div className="fy-field">
+              <label className="fy-label" htmlFor={`${id}-from`}>
+                From
+              </label>
+              <input className="fy-input" type="date" id={`${id}-from`} value={from} onChange={(e) => setFrom(e.target.value)} aria-invalid={errors.from ? true : undefined} aria-describedby={errors.from ? `${id}-from-error` : undefined} />
+              {errors.from && (
+                <span className="fy-error" id={`${id}-from-error`}>
+                  {errors.from}
+                </span>
+              )}
+            </div>
+            <fieldset className="fy-field" aria-describedby={errors.exempt ? `${id}-exempt-error` : undefined}>
+              <legend className="fy-label">Exempt private company from that day</legend>
+              <label className="fy-check">
+                <input type="radio" name={`${id}-exempt`} checked={exempt === "yes"} onChange={() => setExempt("yes")} />
+                <span>Yes, exempt</span>
+              </label>
+              <label className="fy-check">
+                <input type="radio" name={`${id}-exempt`} checked={exempt === "no"} onChange={() => setExempt("no")} />
+                <span>No, not exempt (for example, a corporate investor joined)</span>
+              </label>
+              {errors.exempt && (
+                <span className="fy-error" id={`${id}-exempt-error`}>
+                  {errors.exempt}
+                </span>
+              )}
+            </fieldset>
+            <div className="fy-field">
+              <label className="fy-label" htmlFor={`${id}-note`}>
+                Note (optional)
+              </label>
+              <input className="fy-input" id={`${id}-note`} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />
+            </div>
+            <div className="fy-row justify-end gap-2">
+              <Button variant="ghost" type="button" onClick={close}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" disabled={busy}>
+                {busy ? "Saving…" : "Next: attach the business profile"}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <EvidencePanel record={{ kind: "exempt-status", id: draft.id, etag: draft.etag }} draft mayAttach onChanged={() => void reread(draft.id)} />
+            <div className="fy-row justify-end gap-2">
+              <Button variant="ghost" type="button" onClick={close}>
+                Later
+              </Button>
+              <Button variant="primary" type="button" disabled={busy || draft.evidence === 0} onClick={record}>
+                <Icon of={Stamp} />
+                {busy ? "Recording…" : "Record the status"}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </Dialog>
+  );
+}
+
+// exemptLine says the exempt-private-company status in force, in words.
+function exemptLine(s: { status: string; from?: string } | undefined): string {
+  switch (s?.status) {
+    case "exempt":
+      return `Exempt private company since ${date(s.from ?? "")}: a loan to a director is allowed, and disclosed.`;
+    case "not_exempt":
+      return `Not an exempt private company since ${date(s.from ?? "")}: section 162 of the Companies Act restricts loans to directors.`;
+    default:
+      return "No exempt-private-company status is recorded, so a director's account in debit is treated as for a company that is not exempt.";
+  }
+}
+
 // DirectorAccounts is Accounting › Director accounts (docs/design/screens DirectorAccounts; FR-EQ-01, FR-EQ-11,
 // FR-EQ-14): what the company owes each director and shareholder on 2500 and 2120, and what they owe it, from the
 // balance service; each person's statement by where the amounts came from; and the member who signs in as each.
@@ -667,6 +803,7 @@ export function DirectorAccounts() {
   const [linking, setLinking] = useState<DirectorAccount | null>(null);
   const [paying, setPaying] = useState<DirectorAccount | null>(null);
   const [feeing, setFeeing] = useState<DirectorAccount | null>(null);
+  const [exempting, setExempting] = useState(false);
   const [status, setStatus] = useState<{ text: string; approval?: string } | null>(null);
   const q = useQuery({ queryKey: ["director-accounts", asAt], queryFn: () => accounts(asAt) });
   const mayLink = (session.roles ?? []).some((r) => linkers.includes(r));
@@ -702,6 +839,18 @@ export function DirectorAccounts() {
         </p>
       )}
       {q.isError && <Refusal problem={problemOf(q.error)} title="The director accounts could not be shown" />}
+      {q.data && (
+        <p className="fy-row fy-row--wrap fy-row--between gap-2">
+          <span className="fy-small fy-wrap">
+            <Icon of={Building2} /> {exemptLine(q.data.exempt_status)}
+          </span>
+          {mayLink && (
+            <Button variant="ghost" size="sm" type="button" onClick={() => setExempting(true)} title={helpText("director-accounts.exempt").tooltip}>
+              {helpText("director-accounts.exempt").label}
+            </Button>
+          )}
+        </p>
+      )}
       {q.isPending && <p className="fy-secondary">Loading the director accounts…</p>}
       {q.data && !isZero(q.data.unkeyed) && (
         <div className="fy-banner fy-banner--warning" role="alert">
@@ -734,6 +883,7 @@ export function DirectorAccounts() {
       {selected && q.data && <Statement key={selected.contact_id} person={selected} until={q.data.as_at} />}
       <LinkMember person={linking} onClose={() => setLinking(null)} onAsked={(text, approval) => setStatus({ text, approval })} />
       <PayChoiceDialog key={paying?.contact_id ?? "none"} person={paying} onClose={() => setPaying(null)} onDone={(text) => setStatus({ text })} />
+      <ExemptDialog open={exempting} onClose={() => setExempting(false)} onDone={(text) => setStatus({ text })} />
       <FeesDialog
         key={feeing?.contact_id ?? "no-fees"}
         person={feeing}

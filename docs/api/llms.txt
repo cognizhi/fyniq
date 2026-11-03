@@ -207,6 +207,15 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/document-templates/{template_id}/publish` (publishDocumentTemplate): Publish a template
 - `GET /v1/document-templates/{template_id}/versions` (listDocumentTemplateVersions): List a template's versions
 - `GET /v1/document-templates/{template_id}/versions/{number}` (getDocumentTemplateVersion): Read a template version
+- `GET /v1/exempt-statuses` (listExemptStatuses): List the exempt-private-company statuses
+- `POST /v1/exempt-statuses` (createExemptStatus): Draft an exempt-private-company status
+- `GET /v1/exempt-statuses/{status_id}` (getExemptStatus): Get an exempt-private-company status
+- `PUT /v1/exempt-statuses/{status_id}` (replaceExemptStatus): Change a drafted exempt-private-company status
+- `GET /v1/exempt-statuses/{status_id}/evidence` (listExemptStatusEvidence): List an exempt status's files
+- `POST /v1/exempt-statuses/{status_id}/evidence` (addExemptStatusEvidence): Attach the evidence of an exempt-private-company status
+- `GET /v1/exempt-statuses/{status_id}/evidence/{evidence_id}` (getExemptStatusEvidence): Get an exempt status's file
+- `DELETE /v1/exempt-statuses/{status_id}/evidence/{evidence_id}` (removeExemptStatusEvidence): Remove a file from a drafted exempt status
+- `POST /v1/exempt-statuses/{status_id}/record` (recordExemptStatus): Record an exempt-private-company status
 - `GET /v1/expense-claims` (listExpenseClaims): List expense claims
 - `POST /v1/expense-claims` (createExpenseClaim): Save a draft expense claim
 - `GET /v1/expense-claims/gst-codes` (getClaimGSTCodes): Get the GST codes for a claim's receipts

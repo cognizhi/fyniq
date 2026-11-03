@@ -61,14 +61,16 @@ type DirectorAccount struct {
 	Net          Money             `json:"net" doc:"Their balances together, as the ledger holds them: negative is owed to the person; positive means the person owes the company, which the balance sheet shows under 1250 Staff & director advances (FR-EQ-11)."`
 	InDebit      bool              `json:"in_debit" doc:"The net is a debit: the person owes the company (FR-EQ-11)." example:"false"`
 	PayChoice    PayChoiceInForce  `json:"pay_choice" doc:"Their pay choice in force in the month of the day the balances are at (FR-EQ-04): no salary by default."`
+	DebitWarning string            `json:"debit_warning,omitempty" doc:"When in debit: what it means for the company's exempt-private-company status that day (FR-EQ-11): allowed but disclosed when exempt; the Companies Act s162 ban and its exception otherwise, or when no status is recorded." example:"The company is not an exempt private company: section 162 of the Companies Act bans loans to directors."`
 }
 
 // DirectorAccountList is every director's and shareholder's account as at a day.
 type DirectorAccountList struct {
-	AsAt     string            `json:"as_at" format:"date" doc:"The day the balances are at, inclusive." example:"2026-10-31"`
-	Currency string            `json:"currency" doc:"The base currency the balances are in." example:"SGD"`
-	Items    []DirectorAccount `json:"items" doc:"The contacts marked director or shareholder on this page, in the order they were added."`
-	Unkeyed  Money             `json:"unkeyed" doc:"What the director's accounts hold that names no person: zero, but for lines posted before the accounts named their person, which the period close names (INV-07)."`
+	AsAt     string              `json:"as_at" format:"date" doc:"The day the balances are at, inclusive." example:"2026-10-31"`
+	Currency string              `json:"currency" doc:"The base currency the balances are in." example:"SGD"`
+	Items    []DirectorAccount   `json:"items" doc:"The contacts marked director or shareholder on this page, in the order they were added."`
+	Unkeyed  Money               `json:"unkeyed" doc:"What the director's accounts hold that names no person: zero, but for lines posted before the accounts named their person, which the period close names (INV-07)."`
+	Exempt   ExemptStatusInForce `json:"exempt_status" doc:"The organisation's exempt-private-company status in force on the day the balances are at (FR-EQ-11)."`
 	// NextCursor is the next page's cursor (FR-INT-10).
 	NextCursor string `json:"next_cursor,omitempty" doc:"Send it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjAxOTI4ZjZlIn0"`
 }
@@ -162,7 +164,6 @@ type directorStatementOutput struct{ Body DirectorStatement }
 
 // DirectorCodes are the refusals of the director accounts' commands.
 var DirectorCodes = []string{director.CodeNotPerson, director.CodeDates, CodeNotLinked}
-
 
 // directorAccountOf is a person's director account as the API shows it, with the pay choice in force in asAt's month
 // among choices, their recorded pay choices.
@@ -313,8 +314,18 @@ func registerDirectors(a *API) {
 			if err != nil {
 				return err
 			}
+			statuses, err := director.ExemptStatuses(ctx, u)
+			if err != nil {
+				return err
+			}
+			var inForce *director.RecordedStatus
+			out.Body.Exempt, inForce = exemptInForce(statuses, asAt)
 			for _, x := range page {
-				out.Body.Items = append(out.Body.Items, directorAccountOf(x, accounts, base, choices[x.Contact.ID], asAt))
+				acc := directorAccountOf(x, accounts, base, choices[x.Contact.ID], asAt)
+				if acc.InDebit {
+					acc.DebitWarning = director.DebitWarning(inForce)
+				}
+				out.Body.Items = append(out.Body.Items, acc)
 			}
 			return nil
 		})
@@ -359,6 +370,13 @@ func registerDirectors(a *API) {
 				return err
 			}
 			x := directorAccountOf(person, accounts, base, choices[c.ID], asAt)
+			if x.InDebit {
+				statuses, err := director.ExemptStatuses(ctx, u)
+				if err != nil {
+					return err
+				}
+				x.DebitWarning = director.DebitWarning(director.ExemptOn(statuses, asAt))
+			}
 			out.Body = MyDirectorAccount{Linked: true, Account: &x}
 			return nil
 		})

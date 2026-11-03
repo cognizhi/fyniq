@@ -4,7 +4,7 @@ type: task
 title: Director accounts, each founder's statement, and naming the person on 2500 and 2120
 summary: 2500 and 2120 by person; marking directors, linking their member, naming the person on journal lines; statements and their PDF
 sources:
-  - docs/user-guide/director-accounts.md sha256:a1c9c728d0bd590242dd217e928551d2f98b6c5e7b21900af561625317c850fb
+  - docs/user-guide/director-accounts.md sha256:6dc3ddc6df584a9a9e6bd24fa5dac69cc0066bdd683d15a3633aed9c543863a2
 data_class: general
 taint: trusted
 status: published
@@ -21,6 +21,8 @@ aliases:
   - link member
   - balance confirmation
   - account in debit
+  - exempt private company
+  - section 162
 ---
 
 # Director accounts, each founder's statement, and naming the person on 2500 and 2120
@@ -35,9 +37,8 @@ aliases:
 - Every amount names its person and where it came from: lent, paid personally, pay deferred,
   director's fee, paid out to them, or other. A loan and unpaid pay are taxed differently.
   (src: docs/user-guide/director-accounts.md#what-it-is)
-- **Account in debit**: the person owes the company; a loan to a director is restricted unless the
-  company is an exempt private company, so the accountant is asked.
-  (src: docs/user-guide/director-accounts.md#what-it-is)
+- **Account in debit**: the person owes the company; what it means depends on the company's
+  exempt-private-company status. (src: docs/user-guide/director-accounts.md#what-it-is)
 - A founder's own view: [[founders.balance]]; settling a balance: [[founders.settle-balance]]; costs
   paid before the books start: [[founders.pre-incorporation-costs]].
 
@@ -56,6 +57,17 @@ aliases:
 - The linked member sees their own account in **Money I put in** and never approves their own
   settlement; a member signs in as one director or shareholder at most; **Nobody** unlinks them.
   (src: docs/user-guide/director-accounts.md#link-each-director-to-the-member-who-signs-in-as-them)
+
+## Exempt private company status
+
+- The top of the page says the status in force; **Record exempt status** records it from a day on
+  with the ACRA business profile, by an Owner or the Controller, and a new one supersedes it from
+  its day, for example when a corporate investor joins.
+  (src: docs/user-guide/director-accounts.md#record-the-exempt-private-company-status)
+- An account in debit: when exempt, the loan is allowed and disclosed; when not exempt or nothing
+  is recorded, section 162 of the Companies Act bans loans to directors, but advances for company
+  expenses are allowed when approved in general meeting or repaid within 6 months after the next
+  AGM. (src: docs/user-guide/director-accounts.md#record-the-exempt-private-company-status)
 
 ## Pay choices
 
@@ -102,6 +114,7 @@ aliases:
 | Amounts on 2500 and 2120 name no director or shareholder | Reverse those journals and post them again with each person |
 | You are the member being linked, so another person approves it | Ask another Owner or the Controller |
 | The fee has no shareholders' resolution attached | Attach the resolution or minutes, then ask for approval |
+| The status has no evidence attached | Attach the ACRA business profile, then record it |
 | The fee is paid to you, so another person approves it | Ask another Owner or the Controller |
 
 (src: docs/user-guide/director-accounts.md#common-problems)

@@ -519,6 +519,9 @@ const (
 	// DocumentDirectorFee is a director's fee the shareholders voted: posted Dr 6050 · Cr 2120 to the director once
 	// another person approves it, never the director (FR-EQ-04; design D8).
 	DocumentDirectorFee DocumentType = "director_fee"
+	// DocumentExemptStatus is the organisation's exempt-private-company status from a day on, recorded with its evidence
+	// (the ACRA business profile) and posting no entry; append-only, a later one supersedes it (FR-EQ-11; design D9).
+	DocumentExemptStatus DocumentType = "exempt_status"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).

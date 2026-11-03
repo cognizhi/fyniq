@@ -231,3 +231,30 @@ describe("a director's fee", () => {
     expect(seen.find((s) => s.path === "/v1/director-fees/df-1/post-approval")?.headers.get("If-Match")).toBe('"1-draft"');
   });
 });
+
+// req: FR-EQ-11
+// req: equity/founders-money Status recorded before the corporate profile (rev 0.167)
+describe("the exempt private company status", () => {
+  it("says the status in force and the server's warning on an account in debit, and records a new status", async () => {
+    const warned = { ...list, exempt_status: { status: "not_recorded" }, items: [{ ...arjun, debit_warning: "No exempt-private-company status is recorded, so the company is treated as not exempt: section 162 of the Companies Act bans loans to directors." }] };
+    const drafted = { id: "ex-1", status: "draft", version: 1, from: "2025-03-14", exempt: true, evidence: 1, checks: [] };
+    const seen = answer({
+      "GET /v1/director-accounts": { status: 200, body: warned },
+      "POST /v1/exempt-statuses": { status: 201, body: drafted, headers: { ETag: '"1-draft"' } },
+      "GET /v1/exempt-statuses/ex-1/evidence": { status: 200, body: { items: [] } },
+      "POST /v1/exempt-statuses/ex-1/record": { status: 200, body: { ...drafted, status: "recorded" } },
+    });
+    renderPage(DirectorAccounts, { path: "/accounting/directors" });
+    expect(await screen.findByText(/No exempt-private-company status is recorded, so a director's account in debit/)).toBeTruthy();
+    const card = screen.getByRole("heading", { name: "Arjun Rao" }).closest("section") as HTMLElement;
+    expect(within(card).getByText(/section 162 of the Companies Act bans loans to directors/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Record exempt status" }));
+    fireEvent.change(await screen.findByLabelText("From"), { target: { value: "2025-03-14" } });
+    fireEvent.click(screen.getByLabelText("Yes, exempt"));
+    fireEvent.click(screen.getByRole("button", { name: "Next: attach the business profile" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Record the status" }));
+    expect(await screen.findByText(/Recorded the company as an exempt private company from 14 Mar 2025/)).toBeTruthy();
+    expect(seen.find((s) => s.method === "POST" && s.path === "/v1/exempt-statuses")?.body).toEqual({ from: "2025-03-14", exempt: true });
+    expect(seen.find((s) => s.path === "/v1/exempt-statuses/ex-1/record")?.headers.get("If-Match")).toBe('"1-draft"');
+  });
+});

@@ -27,6 +27,13 @@
       "format": "uuid",
       "type": "string"
     },
+    "debit_warning": {
+      "description": "When in debit: what it means for the company's exempt-private-company status that day (FR-EQ-11): allowed but disclosed when exempt; the Companies Act s162 ban and its exception otherwise, or when no status is recorded.",
+      "examples": [
+        "The company is not an exempt private company: section 162 of the Companies Act bans loans to directors."
+      ],
+      "type": "string"
+    },
     "director": {
       "description": "A director.",
       "examples": [
