@@ -5,6 +5,7 @@ import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
+import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { formatAmount } from "../../format/amount";
@@ -959,6 +960,7 @@ export function DirectorAccounts() {
           <input className="fy-input" type="date" id="da-as-at" value={asAt || q.data?.as_at || ""} onChange={(e) => setAsAt(e.target.value)} />
         </div>
       </div>
+      <ReviewBanner screen="director-accounts" />
       {status && (
         <p className="fy-small" role="status">
           {status.text}{" "}

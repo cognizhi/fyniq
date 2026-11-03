@@ -5,6 +5,7 @@ import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
+import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
 import { formatAmount } from "../../format/amount";
 import { date } from "../../format/date";
@@ -487,6 +488,7 @@ export function DirectorSettlement() {
           )}
         </div>
       </div>
+      <ReviewBanner screen="director-settlement" />
 
       {status && (
         <p className="fy-small" role="status">
