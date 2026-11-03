@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "confirmed_at": {
+      "description": "When the latest confirmation was made.",
+      "examples": [
+        "2026-01-09T10:15:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "confirmed_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who made it: the member who signs in as the person."
+    },
+    "status": {
+      "description": "confirmed: the latest confirmation shows the balances held at the year's end now; changed_since: it shows others, as an entry dated in the year posted after it; not_confirmed: none (⚠).",
+      "enum": [
+        "confirmed",
+        "changed_since",
+        "not_confirmed"
+      ],
+      "examples": [
+        "confirmed"
+      ],
+      "type": "string"
+    },
+    "year_end": {
+      "description": "The latest financial year end on or before the balances' day.",
+      "examples": [
+        "2025-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "year_end",
+    "status"
+  ],
+  "title": "YearEndConfirmation",
+  "type": "object"
+}

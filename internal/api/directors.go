@@ -51,17 +51,18 @@ type DirectorBalance struct {
 
 // DirectorAccount is a director or shareholder with their balances (FR-EQ-01).
 type DirectorAccount struct {
-	ContactID    string            `json:"contact_id" format:"uuid" doc:"The person's contact." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"`
-	LegalName    string            `json:"legal_name" doc:"Their name." example:"Mei Lin Tan"`
-	Director     bool              `json:"director" doc:"A director." example:"true"`
-	Shareholder  bool              `json:"shareholder" doc:"A shareholder." example:"true"`
-	MemberUserID string            `json:"member_user_id,omitempty" format:"uuid" doc:"The member who signs in as them, when linked (linkContactMember)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
-	Active       bool              `json:"active" doc:"The contact is active." example:"true"`
-	Balances     []DirectorBalance `json:"balances" doc:"One per director's account of the chart, in code order."`
-	Net          Money             `json:"net" doc:"Their balances together, as the ledger holds them: negative is owed to the person; positive means the person owes the company, which the balance sheet shows under 1250 Staff & director advances (FR-EQ-11)."`
-	InDebit      bool              `json:"in_debit" doc:"The net is a debit: the person owes the company (FR-EQ-11)." example:"false"`
-	PayChoice    PayChoiceInForce  `json:"pay_choice" doc:"Their pay choice in force in the month of the day the balances are at (FR-EQ-04): no salary by default."`
-	DebitWarning string            `json:"debit_warning,omitempty" doc:"When in debit: what it means for the company's exempt-private-company status that day (FR-EQ-11): allowed but disclosed when exempt; the Companies Act s162 ban and its exception otherwise, or when no status is recorded." example:"The company is not an exempt private company: section 162 of the Companies Act bans loans to directors."`
+	ContactID    string               `json:"contact_id" format:"uuid" doc:"The person's contact." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"`
+	LegalName    string               `json:"legal_name" doc:"Their name." example:"Mei Lin Tan"`
+	Director     bool                 `json:"director" doc:"A director." example:"true"`
+	Shareholder  bool                 `json:"shareholder" doc:"A shareholder." example:"true"`
+	MemberUserID string               `json:"member_user_id,omitempty" format:"uuid" doc:"The member who signs in as them, when linked (linkContactMember)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
+	Active       bool                 `json:"active" doc:"The contact is active." example:"true"`
+	Balances     []DirectorBalance    `json:"balances" doc:"One per director's account of the chart, in code order."`
+	Net          Money                `json:"net" doc:"Their balances together, as the ledger holds them: negative is owed to the person; positive means the person owes the company, which the balance sheet shows under 1250 Staff & director advances (FR-EQ-11)."`
+	InDebit      bool                 `json:"in_debit" doc:"The net is a debit: the person owes the company (FR-EQ-11)." example:"false"`
+	PayChoice    PayChoiceInForce     `json:"pay_choice" doc:"Their pay choice in force in the month of the day the balances are at (FR-EQ-04): no salary by default."`
+	YearEnd      *YearEndConfirmation `json:"year_end,omitempty" doc:"Their confirmation of the latest financial year end on or before the balances' day (FR-EQ-12); absent until a year has ended."`
+	DebitWarning string               `json:"debit_warning,omitempty" doc:"When in debit: what it means for the company's exempt-private-company status that day (FR-EQ-11): allowed but disclosed when exempt; the Companies Act s162 ban and its exception otherwise, or when no status is recorded." example:"The company is not an exempt private company: section 162 of the Companies Act bans loans to directors."`
 }
 
 // DirectorAccountList is every director's and shareholder's account as at a day.
@@ -320,10 +321,20 @@ func registerDirectors(a *API) {
 			}
 			var inForce *director.RecordedStatus
 			out.Body.Exempt, inForce = exemptInForce(statuses, asAt)
+			ye, err := yearEndViewOf(ctx, u, base, asAt)
+			if err != nil {
+				return err
+			}
 			for _, x := range page {
 				acc := directorAccountOf(x, accounts, base, choices[x.Contact.ID], asAt)
 				if acc.InDebit {
 					acc.DebitWarning = director.DebitWarning(inForce)
+				}
+				acc.YearEnd = ye.of(x.Contact.ID)
+				if acc.YearEnd != nil && acc.YearEnd.ConfirmedBy != nil {
+					if err := a.name(ctx, u, acc.YearEnd.ConfirmedBy); err != nil {
+						return err
+					}
 				}
 				out.Body.Items = append(out.Body.Items, acc)
 			}
@@ -377,6 +388,11 @@ func registerDirectors(a *API) {
 				}
 				x.DebitWarning = director.DebitWarning(director.ExemptOn(statuses, asAt))
 			}
+			ye, err := yearEndViewOf(ctx, u, base, asAt)
+			if err != nil {
+				return err
+			}
+			x.YearEnd = ye.of(c.ID)
 			out.Body = MyDirectorAccount{Linked: true, Account: &x}
 			return nil
 		})

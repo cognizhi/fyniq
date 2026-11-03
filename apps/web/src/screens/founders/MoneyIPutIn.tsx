@@ -1,14 +1,55 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { HandCoins, TriangleAlert } from "lucide-react";
-import { api } from "../../api/client";
+import { Fingerprint, HandCoins, TriangleAlert } from "lucide-react";
+import { useState } from "react";
+import { api, newKey } from "../../api/client";
+import { Button } from "../../components/ui/button";
+import { CodeStepUpRequired, stepUp } from "../../stepup";
+import type { ApiProblem } from "../../ui";
 import { Refusal } from "../../components/Refusal";
 import { formatAmount } from "../../format/amount";
 import { date } from "../../format/date";
 import { isZero, sign } from "../../format/decimal";
 import { Icon, problemOf } from "../../ui";
 import { originLabel } from "./data";
-import { owed } from "./DirectorAccounts";
+import { owed, YearEndLine } from "./DirectorAccounts";
+
+// Confirm asks the founder to confirm their balances at the latest financial year end, with their passkey (FR-EQ-12):
+// the API keeps the balances the ledger holds at that end now.
+function Confirm({ yearEnd, onDone }: { yearEnd: string; onDone: (said: string) => void }) {
+  const queries = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const [key] = useState(newKey);
+  const send = () => api.POST("/v1/me/director-account/confirmations", { params: { header: { "Idempotency-Key": key } }, body: { year_end: yearEnd } });
+  const confirm = async () => {
+    setBusy(true);
+    setProblem(null);
+    let out = await send();
+    const code = out.error ? problemOf(out.error).code : "";
+    if (code === "FOUNDER-26" || code === CodeStepUpRequired) {
+      const s = await stepUp();
+      if (!s.ok) {
+        setBusy(false);
+        return setProblem(s.problem ?? { detail: s.cancelled ? "The passkey was cancelled." : "Your browser has no passkey for Fyniq.", fix: "Add a passkey in Preferences › Security, then try again." });
+      }
+      out = await send();
+    }
+    setBusy(false);
+    if (out.error) return setProblem(problemOf(out.error));
+    await queries.invalidateQueries({ queryKey: ["my-director-account"] });
+    onDone(`Confirmed your balances at ${date(yearEnd)}.`);
+  };
+  return (
+    <div className="fy-stack fy-stack--2">
+      {problem && <Refusal problem={problem} title="Your balances were not confirmed" />}
+      <Button variant="primary" size="sm" type="button" onClick={confirm} disabled={busy}>
+        <Icon of={Fingerprint} />
+        {busy ? "Confirming…" : `Confirm my balances at ${date(yearEnd)} with my passkey`}
+      </Button>
+    </div>
+  );
+}
 
 // latest are a founder's movements of the last 90 days, when their roles may read a statement; null otherwise (an
 // Employee's "V (own)" reads their balances only).
@@ -35,6 +76,7 @@ export function MoneyIPutIn() {
     },
   });
   const a = q.data?.account;
+  const [said, setSaid] = useState("");
   const items = useQuery({ queryKey: ["my-director-latest", a?.contact_id], enabled: !!a, queryFn: () => latest(a?.contact_id ?? "", new Date().toISOString().slice(0, 10)) });
   return (
     <div className="fy-page fy-page--narrow fy-enter">
@@ -78,6 +120,13 @@ export function MoneyIPutIn() {
                 In debit
               </span>
               <span className="fy-small">You owe the company. {a.debit_warning ?? "A loan to a director is restricted unless the company is an exempt private company: repay it, or ask your accountant."}</span>
+            </p>
+          )}
+          {a.year_end && <YearEndLine p={a} />}
+          {a.year_end && a.year_end.status !== "confirmed" && <Confirm yearEnd={a.year_end.year_end} onDone={setSaid} />}
+          {said && (
+            <p className="fy-small" role="status">
+              {said}
             </p>
           )}
           <p className="fy-small fy-muted">

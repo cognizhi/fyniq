@@ -3,7 +3,7 @@ key: equity.director-accounts
 title: Director accounts
 mode: expert
 roles: [owner, controller, accountant, bookkeeper, auditor, tax_agent]
-requirements: [FR-EQ-01, FR-EQ-04, FR-EQ-11, FR-EQ-14]
+requirements: [FR-EQ-01, FR-EQ-04, FR-EQ-11, FR-EQ-12, FR-EQ-14]
 ---
 
 # Director accounts
@@ -97,6 +97,20 @@ out does not post, and neither does one that names a person on any other account
 
 When you categorise a bank line to 2500, choose the founder as the line's contact: money in is
 money they lent, and money out is money paid out to them.
+
+## Year-end confirmations
+
+After each financial year ends, every director and shareholder confirms their balances at the
+year's end, in **Money I put in**, with their passkey. Each card says:
+
+- **Confirmed:** the balances at the year's end were confirmed and are still what the books show.
+- **Changed since confirmed:** an entry dated in that year was posted after the confirmation; the
+  person confirms again.
+- **Not confirmed:** nobody has confirmed yet. A director with no member linked cannot confirm:
+  link the member first.
+
+The close of a financial year's last month warns of every director whose balances are not
+confirmed.
 
 ## Read a statement
 

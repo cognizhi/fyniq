@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BadgeDollarSign, Building2, FileDown, Handshake, Link2, ScrollText, Send, Stamp, TriangleAlert, UserRound, Wallet } from "lucide-react";
+import { BadgeDollarSign, Building2, CircleCheck, FileDown, Handshake, Link2, ScrollText, Send, Stamp, TriangleAlert, UserRound, Wallet } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -55,6 +55,35 @@ async function accounts(asAt: string): Promise<{ as_at: string; currency: string
   return { ...head, items };
 }
 
+// YearEndLine says whether the person confirmed their balances at the latest financial year end (FR-EQ-12).
+export function YearEndLine({ p }: { p: DirectorAccount }) {
+  const y = p.year_end;
+  if (!y) return null;
+  if (y.status === "confirmed") {
+    return (
+      <p className="fy-small">
+        <span className="fy-chip fy-chip--good">
+          <Icon of={CircleCheck} />
+          Confirmed
+        </span>{" "}
+        Balances at {date(y.year_end)} confirmed by passkey{y.confirmed_at ? `, ${date(y.confirmed_at)}` : ""}.
+      </p>
+    );
+  }
+  return (
+    <p className="fy-row fy-row--wrap gap-2">
+      <span className="fy-chip fy-chip--warning">
+        <Icon of={TriangleAlert} />
+        {y.status === "changed_since" ? "Changed since confirmed" : "Not confirmed"}
+      </span>
+      <span className="fy-small fy-wrap">
+        {y.status === "changed_since" ? `An entry dated before ${date(y.year_end)} was posted after the confirmation: ` : `Balances at ${date(y.year_end)} are not confirmed: `}
+        {p.member_user_id ? "the person confirms them with a passkey in Money I put in." : "link the member who signs in as them first, then they confirm."}
+      </span>
+    </p>
+  );
+}
+
 function PersonCard({ p, onStatement, onLink, onPay, onFees, mayLink }: { p: DirectorAccount; onStatement: () => void; onLink: () => void; onPay: () => void; onFees: () => void; mayLink: boolean }) {
   const roles = [p.director && "Director", p.shareholder && "Shareholder"].filter(Boolean).join(", ");
   const statement = helpText("director-accounts.statement");
@@ -101,6 +130,7 @@ function PersonCard({ p, onStatement, onLink, onPay, onFees, mayLink }: { p: Dir
           <span className="fy-small fy-wrap">{p.debit_warning ?? "A loan to a director is restricted unless the company is an exempt private company. Ask your accountant."}</span>
         </div>
       )}
+      {p.year_end && <YearEndLine p={p} />}
       {p.pay_choice && (
         <p className="fy-row fy-row--wrap fy-row--between gap-2">
           <span className="fy-small">

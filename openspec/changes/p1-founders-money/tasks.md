@@ -113,8 +113,14 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
   accounts show the status in force (`exempt_status`, "not_recorded" when none) and, on an account in debit, the
   warning in words (`debit_warning`), which Money I put in shows too. C.2 #21 and its re-run on a new status come with
   the checks in task 6.2.
-- [ ] 3.4 Year-end confirmation (D13): `director_confirmation` with a passkey step-up by the linked member, and the
+- [x] 3.4 Year-end confirmation (D13): `director_confirmation` with a passkey step-up by the linked member, and the
   year-end close checklist's item. Tests: confirmed, changed since and unlinked. `// req: FR-EQ-12`
+  Built: `confirmMyDirectorAccount` (migrations 000210 and 000211) keeps the balances held at a year's end, posted at
+  once and append-only; it needs the member linked (FOUNDER-03), a step-up by passkey in the last 5 minutes (FOUNDER-26)
+  and a year that has ended (FOUNDER-24). Each director account shows `year_end` (confirmed, changed since, not
+  confirmed) for the latest year end; Money I put in asks the founder to confirm, running the passkey step-up when
+  needed. The year-end item is a close check, `directors-confirmed` (⚠), at a financial year's last month, naming who
+  must confirm and who has no member linked; C.2 #23 on the checks engine comes in task 6.2.
 
 ## 4. Settlements: repay, keep and waive (slice 4)
 

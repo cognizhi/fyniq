@@ -309,6 +309,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/me/bank-changes/{change_id}/withdraw` (withdrawMyBankChange): Withdraw a change of your bank account from approval
 - `GET /v1/me/bank-details` (getMyBankDetails): Get your bank account for reimbursements
 - `GET /v1/me/director-account` (getMyDirectorAccount): Get your own director account
+- `POST /v1/me/director-account/confirmations` (confirmMyDirectorAccount): Confirm your balances at a year's end
 - `GET /v1/members` (listMembers): List the members
 - `POST /v1/members` (acceptMemberInvitation): Join an organisation with an invitation
 - `GET /v1/members/invitations` (listMemberInvitations): List the pending invitations

@@ -4,7 +4,7 @@ type: task
 title: Director accounts, each founder's statement, and naming the person on 2500 and 2120
 summary: 2500 and 2120 by person; marking directors, linking their member, naming the person on journal lines; statements and their PDF
 sources:
-  - docs/user-guide/director-accounts.md sha256:6dc3ddc6df584a9a9e6bd24fa5dac69cc0066bdd683d15a3633aed9c543863a2
+  - docs/user-guide/director-accounts.md sha256:7f7c765c06f7ab9b62e4b56deed903eee4c975fcb607ceddfe389964702249a2
 data_class: general
 taint: trusted
 status: published
@@ -95,6 +95,16 @@ aliases:
   account. (src: docs/user-guide/director-accounts.md#name-the-person-on-a-journal-or-opening-balance)
 - A bank line categorised to 2500 takes the founder as its contact: money in is lent, money out is
   paid out to them. (src: docs/user-guide/director-accounts.md#name-the-person-on-a-journal-or-opening-balance)
+
+## Year-end confirmations
+
+- After each financial year ends, every director and shareholder confirms their balances at the
+  year's end in **Money I put in** with their passkey; a card says **Confirmed**, **Changed since
+  confirmed** (an entry dated in that year posted after it) or **Not confirmed**, and a director
+  with no member linked cannot confirm until the member is linked.
+  (src: docs/user-guide/director-accounts.md#year-end-confirmations)
+- The close of a financial year's last month warns of every director not confirmed.
+  (src: docs/user-guide/director-accounts.md#year-end-confirmations)
 
 ## Statements and balance confirmations
 

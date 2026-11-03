@@ -4900,6 +4900,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/director-account/confirmations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm your balances at a year's end
+         * @description Confirms, as the director or shareholder you sign in as, your balances on the director's accounts at a financial year's end (FR-EQ-12): the balances the ledger holds at that end now are kept with the confirmation, which is append-only. Only a member linked to a director or shareholder confirms (FOUNDER-03), stepped up with a passkey in the last 5 minutes (FOUNDER-26), for a year that has ended (FOUNDER-24). An entry dated in the year posted after it shows the confirmation as changed since. Side effects: the confirmation, its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["confirmMyDirectorAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/members": {
         parameters: {
             query?: never;
@@ -13531,6 +13551,30 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        ConfirmationRequest: {
+            /**
+             * Format: date
+             * @description The financial year's last day: the year must have ended.
+             * @example 2025-12-31
+             */
+            year_end: string;
+        };
+        ConfirmedBalances: {
+            /** @description The balances confirmed, one per director's account, as the ledger holds them: negative is owed to the person. */
+            balances: components["schemas"]["DirectorBalance"][];
+            /**
+             * Format: uuid
+             * @description The confirmation's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4ff1
+             */
+            id: string;
+            /**
+             * Format: date
+             * @description The year's end confirmed.
+             * @example 2025-12-31
+             */
+            year_end: string;
+        };
         Connector: {
             /** @description What the release's manifest asks beyond the consent. */
             added: components["schemas"]["ConsentChange"];
@@ -14928,6 +14972,8 @@ export interface components {
              * @example true
              */
             shareholder: boolean;
+            /** @description Their confirmation of the latest financial year end on or before the balances' day (FR-EQ-12); absent until a year has ended. */
+            year_end?: components["schemas"]["YearEndConfirmation"];
         };
         DirectorAccountList: {
             /**
@@ -26451,6 +26497,28 @@ export interface components {
              * @example 2026-03-15
              */
             starts_on: string;
+        };
+        YearEndConfirmation: {
+            /**
+             * Format: date-time
+             * @description When the latest confirmation was made.
+             * @example 2026-01-09T10:15:00Z
+             */
+            confirmed_at?: string;
+            /** @description Who made it: the member who signs in as the person. */
+            confirmed_by?: components["schemas"]["Person"];
+            /**
+             * @description confirmed: the latest confirmation shows the balances held at the year's end now; changed_since: it shows others, as an entry dated in the year posted after it; not_confirmed: none (⚠).
+             * @example confirmed
+             * @enum {string}
+             */
+            status: "confirmed" | "changed_since" | "not_confirmed";
+            /**
+             * Format: date
+             * @description The latest financial year end on or before the balances' day.
+             * @example 2025-12-31
+             */
+            year_end: string;
         };
     };
     responses: never;
@@ -65164,6 +65232,151 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    confirmMyDirectorAccount: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmedBalances"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmedBalances"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account; `FOUNDER-26` A passkey step-up is needed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-24` The year-end confirmation does not fit. */
             422: {
                 headers: {
                     [name: string]: unknown;

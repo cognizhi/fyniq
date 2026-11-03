@@ -522,6 +522,9 @@ const (
 	// DocumentExemptStatus is the organisation's exempt-private-company status from a day on, recorded with its evidence
 	// (the ACRA business profile) and posting no entry; append-only, a later one supersedes it (FR-EQ-11; design D9).
 	DocumentExemptStatus DocumentType = "exempt_status"
+	// DocumentDirectorConfirmation is a director's or shareholder's confirmation of their balances at a financial year's
+	// end, made by the member who signs in as them with a passkey; posting no entry, append-only (FR-EQ-12; design D13).
+	DocumentDirectorConfirmation DocumentType = "director_confirmation"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -699,12 +702,12 @@ const (
 	// CodePayee: a vendor's bank account belongs to a draft change of its bank details, comes into force only with the
 	// change approved by a second person, goes out of force only when a later change is, and is never changed or
 	// deleted otherwise (FR-CT-03, SOD-1, FM-1).
-	CodePayee          = "STORAGE-PAYEE-01"
+	CodePayee = "STORAGE-PAYEE-01"
 	// CodeBatch: a batch is released once, approved and at its current version, and never cancelled once released; a
 	// release's payments are posted payments of its account and date; neither ever changes (FR-BNK-12).
 	CodeBatch = "STORAGE-BATCH-01"
 	// CodeBatchHeld: a bill or claim in an approved, unreleased batch is paid by the batch, not by hand (FR-BNK-12).
-	CodeBatchHeld = "STORAGE-BATCH-02"
+	CodeBatchHeld      = "STORAGE-BATCH-02"
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
 	CodeBanner         = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends

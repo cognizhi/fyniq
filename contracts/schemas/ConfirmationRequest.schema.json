@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "year_end": {
+      "description": "The financial year's last day: the year must have ended.",
+      "examples": [
+        "2025-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "year_end"
+  ],
+  "title": "ConfirmationRequest",
+  "type": "object"
+}

@@ -72,6 +72,12 @@ is linked to you, ask an Owner to link your contact to you in Accounting › Dir
 another person approves the link. If you owe the company instead, it says **In debit**: repay it,
 or ask your accountant.
 
+## Confirm your balances at the year end
+
+After each financial year ends, **Money I put in** asks you to confirm what the company owed you,
+or you owed it, at the year's end. Select **Confirm my balances … with my passkey** and confirm it's
+you with your passkey. If an entry for that year is posted later, it asks you to confirm again.
+
 ## Common problems
 
 | Message | Fix |
