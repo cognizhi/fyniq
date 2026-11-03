@@ -11015,7 +11015,7 @@ Takes a file off a draft change of your own bank account (FR-DOC-07). Once it is
 
 The files attached to a cost before the books start, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.
 
-- **Permission:** View on Evidence: add, supersede (rev 0.3). Needs the right to read every director's account as well.
+- **Permission:** View on Director accounts, settlements, share issues (rev 0.3)
 - **Parameters:**
   - `cost_id` (path, required): The cost's ID.
   - `page_size` (query): How many items per page, up to 500.
@@ -11036,7 +11036,7 @@ The files attached to a cost before the books start, oldest first, removed ones 
 
 Attaches a file, such as the receipt or invoice the person paid, to a cost that needs a decision (FR-EQ-03, FR-DOC-05), as multipart/form-data: the decision needs one. The file's type is decided from its content; it is scanned for malware and its image metadata, such as location, is stripped before it is stored (FR-DOC-08). Side effects: the file in the staging store, its evidence row and its audit event with the SHA-256 of the file as received and as stored (FR-DOC-07); once the cost is decided its files are committed to the retention-locked store (FR-DOC-13). An Owner or the Controller attaches. Needs If-Match with the cost's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing.
 
-- **Permission:** Create on Evidence: add, supersede (rev 0.3). Needs the right to read every director's account as well; only while the cost needs a decision. AI and MCP clients only propose attaching a document (doc.attach).
+- **Permission:** Approve on Director accounts, settlements, share issues (rev 0.3)
 - **Parameters:**
   - `cost_id` (path, required): The cost's ID.
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
@@ -11066,7 +11066,7 @@ Attaches a file, such as the receipt or invoice the person paid, to a cost that 
 
 Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.
 
-- **Permission:** View on Evidence: add, supersede (rev 0.3). Needs the right to read every director's account as well.
+- **Permission:** View on Director accounts, settlements, share issues (rev 0.3)
 - **Parameters:**
   - `cost_id` (path, required): The cost's ID.
   - `evidence_id` (path, required): The file's ID.
@@ -11086,7 +11086,7 @@ Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-
 
 Takes a file off a cost that still needs the accountant's decision (FR-DOC-07). Once decided its evidence is append-only, and the database refuses. The row stays, marked removed, for the audit trail; the staged file is deleted by the next sweep. Side effects: the removal and its audit event. Needs If-Match with the file's ETag. Prefer: return=preview checks it and saves nothing.
 
-- **Permission:** Create on Evidence: add, supersede (rev 0.3). Needs the right to read every director's account as well; only while the cost needs a decision (FR-DOC-07).
+- **Permission:** Approve on Director accounts, settlements, share issues (rev 0.3). Only while the cost needs a decision (FR-DOC-07).
 - **Parameters:**
   - `cost_id` (path, required): The cost's ID.
   - `evidence_id` (path, required): The file's ID.

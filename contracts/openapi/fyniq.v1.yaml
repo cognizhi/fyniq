@@ -22055,6 +22055,7 @@ components:
             - fixed_asset
             - asset_disposal
             - payment_batch
+            - pre_incorporation_cost
           examples:
             - journal
           type: string
@@ -84968,6 +84969,7 @@ paths:
               - fixed_asset
               - asset_disposal
               - payment_batch
+              - pre_incorporation_cost
             examples:
               - journal
             type: string
@@ -85091,6 +85093,7 @@ paths:
               - fixed_asset
               - asset_disposal
               - payment_batch
+              - pre_incorporation_cost
             examples:
               - journal
             type: string
@@ -91064,8 +91067,7 @@ paths:
         - API-RATE-01
         - FOUNDER-05
       x-fyniq-permission:
-        capability: "Evidence: add, supersede (rev 0.3)"
-        note: Needs the right to read every director's account as well.
+        capability: Director accounts, settlements, share issues (rev 0.3)
         right: V
     post:
       description: "Attaches a file, such as the receipt or invoice the person paid, to a cost that needs a decision (FR-EQ-03, FR-DOC-05), as multipart/form-data: the decision needs one. The file's type is decided from its content; it is scanned for malware and its image metadata, such as location, is stripped before it is stored (FR-DOC-08). Side effects: the file in the staging store, its evidence row and its audit event with the SHA-256 of the file as received and as stored (FR-DOC-07); once the cost is decided its files are committed to the retention-locked store (FR-DOC-13). An Owner or the Controller attaches. Needs If-Match with the cost's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing."
@@ -91365,9 +91367,8 @@ paths:
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
       x-fyniq-permission:
-        capability: "Evidence: add, supersede (rev 0.3)"
-        note: Needs the right to read every director's account as well; only while the cost needs a decision. AI and MCP clients only propose attaching a document (doc.attach).
-        right: C
+        capability: Director accounts, settlements, share issues (rev 0.3)
+        right: A
   /v1/pre-incorporation-costs/{cost_id}/evidence/{evidence_id}:
     delete:
       description: "Takes a file off a cost that still needs the accountant's decision (FR-DOC-07). Once decided its evidence is append-only, and the database refuses. The row stays, marked removed, for the audit trail; the staged file is deleted by the next sweep. Side effects: the removal and its audit event. Needs If-Match with the file's ETag. Prefer: return=preview checks it and saves nothing."
@@ -91549,9 +91550,9 @@ paths:
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
       x-fyniq-permission:
-        capability: "Evidence: add, supersede (rev 0.3)"
-        note: Needs the right to read every director's account as well; only while the cost needs a decision (FR-DOC-07).
-        right: C
+        capability: Director accounts, settlements, share issues (rev 0.3)
+        note: Only while the cost needs a decision (FR-DOC-07).
+        right: A
     get:
       description: Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.
       operationId: getPreIncorporationCostEvidence
@@ -91670,8 +91671,7 @@ paths:
         - API-RATE-01
         - FOUNDER-05
       x-fyniq-permission:
-        capability: "Evidence: add, supersede (rev 0.3)"
-        note: Needs the right to read every director's account as well.
+        capability: Director accounts, settlements, share issues (rev 0.3)
         right: V
   /v1/public/document:
     get:

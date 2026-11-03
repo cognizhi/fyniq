@@ -8,7 +8,7 @@ total is +400.00: she owes the company S$400.00.
 """
 
 import pytest
-from builders import journal, line, scenario
+from builders import P1_SETTINGS, journal, line, p1_post, scenario
 
 from oracle.ledger import Ledger
 from oracle.scenario import scenario_from_json
@@ -87,3 +87,35 @@ def test_a_line_without_its_person_or_a_person_elsewhere_is_rejected(lines, reas
     assert result["rejected"] == ["JNL-0001"]
     assert result["entries"] == [] and "people" not in result
     assert ledger.reasons == [("JNL-0001", reason)]
+
+
+def _cost(**more) -> dict:
+    doc = {"type": "pre_incorporation_cost", "id": "PIC-9", "version": 1, "date": "2026-01-01", "incurred": "2025-12-01",
+           "person": "P0001", "account": "6010", "gross": "109.00", "gst": "9.00"}
+    doc.update(more)
+    return doc
+
+
+# req: FR-EQ-03
+@pytest.mark.parametrize(
+    ("change", "settings", "reason"),
+    [
+        ({}, {}, "no-books-start"),
+        ({"incurred": "2026-01-01"}, {"books_start": "2026-01-01"}, "not-before-books-start"),
+        ({"date": "2025-12-31"}, {"books_start": "2026-01-01"}, "posts-before-books-start"),
+        ({"person": "P0009"}, {"books_start": "2026-01-01"}, "not-a-director"),
+        ({"account": "2500"}, {"books_start": "2026-01-01"}, "account-not-allowed"),
+        ({"account": "1010"}, {"books_start": "2026-01-01"}, "account-not-allowed"),
+        ({"account": "2200"}, {"books_start": "2026-01-01"}, "account-not-allowed"),
+        ({"gst": "109.00"}, {"books_start": "2026-01-01"}, "gst-not-less-than-amount"),
+        ({"gross": "0.00"}, {"books_start": "2026-01-01"}, "zero-amount"),
+        ({"gst": "0.00", "claim_gst": True}, {"books_start": "2026-01-01"}, "gst-not-claimable"),
+        ({"claim_gst": True}, {"books_start": "2026-01-01", "gst": {"registered_from": "2026-02-01", "rates": [{"from": "2024-01-01", "percent": "9"}]}},
+         "gst-not-claimable"),
+    ],
+)
+def test_a_cost_before_the_books_start_that_breaks_a_rule_is_rejected(change, settings, reason):
+    # D7: a cost paid before the books start, posted on or after it, by a director or shareholder, to an account that is
+    # not a director's account, a money account or GST control; its GST claimed only while registered and when shown.
+    _, ledger = p1_post(_cost(**change), settings={**P1_SETTINGS, **settings})
+    assert ledger.reasons == [("PIC-9", reason)]

@@ -7,7 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
-from builders import bank_line, journal, line, p1_scenario, part, scenario
+from builders import P1_SETTINGS, bank_line, journal, line, p1_scenario, part, scenario
 from hypothesis import given
 from jsonschema import Draft202012Validator
 
@@ -66,7 +66,8 @@ P1_EXAMPLES = [json.loads(block) for block in _BLOCKS[2:]]
 def test_the_p1_examples_in_the_readme_are_documents_that_post_in_order():
     # A later example may settle an earlier one (the payment pays the bill), so they post together. A
     # registered asset posts no entry of its own, only its depreciation.
-    result = Ledger(scenario_from_json(p1_scenario(*P1_EXAMPLES))).result()
+    # The cost before the books start needs a books start before its date (FR-EQ-03); the asset starts after it.
+    result = Ledger(scenario_from_json(p1_scenario(*P1_EXAMPLES, settings={**P1_SETTINGS, "books_start": "2026-01-01"}))).result()
     assert result["rejected"] == []
     assert [e["document"] for e in result["entries"] if e["kind"] == "post"] == [
         d["id"] for d in P1_EXAMPLES if d["type"] != "fixed_asset"]
