@@ -77,7 +77,7 @@ export function MoneyIPutIn() {
                 <Icon of={TriangleAlert} />
                 In debit
               </span>
-              <span className="fy-small">You owe the company. A loan to a director is restricted unless the company is an exempt private company: repay it, or ask your accountant.</span>
+              <span className="fy-small">You owe the company. {a.debit_warning ?? "A loan to a director is restricted unless the company is an exempt private company: repay it, or ask your accountant."}</span>
             </p>
           )}
           <p className="fy-small fy-muted">

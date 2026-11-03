@@ -17,6 +17,10 @@
       ],
       "type": "string"
     },
+    "exempt_status": {
+      "$ref": "ExemptStatusInForce.schema.json",
+      "description": "The organisation's exempt-private-company status in force on the day the balances are at (FR-EQ-11)."
+    },
     "items": {
       "description": "The contacts marked director or shareholder on this page, in the order they were added.",
       "items": {
@@ -43,7 +47,8 @@
     "as_at",
     "currency",
     "items",
-    "unkeyed"
+    "unkeyed",
+    "exempt_status"
   ],
   "title": "DirectorAccountList",
   "type": "object"

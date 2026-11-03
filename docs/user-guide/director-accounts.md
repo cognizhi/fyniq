@@ -22,9 +22,8 @@ personally, pay deferred, director's fee, paid out to them, or other. That is ho
 balance adds up to the accounts, and how the accountant tells a loan from unpaid pay, which are
 taxed differently.
 
-A person whose amounts add up to a debit owes the company. The card says **Account in debit**: a
-loan to a director is restricted unless the company is an exempt private company, so ask your
-accountant.
+A person whose amounts add up to a debit owes the company. The card says **Account in debit**,
+and what that means depends on the company's exempt-private-company status (below).
 
 ## Mark the founders' contacts
 
@@ -40,6 +39,27 @@ person who holds the approval right on director accounts approves it, never the 
 linked. Once linked, the member sees their own account in **Money I put in**, and never approves
 their own settlement. A member signs in as one director or shareholder at most. To unlink them,
 choose **Nobody**.
+
+## Record the exempt private company status
+
+An exempt private company has no corporate shareholder and at most 20 members. The top of the page
+says the status in force. To record it:
+
+1. Select **Record exempt status**, then the day it applies from and whether the company is
+   exempt.
+2. Attach the ACRA business profile that shows it.
+3. Select **Record the status**.
+
+An Owner or the Controller records it. A recorded status never changes: when it changes, for
+example when a corporate investor joins, record a new one from that day.
+
+When a director's account is in debit:
+
+- **Exempt:** a loan to a director is allowed, and it is disclosed in the financial statements and
+  to investors.
+- **Not exempt, or no status recorded:** section 162 of the Companies Act bans loans to directors.
+  Advances for company expenses are allowed when approved in general meeting, or repaid within 6
+  months after the next AGM. Repay it, or ask your accountant.
 
 ## Record a pay choice
 
@@ -101,6 +121,8 @@ Select **PDF for confirmation** to download the statement as a PDF to send to th
 | The pay choice has no signed decision attached | Attach the board minute or resolution, then record it |
 | The pay choice is recorded, so it changes no more | Record a new choice from the month it changes |
 | The fee has no shareholders' resolution attached | Attach the resolution or the minutes, then ask for approval |
+| The status has no evidence attached | Attach the ACRA business profile, then record it |
+| The status is recorded, so it changes no more | Record a new status from the day it changes |
 | The fee is paid to you, so another person approves it | Ask another Owner or the Controller to approve it |
 
 ## Related
