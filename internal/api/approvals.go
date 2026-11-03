@@ -59,9 +59,9 @@ type ApprovalSignature struct {
 // and its signatures.
 type Approval struct {
 	ID              string              `json:"id" format:"uuid" doc:"The request's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
-	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit,recurring_invoice,connector,bank_rule,expense_claim,claim_reimbursement,cash_advance,asset_disposal,fixed_asset,payee_bank_change,claimant_bank_change,payment_batch" doc:"What it changes." example:"organisation_setting"`
+	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit,recurring_invoice,connector,bank_rule,expense_claim,claim_reimbursement,cash_advance,asset_disposal,fixed_asset,payee_bank_change,claimant_bank_change,payment_batch,contact_member_link" doc:"What it changes." example:"organisation_setting"`
 	ObjectKey       string              `json:"object_key" doc:"Which one: the setting's key, the membership's ID, the invitation's code hash, the object type whose approval policy changes, the statutory pack version, or organisation for the team mode." example:"bank.tolerance_base"`
-	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member.remove,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void,recurring_invoice.approve,connector.change,bank_rule.auto_apply,expense_claim.post,claim_reimbursement.void,cash_advance.void,asset_disposal.void,fixed_asset.void,payee_bank_change.approve,claimant_bank_change.approve,payment_batch.approve,payment_batch.reapprove" doc:"What executes on its approval." example:"organisation_setting.change"`
+	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member.remove,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void,recurring_invoice.approve,connector.change,bank_rule.auto_apply,expense_claim.post,claim_reimbursement.void,cash_advance.void,asset_disposal.void,fixed_asset.void,payee_bank_change.approve,claimant_bank_change.approve,payment_batch.approve,payment_batch.reapprove,contact_member_link.change" doc:"What executes on its approval." example:"organisation_setting.change"`
 	Summary         string              `json:"summary" doc:"What it does, in a sentence." example:"Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20"`
 	Status          string              `json:"status" enum:"pending,approved,rejected,void,expired" doc:"pending waits for approval; approved executed it; void means its record, a dependency, its approval policy or the team mode changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days." example:"pending"`
 	StatusReason    string              `json:"status_reason,omitempty" doc:"Why it was rejected or voided." example:"the setting changed after the request"`
@@ -684,6 +684,15 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		for k, v := range deps {
 			e.Dependencies[k] = v
 		}
+	case approval.ObjectContactMemberLink: // the contact's version and its member now (FR-EQ-01)
+		version, deps, err := memberLinkDependencies(ctx, u, c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = version
+		for k, v := range deps {
+			e.Dependencies[k] = v
+		}
 	case approval.ObjectPayeeBankChange, approval.ObjectClaimantBankChange: // the change's version and status, and the change it replaces (FR-CT-03, FR-AP-22)
 		version, deps, err := a.payeeDependencies(ctx, u, c.ObjectKey)
 		if err != nil {
@@ -1159,6 +1168,8 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 		return nil
 	case approval.OpClaimantBankChange: // FR-AP-22, FM-1: never the person whose account it is, nor whoever prepared it
 		return claimantBankExecutable(ctx, u, r, signer)
+	case approval.OpContactMemberLink: // FR-EQ-01, FM-1: never the member linked or unlinked
+		return memberLinkExecutable(s, signer)
 	case approval.OpBatchApprove, approval.OpBatchReapprove: // FM-1: whoever prepared the batch never approves it
 		return batchExecutable(ctx, u, r, signer)
 	case approval.OpBillPost: // SOD-3: whoever prepared the bill never approves its post
@@ -1552,6 +1563,8 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 	case approval.OpClaimantBankChange: // FR-AP-22: the person's account in force, the one it replaces retired
 		_, err := a.approveClaimantBankChange(ctx, u, r)
 		return err
+	case approval.OpContactMemberLink: // FR-EQ-01: the member who signs in as the director or shareholder, or none
+		return executeMemberLink(ctx, u, r, s)
 	case approval.OpBatchApprove, approval.OpBatchReapprove: // FR-BNK-12: the batch numbered and approved, or approved again (G4-055)
 		return a.executeBatchApproval(ctx, u, r)
 	case approval.OpClaimPost: // FR-AP-07: the approved claim posts, as its last approver
@@ -1748,7 +1761,8 @@ func registerApprovals(a *API) {
 			"approval and its audit event; on the last step, the request approved, the change itself and their audit events, which name the " +
 			"approval. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, append([]string{CodeNotFound, CodeSessionRequired, CodeStepUpRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused,
-		CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale, CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion, storage.CodeMembership},
+		CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale, CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion, storage.CodeMembership,
+		storage.CodeParty, CodeOwnLink},
 		append(append(append(append(append(append(append(locks, ApprovalCodes...), MemberCodes...), SettingCodes...), PolicyCodes...), PackCodes...), PasskeyCodes...),
 			append(append(append(append(JournalApprovalCodes(), PayeeApprovalCodes()...), BillApprovalCodes()...), PaymentApprovalCodes()...), append(append(append(ApplicationApprovalCodes(), RefundApprovalCodes()...), OrderApprovalCodes()...), append(append(append(TemplateApprovalCodes(), InvoiceApprovalCodes()...), ReceiptApprovalCodes()...), append(append(append(WriteOffApprovalCodes(), CustomerApplicationApprovalCodes()...), CustomerRefundApprovalCodes()...), append(append(append(DepositApprovalCodes(), ClaimApprovalCodes()...), ReimbursementApprovalCodes()...), AdvanceApprovalCodes()...)...)...)...)...)...)...),
 		func(ctx context.Context, in *approvalDecideInput) (*approvalWriteOutput, error) {

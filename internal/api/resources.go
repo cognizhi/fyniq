@@ -237,6 +237,8 @@ type JournalLineDraft struct {
 	FXRate       string `json:"fx_rate,omitempty" pattern:"^(0|[1-9][0-9]{0,9})(\\.[0-9]{1,10})?$" doc:"Only for a line not in the base currency: base currency per unit of the line's currency, the document's own rate. Left out, the line takes the rate the cascade finds for the journal's date when its checks run and when it posts, with that rate's source, as lookupFxRate shows it; with none anywhere the line has FX-01 (ENG-40; PRD-001 rev 0.71). A base-currency line takes none; posting refuses one (ENG-03)." example:"1.3472"`
 	FXRateSource string `json:"fx_rate_source,omitempty" maxLength:"100" doc:"Where the rate came from. A rate you send is the document's, so its source is document, set for you when you leave it out; any other source is refused (ENG-03, ENG-40)." example:"document"`
 	Description  string `json:"description,omitempty" maxLength:"500" doc:"What the line is for." example:"October office rent"`
+	PartyID      string `json:"party_id,omitempty" format:"uuid" doc:"Only on a director's account (2500, 2120): the director or shareholder the amount belongs to, a contact marked one. Required there and refused on any other account (FR-EQ-01, B.7; LEDGER-41)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"`
+	Origin       string `json:"origin,omitempty" enum:"lent,paid_personally,pay,fee,paid_out,other" doc:"Only on a director's account: where the amount came from, which decides its tax and accounting result (FR-EQ-01). Required there and refused elsewhere (LEDGER-41)." example:"lent"`
 }
 
 // RateSourceDocument is the source of a rate typed on the document (ENG-40).
@@ -438,6 +440,7 @@ type EntryLine struct {
 	FXRateSource string `json:"fx_rate_source" doc:"Where the rate came from." example:"base"`
 	BaseAmount   Money  `json:"base_amount" doc:"In the base currency, computed once at posting (RND-FX)."`
 	Description  string `json:"description,omitempty" doc:"What the line is for." example:"October office rent"`
+	PartyID      string `json:"party_id,omitempty" format:"uuid" doc:"On a director's account only: the director or shareholder the amount belongs to (FR-EQ-01, B.7)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"`
 }
 
 // Entry is a posted journal entry: append-only, corrected only by reversal.
@@ -477,9 +480,29 @@ func linesOut(lines []journal.SavedLine) []JournalLineDraft {
 	for _, l := range lines {
 		out = append(out, JournalLineDraft{AccountID: l.AccountID.String(),
 			Amount: Money{Amount: l.Amount.String(), Currency: l.Amount.Currency().Code},
-			FXRate: l.FXRate, FXRateSource: l.FXRateSource, Description: l.Description})
+			FXRate: l.FXRate, FXRateSource: l.FXRateSource, Description: l.Description, PartyID: idOrEmpty(l.PartyID), Origin: l.Origin})
 	}
 	return out
+}
+
+// idOrEmpty is an optional ID as the API shows it: empty when there is none.
+func idOrEmpty(id *uuid.UUID) string {
+	if id == nil {
+		return ""
+	}
+	return id.String()
+}
+
+// partyOf reads a line's person (FR-EQ-01): uuid.Nil when none was sent.
+func partyOf(s, field string) (uuid.UUID, *FieldProblem) {
+	if s == "" {
+		return uuid.Nil, nil
+	}
+	id, err := uuid.Parse(s)
+	if err != nil {
+		return uuid.Nil, &FieldProblem{Code: CodeInvalid, Field: field, Message: "is not a contact ID", Fix: "Send the ID of the director or shareholder"}
+	}
+	return id, nil
 }
 
 func journalETag(j Journal) string { return etag(j.Version, j.Status) }
@@ -493,7 +516,8 @@ func entryOf(e storage.Entry) Entry {
 	}
 	for _, l := range e.Lines {
 		out.Lines = append(out.Lines, EntryLine{LineNo: l.LineNo, AccountID: l.AccountID.String(), Amount: moneyOf(l.Amount, l.Currency),
-			FXRate: trimDecimal(string(l.FXRate)), FXRateSource: l.FXRateSource, BaseAmount: moneyOf(l.BaseAmount, l.BaseCurrency), Description: l.Description})
+			FXRate: trimDecimal(string(l.FXRate)), FXRateSource: l.FXRateSource, BaseAmount: moneyOf(l.BaseAmount, l.BaseCurrency), Description: l.Description,
+			PartyID: idOrEmpty(l.PartyID)})
 	}
 	return out
 }
@@ -524,7 +548,12 @@ func draftOf(in JournalDraft, base money.Currency) (journal.Draft, error) {
 		if err != nil {
 			fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("account_id"), Message: "is not an ID", Fix: "Send the account's ID"})
 		}
-		line := ledger.JournalLine{AccountID: id, Description: l.Description}
+		line := ledger.JournalLine{AccountID: id, Description: l.Description, Origin: l.Origin}
+		party, fp := partyOf(l.PartyID, at("party_id"))
+		if fp != nil {
+			fields = append(fields, *fp)
+		}
+		line.Party = party
 		cur, err := money.Lookup(l.Amount.Currency)
 		if err != nil {
 			fields = append(fields, FieldProblem{Code: money.CodeCurrency, Field: at("amount.currency"), Message: "is not a currency Fyniq knows",

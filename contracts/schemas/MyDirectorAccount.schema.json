@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account": {
+      "$ref": "DirectorAccount.schema.json",
+      "description": "Their account, when linked."
+    },
+    "linked": {
+      "description": "A director or shareholder is linked to you (linkContactMember); false: Money I put in has nothing to show.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "linked"
+  ],
+  "title": "MyDirectorAccount",
+  "type": "object"
+}

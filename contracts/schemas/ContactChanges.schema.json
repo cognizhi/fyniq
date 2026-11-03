@@ -67,6 +67,13 @@
       ],
       "type": "string"
     },
+    "director": {
+      "description": "A director. A contact with amounts on a director account stays a director or shareholder (STORAGE-PARTY-01).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
     "discount_days": {
       "description": "Its days, 1 to 365; -1 clears them.",
       "examples": [
@@ -121,6 +128,13 @@
       ],
       "maxLength": 254,
       "type": "string"
+    },
+    "shareholder": {
+      "description": "A shareholder.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
     },
     "tax_residence": {
       "description": "Where it is resident for tax, when that is not its country (FR-AP-19); \"\" clears it.",

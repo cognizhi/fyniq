@@ -1365,6 +1365,7 @@ components:
             - payee_bank_change
             - claimant_bank_change
             - payment_batch
+            - contact_member_link
           examples:
             - organisation_setting
           type: string
@@ -1413,6 +1414,7 @@ components:
             - claimant_bank_change.approve
             - payment_batch.approve
             - payment_batch.reapprove
+            - contact_member_link.change
           examples:
             - organisation_setting.change
           type: string
@@ -1644,6 +1646,7 @@ components:
             - payee_bank_change
             - claimant_bank_change
             - payment_batch
+            - contact_member_link
           examples:
             - organisation_setting
           type: string
@@ -1749,6 +1752,7 @@ components:
             - payee_bank_change
             - claimant_bank_change
             - payment_batch
+            - contact_member_link
           examples:
             - organisation_setting
           type: string
@@ -7746,6 +7750,11 @@ components:
           examples:
             - SR
           type: string
+        director:
+          description: "A director of the company: they hold a director account on 2500 and 2120 (FR-EQ-01; PRD-001 rev 0.167)."
+          examples:
+            - false
+          type: boolean
         discount_days:
           description: The days of its early-payment discount.
           examples:
@@ -7767,6 +7776,12 @@ components:
           description: Its legal name.
           examples:
             - Northwind Analytics Pte. Ltd.
+          type: string
+        member_user_id:
+          description: "For a director or shareholder, the member who signs in as them: they see their own account (Money I put in), keep a claim as a loan, are repaid to their own approved bank account and never approve their own settlement (FR-EQ-01, FM-9). It changes only by linkContactMember, another person's approval."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
           type: string
         payment_terms_days:
           description: Days until its documents fall due.
@@ -7796,6 +7811,11 @@ components:
           examples:
             - payments@northwind.example
           type: string
+        shareholder:
+          description: "A shareholder: they hold a director account too, for money they lend the company (FR-EQ-01)."
+          examples:
+            - false
+          type: boolean
         tax_residence:
           description: Where it is resident for tax, ISO 3166 two-letter code, when that is not its country (FR-AP-19). A vendor resident outside Singapore (this, else its country) has its bills record the nature of the payment, and the tax agent decides whether tax is withheld.
           examples:
@@ -7822,6 +7842,8 @@ components:
         - legal_name
         - customer
         - vendor
+        - director
+        - shareholder
         - active
         - version
         - possible_duplicates
@@ -7876,6 +7898,11 @@ components:
           examples:
             - SR
           type: string
+        director:
+          description: A director. A contact with amounts on a director account stays a director or shareholder (STORAGE-PARTY-01).
+          examples:
+            - true
+          type: boolean
         discount_days:
           description: Its days, 1 to 365; -1 clears them.
           examples:
@@ -7917,6 +7944,11 @@ components:
             - payments@northwind.example
           maxLength: 254
           type: string
+        shareholder:
+          description: A shareholder.
+          examples:
+            - true
+          type: boolean
         tax_residence:
           description: Where it is resident for tax, when that is not its country (FR-AP-19); "" clears it.
           examples:
@@ -7979,6 +8011,11 @@ components:
           examples:
             - SR
           type: string
+        director:
+          description: A director of the company, who holds a director account (FR-EQ-01).
+          examples:
+            - false
+          type: boolean
         discount_days:
           description: Its days, 1 to 365, with discount_percent.
           examples:
@@ -8020,6 +8057,11 @@ components:
             - payments@northwind.example
           maxLength: 254
           type: string
+        shareholder:
+          description: A shareholder, who holds a director account too (FR-EQ-01).
+          examples:
+            - false
+          type: boolean
         tax_residence:
           description: Where it is resident for tax, ISO 3166 two-letter code, when that is not its country (FR-AP-19).
           examples:
@@ -8032,7 +8074,7 @@ components:
           maxLength: 30
           type: string
         vendor:
-          description: A vendor; at least one of customer and vendor.
+          description: A vendor; at least one of customer, vendor, director and shareholder.
           examples:
             - false
           type: boolean
@@ -9148,6 +9190,310 @@ components:
       required:
         - ended
       type: object
+    DirectorAccount:
+      additionalProperties: false
+      properties:
+        active:
+          description: The contact is active.
+          examples:
+            - true
+          type: boolean
+        balances:
+          description: One per director's account of the chart, in code order.
+          items:
+            $ref: "#/components/schemas/DirectorBalance"
+          type:
+            - array
+            - "null"
+        contact_id:
+          description: The person's contact.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65
+          format: uuid
+          type: string
+        director:
+          description: A director.
+          examples:
+            - true
+          type: boolean
+        in_debit:
+          description: "The net is a debit: the person owes the company (FR-EQ-11)."
+          examples:
+            - false
+          type: boolean
+        legal_name:
+          description: Their name.
+          examples:
+            - Mei Lin Tan
+          type: string
+        member_user_id:
+          description: The member who signs in as them, when linked (linkContactMember).
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+        net:
+          $ref: "#/components/schemas/Money"
+          description: "Their balances together, as the ledger holds them: negative is owed to the person; positive means the person owes the company, which the balance sheet shows under 1250 Staff & director advances (FR-EQ-11)."
+        shareholder:
+          description: A shareholder.
+          examples:
+            - true
+          type: boolean
+      required:
+        - contact_id
+        - legal_name
+        - director
+        - shareholder
+        - active
+        - balances
+        - net
+        - in_debit
+      type: object
+    DirectorAccountList:
+      additionalProperties: false
+      properties:
+        as_at:
+          description: The day the balances are at, inclusive.
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+        currency:
+          description: The base currency the balances are in.
+          examples:
+            - SGD
+          type: string
+        items:
+          description: The contacts marked director or shareholder on this page, in the order they were added.
+          items:
+            $ref: "#/components/schemas/DirectorAccount"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTI4ZjZlIn0
+          type: string
+        unkeyed:
+          $ref: "#/components/schemas/Money"
+          description: "What the director's accounts hold that names no person: zero, but for lines posted before the accounts named their person, which the period close names (INV-07)."
+      required:
+        - as_at
+        - currency
+        - items
+        - unkeyed
+      type: object
+    DirectorBalance:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: The director's account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+          format: uuid
+          type: string
+        balance:
+          $ref: "#/components/schemas/Money"
+          description: "In the base currency, as the ledger holds it: negative (a credit) is what the company owes the person, positive what they owe it."
+        code:
+          description: Its code.
+          examples:
+            - "2500"
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Loan from director / shareholder
+          type: string
+        role:
+          description: director-loan for 2500, money lent and costs paid personally; deferred-remuneration for 2120, pay and fees not yet paid (B.7).
+          enum:
+            - director-loan
+            - deferred-remuneration
+          examples:
+            - director-loan
+          type: string
+      required:
+        - account_id
+        - code
+        - name
+        - role
+        - balance
+      type: object
+    DirectorMovement:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: The director's account it moved.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+          format: uuid
+          type: string
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "In the base currency, as the ledger holds it: negative is owed to the person."
+        date:
+          description: Its posting date.
+          examples:
+            - "2026-10-15"
+          format: date
+          type: string
+        description:
+          description: The line's description.
+          examples:
+            - Cash lent for October payroll
+          type: string
+        entry_id:
+          description: The journal entry.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80
+          format: uuid
+          type: string
+        memo:
+          description: The entry's memo.
+          examples:
+            - Loan from Mei Lin
+          type: string
+        number:
+          description: Its number, when it has one.
+          examples:
+            - JNL-0042
+          type: string
+        origin:
+          description: "Where the amount came from (FR-EQ-01): from its source, or as entered on a journal or opening balance line."
+          enum:
+            - lent
+            - paid_personally
+            - pay
+            - fee
+            - paid_out
+            - converted
+            - waived
+            - other
+          examples:
+            - lent
+          type: string
+        reversal:
+          description: The line reverses an earlier one.
+          examples:
+            - false
+          type: boolean
+        source_id:
+          description: Its ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+          type: string
+        source_type:
+          description: The document it came from.
+          examples:
+            - bank_transaction
+          type: string
+      required:
+        - entry_id
+        - date
+        - account_id
+        - origin
+        - amount
+        - source_type
+        - source_id
+        - reversal
+      type: object
+    DirectorStatement:
+      additionalProperties: false
+      properties:
+        accounts:
+          description: "Each director's account: opening, movements by origin, closing."
+          items:
+            $ref: "#/components/schemas/DirectorStatementAccount"
+          type:
+            - array
+            - "null"
+        contact_id:
+          description: The person.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65
+          format: uuid
+          type: string
+        currency:
+          description: The base currency.
+          examples:
+            - SGD
+          type: string
+        from:
+          description: Its first day.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        legal_name:
+          description: Their name.
+          examples:
+            - Mei Lin Tan
+          type: string
+        movements:
+          description: Every line in the period, in posting order.
+          items:
+            $ref: "#/components/schemas/DirectorMovement"
+          type:
+            - array
+            - "null"
+        to:
+          description: Its last day.
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+      required:
+        - contact_id
+        - legal_name
+        - from
+        - to
+        - currency
+        - accounts
+        - movements
+      type: object
+    DirectorStatementAccount:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: The director's account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+          format: uuid
+          type: string
+        by_origin:
+          description: The movements by origin, in the order origins first moved.
+          items:
+            $ref: "#/components/schemas/OriginTotal"
+          type:
+            - array
+            - "null"
+        closing:
+          $ref: "#/components/schemas/Money"
+          description: "The balance at the statement's last day: the opening and the movements."
+        code:
+          description: Its code.
+          examples:
+            - "2500"
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Loan from director / shareholder
+          type: string
+        opening:
+          $ref: "#/components/schemas/Money"
+          description: The balance before the statement's first day.
+      required:
+        - account_id
+        - code
+        - name
+        - opening
+        - by_origin
+        - closing
+      type: object
     DocumentLinkOut:
       additionalProperties: false
       properties:
@@ -10066,6 +10412,12 @@ components:
             - 1
           format: int64
           type: integer
+        party_id:
+          description: "On a director's account only: the director or shareholder the amount belongs to (FR-EQ-01, B.7)."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65
+          format: uuid
+          type: string
       required:
         - line_no
         - account_id
@@ -14172,6 +14524,24 @@ components:
             - document
           maxLength: 100
           type: string
+        origin:
+          description: "Only on a director's account: where the amount came from, which decides its tax and accounting result (FR-EQ-01). Required there and refused elsewhere (LEDGER-41)."
+          enum:
+            - lent
+            - paid_personally
+            - pay
+            - fee
+            - paid_out
+            - other
+          examples:
+            - lent
+          type: string
+        party_id:
+          description: "Only on a director's account (2500, 2120): the director or shareholder the amount belongs to, a contact marked one. Required there and refused on any other account (FR-EQ-01, B.7; LEDGER-41)."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65
+          format: uuid
+          type: string
       required:
         - account_id
         - amount
@@ -15002,6 +15372,16 @@ components:
       required:
         - items
       type: object
+    MemberLink:
+      additionalProperties: false
+      properties:
+        member_user_id:
+          description: The member; left out or empty unlinks them.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+      type: object
     MemberPage:
       additionalProperties: false
       properties:
@@ -15548,6 +15928,20 @@ components:
         - kind
         - from_date
       type: object
+    MyDirectorAccount:
+      additionalProperties: false
+      properties:
+        account:
+          $ref: "#/components/schemas/DirectorAccount"
+          description: Their account, when linked.
+        linked:
+          description: "A director or shareholder is linked to you (linkContactMember); false: Money I put in has nothing to show."
+          examples:
+            - true
+          type: boolean
+      required:
+        - linked
+      type: object
     NewMemberInvitation:
       additionalProperties: false
       properties:
@@ -16054,6 +16448,24 @@ components:
             - DBS current account at the books start
           maxLength: 500
           type: string
+        origin:
+          description: "Only on a director's account: where the balance came from (FR-EQ-01). Required there and refused elsewhere (LEDGER-41)."
+          enum:
+            - lent
+            - paid_personally
+            - pay
+            - fee
+            - paid_out
+            - other
+          examples:
+            - lent
+          type: string
+        party_id:
+          description: "Only on a director's account (2500, 2120): the director or shareholder whose balance it is, a contact marked one; a balance owed to two founders is two lines. Required there and refused on any other account (FR-EQ-01, B.7; LEDGER-41)."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65
+          format: uuid
+          type: string
       required:
         - account_id
         - amount
@@ -16260,6 +16672,30 @@ components:
         - fy_start_month
         - time_zone
         - version
+      type: object
+    OriginTotal:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "Their sum, as the ledger holds it: negative is owed to the person."
+        origin:
+          description: Where the amounts came from (FR-EQ-01).
+          enum:
+            - lent
+            - paid_personally
+            - pay
+            - fee
+            - paid_out
+            - converted
+            - waived
+            - other
+          examples:
+            - lent
+          type: string
+      required:
+        - origin
+        - amount
       type: object
     PackActivation:
       additionalProperties: false
@@ -26606,7 +27042,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9)."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `FOUNDER-04` Another person approves your own link; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9)."
         "404":
           content:
             application/problem+json:
@@ -26618,7 +27054,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APPLY-06` The application is not posted; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `BILL-02` The bill is not a draft; `BILL-03` The bill is not posted; `BILL-13` Payments settle the bill; `BILLPAY-06` The payment is not posted; `CLAIM-02` The claim is not a draft; `CLAIM-15` The reimbursement is not posted; `CLAIM-31` The advance cannot be voided as it stands; `CREDIT-06` The application is not posted; `DEPOSIT-06` The deposit is not posted; `DEPOSIT-08` Invoices or refunds use the deposit; `INVOICE-02` The invoice is not a draft; `INVOICE-03` The invoice is not issued; `INVOICE-13` Receipts or credits settle the invoice; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `PO-10` The order is not a draft; `RECEIPT-06` The receipt is not posted; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DOC-04` An edit posts its reversal and its new version together; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way; `STORAGE-PAYEE-01` Bank details do not change that way; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-TEMPLATE-01` The template does not change that way; `TPL-12` That version is in force already; `WRITEOFF-07` The write-off is not a draft; `WRITEOFF-08` The write-off is not posted."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APPLY-06` The application is not posted; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `BILL-02` The bill is not a draft; `BILL-03` The bill is not posted; `BILL-13` Payments settle the bill; `BILLPAY-06` The payment is not posted; `CLAIM-02` The claim is not a draft; `CLAIM-15` The reimbursement is not posted; `CLAIM-31` The advance cannot be voided as it stands; `CREDIT-06` The application is not posted; `DEPOSIT-06` The deposit is not posted; `DEPOSIT-08` Invoices or refunds use the deposit; `INVOICE-02` The invoice is not a draft; `INVOICE-03` The invoice is not issued; `INVOICE-13` Receipts or credits settle the invoice; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `PO-10` The order is not a draft; `RECEIPT-06` The receipt is not posted; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DOC-04` An edit posts its reversal and its new version together; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way; `STORAGE-PAYEE-01` Bank details do not change that way; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-TEMPLATE-01` The template does not change that way; `TPL-12` That version is in force already; `WRITEOFF-07` The write-off is not a draft; `WRITEOFF-08` The write-off is not posted."
         "412":
           content:
             application/problem+json:
@@ -26777,6 +27213,7 @@ paths:
         - DEPOSIT-06
         - DEPOSIT-07
         - DEPOSIT-08
+        - FOUNDER-04
         - FX-01
         - INVOICE-01
         - INVOICE-02
@@ -26885,6 +27322,7 @@ paths:
         - STORAGE-INV-13
         - STORAGE-LOCK-01
         - STORAGE-MEMBER-01
+        - STORAGE-PARTY-01
         - STORAGE-PASSKEY-01
         - STORAGE-PAYEE-01
         - STORAGE-PERIOD-01
@@ -45808,15 +46246,16 @@ paths:
               - eyJhZnRlciI6IjEwMDAifQ
             maxLength: 1000
             type: string
-        - description: Only customers, or only vendors.
+        - description: Only customers, only vendors, or only directors and shareholders.
           explode: false
           in: query
           name: role
           schema:
-            description: Only customers, or only vendors.
+            description: Only customers, only vendors, or only directors and shareholders.
             enum:
               - customer
               - vendor
+              - director
             examples:
               - customer
             type: string
@@ -46319,7 +46758,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PARTY-01` A director's account does not change that way."
         "412":
           content:
             application/problem+json:
@@ -46419,6 +46858,7 @@ paths:
         - CT-11
         - REMINDER-03
         - STORAGE-LOCK-01
+        - STORAGE-PARTY-01
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
       x-fyniq-permission:
@@ -46913,6 +47353,220 @@ paths:
       x-fyniq-permission:
         capability: Contacts and items (rev 0.33)
         right: C
+  /v1/contacts/{contact_id}/member:
+    put:
+      description: "Asks to link a director or shareholder to a member of the organisation, or with no member to unlink them (FR-EQ-01; PRD-001 rev 0.167). The link decides where repayments go and who never approves the person's settlement (FM-9), so it falls under FM-1 in every team mode: the answer is 202 with an approval request, which another person who holds A on \"Director accounts, settlements, share issues\", not the member linked or unlinked, approves; the database refuses any other change of it (STORAGE-PARTY-01). A member signs in as one director or shareholder at most. Asking needs a person signed in who passed step-up in the last 5 minutes, and If-Match with the contact's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing."
+      operationId: linkContactMember
+      parameters:
+        - description: The contact's ID.
+          in: path
+          name: contact_id
+          required: true
+          schema:
+            description: The contact's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberLink"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: "Accepted: the change needs a second approver (FM-1) and waits for approval; nothing changed yet. The body is the approval request (rev 0.36)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PARTY-01` A director's account does not change that way."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Link a director or shareholder to the member who signs in as them
+      tags:
+        - Founders
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - APR-06
+        - FOUNDER-01
+        - FOUNDER-02
+        - FOUNDER-03
+        - STORAGE-APPROVAL-01
+        - STORAGE-LOCK-01
+        - STORAGE-PARTY-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Director accounts, settlements, share issues (rev 0.3)
+        right: A
   /v1/contacts/{contact_id}/statement:
     get:
       description: "Works out a customer's statement of account in one currency from one day to another (FR-AR-08; PRD-001 rev 0.138): the balance brought forward, each invoice, credit note, payment received, refund of a credit, write-off and void in the period with a running balance, the balance due from the AR sub-ledger, what of it is overdue, and its ageing by days past due, which adds up to it; adds_up says whether the lines come to the balance due, and currencies lists the customer's currencies in the period. Nothing is kept: createStatement makes one to send. Read-only; no side effects."
@@ -52617,6 +53271,450 @@ paths:
       x-fyniq-permission:
         capability: Invoices, credit notes
         right: P
+  /v1/director-accounts:
+    get:
+      description: Every contact marked director or shareholder with their balances as at a day on the director's accounts, 2500 Loan from director / shareholder and 2120 Deferred remuneration payable, from the balance service (FR-EQ-01, ENG-04; PRD-001 rev 0.167). Every line on those accounts names its person, so the balances add up to the accounts; unkeyed shows anything that names no one. A net debit means the person owes the company (FR-EQ-11). A page at a time. Read-only; no side effects.
+      operationId: listDirectorAccounts
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: The day the balances are at; the organisation's today when left out.
+          explode: false
+          in: query
+          name: as_at
+          schema:
+            description: The day the balances are at; the organisation's today when left out.
+            examples:
+              - "2026-10-31"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectorAccountList"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the director accounts
+      tags:
+        - Founders
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - FOUNDER-01
+        - FOUNDER-02
+        - FOUNDER-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Director accounts, settlements, share issues (rev 0.3)
+        right: V
+  /v1/director-accounts/{contact_id}/statement:
+    get:
+      description: "A director's or shareholder's statement from one day to another (FR-EQ-01): for each director's account the balance before the first day, the movements by origin (lent, paid personally, pay, fee, paid out, converted, waived, other) and the balance at the last day, with every line in posting order. The origin comes from the line's source, or as entered on a journal or opening balance line. Read-only; no side effects."
+      operationId: getDirectorStatement
+      parameters:
+        - description: The contact's ID.
+          in: path
+          name: contact_id
+          required: true
+          schema:
+            description: The contact's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0
+            format: uuid
+            type: string
+        - description: The statement's first day.
+          explode: false
+          in: query
+          name: from
+          required: true
+          schema:
+            description: The statement's first day.
+            examples:
+              - "2026-01-01"
+            format: date
+            type: string
+        - description: Its last day.
+          explode: false
+          in: query
+          name: to
+          required: true
+          schema:
+            description: Its last day.
+            examples:
+              - "2026-10-31"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectorStatement"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Work out a director's statement
+      tags:
+        - Founders
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - FOUNDER-01
+        - FOUNDER-02
+        - FOUNDER-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Director accounts, settlements, share issues (rev 0.3)
+        right: V
+  /v1/director-accounts/{contact_id}/statement/export:
+    get:
+      description: "The statement getDirectorStatement gives, as a file (FR-EQ-01): a PDF from the render service to print or send for a balance confirmation, owed to the person shown positive; or CSV, its movements with plain decimals and an ASCII minus. Returned in base64 with its SHA-256. A PDF the render service cannot make now is REPORT-08. Side effects: an audit event of the export with its file and hash (FR-RPT-09). Never cached."
+      operationId: exportDirectorStatement
+      parameters:
+        - description: The contact's ID.
+          in: path
+          name: contact_id
+          required: true
+          schema:
+            description: The contact's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0
+            format: uuid
+            type: string
+        - description: The statement's first day.
+          explode: false
+          in: query
+          name: from
+          required: true
+          schema:
+            description: The statement's first day.
+            examples:
+              - "2026-01-01"
+            format: date
+            type: string
+        - description: Its last day.
+          explode: false
+          in: query
+          name: to
+          required: true
+          schema:
+            description: Its last day.
+            examples:
+              - "2026-10-31"
+            format: date
+            type: string
+        - description: "pdf: the statement to print or send for a balance confirmation, from the render service; csv: its movements, plain decimals with an ASCII minus."
+          explode: false
+          in: query
+          name: format
+          schema:
+            default: pdf
+            description: "pdf: the statement to print or send for a balance confirmation, from the render service; csv: its movements, plain decimals with an ASCII minus."
+            enum:
+              - pdf
+              - csv
+            examples:
+              - pdf
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportFile"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again."
+      summary: Export a director's statement
+      tags:
+        - Founders
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - FOUNDER-01
+        - FOUNDER-02
+        - FOUNDER-03
+        - REPORT-08
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Director accounts, settlements, share issues (rev 0.3)
+        right: V
   /v1/document-links/{link_id}/revoke:
     post:
       description: "Stops a link working at once (FR-AR-06): whoever holds it then gets LINK-01. A link is revoked once; to share the document again, email it again, which makes a new link. Side effects: the revocation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview revokes nothing."
@@ -72044,6 +73142,122 @@ paths:
       x-fyniq-permission:
         capability: Expense claims
         right: C
+  /v1/me/director-account:
+    get:
+      description: "The director or shareholder you sign in as, with your balances as at a day: Money I put in (FR-EQ-14, FR-EQ-01); linked is false when none is linked to you (linkContactMember). Only a person signed in as themselves has one (FOUNDER-03). Read-only; no side effects."
+      operationId: getMyDirectorAccount
+      parameters:
+        - description: The day the balances are at; the organisation's today when left out.
+          explode: false
+          in: query
+          name: as_at
+          schema:
+            description: The day the balances are at; the organisation's today when left out.
+            examples:
+              - "2026-10-31"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyDirectorAccount"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get your own director account
+      tags:
+        - Founders
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - FOUNDER-01
+        - FOUNDER-02
+        - FOUNDER-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Director accounts, settlements, share issues (rev 0.3)
+        right: V
   /v1/members:
     get:
       description: The organisation's active members, in the order they joined, with their names and live roles (FR-ADM-01). Read-only; no side effects.
@@ -104544,6 +105758,8 @@ tags:
     name: Sales
   - description: Money accounts, their statements and lines, and the rules that code them; a rule applies by itself only once a second person approves it (FR-BNK-01…18).
     name: Banking
+  - description: What the company owes its directors and shareholders on 2500 Loan from director / shareholder and 2120 Deferred remuneration payable, each amount naming its person and where it came from; their statements; and the member who signs in as each (PRD-001 §8.22, FR-EQ-01, FR-EQ-14).
+    name: Founders
   - description: "Members' claims for what they spent for the company: drafted and submitted by the claimant, approved by someone else, posted to 2150 Expense claims payable (FR-AP-07, FR-AP-14, FR-AP-17)."
     name: Expense claims
   - description: "The fixed asset register: assets registered from the bill or bank lines that bought them, or from the opening balances, their monthly depreciation, and their disposals (FR-FA-01, FR-FA-02, FR-FA-03)."

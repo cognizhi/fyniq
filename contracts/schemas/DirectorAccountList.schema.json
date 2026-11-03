@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_at": {
+      "description": "The day the balances are at, inclusive.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "currency": {
+      "description": "The base currency the balances are in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "items": {
+      "description": "The contacts marked director or shareholder on this page, in the order they were added.",
+      "items": {
+        "$ref": "DirectorAccount.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjAxOTI4ZjZlIn0"
+      ],
+      "type": "string"
+    },
+    "unkeyed": {
+      "$ref": "Money.schema.json",
+      "description": "What the director's accounts hold that names no person: zero, but for lines posted before the accounts named their person, which the period close names (INV-07)."
+    }
+  },
+  "required": [
+    "as_at",
+    "currency",
+    "items",
+    "unkeyed"
+  ],
+  "title": "DirectorAccountList",
+  "type": "object"
+}

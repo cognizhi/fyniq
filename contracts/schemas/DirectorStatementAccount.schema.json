@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The director's account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "by_origin": {
+      "description": "The movements by origin, in the order origins first moved.",
+      "items": {
+        "$ref": "OriginTotal.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "closing": {
+      "$ref": "Money.schema.json",
+      "description": "The balance at the statement's last day: the opening and the movements."
+    },
+    "code": {
+      "description": "Its code.",
+      "examples": [
+        "2500"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Loan from director / shareholder"
+      ],
+      "type": "string"
+    },
+    "opening": {
+      "$ref": "Money.schema.json",
+      "description": "The balance before the statement's first day."
+    }
+  },
+  "required": [
+    "account_id",
+    "code",
+    "name",
+    "opening",
+    "by_origin",
+    "closing"
+  ],
+  "title": "DirectorStatementAccount",
+  "type": "object"
+}

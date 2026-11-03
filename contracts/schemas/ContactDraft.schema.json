@@ -60,6 +60,13 @@
       ],
       "type": "string"
     },
+    "director": {
+      "description": "A director of the company, who holds a director account (FR-EQ-01).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "discount_days": {
       "description": "Its days, 1 to 365, with discount_percent.",
       "examples": [
@@ -115,6 +122,13 @@
       "maxLength": 254,
       "type": "string"
     },
+    "shareholder": {
+      "description": "A shareholder, who holds a director account too (FR-EQ-01).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "tax_residence": {
       "description": "Where it is resident for tax, ISO 3166 two-letter code, when that is not its country (FR-AP-19).",
       "examples": [
@@ -131,7 +145,7 @@
       "type": "string"
     },
     "vendor": {
-      "description": "A vendor; at least one of customer and vendor.",
+      "description": "A vendor; at least one of customer, vendor, director and shareholder.",
       "examples": [
         false
       ],

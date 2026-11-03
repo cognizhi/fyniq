@@ -46,6 +46,14 @@
       ],
       "format": "int64",
       "type": "integer"
+    },
+    "party_id": {
+      "description": "On a director's account only: the director or shareholder the amount belongs to (FR-EQ-01, B.7).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"
+      ],
+      "format": "uuid",
+      "type": "string"
     }
   },
   "required": [

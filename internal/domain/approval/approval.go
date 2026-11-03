@@ -95,6 +95,11 @@ const (
 	// ObjectPaymentBatch is a batch of payments (FR-BNK-12, FM-1, G4-055; rev 0.154): another person who holds A on
 	// "Payment batches" (the Controller) approves it, or approves it again after a payee's account changed; its key is its id.
 	ObjectPaymentBatch = "payment_batch"
+	// ObjectContactMemberLink is the member a director or shareholder signs in as, linked or unlinked (FR-EQ-01, FM-1;
+	// rev 0.167): it decides where repayments go and who never approves a settlement (FM-9), so another person who holds
+	// A on "Director accounts, settlements, share issues" approves it, never the member linked or unlinked, in every team
+	// mode; its key is the contact's id.
+	ObjectContactMemberLink = "contact_member_link"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -160,6 +165,8 @@ const (
 	OpBatchApprove = "payment_batch.approve"
 	// OpBatchReapprove approves an approved, unreleased batch again with its payees' accounts in force now (G4-055).
 	OpBatchReapprove = "payment_batch.reapprove"
+	// OpContactMemberLink links a director or shareholder to the member who signs in as them, or unlinks them.
+	OpContactMemberLink = "contact_member_link.change"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -182,6 +189,7 @@ var Operations = map[string]string{
 	OpClaimantBankChange: ObjectClaimantBankChange,
 	OpBatchApprove:       ObjectPaymentBatch,
 	OpBatchReapprove:     ObjectPaymentBatch,
+	OpContactMemberLink:  ObjectContactMemberLink,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -252,6 +260,8 @@ var Dependencies = map[string][]string{
 	ObjectClaimantBankChange: {"status", "replaces"},
 	// the batch's version and status, its total in SGD, and each payee's account in force, payee to change (G4-055)
 	ObjectPaymentBatch: {"status", "total", "accounts"},
+	// the contact's version and its member now: the link changes from them
+	ObjectContactMemberLink: {"contact_version", "member"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -290,6 +300,7 @@ var Rows = map[string]string{
 	ObjectPayeeBankChange:     "Vendor bank details",
 	ObjectClaimantBankChange:  "Payment batches",
 	ObjectPaymentBatch:        "Payment batches",
+	ObjectContactMemberLink:   "Director accounts, settlements, share issues (rev 0.3)",
 }
 
 // The limits of a policy.
@@ -357,6 +368,7 @@ var Policies = map[string]Policy{
 	ObjectPayeeBankChange:     {ObjectType: ObjectPayeeBankChange, Version: "founder/payee_bank_change@2026-10-27.1", Steps: []Step{{Quorum: 1}}},
 	ObjectClaimantBankChange:  {ObjectType: ObjectClaimantBankChange, Version: "founder/claimant_bank_change@2026-10-28.1", Steps: []Step{{Quorum: 1}}},
 	ObjectPaymentBatch:        {ObjectType: ObjectPaymentBatch, Version: "founder/payment_batch@2026-10-28.1", Steps: []Step{{Quorum: 1}}},
+	ObjectContactMemberLink:   {ObjectType: ObjectContactMemberLink, Version: "founder/contact_member_link@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

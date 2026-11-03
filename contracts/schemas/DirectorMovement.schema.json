@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The director's account it moved.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "In the base currency, as the ledger holds it: negative is owed to the person."
+    },
+    "date": {
+      "description": "Its posting date.",
+      "examples": [
+        "2026-10-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "description": {
+      "description": "The line's description.",
+      "examples": [
+        "Cash lent for October payroll"
+      ],
+      "type": "string"
+    },
+    "entry_id": {
+      "description": "The journal entry.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "memo": {
+      "description": "The entry's memo.",
+      "examples": [
+        "Loan from Mei Lin"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number, when it has one.",
+      "examples": [
+        "JNL-0042"
+      ],
+      "type": "string"
+    },
+    "origin": {
+      "description": "Where the amount came from (FR-EQ-01): from its source, or as entered on a journal or opening balance line.",
+      "enum": [
+        "lent",
+        "paid_personally",
+        "pay",
+        "fee",
+        "paid_out",
+        "converted",
+        "waived",
+        "other"
+      ],
+      "examples": [
+        "lent"
+      ],
+      "type": "string"
+    },
+    "reversal": {
+      "description": "The line reverses an earlier one.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "source_id": {
+      "description": "Its ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"
+      ],
+      "type": "string"
+    },
+    "source_type": {
+      "description": "The document it came from.",
+      "examples": [
+        "bank_transaction"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "entry_id",
+    "date",
+    "account_id",
+    "origin",
+    "amount",
+    "source_type",
+    "source_id",
+    "reversal"
+  ],
+  "title": "DirectorMovement",
+  "type": "object"
+}
