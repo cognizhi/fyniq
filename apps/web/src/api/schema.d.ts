@@ -2700,6 +2700,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/director-accounts/related-parties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Work out the related-party schedule
+         * @description The related-party schedule as at a day (FR-EQ-10): for each director and shareholder with something to disclose, what the company owes them on 2500 (loan) and 2120 (deferred pay) at the day, negative when they owe it, and in the financial year to the day the directors' fees owed to them, what was converted to shares and what they waived, with the totals. From the balance service (ENG-04); the notes to the financial statements read it. Read-only; no side effects.
+         */
+        get: operations["getRelatedParties"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-accounts/related-parties/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export the related-party schedule
+         * @description The schedule getRelatedParties gives, as CSV (FR-EQ-10): a row per person and a total, plain decimals with an ASCII minus. Returned in base64 with its SHA-256. Side effects: an audit event of the export with its file and hash (FR-RPT-09). Never cached.
+         */
+        get: operations["exportRelatedParties"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/director-accounts/{contact_id}/statement": {
         parameters: {
             query?: never;
@@ -17929,6 +17969,11 @@ export interface components {
              */
             date: string;
             /**
+             * @description What it was, when its source says it: Converted to shares, or Waived (FR-EQ-10); never shown as shares issued for cash and a loan repaid.
+             * @example Converted to shares
+             */
+            label?: string;
+            /**
              * @description The entry's memo.
              * @example Interest on the director's loan
              */
@@ -24343,6 +24388,66 @@ export interface components {
              * @example 2026-11-01
              */
             starts_on: string;
+        };
+        RelatedPartyFigures: {
+            /** @description What they were owed that was converted to shares in the year, effective when ACRA registered it (FR-EQ-06). */
+            converted: components["schemas"]["Money"];
+            /** @description What the company owes them on 2120 Deferred remuneration payable at the day: pay and fees not yet paid. */
+            deferred_pay: components["schemas"]["Money"];
+            /** @description Directors' fees owed to them in the financial year to the day (FR-EQ-04). */
+            fees_for_year: components["schemas"]["Money"];
+            /** @description What the company owes them on 2500 Loan from director / shareholder at the day: positive owed to them; negative means they owe the company, shown under 1250 Staff & director advances (FR-EQ-11). */
+            loan: components["schemas"]["Money"];
+            /** @description What they waived of what they were owed in the year (FR-EQ-07). */
+            waived: components["schemas"]["Money"];
+        };
+        RelatedPartyRow: {
+            /**
+             * Format: uuid
+             * @description The person's contact.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65
+             */
+            contact_id: string;
+            /**
+             * @description A director.
+             * @example true
+             */
+            director: boolean;
+            /** @description Their figures by nature. */
+            figures: components["schemas"]["RelatedPartyFigures"];
+            /**
+             * @description Their name.
+             * @example Mei Lin Tan
+             */
+            legal_name: string;
+            /**
+             * @description A shareholder.
+             * @example true
+             */
+            shareholder: boolean;
+        };
+        RelatedPartySchedule: {
+            /**
+             * Format: date
+             * @description The day the balances are at, inclusive.
+             * @example 2026-12-31
+             */
+            as_at: string;
+            /**
+             * @description The base currency.
+             * @example SGD
+             */
+            currency: string;
+            /** @description Each director and shareholder with something to disclose, in the order they were added: a schedule, whole, not a page of a list. */
+            rows: components["schemas"]["RelatedPartyRow"][] | null;
+            /** @description The rows' figures added up. */
+            totals: components["schemas"]["RelatedPartyFigures"];
+            /**
+             * Format: date
+             * @description The first day of the year the fees, conversions and waivers are read from: the financial year as_at falls in, or the calendar year when the financial years are not set.
+             * @example 2026-01-01
+             */
+            year_from: string;
         };
         RemittanceAgain: {
             /**
@@ -48231,6 +48336,200 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getRelatedParties: {
+        parameters: {
+            query?: {
+                /** @description The day the balances are at; the organisation's today when left out. */
+                as_at?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelatedPartySchedule"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    exportRelatedParties: {
+        parameters: {
+            query?: {
+                /** @description The day the balances are at; the organisation's today when left out. */
+                as_at?: string;
+                /** @description csv: a row per person and a total, plain decimals with an ASCII minus. */
+                format?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportFile"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit. */
             422: {
                 headers: {
                     [name: string]: unknown;

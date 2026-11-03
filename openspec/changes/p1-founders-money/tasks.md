@@ -242,12 +242,26 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
 
 ## 6. Presentation, checks and the canvases (slice 6)
 
-- [ ] 6.1 Presentation (D14):
+- [x] 6.1 Presentation (D14):
   - net debits under 1250;
   - non-cash labels in the cash flow;
   - shares issued for cash and non-cash apart in the movement in equity;
   - the related-party schedule.
   Tests: each figure checked, and the oracle's statements. `// req: FR-EQ-10`, `// req: FR-EQ-11`
+  Built:
+  - The balance sheet moves a person's net debit on 2500 and 2120 to the advances account the setting
+    `claims.advances_account` names (1250), from `balance.People` at each column's end, with no posting; with no such
+    account the balances stay as they are.
+  - The cash flow's non-cash list carries a `label`: "Converted to shares" for `share_issue`, "Waived" for
+    `director_settlement`. The printed statements show it before the memo.
+  - The movement in equity has "Shares issued for cash" and "Shares issued for non-cash consideration", by the
+    register's consideration.
+  - `getRelatedParties` and `exportRelatedParties` (CSV), behind **Related parties** on Director accounts: per
+    person, the loan and deferred pay at the day (a minus when owed to the company) and the year's fees,
+    conversions and waivers, with totals. The year is the financial year the day falls in, or the calendar
+    year when the years are not set.
+  - The oracle states the same in its statements: the advances from the settings, a non-cash `label`, and
+    `share_capital_non_cash`. `TestTheFoundersInTheStatements` checks each figure through the API.
 - [x] 6.2 The checks C.2 #21, #22, #23 and #25 on the checks engine (D15), each with a fixture that fires and one
   that passes. `// req: FR-EQ-11`, `// req: FR-EQ-09`, `// req: FR-EQ-12`, `// req: INV-13`
   Built: in the Ledger area.

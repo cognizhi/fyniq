@@ -602,6 +602,9 @@ var (
 	ExportDirectorStatement = Policy{Operation: "exportDirectorStatement", Capability: DirectorAccounts, Need: View, Unqualified: true}
 	GetMyDirectorAccount    = Policy{Operation: "getMyDirectorAccount", Capability: DirectorAccounts, Need: View}
 	LinkContactMember       = Policy{Operation: "linkContactMember", Capability: DirectorAccounts, Need: Approve}
+	// The related-party schedule (FR-EQ-10; design D14): every person's figures, so the whole row, as the list.
+	GetRelatedParties    = Policy{Operation: "getRelatedParties", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	ExportRelatedParties = Policy{Operation: "exportRelatedParties", Capability: DirectorAccounts, Need: View, Unqualified: true}
 	// Costs before the books start (FR-EQ-03; design D7): an Owner or the Controller records a founder's cost (A on the
 	// row), and the accountant, who posts on it (P), decides it; reading needs the whole row, not an Employee's own.
 	ListPreIncorporationCosts   = Policy{Operation: "listPreIncorporationCosts", Capability: DirectorAccounts, Need: View, Unqualified: true}
@@ -1174,7 +1177,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset, ListUnregisteredAssetLines,
 	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid, VoidFixedAsset, RequestFixedAssetVoid,
 	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,
-	ListDirectorAccounts, GetDirectorStatement, ExportDirectorStatement, GetMyDirectorAccount, LinkContactMember,
+	ListDirectorAccounts, GetDirectorStatement, ExportDirectorStatement, GetMyDirectorAccount, LinkContactMember, GetRelatedParties, ExportRelatedParties,
 	ListPreIncorporationCosts, GetPreIncorporationCost, RecordPreIncorporationCost, ReplacePreIncorporationCost, DecidePreIncorporationCost,
 	AddPreIncorporationCostEvidence, ListPreIncorporationCostEvidence, GetPreIncorporationCostEvidence, RemovePreIncorporationCostEvidence,
 	ListDirectorPayChoices, GetDirectorPayChoice, CreateDirectorPayChoice, ReplaceDirectorPayChoice, RecordDirectorPayChoice,

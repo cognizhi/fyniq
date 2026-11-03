@@ -396,8 +396,8 @@ def test_pending_statements():
         "closing_cash": "5430.21",
         "non_cash": [{"document": "JNL-0008", "kind": "post", "posting_date": "2026-01-28", "section": "financing"}],
     }
-    assert jan["equity_movement"] == {"opening": "0.00", "profit": "-2483.12", "share_capital": "0.00", "other": "0.00",
-                                      "closing": "-2483.12"}
+    assert jan["equity_movement"] == {"opening": "0.00", "profit": "-2483.12", "share_capital": "0.00",
+                                      "share_capital_non_cash": "0.00", "other": "0.00", "closing": "-2483.12"}
     assert jan["checks"] == {"balances": True, "ties": True, "equity": True, "unplaced": []}
 
     feb = s["2026-02"]
@@ -461,7 +461,7 @@ def test_pending_statements():
     }
     # The capital contribution 2,000.00 less the dividend 300.00.
     assert feb["equity_movement"] == {"opening": "-2483.12", "profit": "3443.32", "share_capital": "0.00",
-                                      "other": "1700.00", "closing": "2660.20"}
+                                      "share_capital_non_cash": "0.00", "other": "1700.00", "closing": "2660.20"}
     assert feb["checks"] == {"balances": True, "ties": True, "equity": True, "unplaced": []}
 
     mar = s["2026-03"]
@@ -469,8 +469,8 @@ def test_pending_statements():
     assert mar["balance_sheet"] == feb["balance_sheet"]
     assert mar["cash_flow"] == {"operating": _NO_CASH_FLOW, "investing": "0.00", "financing": "0.00",
                                 "net_change": "0.00", "opening_cash": "9710.20", "closing_cash": "9710.20", "non_cash": []}
-    assert mar["equity_movement"] == {"opening": "2660.20", "profit": "0.00", "share_capital": "0.00", "other": "0.00",
-                                      "closing": "2660.20"}
+    assert mar["equity_movement"] == {"opening": "2660.20", "profit": "0.00", "share_capital": "0.00",
+                                      "share_capital_non_cash": "0.00", "other": "0.00", "closing": "2660.20"}
     assert mar["checks"] == {"balances": True, "ties": True, "equity": True, "unplaced": []}
 
     # 50.00 paid to 1990, which has no cash-flow line: it sits in no section, so the balance sheet is 50.00 short

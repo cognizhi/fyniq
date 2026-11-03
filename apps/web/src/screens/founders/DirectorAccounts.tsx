@@ -319,6 +319,101 @@ function Statement({ person, until }: { person: DirectorAccount; until: string }
   );
 }
 
+// RelatedParties is the related-party schedule as at the page's day (FR-EQ-10): per person, what the company owes them
+// by nature and the year's fees, conversions and waivers, owed to the person shown positive; with its CSV.
+function RelatedParties({ asAt }: { asAt: string }) {
+  const id = useId();
+  const h = helpText("director-accounts.related-parties");
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const q = useQuery({
+    queryKey: ["related-parties", asAt],
+    queryFn: async () => {
+      const r = await api.GET("/v1/director-accounts/related-parties", { params: { query: { as_at: asAt } } });
+      if (r.error) throw r.error;
+      return r.data;
+    },
+  });
+  const download = async () => {
+    setBusy(true);
+    setProblem(null);
+    const r = await api.GET("/v1/director-accounts/related-parties/export", { params: { query: { as_at: asAt, format: "csv" } } });
+    setBusy(false);
+    if (r.error) return setProblem(problemOf(r.error));
+    save(r.data.file_name, r.data.media_type, r.data.content_base64);
+  };
+  const s = q.data;
+  const natures = [
+    ["loan", "Loan"],
+    ["deferred_pay", "Deferred pay"],
+    ["fees_for_year", "Fees for the year"],
+    ["converted", "Converted to shares"],
+    ["waived", "Waived"],
+  ] as const;
+  return (
+    <section className="fy-card" aria-labelledby={`${id}-title`}>
+      <div className="fy-card__head" style={{ flexWrap: "wrap" }}>
+        <h2 className="fy-h3" id={`${id}-title`} title={h.tooltip}>
+          {h.label}
+        </h2>
+        <Button variant="ghost" size="sm" type="button" disabled={busy || !s || (s.rows ?? []).length === 0} onClick={() => void download()}>
+          <Icon of={FileDown} />
+          {busy ? "Making the CSV…" : "CSV"}
+        </Button>
+      </div>
+      <div className="fy-card__body fy-stack fy-stack--2">
+        {problem && <Refusal problem={problem} title="The schedule was not exported" />}
+        {q.isError && <Refusal problem={problemOf(q.error)} title="The related-party schedule could not be worked out" />}
+        {s && (
+          <p className="fy-small fy-secondary">
+            Balances at {date(s.as_at)}; fees, conversions and waivers from {date(s.year_from)}. A minus means the person owes the company.
+          </p>
+        )}
+        {s && (s.rows ?? []).length === 0 && <p className="fy-small fy-muted">Nothing to disclose: no balance and no fee, conversion or waiver this year.</p>}
+      </div>
+      {s && (s.rows ?? []).length > 0 && (
+        <div className="fy-tablewrap" style={{ border: 0, borderRadius: 0 }}>
+          <table className="fy-table">
+            <caption className="fy-sr">Related parties as at {date(s.as_at)}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Person ({s.currency})</th>
+                {natures.map(([k, label]) => (
+                  <th key={k} scope="col" className="fy-num">
+                    {label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {(s.rows ?? []).map((r) => (
+                <tr key={r.contact_id}>
+                  <td data-card="title">{r.legal_name}</td>
+                  {natures.map(([k]) => (
+                    <td key={k} data-card="amount" className="fy-num">
+                      {formatAmount(r.figures[k].amount)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>Total</td>
+                {natures.map(([k]) => (
+                  <td key={k} className="fy-num">
+                    {formatAmount(s.totals[k].amount)}
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 // LinkMember asks for a director or shareholder to be linked to the member who signs in as them; another person who
 // holds the approval right approves it, never the member (FR-EQ-01, FM-1).
 function LinkMember({ person, onClose, onAsked }: { person: DirectorAccount | null; onClose: () => void; onAsked: (what: string, approval: string) => void }) {
@@ -841,6 +936,7 @@ export function DirectorAccounts() {
   const [paying, setPaying] = useState<DirectorAccount | null>(null);
   const [feeing, setFeeing] = useState<DirectorAccount | null>(null);
   const [exempting, setExempting] = useState(false);
+  const [related, setRelated] = useState(false);
   const [status, setStatus] = useState<{ text: string; approval?: string } | null>(null);
   const q = useQuery({ queryKey: ["director-accounts", asAt], queryFn: () => accounts(asAt) });
   const mayLink = (session.roles ?? []).some((r) => linkers.includes(r));
@@ -882,6 +978,12 @@ export function DirectorAccounts() {
             <Icon of={Building2} /> {exemptLine(q.data.exempt_status)}
           </span>
           <span className="fy-row gap-2">
+            {people.length > 0 && (
+              <Button variant="ghost" size="sm" type="button" aria-pressed={related} onClick={() => setRelated(!related)} title={helpText("director-accounts.related-parties").tooltip}>
+                <Icon of={Handshake} />
+                {helpText("director-accounts.related-parties").label}
+              </Button>
+            )}
             <Link to="/equity/transactions" className="fy-btn fy-btn--ghost fy-btn--sm" title={helpText("director-accounts.share-issues").tooltip}>
               <Icon of={ScrollText} />
               {helpText("director-accounts.share-issues").label}
@@ -924,6 +1026,7 @@ export function DirectorAccounts() {
         </div>
       )}
       {selected && q.data && <Statement key={selected.contact_id} person={selected} until={q.data.as_at} />}
+      {related && q.data && <RelatedParties asAt={q.data.as_at} />}
       <LinkMember person={linking} onClose={() => setLinking(null)} onAsked={(text, approval) => setStatus({ text, approval })} />
       <PayChoiceDialog key={paying?.contact_id ?? "none"} person={paying} onClose={() => setPaying(null)} onDone={(text) => setStatus({ text })} />
       <ExemptDialog open={exempting} onClose={() => setExempting(false)} onDone={(text) => setStatus({ text })} />

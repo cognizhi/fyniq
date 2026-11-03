@@ -228,6 +228,10 @@
       "label": "PDF for confirmation",
       "tooltip": "The statement as a PDF to send for a balance confirmation, what the company owes the person shown positive; or its movements as CSV."
     },
+    "director-accounts.related-parties": {
+      "label": "Related parties",
+      "tooltip": "Each director and shareholder as at the day: what the company owes them by nature, and the year's fees, conversions and waivers, for the notes to the accounts."
+    },
     "director-accounts.link-member": {
       "label": "Link member",
       "tooltip": "Choose the member who signs in as this director or shareholder: they see their own account and never approve their own settlement. Another person approves it."

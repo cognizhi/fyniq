@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contact_id": {
+      "description": "The person's contact.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "director": {
+      "description": "A director.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "figures": {
+      "$ref": "RelatedPartyFigures.schema.json",
+      "description": "Their figures by nature."
+    },
+    "legal_name": {
+      "description": "Their name.",
+      "examples": [
+        "Mei Lin Tan"
+      ],
+      "type": "string"
+    },
+    "shareholder": {
+      "description": "A shareholder.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "contact_id",
+    "legal_name",
+    "director",
+    "shareholder",
+    "figures"
+  ],
+  "title": "RelatedPartyRow",
+  "type": "object"
+}

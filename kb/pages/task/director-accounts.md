@@ -2,9 +2,9 @@
 key: founders.director-accounts
 type: task
 title: Director accounts, each founder's statement, and naming the person on 2500 and 2120
-summary: 2500 and 2120 by person; marking directors, linking their member, naming the person on journal lines; statements and their PDF
+summary: 2500 and 2120 by person; marking directors, linking their member, naming the person on journal lines; statements and their PDF; the related-party schedule
 sources:
-  - docs/user-guide/director-accounts.md sha256:9c8342f9ff4655506681ddac17070f0df6b30caf946cb6f45b679b24ab420136
+  - docs/user-guide/director-accounts.md sha256:7efb8ff780815a1360810e4fafe6f294d1e83819acbd302bf33f207e6b14a3ff
 data_class: general
 taint: trusted
 status: published
@@ -29,6 +29,9 @@ aliases:
   - register of share issues
   - ACRA steps
   - return of allotment
+  - related parties
+  - related-party schedule
+  - related party disclosure
 ---
 
 # Director accounts, each founder's statement, and naming the person on 2500 and 2120
@@ -165,6 +168,17 @@ aliases:
   line. (src: docs/user-guide/director-accounts.md#read-a-statement)
 - **PDF for confirmation** downloads it to send to the person; **CSV** gives its movements; each
   download is in the audit trail. (src: docs/user-guide/director-accounts.md#send-it-for-a-balance-confirmation)
+
+## The related-party schedule
+
+- **Related parties** lists each director and shareholder with something to disclose as at the
+  day chosen: what the company owes them on their loan and in deferred pay (a minus when they owe
+  it), and in the financial year to that day the directors' fees owed to them, what was converted
+  to shares and what they waived. (src: docs/user-guide/director-accounts.md#the-related-party-schedule)
+- **CSV** downloads it with a total, for the accountant and the notes to the financial statements;
+  each download is in the audit trail. On the balance sheet a person who owes the company shows
+  under staff and director advances, not under the loan, with no entry posted.
+  (src: docs/user-guide/director-accounts.md#the-related-party-schedule)
 
 ## Messages and fixes
 

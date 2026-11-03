@@ -70,6 +70,42 @@ describe("Director accounts", () => {
     await noViolations(document.body);
   });
 
+  // req: FR-EQ-10
+  it("shows the related-party schedule on demand, a minus for what a person owes, and downloads it as CSV", async () => {
+    const figures = (loan: string, fees = "0.00") => ({ loan: sgd(loan), deferred_pay: sgd(fees), fees_for_year: sgd(fees), converted: sgd("0.00"), waived: sgd("0.00") });
+    const seen = answer({
+      "GET /v1/director-accounts": { status: 200, body: list },
+      "GET /v1/director-accounts/related-parties": {
+        status: 200,
+        body: {
+          as_at: "2026-10-31",
+          year_from: "2026-01-01",
+          currency: "SGD",
+          rows: [
+            { contact_id: "c-mei", legal_name: "Mei Lin Tan", director: true, shareholder: true, figures: figures("1100.00", "800.00") },
+            { contact_id: "c-arjun", legal_name: "Arjun Rao", director: true, shareholder: true, figures: figures("-200.00") },
+          ],
+          totals: figures("900.00", "800.00"),
+        },
+      },
+      "GET /v1/director-accounts/related-parties/export": {
+        status: 200,
+        body: { export_id: "x-1", file_name: "related-parties-2026-10-31.csv", media_type: "text/csv", sha256: "ab", size_bytes: 2, rows: 2, ledger_revision: 9, content_base64: "YSw=" },
+      },
+    });
+    Object.assign(URL, { createObjectURL: () => "blob:x", revokeObjectURL: () => undefined });
+    renderPage(DirectorAccounts, { path: "/accounting/directors" });
+    fireEvent.click(await screen.findByRole("button", { name: "Related parties" }));
+    const table = await screen.findByRole("table", { name: "Related parties as at 31 Oct 2026" });
+    const arjunRow = within(table).getByText("Arjun Rao").closest("tr") as HTMLElement;
+    expect(within(arjunRow).getByText(/−200.00|-200.00/)).toBeTruthy();
+    expect(within(table).getByText("900.00")).toBeTruthy();
+    expect(screen.getByText(/fees, conversions and waivers from 1 Jan 2026/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "CSV" }));
+    await waitFor(() => expect(seen.some((x) => x.path === "/v1/director-accounts/related-parties/export" && x.query.includes("as_at=2026-10-31"))).toBe(true));
+    await noViolations(document.body);
+  });
+
   it("asks for a member's link over the contact's version, for another person to approve", async () => {
     const seen = answer({
       "GET /v1/director-accounts": { status: 200, body: list },

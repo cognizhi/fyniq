@@ -13227,6 +13227,11 @@ components:
             - "2026-10-31"
           format: date
           type: string
+        label:
+          description: "What it was, when its source says it: Converted to shares, or Waived (FR-EQ-10); never shown as shares issued for cash and a loan repaid."
+          examples:
+            - Converted to shares
+          type: string
         memo:
           description: The entry's memo.
           examples:
@@ -22462,6 +22467,102 @@ components:
         - every_months
         - day_of_month
         - starts_on
+      type: object
+    RelatedPartyFigures:
+      additionalProperties: false
+      properties:
+        converted:
+          $ref: "#/components/schemas/Money"
+          description: What they were owed that was converted to shares in the year, effective when ACRA registered it (FR-EQ-06).
+        deferred_pay:
+          $ref: "#/components/schemas/Money"
+          description: "What the company owes them on 2120 Deferred remuneration payable at the day: pay and fees not yet paid."
+        fees_for_year:
+          $ref: "#/components/schemas/Money"
+          description: Directors' fees owed to them in the financial year to the day (FR-EQ-04).
+        loan:
+          $ref: "#/components/schemas/Money"
+          description: "What the company owes them on 2500 Loan from director / shareholder at the day: positive owed to them; negative means they owe the company, shown under 1250 Staff & director advances (FR-EQ-11)."
+        waived:
+          $ref: "#/components/schemas/Money"
+          description: What they waived of what they were owed in the year (FR-EQ-07).
+      required:
+        - loan
+        - deferred_pay
+        - fees_for_year
+        - converted
+        - waived
+      type: object
+    RelatedPartyRow:
+      additionalProperties: false
+      properties:
+        contact_id:
+          description: The person's contact.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65
+          format: uuid
+          type: string
+        director:
+          description: A director.
+          examples:
+            - true
+          type: boolean
+        figures:
+          $ref: "#/components/schemas/RelatedPartyFigures"
+          description: Their figures by nature.
+        legal_name:
+          description: Their name.
+          examples:
+            - Mei Lin Tan
+          type: string
+        shareholder:
+          description: A shareholder.
+          examples:
+            - true
+          type: boolean
+      required:
+        - contact_id
+        - legal_name
+        - director
+        - shareholder
+        - figures
+      type: object
+    RelatedPartySchedule:
+      additionalProperties: false
+      properties:
+        as_at:
+          description: The day the balances are at, inclusive.
+          examples:
+            - "2026-12-31"
+          format: date
+          type: string
+        currency:
+          description: The base currency.
+          examples:
+            - SGD
+          type: string
+        rows:
+          description: "Each director and shareholder with something to disclose, in the order they were added: a schedule, whole, not a page of a list."
+          items:
+            $ref: "#/components/schemas/RelatedPartyRow"
+          type:
+            - array
+            - "null"
+        totals:
+          $ref: "#/components/schemas/RelatedPartyFigures"
+          description: The rows' figures added up.
+        year_from:
+          description: "The first day of the year the fees, conversions and waivers are read from: the financial year as_at falls in, or the calendar year when the financial years are not set."
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+      required:
+        - as_at
+        - year_from
+        - currency
+        - rows
+        - totals
       type: object
     RemittanceAgain:
       additionalProperties: false
@@ -55906,6 +56007,250 @@ paths:
         - API-AUTHZ-03
         - API-AUTHZ-07
         - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - FOUNDER-01
+        - FOUNDER-02
+        - FOUNDER-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Director accounts, settlements, share issues (rev 0.3)
+        right: V
+  /v1/director-accounts/related-parties:
+    get:
+      description: "The related-party schedule as at a day (FR-EQ-10): for each director and shareholder with something to disclose, what the company owes them on 2500 (loan) and 2120 (deferred pay) at the day, negative when they owe it, and in the financial year to the day the directors' fees owed to them, what was converted to shares and what they waived, with the totals. From the balance service (ENG-04); the notes to the financial statements read it. Read-only; no side effects."
+      operationId: getRelatedParties
+      parameters:
+        - description: The day the balances are at; the organisation's today when left out.
+          explode: false
+          in: query
+          name: as_at
+          schema:
+            description: The day the balances are at; the organisation's today when left out.
+            examples:
+              - "2026-12-31"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RelatedPartySchedule"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Work out the related-party schedule
+      tags:
+        - Founders
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - FOUNDER-01
+        - FOUNDER-02
+        - FOUNDER-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Director accounts, settlements, share issues (rev 0.3)
+        right: V
+  /v1/director-accounts/related-parties/export:
+    get:
+      description: "The schedule getRelatedParties gives, as CSV (FR-EQ-10): a row per person and a total, plain decimals with an ASCII minus. Returned in base64 with its SHA-256. Side effects: an audit event of the export with its file and hash (FR-RPT-09). Never cached."
+      operationId: exportRelatedParties
+      parameters:
+        - description: The day the balances are at; the organisation's today when left out.
+          explode: false
+          in: query
+          name: as_at
+          schema:
+            description: The day the balances are at; the organisation's today when left out.
+            examples:
+              - "2026-12-31"
+            format: date
+            type: string
+        - description: "csv: a row per person and a total, plain decimals with an ASCII minus."
+          explode: false
+          in: query
+          name: format
+          schema:
+            default: csv
+            description: "csv: a row per person and a total, plain decimals with an ASCII minus."
+            enum:
+              - csv
+            examples:
+              - csv
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportFile"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Export the related-party schedule
+      tags:
+        - Founders
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
         - API-FAILURE-01
         - API-INPUT-02
         - API-RATE-01
