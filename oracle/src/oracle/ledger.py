@@ -24,6 +24,10 @@ rule of ENG-24 (PRD-001 rev 0.24) below; otherwise it is rejected whole and post
 6. Its base amounts fit NUMERIC(20,4) (§11.3).
 7. It balances in the base currency, summing the stored base amounts (INV-01, INV-05).
 8. When every line shares one currency, it also balances in that currency (INV-01).
+9. (PRD-001 rev 0.167) Every line on a director's account (the roles ``director-loan``, 2500, and
+   ``deferred-remuneration``, 2120) names its person, one of the scenario's ``people``, and where its
+   amount came from (lent, paid personally, pay, fee, paid out or other); no other line names either
+   (FR-EQ-01, Appendix B.7: "all amounts carry the person as a sub-ledger key on 2500 and 2120").
 
 A reversal posts the negation of every line of the document's posted entry, on the reversal's date
 (FR-GL-12). The base amounts are negated as stored, never re-converted (ENG-14). A reversal of an
@@ -59,6 +63,10 @@ from oracle.scenario import RESULT_SCHEMA, Document, Reversal, Scenario, Source,
 from oracle.sources import RULE_SETS
 from oracle.kpis import kpis
 from oracle.statements import statements
+
+# The director's accounts' roles (B.7) and the origins a line on one may give (FR-EQ-01, PRD-001 rev 0.167).
+DIRECTOR_ACCOUNTS = frozenset({"director-loan", "deferred-remuneration"})
+ORIGINS = frozenset({"lent", "paid_personally", "pay", "fee", "paid_out", "other"})
 
 __all__ = ["Entry", "Ledger", "PostedLine", "Rejected", "period", "run"]
 
@@ -156,6 +164,14 @@ class Ledger:
             if account.role == "share-capital":  # INV-13
                 raise Rejected("share-capital-account")
 
+        # Rule 9 (FR-EQ-01, B.7): the person and origin on a director's account, and only there.
+        for line in document.lines:
+            director = s.accounts[line.account].role in DIRECTOR_ACCOUNTS
+            if director and (line.party not in s.people or line.origin not in ORIGINS):
+                raise Rejected("director-line-without-person")
+            if not director and (line.party is not None or line.origin is not None):
+                raise Rejected("person-on-another-account")
+
         # Rule 5 (ENG-13, ENG-03), then RND-FX for every line not in the base currency.
         posted: list[PostedLine] = []
         for line, (amount, rate) in zip(document.lines, parsed, strict=True):
@@ -170,7 +186,7 @@ class Ledger:
             # Rule 6 (§11.3): a stored base amount is NUMERIC(20,4) too.
             if base_amount.copy_abs() >= money.AMOUNT_LIMIT:
                 raise Rejected("base-out-of-range")
-            posted.append(PostedLine(line.account, line.currency, amount, base_amount))
+            posted.append(PostedLine(line.account, line.currency, amount, base_amount, line.party))
 
         # Rule 7 (INV-01, INV-05): the stored base amounts balance. Never round a sum.
         if not money.total([ln.base_amount for ln in posted]).is_zero():
@@ -232,7 +248,7 @@ class Ledger:
             return
         self._reversed.add(reversal.document)
         lines = tuple(
-            PostedLine(ln.account, ln.currency, money.negate(ln.amount), money.negate(ln.base_amount))
+            PostedLine(ln.account, ln.currency, money.negate(ln.amount), money.negate(ln.base_amount), ln.party)
             for ln in original.lines
         )
         self._record(Entry(reversal.document, "reversal", reversal.date, lines))
@@ -249,17 +265,38 @@ class Ledger:
                 months[month][account] = amount
         return {m: dict(sorted(months[m].items())) for m in sorted(months)}
 
+    def people(self) -> dict[str, dict[str, Decimal]]:
+        """Each person's base-currency total on each director's account over every posted line (FR-EQ-01).
+
+        The sub-ledger of 2500 and 2120: a line names its person there and nowhere else (rule 9), so the
+        totals add up to those accounts. Totals of zero are left out, and so is a person with none.
+        """
+        totals: dict[str, dict[str, Decimal]] = defaultdict(lambda: defaultdict(lambda: money.ZERO))
+        for entry in self.entries:
+            for ln in entry.lines:
+                if ln.party is not None:
+                    totals[ln.party][ln.account] = money.EXACT.add(totals[ln.party][ln.account], ln.base_amount)
+        out = {}
+        for person in sorted(totals):
+            accounts = {a: v for a, v in sorted(totals[person].items()) if not v.is_zero()}
+            if accounts:
+                out[person] = accounts
+        return out
+
     def result(self) -> dict[str, Any]:
         """The ``fyniq-scenario-result@1`` document, every amount a plain decimal string."""
         s = self.scenario
 
         def line(ln: PostedLine) -> dict[str, str]:
-            return {
+            out = {
                 "account": ln.account,
                 "currency": ln.currency,
                 "amount": money.fmt(ln.amount, s.currencies[ln.currency]),
                 "base_amount": money.fmt(ln.base_amount, self.base_minor),
             }
+            if ln.party is not None:
+                out["party"] = ln.party
+            return out
 
         result = {
             "schema": RESULT_SCHEMA,
@@ -279,6 +316,12 @@ class Ledger:
                 for month, accounts in self.trial_balance().items()
             },
         }
+        people = self.people()
+        if people:
+            result["people"] = {
+                person: {account: money.fmt(total, self.base_minor) for account, total in accounts.items()}
+                for person, accounts in people.items()
+            }
         if s.statements:
             result["statements"] = statements(s, self.entries)
         if s.kpis is not None:

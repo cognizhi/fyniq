@@ -36,8 +36,8 @@
           "group": {"description": "A group (parent) account cannot be posted to (INV-04).", "type": "boolean"},
           "active": {"type": "boolean"},
           "role": {
-            "description": "Optional. \"share-capital\" marks an account a manual journal may not post to (INV-13, PRD-001 rev 0.24), such as 3010 and 3020 in the default chart. The statements read three more (FR-RPT-01 rev 0.159): \"retained-earnings\" (an equity account, 3100), \"depreciation\" (an expense account, 6610) and \"income-tax-expense\" (an expense account, 8010); a chart has at most one account with each of these three.",
-            "enum": ["share-capital", "retained-earnings", "depreciation", "income-tax-expense"]
+            "description": "Optional. \"share-capital\" marks an account a manual journal may not post to (INV-13, PRD-001 rev 0.24), such as 3010 and 3020 in the default chart. The statements read three more (FR-RPT-01 rev 0.159): \"retained-earnings\" (an equity account, 3100), \"depreciation\" (an expense account, 6610) and \"income-tax-expense\" (an expense account, 8010); a chart has at most one account with each of these three. \"director-loan\" (2500) and \"deferred-remuneration\" (2120) mark the director's accounts, each of whose lines names its person and origin, while no other line names either (FR-EQ-01, B.7; PRD-001 rev 0.167).",
+            "enum": ["share-capital", "retained-earnings", "depreciation", "income-tax-expense", "director-loan", "deferred-remuneration"]
           },
           "report_group": {
             "description": "Optional (FR-COA-02): the line a statement shows the account under. An account without one is shown under its code.",
@@ -57,6 +57,12 @@
           }
         }
       }
+    },
+    "people": {
+      "description": "Optional. The directors and shareholders: the only persons a line on a director's account may name (FR-EQ-01). Left out, there are none.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/documentId"}
     },
     "statements": {
       "description": "Optional. true asks both sides for every month's statements (FR-RPT-01, README \"Statements\"); the chart then needs an account with the role retained-earnings.",
@@ -577,7 +583,9 @@
         "currency": {"type": "string"},
         "amount": {"description": "Signed: debit positive, credit negative.", "type": "string"},
         "fx_rate": {"description": "Base per unit of the line's currency. Only on lines not in the base currency, and always with fx_rate_source.", "type": "string"},
-        "fx_rate_source": {"description": "Where the rate came from (ENG-40), e.g. \"document\". Only with fx_rate.", "type": "string", "minLength": 1}
+        "fx_rate_source": {"description": "Where the rate came from (ENG-40), e.g. \"document\". Only with fx_rate.", "type": "string", "minLength": 1},
+        "party": {"description": "The person a line on a director's account belongs to, one of people (FR-EQ-01, B.7). Whether it is there exactly when the account is a director's, and one of people, is a posting rule (README, rule 9).", "type": "string"},
+        "origin": {"description": "Where the amount on a director's account came from (FR-EQ-01): lent, paid_personally, pay, fee, paid_out or other. A posting rule, as party is.", "type": "string"}
       }
     }
   }

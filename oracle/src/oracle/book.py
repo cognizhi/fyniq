@@ -20,6 +20,7 @@ class PostedLine:
     currency: str
     amount: Decimal
     base_amount: Decimal
+    party: str | None = None  # a director's account's person (FR-EQ-01, B.7); a P1 source's lines name none yet
 
 
 @dataclass(frozen=True)

@@ -15,7 +15,9 @@ The shapes PRD-001 rev 0.24 decided (the "Decided in PRD-001 rev 0.24" table of
 ``test/differential/README.md``) each have a kind: a foreign line whose base amount rounds to zero
 (posts, INV-05), a rate or rate source on a base-currency line (rejected, ENG-03), a base amount of
 17 integer digits or more (rejected, ENG-44) and a line to a share-capital account (rejected,
-INV-13); half of the charts have such an account. A reversal may be dated up to 20 days before its
+INV-13); half of the charts have such an account. (PRD-001 rev 0.167) Half of the charts also have a
+director's account, 2500 or 2120, and two people: a line on it names one of them and an origin (posts),
+names none or someone else (rejected), or a person on another line (rejected; FR-EQ-01, B.7). A reversal may be dated up to 20 days before its
 document (rejected, FR-GL-12, and the document stays unreversed). Every rate carries its source, as
 the format requires: ``document``, or ``base`` on a base-currency line built to be rejected.
 """
@@ -60,7 +62,7 @@ _DATES = st.dates(date(2025, 11, 1), date(2027, 2, 28))  # crosses two year ends
 POST, REJECT, OPEN = "post", "reject", "open"
 
 _POSTING_KINDS = ["balanced"] * 14 + [
-    "single-base", "long", "boundary", "half-unit", "half-unit", "base-rounds-to-zero"
+    "single-base", "long", "boundary", "half-unit", "half-unit", "base-rounds-to-zero", "director-line", "director-line"
 ]
 _OPEN_KINDS = ["single-foreign", "single-foreign"]
 _REJECTED_KINDS = [
@@ -80,7 +82,15 @@ _REJECTED_KINDS = [
     "rate-on-base-line",
     "base-out-of-range",
     "share-capital-account",
+    "director-line-without-person",
+    "person-on-another-account",
 ]
+
+# The people of a chart with a director's account (FR-EQ-01), the origins a line on it gives, and a person who is
+# not one of them.
+PEOPLE = ["P0001", "P0002"]
+_ORIGINS = ["lent", "paid_personally", "pay", "fee", "paid_out", "other"]
+_STRANGER = "P0099"
 KINDS = _POSTING_KINDS + _OPEN_KINDS + _REJECTED_KINDS
 
 _NOT_PLAIN_AMOUNTS = [
@@ -123,6 +133,7 @@ class _Ctx:
     inactive: str
     group: str
     share: str | None  # an account with the role share-capital, in half of the charts (INV-13)
+    director: str | None = None  # a director's account (2500 or 2120), in half of the charts (FR-EQ-01)
 
     @property
     def base_minor(self) -> int:
@@ -384,7 +395,9 @@ def _journal(draw: st.DrawFn, ctx: _Ctx, kind: str) -> tuple[list[dict], str]:
     """The lines of one manual journal of ``kind``, and its intent."""
     foreign_kinds = ("missing-rate", "bad-rate", "half-unit", "single-foreign", "unbalanced-currency",
                      "base-rounds-to-zero", "base-out-of-range")
-    if (kind in foreign_kinds and not ctx.foreign) or (kind == "share-capital-account" and ctx.share is None):
+    director_kinds = ("director-line", "director-line-without-person", "person-on-another-account")
+    if ((kind in foreign_kinds and not ctx.foreign) or (kind == "share-capital-account" and ctx.share is None)
+            or (kind in director_kinds and ctx.director is None)):
         kind = "balanced"
     if kind == "balanced":
         return draw(_balanced(ctx)), POST
@@ -429,6 +442,24 @@ def _journal(draw: st.DrawFn, ctx: _Ctx, kind: str) -> tuple[list[dict], str]:
         lines[i]["account"] = ctx.group
     elif kind == "share-capital-account":
         lines[i]["account"] = ctx.share
+    elif kind in director_kinds:
+        lines[i]["account"] = ctx.director
+        lines[i]["party"], lines[i]["origin"] = draw(st.sampled_from(PEOPLE)), draw(st.sampled_from(_ORIGINS))
+        if kind == "director-line":
+            return lines, POST
+        if kind == "director-line-without-person":
+            broken = draw(st.sampled_from(["party", "origin", "stranger", "unknown-origin"]))
+            if broken == "stranger":
+                lines[i]["party"] = _STRANGER
+            elif broken == "unknown-origin":
+                lines[i]["origin"] = "gift"
+            else:
+                del lines[i][broken]
+        else:  # a person, an origin or both on a line to another account
+            k = draw(st.sampled_from([k for k in range(len(lines)) if k != i] or [i]))
+            assume(k != i)
+            for key in draw(st.sampled_from([("party",), ("origin",), ("party", "origin")])):
+                lines[k][key] = lines[i][key]
     elif kind == "rate-on-base-line":
         i = draw(st.sampled_from([k for k, ln in enumerate(lines) if ln["currency"] == ctx.base]))
         if draw(st.integers(0, 3)) > 0:  # a rate, which comes with its source; else the source alone
@@ -465,9 +496,10 @@ def _context(draw: st.DrawFn) -> tuple[_Ctx, list[dict]]:
     base = draw(st.sampled_from(_BASES))
     others = draw(st.lists(st.sampled_from(sorted(set(CURRENCIES) - {base})), max_size=8, unique=True))
     currencies = {base: CURRENCIES[base], **{c: CURRENCIES[c] for c in sorted(others)}}
-    with_share = draw(st.booleans())
-    codes = draw(st.lists(st.integers(1000, 8999).map(str), min_size=4 + with_share, max_size=12, unique=True))
+    with_share, with_director = draw(st.booleans()), draw(st.booleans())
+    codes = draw(st.lists(st.integers(1000, 8999).map(str), min_size=4 + with_share + with_director, max_size=12, unique=True))
     share = codes.pop() if with_share else None
+    director = codes.pop() if with_director else None
     *postable, inactive, group = codes
     kinds = ["asset", "liability", "equity", "revenue", "expense"]
     accounts = [
@@ -476,8 +508,11 @@ def _context(draw: st.DrawFn) -> tuple[_Ctx, list[dict]]:
     ]
     if share is not None:
         accounts.append({"code": share, "type": "equity", "group": False, "active": True, "role": "share-capital"})
+    if director is not None:
+        role = draw(st.sampled_from(["director-loan", "deferred-remuneration"]))
+        accounts.append({"code": director, "type": "liability", "group": False, "active": True, "role": role})
     accounts = draw(st.permutations(accounts))
-    return _Ctx(base, currencies, postable, inactive, group, share), accounts
+    return _Ctx(base, currencies, postable, inactive, group, share, director), accounts
 
 
 @st.composite
@@ -512,6 +547,8 @@ def scenarios_with_intent(draw: st.DrawFn, name: str = "generated") -> tuple[dic
         "documents": documents,
         "reversals": list(reversals),
     }
+    if ctx.director is not None:
+        scenario["people"] = list(PEOPLE)
     return scenario, Intent(intent)
 
 
