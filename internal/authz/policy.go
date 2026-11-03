@@ -105,9 +105,10 @@ const (
 // a step of an organisation connector's lifecycle (p1-connector-framework, FR-INT-26); a bank rule's auto-apply
 // (p1-bank-import-reconcile, FR-BNK-14); posting an expense claim (p1-expense-claims, FR-AP-17), and voiding a
 // reimbursement of claims (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148); voiding a disposal of a fixed asset
-// (FR-FA-03, p1-fixed-assets); a change of a vendor's bank details (FR-CT-03, rev 0.153).
+// (FR-FA-03, p1-fixed-assets); a change of a vendor's bank details (FR-CT-03, rev 0.153); the member a director or
+// shareholder signs in as (FR-EQ-01, rev 0.167).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
-	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails}
+	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -590,6 +591,17 @@ var (
 	// and the account numbers show their last four characters to everyone; prepared and asked for under C (the
 	// Accountant, the AP specialist); approved through the approval engine by another person who holds A (the Owner, the
 	// Controller). Revealing a full number needs V unmasked (C or A) and step-up; a masked view (M) gets it masked.
+	// Director accounts (FR-EQ-01, FR-EQ-14; PRD-001 rev 0.167; p1-founders-money design D5): read under V without a
+	// qualifier (the Owner, the Controller, the Accountant, the Bookkeeper, the Auditor, the Tax agent), for Payroll's
+	// "deferred pay" and the Board's "share issues" reach only their own parts as those arrive; a person's own account
+	// under any right, which the handler narrows to the caller's own. The member a director or shareholder signs in as is
+	// linked by a holder of A (the Owner, the Controller) through the approval engine, approved by another, never the
+	// member (FM-1).
+	ListDirectorAccounts           = Policy{Operation: "listDirectorAccounts", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetDirectorStatement           = Policy{Operation: "getDirectorStatement", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	ExportDirectorStatement        = Policy{Operation: "exportDirectorStatement", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetMyDirectorAccount           = Policy{Operation: "getMyDirectorAccount", Capability: DirectorAccounts, Need: View}
+	LinkContactMember              = Policy{Operation: "linkContactMember", Capability: DirectorAccounts, Need: Approve}
 	GetPayeeBankDetails            = Policy{Operation: "getPayeeBankDetails", Capability: VendorBankDetails, Need: View}
 	GetPayeeBankChange             = Policy{Operation: "getPayeeBankChange", Capability: VendorBankDetails, Need: View}
 	CreatePayeeBankChange          = Policy{Operation: "createPayeeBankChange", Capability: VendorBankDetails, Need: Create}
@@ -1078,6 +1090,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset, ListUnregisteredAssetLines,
 	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid, VoidFixedAsset, RequestFixedAssetVoid,
 	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,
+	ListDirectorAccounts, GetDirectorStatement, ExportDirectorStatement, GetMyDirectorAccount, LinkContactMember,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
 	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, SendRemittanceAgain, ReleasePaymentBatch, GetPaymentBatchFile,
@@ -1164,8 +1177,9 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 			q.Capability = row
 			// An Employee's own claims ("C (own)") are not the approvals: a claimant reaches their claim's request from the
 			// claim (design D10), and never the approvals or the review log; nor is the Payroll administrator's "C
-			// (salaries)" on payment batches.
-			q.Unqualified = row == ExpenseClaims || row == PaymentBatches
+			// (salaries)" on payment batches, nor a qualified view of director accounts (own, deferred pay, share issues,
+			// repayments).
+			q.Unqualified = row == ExpenseClaims || row == PaymentBatches || row == DirectorAccounts
 			if r, ok := holds(q, roles); ok {
 				return Decision{Allowed: true, Right: r}
 			}

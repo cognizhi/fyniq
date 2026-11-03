@@ -267,6 +267,7 @@ type AccountLine struct {
 	BaseAmount      Decimal
 	Description     string
 	Number          string
+	PartyID         *uuid.UUID // the person of a line on a director's account (B.7), else nil
 }
 
 // Balances is the materialised balances cache (INV-08).
@@ -572,6 +573,7 @@ type NewLine struct {
 	FXRateSource string
 	BaseAmount   Decimal
 	Description  string
+	PartyID      *uuid.UUID // the director or shareholder of a line on 2500 or 2120, required there and refused elsewhere (B.7, FY250)
 }
 
 // Entry is a posted journal entry.
@@ -601,6 +603,7 @@ type Line struct {
 	BaseCurrency string
 	BaseAmount   Decimal
 	Description  string
+	PartyID      *uuid.UUID // the person of a line on a director's account (B.7), else nil
 }
 
 // Balance is the cached total of one account, period and currency.
@@ -715,6 +718,10 @@ const (
 	// CodeEvidence: evidence keeps what it is, is removed only from a draft, is append-only once its record is
 	// not a draft, keeps a retain-until that only moves later, and is never deleted (FR-DOC-02, FR-DOC-07).
 	CodeEvidence = "STORAGE-EVIDENCE-01"
+	// CodeParty: a line on a director's account (2500, 2120) names a director or shareholder, and no other line names a
+	// person; a contact named by a line stays one; a contact's member changes only under its approved request (B.7,
+	// FR-EQ-01, FM-1).
+	CodeParty = "STORAGE-PARTY-01"
 )
 
 // ErrPreviewed is what Do returns for a preview that passed every check the commit would run: nothing

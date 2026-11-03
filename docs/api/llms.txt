@@ -140,6 +140,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/contacts/{contact_id}/bank-details` (getPayeeBankDetails): Get a vendor's bank details
 - `GET /v1/contacts/{contact_id}/document-templates` (listContactDocumentTemplates): List a contact's templates
 - `PUT /v1/contacts/{contact_id}/document-templates/{kind}/{document_type}` (setContactDocumentTemplate): Choose a contact's template
+- `PUT /v1/contacts/{contact_id}/member` (linkContactMember): Link a director or shareholder to the member who signs in as them
 - `GET /v1/contacts/{contact_id}/statement` (getCustomerStatement): Work out a customer's statement
 - `GET /v1/contacts/{contact_id}/withholding-decisions` (listWithholdingDecisions): List a supplier's withholding decisions
 - `POST /v1/contacts/{contact_id}/withholding-decisions` (recordWithholdingDecision): Record the tax agent's withholding decision
@@ -169,6 +170,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/customer-refunds/{refund_id}` (getCustomerRefund): Get a refund to a customer
 - `POST /v1/customer-refunds/{refund_id}/void` (voidCustomerRefund): Void a refund to a customer
 - `POST /v1/customer-refunds/{refund_id}/void-approval` (requestCustomerRefundVoid): Ask for approval to void a refund to a customer
+- `GET /v1/director-accounts` (listDirectorAccounts): List the director accounts
+- `GET /v1/director-accounts/{contact_id}/statement` (getDirectorStatement): Work out a director's statement
+- `GET /v1/director-accounts/{contact_id}/statement/export` (exportDirectorStatement): Export a director's statement
 - `POST /v1/document-links/{link_id}/revoke` (revokeDocumentLink): Revoke a quote's or invoice's online link
 - `GET /v1/document-template-bundle` (exportDocumentTemplates): Export templates as a bundle
 - `POST /v1/document-template-bundles` (importDocumentTemplates): Import templates from a bundle
@@ -277,6 +281,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/me/bank-changes/{change_id}/reveal` (revealMyBankAccount): Reveal your account's full number
 - `POST /v1/me/bank-changes/{change_id}/withdraw` (withdrawMyBankChange): Withdraw a change of your bank account from approval
 - `GET /v1/me/bank-details` (getMyBankDetails): Get your bank account for reimbursements
+- `GET /v1/me/director-account` (getMyDirectorAccount): Get your own director account
 - `GET /v1/members` (listMembers): List the members
 - `POST /v1/members` (acceptMemberInvitation): Join an organisation with an invitation
 - `GET /v1/members/invitations` (listMemberInvitations): List the pending invitations

@@ -31,6 +31,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/credits"
 	"github.com/cognizhi/fyniq/internal/domain/customercredit"
 	"github.com/cognizhi/fyniq/internal/domain/deposit"
+	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
@@ -747,6 +748,12 @@ var codeFacts = map[string]struct {
 	storage.CodePayee:             {409, "Bank details do not change that way"},
 	storage.CodeBatch:             {409, "A payment batch does not change that way"},
 	storage.CodeBatchHeld:         {409, "The item is paid by an approved payment batch"},
+	ledger.CodeParty:              {422, "A director's account line needs its person"},
+	director.CodeNotPerson:        {422, "Not a director or shareholder"},
+	director.CodeDates:            {422, "The statement's dates do not fit"},
+	CodeNotLinked:                 {403, "Only a person has their own director account"},
+	CodeOwnLink:                   {403, "Another person approves your own link"},
+	storage.CodeParty:             {409, "A director's account does not change that way"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -777,6 +784,8 @@ var storageFixes = map[string]string{
 	storage.CodePayee:     "Prepare a change of the bank details and ask for approval: a second person, who neither prepared nor asked for it, approves it, which puts its account in force",
 	storage.CodeBatch:     "A batch is approved by a second person, released once, and never changed after; a payment the bank rejects is voided on its own",
 	storage.CodeBatchHeld: "Release the approved batch that holds it, or cancel the batch first and then record the payment",
+
+	storage.CodeParty: "Name the director or shareholder on each line of 2500 and 2120 and on no other line; a person with amounts stays a director or shareholder, and their member is linked only by another person's approval",
 
 	storage.CodeAsset: "Register an asset from a line of a posted bill or bank line that put its cost on an asset account, once; a month's depreciation is of a registered asset's current version",
 

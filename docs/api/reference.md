@@ -6720,6 +6720,127 @@ Changes a saved mapping. Statements imported before keep what it read then. Need
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `BANKFILE-06`, `STORAGE-BANKING-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+## Founders
+
+What the company owes its directors and shareholders on 2500 Loan from director / shareholder and 2120 Deferred remuneration payable, each amount naming its person and where it came from; their statements; and the member who signs in as each (PRD-001 §8.22, FR-EQ-01, FR-EQ-14).
+
+### `PUT /v1/contacts/{contact_id}/member`
+
+**Link a director or shareholder to the member who signs in as them** (`linkContactMember`)
+
+Asks to link a director or shareholder to a member of the organisation, or with no member to unlink them (FR-EQ-01; PRD-001 rev 0.167). The link decides where repayments go and who never approves the person's settlement (FM-9), so it falls under FM-1 in every team mode: the answer is 202 with an approval request, which another person who holds A on "Director accounts, settlements, share issues", not the member linked or unlinked, approves; the database refuses any other change of it (STORAGE-PARTY-01). A member signs in as one director or shareholder at most. Asking needs a person signed in who passed step-up in the last 5 minutes, and If-Match with the contact's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+
+- **Permission:** Approve on Director accounts, settlements, share issues (rev 0.3)
+- **Parameters:**
+  - `contact_id` (path, required): The contact's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`MemberLink`](../../contracts/schemas/MemberLink.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted: the change needs a second approver (FM-1) and waits for approval; nothing changed yet. The body is the approval request (rev 0.36). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PARTY-01` A director's account does not change that way.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `FOUNDER-01`, `FOUNDER-02`, `FOUNDER-03`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-PARTY-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/director-accounts`
+
+**List the director accounts** (`listDirectorAccounts`)
+
+Every contact marked director or shareholder with their balances as at a day on the director's accounts, 2500 Loan from director / shareholder and 2120 Deferred remuneration payable, from the balance service (FR-EQ-01, ENG-04; PRD-001 rev 0.167). Every line on those accounts names its person, so the balances add up to the accounts; unkeyed shows anything that names no one. A net debit means the person owes the company (FR-EQ-11). A page at a time. Read-only; no side effects.
+
+- **Permission:** View on Director accounts, settlements, share issues (rev 0.3)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `as_at` (query): The day the balances are at; the organisation's today when left out.
+- **Responses:**
+  - `200` OK [`DirectorAccountList`](../../contracts/schemas/DirectorAccountList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `FOUNDER-01`, `FOUNDER-02`, `FOUNDER-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/director-accounts/{contact_id}/statement`
+
+**Work out a director's statement** (`getDirectorStatement`)
+
+A director's or shareholder's statement from one day to another (FR-EQ-01): for each director's account the balance before the first day, the movements by origin (lent, paid personally, pay, fee, paid out, converted, waived, other) and the balance at the last day, with every line in posting order. The origin comes from the line's source, or as entered on a journal or opening balance line. Read-only; no side effects.
+
+- **Permission:** View on Director accounts, settlements, share issues (rev 0.3)
+- **Parameters:**
+  - `contact_id` (path, required): The contact's ID.
+  - `from` (query, required): The statement's first day.
+  - `to` (query, required): Its last day.
+- **Responses:**
+  - `200` OK [`DirectorStatement`](../../contracts/schemas/DirectorStatement.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `FOUNDER-01`, `FOUNDER-02`, `FOUNDER-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/director-accounts/{contact_id}/statement/export`
+
+**Export a director's statement** (`exportDirectorStatement`)
+
+The statement getDirectorStatement gives, as a file (FR-EQ-01): a PDF from the render service to print or send for a balance confirmation, owed to the person shown positive; or CSV, its movements with plain decimals and an ASCII minus. Returned in base64 with its SHA-256. A PDF the render service cannot make now is REPORT-08. Side effects: an audit event of the export with its file and hash (FR-RPT-09). Never cached.
+
+- **Permission:** View on Director accounts, settlements, share issues (rev 0.3)
+- **Parameters:**
+  - `contact_id` (path, required): The contact's ID.
+  - `from` (query, required): The statement's first day.
+  - `to` (query, required): Its last day.
+  - `format` (query): pdf: the statement to print or send for a balance confirmation, from the render service; csv: its movements, plain decimals with an ASCII minus.
+- **Responses:**
+  - `200` OK [`ReportFile`](../../contracts/schemas/ReportFile.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `FOUNDER-01`, `FOUNDER-02`, `FOUNDER-03`, `REPORT-08`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/me/director-account`
+
+**Get your own director account** (`getMyDirectorAccount`)
+
+The director or shareholder you sign in as, with your balances as at a day: Money I put in (FR-EQ-14, FR-EQ-01); linked is false when none is linked to you (linkContactMember). Only a person signed in as themselves has one (FOUNDER-03). Read-only; no side effects.
+
+- **Permission:** View on Director accounts, settlements, share issues (rev 0.3)
+- **Parameters:**
+  - `as_at` (query): The day the balances are at; the organisation's today when left out.
+- **Responses:**
+  - `200` OK [`MyDirectorAccount`](../../contracts/schemas/MyDirectorAccount.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `FOUNDER-01`, `FOUNDER-02`, `FOUNDER-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ## Expense claims
 
 Members' claims for what they spent for the company: drafted and submitted by the claimant, approved by someone else, posted to 2150 Expense claims payable (FR-AP-07, FR-AP-14, FR-AP-17).
@@ -9109,7 +9230,7 @@ The organisation's customers and vendors, in the order they were added, a page a
 - **Parameters:**
   - `page_size` (query): How many items per page, up to 500.
   - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
-  - `role` (query): Only customers, or only vendors.
+  - `role` (query): Only customers, only vendors, or only directors and shareholders.
 - **Responses:**
   - `200` OK [`ContactPage`](../../contracts/schemas/ContactPage.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
@@ -9182,7 +9303,7 @@ Changes the fields sent and keeps the rest; "" clears a text, -1 the payment ter
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
-  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PARTY-01` A director's account does not change that way.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
@@ -9191,7 +9312,7 @@ Changes the fields sent and keeps the rest; "" clears a text, -1 the payment ter
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CT-01`, `CT-02`, `CT-03`, `CT-04`, `CT-05`, `CT-06`, `CT-07`, `CT-08`, `CT-09`, `CT-10`, `CT-11`, `REMINDER-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CT-01`, `CT-02`, `CT-03`, `CT-04`, `CT-05`, `CT-06`, `CT-07`, `CT-08`, `CT-09`, `CT-10`, `CT-11`, `REMINDER-03`, `STORAGE-LOCK-01`, `STORAGE-PARTY-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
 ### `GET /v1/contacts/{contact_id}/bank-details`
 
@@ -9876,9 +9997,9 @@ Signs the request's current step and, once every step of its policy has its quor
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9).
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `FOUNDER-04` Another person approves your own link; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9).
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `APPLY-01` Not a customer credit application; `APPLY-10` Not a customer refund; `BILL-01` Not a bill; `BILLPAY-01` Not a payment of bills; `CLAIM-01` Not an expense claim; `CLAIM-12` Not a reimbursement of expense claims; `CLAIM-28` Not a cash advance; `CREDIT-01` Not a credit application; `CREDIT-10` Not a supplier refund; `DEPOSIT-01` Not a customer deposit; `INVOICE-01` Not an invoice; `JOURNAL-01` Not a manual journal; `PAYEE-01` Not a change of bank details; `PO-01` Not a purchase order; `RECEIPT-01` Not a customer receipt; `WRITEOFF-01` Not a write-off.
-  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APPLY-06` The application is not posted; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `BILL-02` The bill is not a draft; `BILL-03` The bill is not posted; `BILL-13` Payments settle the bill; `BILLPAY-06` The payment is not posted; `CLAIM-02` The claim is not a draft; `CLAIM-15` The reimbursement is not posted; `CLAIM-31` The advance cannot be voided as it stands; `CREDIT-06` The application is not posted; `DEPOSIT-06` The deposit is not posted; `DEPOSIT-08` Invoices or refunds use the deposit; `INVOICE-02` The invoice is not a draft; `INVOICE-03` The invoice is not issued; `INVOICE-13` Receipts or credits settle the invoice; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `PO-10` The order is not a draft; `RECEIPT-06` The receipt is not posted; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DOC-04` An edit posts its reversal and its new version together; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way; `STORAGE-PAYEE-01` Bank details do not change that way; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-TEMPLATE-01` The template does not change that way; `TPL-12` That version is in force already; `WRITEOFF-07` The write-off is not a draft; `WRITEOFF-08` The write-off is not posted.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APPLY-06` The application is not posted; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `BILL-02` The bill is not a draft; `BILL-03` The bill is not posted; `BILL-13` Payments settle the bill; `BILLPAY-06` The payment is not posted; `CLAIM-02` The claim is not a draft; `CLAIM-15` The reimbursement is not posted; `CLAIM-31` The advance cannot be voided as it stands; `CREDIT-06` The application is not posted; `DEPOSIT-06` The deposit is not posted; `DEPOSIT-08` Invoices or refunds use the deposit; `INVOICE-02` The invoice is not a draft; `INVOICE-03` The invoice is not issued; `INVOICE-13` Receipts or credits settle the invoice; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `PO-10` The order is not a draft; `RECEIPT-06` The receipt is not posted; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DOC-04` An edit posts its reversal and its new version together; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way; `STORAGE-PAYEE-01` Bank details do not change that way; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-TEMPLATE-01` The template does not change that way; `TPL-12` That version is in force already; `WRITEOFF-07` The write-off is not a draft; `WRITEOFF-08` The write-off is not posted.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
@@ -9887,7 +10008,7 @@ Signs the request's current step and, once every step of its policy has its quor
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-PASSKEY-01`, `API-PASSKEY-03`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APPLY-01`, `APPLY-02`, `APPLY-06`, `APPLY-07`, `APPLY-10`, `APR-01`, `APR-02`, `APR-03`, `APR-04`, `APR-05`, `APR-06`, `APR-07`, `APR-08`, `APR-09`, `APR-10`, `APR-11`, `BILL-01`, `BILL-02`, `BILL-03`, `BILL-04`, `BILL-05`, `BILL-06`, `BILL-07`, `BILL-08`, `BILL-11`, `BILL-13`, `BILL-14`, `BILL-15`, `BILL-16`, `BILLPAY-01`, `BILLPAY-02`, `BILLPAY-06`, `BILLPAY-07`, `CLAIM-01`, `CLAIM-02`, `CLAIM-03`, `CLAIM-04`, `CLAIM-05`, `CLAIM-06`, `CLAIM-07`, `CLAIM-08`, `CLAIM-11`, `CLAIM-12`, `CLAIM-15`, `CLAIM-16`, `CLAIM-18`, `CLAIM-19`, `CLAIM-24`, `CLAIM-25`, `CLAIM-26`, `CLAIM-27`, `CLAIM-28`, `CLAIM-31`, `CLAIM-32`, `CREDIT-01`, `CREDIT-02`, `CREDIT-06`, `CREDIT-07`, `CREDIT-10`, `DEPOSIT-01`, `DEPOSIT-02`, `DEPOSIT-06`, `DEPOSIT-07`, `DEPOSIT-08`, `FX-01`, `INVOICE-01`, `INVOICE-02`, `INVOICE-03`, `INVOICE-04`, `INVOICE-05`, `INVOICE-06`, `INVOICE-07`, `INVOICE-08`, `INVOICE-09`, `INVOICE-12`, `INVOICE-13`, `INVOICE-15`, `INVOICE-16`, `JOURNAL-01`, `JOURNAL-02`, `JOURNAL-03`, `JOURNAL-04`, `JOURNAL-09`, `JOURNAL-11`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `LEDGER-21`, `LEDGER-22`, `LEDGER-23`, `LEDGER-24`, `LEDGER-26`, `LEDGER-28`, `LEDGER-29`, `LEDGER-30`, `LEDGER-31`, `LEDGER-32`, `LEDGER-33`, `LEDGER-36`, `LEDGER-37`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-06`, `MEM-07`, `PACK-07`, `PACK-09`, `PACK-10`, `PACK-13`, `PAYEE-01`, `PAYEE-02`, `PAYEE-03`, `PAYEE-04`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-09`, `PAYEE-10`, `PAYEE-11`, `PAYEE-13`, `PAYEE-14`, `PAYEE-15`, `PAYEE-18`, `PO-01`, `PO-02`, `PO-03`, `PO-04`, `PO-05`, `PO-06`, `PO-07`, `PO-08`, `PO-09`, `PO-10`, `PO-15`, `RECEIPT-01`, `RECEIPT-02`, `RECEIPT-06`, `RECEIPT-07`, `SET-01`, `SET-02`, `SET-03`, `SET-04`, `SET-06`, `STORAGE-APPROVAL-01`, `STORAGE-CLAIM-01`, `STORAGE-DOC-02`, `STORAGE-DOC-04`, `STORAGE-DUPLICATE-01`, `STORAGE-INV-01`, `STORAGE-INV-02`, `STORAGE-INV-03`, `STORAGE-INV-04`, `STORAGE-INV-05`, `STORAGE-INV-13`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-PASSKEY-01`, `STORAGE-PAYEE-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`, `STORAGE-TEMPLATE-01`, `STORAGE-VERSION-01`, `TEAM-04`, `TPL-01`, `TPL-02`, `TPL-03`, `TPL-04`, `TPL-05`, `TPL-06`, `TPL-07`, `TPL-08`, `TPL-09`, `TPL-10`, `TPL-11`, `TPL-12`, `TPL-13`, `TPL-15`, `TPL-16`, `TPL-17`, `WRITEOFF-01`, `WRITEOFF-02`, `WRITEOFF-03`, `WRITEOFF-04`, `WRITEOFF-05`, `WRITEOFF-06`, `WRITEOFF-07`, `WRITEOFF-08`, `WRITEOFF-09`, `WRITEOFF-11`, `WRITEOFF-12`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-PASSKEY-01`, `API-PASSKEY-03`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APPLY-01`, `APPLY-02`, `APPLY-06`, `APPLY-07`, `APPLY-10`, `APR-01`, `APR-02`, `APR-03`, `APR-04`, `APR-05`, `APR-06`, `APR-07`, `APR-08`, `APR-09`, `APR-10`, `APR-11`, `BILL-01`, `BILL-02`, `BILL-03`, `BILL-04`, `BILL-05`, `BILL-06`, `BILL-07`, `BILL-08`, `BILL-11`, `BILL-13`, `BILL-14`, `BILL-15`, `BILL-16`, `BILLPAY-01`, `BILLPAY-02`, `BILLPAY-06`, `BILLPAY-07`, `CLAIM-01`, `CLAIM-02`, `CLAIM-03`, `CLAIM-04`, `CLAIM-05`, `CLAIM-06`, `CLAIM-07`, `CLAIM-08`, `CLAIM-11`, `CLAIM-12`, `CLAIM-15`, `CLAIM-16`, `CLAIM-18`, `CLAIM-19`, `CLAIM-24`, `CLAIM-25`, `CLAIM-26`, `CLAIM-27`, `CLAIM-28`, `CLAIM-31`, `CLAIM-32`, `CREDIT-01`, `CREDIT-02`, `CREDIT-06`, `CREDIT-07`, `CREDIT-10`, `DEPOSIT-01`, `DEPOSIT-02`, `DEPOSIT-06`, `DEPOSIT-07`, `DEPOSIT-08`, `FOUNDER-04`, `FX-01`, `INVOICE-01`, `INVOICE-02`, `INVOICE-03`, `INVOICE-04`, `INVOICE-05`, `INVOICE-06`, `INVOICE-07`, `INVOICE-08`, `INVOICE-09`, `INVOICE-12`, `INVOICE-13`, `INVOICE-15`, `INVOICE-16`, `JOURNAL-01`, `JOURNAL-02`, `JOURNAL-03`, `JOURNAL-04`, `JOURNAL-09`, `JOURNAL-11`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `LEDGER-21`, `LEDGER-22`, `LEDGER-23`, `LEDGER-24`, `LEDGER-26`, `LEDGER-28`, `LEDGER-29`, `LEDGER-30`, `LEDGER-31`, `LEDGER-32`, `LEDGER-33`, `LEDGER-36`, `LEDGER-37`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-06`, `MEM-07`, `PACK-07`, `PACK-09`, `PACK-10`, `PACK-13`, `PAYEE-01`, `PAYEE-02`, `PAYEE-03`, `PAYEE-04`, `PAYEE-05`, `PAYEE-06`, `PAYEE-07`, `PAYEE-08`, `PAYEE-09`, `PAYEE-10`, `PAYEE-11`, `PAYEE-13`, `PAYEE-14`, `PAYEE-15`, `PAYEE-18`, `PO-01`, `PO-02`, `PO-03`, `PO-04`, `PO-05`, `PO-06`, `PO-07`, `PO-08`, `PO-09`, `PO-10`, `PO-15`, `RECEIPT-01`, `RECEIPT-02`, `RECEIPT-06`, `RECEIPT-07`, `SET-01`, `SET-02`, `SET-03`, `SET-04`, `SET-06`, `STORAGE-APPROVAL-01`, `STORAGE-CLAIM-01`, `STORAGE-DOC-02`, `STORAGE-DOC-04`, `STORAGE-DUPLICATE-01`, `STORAGE-INV-01`, `STORAGE-INV-02`, `STORAGE-INV-03`, `STORAGE-INV-04`, `STORAGE-INV-05`, `STORAGE-INV-13`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-PARTY-01`, `STORAGE-PASSKEY-01`, `STORAGE-PAYEE-01`, `STORAGE-PERIOD-01`, `STORAGE-RETRY-01`, `STORAGE-TEMPLATE-01`, `STORAGE-VERSION-01`, `TEAM-04`, `TPL-01`, `TPL-02`, `TPL-03`, `TPL-04`, `TPL-05`, `TPL-06`, `TPL-07`, `TPL-08`, `TPL-09`, `TPL-10`, `TPL-11`, `TPL-12`, `TPL-13`, `TPL-15`, `TPL-16`, `TPL-17`, `WRITEOFF-01`, `WRITEOFF-02`, `WRITEOFF-03`, `WRITEOFF-04`, `WRITEOFF-05`, `WRITEOFF-06`, `WRITEOFF-07`, `WRITEOFF-08`, `WRITEOFF-09`, `WRITEOFF-11`, `WRITEOFF-12`
 
 ### `POST /v1/approvals/{approval_id}/challenge`
 

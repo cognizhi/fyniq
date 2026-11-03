@@ -192,7 +192,8 @@ var closeChecks = []Definition{
 
 // subLedgerKeys are the close's checks of the sub-ledgers against their control accounts (INV-07; C.2 #2).
 var subLedgerKeys = []string{"payables", "payables-unsupported", "receivables", "receivables-unsupported", "deposits", "deposits-unsupported",
-	"prepayments", "prepayments-unsupported", "prepayments-unscheduled", "deferred-revenue", "deferred-revenue-unsupported", "deferred-revenue-unscheduled"}
+	"prepayments", "prepayments-unsupported", "prepayments-unscheduled", "deferred-revenue", "deferred-revenue-unsupported", "deferred-revenue-unscheduled",
+	"directors"}
 
 // syncsOnSchedule: a connector's feed whose last sync failed, or that has not synced within its schedule (C.2 #43).
 func syncsOnSchedule(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {

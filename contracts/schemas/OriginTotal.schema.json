@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "Their sum, as the ledger holds it: negative is owed to the person."
+    },
+    "origin": {
+      "description": "Where the amounts came from (FR-EQ-01).",
+      "enum": [
+        "lent",
+        "paid_personally",
+        "pay",
+        "fee",
+        "paid_out",
+        "converted",
+        "waived",
+        "other"
+      ],
+      "examples": [
+        "lent"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "origin",
+    "amount"
+  ],
+  "title": "OriginTotal",
+  "type": "object"
+}

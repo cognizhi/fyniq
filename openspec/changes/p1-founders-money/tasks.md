@@ -5,30 +5,48 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
 
 ## 1. The person on every line, and director accounts (slice 1)
 
-- [ ] 1.1 Migration (D1, D2):
+- [x] 1.1 Migration (D1, D2):
   - `contact.is_director`, `is_shareholder` and `member_user_id`, with `contact_role_known` widened and a member
     linked to one contact at most;
   - `journal_line.party_id`, refused by `journal_line_check` when missing on 2500 or 2120, not a director or
     shareholder, or on any other account (FY250);
   - FY249: a contact with such lines stays marked.
   Plus the storage port and adapter, attack tests, and the grants and schema goldens. `// req: FR-EQ-01`
-- [ ] 1.2 The engine and the sources (D2, D3):
+  Built (migrations 000199 to 000201): FY251 also refuses a contact created with a member, and the API may not write the
+  member on insert at all; the member changes only by `Contacts.LinkMember` under the approved request, at the contact's
+  version the request names. The error code is STORAGE-PARTY-01.
+- [x] 1.2 The engine and the sources (D2, D3):
   - `ledger.Line.Party`, and `LEDGER-41` for a missing or stray person;
   - manual journal and opening balance lines carry a person and origin on 2500 and 2120;
   - a bank transaction's contact is the person;
   - the sample company's generator gives its 2500 lines a person.
   Tests: each source refuses a line without its person, and replay is unchanged. `// req: FR-EQ-01`,
   `// req: ENG-06`
+  Built: `ledger.Settings.People` is read with the chart for every posting, so the engine names a contact that is not a
+  director or shareholder before the database does. A bank line's part on a director's account takes the line's contact
+  under `bank_transaction@1`: such a part posted with no person before, which the close now names, and none exists in
+  production. The replay compares each line's person. The sample company names Mei Lin Tan and Arjun Rao in turn on
+  its 2500 and 2120 lines, drawing no random number, so the rest of the company is unchanged; `seedload` adds them as
+  contacts.
 - [ ] 1.3 The balance service (D4): `balance.People` and `balance.PersonLedger`; the close's sub-ledger check names
   lines with no person. The oracle states the per-person sub-ledger independently, and the scenario format gains
   `party` (D16). Tests: property tests (the sum by person is the control account) and a differential golden case.
   `// req: FR-EQ-01`, `// req: INV-07`, `// req: QA-ENG-02`
-- [ ] 1.4 The member link under dual control (D1): the approval object `contact_member_link`, never signed by the
+  Built, with the API slice: `balance.People`, `balance.PersonLines`, `director.Accounts` and `director.StatementOf`, and
+  the close's check "directors", which C.2 #2 reads with the other sub-ledgers. The oracle's half follows in its own pull
+  request, so this task stays open until it merges.
+- [x] 1.4 The member link under dual control (D1): the approval object `contact_member_link`, never signed by the
   member linked. Contacts' roles in `createContact` and `updateContact`. Tests: through the API as each matrix role,
   and the authorisation matrix rows. `// req: FR-EQ-01`, `// req: QA-SEC-03`
-- [ ] 1.5 The API (D5): `listDirectorAccounts`, `getDirectorStatement` with its PDF, and `getMyDirectorAccount`.
+  Built: `linkContactMember` (PUT /v1/contacts/{contact_id}/member) always answers 202 with the request, in every team
+  mode; asking needs A on the row (the Owner, the Controller), and signing it refuses the member linked or unlinked
+  (FOUNDER-04). A member signs in as one director or shareholder at most (STORAGE-PARTY-01 at asking).
+- [x] 1.5 The API (D5): `listDirectorAccounts`, `getDirectorStatement` with its PDF, and `getMyDirectorAccount`.
   Then `make openapi`. Tests: each figure checked against hand-worked amounts (QA-RPT-01). `// req: FR-EQ-01`,
   `// req: FR-EQ-14`
+  Built: the PDF is `exportDirectorStatement` (PDF from the render service, owed to the person shown positive, or CSV),
+  audited as `report.exported`. `getMyDirectorAccount` answers `linked: false` when no one is linked to the caller, so
+  Money I put in can say so; FOUNDER-03 is for a caller who is not a person signed in as themselves.
 - [ ] 1.6 The pages (D5):
   - Director accounts (Expert) and Money I put in (Basic);
   - the person picker on the contact record, categorise, journal and opening balances;

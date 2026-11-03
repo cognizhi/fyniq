@@ -37,6 +37,29 @@
       ],
       "maxLength": 100,
       "type": "string"
+    },
+    "origin": {
+      "description": "Only on a director's account: where the amount came from, which decides its tax and accounting result (FR-EQ-01). Required there and refused elsewhere (LEDGER-41).",
+      "enum": [
+        "lent",
+        "paid_personally",
+        "pay",
+        "fee",
+        "paid_out",
+        "other"
+      ],
+      "examples": [
+        "lent"
+      ],
+      "type": "string"
+    },
+    "party_id": {
+      "description": "Only on a director's account (2500, 2120): the director or shareholder the amount belongs to, a contact marked one. Required there and refused on any other account (FR-EQ-01, B.7; LEDGER-41).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"
+      ],
+      "format": "uuid",
+      "type": "string"
     }
   },
   "required": [

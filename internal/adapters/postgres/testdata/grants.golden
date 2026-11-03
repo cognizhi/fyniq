@@ -91,9 +91,9 @@ fyniq_api       SELECT    close_checklist_entry
 fyniq_api       INSERT    close_checklist_template (tasks, version, written_at, written_by)
 fyniq_api       SELECT    close_checklist_template
 fyniq_api       EXECUTE   confirm_super_admin_recovery()
-fyniq_api       INSERT    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id)
+fyniq_api       INSERT    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_customer, is_director, is_shareholder, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id)
 fyniq_api       SELECT    contact
-fyniq_api       UPDATE    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_active, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id, version)
+fyniq_api       UPDATE    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_active, is_customer, is_director, is_shareholder, is_vendor, legal_name, member_user_id, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id, version)
 fyniq_api       INSERT    contact_document_template (contact_id, document_type, kind, set_at, set_by, template_id)
 fyniq_api       SELECT    contact_document_template
 fyniq_api       EXECUTE   count_super_admins()
@@ -178,7 +178,7 @@ fyniq_api       SELECT    item_price
 fyniq_api       SELECT    job_slots
 fyniq_api       INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_api       SELECT    journal_entry
-fyniq_api       INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no)
+fyniq_api       INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no, party_id)
 fyniq_api       SELECT    journal_line
 fyniq_api       INSERT    kpi_input (entered_at, entered_by, headcount, lost_customers, month, new_customers, paying_customers)
 fyniq_api       SELECT    kpi_input
@@ -353,7 +353,7 @@ fyniq_executor  SELECT    item
 fyniq_executor  SELECT    item_price
 fyniq_executor  INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_executor  SELECT    journal_entry
-fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no)
+fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no, party_id)
 fyniq_executor  SELECT    journal_line
 fyniq_executor  SELECT    ledger_revision
 fyniq_executor  SELECT    opening_balance
@@ -604,7 +604,7 @@ fyniq_worker    SELECT    item_price
 fyniq_worker    SELECT    job_slots
 fyniq_worker    INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_worker    SELECT    journal_entry
-fyniq_worker    INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no)
+fyniq_worker    INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no, party_id)
 fyniq_worker    SELECT    journal_line
 fyniq_worker    SELECT    kpi_input
 fyniq_worker    SELECT    ledger_revision

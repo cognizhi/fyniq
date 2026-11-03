@@ -61,6 +61,7 @@ func Differences(want, got Entry) []string {
 		}
 		diff(at+"base", w.Base.String()+" "+w.Base.Currency().Code, g.Base.String()+" "+g.Base.Currency().Code)
 		diff(at+"description", w.Description, g.Description)
+		diff(at+"party", w.Party, g.Party)
 	}
 	return out
 }

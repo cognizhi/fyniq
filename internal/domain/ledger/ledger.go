@@ -60,6 +60,9 @@ type Account struct {
 type Settings struct {
 	Base     money.Currency
 	Accounts map[uuid.UUID]Account
+	// People are the contacts marked director or shareholder, who hold director accounts (FR-EQ-01); nil when the
+	// caller did not read them, and the database alone refuses another contact on a director's account (FY250).
+	People map[uuid.UUID]bool
 }
 
 // Source identifies the document version an entry comes from (ENG-03).
@@ -77,6 +80,9 @@ type Line struct {
 	Rate        money.Rate
 	Base        money.Money
 	Description string
+	// Party is the director or shareholder a line on a director's account belongs to (B.7, FR-EQ-01); uuid.Nil on
+	// every other line.
+	Party uuid.UUID
 }
 
 // Entry is one balanced journal entry, ready to persist.
@@ -96,6 +102,8 @@ type JournalLine struct {
 	Amount      money.Money
 	Rate        *money.Rate
 	Description string
+	Party       uuid.UUID // the person, on a director's account only (B.7)
+	Origin      string    // where the person's amount came from, one of EnteredOrigins, on a director's account only (FR-EQ-01)
 }
 
 // Journal is one version of a manual journal document.
@@ -238,6 +246,14 @@ func post(j Journal, s Settings, r asEntered) (Entry, error) {
 			add(CodeShareCapital, f("account"), fmt.Sprintf("account %s is share capital, which changes only through the register of share issues or opening balances", acc.Code),
 				"Record the share issue in the register of share issues instead of a manual journal")
 		}
+		if ok {
+			if p := partyProblem(s, acc, l.Party, f("party_id")); p != nil {
+				probs = append(probs, *p)
+			}
+			if p := originProblem(acc, l.Origin, f("origin")); p != nil {
+				probs = append(probs, *p)
+			}
+		}
 		if len(l.Description) > MaxDescription {
 			add(CodeTooLong, f("description"), fmt.Sprintf("the description has %d characters; the most is %d", len(l.Description), MaxDescription), "Shorten it")
 		}
@@ -298,7 +314,7 @@ func post(j Journal, s Settings, r asEntered) (Entry, error) {
 			currencies = append(currencies, cur.Code)
 		}
 		perCurrency[cur.Code], _ = perCurrency[cur.Code].Add(l.Amount)
-		lines = append(lines, Line{AccountID: l.AccountID, Amount: l.Amount, Rate: rate, Base: base, Description: l.Description})
+		lines = append(lines, Line{AccountID: l.AccountID, Amount: l.Amount, Rate: rate, Base: base, Description: l.Description, Party: l.Party})
 	}
 
 	// Rule 7: the base amounts, each RND-FX of its line, sum to zero; rule 8: a journal in one currency
@@ -365,7 +381,7 @@ func Reverse(e Entry, date time.Time, reason string) (Entry, error) {
 		Lines:           make([]Line, len(e.Lines)),
 	}
 	for i, l := range e.Lines {
-		out.Lines[i] = Line{AccountID: l.AccountID, Amount: l.Amount.Neg(), Rate: l.Rate, Base: l.Base.Neg(), Description: l.Description}
+		out.Lines[i] = Line{AccountID: l.AccountID, Amount: l.Amount.Neg(), Rate: l.Rate, Base: l.Base.Neg(), Description: l.Description, Party: l.Party}
 	}
 	return out, nil
 }

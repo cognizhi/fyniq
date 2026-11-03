@@ -143,8 +143,7 @@ func ReadContent(b []byte) (Saved, bool, error) {
 	}
 	out := Saved{Memo: p.Memo, Lines: make([]SavedLine, 0, len(p.Lines))}
 	for _, l := range p.Lines {
-		out.Lines = append(out.Lines, SavedLine{AccountID: l.AccountID, Amount: l.Amount, FXRate: l.FXRate,
-			FXRateSource: l.FXRateSource, Description: l.Description})
+		out.Lines = append(out.Lines, savedLine(l))
 	}
 	return out, p.Reverses, nil
 }

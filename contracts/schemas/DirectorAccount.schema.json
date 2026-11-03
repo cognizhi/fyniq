@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "active": {
+      "description": "The contact is active.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "balances": {
+      "description": "One per director's account of the chart, in code order.",
+      "items": {
+        "$ref": "DirectorBalance.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "contact_id": {
+      "description": "The person's contact.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "director": {
+      "description": "A director.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "in_debit": {
+      "description": "The net is a debit: the person owes the company (FR-EQ-11).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "legal_name": {
+      "description": "Their name.",
+      "examples": [
+        "Mei Lin Tan"
+      ],
+      "type": "string"
+    },
+    "member_user_id": {
+      "description": "The member who signs in as them, when linked (linkContactMember).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "net": {
+      "$ref": "Money.schema.json",
+      "description": "Their balances together, as the ledger holds them: negative is owed to the person; positive means the person owes the company, which the balance sheet shows under 1250 Staff \u0026 director advances (FR-EQ-11)."
+    },
+    "shareholder": {
+      "description": "A shareholder.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "contact_id",
+    "legal_name",
+    "director",
+    "shareholder",
+    "active",
+    "balances",
+    "net",
+    "in_debit"
+  ],
+  "title": "DirectorAccount",
+  "type": "object"
+}

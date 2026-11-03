@@ -159,6 +159,7 @@ func Config(version string) huma.Config {
 		{Name: "Purchases", Description: "Bills from suppliers: drafted, approved, posted and voided; posted history never changes (FR-AP-02, FR-GL-12)."},
 		{Name: "Sales", Description: "Invoices to customers: drafted, approved, issued and voided; posted history never changes (FR-AR-03, FR-GL-12)."},
 		{Name: "Banking", Description: "Money accounts, their statements and lines, and the rules that code them; a rule applies by itself only once a second person approves it (FR-BNK-01…18)."},
+		{Name: "Founders", Description: "What the company owes its directors and shareholders on 2500 Loan from director / shareholder and 2120 Deferred remuneration payable, each amount naming its person and where it came from; their statements; and the member who signs in as each (PRD-001 §8.22, FR-EQ-01, FR-EQ-14)."},
 		{Name: "Expense claims", Description: "Members' claims for what they spent for the company: drafted and submitted by the claimant, approved by someone else, posted to 2150 Expense claims payable (FR-AP-07, FR-AP-14, FR-AP-17)."},
 		{Name: "Fixed assets", Description: "The fixed asset register: assets registered from the bill or bank lines that bought them, or from the opening balances, their monthly depreciation, and their disposals (FR-FA-01, FR-FA-02, FR-FA-03)."},
 		{Name: "Periods", Description: "Accounting periods and financial years: a posting's period is the month of its date (FR-ORG-02, FR-GL-08)."},
@@ -306,6 +307,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerDocumentSends(a)
 	registerSalesReminders(a)
 	registerStatements(a)
+	registerDirectors(a)
 	registerPublicDocuments(a)
 	registerInvoiceEvidence(a)
 	registerReceivables(a)

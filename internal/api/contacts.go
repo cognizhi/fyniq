@@ -26,12 +26,15 @@ type PossibleDuplicate struct {
 	SameEmail bool   `json:"same_email" doc:"A billing or remittance email in common." example:"false"`
 }
 
-// Contact is a customer, a vendor or both.
+// Contact is a customer, a vendor, a director or shareholder, or several of these.
 type Contact struct {
 	ID                 string              `json:"id" format:"uuid" doc:"The contact's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0"`
 	LegalName          string              `json:"legal_name" doc:"Its legal name." example:"Northwind Analytics Pte. Ltd."`
 	Customer           bool                `json:"customer" doc:"A customer: invoices go to it." example:"true"`
 	Vendor             bool                `json:"vendor" doc:"A vendor: bills come from it." example:"false"`
+	Director           bool                `json:"director" doc:"A director of the company: they hold a director account on 2500 and 2120 (FR-EQ-01; PRD-001 rev 0.167)." example:"false"`
+	Shareholder        bool                `json:"shareholder" doc:"A shareholder: they hold a director account too, for money they lend the company (FR-EQ-01)." example:"false"`
+	MemberUserID       string              `json:"member_user_id,omitempty" format:"uuid" doc:"For a director or shareholder, the member who signs in as them: they see their own account (Money I put in), keep a claim as a loan, are repaid to their own approved bank account and never approve their own settlement (FR-EQ-01, FM-9). It changes only by linkContactMember, another person's approval." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	UENOrTaxID         string              `json:"uen_or_tax_id,omitempty" doc:"Its UEN, or a foreign contact's tax ID." example:"202312345K"`
 	PeppolID           string              `json:"peppol_id,omitempty" doc:"Its Peppol participant ID for InvoiceNow." example:"0195:SGUEN202312345K"`
 	BillingEmail       string              `json:"billing_email,omitempty" doc:"Where invoices go." example:"accounts@northwind.example"`
@@ -57,7 +60,9 @@ type Contact struct {
 type ContactDraft struct {
 	LegalName        string `json:"legal_name" maxLength:"200" doc:"Its legal name." example:"Northwind Analytics Pte. Ltd."`
 	Customer         bool   `json:"customer,omitempty" doc:"A customer." example:"true"`
-	Vendor           bool   `json:"vendor,omitempty" doc:"A vendor; at least one of customer and vendor." example:"false"`
+	Vendor           bool   `json:"vendor,omitempty" doc:"A vendor; at least one of customer, vendor, director and shareholder." example:"false"`
+	Director         bool   `json:"director,omitempty" doc:"A director of the company, who holds a director account (FR-EQ-01)." example:"false"`
+	Shareholder      bool   `json:"shareholder,omitempty" doc:"A shareholder, who holds a director account too (FR-EQ-01)." example:"false"`
 	UENOrTaxID       string `json:"uen_or_tax_id,omitempty" maxLength:"30" doc:"Its UEN or tax ID." example:"202312345K"`
 	PeppolID         string `json:"peppol_id,omitempty" maxLength:"70" doc:"Its Peppol participant ID." example:"0195:SGUEN202312345K"`
 	BillingEmail     string `json:"billing_email,omitempty" maxLength:"254" doc:"Where invoices go." example:"accounts@northwind.example"`
@@ -81,6 +86,8 @@ type ContactChanges struct {
 	LegalName        *string `json:"legal_name,omitempty" maxLength:"200" doc:"Its legal name." example:"Northwind Analytics Pte. Ltd."`
 	Customer         *bool   `json:"customer,omitempty" doc:"A customer." example:"true"`
 	Vendor           *bool   `json:"vendor,omitempty" doc:"A vendor." example:"true"`
+	Director         *bool   `json:"director,omitempty" doc:"A director. A contact with amounts on a director account stays a director or shareholder (STORAGE-PARTY-01)." example:"true"`
+	Shareholder      *bool   `json:"shareholder,omitempty" doc:"A shareholder." example:"true"`
 	UENOrTaxID       *string `json:"uen_or_tax_id,omitempty" maxLength:"30" doc:"Its UEN or tax ID." example:"202312345K"`
 	PeppolID         *string `json:"peppol_id,omitempty" maxLength:"70" doc:"Its Peppol participant ID." example:"0195:SGUEN202312345K"`
 	BillingEmail     *string `json:"billing_email,omitempty" maxLength:"254" doc:"Where invoices go." example:"accounts@northwind.example"`
@@ -113,7 +120,7 @@ type ContactPath struct {
 
 type contactListInput struct {
 	PageQuery
-	Role string `query:"role" enum:"customer,vendor" doc:"Only customers, or only vendors." example:"customer"`
+	Role string `query:"role" enum:"customer,vendor,director" doc:"Only customers, only vendors, or only directors and shareholders." example:"customer"`
 }
 
 type contactCreateInput struct {
@@ -150,7 +157,8 @@ var ContactCodes = []string{contact.CodeName, contact.CodeRole, contact.CodeEmai
 	contact.CodeTerms, contact.CodeGSTCode, contact.CodePeppol, contact.CodeText, contact.CodeCategory, contact.CodeDiscount, salesreminder.CodeGroup}
 
 func contactOf(c storage.Contact, dups []storage.ContactDuplicate) Contact {
-	out := Contact{ID: c.ID.String(), LegalName: c.LegalName, Customer: c.Customer, Vendor: c.Vendor, UENOrTaxID: c.UENOrTaxID,
+	out := Contact{ID: c.ID.String(), LegalName: c.LegalName, Customer: c.Customer, Vendor: c.Vendor, Director: c.Director,
+		Shareholder: c.Shareholder, MemberUserID: idOrEmpty(c.MemberUserID), UENOrTaxID: c.UENOrTaxID,
 		PeppolID: c.PeppolID, BillingEmail: c.BillingEmail, RemittanceEmail: c.RemittanceEmail, Phone: c.Phone, Address: c.Address,
 		Country: c.Country, TaxResidence: c.TaxResidence, Currency: c.Currency, PaymentTermsDays: c.PaymentTermsDays, DefaultGSTCode: c.DefaultGSTCode,
 		DiscountPercent: c.DiscountPercent, DiscountDays: c.DiscountDays,
@@ -272,6 +280,7 @@ func registerContacts(a *API) {
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (Contact, error) {
 				b := in.Body
 				d := storage.ContactDetails{LegalName: strings.TrimSpace(b.LegalName), Customer: b.Customer, Vendor: b.Vendor,
+					Director: b.Director, Shareholder: b.Shareholder,
 					UENOrTaxID: strings.TrimSpace(b.UENOrTaxID), PeppolID: strings.TrimSpace(b.PeppolID), BillingEmail: strings.TrimSpace(b.BillingEmail),
 					RemittanceEmail: strings.TrimSpace(b.RemittanceEmail), Phone: strings.TrimSpace(b.Phone), Address: strings.TrimSpace(b.Address),
 					Country: b.Country, TaxResidence: b.TaxResidence, Currency: b.Currency, PaymentTermsDays: b.PaymentTermsDays, DefaultGSTCode: b.DefaultGSTCode,
@@ -333,7 +342,7 @@ func registerContacts(a *API) {
 			"for its history and offers it for nothing new; a contact is never deleted. Lists the contacts it may then duplicate (FR-CT-04). " +
 			"Side effects: the next version and its audit event. Needs If-Match with the contact's ETag. Prefer: return=preview checks it " +
 			"and saves nothing.",
-	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, storage.CodeVersion}, codes...),
+	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, storage.CodeVersion, storage.CodeParty}, codes...),
 		func(ctx context.Context, in *contactUpdateInput) (*contactWriteOutput, error) {
 			id, err := parseID("contact_id", in.ContactID)
 			if err != nil {
@@ -369,6 +378,12 @@ func registerContacts(a *API) {
 				}
 				if b.Vendor != nil {
 					d.Vendor = *b.Vendor
+				}
+				if b.Director != nil {
+					d.Director = *b.Director
+				}
+				if b.Shareholder != nil {
+					d.Shareholder = *b.Shareholder
 				}
 				if b.Active != nil {
 					active = *b.Active

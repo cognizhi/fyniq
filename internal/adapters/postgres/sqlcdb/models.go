@@ -561,6 +561,9 @@ type FyniqContact struct {
 	DiscountPercent  *string
 	DiscountDays     *int16
 	CustomerGroupID  *uuid.UUID
+	IsDirector       bool
+	IsShareholder    bool
+	MemberUserID     *uuid.UUID
 }
 
 type FyniqContactDocumentTemplate struct {
@@ -1063,6 +1066,7 @@ type FyniqJournalLine struct {
 	BaseAmount     string
 	Description    *string
 	RecordedAt     time.Time
+	PartyID        *uuid.UUID
 }
 
 type FyniqKpiInput struct {

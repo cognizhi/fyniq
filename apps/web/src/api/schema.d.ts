@@ -2160,6 +2160,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/contacts/{contact_id}/member": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Link a director or shareholder to the member who signs in as them
+         * @description Asks to link a director or shareholder to a member of the organisation, or with no member to unlink them (FR-EQ-01; PRD-001 rev 0.167). The link decides where repayments go and who never approves the person's settlement (FM-9), so it falls under FM-1 in every team mode: the answer is 202 with an approval request, which another person who holds A on "Director accounts, settlements, share issues", not the member linked or unlinked, approves; the database refuses any other change of it (STORAGE-PARTY-01). A member signs in as one director or shareholder at most. Asking needs a person signed in who passed step-up in the last 5 minutes, and If-Match with the contact's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+         */
+        put: operations["linkContactMember"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/contacts/{contact_id}/statement": {
         parameters: {
             query?: never;
@@ -2654,6 +2674,66 @@ export interface paths {
          * @description Asks for another person's approval to void a refund on the date given, with a reason (FR-GL-12, FM-1): what voidCustomerRefund asks for in Founder mode (APPLY-11). The answer is 202 with an approval request, which a person who holds A on "Invoices, credit notes" and did not ask approves, stepped up; on the approval the void posts and the credit reopens. Needs a person signed in who passed step-up, and If-Match with the refund's ETag. Idempotent with Idempotency-Key.
          */
         post: operations["requestCustomerRefundVoid"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the director accounts
+         * @description Every contact marked director or shareholder with their balances as at a day on the director's accounts, 2500 Loan from director / shareholder and 2120 Deferred remuneration payable, from the balance service (FR-EQ-01, ENG-04; PRD-001 rev 0.167). Every line on those accounts names its person, so the balances add up to the accounts; unkeyed shows anything that names no one. A net debit means the person owes the company (FR-EQ-11). A page at a time. Read-only; no side effects.
+         */
+        get: operations["listDirectorAccounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-accounts/{contact_id}/statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Work out a director's statement
+         * @description A director's or shareholder's statement from one day to another (FR-EQ-01): for each director's account the balance before the first day, the movements by origin (lent, paid personally, pay, fee, paid out, converted, waived, other) and the balance at the last day, with every line in posting order. The origin comes from the line's source, or as entered on a journal or opening balance line. Read-only; no side effects.
+         */
+        get: operations["getDirectorStatement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-accounts/{contact_id}/statement/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export a director's statement
+         * @description The statement getDirectorStatement gives, as a file (FR-EQ-01): a PDF from the render service to print or send for a balance confirmation, owed to the person shown positive; or CSV, its movements with plain decimals and an ASCII minus. Returned in base64 with its SHA-256. A PDF the render service cannot make now is REPORT-08. Side effects: an audit event of the export with its file and hash (FR-RPT-09). Never cached.
+         */
+        get: operations["exportDirectorStatement"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4444,6 +4524,26 @@ export interface paths {
          * @description Your own bank account for reimbursements in force, if any, and every change of it, newest first, with whether payments to you are frozen because a change waits for approval (FR-AP-22; PRD-001 rev 0.154). The number shows its last four characters only (SEC-11). Read-only; no side effects.
          */
         get: operations["getMyBankDetails"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/director-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get your own director account
+         * @description The director or shareholder you sign in as, with your balances as at a day: Money I put in (FR-EQ-14, FR-EQ-01); linked is false when none is linked to you (linkContactMember). Only a person signed in as themselves has one (FOUNDER-03). Read-only; no side effects.
+         */
+        get: operations["getMyDirectorAccount"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8921,13 +9021,13 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link";
             /**
              * @description What executes on its approval.
              * @example organisation_setting.change
              * @enum {string}
              */
-            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove";
+            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change";
             /**
              * @description The approval policy's version it keeps (G4-057).
              * @example founder/organisation_setting@2026-10-20.1
@@ -9064,7 +9164,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -9106,7 +9206,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -13248,6 +13348,11 @@ export interface components {
              */
             default_gst_code?: string;
             /**
+             * @description A director of the company: they hold a director account on 2500 and 2120 (FR-EQ-01; PRD-001 rev 0.167).
+             * @example false
+             */
+            director: boolean;
+            /**
              * Format: int64
              * @description The days of its early-payment discount.
              * @example 10
@@ -13269,6 +13374,12 @@ export interface components {
              * @example Northwind Analytics Pte. Ltd.
              */
             legal_name: string;
+            /**
+             * Format: uuid
+             * @description For a director or shareholder, the member who signs in as them: they see their own account (Money I put in), keep a claim as a loan, are repaid to their own approved bank account and never approve their own settlement (FR-EQ-01, FM-9). It changes only by linkContactMember, another person's approval.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            member_user_id?: string;
             /**
              * Format: int64
              * @description Days until its documents fall due.
@@ -13292,6 +13403,11 @@ export interface components {
              * @example payments@northwind.example
              */
             remittance_email?: string;
+            /**
+             * @description A shareholder: they hold a director account too, for money they lend the company (FR-EQ-01).
+             * @example false
+             */
+            shareholder: boolean;
             /**
              * @description Where it is resident for tax, ISO 3166 two-letter code, when that is not its country (FR-AP-19). A vendor resident outside Singapore (this, else its country) has its bills record the nature of the payment, and the tax agent decides whether tax is withheld.
              * @example US
@@ -13361,6 +13477,11 @@ export interface components {
              */
             default_gst_code?: string;
             /**
+             * @description A director. A contact with amounts on a director account stays a director or shareholder (STORAGE-PARTY-01).
+             * @example true
+             */
+            director?: boolean;
+            /**
              * Format: int64
              * @description Its days, 1 to 365; -1 clears them.
              * @example 10
@@ -13397,6 +13518,11 @@ export interface components {
              * @example payments@northwind.example
              */
             remittance_email?: string;
+            /**
+             * @description A shareholder.
+             * @example true
+             */
+            shareholder?: boolean;
             /**
              * @description Where it is resident for tax, when that is not its country (FR-AP-19); "" clears it.
              * @example US
@@ -13455,6 +13581,11 @@ export interface components {
              */
             default_gst_code?: string;
             /**
+             * @description A director of the company, who holds a director account (FR-EQ-01).
+             * @example false
+             */
+            director?: boolean;
+            /**
              * Format: int64
              * @description Its days, 1 to 365, with discount_percent.
              * @example 10
@@ -13492,6 +13623,11 @@ export interface components {
              */
             remittance_email?: string;
             /**
+             * @description A shareholder, who holds a director account too (FR-EQ-01).
+             * @example false
+             */
+            shareholder?: boolean;
+            /**
              * @description Where it is resident for tax, ISO 3166 two-letter code, when that is not its country (FR-AP-19).
              * @example US
              */
@@ -13502,7 +13638,7 @@ export interface components {
              */
             uen_or_tax_id?: string;
             /**
-             * @description A vendor; at least one of customer and vendor.
+             * @description A vendor; at least one of customer, vendor, director and shareholder.
              * @example false
              */
             vendor?: boolean;
@@ -14279,6 +14415,213 @@ export interface components {
              */
             ended: number;
         };
+        DirectorAccount: {
+            /**
+             * @description The contact is active.
+             * @example true
+             */
+            active: boolean;
+            /** @description One per director's account of the chart, in code order. */
+            balances: components["schemas"]["DirectorBalance"][] | null;
+            /**
+             * Format: uuid
+             * @description The person's contact.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65
+             */
+            contact_id: string;
+            /**
+             * @description A director.
+             * @example true
+             */
+            director: boolean;
+            /**
+             * @description The net is a debit: the person owes the company (FR-EQ-11).
+             * @example false
+             */
+            in_debit: boolean;
+            /**
+             * @description Their name.
+             * @example Mei Lin Tan
+             */
+            legal_name: string;
+            /**
+             * Format: uuid
+             * @description The member who signs in as them, when linked (linkContactMember).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            member_user_id?: string;
+            /** @description Their balances together, as the ledger holds them: negative is owed to the person; positive means the person owes the company, which the balance sheet shows under 1250 Staff & director advances (FR-EQ-11). */
+            net: components["schemas"]["Money"];
+            /**
+             * @description A shareholder.
+             * @example true
+             */
+            shareholder: boolean;
+        };
+        DirectorAccountList: {
+            /**
+             * Format: date
+             * @description The day the balances are at, inclusive.
+             * @example 2026-10-31
+             */
+            as_at: string;
+            /**
+             * @description The base currency the balances are in.
+             * @example SGD
+             */
+            currency: string;
+            /** @description The contacts marked director or shareholder on this page, in the order they were added. */
+            items: components["schemas"]["DirectorAccount"][] | null;
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjAxOTI4ZjZlIn0
+             */
+            next_cursor?: string;
+            /** @description What the director's accounts hold that names no person: zero, but for lines posted before the accounts named their person, which the period close names (INV-07). */
+            unkeyed: components["schemas"]["Money"];
+        };
+        DirectorBalance: {
+            /**
+             * Format: uuid
+             * @description The director's account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+             */
+            account_id: string;
+            /** @description In the base currency, as the ledger holds it: negative (a credit) is what the company owes the person, positive what they owe it. */
+            balance: components["schemas"]["Money"];
+            /**
+             * @description Its code.
+             * @example 2500
+             */
+            code: string;
+            /**
+             * @description Its name.
+             * @example Loan from director / shareholder
+             */
+            name: string;
+            /**
+             * @description director-loan for 2500, money lent and costs paid personally; deferred-remuneration for 2120, pay and fees not yet paid (B.7).
+             * @example director-loan
+             * @enum {string}
+             */
+            role: "director-loan" | "deferred-remuneration";
+        };
+        DirectorMovement: {
+            /**
+             * Format: uuid
+             * @description The director's account it moved.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+             */
+            account_id: string;
+            /** @description In the base currency, as the ledger holds it: negative is owed to the person. */
+            amount: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description Its posting date.
+             * @example 2026-10-15
+             */
+            date: string;
+            /**
+             * @description The line's description.
+             * @example Cash lent for October payroll
+             */
+            description?: string;
+            /**
+             * Format: uuid
+             * @description The journal entry.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80
+             */
+            entry_id: string;
+            /**
+             * @description The entry's memo.
+             * @example Loan from Mei Lin
+             */
+            memo?: string;
+            /**
+             * @description Its number, when it has one.
+             * @example JNL-0042
+             */
+            number?: string;
+            /**
+             * @description Where the amount came from (FR-EQ-01): from its source, or as entered on a journal or opening balance line.
+             * @example lent
+             * @enum {string}
+             */
+            origin: "lent" | "paid_personally" | "pay" | "fee" | "paid_out" | "converted" | "waived" | "other";
+            /**
+             * @description The line reverses an earlier one.
+             * @example false
+             */
+            reversal: boolean;
+            /**
+             * @description Its ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+             */
+            source_id: string;
+            /**
+             * @description The document it came from.
+             * @example bank_transaction
+             */
+            source_type: string;
+        };
+        DirectorStatement: {
+            /** @description Each director's account: opening, movements by origin, closing. */
+            accounts: components["schemas"]["DirectorStatementAccount"][] | null;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65
+             */
+            contact_id: string;
+            /**
+             * @description The base currency.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: date
+             * @description Its first day.
+             * @example 2026-01-01
+             */
+            from: string;
+            /**
+             * @description Their name.
+             * @example Mei Lin Tan
+             */
+            legal_name: string;
+            /** @description Every line in the period, in posting order. */
+            movements: components["schemas"]["DirectorMovement"][] | null;
+            /**
+             * Format: date
+             * @description Its last day.
+             * @example 2026-10-31
+             */
+            to: string;
+        };
+        DirectorStatementAccount: {
+            /**
+             * Format: uuid
+             * @description The director's account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+             */
+            account_id: string;
+            /** @description The movements by origin, in the order origins first moved. */
+            by_origin: components["schemas"]["OriginTotal"][] | null;
+            /** @description The balance at the statement's last day: the opening and the movements. */
+            closing: components["schemas"]["Money"];
+            /**
+             * @description Its code.
+             * @example 2500
+             */
+            code: string;
+            /**
+             * @description Its name.
+             * @example Loan from director / shareholder
+             */
+            name: string;
+            /** @description The balance before the statement's first day. */
+            opening: components["schemas"]["Money"];
+        };
         DocumentLinkOut: {
             /**
              * Format: date-time
@@ -14891,6 +15234,12 @@ export interface components {
              * @example 1
              */
             line_no: number;
+            /**
+             * Format: uuid
+             * @description On a director's account only: the director or shareholder the amount belongs to (FR-EQ-01, B.7).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65
+             */
+            party_id?: string;
         };
         Evidence: {
             /**
@@ -17744,6 +18093,18 @@ export interface components {
              * @example document
              */
             fx_rate_source?: string;
+            /**
+             * @description Only on a director's account: where the amount came from, which decides its tax and accounting result (FR-EQ-01). Required there and refused elsewhere (LEDGER-41).
+             * @example lent
+             * @enum {string}
+             */
+            origin?: "lent" | "paid_personally" | "pay" | "fee" | "paid_out" | "other";
+            /**
+             * Format: uuid
+             * @description Only on a director's account (2500, 2120): the director or shareholder the amount belongs to, a contact marked one. Required there and refused on any other account (FR-EQ-01, B.7; LEDGER-41).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65
+             */
+            party_id?: string;
         };
         JournalPage: {
             items: components["schemas"]["JournalSummary"][];
@@ -18340,6 +18701,14 @@ export interface components {
              */
             next_cursor?: string;
         };
+        MemberLink: {
+            /**
+             * Format: uuid
+             * @description The member; left out or empty unlinks them.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            member_user_id?: string;
+        };
         MemberPage: {
             /** @description The members on this page. */
             items: components["schemas"]["Member"][] | null;
@@ -18677,6 +19046,15 @@ export interface components {
             /** @description email: the bank's registered addresses (DMARC must pass for each, FR-INT-22). */
             senders?: string[] | null;
         };
+        MyDirectorAccount: {
+            /** @description Their account, when linked. */
+            account?: components["schemas"]["DirectorAccount"];
+            /**
+             * @description A director or shareholder is linked to you (linkContactMember); false: Money I put in has nothing to show.
+             * @example true
+             */
+            linked: boolean;
+        };
         NewMemberInvitation: {
             /**
              * @description The name of the person you invite.
@@ -19010,6 +19388,18 @@ export interface components {
              * @example DBS current account at the books start
              */
             description?: string;
+            /**
+             * @description Only on a director's account: where the balance came from (FR-EQ-01). Required there and refused elsewhere (LEDGER-41).
+             * @example lent
+             * @enum {string}
+             */
+            origin?: "lent" | "paid_personally" | "pay" | "fee" | "paid_out" | "other";
+            /**
+             * Format: uuid
+             * @description Only on a director's account (2500, 2120): the director or shareholder whose balance it is, a contact marked one; a balance owed to two founders is two lines. Required there and refused on any other account (FR-EQ-01, B.7; LEDGER-41).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65
+             */
+            party_id?: string;
         };
         OpeningPosting: {
             entry: components["schemas"]["Entry"];
@@ -19165,6 +19555,16 @@ export interface components {
              * @example https://northwind.example
              */
             website?: string;
+        };
+        OriginTotal: {
+            /** @description Their sum, as the ledger holds it: negative is owed to the person. */
+            amount: components["schemas"]["Money"];
+            /**
+             * @description Where the amounts came from (FR-EQ-01).
+             * @example lent
+             * @enum {string}
+             */
+            origin: "lent" | "paid_personally" | "pay" | "fee" | "paid_out" | "converted" | "waived" | "other";
         };
         PackActivation: {
             /**
@@ -26421,7 +26821,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9). */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `FOUNDER-04` Another person approves your own link; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -26439,7 +26839,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APPLY-06` The application is not posted; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `BILL-02` The bill is not a draft; `BILL-03` The bill is not posted; `BILL-13` Payments settle the bill; `BILLPAY-06` The payment is not posted; `CLAIM-02` The claim is not a draft; `CLAIM-15` The reimbursement is not posted; `CLAIM-31` The advance cannot be voided as it stands; `CREDIT-06` The application is not posted; `DEPOSIT-06` The deposit is not posted; `DEPOSIT-08` Invoices or refunds use the deposit; `INVOICE-02` The invoice is not a draft; `INVOICE-03` The invoice is not issued; `INVOICE-13` Receipts or credits settle the invoice; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `PO-10` The order is not a draft; `RECEIPT-06` The receipt is not posted; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DOC-04` An edit posts its reversal and its new version together; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way; `STORAGE-PAYEE-01` Bank details do not change that way; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-TEMPLATE-01` The template does not change that way; `TPL-12` That version is in force already; `WRITEOFF-07` The write-off is not a draft; `WRITEOFF-08` The write-off is not posted. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APPLY-06` The application is not posted; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `BILL-02` The bill is not a draft; `BILL-03` The bill is not posted; `BILL-13` Payments settle the bill; `BILLPAY-06` The payment is not posted; `CLAIM-02` The claim is not a draft; `CLAIM-15` The reimbursement is not posted; `CLAIM-31` The advance cannot be voided as it stands; `CREDIT-06` The application is not posted; `DEPOSIT-06` The deposit is not posted; `DEPOSIT-08` Invoices or refunds use the deposit; `INVOICE-02` The invoice is not a draft; `INVOICE-03` The invoice is not issued; `INVOICE-13` Receipts or credits settle the invoice; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `PO-10` The order is not a draft; `RECEIPT-06` The receipt is not posted; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DOC-04` An edit posts its reversal and its new version together; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way; `STORAGE-PAYEE-01` Bank details do not change that way; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-TEMPLATE-01` The template does not change that way; `TPL-12` That version is in force already; `WRITEOFF-07` The write-off is not a draft; `WRITEOFF-08` The write-off is not posted. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -40174,8 +40574,8 @@ export interface operations {
                 page_size?: number;
                 /** @description The next_cursor of the previous page; leave it out for the first page. */
                 cursor?: string;
-                /** @description Only customers, or only vendors. */
-                role?: "customer" | "vendor";
+                /** @description Only customers, only vendors, or only directors and shareholders. */
+                role?: "customer" | "vendor" | "director";
             };
             header?: never;
             path?: never;
@@ -40559,7 +40959,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PARTY-01` A director's account does not change that way. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -40962,6 +41362,158 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TPL-19` Not a published template of this kind and document type; `TPL-20` The contact does not receive this document. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    linkContactMember: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The contact's ID. */
+                contact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberLink"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted: the change needs a second approver (FM-1) and waits for approval; nothing changed yet. The body is the approval request (rev 0.36). */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PARTY-01` A director's account does not change that way. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -45111,6 +45663,328 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listDirectorAccounts: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description The day the balances are at; the organisation's today when left out. */
+                as_at?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorAccountList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getDirectorStatement: {
+        parameters: {
+            query: {
+                /** @description The statement's first day. */
+                from: string;
+                /** @description Its last day. */
+                to: string;
+            };
+            header?: never;
+            path: {
+                /** @description The contact's ID. */
+                contact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorStatement"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    exportDirectorStatement: {
+        parameters: {
+            query: {
+                /** @description The statement's first day. */
+                from: string;
+                /** @description Its last day. */
+                to: string;
+                /** @description pdf: the statement to print or send for a balance confirmation, from the render service; csv: its movements, plain decimals with an ASCII minus. */
+                format?: "pdf" | "csv";
+            };
+            header?: never;
+            path: {
+                /** @description The contact's ID. */
+                contact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportFile"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -59172,6 +60046,102 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyDirectorAccount: {
+        parameters: {
+            query?: {
+                /** @description The day the balances are at; the organisation's today when left out. */
+                as_at?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyDirectorAccount"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

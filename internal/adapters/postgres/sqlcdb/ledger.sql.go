@@ -14,7 +14,7 @@ import (
 
 const accountLines = `-- name: AccountLines :many
 SELECT e.id AS entry_id, e.ledger_revision, e.posting_date, e.source_type, e.source_id, e.source_version, e.memo,
-       e.reverses_entry_id, l.line_no, l.currency, l.amount, l.base_amount, l.description, n.number
+       e.reverses_entry_id, l.line_no, l.currency, l.amount, l.base_amount, l.description, n.number, l.party_id
 FROM fyniq.journal_line l
 JOIN fyniq.journal_entry e ON e.organisation_id = l.organisation_id AND e.id = l.entry_id
 LEFT JOIN fyniq.document_number n ON n.organisation_id = e.organisation_id AND n.id::text = e.source_id
@@ -45,6 +45,7 @@ type AccountLinesRow struct {
 	BaseAmount      string
 	Description     *string
 	Number          *string
+	PartyID         *uuid.UUID
 }
 
 // An account's lines dated from..to, in posting order: date, then revision, then line (FR-GL-11), with their entry's
@@ -78,6 +79,7 @@ func (q *Queries) AccountLines(ctx context.Context, arg AccountLinesParams) ([]A
 			&i.BaseAmount,
 			&i.Description,
 			&i.Number,
+			&i.PartyID,
 		); err != nil {
 			return nil, err
 		}
@@ -207,7 +209,7 @@ func (q *Queries) GetEntryIDByIdentity(ctx context.Context, postingIdentity stri
 }
 
 const getEntryLines = `-- name: GetEntryLines :many
-SELECT id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_currency, base_amount, description
+SELECT id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_currency, base_amount, description, party_id
 FROM fyniq.journal_line WHERE entry_id = $1 ORDER BY line_no
 `
 
@@ -222,6 +224,7 @@ type GetEntryLinesRow struct {
 	BaseCurrency string
 	BaseAmount   string
 	Description  *string
+	PartyID      *uuid.UUID
 }
 
 func (q *Queries) GetEntryLines(ctx context.Context, entryID uuid.UUID) ([]GetEntryLinesRow, error) {
@@ -244,6 +247,7 @@ func (q *Queries) GetEntryLines(ctx context.Context, entryID uuid.UUID) ([]GetEn
 			&i.BaseCurrency,
 			&i.BaseAmount,
 			&i.Description,
+			&i.PartyID,
 		); err != nil {
 			return nil, err
 		}
@@ -318,7 +322,7 @@ func (q *Queries) InsertEntry(ctx context.Context, arg InsertEntryParams) (Inser
 
 const insertLines = `-- name: InsertLines :exec
 INSERT INTO fyniq.journal_line
-  (entry_id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_amount, description)
+  (entry_id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_amount, description, party_id)
 SELECT $1::uuid,
        unnest($2::int[]),
        unnest($3::uuid[]),
@@ -327,7 +331,8 @@ SELECT $1::uuid,
        unnest($6::numeric[]),
        unnest($7::text[]),
        unnest($8::numeric[]),
-       nullif(unnest($9::text[]), '')
+       nullif(unnest($9::text[]), ''),
+       nullif(unnest($10::text[]), '')::uuid
 `
 
 type InsertLinesParams struct {
@@ -340,6 +345,7 @@ type InsertLinesParams struct {
 	FxRateSources []string
 	BaseAmounts   []string
 	Descriptions  []string
+	PartyIds      []string
 }
 
 // One statement for all of an entry's lines, so the balances cache updates once (INV-08).
@@ -354,6 +360,7 @@ func (q *Queries) InsertLines(ctx context.Context, arg InsertLinesParams) error 
 		arg.FxRateSources,
 		arg.BaseAmounts,
 		arg.Descriptions,
+		arg.PartyIds,
 	)
 	return err
 }

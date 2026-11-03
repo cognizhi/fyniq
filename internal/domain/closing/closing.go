@@ -230,6 +230,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		return nil, err
 	}
 	out = append(out, assets...)
+	directors, err := directorChecks(ctx, u, cur, p)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, directors...)
 	deposits, err := depositsChecks(ctx, u, cur, p)
 	if err != nil {
 		return nil, err
@@ -421,6 +426,29 @@ func assetChecks(ctx context.Context, u storage.UnitOfWork, p storage.Period) ([
 			strings.Join(lines, ", ") + ": register each in Accounting › Fixed assets, so it depreciates"})
 	}
 	return out, nil
+}
+
+// directorChecks reconcile the director's accounts, 2500 and 2120, with their people at the period's end (INV-07;
+// p1-founders-money design D4): every line names its person (B.7), so their balances add up to the accounts by
+// construction, and ✖ names an amount on them that names no one, which only a line posted before the accounts named
+// their person can be. Nothing is said when the accounts hold nothing.
+func directorChecks(ctx context.Context, u storage.UnitOfWork, cur money.Currency, p storage.Period) ([]Check, error) {
+	people, err := balance.People(ctx, u, cur, p.EndsOn)
+	if err != nil || len(people) == 0 {
+		return nil, err
+	}
+	for _, x := range people {
+		if x.Party != uuid.Nil {
+			continue
+		}
+		for _, v := range x.Accounts {
+			if !v.IsZero() {
+				return []Check{{"directors", Failed, "Director accounts hold amounts that name no one",
+					fmt.Sprintf("%s %s on 2500 and 2120 names no director or shareholder: reverse those lines and post them again with their person", x.Net, cur.Code)}}, nil
+			}
+		}
+	}
+	return []Check{{"directors", OK, "Every amount on the director accounts names its person", ""}}, nil
 }
 
 // deferralChecks reconcile the holding accounts of spreads, 1210 Prepayments and 2400 Deferred revenue, with the
