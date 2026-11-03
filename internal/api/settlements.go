@@ -109,6 +109,7 @@ type ConversionStepRequest struct {
 type conversionStepInput struct {
 	DirectorSettlementPath
 	KeyHeader
+	IfMatchHeader
 	PreferHeader
 	Body ConversionStepRequest
 }
@@ -813,14 +814,18 @@ func registerSettlements(a *API) {
 			"resolved; the day their approval was lodged with ACRA, due within 14 days of the resolution (s161(5), s186; ⏰ until it is); " +
 			"the date by which the next AGM must be held, when it differs from the one worked out [verify], which is when the approval " +
 			"lapses; or the day the return of allotment was lodged. Attach ACRA's acknowledgement with addDirectorSettlementEvidence. " +
-			"A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up. Side effects: the " +
-			"step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
-	}, []string{director.CodeStep, director.CodeNotApproved, storage.CodeConversionStep, CodeNotFound, CodeSessionRequired, CodeStepUpRequired, CodeInvalid,
+			"A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up, and If-Match with " +
+			"the settlement's ETag, so the step is recorded against the conversion as read. Side effects: the step, append-only, and its " +
+			"audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
+	}, []string{director.CodeStep, director.CodeNotApproved, storage.CodeConversionStep, CodeNotFound, CodeStale, CodeIfMatchRequired, CodeSessionRequired, CodeStepUpRequired, CodeInvalid,
 		CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, storage.CodeRetry, storage.CodeLockTimeout},
 		func(ctx context.Context, in *conversionStepInput) (*settlementOutput, error) {
 			id, err := parseID("settlement_id", in.SettlementID)
 			if err != nil {
 				return nil, err
+			}
+			if strings.TrimSpace(in.IfMatch) == "" {
+				return nil, checkIfMatch(in.IfMatch, "")
 			}
 			on, err := time.Parse(time.DateOnly, in.Body.On)
 			if err != nil {
@@ -833,6 +838,9 @@ func registerSettlements(a *API) {
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (DirectorSettlement, error) {
 				doc, err := u.Documents().Lock(ctx, id)
 				if err != nil {
+					return DirectorSettlement{}, err
+				}
+				if err := checkIfMatch(in.IfMatch, settlementETag(doc)); err != nil {
 					return DirectorSettlement{}, err
 				}
 				st, err := director.ReadSettlement(doc)

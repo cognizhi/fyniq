@@ -3111,7 +3111,7 @@ export interface paths {
         put?: never;
         /**
          * Record an ACRA step of a conversion
-         * @description Records one ACRA step of an approved conversion not yet effective (FR-EQ-09, design D12): the day the shareholders resolved; the day their approval was lodged with ACRA, due within 14 days of the resolution (s161(5), s186; ⏰ until it is); the date by which the next AGM must be held, when it differs from the one worked out [verify], which is when the approval lapses; or the day the return of allotment was lodged. Attach ACRA's acknowledgement with addDirectorSettlementEvidence. A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up. Side effects: the step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Records one ACRA step of an approved conversion not yet effective (FR-EQ-09, design D12): the day the shareholders resolved; the day their approval was lodged with ACRA, due within 14 days of the resolution (s161(5), s186; ⏰ until it is); the date by which the next AGM must be held, when it differs from the one worked out [verify], which is when the approval lapses; or the day the return of allotment was lodged. Attach ACRA's acknowledgement with addDirectorSettlementEvidence. A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up, and If-Match with the settlement's ETag, so the step is recorded against the conversion as read. Side effects: the step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["recordConversionStep"];
         delete?: never;
@@ -8297,7 +8297,7 @@ export interface paths {
         };
         /**
          * List the register of share issues
-         * @description Every allotment of shares, earliest effective date first (FR-EQ-08): the holder, class, number, price, amount, consideration, resolutions, ACRA's lodgement reference and effective date, and the entry it posted, if any. Share capital moves only with the register or the opening balances (INV-13). Read-only; no side effects.
+         * @description Every allotment of shares, earliest effective date first (FR-EQ-08): the holder, class, number, price, amount, consideration, resolutions, ACRA's lodgement reference and effective date, and the entry it posted, if any. Share capital moves only with the register or the opening balances (INV-13). A page at a time. Read-only; no side effects.
          */
         get: operations["listShareIssues"];
         put?: never;
@@ -25843,7 +25843,13 @@ export interface components {
             shares: string;
         };
         ShareIssuePage: {
+            /** @description The issues on this page, earliest effective date first. */
             items: components["schemas"]["ShareIssue"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjAxOTI4ZjZlIn0
+             */
+            next_cursor?: string;
         };
         ShareIssueRequest: {
             /**
@@ -51945,6 +51951,8 @@ export interface operations {
             header?: {
                 /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
                 "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
                 /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
                 Prefer?: string;
             };
@@ -52036,6 +52044,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
             413: {
                 headers: {
@@ -52056,6 +52073,15 @@ export interface operations {
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-37` The ACRA step does not fit. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -90280,7 +90306,12 @@ export interface operations {
     };
     listShareIssues: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -90318,7 +90349,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

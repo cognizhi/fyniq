@@ -24541,9 +24541,15 @@ components:
       additionalProperties: false
       properties:
         items:
+          description: The issues on this page, earliest effective date first.
           items:
             $ref: "#/components/schemas/ShareIssue"
           type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTI4ZjZlIn0
+          type: string
       required:
         - items
       type: object
@@ -60802,7 +60808,7 @@ paths:
         right: A
   /v1/director-settlements/{settlement_id}/acra-steps:
     post:
-      description: "Records one ACRA step of an approved conversion not yet effective (FR-EQ-09, design D12): the day the shareholders resolved; the day their approval was lodged with ACRA, due within 14 days of the resolution (s161(5), s186; ⏰ until it is); the date by which the next AGM must be held, when it differs from the one worked out [verify], which is when the approval lapses; or the day the return of allotment was lodged. Attach ACRA's acknowledgement with addDirectorSettlementEvidence. A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up. Side effects: the step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      description: "Records one ACRA step of an approved conversion not yet effective (FR-EQ-09, design D12): the day the shareholders resolved; the day their approval was lodged with ACRA, due within 14 days of the resolution (s161(5), s186; ⏰ until it is); the date by which the next AGM must be held, when it differs from the one worked out [verify], which is when the approval lapses; or the day the return of allotment was lodged. Attach ACRA's acknowledgement with addDirectorSettlementEvidence. A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up, and If-Match with the settlement's ETag, so the step is recorded against the conversion as read. Side effects: the step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
       operationId: recordConversionStep
       parameters:
         - description: The settlement's ID.
@@ -60825,6 +60831,14 @@ paths:
             maxLength: 255
             minLength: 1
             pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
             type: string
         - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
           in: header
@@ -60927,6 +60941,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
           description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `FOUNDER-35` Not an approved conversion waiting for ACRA; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SHARE-02` A conversion's ACRA steps do not change that way."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
         "413":
           content:
             application/problem+json:
@@ -60945,6 +60965,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
           description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-37` The ACRA step does not fit."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
         "429":
           content:
             application/problem+json:
@@ -60998,6 +61024,8 @@ paths:
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
         - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
         - API-INPUT-01
         - API-INPUT-02
         - API-INPUT-03
@@ -112841,8 +112869,32 @@ paths:
         right: C
   /v1/share-issues:
     get:
-      description: "Every allotment of shares, earliest effective date first (FR-EQ-08): the holder, class, number, price, amount, consideration, resolutions, ACRA's lodgement reference and effective date, and the entry it posted, if any. Share capital moves only with the register or the opening balances (INV-13). Read-only; no side effects."
+      description: "Every allotment of shares, earliest effective date first (FR-EQ-08): the holder, class, number, price, amount, consideration, resolutions, ACRA's lodgement reference and effective date, and the entry it posted, if any. Share capital moves only with the register or the opening balances (INV-13). A page at a time. Read-only; no side effects."
       operationId: listShareIssues
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
       responses:
         "200":
           content:
@@ -112880,7 +112932,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
         "429":
           content:
             application/problem+json:
@@ -112921,6 +112973,7 @@ paths:
         - API-AUTHZ-02
         - API-AUTHZ-03
         - API-AUTHZ-07
+        - API-CURSOR-01
         - API-FAILURE-01
         - API-INPUT-02
         - API-RATE-01

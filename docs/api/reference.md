@@ -7264,12 +7264,13 @@ Saves a new version of a settlement not decided yet, checked as drafting it is (
 
 **Record an ACRA step of a conversion** (`recordConversionStep`)
 
-Records one ACRA step of an approved conversion not yet effective (FR-EQ-09, design D12): the day the shareholders resolved; the day their approval was lodged with ACRA, due within 14 days of the resolution (s161(5), s186; ⏰ until it is); the date by which the next AGM must be held, when it differs from the one worked out [verify], which is when the approval lapses; or the day the return of allotment was lodged. Attach ACRA's acknowledgement with addDirectorSettlementEvidence. A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up. Side effects: the step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+Records one ACRA step of an approved conversion not yet effective (FR-EQ-09, design D12): the day the shareholders resolved; the day their approval was lodged with ACRA, due within 14 days of the resolution (s161(5), s186; ⏰ until it is); the date by which the next AGM must be held, when it differs from the one worked out [verify], which is when the approval lapses; or the day the return of allotment was lodged. Attach ACRA's acknowledgement with addDirectorSettlementEvidence. A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up, and If-Match with the settlement's ETag, so the step is recorded against the conversion as read. Side effects: the step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
 
 - **Permission:** Approve on Director accounts, settlements, share issues (rev 0.3). The caller must have stepped up in the last 5 minutes.
 - **Parameters:**
   - `settlement_id` (path, required): The settlement's ID.
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
   - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
 - **Request body:** [`ConversionStepRequest`](../../contracts/schemas/ConversionStepRequest.schema.json)
 - **Responses:**
@@ -7280,13 +7281,15 @@ Records one ACRA step of an approved conversion not yet effective (FR-EQ-09, des
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `FOUNDER-35` Not an approved conversion waiting for ACRA; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SHARE-02` A conversion's ACRA steps do not change that way.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
   - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-37` The ACRA step does not fit.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `FOUNDER-35`, `FOUNDER-37`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-02`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `FOUNDER-35`, `FOUNDER-37`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-02`
 
 ### `POST /v1/director-settlements/{settlement_id}/approval`
 
@@ -7649,17 +7652,20 @@ Records the accountant's decision on a cost (FR-EQ-03): its income-tax treatment
 
 **List the register of share issues** (`listShareIssues`)
 
-Every allotment of shares, earliest effective date first (FR-EQ-08): the holder, class, number, price, amount, consideration, resolutions, ACRA's lodgement reference and effective date, and the entry it posted, if any. Share capital moves only with the register or the opening balances (INV-13). Read-only; no side effects.
+Every allotment of shares, earliest effective date first (FR-EQ-08): the holder, class, number, price, amount, consideration, resolutions, ACRA's lodgement reference and effective date, and the entry it posted, if any. Share capital moves only with the register or the opening balances (INV-13). A page at a time. Read-only; no side effects.
 
 - **Permission:** View on Director accounts, settlements, share issues (rev 0.3)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
 - **Responses:**
   - `200` OK [`ShareIssuePage`](../../contracts/schemas/ShareIssuePage.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
-  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
-- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
 
 ### `POST /v1/share-issues`
 
