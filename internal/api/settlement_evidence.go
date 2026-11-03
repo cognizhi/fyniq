@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -115,12 +116,32 @@ func settlementFile(ctx context.Context, u storage.UnitOfWork, p authn.Principal
 	return e, nil
 }
 
+// attachableSettlement is a settlement a file may be attached to, locked until commit: a draft, or an approved
+// conversion waiting for ACRA, whose acknowledgements arrive after its approval (FR-EQ-09); once decided otherwise, or
+// effective, director.CodeSettled. Files on a decided settlement are append-only.
+func attachableSettlement(ctx context.Context, u storage.UnitOfWork, id uuid.UUID) (storage.Document, error) {
+	doc, s, err := journal.DraftSettlement(ctx, u, id)
+	var de *director.Error
+	if !errors.As(err, &de) || de.Code != director.CodeSettled || s.Route != director.RouteConvert {
+		return doc, err
+	}
+	issue, ierr := u.ShareIssues().OfSettlement(ctx, id)
+	if ierr != nil {
+		return doc, ierr
+	}
+	if issue != nil {
+		return doc, err
+	}
+	return doc, nil
+}
+
 func registerSettlementEvidence(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
 	register(a, authz.AddDirectorSettlementEvidence, huma.Operation{
 		OperationID: "addDirectorSettlementEvidence", Method: http.MethodPost, Path: "/v1/director-settlements/{settlement_id}/evidence", Tags: []string{"Evidence"},
 		DefaultStatus: http.StatusCreated, Summary: "Attach the agreement to a settlement",
-		Description: "Attaches a file, such as the loan note, board minute or deed of waiver, to a drafted settlement (FR-EQ-05, FR-DOC-05), as " +
+		Description: "Attaches a file, such as the loan note, board minute or deed of waiver, to a drafted settlement (FR-EQ-05, FR-DOC-05), or " +
+			"ACRA's acknowledgement to an approved conversion waiting for ACRA (FR-EQ-09), as " +
 			"multipart/form-data: asking for its approval needs one. The file's type is decided from its content; it is scanned for " +
 			"malware and its image metadata, such as location, is stripped before it is stored (FR-DOC-08). Side effects: the file in " +
 			"the staging store, its evidence row and its audit event with the SHA-256 of the file as received and as stored (FR-DOC-07); " +
@@ -156,7 +177,7 @@ func registerSettlementEvidence(a *API) {
 				if _, err := readableSettlement(ctx, u, p, id); err != nil {
 					return DirectorSettlementEvidence{}, err
 				}
-				doc, _, err := journal.DraftSettlement(ctx, u, id)
+				doc, err := attachableSettlement(ctx, u, id)
 				if err != nil {
 					return DirectorSettlementEvidence{}, err
 				}

@@ -3060,6 +3060,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/director-settlements/{settlement_id}/acra-steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record an ACRA step of a conversion
+         * @description Records one ACRA step of an approved conversion not yet effective (FR-EQ-09, design D12): the day the shareholders resolved; the day their approval was lodged with ACRA, due within 14 days of the resolution (s161(5), s186; ⏰ until it is); the date by which the next AGM must be held, when it differs from the one worked out [verify], which is when the approval lapses; or the day the return of allotment was lodged. Attach ACRA's acknowledgement with addDirectorSettlementEvidence. A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up, and If-Match with the settlement's ETag, so the step is recorded against the conversion as read. Side effects: the step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["recordConversionStep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/director-settlements/{settlement_id}/approval": {
         parameters: {
             query?: never;
@@ -3115,7 +3135,7 @@ export interface paths {
         put?: never;
         /**
          * Attach the agreement to a settlement
-         * @description Attaches a file, such as the loan note, board minute or deed of waiver, to a drafted settlement (FR-EQ-05, FR-DOC-05), as multipart/form-data: asking for its approval needs one. The file's type is decided from its content; it is scanned for malware and its image metadata, such as location, is stripped before it is stored (FR-DOC-08). Side effects: the file in the staging store, its evidence row and its audit event with the SHA-256 of the file as received and as stored (FR-DOC-07); once the settlement is decided its files are committed to the retention-locked store (FR-DOC-13). An Owner or the Controller attaches. Needs If-Match with the settlement's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing.
+         * @description Attaches a file, such as the loan note, board minute or deed of waiver, to a drafted settlement (FR-EQ-05, FR-DOC-05), or ACRA's acknowledgement to an approved conversion waiting for ACRA (FR-EQ-09), as multipart/form-data: asking for its approval needs one. The file's type is decided from its content; it is scanned for malware and its image metadata, such as location, is stripped before it is stored (FR-DOC-08). Side effects: the file in the staging store, its evidence row and its audit event with the SHA-256 of the file as received and as stored (FR-DOC-07); once the settlement is decided its files are committed to the retention-locked store (FR-DOC-13). An Owner or the Controller attaches. Needs If-Match with the settlement's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing.
          */
         post: operations["addDirectorSettlementEvidence"];
         delete?: never;
@@ -14360,6 +14380,115 @@ export interface components {
              */
             next_cursor?: string;
         };
+        ConversionACRA: {
+            /**
+             * Format: date
+             * @description The date by which the next AGM must be held, when the approval lapses: as recorded, or worked out from the financial years [verify].
+             * @example 2027-06-30
+             */
+            agm_due_on: string;
+            /**
+             * Format: date
+             * @description The day the return of allotment was lodged with the conversion agreement (s63, s63B).
+             * @example 2026-10-20
+             */
+            allotment_lodged_on?: string;
+            /**
+             * Format: date
+             * @description The day their approval was lodged with ACRA: due within 14 days of the resolution (s161(5), s186).
+             * @example 2026-10-12
+             */
+            approval_lodged_on?: string;
+            /** @description What the steps raise today: ⏰ due, or ⚠ warning. Empty once effective. */
+            flags: components["schemas"]["ConversionFlag"][];
+            /**
+             * Format: date
+             * @description The day the shareholders resolved to issue the shares.
+             * @example 2026-10-06
+             */
+            resolved_on?: string;
+            /** @description Every step recorded, earliest first: a later one of a kind supersedes the earlier. */
+            steps: components["schemas"]["ConversionStep"][];
+        };
+        ConversionFlag: {
+            /**
+             * @description The flag's stable code.
+             * @example FOUNDER-38
+             */
+            code: string;
+            /**
+             * Format: date
+             * @description The day it is due, or lapses.
+             * @example 2026-10-20
+             */
+            due_on?: string;
+            /**
+             * @description What to do.
+             * @example Lodge it, attach ACRA's acknowledgement and record the day it was lodged
+             */
+            fix: string;
+            /**
+             * @description due (⏰): a statutory step is due; warning (⚠): please review.
+             * @example due
+             * @enum {string}
+             */
+            kind: "due" | "warning";
+            /**
+             * @description What it says.
+             * @example the shareholders' approval to issue the shares is due to be lodged with ACRA by 20 Oct 2026
+             */
+            message: string;
+        };
+        ConversionStep: {
+            /**
+             * Format: uuid
+             * @description The step's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f40
+             */
+            id: string;
+            /**
+             * @description Which step.
+             * @example approval_lodged
+             * @enum {string}
+             */
+            kind: "resolved" | "approval_lodged" | "agm_due" | "allotment_lodged";
+            /**
+             * Format: date
+             * @description Its day.
+             * @example 2026-10-12
+             */
+            on: string;
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-10-12T09:30:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description ACRA's transaction number, or what it rests on.
+             * @example T26ACRA00123
+             */
+            reference?: string;
+        };
+        ConversionStepRequest: {
+            /**
+             * @description Which step.
+             * @example approval_lodged
+             * @enum {string}
+             */
+            kind: "resolved" | "approval_lodged" | "agm_due" | "allotment_lodged";
+            /**
+             * Format: date
+             * @description Its day: no later than today, except the AGM date.
+             * @example 2026-10-12
+             */
+            on: string;
+            /**
+             * @description ACRA's transaction number, or what it rests on.
+             * @example T26ACRA00123
+             */
+            reference?: string;
+        };
         CreditApplication: {
             /** @description What was applied, in their currency. */
             amount: components["schemas"]["Money"];
@@ -15851,6 +15980,8 @@ export interface components {
              * @example false
              */
             accountant_review: boolean;
+            /** @description An approved conversion: its ACRA steps and what they raise (FR-EQ-09). */
+            acra?: components["schemas"]["ConversionACRA"];
             /**
              * Format: int64
              * @description How many files are attached and not removed: asking for approval needs one, the loan note, minute or deed.
@@ -51463,6 +51594,185 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `FOUNDER-32` No account to repay the person into; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordConversionStep: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The settlement's ID. */
+                settlement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversionStepRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorSettlement"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorSettlement"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `FOUNDER-35` Not an approved conversion waiting for ACRA; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SHARE-02` A conversion's ACRA steps do not change that way. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-37` The ACRA step does not fit. */
             422: {
                 headers: {
                     [name: string]: unknown;

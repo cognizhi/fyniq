@@ -119,6 +119,7 @@ export const routes = [
   // a founder's own account, Money I put in, is Basic.
   { kind: "route", id: "director-accounts", path: "/accounting/directors", mode: "expert", signedIn: true, help: "accounting.directors", guide: "equity.director-accounts" },
   { kind: "route", id: "director-settlement", path: "/accounting/directors/$contactId/settle", mode: "expert", signedIn: true, help: "accounting.director-settlement", guide: "equity.director-accounts#settle-a-balance" },
+  { kind: "route", id: "share-issues", path: "/equity/transactions", mode: "expert", signedIn: true, help: "equity.share-issues", guide: "equity.director-accounts#the-register-of-share-issues" },
   { kind: "route", id: "money-i-put-in", path: "/me/money-i-put-in", mode: "basic", signedIn: true, help: "founders.money-i-put-in", guide: "equity.founders-money#see-what-the-company-owes-you" },
   // Costs before the books start (FR-EQ-03; p1-founders-money task 2.2): Basic, as the founders record their own costs.
   { kind: "route", id: "pre-incorporation-costs", path: "/accounting/pre-incorporation", mode: "basic", signedIn: true, help: "accounting.pre-incorporation", guide: "equity.pre-incorporation-costs" },
@@ -265,6 +266,9 @@ export const actions = [
   { kind: "action", id: "director-accounts.settle", mode: "expert", help: "director-accounts.settle", guide: "equity.director-accounts#settle-a-balance" },
   { kind: "action", id: "director-settlement.ask", mode: "expert", help: "director-settlement.ask", guide: "equity.director-accounts#settle-a-balance" },
   { kind: "action", id: "director-settlement.effective", mode: "expert", help: "director-settlement.effective", guide: "equity.director-accounts#convert-a-balance-to-shares" },
+  { kind: "action", id: "director-settlement.acra-step", mode: "expert", help: "director-settlement.acra-step", guide: "equity.director-accounts#convert-a-balance-to-shares" },
+  { kind: "action", id: "share-issues.record-before-books", mode: "expert", help: "share-issues.record-before-books", guide: "equity.director-accounts#the-register-of-share-issues" },
+  { kind: "action", id: "director-accounts.share-issues", mode: "expert", help: "director-accounts.share-issues", guide: "equity.director-accounts#the-register-of-share-issues" },
   { kind: "action", id: "director-settlement.attach-evidence", mode: "expert", help: "director-settlement.attach-evidence", guide: "equity.director-accounts#settle-a-balance" },
   { kind: "action", id: "director-fee.attach-evidence", mode: "expert", help: "director-fee.attach-evidence", guide: "equity.director-accounts#record-a-directors-fee" },
   { kind: "action", id: "pay-choice.attach-evidence", mode: "expert", help: "pay-choice.attach-evidence", guide: "equity.director-accounts#record-a-pay-choice" },

@@ -249,13 +249,17 @@ approver. See [Explain the variances](periods-and-close.md#explain-the-variances
 
 What the company owes a founder (money lent, costs paid personally, pay or fees owed) is settled
 by one of four routes: keep it as a loan, repay it, convert it to shares, or waive it. Two settings,
-each needing a second approver, set what the Settle a balance page offers first:
+each needing a second approver, set what the Settle a balance page offers first, and a third flags a
+conversion ACRA has not registered:
 
 - **Default route:** recommended *keep*, an interest-free loan repayable on demand until the first
   priced round. No tax or CPF falls on money never received, and nobody's ownership moves at an
   arbitrary price.
 - **Default price basis** to convert to shares: recommended *latest priced round*, the price outside
   investors paid; *valuation* when there is none.
+- **Flag a conversion not registered by ACRA after:** recommended 14 days, matching ACRA's
+  guidance for a return of allotment. The Act sets no deadline for private companies. This one
+  needs no second approver.
 
 The founders and the accountant still choose each settlement, which another person approves.
 

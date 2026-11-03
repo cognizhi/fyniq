@@ -881,11 +881,17 @@ export function DirectorAccounts() {
           <span className="fy-small fy-wrap">
             <Icon of={Building2} /> {exemptLine(q.data.exempt_status)}
           </span>
-          {mayLink && (
-            <Button variant="ghost" size="sm" type="button" onClick={() => setExempting(true)} title={helpText("director-accounts.exempt").tooltip}>
-              {helpText("director-accounts.exempt").label}
-            </Button>
-          )}
+          <span className="fy-row gap-2">
+            <Link to="/equity/transactions" className="fy-btn fy-btn--ghost fy-btn--sm" title={helpText("director-accounts.share-issues").tooltip}>
+              <Icon of={ScrollText} />
+              {helpText("director-accounts.share-issues").label}
+            </Link>
+            {mayLink && (
+              <Button variant="ghost" size="sm" type="button" onClick={() => setExempting(true)} title={helpText("director-accounts.exempt").tooltip}>
+                {helpText("director-accounts.exempt").label}
+              </Button>
+            )}
+          </span>
         </p>
       )}
       {q.isPending && <p className="fy-secondary">Loading the director accounts…</p>}

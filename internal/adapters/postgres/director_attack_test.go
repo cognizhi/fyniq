@@ -326,3 +326,34 @@ VALUES ($1, $2, $3, 100, 1, 'SGD', 2, 100, 'cash', 'Incorporation subscription',
 		return err
 	}), "FY255", "42501")
 }
+
+// A conversion's ACRA steps name an approved conversion waiting for ACRA, and never change (FR-EQ-09; FY256): a step of a
+// settlement still a draft is refused, and so is changing one.
+// req: FR-EQ-09
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackConversionStepsNameAnApprovedConversion(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack conversion steps Pte Ltd")
+	payload := []byte(`{"date":"2026-10-15","contact_id":"` + d.director.ID.String() + `","account_id":"` + d.loan.String() + `",` +
+		`"amount":{"amount":"100.00","currency":"SGD"},"route":"convert"}`)
+	var draft uuid.UUID
+	if err := store(t, "fyniq_api").Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentDirectorSettlement, Payload: payload})
+		draft = doc.ID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	wantState(t, "a step of a draft conversion", asOrg(ctx, conn(t, "fyniq_api"), d.org, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `INSERT INTO fyniq.conversion_step (settlement_id, kind, on_date, recorded_by, recorded_at) VALUES ($1, 'resolved', '2026-10-06', $2, now())`,
+			draft, d.member); err != nil {
+			return err
+		}
+		return auditRaw(ctx, tx, "director_settlement.acra_step", "document", draft)
+	}), "FY256")
+	wantState(t, "changing a step", asOrg(ctx, conn(t, "fyniq_api"), d.org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `UPDATE fyniq.conversion_step SET on_date = '2026-10-07'`)
+		return err
+	}), "FY256", "42501")
+}

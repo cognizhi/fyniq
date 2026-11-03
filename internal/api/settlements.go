@@ -71,6 +71,49 @@ type SettlementShares struct {
 	Remainder Money  `json:"remainder" doc:"What stays owed on the director's account."`
 }
 
+// ConversionACRA are an approved conversion's ACRA steps (FR-EQ-09, design D12) and what they raise.
+type ConversionACRA struct {
+	ResolvedOn        string           `json:"resolved_on,omitempty" format:"date" doc:"The day the shareholders resolved to issue the shares." example:"2026-10-06"`
+	ApprovalLodgedOn  string           `json:"approval_lodged_on,omitempty" format:"date" doc:"The day their approval was lodged with ACRA: due within 14 days of the resolution (s161(5), s186)." example:"2026-10-12"`
+	AGMDueOn          string           `json:"agm_due_on" format:"date" doc:"The date by which the next AGM must be held, when the approval lapses: as recorded, or worked out from the financial years [verify]." example:"2027-06-30"`
+	AllotmentLodgedOn string           `json:"allotment_lodged_on,omitempty" format:"date" doc:"The day the return of allotment was lodged with the conversion agreement (s63, s63B)." example:"2026-10-20"`
+	Steps             []ConversionStep `json:"steps" nullable:"false" doc:"Every step recorded, earliest first: a later one of a kind supersedes the earlier."`
+	Flags             []ConversionFlag `json:"flags" nullable:"false" doc:"What the steps raise today: ⏰ due, or ⚠ warning. Empty once effective."`
+}
+
+// ConversionStep is one ACRA step as recorded.
+type ConversionStep struct {
+	ID         string `json:"id" format:"uuid" doc:"The step's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f40"`
+	Kind       string `json:"kind" enum:"resolved,approval_lodged,agm_due,allotment_lodged" doc:"Which step." example:"approval_lodged"`
+	On         string `json:"on" format:"date" doc:"Its day." example:"2026-10-12"`
+	Reference  string `json:"reference,omitempty" doc:"ACRA's transaction number, or what it rests on." example:"T26ACRA00123"`
+	RecordedAt string `json:"recorded_at" format:"date-time" doc:"When it was recorded." example:"2026-10-12T09:30:00Z"`
+}
+
+// ConversionFlag is what an approved conversion's steps raise.
+type ConversionFlag struct {
+	Code    string `json:"code" doc:"The flag's stable code." example:"FOUNDER-38"`
+	Kind    string `json:"kind" enum:"due,warning" doc:"due (⏰): a statutory step is due; warning (⚠): please review." example:"due"`
+	Message string `json:"message" doc:"What it says." example:"the shareholders' approval to issue the shares is due to be lodged with ACRA by 20 Oct 2026"`
+	Fix     string `json:"fix" doc:"What to do." example:"Lodge it, attach ACRA's acknowledgement and record the day it was lodged"`
+	DueOn   string `json:"due_on,omitempty" format:"date" doc:"The day it is due, or lapses." example:"2026-10-20"`
+}
+
+// ConversionStepRequest is an ACRA step as recorded.
+type ConversionStepRequest struct {
+	Kind      string `json:"kind" enum:"resolved,approval_lodged,agm_due,allotment_lodged" doc:"Which step." example:"approval_lodged"`
+	On        string `json:"on" format:"date" doc:"Its day: no later than today, except the AGM date." example:"2026-10-12"`
+	Reference string `json:"reference,omitempty" maxLength:"200" doc:"ACRA's transaction number, or what it rests on." example:"T26ACRA00123"`
+}
+
+type conversionStepInput struct {
+	DirectorSettlementPath
+	KeyHeader
+	IfMatchHeader
+	PreferHeader
+	Body ConversionStepRequest
+}
+
 // DirectorSettlementDraft is a settlement as drafted.
 type DirectorSettlementDraft struct {
 	ContactID  string                `json:"contact_id" format:"uuid" doc:"The director or shareholder the company owes." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"`
@@ -105,6 +148,7 @@ type DirectorSettlement struct {
 	Shares           *SettlementShares     `json:"shares,omitempty" doc:"A conversion: the whole shares RND-SHARE allots, what they convert and what stays owed."`
 	LapsesOn         string                `json:"lapses_on,omitempty" format:"date" doc:"An approved conversion not yet effective: the day the shareholders' approval lapses, the date by which the next AGM must be held [verify]; after it a new approval is needed." example:"2027-06-30"`
 	ShareIssue       *ShareIssue           `json:"share_issue,omitempty" doc:"An effective conversion: its share issue in the register."`
+	ACRA             *ConversionACRA       `json:"acra,omitempty" doc:"An approved conversion: its ACRA steps and what they raise (FR-EQ-09)."`
 	Agreements       int                   `json:"agreements" doc:"How many files are attached and not removed: asking for approval needs one, the loan note, minute or deed." example:"1"`
 	ApprovalAsked    string                `json:"approval_asked,omitempty" format:"uuid" doc:"The pending request to decide it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"`
 	Checks           []BillCheck           `json:"checks" nullable:"false" doc:"A draft's statuses: ✖ while no agreement is attached, or while it does not fit what is owed now."`
@@ -345,9 +389,13 @@ func (a *API) settlementOf(ctx context.Context, u storage.UnitOfWork, v settleme
 			if issue != nil {
 				x := shareIssueOf(*issue, v.names[issue.HolderID], v.accounts[issue.ClassAccountID].Code)
 				out.ShareIssue = &x
-			} else if s.ApprovedOn != nil {
-				if lapses, ok := director.LapsesOn(v.profile, *s.ApprovedOn); ok {
-					out.LapsesOn = dateOf(lapses)
+			}
+			if s.ApprovedOn != nil {
+				if out.ACRA, err = a.conversionACRA(ctx, u, v, doc.ID, *s.ApprovedOn, issue != nil); err != nil {
+					return DirectorSettlement{}, err
+				}
+				if issue == nil {
+					out.LapsesOn = out.ACRA.AGMDueOn
 				}
 			}
 		}
@@ -418,6 +466,45 @@ func (a *API) settlementOf(ctx context.Context, u storage.UnitOfWork, v settleme
 		out.Checks = append(out.Checks, BillCheck{Severity: "error", Code: p.Code, Message: strings.TrimSuffix(p.Detail, "."), Fix: strings.TrimSuffix(p.Fix, ".")})
 	case c.Entry != nil:
 		out.LedgerImpact = impactOf(*c.Entry)
+	}
+	return out, nil
+}
+
+// conversionACRA is an approved conversion's ACRA steps, and what they raise today while it is not effective.
+func (a *API) conversionACRA(ctx context.Context, u storage.UnitOfWork, v settlementView, id uuid.UUID, approvedOn time.Time, effective bool) (*ConversionACRA, error) {
+	all, err := u.ConversionSteps().Of(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	steps := director.StepsOf(all)
+	out := &ConversionACRA{Steps: []ConversionStep{}, Flags: []ConversionFlag{}}
+	for _, x := range all {
+		out.Steps = append(out.Steps, ConversionStep{ID: x.ID.String(), Kind: x.Kind, On: dateOf(x.On), Reference: x.Reference, RecordedAt: x.RecordedAt.UTC().Format(time.RFC3339)})
+	}
+	on := func(kind string) string {
+		if x, ok := steps[kind]; ok {
+			return dateOf(x.On)
+		}
+		return ""
+	}
+	out.ResolvedOn, out.ApprovalLodgedOn, out.AllotmentLodgedOn = on(storage.StepResolved), on(storage.StepApprovalLodged), on(storage.StepAllotmentLodged)
+	lapses, ok := director.LapsesOnFor(steps, v.profile, approvedOn)
+	if ok {
+		out.AGMDueOn = dateOf(lapses)
+	}
+	if effective {
+		return out, nil
+	}
+	days, err := director.RegistrationDays(ctx, u, v.today)
+	if err != nil {
+		return nil, err
+	}
+	for _, f := range director.Flags(steps, approvedOn, lapses, v.today, days) {
+		x := ConversionFlag{Code: f.Code, Kind: f.Kind, Message: f.Message, Fix: f.Fix}
+		if f.DueOn != nil {
+			x.DueOn = dateOf(*f.DueOn)
+		}
+		out.Flags = append(out.Flags, x)
 	}
 	return out, nil
 }
@@ -720,6 +807,74 @@ func registerSettlements(a *API) {
 		return answer(w), nil
 	})
 
+	register(a, authz.RecordConversionStep, huma.Operation{
+		OperationID: "recordConversionStep", Method: http.MethodPost, Path: "/v1/director-settlements/{settlement_id}/acra-steps",
+		Tags: []string{"Founders"}, DefaultStatus: http.StatusCreated, Summary: "Record an ACRA step of a conversion",
+		Description: "Records one ACRA step of an approved conversion not yet effective (FR-EQ-09, design D12): the day the shareholders " +
+			"resolved; the day their approval was lodged with ACRA, due within 14 days of the resolution (s161(5), s186; ⏰ until it is); " +
+			"the date by which the next AGM must be held, when it differs from the one worked out [verify], which is when the approval " +
+			"lapses; or the day the return of allotment was lodged. Attach ACRA's acknowledgement with addDirectorSettlementEvidence. " +
+			"A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up, and If-Match with " +
+			"the settlement's ETag, so the step is recorded against the conversion as read. Side effects: the step, append-only, and its " +
+			"audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
+	}, []string{director.CodeStep, director.CodeNotApproved, storage.CodeConversionStep, CodeNotFound, CodeStale, CodeIfMatchRequired, CodeSessionRequired, CodeStepUpRequired, CodeInvalid,
+		CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, storage.CodeRetry, storage.CodeLockTimeout},
+		func(ctx context.Context, in *conversionStepInput) (*settlementOutput, error) {
+			id, err := parseID("settlement_id", in.SettlementID)
+			if err != nil {
+				return nil, err
+			}
+			if strings.TrimSpace(in.IfMatch) == "" {
+				return nil, checkIfMatch(in.IfMatch, "")
+			}
+			on, err := time.Parse(time.DateOnly, in.Body.On)
+			if err != nil {
+				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.on", Message: "is not a date", Fix: "Send the date as YYYY-MM-DD"}})
+			}
+			p, err := a.steppedUpPerson(ctx, "Recording a conversion's ACRA step")
+			if err != nil {
+				return nil, err
+			}
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (DirectorSettlement, error) {
+				doc, err := u.Documents().Lock(ctx, id)
+				if err != nil {
+					return DirectorSettlement{}, err
+				}
+				if err := checkIfMatch(in.IfMatch, settlementETag(doc)); err != nil {
+					return DirectorSettlement{}, err
+				}
+				st, err := director.ReadSettlement(doc)
+				if err != nil {
+					return DirectorSettlement{}, err
+				}
+				issue, err := u.ShareIssues().OfSettlement(ctx, id)
+				if err != nil {
+					return DirectorSettlement{}, err
+				}
+				if doc.Status != storage.DocumentPosted || st.Route != director.RouteConvert || issue != nil {
+					return DirectorSettlement{}, &director.Error{Code: director.CodeNotApproved, Message: "only an approved conversion waiting for ACRA records its steps",
+						Fix: "Record the steps between the conversion's approval and its effective date"}
+				}
+				today, err := orgToday(ctx, a, u)
+				if err != nil {
+					return DirectorSettlement{}, err
+				}
+				ref := strings.TrimSpace(in.Body.Reference)
+				if err := director.CheckStep(in.Body.Kind, on, ref, today); err != nil {
+					return DirectorSettlement{}, err
+				}
+				if _, err := u.ConversionSteps().Record(ctx, storage.ConversionStep{SettlementID: id, Kind: in.Body.Kind, On: on, Reference: ref,
+					RecordedBy: p.UserID, RecordedAt: a.deps.Clock.Now()}); err != nil {
+					return DirectorSettlement{}, err
+				}
+				return shown(ctx, u, id)
+			})
+			if err != nil {
+				return nil, err
+			}
+			return answer(w), nil
+		})
+
 	register(a, authz.RecordConversionEffective, huma.Operation{
 		OperationID: "recordConversionEffective", Method: http.MethodPost, Path: "/v1/director-settlements/{settlement_id}/effective",
 		Tags: []string{"Founders"}, Summary: "Record a conversion as registered by ACRA",
@@ -777,7 +932,11 @@ func registerSettlements(a *API) {
 				}
 				var lapses time.Time
 				if st.ApprovedOn != nil {
-					lapses, _ = director.LapsesOn(v.profile, *st.ApprovedOn)
+					all, err := u.ConversionSteps().Of(ctx, id)
+					if err != nil {
+						return DirectorSettlement{}, err
+					}
+					lapses, _ = director.LapsesOnFor(director.StepsOf(all), v.profile, *st.ApprovedOn)
 				}
 				if _, _, err := a.settlements.EffectiveIn(ctx, u, id, journal.Effective{LodgementRef: strings.TrimSpace(in.Body.LodgementRef),
 					ResolutionRefs: strings.TrimSpace(in.Body.ResolutionRefs), EffectiveOn: on, Today: v.today, LapsesOn: lapses, RecordedBy: p.UserID}); err != nil {

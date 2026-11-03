@@ -306,3 +306,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-03] compile | docs/user-guide/director-accounts.md, founders-money.md → founders.director-accounts, founders.settle-balance, founders.balance, founders.pay-choice (the Settle a balance page, p1-founders-money 4.4)
 
 ## [2026-11-03] compile | docs/user-guide/director-accounts.md, founders-money.md → founders.director-accounts, founders.settle-balance, founders.balance, founders.pay-choice (converting a balance to shares, p1-founders-money 5.3)
+
+## [2026-11-03] compile | docs/user-guide/director-accounts.md, organisation-settings.md → founders.director-accounts, founders.pay-choice, settings.organisation, settings.change (the register of share issues and a conversion's ACRA steps, p1-founders-money 5.4)

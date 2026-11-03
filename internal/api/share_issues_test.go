@@ -161,6 +161,8 @@ var matrixShareIssues = map[string]func(e *env, tok string) (response, func() bo
 // req: equity/founders-money Approval documents and capacity
 // req: equity/founders-money The conversion becomes effective
 // req: equity/founders-money Pending until registered
+// req: FR-EQ-09
+// req: equity/founders-money Shareholders' approval lodged within 14 days
 func TestADirectorsBalanceIsConvertedToShares(t *testing.T) {
 	c := newClaimants(t)
 	e := c.e
@@ -232,6 +234,31 @@ func TestADirectorsBalanceIsConvertedToShares(t *testing.T) {
 		t.Errorf("pending, the balance stays owed: %s", st.Raw)
 	}
 
+	// FR-EQ-09 (design D12): its ACRA steps. Until the approval is lodged it is ⏰ due 14 days after the resolution, here 6
+	// Oct, so by 20 Oct; ACRA's acknowledgement is attached after the approval; an AGM date recorded earlier than the one
+	// worked out moves the lapse, and within 30 days of it the conversion is ⚠.
+	if g.str("acra", "agm_due_on") != "2027-06-30" || !strings.Contains(g.Raw, `"code":"`+director.CodeApprovalDue+`"`) || !strings.Contains(g.Raw, `"due_on":"2026-10-29"`) {
+		t.Errorf("the ACRA steps on approval: %s", g.Raw)
+	}
+	step := func(kind, on, ref string) response {
+		return e.call(http.MethodPost, path+"/acra-steps", weiling, map[string]any{"kind": kind, "on": on, "reference": ref}, "If-Match", g.Header.Get("ETag"))
+	}
+	if r := e.call(http.MethodPost, path+"/acra-steps", weiling, map[string]any{"kind": "resolved", "on": "2026-10-06"}); r.Status != http.StatusPreconditionRequired {
+		t.Errorf("a step without If-Match: %d %s", r.Status, r.Raw)
+	}
+	e.problemIs(step("approval_lodged", "2026-10-16", "T26A001"), "recordConversionStep", 422, director.CodeStep)
+	if r := step("resolved", "2026-10-06", "Written resolution"); r.Status != http.StatusCreated || !strings.Contains(r.Raw, `"due_on":"2026-10-20"`) {
+		t.Errorf("the resolution recorded: %d %s", r.Status, r.Raw)
+	}
+	attach("ACRA acknowledgement")
+	if r := step("approval_lodged", "2026-10-12", "T26A001"); r.Status != http.StatusCreated || strings.Contains(r.Raw, director.CodeApprovalDue) || r.str("acra", "approval_lodged_on") != "2026-10-12" {
+		t.Errorf("the approval lodged: %d %s", r.Status, r.Raw)
+	}
+	if r := step("agm_due", "2026-10-31", "AGM notice"); r.Status != http.StatusCreated || r.str("lapses_on") != "2026-10-31" || !strings.Contains(r.Raw, `"code":"`+director.CodeApprovalLapsing+`"`) {
+		t.Errorf("an earlier AGM date: %d %s", r.Status, r.Raw)
+	}
+	g = e.call(http.MethodGet, path, weiling, nil)
+
 	effective := func(tok, on string) response {
 		return e.call(http.MethodPost, path+"/effective", tok, map[string]any{"lodgement_ref": "AA2026101500456", "resolution_refs": "Written resolution of 6 Oct 2026",
 			"effective_on": on}, "If-Match", g.Header.Get("ETag"))
@@ -259,6 +286,10 @@ func TestADirectorsBalanceIsConvertedToShares(t *testing.T) {
 	again := e.call(http.MethodPost, path+"/effective", weiling, map[string]any{"lodgement_ref": "AA2026101500456", "resolution_refs": "Again", "effective_on": "2026-10-15"},
 		"If-Match", done.Header.Get("ETag"))
 	e.problemIs(again, "recordConversionEffective", 409, director.CodeNotApproved)
+	e.problemIs(step("allotment_lodged", "2026-10-15", "T26A002"), "recordConversionStep", 409, director.CodeNotApproved)
+	if f := e.call(http.MethodGet, path, weiling, nil); len(f.Body["acra"].(map[string]any)["flags"].([]any)) != 0 {
+		t.Errorf("an effective conversion still raises flags: %s", f.Raw)
+	}
 }
 
 // matrixConversionOf is the conversion the matrix records effective, approved once per env in its organisation: S$100.00
@@ -303,6 +334,15 @@ func matrixConversion(e *env) string {
 }
 
 var matrixConversions = map[string]func(e *env, tok string) (response, func() bool){
+	"recordConversionStep": func(e *env, tok string) (response, func() bool) {
+		id := matrixConversion(e)
+		state := func() string { return e.call(http.MethodGet, "/v1/director-settlements/"+id, e.as(authz.Owner), nil).Raw }
+		was := state()
+		g := e.call(http.MethodGet, "/v1/director-settlements/"+id, e.as(authz.Owner), nil)
+		r := e.call(http.MethodPost, "/v1/director-settlements/"+id+"/acra-steps", steppedUp(e, tok), map[string]any{"kind": "approval_lodged", "on": "2026-10-15",
+			"reference": "T26MATRIX"}, "Prefer", "return=preview", "If-Match", g.Header.Get("ETag"))
+		return r, func() bool { return state() == was }
+	},
 	// An allowed role, stepped up, previews recording it effective, which saves nothing; a refused one changes nothing.
 	"recordConversionEffective": func(e *env, tok string) (response, func() bool) {
 		id := matrixConversion(e)

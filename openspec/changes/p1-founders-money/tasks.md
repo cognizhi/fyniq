@@ -199,9 +199,9 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
     already allowed `share_issue`.
   - **Before the books start.** `recordShareIssueBeforeBooks` (Owner, Controller, stepped up) records an issue with no
     entry, its amount shares × price (RND-LINE). `listShareIssues` reads the register, the Board viewer included.
-  - **Not built.** A cash allotment after the books start: how its money is received and matched is not designed
-    (FR-EQ-08 lists cash among the considerations). It waits for the owner's decision. The register's page and its
-    guide come with 5.4.
+  - **Not built.** A cash allotment after the books start, which comes with `p1-equity-register` (FR-EQ-17): cash that
+    arrives before the effective date is held as share application monies. The register's page and its guide come with
+    5.4.
 - [x] 5.3 The convert route (D11):
   - approve with the four documents, the price basis, the capacity and the measurement basis;
   - effective on the date ACRA registered it, posting from the register, refused in a closed period or after the
@@ -227,7 +227,18 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
   - **The Settle page.** It takes the conversion's fields, shows the shares and what stays owed, and records it as
     registered.
 
-- [ ] 5.4 The ACRA steps (D12) and the register's page on the equity register's screen. `// req: FR-EQ-09`
+- [x] 5.4 The ACRA steps (D12) and the register's page on the equity register's screen. `// req: FR-EQ-09`
+  Built:
+  - **The steps.** `recordConversionStep` records an approved conversion's steps, append-only (migration 000217,
+    FY256; a later step supersedes the earlier): the resolution, the approval lodged, the AGM date (when it differs from
+    the one worked out [verify]; the lapse and the effective step read it), and the return of allotment. ACRA's
+    acknowledgements attach to the approved conversion until it is effective; its files stay append-only.
+  - **What they raise.** The settlement answers `acra` with ⏰ approval due 14 days after the resolution (FOUNDER-38);
+    ⚠ not registered after `founders.registration_days`, default 14 (FOUNDER-39); and ⚠ within 30 days of the lapse
+    (FOUNDER-40). The Settle page shows them and records the steps. The checks page reads them with C.2 #22 in 6.2.
+  - **The register's page.** `/equity/transactions` lists every issue and records shares issued before the books start
+    (Owner, Controller), linked from Director accounts, with its guide section. Transfers, cash issues, share application
+    monies and the cap table come with `p1-equity-register` (FR-EQ-17).
 
 ## 6. Presentation, checks and the canvases (slice 6)
 

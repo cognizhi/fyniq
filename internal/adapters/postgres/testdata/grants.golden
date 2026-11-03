@@ -96,6 +96,8 @@ fyniq_api       SELECT    contact
 fyniq_api       UPDATE    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_active, is_customer, is_director, is_shareholder, is_vendor, legal_name, member_user_id, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id, version)
 fyniq_api       INSERT    contact_document_template (contact_id, document_type, kind, set_at, set_by, template_id)
 fyniq_api       SELECT    contact_document_template
+fyniq_api       INSERT    conversion_step (kind, on_date, recorded_at, recorded_by, reference, settlement_id)
+fyniq_api       SELECT    conversion_step
 fyniq_api       EXECUTE   count_super_admins()
 fyniq_api       SELECT    currencies
 fyniq_api       EXECUTE   current_org()
@@ -423,6 +425,7 @@ fyniq_readonly  SELECT    close_checklist_entry
 fyniq_readonly  SELECT    close_checklist_template
 fyniq_readonly  SELECT    contact
 fyniq_readonly  SELECT    contact_document_template
+fyniq_readonly  SELECT    conversion_step
 fyniq_readonly  SELECT    currencies
 fyniq_readonly  EXECUTE   current_org()
 fyniq_readonly  SELECT    customer_group
@@ -550,6 +553,7 @@ fyniq_worker    SELECT    close_checklist_entry
 fyniq_worker    SELECT    close_checklist_template
 fyniq_worker    SELECT    contact
 fyniq_worker    SELECT    contact_document_template
+fyniq_worker    SELECT    conversion_step
 fyniq_worker    EXECUTE   count_super_admins()
 fyniq_worker    EXECUTE   create_scheduled_bill_draft()
 fyniq_worker    EXECUTE   create_scheduled_draft()

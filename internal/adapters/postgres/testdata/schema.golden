@@ -453,6 +453,14 @@ contact_document_template | document_type | text | not null |
 contact_document_template | template_id | uuid | null | 
 contact_document_template | set_by | text | not null | 
 contact_document_template | set_at | timestamp with time zone | not null | 
+conversion_step | organisation_id | uuid | not null | current_org()
+conversion_step | id | uuid | not null | uuidv7()
+conversion_step | settlement_id | uuid | not null | 
+conversion_step | kind | text | not null | 
+conversion_step | on_date | date | not null | 
+conversion_step | reference | text | null | 
+conversion_step | recorded_by | uuid | not null | 
+conversion_step | recorded_at | timestamp with time zone | not null | 
 currencies | code | text | null | 
 currencies | minor_units | smallint | null | 
 currencies | name | text | null | 
@@ -2101,6 +2109,19 @@ contact_document_template | contact_document_template_set_by_not_null | NOT NULL
 contact_document_template | contact_document_template_template_fkey | FOREIGN KEY (organisation_id, template_id) REFERENCES document_template(organisation_id, id)
 contact_document_template | contact_document_template_type_known | CHECK ((document_type = ANY (ARRAY['invoice'::text, 'quote'::text, 'credit_note'::text, 'receipt'::text, 'statement'::text, 'reminder'::text, 'remittance'::text, 'purchase_order'::text])))
 contact_document_template | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+conversion_step | conversion_step_id_not_null | NOT NULL id
+conversion_step | conversion_step_kind_known | CHECK ((kind = ANY (ARRAY['resolved'::text, 'approval_lodged'::text, 'agm_due'::text, 'allotment_lodged'::text])))
+conversion_step | conversion_step_kind_not_null | NOT NULL kind
+conversion_step | conversion_step_on_date_not_null | NOT NULL on_date
+conversion_step | conversion_step_organisation_id_not_null | NOT NULL organisation_id
+conversion_step | conversion_step_pkey | PRIMARY KEY (organisation_id, id)
+conversion_step | conversion_step_recorded_at_not_null | NOT NULL recorded_at
+conversion_step | conversion_step_recorded_by_fkey | FOREIGN KEY (recorded_by) REFERENCES app_user(user_id)
+conversion_step | conversion_step_recorded_by_not_null | NOT NULL recorded_by
+conversion_step | conversion_step_reference_length | CHECK (((reference IS NULL) OR ((length(btrim(reference)) >= 1) AND (length(btrim(reference)) <= 200))))
+conversion_step | conversion_step_settlement_fkey | FOREIGN KEY (organisation_id, settlement_id) REFERENCES document(organisation_id, id)
+conversion_step | conversion_step_settlement_id_not_null | NOT NULL settlement_id
+conversion_step | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 currency | currency_code_format | CHECK ((code ~ '^[A-Z]{3}$'::text))
 currency | currency_code_minor_units_key | UNIQUE (code, minor_units)
 currency | currency_code_not_null | NOT NULL code
@@ -3573,6 +3594,7 @@ CREATE INDEX check_run_latest ON fyniq.check_run USING btree (organisation_id, r
 CREATE INDEX close_checklist_entry_period ON fyniq.close_checklist_entry USING btree (organisation_id, period_id, task_key, written_at)
 CREATE INDEX contact_document_template_latest ON fyniq.contact_document_template USING btree (organisation_id, contact_id, kind, document_type, set_at)
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
+CREATE INDEX conversion_step_settlement ON fyniq.conversion_step USING btree (organisation_id, settlement_id)
 CREATE INDEX document_link_document ON fyniq.document_link USING btree (organisation_id, document_id, created_at)
 CREATE INDEX document_send_document ON fyniq.document_send USING btree (organisation_id, document_id, sent_at)
 CREATE INDEX document_template_default_latest ON fyniq.document_template_default USING btree (organisation_id, kind, document_type, set_at)
@@ -3688,6 +3710,7 @@ CREATE UNIQUE INDEX connector_route_pkey ON fyniq.connector_route USING btree (c
 CREATE UNIQUE INDEX contact_document_template_pkey ON fyniq.contact_document_template USING btree (organisation_id, id)
 CREATE UNIQUE INDEX contact_member_once ON fyniq.contact USING btree (organisation_id, member_user_id) WHERE (member_user_id IS NOT NULL)
 CREATE UNIQUE INDEX contact_pkey ON fyniq.contact USING btree (organisation_id, id)
+CREATE UNIQUE INDEX conversion_step_pkey ON fyniq.conversion_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX currency_code_minor_units_key ON fyniq.currency USING btree (code, minor_units)
 CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
 CREATE UNIQUE INDEX customer_group_name_key ON fyniq.customer_group USING btree (organisation_id, lower(btrim(name)))
@@ -3865,6 +3888,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.check_state DEFERR
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_template', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.contact_document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'contact_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.conversion_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'settlement_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_number DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_send DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_send', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_template_default DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template_default', 'id')
@@ -4005,6 +4029,8 @@ CREATE TRIGGER close_checklist_template_no_truncate BEFORE TRUNCATE ON fyniq.clo
 CREATE TRIGGER contact_document_template_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.contact_document_template FOR EACH ROW EXECUTE FUNCTION document_template_choice_guard()
 CREATE TRIGGER contact_document_template_no_truncate BEFORE TRUNCATE ON fyniq.contact_document_template FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER contact_party_guard BEFORE INSERT OR UPDATE ON fyniq.contact FOR EACH ROW EXECUTE FUNCTION contact_party_guard()
+CREATE TRIGGER conversion_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.conversion_step FOR EACH ROW EXECUTE FUNCTION conversion_step_guard()
+CREATE TRIGGER conversion_step_no_truncate BEFORE TRUNCATE ON fyniq.conversion_step FOR EACH STATEMENT EXECUTE FUNCTION conversion_step_guard()
 CREATE TRIGGER document_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION document_guard()
 CREATE TRIGGER document_link_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.document_link FOR EACH ROW EXECUTE FUNCTION document_link_guard()
 CREATE TRIGGER document_link_no_truncate BEFORE TRUNCATE ON fyniq.document_link FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -4189,6 +4215,7 @@ close_checklist_entry | tenant_isolation | * | (organisation_id = current_org())
 close_checklist_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact_document_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+conversion_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 customer_group | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_link | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -4319,6 +4346,7 @@ connector_secret_guard() → trigger | security invoker | v | search_path=pg_cat
 connector_secret_named() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1a9173546f91feb840e7b1996f3342c4
 contact_member_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0faf2bd332726b6037d87c0a8160e65b
 contact_party_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7e0edc5eb3f4311abfec69ca1ebaba57
+conversion_step_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4d31c236d9b87b88fff3de4ebae0ca66
 count_super_admins() → integer | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c51240844e3a2e9633d6e96de4827bd0
 create_scheduled_bill_draft(p_recurring_bill uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 034ac02e0e0c8386e09e6dfb54a6f8fa
 create_scheduled_draft(p_recurring_journal uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b23a8c0aa6277cadb7bd3f6aae5f5661
