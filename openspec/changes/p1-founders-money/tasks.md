@@ -272,9 +272,17 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
   - `founders.share-capital-registered` (✖): a share-capital account's balance against its class's issues in the
     register.
   `TestTheFoundersChecks` passes each, then fires it.
-- [ ] 6.3 The canvases `people-ledger`, `equity`, `workflows`, `sales-purchases` and `banking-claims` rebuilt and
+- [x] 6.3 The canvases `people-ledger`, `equity`, `workflows`, `sales-purchases` and `banking-claims` rebuilt and
   republished, with the review register's area for the founders' money ([accountant to confirm] readings,
   FR-UX-41).
+  *Done (3 Nov 2026):* each canvas rebuilt and compared file by file with what it held, none edited by hand.
+  - people-ledger: Director accounts, Settle and Fixed assets republished.
+  - sales-purchases: Invoice record and Record payment republished.
+  - banking-claims: Bank account, both Categorise screens and the two payment-batch screens republished.
+  - equity and workflows were already current.
+  The register's area `founders` is #378, stacked on #358: FM-9's accountant step, the waiver's tax tag and the
+  approval's lapse date. Director accounts, Settle and Money I put in render `ReviewBanner`; the two screens it lists
+  get their canvas banners when it merges.
 - [ ] 6.4 `make test` and `make check` green. The build plan and the PRD rows say what was built.
 
 ## Workflow follow-up
