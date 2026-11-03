@@ -32,7 +32,7 @@ CHART = [
 
 
 def _scenario(*documents: dict, accounts: list[dict] | None = None, statements: bool = True,
-              currencies: dict | None = None) -> dict:
+              currencies: dict | None = None, **more: object) -> dict:
     data = {
         "schema": "fyniq-scenario@1",
         "name": "statements-by-hand",
@@ -44,7 +44,7 @@ def _scenario(*documents: dict, accounts: list[dict] | None = None, statements: 
     }
     if statements:
         data["statements"] = True
-    return data
+    return {**data, **more}
 
 
 def _statements(*documents: dict, **options) -> dict:
@@ -137,9 +137,73 @@ def test_a_dividend_through_retained_earnings_is_financing_and_an_equity_movemen
         journal("J2", "2026-03-30", line("3100", "SGD", "400.00"), line("1010", "SGD", "-400.00")),
     )["2026-03"]
     assert s["cash_flow"]["financing"] == "-400.00"
-    assert s["equity_movement"] == {"opening": "0.00", "profit": "1000.00", "share_capital": "0.00", "other": "-400.00",
-                                    "closing": "600.00"}
+    assert s["equity_movement"] == {"opening": "0.00", "profit": "1000.00", "share_capital": "0.00",
+                                    "share_capital_non_cash": "0.00", "other": "-400.00", "closing": "600.00"}
     assert s["balance_sheet"]["equity"] == {"total": "600.00", "groups": {"Retained earnings": "600.00"}}
+
+
+# The founders' presentation (p1-founders-money design D14): Ah Kow (P0001) lent 1,000.00 and was paid 1,500.00, so
+# he owes the company 500.00; Mei Lin (P0002) lent 2,000.00, converted 1,200.00 at 1.20 (1,000 shares) and waived
+# 300.00, so the company owes her 500.00. The 2500 account nets to nothing.
+FOUNDERS_CHART = [
+    *CHART,
+    _account("1250", "asset", report_group="Advances", cash_flow_line="Other current assets"),
+    _account("2500", "liability", role="director-loan", report_group="Director loans", cash_flow_line="Borrowings"),
+    _account("3010", "equity", role="share-capital", report_group="Share capital", cash_flow_line="Share capital"),
+    _account("3300", "equity", report_group="Capital contribution", cash_flow_line="Dividends & other equity"),
+]
+FOUNDERS_SETTINGS = {"accounts": {"advances": "1250", "director_loan": "2500"}, "money_accounts": {"1010": "SGD"},
+                     "books_start": "2026-01-01"}
+
+
+def _owed(account: str, amount: str, person: str, origin: str) -> dict:
+    return {**line(account, "SGD", amount), "party": person, "origin": origin}
+
+
+FOUNDERS = (
+    journal("J1", "2026-03-02", line("1010", "SGD", "1000.00"), _owed("2500", "-1000.00", "P0001", "lent")),
+    journal("J2", "2026-03-05", line("1010", "SGD", "2000.00"), _owed("2500", "-2000.00", "P0002", "lent")),
+    journal("J3", "2026-03-10", _owed("2500", "1500.00", "P0001", "paid_out"), line("1010", "SGD", "-1500.00")),
+    {"type": "director_conversion", "id": "SI-0001", "version": 1, "date": "2026-03-31", "person": "P0002",
+     "account": "2500", "class": "3010", "amount": "1200.00", "price": "1.20"},
+    {"type": "director_waiver", "id": "DS-0001", "version": 1, "date": "2026-03-31", "person": "P0002",
+     "account": "2500", "credit": "3300", "amount": "300.00"},
+    journal("J4", "2026-04-08", line("1010", "SGD", "600.00"), _owed("2500", "-600.00", "P0001", "lent")),
+)
+
+
+# req: FR-EQ-10, FR-EQ-11, FR-RPT-01
+def test_a_founders_net_debit_shows_under_the_advances_and_conversions_and_waivers_move_no_money():
+    s = _statements(*FOUNDERS, accounts=FOUNDERS_CHART, people=["P0001", "P0002"], settings=FOUNDERS_SETTINGS,
+                    as_of="2026-04-30")
+    mar, apr = s["2026-03"], s["2026-04"]
+    # Ah Kow's 500.00 debit shows under 1250; 2500 keeps Mei Lin's 500.00 credit.
+    assert mar["balance_sheet"]["current_assets"] == {"total": "2000.00",
+                                                      "groups": {"Advances": "500.00", "Cash and bank": "1500.00"}}
+    assert mar["balance_sheet"]["borrowings"] == {"total": "500.00", "groups": {"Director loans": "500.00"}}
+    assert mar["balance_sheet"]["equity"] == {"total": "1500.00", "groups": {"Capital contribution": "300.00",
+                                                                             "Share capital": "1200.00"}}
+    assert mar["balance_sheet"]["total_assets"] == mar["balance_sheet"]["total_liabilities_and_equity"] == "2000.00"
+    assert mar["cash_flow"]["financing"] == "1500.00"
+    assert mar["cash_flow"]["non_cash"] == [
+        {"document": "SI-0001", "kind": "post", "posting_date": "2026-03-31", "section": "financing",
+         "label": "Converted to shares"},
+        {"document": "DS-0001", "kind": "post", "posting_date": "2026-03-31", "section": "financing", "label": "Waived"},
+    ]
+    assert mar["equity_movement"] == {"opening": "0.00", "profit": "0.00", "share_capital": "0.00",
+                                      "share_capital_non_cash": "1200.00", "other": "300.00", "closing": "1500.00"}
+    assert mar["checks"] == {"balances": True, "ties": True, "equity": True, "unplaced": []}
+    # Ah Kow lends 600.00 in April: he is owed 100.00, so nothing shows under 1250 any more.
+    assert apr["balance_sheet"]["current_assets"] == {"total": "2100.00", "groups": {"Cash and bank": "2100.00"}}
+    assert apr["balance_sheet"]["borrowings"] == {"total": "600.00", "groups": {"Director loans": "600.00"}}
+    assert apr["checks"]["balances"] is True
+
+
+# req: FR-EQ-11, FR-RPT-01
+def test_without_an_advances_account_a_founders_debit_stays_on_their_account():
+    bs = _statements(*FOUNDERS[:3], accounts=FOUNDERS_CHART, people=["P0001", "P0002"])["2026-03"]["balance_sheet"]
+    assert bs["current_assets"] == {"total": "1500.00", "groups": {"Cash and bank": "1500.00"}}
+    assert bs["borrowings"] == {"total": "1500.00", "groups": {"Director loans": "1500.00"}}
 
 
 # req: FR-RPT-01, FR-GL-10

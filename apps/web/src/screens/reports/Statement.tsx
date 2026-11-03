@@ -407,8 +407,11 @@ export function FinancialStatement() {
                 {s.non_cash.map((x) => (
                   <li key={`${x.source_id}-${x.date}`} className="fy-list__item">
                     <span className="fy-list__main">
-                      <span className="fy-list__title">{x.memo || x.source_type.replaceAll("_", " ")}</span>
-                      <span className="fy-list__meta">{date(x.date)}</span>
+                      <span className="fy-list__title">{x.label || x.memo || x.source_type.replaceAll("_", " ")}</span>
+                      <span className="fy-list__meta">
+                        {date(x.date)}
+                        {x.label && x.memo ? ` · ${x.memo}` : ""}
+                      </span>
                     </span>
                     <span className="fy-num">{formatAmount(x.amount.amount)}</span>
                   </li>

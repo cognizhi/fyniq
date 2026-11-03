@@ -52,6 +52,15 @@ type NonCash struct {
 	Source storage.Source
 	Memo   string
 	Amount money.Money // its debits
+	// Label names what it was, when its source says it (FR-EQ-10; p1-founders-money design D14): "Converted to shares"
+	// for a founder's balance converted from the register, "Waived" for a waiver; "" otherwise.
+	Label string
+}
+
+// nonCashLabels are the labels of the founders' non-cash transactions, by source type (FR-EQ-10).
+var nonCashLabels = map[string]string{
+	ledger.SourceShareIssue:         "Converted to shares",
+	ledger.SourceDirectorSettlement: "Waived",
 }
 
 // activity is what an entry is: operating, investing or financing.
@@ -108,12 +117,16 @@ type flow struct {
 	cashStart, cashEnd                        money.Money
 	equityStart, equityEnd                    money.Money
 	shares, otherEquity                       money.Money
+	sharesNonCash                             money.Money // shares issued for non-cash consideration (D14)
+	// nonCashIssues are the register's issues for non-cash consideration, by ID: the entries their shares came from.
+	nonCashIssues map[string]bool
 }
 
 func newFlow(base money.Currency) *flow {
 	z := money.Zero(base)
 	return &flow{profit: z, depreciation: z, reclassified: z, other: z, working: map[string]money.Money{}, paidOut: z, paidIn: z,
-		financed: map[string]money.Money{}, others: map[string]bool{}, cashStart: z, cashEnd: z, equityStart: z, equityEnd: z, shares: z, otherEquity: z}
+		financed: map[string]money.Money{}, others: map[string]bool{}, cashStart: z, cashEnd: z, equityStart: z, equityEnd: z, shares: z, otherEquity: z,
+		sharesNonCash: z}
 }
 
 // accrue adds b into *a.
@@ -151,11 +164,22 @@ func flows(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Req
 			inColumn[i][p.ID] = true
 		}
 	}
+	issues, err := u.ShareIssues().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	nonCash := map[string]bool{}
+	for _, x := range issues {
+		if x.Consideration != storage.ConsiderationCash {
+			nonCash[x.ID.String()] = true
+		}
+	}
 	out := make([]*flow, len(cols))
 	for i := range cols {
 		out[i] = newFlow(base)
+		out[i].nonCashIssues = nonCash
 	}
-	err := balance.EachEntry(ctx, u, r.Revision, func(e storage.Entry) error {
+	err = balance.EachEntry(ctx, u, r.Revision, func(e storage.Entry) error {
 		for i := range cols {
 			if !inColumn[i][e.PeriodID] {
 				continue
@@ -282,7 +306,11 @@ func (f *flow) read(e storage.Entry, byID map[uuid.UUID]storage.Account, base mo
 		}
 		if x.a.Type == storage.Equity {
 			to := &f.otherEquity
-			if strings.TrimSpace(x.a.CashFlowLine) == shareCapitalLine {
+			switch {
+			case strings.TrimSpace(x.a.CashFlowLine) != shareCapitalLine:
+			case e.Source.Type == ledger.SourceShareIssue && f.nonCashIssues[e.Source.ID]: // the register's consideration (D14)
+				to = &f.sharesNonCash
+			default:
 				to = &f.shares
 			}
 			if err := accrue(to, x.base.Neg()); err != nil {
@@ -301,7 +329,7 @@ func (f *flow) read(e storage.Entry, byID map[uuid.UUID]storage.Account, base mo
 				}
 			}
 		}
-		f.nonCash = append(f.nonCash, NonCash{Date: e.PostingDate, Source: e.Source, Memo: e.Memo, Amount: debits})
+		f.nonCash = append(f.nonCash, NonCash{Date: e.PostingDate, Source: e.Source, Memo: e.Memo, Amount: debits, Label: nonCashLabels[e.Source.Type]})
 	case act == investing && cashOf.Sign() < 0:
 		return accrue(&f.paidOut, cashOf)
 	case act == investing:
@@ -467,12 +495,14 @@ func cashFlow(fs []*flow, n int, base money.Currency) ([]Block, []Check, []NonCa
 }
 
 // equityMovement is the balance sheet's movement in equity over each column's run, and its check (BS_EqChk): equity
-// at the start, the profit, the shares issued and the other movements add up to equity at the end.
+// at the start, the profit, the shares issued for cash and for non-cash consideration (the register's consideration,
+// FR-EQ-10) and the other movements add up to equity at the end.
 func equityMovement(fs []*flow, n int, base money.Currency) (Block, Check, error) {
 	groups := []Group{
 		row("Equity at the start", n, base, func(f *flow) money.Money { return f.equityStart }, fs),
 		row("Profit for the period", n, base, func(f *flow) money.Money { return f.profit }, fs),
-		row("Shares issued", n, base, func(f *flow) money.Money { return f.shares }, fs),
+		row("Shares issued for cash", n, base, func(f *flow) money.Money { return f.shares }, fs),
+		row("Shares issued for non-cash consideration", n, base, func(f *flow) money.Money { return f.sharesNonCash }, fs),
 		row("Other movements", n, base, func(f *flow) money.Money { return f.otherEquity }, fs),
 	}
 	totals, err := total(groups, n, base)

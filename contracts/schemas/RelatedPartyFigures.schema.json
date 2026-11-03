@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "converted": {
+      "$ref": "Money.schema.json",
+      "description": "What they were owed that was converted to shares in the year, effective when ACRA registered it (FR-EQ-06)."
+    },
+    "deferred_pay": {
+      "$ref": "Money.schema.json",
+      "description": "What the company owes them on 2120 Deferred remuneration payable at the day: pay and fees not yet paid."
+    },
+    "fees_for_year": {
+      "$ref": "Money.schema.json",
+      "description": "Directors' fees owed to them in the financial year to the day (FR-EQ-04)."
+    },
+    "loan": {
+      "$ref": "Money.schema.json",
+      "description": "What the company owes them on 2500 Loan from director / shareholder at the day: positive owed to them; negative means they owe the company, shown under 1250 Staff \u0026 director advances (FR-EQ-11)."
+    },
+    "waived": {
+      "$ref": "Money.schema.json",
+      "description": "What they waived of what they were owed in the year (FR-EQ-07)."
+    }
+  },
+  "required": [
+    "loan",
+    "deferred_pay",
+    "fees_for_year",
+    "converted",
+    "waived"
+  ],
+  "title": "RelatedPartyFigures",
+  "type": "object"
+}

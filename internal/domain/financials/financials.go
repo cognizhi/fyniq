@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/rounding"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -295,6 +296,11 @@ func Lay(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Reque
 	if err != nil {
 		return Statement{}, err
 	}
+	if r.Kind == BalanceSheet {
+		if err := debitsAsAdvances(ctx, u, base, cols, figs); err != nil {
+			return Statement{}, err
+		}
+	}
 	l := layout{kind: r.Kind, base: base, n: len(cols), figs: figs, accounts: accounts}
 	switch r.Kind {
 	case ProfitAndLoss:
@@ -324,6 +330,42 @@ func Lay(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Reque
 		s.Checks = append(s.Checks, c)
 	}
 	return s, nil
+}
+
+// debitsAsAdvances presents, at each column's end, a director's or shareholder's net debit on 2500 and 2120 under the
+// advances account (1250 Staff & director advances, the setting claims.advances_account) instead of on their accounts,
+// with no posting (FR-EQ-11; p1-founders-money design D14): what a person owes the company is an asset. A person whose
+// accounts net to a credit stays a liability; with no advances account set, nothing moves.
+func debitsAsAdvances(ctx context.Context, u storage.UnitOfWork, base money.Currency, cols []Column, figs []map[uuid.UUID]money.Money) error {
+	for i, c := range cols {
+		end := c.Periods[len(c.Periods)-1].EndsOn
+		advances, err := claim.AdvancesAccount(ctx, u, end)
+		if err != nil || advances == uuid.Nil {
+			return err
+		}
+		people, err := balance.People(ctx, u, base, end)
+		if err != nil {
+			return err
+		}
+		for _, p := range people {
+			if p.Party == uuid.Nil || p.Net.Sign() <= 0 {
+				continue
+			}
+			for acc, m := range p.Accounts {
+				if figs[i][acc], err = figs[i][acc].Sub(m); err != nil {
+					return err
+				}
+			}
+			was, ok := figs[i][advances]
+			if !ok {
+				was = money.Zero(base)
+			}
+			if figs[i][advances], err = was.Add(p.Net); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // layout is what laying out one statement reads: the figures by column and the chart.

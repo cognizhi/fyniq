@@ -39,8 +39,9 @@ func TestEachCloseBackedCheckReadsItsOwnFindings(t *testing.T) {
 	}
 	after := time.Date(2026, 11, 10, 0, 0, 0, 0, time.UTC)
 	for _, d := range Catalogue() {
-		if len(d.CloseKeys) == 0 || slicesHas([]string{"C.1 #1", "C.1 #3", "C.1 #5", "C.1 #23", "C.2 #1", "C.2 #49"}, d.Ref) {
-			continue // the books' checks read the statements and the balance service (slice 1); C.2 #49 reads the write-offs too
+		if len(d.CloseKeys) == 0 || slicesHas([]string{"C.1 #1", "C.1 #3", "C.1 #5", "C.1 #23", "C.2 #1", "C.2 #23", "C.2 #49"}, d.Ref) {
+			continue // the books' checks read the statements and the balance service (slice 1); C.2 #49 reads the write-offs too;
+			// C.2 #23 reads the confirmations at the latest year end itself, as the close does (founders_test.go)
 		}
 		t.Run(d.Ref, func(t *testing.T) {
 			var bad, fine []closing.Check

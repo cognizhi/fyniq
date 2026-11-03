@@ -186,7 +186,7 @@ borrowings [1030.00] | 2500 [1030.00]
 total_liabilities [2230.00]
 equity [13190.00] | 3010 [10000.00] | Profit for the year to date [3190.00]
 liabilities_and_equity [15420.00]
-equity_movement [13190.00] | Equity at the start [10000.00] | Profit for the period [3190.00] | Shares issued [0.00] | Other movements [0.00]
+equity_movement [13190.00] | Equity at the start [10000.00] | Profit for the period [3190.00] | Shares issued for cash [0.00] | Shares issued for non-cash consideration [0.00] | Other movements [0.00]
 `
 	if got := rendered(bs); got != want {
 		t.Errorf("31 October's balance sheet:\n%s\nwant\n%s", got, want)

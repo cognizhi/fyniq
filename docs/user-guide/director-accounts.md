@@ -3,7 +3,7 @@ key: equity.director-accounts
 title: Director accounts
 mode: expert
 roles: [owner, controller, accountant, bookkeeper, auditor, tax_agent]
-requirements: [FR-EQ-01, FR-EQ-04, FR-EQ-05, FR-EQ-06, FR-EQ-07, FR-EQ-08, FR-EQ-11, FR-EQ-12, FR-EQ-14, FM-9]
+requirements: [FR-EQ-01, FR-EQ-04, FR-EQ-05, FR-EQ-06, FR-EQ-07, FR-EQ-08, FR-EQ-09, FR-EQ-11, FR-EQ-12, FR-EQ-14, FM-9]
 ---
 
 # Director accounts
@@ -118,7 +118,13 @@ Converting is approved first and becomes effective once ACRA registers the share
 2. Attach all four documents, each as its type: the shareholders' approval, the board
    resolution, the conversion agreement and their balance confirmation. Then select **Ask for
    approval**. Approving it posts nothing.
-3. Once ACRA's register of members shows the allotment, enter ACRA's lodgement reference, the
+3. Record each ACRA step as it happens, under **ACRA steps**: the day the shareholders resolved,
+   the day their approval was lodged, and the day the return of allotment was lodged. Attach
+   ACRA's acknowledgements. Until the approval is lodged it shows **Due**, 14 days after the
+   resolution. If ACRA has not registered the shares 14 days after the approval (a setting), it
+   shows **Review**. It also shows **Review** within 30 days of the date by which the next AGM
+   must be held. Record that date as a step when it differs from the one Fyniq works out.
+4. Once ACRA's register of members shows the allotment, enter ACRA's lodgement reference, the
    resolutions and the day it was registered, and select **Record as registered**. The
    conversion posts on that day, never earlier, and the shares join the register of share
    issues.
@@ -128,6 +134,18 @@ day, a conversion not yet registered needs a new approval. A day in a closed per
 reopen the period rather than choose a later date. The accountant chooses the measurement
 basis. The default is the carrying amount; the shares' fair value, with the difference in profit
 or loss, needs their note.
+
+## The register of share issues
+
+**Register of share issues**, on Director accounts, lists every allotment of shares: who holds
+them, the class, the number, the price, what paid for them, the resolutions and ACRA's
+reference. Share capital changes only with this register or the opening balances.
+
+Record the shares issued before the books start, such as the incorporation subscription, with
+**Record shares issued before the books start**. No entry posts, because the opening balances
+hold their share capital. An Owner or the Controller records them. Conversions add their shares
+when ACRA registers them. Transfers, issues for cash and the cap table come with the equity
+register.
 
 ## Name the person on a journal or opening balance
 
@@ -162,6 +180,16 @@ company owes the person shown positive. **Every movement** lists each line, with
 
 Select **PDF for confirmation** to download the statement as a PDF to send to the person, or
 **CSV** for its movements. Each download is recorded in the audit trail.
+
+## The related-party schedule
+
+Select **Related parties** to list each director and shareholder with something to
+disclose as at the day chosen: what the company owes them on their loan and in deferred pay, a
+minus when they owe it, and in the financial year to that day the directors' fees owed to them,
+what was converted to shares and what they waived. **CSV** downloads it, with a total, for the
+accountant and the notes to the financial statements; each download is recorded in the audit
+trail. On the balance sheet, a person who owes the company shows under staff and director
+advances, not under the loan, with no entry posted.
 
 ## Common problems
 

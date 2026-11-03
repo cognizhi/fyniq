@@ -602,6 +602,9 @@ var (
 	ExportDirectorStatement = Policy{Operation: "exportDirectorStatement", Capability: DirectorAccounts, Need: View, Unqualified: true}
 	GetMyDirectorAccount    = Policy{Operation: "getMyDirectorAccount", Capability: DirectorAccounts, Need: View}
 	LinkContactMember       = Policy{Operation: "linkContactMember", Capability: DirectorAccounts, Need: Approve}
+	// The related-party schedule (FR-EQ-10; design D14): every person's figures, so the whole row, as the list.
+	GetRelatedParties    = Policy{Operation: "getRelatedParties", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	ExportRelatedParties = Policy{Operation: "exportRelatedParties", Capability: DirectorAccounts, Need: View, Unqualified: true}
 	// Costs before the books start (FR-EQ-03; design D7): an Owner or the Controller records a founder's cost (A on the
 	// row), and the accountant, who posts on it (P), decides it; reading needs the whole row, not an Employee's own.
 	ListPreIncorporationCosts   = Policy{Operation: "listPreIncorporationCosts", Capability: DirectorAccounts, Need: View, Unqualified: true}
@@ -666,6 +669,8 @@ var (
 	ReplaceDirectorSettlement         = Policy{Operation: "replaceDirectorSettlement", Capability: DirectorAccounts, Need: Approve}
 	RequestDirectorSettlementApproval = Policy{Operation: "requestDirectorSettlementApproval", Capability: DirectorAccounts, Need: Approve,
 		Note: "Another person approves it, never the person settled; the Accountant too when every available approver benefits."}
+	RecordConversionStep = Policy{Operation: "recordConversionStep", Capability: DirectorAccounts, Need: Approve,
+		Note: "The caller must have stepped up in the last 5 minutes."}
 	RecordConversionEffective = Policy{Operation: "recordConversionEffective", Capability: DirectorAccounts, Need: Approve,
 		Note: "The caller must have stepped up in the last 5 minutes, and is never the person converting."}
 	AddDirectorSettlementEvidence    = Policy{Operation: "addDirectorSettlementEvidence", Capability: DirectorAccounts, Need: Approve}
@@ -1172,7 +1177,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset, ListUnregisteredAssetLines,
 	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid, VoidFixedAsset, RequestFixedAssetVoid,
 	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,
-	ListDirectorAccounts, GetDirectorStatement, ExportDirectorStatement, GetMyDirectorAccount, LinkContactMember,
+	ListDirectorAccounts, GetDirectorStatement, ExportDirectorStatement, GetMyDirectorAccount, LinkContactMember, GetRelatedParties, ExportRelatedParties,
 	ListPreIncorporationCosts, GetPreIncorporationCost, RecordPreIncorporationCost, ReplacePreIncorporationCost, DecidePreIncorporationCost,
 	AddPreIncorporationCostEvidence, ListPreIncorporationCostEvidence, GetPreIncorporationCostEvidence, RemovePreIncorporationCostEvidence,
 	ListDirectorPayChoices, GetDirectorPayChoice, CreateDirectorPayChoice, ReplaceDirectorPayChoice, RecordDirectorPayChoice,
@@ -1182,7 +1187,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListExemptStatuses, GetExemptStatus, CreateExemptStatus, ReplaceExemptStatus, RecordExemptStatus,
 	AddExemptStatusEvidence, ListExemptStatusEvidence, GetExemptStatusEvidence, RemoveExemptStatusEvidence,
 	ConfirmMyDirectorAccount,
-	ListDirectorSettlements, GetDirectorSettlement, CreateDirectorSettlement, ReplaceDirectorSettlement, RequestDirectorSettlementApproval, RecordConversionEffective,
+	ListDirectorSettlements, GetDirectorSettlement, CreateDirectorSettlement, ReplaceDirectorSettlement, RequestDirectorSettlementApproval, RecordConversionEffective, RecordConversionStep,
 	AddDirectorSettlementEvidence, ListDirectorSettlementEvidence, GetDirectorSettlementEvidence, RemoveDirectorSettlementEvidence,
 	GetDirectorRepayment, RequestDirectorRepaymentVoid, ListShareIssues, RecordShareIssueBeforeBooks,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,

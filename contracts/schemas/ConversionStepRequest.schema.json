@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "description": "Which step.",
+      "enum": [
+        "resolved",
+        "approval_lodged",
+        "agm_due",
+        "allotment_lodged"
+      ],
+      "examples": [
+        "approval_lodged"
+      ],
+      "type": "string"
+    },
+    "on": {
+      "description": "Its day: no later than today, except the AGM date.",
+      "examples": [
+        "2026-10-12"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reference": {
+      "description": "ACRA's transaction number, or what it rests on.",
+      "examples": [
+        "T26ACRA00123"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "on"
+  ],
+  "title": "ConversionStepRequest",
+  "type": "object"
+}

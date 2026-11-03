@@ -275,6 +275,12 @@ var matrixDirectors = map[string]func(e *env, tok string) (response, func() bool
 	"exportDirectorStatement": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/director-accounts/"+matrixDirector(e)+"/statement/export?from=2026-10-01&to=2026-10-31&format=csv", tok, nil), nil
 	},
+	"getRelatedParties": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/director-accounts/related-parties?as_at=2026-10-31", tok, nil), nil
+	},
+	"exportRelatedParties": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/director-accounts/related-parties/export?as_at=2026-10-31", tok, nil), nil
+	},
 	// Always a request for another person's approval: an allowed role, stepped up, previews the request it would make.
 	"linkContactMember": func(e *env, tok string) (response, func() bool) {
 		id := matrixDirector(e)

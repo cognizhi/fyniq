@@ -199,9 +199,9 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
     already allowed `share_issue`.
   - **Before the books start.** `recordShareIssueBeforeBooks` (Owner, Controller, stepped up) records an issue with no
     entry, its amount shares × price (RND-LINE). `listShareIssues` reads the register, the Board viewer included.
-  - **Not built.** A cash allotment after the books start: how its money is received and matched is not designed
-    (FR-EQ-08 lists cash among the considerations). It waits for the owner's decision. The register's page and its
-    guide come with 5.4.
+  - **Not built.** A cash allotment after the books start, which comes with `p1-equity-register` (FR-EQ-17): cash that
+    arrives before the effective date is held as share application monies. The register's page and its guide come with
+    5.4.
 - [x] 5.3 The convert route (D11):
   - approve with the four documents, the price basis, the capacity and the measurement basis;
   - effective on the date ACRA registered it, posting from the register, refused in a closed period or after the
@@ -227,21 +227,62 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
   - **The Settle page.** It takes the conversion's fields, shows the shares and what stays owed, and records it as
     registered.
 
-- [ ] 5.4 The ACRA steps (D12) and the register's page on the equity register's screen. `// req: FR-EQ-09`
+- [x] 5.4 The ACRA steps (D12) and the register's page on the equity register's screen. `// req: FR-EQ-09`
+  Built:
+  - **The steps.** `recordConversionStep` records an approved conversion's steps, append-only (migration 000217,
+    FY256; a later step supersedes the earlier): the resolution, the approval lodged, the AGM date (when it differs from
+    the one worked out [verify]; the lapse and the effective step read it), and the return of allotment. ACRA's
+    acknowledgements attach to the approved conversion until it is effective; its files stay append-only.
+  - **What they raise.** The settlement answers `acra` with ⏰ approval due 14 days after the resolution (FOUNDER-38);
+    ⚠ not registered after `founders.registration_days`, default 14 (FOUNDER-39); and ⚠ within 30 days of the lapse
+    (FOUNDER-40). The Settle page shows them and records the steps. The checks page reads them with C.2 #22 in 6.2.
+  - **The register's page.** `/equity/transactions` lists every issue and records shares issued before the books start
+    (Owner, Controller), linked from Director accounts, with its guide section. Transfers, cash issues, share application
+    monies and the cap table come with `p1-equity-register` (FR-EQ-17).
 
 ## 6. Presentation, checks and the canvases (slice 6)
 
-- [ ] 6.1 Presentation (D14):
+- [x] 6.1 Presentation (D14):
   - net debits under 1250;
   - non-cash labels in the cash flow;
   - shares issued for cash and non-cash apart in the movement in equity;
   - the related-party schedule.
   Tests: each figure checked, and the oracle's statements. `// req: FR-EQ-10`, `// req: FR-EQ-11`
-- [ ] 6.2 The checks C.2 #21, #22, #23 and #25 on the checks engine (D15), each with a fixture that fires and one
+  Built:
+  - The balance sheet moves a person's net debit on 2500 and 2120 to the advances account the setting
+    `claims.advances_account` names (1250), from `balance.People` at each column's end, with no posting; with no such
+    account the balances stay as they are.
+  - The cash flow's non-cash list carries a `label`: "Converted to shares" for `share_issue`, "Waived" for
+    `director_settlement`. The printed statements show it before the memo.
+  - The movement in equity has "Shares issued for cash" and "Shares issued for non-cash consideration", by the
+    register's consideration.
+  - `getRelatedParties` and `exportRelatedParties` (CSV), behind **Related parties** on Director accounts: per
+    person, the loan and deferred pay at the day (a minus when owed to the company) and the year's fees,
+    conversions and waivers, with totals. The year is the financial year the day falls in, or the calendar
+    year when the years are not set.
+  - The oracle states the same in its statements: the advances from the settings, a non-cash `label`, and
+    `share_capital_non_cash`. `TestTheFoundersInTheStatements` checks each figure through the API.
+- [x] 6.2 The checks C.2 #21, #22, #23 and #25 on the checks engine (D15), each with a fixture that fires and one
   that passes. `// req: FR-EQ-11`, `// req: FR-EQ-09`, `// req: FR-EQ-12`, `// req: INV-13`
-- [ ] 6.3 The canvases `people-ledger`, `equity`, `workflows`, `sales-purchases` and `banking-claims` rebuilt and
+  Built: in the Ledger area.
+  - `founders.director-in-debit` (⚠): a net debit at the latest month end, with D9's words.
+  - `founders.conversion-registered` (⏰, with ⚠ items): D12's flags of each approved conversion not yet effective.
+  - `founders.balances-confirmed` (⚠): balances at the latest year end not confirmed or changed since. It is the
+    close's `directors-confirmed`, so the catalogue adds that key no more.
+  - `founders.share-capital-registered` (✖): a share-capital account's balance against its class's issues in the
+    register.
+  `TestTheFoundersChecks` passes each, then fires it.
+- [x] 6.3 The canvases `people-ledger`, `equity`, `workflows`, `sales-purchases` and `banking-claims` rebuilt and
   republished, with the review register's area for the founders' money ([accountant to confirm] readings,
   FR-UX-41).
+  *Done (3 Nov 2026):* each canvas rebuilt and compared file by file with what it held, none edited by hand.
+  - people-ledger: Director accounts, Settle and Fixed assets republished.
+  - sales-purchases: Invoice record and Record payment republished.
+  - banking-claims: Bank account, both Categorise screens and the two payment-batch screens republished.
+  - equity and workflows were already current.
+  The register's area `founders` is #378, stacked on #358: FM-9's accountant step, the waiver's tax tag and the
+  approval's lapse date. Director accounts, Settle and Money I put in render `ReviewBanner`; the two screens it lists
+  get their canvas banners when it merges.
 - [ ] 6.4 `make test` and `make check` green. The build plan and the PRD rows say what was built.
 
 ## Workflow follow-up

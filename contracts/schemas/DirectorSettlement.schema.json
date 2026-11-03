@@ -24,6 +24,10 @@
       ],
       "type": "boolean"
     },
+    "acra": {
+      "$ref": "ConversionACRA.schema.json",
+      "description": "An approved conversion: its ACRA steps and what they raise (FR-EQ-09)."
+    },
     "agreements": {
       "description": "How many files are attached and not removed: asking for approval needs one, the loan note, minute or deed.",
       "examples": [

@@ -2,9 +2,9 @@
 key: founders.director-accounts
 type: task
 title: Director accounts, each founder's statement, and naming the person on 2500 and 2120
-summary: 2500 and 2120 by person; marking directors, linking their member, naming the person on journal lines; statements and their PDF
+summary: 2500 and 2120 by person; marking directors, linking their member, naming the person on journal lines; statements and their PDF; the related-party schedule
 sources:
-  - docs/user-guide/director-accounts.md sha256:1783e426a7f77a15656ab35858cb8818614e8daa636194d39a014dada003a7c9
+  - docs/user-guide/director-accounts.md sha256:7efb8ff780815a1360810e4fafe6f294d1e83819acbd302bf33f207e6b14a3ff
 data_class: general
 taint: trusted
 status: published
@@ -26,6 +26,12 @@ aliases:
   - settle a balance
   - convert to shares
   - share issue
+  - register of share issues
+  - ACRA steps
+  - return of allotment
+  - related parties
+  - related-party schedule
+  - related party disclosure
 ---
 
 # Director accounts, each founder's statement, and naming the person on 2500 and 2120
@@ -110,6 +116,11 @@ aliases:
   the shareholders' approval, the board resolution, the conversion agreement and the balance
   confirmation; **Ask for approval**, which posts nothing.
   (src: docs/user-guide/director-accounts.md#convert-a-balance-to-shares)
+- **ACRA steps**, recorded as they happen with ACRA's acknowledgements attached: the resolution,
+  the approval lodged (shown **Due** until then, 14 days after the resolution), the return of
+  allotment; **Review** when ACRA has not registered it 14 days after approval (a setting,
+  [[settings.organisation]]) and within 30 days of the next AGM's date, recorded as a step when it
+  differs from the one worked out. (src: docs/user-guide/director-accounts.md#convert-a-balance-to-shares)
 - Once ACRA's register of members shows the allotment: the lodgement reference, the resolutions
   and the day registered, then **Record as registered**; it posts on that day, never earlier,
   and the shares join the register of share issues.
@@ -118,6 +129,17 @@ aliases:
   period is reopened rather than a later date chosen; the measurement basis is the carrying
   amount unless the accountant notes the shares' fair value.
   (src: docs/user-guide/director-accounts.md#convert-a-balance-to-shares)
+
+## The register of share issues
+
+- **Register of share issues**, on Director accounts: every allotment with its holder, class,
+  number, price, what paid for it, the resolutions and ACRA's reference; share capital changes
+  only with it or the opening balances.
+  (src: docs/user-guide/director-accounts.md#the-register-of-share-issues)
+- **Record shares issued before the books start** (Owner or Controller), such as the
+  incorporation subscription: no entry posts, the opening balances hold their share capital.
+  Conversions add theirs when ACRA registers them; transfers, cash issues and the cap table come
+  with the equity register. (src: docs/user-guide/director-accounts.md#the-register-of-share-issues)
 
 ## Name the person on a line
 
@@ -146,6 +168,17 @@ aliases:
   line. (src: docs/user-guide/director-accounts.md#read-a-statement)
 - **PDF for confirmation** downloads it to send to the person; **CSV** gives its movements; each
   download is in the audit trail. (src: docs/user-guide/director-accounts.md#send-it-for-a-balance-confirmation)
+
+## The related-party schedule
+
+- **Related parties** lists each director and shareholder with something to disclose as at the
+  day chosen: what the company owes them on their loan and in deferred pay (a minus when they owe
+  it), and in the financial year to that day the directors' fees owed to them, what was converted
+  to shares and what they waived. (src: docs/user-guide/director-accounts.md#the-related-party-schedule)
+- **CSV** downloads it with a total, for the accountant and the notes to the financial statements;
+  each download is in the audit trail. On the balance sheet a person who owes the company shows
+  under staff and director advances, not under the loan, with no entry posted.
+  (src: docs/user-guide/director-accounts.md#the-related-party-schedule)
 
 ## Messages and fixes
 

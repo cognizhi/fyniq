@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The flag's stable code.",
+      "examples": [
+        "FOUNDER-38"
+      ],
+      "type": "string"
+    },
+    "due_on": {
+      "description": "The day it is due, or lapses.",
+      "examples": [
+        "2026-10-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "fix": {
+      "description": "What to do.",
+      "examples": [
+        "Lodge it, attach ACRA's acknowledgement and record the day it was lodged"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "due (⏰): a statutory step is due; warning (⚠): please review.",
+      "enum": [
+        "due",
+        "warning"
+      ],
+      "examples": [
+        "due"
+      ],
+      "type": "string"
+    },
+    "message": {
+      "description": "What it says.",
+      "examples": [
+        "the shareholders' approval to issue the shares is due to be lodged with ACRA by 20 Oct 2026"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "kind",
+    "message",
+    "fix"
+  ],
+  "title": "ConversionFlag",
+  "type": "object"
+}
