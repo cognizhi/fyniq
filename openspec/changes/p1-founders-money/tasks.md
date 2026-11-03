@@ -248,8 +248,16 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
   - shares issued for cash and non-cash apart in the movement in equity;
   - the related-party schedule.
   Tests: each figure checked, and the oracle's statements. `// req: FR-EQ-10`, `// req: FR-EQ-11`
-- [ ] 6.2 The checks C.2 #21, #22, #23 and #25 on the checks engine (D15), each with a fixture that fires and one
+- [x] 6.2 The checks C.2 #21, #22, #23 and #25 on the checks engine (D15), each with a fixture that fires and one
   that passes. `// req: FR-EQ-11`, `// req: FR-EQ-09`, `// req: FR-EQ-12`, `// req: INV-13`
+  Built: in the Ledger area.
+  - `founders.director-in-debit` (⚠): a net debit at the latest month end, with D9's words.
+  - `founders.conversion-registered` (⏰, with ⚠ items): D12's flags of each approved conversion not yet effective.
+  - `founders.balances-confirmed` (⚠): balances at the latest year end not confirmed or changed since. It is the
+    close's `directors-confirmed`, so the catalogue adds that key no more.
+  - `founders.share-capital-registered` (✖): a share-capital account's balance against its class's issues in the
+    register.
+  `TestTheFoundersChecks` passes each, then fires it.
 - [ ] 6.3 The canvases `people-ledger`, `equity`, `workflows`, `sales-purchases` and `banking-claims` rebuilt and
   republished, with the review register's area for the founders' money ([accountant to confirm] readings,
   FR-UX-41).
