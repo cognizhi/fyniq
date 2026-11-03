@@ -8,7 +8,7 @@ total is +400.00: she owes the company S$400.00.
 """
 
 import pytest
-from builders import P1_ACCOUNTS, P1_SETTINGS, journal, line, p1_post, scenario
+from builders import P1_SETTINGS, journal, line, p1_post, scenario
 
 from oracle.ledger import Ledger
 from oracle.scenario import scenario_from_json
@@ -157,8 +157,7 @@ def test_a_waiver_credits_capital_and_clears_the_persons_account():
                       {"account": "2500", "currency": "SGD", "amount": "-1000.00", "party": "P0001", "origin": "lent"}]}
     waiver = {"type": "director_waiver", "id": "DS-1", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500",
               "credit": "3300", "amount": "400.00"}
-    accounts = [*P1_ACCOUNTS, {"code": "3300", "type": "equity", "group": False, "active": True}]
-    result, ledger = p1_post(loan, waiver, accounts=accounts)
+    result, ledger = p1_post(loan, waiver)
     assert ledger.reasons == []
     entry = next(e for e in result["entries"] if e["document"] == "DS-1")
     assert [(ln["account"], ln["amount"], ln.get("party")) for ln in entry["lines"]] == [("2500", "400.00", "P0001"), ("3300", "-400.00", None)]
@@ -181,5 +180,5 @@ def test_a_waiver_that_breaks_a_rule_is_rejected(change, reason):
     waiver = {"type": "director_waiver", "id": "DS-9", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500",
               "credit": "3300", "amount": "10.00"}
     waiver.update(change)
-    _, ledger = p1_post(waiver, accounts=[*P1_ACCOUNTS, {"code": "3300", "type": "equity", "group": False, "active": True}])
+    _, ledger = p1_post(waiver)
     assert ledger.reasons == [("DS-9", reason)]
