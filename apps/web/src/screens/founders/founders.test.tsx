@@ -90,11 +90,20 @@ describe("Director accounts", () => {
     expect(put?.body).toEqual({ member_user_id: "u-arjun" });
   });
 
-  it("offers the link only to an Owner or the Controller", async () => {
+  it("offers the link and settling only to an Owner or the Controller", async () => {
     answer({ "GET /v1/director-accounts": { status: 200, body: list } });
     renderPage(DirectorAccounts, { path: "/accounting/directors", session: { ...ownerSession, roles: ["accountant"] } as Session });
     await screen.findByRole("heading", { name: "Mei Lin Tan" });
     expect(screen.queryByRole("button", { name: "Link member" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Settle/ })).toBeNull();
+  });
+
+  // req: FR-EQ-05
+  it("links each person's card to settling their balance", async () => {
+    answer({ "GET /v1/director-accounts": { status: 200, body: list } });
+    renderPage(DirectorAccounts, { path: "/accounting/directors" });
+    const card = (await screen.findByRole("heading", { name: "Mei Lin Tan" })).closest("section") as HTMLElement;
+    expect(within(card).getByRole("link", { name: /Settle/ }).getAttribute("href")).toBe("/accounting/directors/c-mei/settle");
   });
 });
 

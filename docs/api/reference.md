@@ -7127,7 +7127,7 @@ Asks another person's approval to void a repayment, as when the bank rejected it
 
 **List settlements of founders' balances** (`listDirectorSettlements`)
 
-The settlements of what the company owes directors and shareholders, drafted, waiting for approval and decided, the latest first, a page at a time, narrowed by person (FR-EQ-05). Needs the right to read every director's account. Read-only; no side effects.
+The settlements of what the company owes directors and shareholders, drafted, waiting for approval and decided, the latest first, a page at a time, narrowed by person (FR-EQ-05), with the route a new one starts with (founders.default_route). Needs the right to read every director's account. Read-only; no side effects.
 
 - **Permission:** View on Director accounts, settlements, share issues (rev 0.3)
 - **Parameters:**
@@ -7148,7 +7148,7 @@ The settlements of what the company owes directors and shareholders, drafted, wa
 
 **Draft a settlement of a founder's balance** (`createDirectorSettlement`)
 
-Drafts a settlement of what the company owes a director or shareholder on 2500 or 2120 (FR-EQ-05): at most what is owed today, by a route (keep as a loan on terms, or waive with the account it credits, the capacity and the reason; the default route is the setting founders.default_route). Attach the loan note, minute or deed with addDirectorSettlementEvidence, then ask for approval with requestDirectorSettlementApproval. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+Drafts a settlement of what the company owes a director or shareholder on 2500 or 2120 (FR-EQ-05): at most what is owed today less what other settlements approved to be repaid still have open, by a route (keep as a loan on terms; repay through a payment batch, into the person's approved account (FOUNDER-32 while there is none); or waive with the account it credits, the capacity and the reason; the default route is the setting founders.default_route). Attach the loan note, minute or deed with addDirectorSettlementEvidence, then ask for approval with requestDirectorSettlementApproval. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
 
 - **Permission:** Approve on Director accounts, settlements, share issues (rev 0.3)
 - **Parameters:**

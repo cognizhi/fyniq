@@ -41,7 +41,7 @@ const initials = (name: string) =>
 
 type ExemptInForce = components["schemas"]["ExemptStatusInForce"];
 
-async function accounts(asAt: string): Promise<{ as_at: string; currency: string; items: DirectorAccount[]; unkeyed: string; exempt_status?: ExemptInForce }> {
+export async function accounts(asAt: string): Promise<{ as_at: string; currency: string; items: DirectorAccount[]; unkeyed: string; exempt_status?: ExemptInForce }> {
   const items: DirectorAccount[] = [];
   let cursor: string | undefined;
   let head: { as_at: string; currency: string; unkeyed: string; exempt_status?: ExemptInForce } = { as_at: asAt, currency: "", unkeyed: "0.00" };
@@ -85,6 +85,7 @@ export function YearEndLine({ p }: { p: DirectorAccount }) {
 }
 
 function PersonCard({ p, onStatement, onLink, onPay, onFees, mayLink }: { p: DirectorAccount; onStatement: () => void; onLink: () => void; onPay: () => void; onFees: () => void; mayLink: boolean }) {
+  const settle = helpText("director-accounts.settle");
   const roles = [p.director && "Director", p.shareholder && "Shareholder"].filter(Boolean).join(", ");
   const statement = helpText("director-accounts.statement");
   const link = helpText("director-accounts.link-member");
@@ -148,6 +149,12 @@ function PersonCard({ p, onStatement, onLink, onPay, onFees, mayLink }: { p: Dir
       <div className="fy-row fy-row--wrap fy-row--between gap-2">
         <span className="fy-small fy-muted">{p.member_user_id ? "Signs in as a member: sees their own account" : "No member signs in as them"}</span>
         <span className="fy-row gap-2">
+          {mayLink && (
+            <Link to="/accounting/directors/$contactId/settle" params={{ contactId: p.contact_id }} className="fy-btn fy-btn--ghost fy-btn--sm" title={settle.tooltip}>
+              <Icon of={Handshake} />
+              {settle.label}
+            </Link>
+          )}
           {mayLink && p.director && (
             <Button variant="ghost" size="sm" type="button" onClick={onFees} title={helpText("director-accounts.fees").tooltip}>
               <Icon of={BadgeDollarSign} />

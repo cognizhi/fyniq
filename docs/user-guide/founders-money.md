@@ -58,9 +58,9 @@ on money you never received, and investors see a clean balance sheet at the roun
 2. **Lent the company money?** In Banking › Categorise, give the bank line the category *Loan from
    director / shareholder* and yourself as its contact.
 3. **See your balance:** *Money I put in*, under your name in the menu (below).
-4. **Settle it:** Equity → *Money I put in* → **Settle**, then choose an option. The other
-   founder approves it. If every founder benefits, your accountant also reviews it. Attach the
-   resolutions and the agreement.
+4. **Settle it:** an Owner or the Controller selects **Settle** on your card in Accounting ›
+   Director accounts, then chooses an option. Another founder approves it, never you. If every
+   founder benefits, your accountant also reviews it. Attach the resolutions and the agreement.
 5. **Converting to shares:** after approval, your company secretary files with ACRA. Attach the
    ACRA acknowledgement. Fyniq then posts the conversion on the date ACRA registered it.
 
