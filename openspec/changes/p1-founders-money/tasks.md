@@ -47,12 +47,20 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
   Built: the PDF is `exportDirectorStatement` (PDF from the render service, owed to the person shown positive, or CSV),
   audited as `report.exported`. `getMyDirectorAccount` answers `linked: false` when no one is linked to the caller, so
   Money I put in can say so; FOUNDER-03 is for a caller who is not a person signed in as themselves.
-- [ ] 1.6 The pages (D5):
+- [x] 1.6 The pages (D5):
   - Director accounts (Expert) and Money I put in (Basic);
   - the person picker on the contact record, categorise, journal and opening balances;
   - the feature registry tags, help keys, guide pages and `kb/`;
   - a Playwright journey.
   Tests: Vitest with axe, and mode parity. `// req: FR-EQ-14`, `// req: QA-UI-04`
+  Built: Accounting › Director accounts (`/accounting/directors`, Expert): each person's balances owed to them shown
+  positive, an account in debit, the statement by origin with its PDF and CSV, and Link member for the Owner and the
+  Controller; Money I put in (`/me/money-i-put-in`, Basic, in the Owner's personal menu). Contacts gain the director
+  and shareholder roles and filter; a journal or recurring journal line on 2500 or 2120 asks Whose account and Where it
+  came from; the opening balances give a director's account one row per person, each with its origin. The guide page
+  `docs/user-guide/director-accounts.md` is new, `founders-money.md` says where Money I put in is, and `kb/` is
+  compiled. Tests: `founders.test.tsx` (Vitest with axe) and `e2e/founders.spec.ts`. The categorise screen names the
+  person through the line's contact as it is; the canvases are republished with task 6.3.
 
 ## 2. Paid personally and costs before the books start (slice 2)
 

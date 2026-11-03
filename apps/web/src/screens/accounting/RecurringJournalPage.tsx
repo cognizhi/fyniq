@@ -12,7 +12,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
-import { listAccounts, postable } from "./data";
+import { listAccounts, postable, type Account } from "./data";
 import { Checks } from "./JournalPage";
 import { CheckChip, preparers, who } from "./Journals";
 import { checkLines, LineEditor, newLine, toLines, type Errors, type Line } from "./lines";
@@ -47,14 +47,14 @@ export function recurringFormOf(r: Recurring): RecurringForm {
 
 // checkRecurring turns what was typed into the recurring journal to send, or says what to fix under each field. The
 // API checks the lines as the posting rules would and says so in the statuses.
-export function checkRecurring(f: RecurringForm, base: string): { input?: Input; errors: Errors } {
+export function checkRecurring(f: RecurringForm, base: string, byId?: Map<string, Account>): { input?: Input; errors: Errors } {
   const errors: Errors = {};
   if (!f.name.trim()) errors.name = "Name it, such as Office rent accrual.";
   const day = Number(f.day_of_month);
   if (!Number.isInteger(day) || day < 1 || day > 31) errors.day_of_month = "Enter a day from 1 to 31.";
   if (!f.starts_on) errors.starts_on = "Enter the date it starts from.";
   if (f.ends_on && f.starts_on && f.ends_on < f.starts_on) errors.ends_on = "End it on or after its start, or leave the end empty.";
-  const lines = checkLines(f.lines, base, errors);
+  const lines = checkLines(f.lines, base, errors, byId);
   if (lines.length === 0) errors.lines = "Add a line.";
   if (Object.keys(errors).length > 0) return { errors };
   return {
@@ -144,7 +144,7 @@ export function RecurringJournalPage() {
   const send = async (dryRun: boolean, e?: FormEvent) => {
     e?.preventDefault();
     if (!f) return;
-    const { input, errors: errs } = checkRecurring(f, base);
+    const { input, errors: errs } = checkRecurring(f, base, byId);
     setErrors(errs);
     if (!input) return setStatus(`Fix the fields marked, then ${dryRun ? "check" : "save"} again.`);
     setBusy(true);
