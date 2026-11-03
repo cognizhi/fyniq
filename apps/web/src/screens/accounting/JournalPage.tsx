@@ -55,12 +55,13 @@ export function formOf(j: Journal): Form {
 }
 
 // check turns what was typed into the draft to send, or says what to fix under each field. Blank lines
-// are left out. The API checks the rest when the journal posts (ENG-24).
-export function check(f: Form, base: string): { draft?: Draft; errors: Errors } {
+// are left out. The API checks the rest when the journal posts (ENG-24). byId names the accounts, so a line on a
+// director's account asks for its person (FR-EQ-01).
+export function check(f: Form, base: string, byId?: Map<string, Account>): { draft?: Draft; errors: Errors } {
   const errors: Errors = {};
   if (!f.date) errors.date = "Enter the date the journal belongs to.";
   if (f.reverse_on && f.date && f.reverse_on <= f.date) errors.reverse_on = "Date the reversal after the journal's date, such as the first day of the next month.";
-  const lines = checkLines(f.lines, base, errors);
+  const lines = checkLines(f.lines, base, errors, byId);
   if (lines.length === 0) errors.lines = "Add a line.";
   if (Object.keys(errors).length > 0) return { errors };
   return { draft: { date: f.date, memo: f.memo.trim() || undefined, lines, reverse_on: f.reverse_on || undefined }, errors };
@@ -350,7 +351,7 @@ export function JournalPage() {
   const onSave = async (e?: FormEvent) => {
     e?.preventDefault();
     if (!f) return;
-    const { draft, errors: errs } = check(f, base);
+    const { draft, errors: errs } = check(f, base, byId);
     setErrors(errs);
     if (!draft) return setStatus("Fix the fields marked, then save again.");
     setBusy(true);
@@ -422,7 +423,7 @@ export function JournalPage() {
   // editBody is the edit to send, or nothing when a field needs fixing: the content as typed, and why.
   const editBody = (): Edit | null => {
     if (!f) return null;
-    const { draft, errors: errs } = check(f, base);
+    const { draft, errors: errs } = check(f, base, byId);
     const why = reason.trim();
     setErrors(errs);
     setReasonMissing(!why);
