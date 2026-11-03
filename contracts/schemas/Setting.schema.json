@@ -12,6 +12,20 @@
         "null"
       ]
     },
+    "choices": {
+      "description": "A choice's values.",
+      "items": {
+        "description": "One value of a choice setting, such as keep.",
+        "examples": [
+          "keep"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "effective_from": {
       "description": "The day that value took effect; absent while it has the value it shipped with.",
       "examples": [
@@ -42,7 +56,7 @@
       "type": "string"
     },
     "kind": {
-      "description": "What it holds: switch is \"true\" or \"false\"; days and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460.",
+      "description": "What it holds: switch is \"true\" or \"false\"; days and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices.",
       "enum": [
         "switch",
         "days",
@@ -50,7 +64,8 @@
         "amount_sgd",
         "percent",
         "text",
-        "account_code"
+        "account_code",
+        "choice"
       ],
       "examples": [
         "days"

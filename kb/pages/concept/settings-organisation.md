@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings and recommended values: features, terms, GST, tolerances, banking, claims, mileage, thresholds, asset disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:bc52cfc799753a29127849306376be31384a468972add2b7c735c795484f9eea
+  - docs/user-guide/organisation-settings.md sha256:cb241a84e299896f9bced191896355bee18827b14322f388d715df6b693f85b6
 data_class: general
 taint: trusted
 status: draft
@@ -204,6 +204,17 @@ aliases:
 - Changing either needs a second approver. Explaining them at the close: [[accounting.periods]].
 
 (src: docs/user-guide/organisation-settings.md#variances-at-the-close)
+
+## Founders' money
+
+- What the company owes a founder is settled by one of four routes: keep it as a loan, repay it,
+  convert it to shares, or waive it; the Settle a balance page offers the defaults first, and
+  another person approves each settlement.
+  (src: docs/user-guide/organisation-settings.md#founders-money)
+- **Default route:** recommended *keep*, an interest-free loan repayable on demand until the first
+  priced round. **Default price basis** to convert: recommended *latest priced round*, or
+  *valuation* when there is none. Each change needs a second approver.
+  (src: docs/user-guide/organisation-settings.md#founders-money)
 
 ## Data region and retention
 

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "capacity": {
+      "description": "The capacity in which the person waives it: as a shareholder (a capital contribution), or otherwise (income of the company).",
+      "enum": [
+        "shareholder",
+        "other"
+      ],
+      "examples": [
+        "shareholder"
+      ],
+      "type": "string"
+    },
+    "credit_account_id": {
+      "description": "The account it credits: 3300 Capital contribution when the person waives as a shareholder, or an income account the accountant chooses.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d33"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why the person waives it.",
+      "examples": [
+        "Waived ahead of the seed round"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    }
+  },
+  "required": [
+    "credit_account_id",
+    "capacity",
+    "reason"
+  ],
+  "title": "SettlementWaiver",
+  "type": "object"
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The director's account it is owed on: 2500 or 2120.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "The amount, in the base currency: at most what is owed on the account today."
+    },
+    "contact_id": {
+      "description": "The director or shareholder the company owes.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "route": {
+      "description": "keep as a loan on terms, or waive (FR-EQ-07); repay and convert are not built yet. Left out, the organisation's default route (founders.default_route), keep.",
+      "enum": [
+        "keep",
+        "repay",
+        "convert",
+        "waive"
+      ],
+      "examples": [
+        "keep"
+      ],
+      "type": "string"
+    },
+    "terms": {
+      "$ref": "SettlementTerms.schema.json",
+      "description": "A loan kept's terms."
+    },
+    "waiver": {
+      "$ref": "SettlementWaiver.schema.json",
+      "description": "A waiver's account, capacity and reason."
+    }
+  },
+  "required": [
+    "contact_id",
+    "account_id",
+    "amount"
+  ],
+  "title": "DirectorSettlementDraft",
+  "type": "object"
+}

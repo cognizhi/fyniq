@@ -25,7 +25,7 @@ import (
 // DirectorFeeEvidence is a file on a director's fee, as the API shows it.
 type DirectorFeeEvidence struct {
 	ID             string `json:"id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
-	FeeID       string `json:"fee_id" format:"uuid" doc:"The fee it is attached to." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fd1"`
+	FeeID          string `json:"fee_id" format:"uuid" doc:"The fee it is attached to." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fd1"`
 	EvidenceType   string `json:"evidence_type" doc:"What the file is." example:"shareholders' resolution"`
 	Note           string `json:"note,omitempty" doc:"A short note." example:"AGM minutes of 30 Nov 2026"`
 	RelatesOn      string `json:"relates_on,omitempty" format:"date" doc:"The date it relates to." example:"2026-01-02"`
@@ -46,7 +46,7 @@ type DirectorFeeEvidence struct {
 // DirectorFeeEvidencePage is a page of a fee's files, oldest first.
 type DirectorFeeEvidencePage struct {
 	Items      []DirectorFeeEvidence `json:"items" nullable:"false" doc:"The files on this page, removed ones included."`
-	NextCursor string                      `json:"next_cursor,omitempty" doc:"Send it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjAxOTIifQ"`
+	NextCursor string                `json:"next_cursor,omitempty" doc:"Send it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjAxOTIifQ"`
 }
 
 // DirectorFeeEvidencePath names a fee's file.
@@ -141,7 +141,7 @@ func registerFeeEvidence(a *API) {
 			// The request's identity for Idempotency-Key: the fee, the file's hash and what was said about it.
 			request := struct {
 				Fee, IfMatch, SHA256, Name string
-				Details                       evidence.Details
+				Details                    evidence.Details
 			}{in.FeeID, in.IfMatch, file.OriginalSHA256, file.Name, d}
 			key := evidence.StagingKey(p.Organisation, uuid.Must(uuid.NewV7()))
 			if !wantsPreview(in.Prefer) {

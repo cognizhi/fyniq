@@ -410,6 +410,20 @@ A fee the shareholders voted, posted on `date`, the day the director became enti
 Directors' fees) with `amount`, Cr `deferred_remuneration` (2120) with `amount`, the line naming `person`, one of
 `people`. The account is not a director's account, a money account or GST control.
 
+### Waivers of founders' balances (`director_waiver`, `director_settlement@1`)
+
+From FR-EQ-07, Appendix B.7 and the founders' money design D10 (rev 0.167).
+
+```json
+{"type": "director_waiver", "id": "DS-0001", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500",
+ "credit": "3300", "amount": "400.00"}
+```
+
+A waiver of what the company owes a director or shareholder, posted on `date`, the day it was approved: Dr `account`
+(2500 or 2120, a director's account) with `amount`, the line naming `person`, one of `people`; Cr `credit` (3300 Capital
+contribution, or an income account) with `amount`. The credit is not a director's account, a money account or GST
+control. A loan kept posts nothing.
+
 ### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
 
 From Appendix B.4, §10.2, FR-FA-01, FR-FA-02, FR-FA-03 and the rows of rev 0.149, 0.150 and 0.151.

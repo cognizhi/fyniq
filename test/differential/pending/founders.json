@@ -16,6 +16,7 @@
   {"code": "2120", "type": "liability", "group": false, "active": true, "role": "deferred-remuneration"},
   {"code": "2200", "type": "liability", "group": false, "active": true},
   {"code": "2500", "type": "liability", "group": false, "active": true, "role": "director-loan"},
+  {"code": "3300", "type": "equity", "group": false, "active": true},
   {"code": "6050", "type": "expense", "group": false, "active": true},
   {"code": "6400", "type": "expense", "group": false, "active": true},
   {"code": "6910", "type": "expense", "group": false, "active": true}
@@ -40,7 +41,10 @@
    "account": "6400", "gross": "10.00", "claim_gst": true},
   {"type": "director_fee", "id": "DF-0001", "version": 1, "date": "2026-03-31", "person": "P0002", "account": "6050", "amount": "6000.00"},
   {"type": "director_fee", "id": "DF-0002", "version": 1, "date": "2026-03-31", "person": "P0009", "account": "6050", "amount": "10.00"},
-  {"type": "director_fee", "id": "DF-0003", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2120", "amount": "10.00"}
+  {"type": "director_fee", "id": "DF-0003", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2120", "amount": "10.00"},
+  {"type": "director_waiver", "id": "DS-0001", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500", "credit": "3300", "amount": "1000.00"},
+  {"type": "director_waiver", "id": "DS-0002", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "6400", "credit": "3300", "amount": "10.00"},
+  {"type": "director_waiver", "id": "DS-0003", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500", "credit": "1010", "amount": "10.00"}
  ],
  "reversals": []
 }

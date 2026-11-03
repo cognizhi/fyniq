@@ -235,12 +235,14 @@ def test_pending_claims():
 # req: QA-ENG-02
 # req: FR-EQ-03
 # req: FR-EQ-04
+# req: FR-EQ-07
 def test_pending_founders():
     r = _run("founders")
     # On the books start; a person who is not a director; on a director's account; posted before the books start; GST
     # claimed when the receipt shows none.
     # Then a fee voted to someone who is not a director, and one posted to the director's account itself.
-    assert r["rejected"] == ["PIC-0004", "PIC-0005", "PIC-0006", "PIC-0007", "PIC-0008", "DF-0002", "DF-0003"]
+    # A waiver of an account that is not a director's, and one crediting a money account, are refused too.
+    assert r["rejected"] == ["PIC-0004", "PIC-0005", "PIC-0006", "PIC-0007", "PIC-0008", "DF-0002", "DF-0003", "DS-0002", "DS-0003"]
     # 1,315.00 with no GST shown: all to 6910, owed to P0001 on 2500.
     assert _lines(r, "PIC-0001") == [("2500", "SGD", "-1315.00", "-1315.00"), ("6910", "SGD", "1315.00", "1315.00")]
     # 3,815.00 with 315.00 GST claimed while registered from the books start: 3,500.00 to 1600, 315.00 to 2200.
@@ -253,10 +255,12 @@ def test_pending_founders():
     assert r["trial_balance"] == {
         "2026-01": {"1600": "3500.00", "2200": "315.00", "2500": "-5130.00", "6910": "1315.00"},  # 1,315.00 + 3,815.00
         "2026-02": {"2500": "-763.00", "6400": "763.00"},
-        "2026-03": {"2120": "-6000.00", "6050": "6000.00"},
+        "2026-03": {"2120": "-6000.00", "2500": "1000.00", "3300": "-1000.00", "6050": "6000.00"},
     }
-    # 1,315.00 + 763.00 for P0001; P0002's cost on 2500 and fee on 2120.
-    assert r["people"] == {"P0001": {"2500": "-2078.00"}, "P0002": {"2120": "-6000.00", "2500": "-3815.00"}}
+    # FR-EQ-07: P0001 waives 1,000.00 of their 2,078.00 as a shareholder: Dr 2500 naming them, Cr 3300.
+    assert _lines(r, "DS-0001") == [("2500", "SGD", "1000.00", "1000.00"), ("3300", "SGD", "-1000.00", "-1000.00")]
+    # 1,315.00 + 763.00 - 1,000.00 for P0001; P0002's cost on 2500 and fee on 2120.
+    assert r["people"] == {"P0001": {"2500": "-1078.00"}, "P0002": {"2120": "-6000.00", "2500": "-3815.00"}}
 
 
 # req: QA-ENG-02

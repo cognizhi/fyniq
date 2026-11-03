@@ -298,3 +298,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-03] compile | docs/user-guide/director-accounts.md (Record the exempt private company status) → founders.director-accounts; founders.pay-choice re-hashed (p1-founders-money task 3.3)
 
 ## [2026-11-03] compile | docs/user-guide/director-accounts.md (Year-end confirmations), founders-money.md (Confirm your balances at the year end) → founders.director-accounts, founders.balance; founders.pay-choice and founders.settle-balance re-hashed (p1-founders-money task 3.4)
+
+## [2026-11-03] compile | docs/user-guide/organisation-settings.md (Founders' money) → settings.organisation; settings.change re-hashed (p1-founders-money task 4.1)

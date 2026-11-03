@@ -83,6 +83,7 @@ P1_ACCOUNTS = [
     {"code": "2500", "type": "liability", "group": False, "active": True, "role": "director-loan"},
     {"code": "2999", "type": "liability", "group": False, "active": True},
     {"code": "3010", "type": "equity", "group": False, "active": True, "role": "share-capital"},
+    {"code": "3300", "type": "equity", "group": False, "active": True},  # capital contribution
     {"code": "4000", "type": "revenue", "group": True, "active": True},
     {"code": "4010", "type": "revenue", "group": False, "active": True},
     {"code": "4020", "type": "revenue", "group": False, "active": True},

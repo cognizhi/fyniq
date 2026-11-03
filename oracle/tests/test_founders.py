@@ -147,3 +147,38 @@ def test_a_directors_fee_that_breaks_a_rule_is_rejected(change, reason):
     fee.update(change)
     _, ledger = p1_post(fee)
     assert ledger.reasons == [("DF-9", reason)]
+
+
+# req: FR-EQ-07
+def test_a_waiver_credits_capital_and_clears_the_persons_account():
+    # B.7: P0001 waives 400.00 of a 1,000.00 loan as a shareholder: Dr 2500 400.00 naming them, Cr 3300 400.00.
+    loan = {"type": "manual_journal", "id": "JNL-1", "version": 1, "date": "2026-03-01", "memo": "",
+            "lines": [{"account": "1010", "currency": "SGD", "amount": "1000.00"},
+                      {"account": "2500", "currency": "SGD", "amount": "-1000.00", "party": "P0001", "origin": "lent"}]}
+    waiver = {"type": "director_waiver", "id": "DS-1", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500",
+              "credit": "3300", "amount": "400.00"}
+    result, ledger = p1_post(loan, waiver)
+    assert ledger.reasons == []
+    entry = next(e for e in result["entries"] if e["document"] == "DS-1")
+    assert [(ln["account"], ln["amount"], ln.get("party")) for ln in entry["lines"]] == [("2500", "400.00", "P0001"), ("3300", "-400.00", None)]
+    assert result["people"] == {"P0001": {"2500": "-600.00"}}
+
+
+# req: FR-EQ-07
+@pytest.mark.parametrize(
+    ("change", "reason"),
+    [
+        ({"person": "P0009"}, "not-a-director"),
+        ({"account": "6010"}, "not-a-directors-account"),
+        ({"credit": "2120"}, "account-not-allowed"),
+        ({"credit": "1010"}, "account-not-allowed"),
+        ({"credit": "2200"}, "account-not-allowed"),
+        ({"amount": "0.00"}, "zero-amount"),
+    ],
+)
+def test_a_waiver_that_breaks_a_rule_is_rejected(change, reason):
+    waiver = {"type": "director_waiver", "id": "DS-9", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500",
+              "credit": "3300", "amount": "10.00"}
+    waiver.update(change)
+    _, ledger = p1_post(waiver)
+    assert ledger.reasons == [("DS-9", reason)]

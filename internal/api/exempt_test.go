@@ -33,7 +33,9 @@ func TestTheExemptPrivateCompanyStatus(t *testing.T) {
 		t.Fatalf("paying Mei Lin out: %d %s", r.Status, r.Raw)
 	}
 	owner := e.as(authz.Owner)
-	accounts := func() response { return e.call(http.MethodGet, "/v1/director-accounts?as_at=2026-10-31", e.as(authz.Accountant), nil) }
+	accounts := func() response {
+		return e.call(http.MethodGet, "/v1/director-accounts?as_at=2026-10-31", e.as(authz.Accountant), nil)
+	}
 	warning := func(r response) string {
 		for _, it := range r.Body["items"].([]any) {
 			if x := it.(map[string]any); x["contact_id"] == mei {
