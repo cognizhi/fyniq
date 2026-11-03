@@ -191,7 +191,7 @@ const stepWords: Record<NonNullable<Settlement["acra"]>["steps"][number]["kind"]
 
 // AcraSteps shows an approved conversion's ACRA steps and what they raise (⏰ due, ⚠ warning), and records the next one,
 // with ACRA's acknowledgement attached through the evidence panel (FR-EQ-09; design D12).
-function AcraSteps({ s, onDone, onRead }: { s: Settlement; onDone: (text: string) => void; onRead: () => void }) {
+function AcraSteps({ s, etag, onDone, onRead }: { s: Settlement; etag: string; onDone: (text: string) => void; onRead: () => void }) {
   const id = useId();
   const confirm = useConfirm();
   const [form, setForm] = useState<{ kind: keyof typeof stepWords; on: string; reference: string }>({ kind: "approval_lodged", on: "", reference: "" });
@@ -205,7 +205,7 @@ function AcraSteps({ s, onDone, onRead }: { s: Settlement; onDone: (text: string
     setProblem(null);
     const out = await guarded(confirm, () =>
       api.POST("/v1/director-settlements/{settlement_id}/acra-steps", {
-        params: { path: { settlement_id: s.id }, header: { "Idempotency-Key": newKey() } },
+        params: { path: { settlement_id: s.id }, header: { "If-Match": etag, "Idempotency-Key": newKey() } },
         body: { kind: form.kind, on: form.on, ...(form.reference.trim() ? { reference: form.reference.trim() } : {}) },
       }),
     );
@@ -803,7 +803,7 @@ export function DirectorSettlement() {
                 {open.s.status === "decided" && open.s.route !== "convert" && <p className="fy-small">Decided as {open.s.number}.</p>}
                 {open.s.status === "decided" && open.s.route === "convert" && mayDraft && (
                   <>
-                    <AcraSteps s={open.s} onDone={(text) => setStatus({ text })} onRead={() => void read(open.s.id)} />
+                    <AcraSteps s={open.s} etag={open.etag} onDone={(text) => setStatus({ text })} onRead={() => void read(open.s.id)} />
                     <EffectiveForm s={open.s} etag={open.etag} name={name} onDone={(text) => setStatus({ text })} onRead={() => void read(open.s.id)} />
                   </>
                 )}

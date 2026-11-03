@@ -241,7 +241,10 @@ func TestADirectorsBalanceIsConvertedToShares(t *testing.T) {
 		t.Errorf("the ACRA steps on approval: %s", g.Raw)
 	}
 	step := func(kind, on, ref string) response {
-		return e.call(http.MethodPost, path+"/acra-steps", weiling, map[string]any{"kind": kind, "on": on, "reference": ref})
+		return e.call(http.MethodPost, path+"/acra-steps", weiling, map[string]any{"kind": kind, "on": on, "reference": ref}, "If-Match", g.Header.Get("ETag"))
+	}
+	if r := e.call(http.MethodPost, path+"/acra-steps", weiling, map[string]any{"kind": "resolved", "on": "2026-10-06"}); r.Status != http.StatusPreconditionRequired {
+		t.Errorf("a step without If-Match: %d %s", r.Status, r.Raw)
 	}
 	e.problemIs(step("approval_lodged", "2026-10-16", "T26A001"), "recordConversionStep", 422, director.CodeStep)
 	if r := step("resolved", "2026-10-06", "Written resolution"); r.Status != http.StatusCreated || !strings.Contains(r.Raw, `"due_on":"2026-10-20"`) {
@@ -335,8 +338,9 @@ var matrixConversions = map[string]func(e *env, tok string) (response, func() bo
 		id := matrixConversion(e)
 		state := func() string { return e.call(http.MethodGet, "/v1/director-settlements/"+id, e.as(authz.Owner), nil).Raw }
 		was := state()
+		g := e.call(http.MethodGet, "/v1/director-settlements/"+id, e.as(authz.Owner), nil)
 		r := e.call(http.MethodPost, "/v1/director-settlements/"+id+"/acra-steps", steppedUp(e, tok), map[string]any{"kind": "approval_lodged", "on": "2026-10-15",
-			"reference": "T26MATRIX"}, "Prefer", "return=preview")
+			"reference": "T26MATRIX"}, "Prefer", "return=preview", "If-Match", g.Header.Get("ETag"))
 		return r, func() bool { return state() == was }
 	},
 	// An allowed role, stepped up, previews recording it effective, which saves nothing; a refused one changes nothing.

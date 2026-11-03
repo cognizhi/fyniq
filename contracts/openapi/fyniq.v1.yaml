@@ -60463,7 +60463,7 @@ paths:
         right: A
   /v1/director-settlements/{settlement_id}/acra-steps:
     post:
-      description: "Records one ACRA step of an approved conversion not yet effective (FR-EQ-09, design D12): the day the shareholders resolved; the day their approval was lodged with ACRA, due within 14 days of the resolution (s161(5), s186; ⏰ until it is); the date by which the next AGM must be held, when it differs from the one worked out [verify], which is when the approval lapses; or the day the return of allotment was lodged. Attach ACRA's acknowledgement with addDirectorSettlementEvidence. A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up. Side effects: the step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      description: "Records one ACRA step of an approved conversion not yet effective (FR-EQ-09, design D12): the day the shareholders resolved; the day their approval was lodged with ACRA, due within 14 days of the resolution (s161(5), s186; ⏰ until it is); the date by which the next AGM must be held, when it differs from the one worked out [verify], which is when the approval lapses; or the day the return of allotment was lodged. Attach ACRA's acknowledgement with addDirectorSettlementEvidence. A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up, and If-Match with the settlement's ETag, so the step is recorded against the conversion as read. Side effects: the step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
       operationId: recordConversionStep
       parameters:
         - description: The settlement's ID.
@@ -60486,6 +60486,14 @@ paths:
             maxLength: 255
             minLength: 1
             pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
             type: string
         - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
           in: header
@@ -60588,6 +60596,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
           description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `FOUNDER-35` Not an approved conversion waiting for ACRA; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SHARE-02` A conversion's ACRA steps do not change that way."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
         "413":
           content:
             application/problem+json:
@@ -60606,6 +60620,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
           description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-37` The ACRA step does not fit."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
         "429":
           content:
             application/problem+json:
@@ -60659,6 +60679,8 @@ paths:
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
         - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
         - API-INPUT-01
         - API-INPUT-02
         - API-INPUT-03

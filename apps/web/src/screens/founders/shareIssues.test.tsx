@@ -89,6 +89,8 @@ describe("a conversion's ACRA steps", () => {
     fireEvent.change(screen.getByLabelText("ACRA reference (optional)"), { target: { value: "T26A001" } });
     fireEvent.click(screen.getByRole("button", { name: "Record the step" }));
     expect(await screen.findByText(/Recorded: approval lodged with acra on/)).toBeTruthy();
-    expect(seen.find((s) => s.path === "/v1/director-settlements/ds-3/acra-steps")?.body).toEqual({ kind: "approval_lodged", on: "2026-10-12", reference: "T26A001" });
+    const sent = seen.find((s) => s.path === "/v1/director-settlements/ds-3/acra-steps");
+    expect(sent?.body).toEqual({ kind: "approval_lodged", on: "2026-10-12", reference: "T26A001" });
+    expect(sent?.headers.get("If-Match")).toBe('"2-posted"');
   });
 });
