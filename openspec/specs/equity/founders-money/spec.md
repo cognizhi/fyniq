@@ -112,6 +112,16 @@ Source: PRD-001 §8.22 · Priority M · Phase P1
 - **THEN** it shows the opening balance, movements by origin, repayments, conversions, waivers and the closing balance
 - **AND** it can be exported as a PDF for balance confirmations
 
+#### Scenario: The person is a contact, optionally a member (rev 0.167)
+- **WHEN** a director account is opened
+- **THEN** it belongs to a contact marked director or shareholder, optionally linked to a member of the organisation
+- **AND** the link lets the person see "Money I put in", keep a claim as a loan, be repaid to their own approved bank account (FR-AP-22) and confirm their balance with a passkey
+
+#### Scenario: Every line carries the person (rev 0.167)
+- **WHEN** a line posts to 2500 or 2120
+- **THEN** it carries the person's contact as its sub-ledger key
+- **AND** the database refuses the line without one (B.7)
+
 ### Requirement: FR-EQ-02 "Paid personally"
 When the claimant on an expense claim (FR-AP-07) is a director, the system SHALL let each claim settle either to 2150 (reimburse) or to the director's account on 2500 (keep as a loan).
 
@@ -183,6 +193,16 @@ Source: PRD-001 §8.22 · Priority M · Phase P1 (with payroll)
 - **WHEN** a new director is added
 - **THEN** their pay choice defaults to "No salary" (§20 recommended default 16; FR-ORG-08)
 
+#### Scenario: Recorded before payroll (rev 0.167)
+- **GIVEN** payroll is not built yet
+- **WHEN** a director's pay choice is recorded for a period
+- **THEN** it is kept with its signed decision as evidence, "No salary" unless another choice is recorded
+- **AND** the pay run's part (deferred net pay to 2120, the plain words on what falls due, C.2 #24) comes with payroll
+
+#### Scenario: A director's fee posts to the person (rev 0.167)
+- **WHEN** a director's fee approved by the shareholders is recorded
+- **THEN** it posts Dr 6050 / Cr 2120 to that person (§10.2)
+
 ### Requirement: FR-EQ-05 Settlement routes
 The system SHALL offer settlement routes for a director's balance on 2500 or 2120, each an approval object (FR-APR-01) that shows its ledger impact before approval (FR-APR-02), with FM-9 applying.
 
@@ -200,6 +220,12 @@ Source: PRD-001 §8.22 · Priority M · Phase P1
 #### Scenario: Default route and price basis
 - **WHEN** a settlement is started without other choices
 - **THEN** the route defaults to "keep as a loan" and the price basis to "latest priced round", both organisation settings (§20 recommended default 15; FR-ORG-08)
+
+#### Scenario: The SAFE or note route comes with the instruments (rev 0.167)
+- **GIVEN** the equity register's instruments (FR-EQ-18) are not built yet
+- **WHEN** the settlement routes are offered
+- **THEN** repay, keep, convert to shares and waive are offered
+- **AND** converting to a SAFE or convertible note comes with the instruments
 
 ### Requirement: FR-EQ-06 Conversion to share capital
 The system SHALL convert a director's balance to share capital in two steps, approve and then effective, posting only on the effective date and never backdating.
@@ -345,6 +371,17 @@ Source: PRD-001 §8.22 · Priority M · Phase P1
 #### Scenario: Losing exempt status re-runs the check
 - **WHEN** the company loses exempt status, for example when a corporate investor joins
 - **THEN** the director's-account check re-runs
+
+#### Scenario: Status recorded before the corporate profile (rev 0.167)
+- **GIVEN** the corporate profile (FR-CS-01) is not built yet
+- **WHEN** exempt-private-company status is recorded
+- **THEN** it is an effective-dated fact of the organisation, exempt or not from a date, with its evidence
+- **AND** the corporate profile takes it over
+
+#### Scenario: No status recorded (rev 0.167)
+- **GIVEN** no exempt-private-company status is recorded
+- **WHEN** a director's account is in debit
+- **THEN** the message cites s162 as for a company that is not exempt
 
 ### Requirement: FR-EQ-12 Year-end confirmation
 Each director SHALL confirm their closing balance in the app with a passkey.

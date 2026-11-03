@@ -769,6 +769,11 @@ Source: PRD-001 §B.7
 - **WHEN** an amount is posted to 2500 or 2120
 - **THEN** it carries the person as its sub-ledger key
 
+#### Scenario: The key is the person's contact (rev 0.167)
+- **WHEN** a line posts to an account with the role of 2500 or 2120
+- **THEN** its key is the contact of a director or shareholder, and the database refuses the line without one
+- **AND** it refuses a key on a line to any other account
+
 ### Requirement: Cost a founder paid personally, kept as a loan
 A cost a founder paid personally and kept as a loan (FR-EQ-02) SHALL credit 2500 with the gross, instead of 2150, when the claim settles to the director's account.
 
