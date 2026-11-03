@@ -258,3 +258,29 @@ describe("the exempt private company status", () => {
     expect(seen.find((s) => s.path === "/v1/exempt-statuses/ex-1/record")?.headers.get("If-Match")).toBe('"1-draft"');
   });
 });
+
+// req: FR-EQ-12
+// req: equity/founders-money Director confirms with a passkey
+describe("the year-end confirmation", () => {
+  it("asks a founder to confirm their balances at the year end, and says when they changed since", async () => {
+    const waiting = { ...mei, year_end: { year_end: "2026-09-30", status: "not_confirmed" } };
+    const seen = answer({
+      "GET /v1/me/director-account": { status: 200, body: { linked: true, account: waiting } },
+      "GET /v1/director-accounts/c-mei/statement": { status: 200, body: statement },
+      "POST /v1/me/director-account/confirmations": { status: 201, body: { id: "dc-1", year_end: "2026-09-30", balances: [] } },
+    });
+    renderPage(MoneyIPutIn, { path: "/me/money-i-put-in", mode: "basic" });
+    expect(await screen.findByText("Not confirmed")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Confirm my balances at 30 Sept? 2026 with my passkey/ }));
+    expect(await screen.findByText(/Confirmed your balances at 30 Sept? 2026/)).toBeTruthy();
+    expect(seen.find((s) => s.method === "POST")?.body).toEqual({ year_end: "2026-09-30" });
+  });
+
+  it("shows a card's confirmation changed since, and what to do", async () => {
+    answer({ "GET /v1/director-accounts": { status: 200, body: { ...list, items: [{ ...mei, year_end: { year_end: "2026-09-30", status: "changed_since" } }] } } });
+    renderPage(DirectorAccounts, { path: "/accounting/directors" });
+    const card = (await screen.findByRole("heading", { name: "Mei Lin Tan" })).closest("section") as HTMLElement;
+    expect(within(card).getByText("Changed since confirmed")).toBeTruthy();
+    expect(within(card).getByText(/the person confirms them with a passkey in Money I put in/)).toBeTruthy();
+  });
+});

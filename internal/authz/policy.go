@@ -654,6 +654,10 @@ var (
 	GetExemptStatusEvidence    = Policy{Operation: "getExemptStatusEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
 	RemoveExemptStatusEvidence = Policy{Operation: "removeExemptStatusEvidence", Capability: DirectorAccounts, Need: Approve,
 		Note: "Only while the status is a draft (FR-DOC-07)."}
+	// A year-end confirmation (FR-EQ-12; design D13): the member who signs in as the director or shareholder confirms
+	// their own balances, with a passkey, whatever their right on the row; nobody confirms for another.
+	ConfirmMyDirectorAccount = Policy{Operation: "confirmMyDirectorAccount", Capability: DirectorAccounts, Need: View,
+		Note: "Only the member linked to the director or shareholder, stepped up with a passkey."}
 	GetPayeeBankDetails            = Policy{Operation: "getPayeeBankDetails", Capability: VendorBankDetails, Need: View}
 	GetPayeeBankChange             = Policy{Operation: "getPayeeBankChange", Capability: VendorBankDetails, Need: View}
 	CreatePayeeBankChange          = Policy{Operation: "createPayeeBankChange", Capability: VendorBankDetails, Need: Create}
@@ -1151,6 +1155,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	AddDirectorFeeEvidence, ListDirectorFeeEvidence, GetDirectorFeeEvidence, RemoveDirectorFeeEvidence,
 	ListExemptStatuses, GetExemptStatus, CreateExemptStatus, ReplaceExemptStatus, RecordExemptStatus,
 	AddExemptStatusEvidence, ListExemptStatusEvidence, GetExemptStatusEvidence, RemoveExemptStatusEvidence,
+	ConfirmMyDirectorAccount,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
 	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, SendRemittanceAgain, ReleasePaymentBatch, GetPaymentBatchFile,

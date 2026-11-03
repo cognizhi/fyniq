@@ -4,7 +4,7 @@ type: concept
 title: What the company owes a founder (the director's account)
 summary: Money a founder lent, costs paid personally and unpaid pay are owed to them, tracked per founder in their director's account
 sources:
-  - docs/user-guide/founders-money.md sha256:3fee41697faa10d7801395b2ba9c3f20be8c81e257aeee8290edb0832ae08a27
+  - docs/user-guide/founders-money.md sha256:9dbe9631b0b0cc6b59f1c765c26fbb52d1a9c49a74e3705d86d560779ca5b50e
 aliases:
   - director loan
   - money I lent the company
@@ -52,3 +52,10 @@ compiled_at: 2026-11-03
   or ask the accountant, because loans to directors are restricted unless the company is an
   exempt private company. (src: docs/user-guide/founders-money.md#common-problems)
   (src: docs/user-guide/founders-money.md#see-what-the-company-owes-you)
+
+## Confirm your balances at the year end
+
+- After each financial year ends, **Money I put in** asks the founder to confirm their balances at
+  the year's end with their passkey, and again if an entry for that year is posted later; the
+  card in Director accounts says where it stands: [[founders.director-accounts]].
+  (src: docs/user-guide/founders-money.md#confirm-your-balances-at-the-year-end)

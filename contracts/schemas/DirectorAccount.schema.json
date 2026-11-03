@@ -77,6 +77,10 @@
         true
       ],
       "type": "boolean"
+    },
+    "year_end": {
+      "$ref": "YearEndConfirmation.schema.json",
+      "description": "Their confirmation of the latest financial year end on or before the balances' day (FR-EQ-12); absent until a year has ended."
     }
   },
   "required": [

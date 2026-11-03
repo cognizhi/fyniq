@@ -7218,6 +7218,32 @@ The director or shareholder you sign in as, with your balances as at a day: Mone
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `FOUNDER-01`, `FOUNDER-02`, `FOUNDER-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/me/director-account/confirmations`
+
+**Confirm your balances at a year's end** (`confirmMyDirectorAccount`)
+
+Confirms, as the director or shareholder you sign in as, your balances on the director's accounts at a financial year's end (FR-EQ-12): the balances the ledger holds at that end now are kept with the confirmation, which is append-only. Only a member linked to a director or shareholder confirms (FOUNDER-03), stepped up with a passkey in the last 5 minutes (FOUNDER-26), for a year that has ended (FOUNDER-24). An entry dated in the year posted after it shows the confirmation as changed since. Side effects: the confirmation, its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** View on Director accounts, settlements, share issues (rev 0.3). Only the member linked to the director or shareholder, stepped up with a passkey.
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ConfirmationRequest`](../../contracts/schemas/ConfirmationRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ConfirmedBalances`](../../contracts/schemas/ConfirmedBalances.schema.json)
+  - `201` Created [`ConfirmedBalances`](../../contracts/schemas/ConfirmedBalances.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account; `FOUNDER-26` A passkey step-up is needed.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-24` The year-end confirmation does not fit.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `FOUNDER-01`, `FOUNDER-03`, `FOUNDER-24`, `FOUNDER-26`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/pre-incorporation-costs`
 
 **List costs paid before the books start** (`listPreIncorporationCosts`)
