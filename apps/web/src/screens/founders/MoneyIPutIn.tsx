@@ -7,6 +7,7 @@ import { Button } from "../../components/ui/button";
 import { CodeStepUpRequired, stepUp } from "../../stepup";
 import type { ApiProblem } from "../../ui";
 import { Refusal } from "../../components/Refusal";
+import { ReviewBanner } from "../../components/ReviewBanner";
 import { formatAmount } from "../../format/amount";
 import { date } from "../../format/date";
 import { isZero, sign } from "../../format/decimal";
@@ -86,6 +87,7 @@ export function MoneyIPutIn() {
           <p className="fy-secondary">What the company owes you for money you lent, costs you paid and pay or fees not yet paid, and where each amount came from.</p>
         </div>
       </div>
+      <ReviewBanner screen="money-i-put-in" />
       {q.isError && <Refusal problem={problemOf(q.error)} title="Your account could not be shown" />}
       {q.isPending && <p className="fy-secondary">Loading your account…</p>}
       {q.data && !q.data.linked && (

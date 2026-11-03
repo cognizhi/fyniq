@@ -231,7 +231,11 @@ func statementReport(s FinancialStatement, author, version string) render.Report
 	if len(s.NonCash) > 0 {
 		n := render.ReportNote{Title: "Investing and financing transactions that moved no money"}
 		for _, x := range s.NonCash {
-			n.Items = append(n.Items, strings.TrimSpace(longDay(x.Date)+" "+x.Memo)+": "+printed(x.Amount))
+			what := x.Memo
+			if x.Label != "" {
+				what = strings.TrimSpace(x.Label + ", " + x.Memo)
+			}
+			n.Items = append(n.Items, strings.TrimSpace(longDay(x.Date)+" "+what)+": "+printed(x.Amount))
 		}
 		r.Notes = append(r.Notes, n)
 	}

@@ -553,7 +553,10 @@ in that order. `percent_of_revenue` has each of the twelve lines under `RND-PERC
 **Balance sheet** at the month's last day: each placed account's balance, assets debit positive,
 liabilities, borrowings and equity credit positive, by section and report group. The retained-earnings
 account's group also holds the profit to date (every posted revenue and expense line so far: FR-GL-10
-folds earlier years into retained earnings, and FR-RPT-01 puts the year's profit inside them).
+folds earlier years into retained earnings, and FR-RPT-01 puts the year's profit inside them). A person
+whose lines on the director's accounts (`director-loan`, `deferred-remuneration`) net to a debit owes the
+company: with an `advances` account in the settings, their balances on those accounts show on it instead,
+with no posting (FR-EQ-11, `p1-founders-money` design D14).
 
 **Cash flow**, indirect, money in positive. Each of the month's entries is *investing* when it has a line
 on a capital-expenditure account, else *financing* when it has a line on a borrowings or equity account,
@@ -567,13 +570,15 @@ else *operating*. An entry's cash is the sum of its lines on cash accounts.
   and `total`, their sum, which equals the operating entries' cash whenever every account they move is
   placed.
 - `non_cash`: the investing and financing entries with no line on a cash account (FR-RPT-01: "a
-  transaction that moved no money ... is left out of investing and financing and listed apart").
+  transaction that moved no money ... is left out of investing and financing and listed apart"). A
+  `director_conversion`'s has the `label` "Converted to shares" and a `director_waiver`'s "Waived" (FR-EQ-10).
 - `net_change` = operating + investing + financing; `opening_cash` and `closing_cash` are the cash
   accounts' balances at the month before's end and the month's.
 
 **Movement in equity**: `opening` (the month before's closing; nothing before the first month),
-`profit` (the month's net profit), `share_capital` (the change in accounts on the Share capital line),
-`other` (the change in every other equity-section account, retained earnings' own lines included) and
+`profit` (the month's net profit), `share_capital` (shares issued for cash: the change in accounts on the
+Share capital line from every entry but a conversion), `share_capital_non_cash` (a `director_conversion`'s
+change on that line: shares issued for non-cash consideration, FR-EQ-10), `other` (the change in every other equity-section account, retained earnings' own lines included) and
 `closing`, the balance sheet's equity.
 
 **Checks**: `balances`, total assets equal total liabilities and equity (INV-10, BS_Chk); `ties`,

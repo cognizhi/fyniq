@@ -135,7 +135,10 @@ describe("a financial statement", () => {
       kind: "cf",
       restated_presentation: true,
       checks: [{ key: "placed", ok: false, title: "Accounts sit in no line of the cash flow", detail: "1999 Unsorted: give each a cash-flow line" }],
-      non_cash: [{ date: "2026-10-31", source_type: "manual_journal", source_id: "j1", memo: "Interest on the director's loan", amount: m("30.00") }],
+      non_cash: [
+        { date: "2026-10-31", source_type: "manual_journal", source_id: "j1", memo: "Interest on the director's loan", amount: m("30.00") },
+        { date: "2026-11-14", source_type: "share_issue", source_id: "s1", memo: "Mei Lin's loan", label: "Converted to shares", amount: m("12345.60") },
+      ],
       blocks: [{ key: "net_change", title: "Net change in cash", measure: true, totals: [m("-1880.00")], percents: [""], groups: [] }],
     };
     answer({ "GET /v1/periods": { status: 200, body: { items: periods } }, "GET /v1/reports/statements/cf": { status: 200, body: cf } });
@@ -145,6 +148,7 @@ describe("a financial statement", () => {
     expect(screen.getByText("Restated presentation")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Transactions that moved no money" })).toBeTruthy();
     expect(screen.getByText("Interest on the director's loan")).toBeTruthy();
+    expect(screen.getByText("Converted to shares")).toBeTruthy();
     expect(screen.getByText("−1,880.00")).toBeTruthy();
     await noViolations(document.body);
   });

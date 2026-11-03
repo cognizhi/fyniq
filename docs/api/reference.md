@@ -6774,6 +6774,47 @@ Every contact marked director or shareholder with their balances as at a day on 
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `FOUNDER-01`, `FOUNDER-02`, `FOUNDER-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/director-accounts/related-parties`
+
+**Work out the related-party schedule** (`getRelatedParties`)
+
+The related-party schedule as at a day (FR-EQ-10): for each director and shareholder with something to disclose, what the company owes them on 2500 (loan) and 2120 (deferred pay) at the day, negative when they owe it, and in the financial year to the day the directors' fees owed to them, what was converted to shares and what they waived, with the totals. From the balance service (ENG-04); the notes to the financial statements read it. Read-only; no side effects.
+
+- **Permission:** View on Director accounts, settlements, share issues (rev 0.3)
+- **Parameters:**
+  - `as_at` (query): The day the balances are at; the organisation's today when left out.
+- **Responses:**
+  - `200` OK [`RelatedPartySchedule`](../../contracts/schemas/RelatedPartySchedule.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `FOUNDER-01`, `FOUNDER-02`, `FOUNDER-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/director-accounts/related-parties/export`
+
+**Export the related-party schedule** (`exportRelatedParties`)
+
+The schedule getRelatedParties gives, as CSV (FR-EQ-10): a row per person and a total, plain decimals with an ASCII minus. Returned in base64 with its SHA-256. Side effects: an audit event of the export with its file and hash (FR-RPT-09). Never cached.
+
+- **Permission:** View on Director accounts, settlements, share issues (rev 0.3)
+- **Parameters:**
+  - `as_at` (query): The day the balances are at; the organisation's today when left out.
+  - `format` (query): csv: a row per person and a total, plain decimals with an ASCII minus.
+- **Responses:**
+  - `200` OK [`ReportFile`](../../contracts/schemas/ReportFile.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `FOUNDER-03` Only a person has their own director account.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-02` The statement's dates do not fit.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `FOUNDER-01`, `FOUNDER-02`, `FOUNDER-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/director-accounts/{contact_id}/statement`
 
 **Work out a director's statement** (`getDirectorStatement`)

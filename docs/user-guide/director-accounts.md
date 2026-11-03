@@ -181,6 +181,16 @@ company owes the person shown positive. **Every movement** lists each line, with
 Select **PDF for confirmation** to download the statement as a PDF to send to the person, or
 **CSV** for its movements. Each download is recorded in the audit trail.
 
+## The related-party schedule
+
+Select **Related parties** to list each director and shareholder with something to
+disclose as at the day chosen: what the company owes them on their loan and in deferred pay, a
+minus when they owe it, and in the financial year to that day the directors' fees owed to them,
+what was converted to shares and what they waived. **CSV** downloads it, with a total, for the
+accountant and the notes to the financial statements; each download is recorded in the audit
+trail. On the balance sheet, a person who owes the company shows under staff and director
+advances, not under the loan, with no entry posted.
+
 ## Common problems
 
 | Message | Fix |

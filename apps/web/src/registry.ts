@@ -176,6 +176,7 @@ export const actions = [
   { kind: "action", id: "access-review.attest", mode: "expert", help: "access-review.attest", guide: "settings.access-review#attest-the-quarter" },
   { kind: "action", id: "director-accounts.statement", mode: "expert", help: "director-accounts.statement", guide: "equity.director-accounts#read-a-statement" },
   { kind: "action", id: "director-accounts.export", mode: "expert", help: "director-accounts.export", guide: "equity.director-accounts#send-it-for-a-balance-confirmation" },
+  { kind: "action", id: "director-accounts.related-parties", mode: "expert", help: "director-accounts.related-parties", guide: "equity.director-accounts#the-related-party-schedule" },
   { kind: "action", id: "director-accounts.link-member", mode: "expert", help: "director-accounts.link-member", guide: "equity.director-accounts#link-each-director-to-the-member-who-signs-in-as-them" },
   { kind: "action", id: "journal.line-person", mode: "expert", help: "journal.line-person", guide: "equity.director-accounts#name-the-person-on-a-journal-or-opening-balance" },
   { kind: "action", id: "access-review.export", mode: "expert", help: "access-review.export", guide: "settings.access-review#download-it" },

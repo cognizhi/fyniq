@@ -171,6 +171,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/customer-refunds/{refund_id}/void` (voidCustomerRefund): Void a refund to a customer
 - `POST /v1/customer-refunds/{refund_id}/void-approval` (requestCustomerRefundVoid): Ask for approval to void a refund to a customer
 - `GET /v1/director-accounts` (listDirectorAccounts): List the director accounts
+- `GET /v1/director-accounts/related-parties` (getRelatedParties): Work out the related-party schedule
+- `GET /v1/director-accounts/related-parties/export` (exportRelatedParties): Export the related-party schedule
 - `GET /v1/director-accounts/{contact_id}/statement` (getDirectorStatement): Work out a director's statement
 - `GET /v1/director-accounts/{contact_id}/statement/export` (exportDirectorStatement): Export a director's statement
 - `GET /v1/director-fees` (listDirectorFees): List directors' fees

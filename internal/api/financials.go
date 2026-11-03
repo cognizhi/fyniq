@@ -83,6 +83,7 @@ type FinancialNonCash struct {
 	SourceID   string `json:"source_id" doc:"The source document, to open it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"`
 	Memo       string `json:"memo,omitempty" doc:"The entry's memo." example:"Interest on the director's loan"`
 	Amount     Money  `json:"amount" doc:"Its debits, in the base currency."`
+	Label      string `json:"label,omitempty" doc:"What it was, when its source says it: Converted to shares, or Waived (FR-EQ-10); never shown as shares issued for cash and a loan repaid." example:"Converted to shares"`
 }
 
 // FinancialStatement is a statement laid out from the chart (FR-RPT-01; PRD-001 rev 0.159, provisional), read as at
@@ -289,7 +290,8 @@ func (a *API) financialStatement(ctx context.Context, u storage.UnitOfWork, in *
 		out.Checks = append(out.Checks, FinancialCheck{Key: c.Key, OK: c.OK, Title: c.Title, Detail: c.Detail})
 	}
 	for _, x := range s.NonCash {
-		out.NonCash = append(out.NonCash, FinancialNonCash{Date: dateOf(x.Date), SourceType: x.Source.Type, SourceID: x.Source.ID, Memo: x.Memo, Amount: moneyOut(x.Amount)})
+		out.NonCash = append(out.NonCash, FinancialNonCash{Date: dateOf(x.Date), SourceType: x.Source.Type, SourceID: x.Source.ID, Memo: x.Memo, Amount: moneyOut(x.Amount),
+			Label: x.Label})
 	}
 	return out, nil
 }
