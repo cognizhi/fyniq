@@ -24,7 +24,7 @@ const items = [
   { kind: "bill", document_id: "d-41", number: "BILL-0041", date: "2026-10-02", open: sgd("109.00"), checks: [] },
   { kind: "bill", document_id: "d-42", number: "BILL-0042", date: "2026-10-05", open: sgd("218.00"), checks: [] },
 ];
-const payment = { payee: { kind: "vendor", id: "v1", name: "Northwind Analytics Pte Ltd" }, account, payments_frozen: false, amount: sgd("327.00"), items, paid: false, rejected: false };
+const payment = { kind: "supplier", payee: { kind: "vendor", id: "v1", name: "Northwind Analytics Pte Ltd" }, account, payments_frozen: false, amount: sgd("327.00"), items, paid: false, rejected: false };
 const list = "PB-0003-payment-list.csv";
 
 // batches answers the batch's calls from its state, which the journey moves on as each step would.
