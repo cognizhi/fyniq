@@ -66,7 +66,7 @@ type Org struct {
 type Account struct {
 	Code string `json:"code"`
 	Name string `json:"name"`
-	Role string `json:"role,omitempty"` // "share-capital" for 3010 and 3020 (INV-13)
+	Role string `json:"role,omitempty"` // "share-capital" for 3010 and 3020 (INV-13); a director's account's for 2120 and 2500
 }
 
 // ShareCapital are the default chart's share-capital accounts. Only the register of share issues and
@@ -75,9 +75,9 @@ type Account struct {
 var ShareCapital = map[string]bool{"3010": true, "3020": true}
 
 // DirectorAccounts are the default chart's director's accounts, 2500 Loan from director / shareholder and 2120 Deferred
-// remuneration payable: every line on one names its director and where its amount came from (FR-EQ-01, B.7; PRD-001
-// rev 0.167).
-var DirectorAccounts = map[string]bool{"2120": true, "2500": true}
+// remuneration payable, with their roles: every line on one names its director and where its amount came from
+// (FR-EQ-01, B.7; PRD-001 rev 0.167).
+var DirectorAccounts = map[string]string{"2120": "deferred-remuneration", "2500": "director-loan"}
 
 // Contact is a customer or vendor.
 type Contact struct {
@@ -130,6 +130,7 @@ func Generate(v *Vocabulary, seed uint64, journals int) Company {
 		if ShareCapital[code] {
 			a.Role = "share-capital"
 		} else {
+			a.Role = DirectorAccounts[code]
 			codes = append(codes, code)
 		}
 		c.Accounts = append(c.Accounts, a)
@@ -177,7 +178,7 @@ func Generate(v *Vocabulary, seed uint64, journals int) Company {
 		// A line on a director's account names a director in turn, and its origin by its side and account: drawing no
 		// random number, so the rest of the company is as it was before director's accounts named their person.
 		for k, l := range c.Journals[i].Lines {
-			if !DirectorAccounts[l.Account] || len(directors) == 0 {
+			if DirectorAccounts[l.Account] == "" || len(directors) == 0 {
 				continue
 			}
 			l.Person = directors[turn%len(directors)]
