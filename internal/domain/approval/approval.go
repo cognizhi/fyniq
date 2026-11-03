@@ -104,6 +104,11 @@ const (
 	// who holds A on "Director accounts, settlements, share issues" approves it, never the director it is paid to, nor
 	// whoever asked; its key is its id.
 	ObjectDirectorFee = "director_fee"
+	// ObjectDirectorSettlement is a settlement of what the company owes a director or shareholder, kept as a loan or
+	// waived (FR-EQ-05, FR-EQ-07, FM-9; rev 0.167): another person who holds A on "Director accounts, settlements, share
+	// issues" approves it, never the person settled (APR-15), and the Accountant too when every available approver
+	// benefits; its key is its id.
+	ObjectDirectorSettlement = "director_settlement"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -173,6 +178,8 @@ const (
 	OpContactMemberLink = "contact_member_link.change"
 	// OpDirectorFeePost posts a director's fee: Dr 6050 · Cr 2120 to the director (director_fee@1).
 	OpDirectorFeePost = "director_fee.post"
+	// OpSettlementApprove decides a settlement: a loan kept on its terms, or a waiver posted (director_settlement@1).
+	OpSettlementApprove = "director_settlement.approve"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -197,6 +204,7 @@ var Operations = map[string]string{
 	OpBatchReapprove:     ObjectPaymentBatch,
 	OpContactMemberLink:  ObjectContactMemberLink,
 	OpDirectorFeePost:    ObjectDirectorFee,
+	OpSettlementApprove:  ObjectDirectorSettlement,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -271,6 +279,8 @@ var Dependencies = map[string][]string{
 	ObjectContactMemberLink: {"contact_version", "member"},
 	// the fee's version and status, and its amount: what it posts
 	ObjectDirectorFee: {"status", "amount"},
+	// the settlement's version and status, its amount, and what is owed on its account now: the waiver or loan it decides
+	ObjectDirectorSettlement: {"status", "amount", "owed"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -311,6 +321,7 @@ var Rows = map[string]string{
 	ObjectPaymentBatch:        "Payment batches",
 	ObjectContactMemberLink:   "Director accounts, settlements, share issues (rev 0.3)",
 	ObjectDirectorFee:         "Director accounts, settlements, share issues (rev 0.3)",
+	ObjectDirectorSettlement:  "Director accounts, settlements, share issues (rev 0.3)",
 }
 
 // The limits of a policy.
@@ -380,6 +391,7 @@ var Policies = map[string]Policy{
 	ObjectPaymentBatch:        {ObjectType: ObjectPaymentBatch, Version: "founder/payment_batch@2026-10-28.1", Steps: []Step{{Quorum: 1}}},
 	ObjectContactMemberLink:   {ObjectType: ObjectContactMemberLink, Version: "founder/contact_member_link@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
 	ObjectDirectorFee:         {ObjectType: ObjectDirectorFee, Version: "founder/director_fee@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
+	ObjectDirectorSettlement:  {ObjectType: ObjectDirectorSettlement, Version: "founder/director_settlement@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).
@@ -464,6 +476,7 @@ const (
 	CodeNotYours    = "APR-12" // only its requester withdraws a request
 	CodeReviewOwn   = "APR-13" // a high-risk action is reviewed by someone other than the one who acted (FM-3)
 	CodeReviewed    = "APR-14" // the action was reviewed already (FM-3)
+	CodeBeneficiary = "APR-15" // a signer is the person a founders' settlement benefits (FM-9)
 )
 
 // ReviewOverdue is how long a high-risk action may wait for its review before it is overdue in Founder mode (FM-3).

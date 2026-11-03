@@ -232,6 +232,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 		}
 		return strings.Join(ledger.Differences(want, stored), "; "), nil
 	}
+	if director.IsSettlement(doc) { // a waiver, as it was approved (FR-EQ-07)
+		want, err := replayDirectorWaiver(doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
 	if director.IsFee(doc) { // a director's fee, as it was approved (FR-EQ-04)
 		want, err := replayDirectorFee(doc, s, e)
 		if err != nil {

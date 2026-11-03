@@ -54,12 +54,12 @@ var batchWriter paymentfile.Writer = paymentfile.PaymentList{}
 
 // PaymentBatchRelease is a batch's release as the API shows it: never the file's content.
 type PaymentBatchRelease struct {
-	ReleasedBy Person   `json:"released_by" doc:"Who released it."`
-	ReleasedAt string   `json:"released_at" format:"date-time" doc:"When it was released." example:"2026-10-31T09:30:00+08:00"`
-	ApprovalID string   `json:"approval_id" format:"uuid" doc:"The approval it was released under." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20"`
-	Writer     string   `json:"writer" doc:"The file's format and version: payment-list@1 is the payment list keyed into the bank (rev 0.156)." example:"payment-list@1"`
-	FileName   string   `json:"file_name" doc:"The file's name." example:"PB-0003-payment-list.csv"`
-	SHA256     string   `json:"sha256" doc:"The SHA-256 of the file as written, in hexadecimal: a downloaded copy can be checked against it." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
+	ReleasedBy Person               `json:"released_by" doc:"Who released it."`
+	ReleasedAt string               `json:"released_at" format:"date-time" doc:"When it was released." example:"2026-10-31T09:30:00+08:00"`
+	ApprovalID string               `json:"approval_id" format:"uuid" doc:"The approval it was released under." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20"`
+	Writer     string               `json:"writer" doc:"The file's format and version: payment-list@1 is the payment list keyed into the bank (rev 0.156)." example:"payment-list@1"`
+	FileName   string               `json:"file_name" doc:"The file's name." example:"PB-0003-payment-list.csv"`
+	SHA256     string               `json:"sha256" doc:"The SHA-256 of the file as written, in hexadecimal: a downloaded copy can be checked against it." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
 	Payments   []PaymentBatchPosted `json:"payments" nullable:"false" doc:"The bill payments and reimbursements it posted, one per payee, in the file's order."`
 }
 

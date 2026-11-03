@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "Its code.",
+      "examples": [
+        "2500"
+      ],
+      "type": "string"
+    },
+    "account_id": {
+      "description": "The director's account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "accountant_review": {
+      "description": "Its request has a final step the Accountant signs, as every member who could sign benefits from a settlement of their own (FM-9) [accountant to confirm].",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "agreements": {
+      "description": "How many files are attached and not removed: asking for approval needs one, the loan note, minute or deed.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "The amount settled."
+    },
+    "approval_asked": {
+      "description": "The pending request to decide it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "checks": {
+      "description": "A draft's statuses: ✖ while no agreement is attached, or while it does not fit what is owed now.",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "contact_id": {
+      "description": "The person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "date": {
+      "description": "The day it was last drafted.",
+      "examples": [
+        "2026-11-03"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "deducted_earlier": {
+      "description": "A decided waiver of amounts the company deducted earlier as costs (pay or fees on 2120): tagged for the tax computation [verify].",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "id": {
+      "description": "Its ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa9"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ledger_impact": {
+      "description": "A waiver's entry: the lines it would post as a dry run while undecided (FR-APR-02), and the lines it posted once decided; empty for a loan kept.",
+      "items": {
+        "$ref": "EntryLine.schema.json"
+      },
+      "type": "array"
+    },
+    "legal_name": {
+      "description": "Their name.",
+      "examples": [
+        "Mei Lin Tan"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number, once decided (FR-ORG-04).",
+      "examples": [
+        "DS-0001"
+      ],
+      "type": "string"
+    },
+    "owed": {
+      "$ref": "Money.schema.json",
+      "description": "What the company owes the person on the account today."
+    },
+    "route": {
+      "description": "The route.",
+      "enum": [
+        "keep",
+        "repay",
+        "convert",
+        "waive"
+      ],
+      "examples": [
+        "keep"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "draft; waiting for another person's approval; or decided: the loan kept, or the waiver posted.",
+      "enum": [
+        "draft",
+        "waiting",
+        "decided"
+      ],
+      "examples": [
+        "waiting"
+      ],
+      "type": "string"
+    },
+    "terms": {
+      "$ref": "SettlementTerms.schema.json",
+      "description": "A loan kept's terms."
+    },
+    "version": {
+      "description": "The version of its content; with its status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "waiver": {
+      "$ref": "SettlementWaiver.schema.json",
+      "description": "A waiver's account, capacity and reason."
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "version",
+    "date",
+    "contact_id",
+    "legal_name",
+    "account_id",
+    "amount",
+    "owed",
+    "route",
+    "deducted_earlier",
+    "agreements",
+    "checks",
+    "ledger_impact",
+    "accountant_review"
+  ],
+  "title": "DirectorSettlement",
+  "type": "object"
+}

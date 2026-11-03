@@ -198,3 +198,26 @@ func TestAttackADirectorsFeePostsOnlyByApproval(t *testing.T) {
 		t.Errorf("a director's fee posted with no approved request: %v", err)
 	}
 }
+
+// A settlement is decided only under an approved director_settlement.approve request that neither its requester nor the
+// person settled signed: posting a draft settlement with no request at all is refused at commit (FR-EQ-05, FM-9; FY253).
+// req: FR-EQ-05
+// req: FM-9
+// req: QA-ENG-05
+// asvs: V2.2.3
+func TestAttackASettlementIsDecidedOnlyByApproval(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack director settlement Pte Ltd")
+	payload := []byte(`{"date":"2026-10-15","contact_id":"` + d.director.ID.String() + `","account_id":"` + d.loan.String() + `",` +
+		`"amount":{"amount":"100.00","currency":"SGD"},"route":"keep","terms":{"interest_rate":"0"}}`)
+	err := store(t, "fyniq_api").Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentDirectorSettlement, Payload: payload})
+		if err != nil {
+			return err
+		}
+		return u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted)
+	})
+	if storage.CodeOf(err) != storage.CodeParty {
+		t.Errorf("a settlement decided with no approved request: %v", err)
+	}
+}

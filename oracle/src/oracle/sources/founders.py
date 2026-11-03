@@ -1,6 +1,7 @@
 """A cost a founder paid before the books start (``pre_incorporation_cost@1``), from PRD-001 FR-EQ-03 and Appendix B.7
 ("Cost a founder paid personally, kept as a loan") and the founders' money design D7 (rev 0.167); and a director's fee
-(``director_fee@1``), from FR-EQ-04, §10.2 and design D8.
+(``director_fee@1``), from FR-EQ-04, §10.2 and design D8; and a waiver of what the company owes one
+(``director_settlement@1``), from FR-EQ-07, Appendix B.7 and design D10.
 
 The document is the cost as the accountant decided it: the date it posts on (``date``: the books start, or the day of
 the decision when the books start's month is closed), the day it was paid (``incurred``, before the books start), the
@@ -76,4 +77,27 @@ def director_fee(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     return Posting([
         r.base_line(d["account"], amount),
         r.line(r.system("deferred_remuneration"), r.base, money.negate(amount), money.negate(amount), party=person),
+    ])
+
+
+def director_waiver(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
+    """A waiver of what the company owes a director or shareholder, posted on ``date``, the day it was approved.
+
+    Dr ``account`` (2500 or 2120, a director's account) with ``amount``, the line naming ``person`` (one of the scenario's
+    ``people``; B.7: waived); Cr ``credit`` (3300 Capital contribution, or an income account the accountant chose) with
+    ``amount`` (FR-EQ-07). The credit is not a director's account, a money account or GST control.
+    """
+    d = doc.data
+    person = d["person"]
+    if person not in r.scenario.people:
+        raise Rejected("not-a-director")
+    if r.account(d["account"]).role not in DIRECTOR_ROLES:
+        raise Rejected("not-a-directors-account")
+    credit = r.account(d["credit"])
+    if credit.role in DIRECTOR_ROLES or d["credit"] in r.settings.money_accounts or r.is_system(d["credit"], "gst"):
+        raise Rejected("account-not-allowed")
+    amount = r.amount(d["amount"], r.base, sign=1)
+    return Posting([
+        r.line(d["account"], r.base, amount, amount, party=person),
+        r.base_line(d["credit"], money.negate(amount)),
     ])

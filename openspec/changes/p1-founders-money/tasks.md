@@ -124,13 +124,25 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
 
 ## 4. Settlements: repay, keep and waive (slice 4)
 
-- [ ] 4.1 The `director_settlement` document and its approval (D10):
+- [x] 4.1 The `director_settlement` document and its approval (D10):
   - the ledger impact in the envelope;
   - FM-9's exclusion (`APR-15`), and the accountant's step when every available approver benefits;
   - the default route and price basis as settings.
   Tests: who may sign in Founder and Standard mode. `// req: FR-EQ-05`, `// req: FM-9`
-- [ ] 4.2 Keep and waive (D10): keep's terms with no entry; the waiver's legs to 3300 or income with the reason and
+  Built: the settlement (migrations 000212 and 000213, numbered DS- when decided) is drafted by an Owner or the
+  Controller (A on the row) for at most what is owed today, its agreement attached (FOUNDER-30), and asked for with
+  `requestDirectorSettlementApproval`, whose envelope carries the waiver's legs (FR-APR-02). A signer may not be the
+  person settled (APR-15; the database's `director_settlement_approved`, FY253), in every team mode. When every member
+  who could sign is a director with a settlement waiting or decided in the last 30 days, the request gains a final step
+  the Accountant signs [accountant to confirm]. The defaults are the settings `founders.default_route` (keep) and
+  `founders.price_basis` (latest priced round), of a new kind, choice. Repay and convert are refused until tasks 4.3
+  and 5.3. The tests sign in Founder mode; the refusal and the database's guard take the same path in Standard mode,
+  which no test switches to yet.
+- [x] 4.2 Keep and waive (D10): keep's terms with no entry; the waiver's legs to 3300 or income with the reason and
   the "deducted earlier" tag. The oracle states the legs. `// req: FR-EQ-05`, `// req: FR-EQ-07`
+  Built: a loan kept is decided with no entry, its terms kept (interest, repayment day or on demand, subordinated); a
+  waiver posts `director_settlement@1` (LEDGER-44) on the day approved, Dr 2500/2120 naming the person (waived), Cr the
+  account chosen; a waiver of 2120 is tagged `deducted_earlier` [verify]. The oracle's `director_waiver` states the legs.
 - [ ] 4.3 Repay (D10): the payment batch item kind `director`, the `director_repayment` posted on release to the
   person's account in force, and matching by bank import. Tests: through a batch from approval to match.
   `// req: FR-EQ-05`, `// req: FR-BNK-12`

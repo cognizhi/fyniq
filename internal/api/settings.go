@@ -32,7 +32,7 @@ type Setting struct {
 	Key                 string          `json:"key" doc:"The setting's key." example:"sales.payment_terms_days"`
 	Group               string          `json:"group" doc:"Where settings show it." example:"Defaults"`
 	Label               string          `json:"label" doc:"Its name." example:"Payment terms for invoices"`
-	Kind                string          `json:"kind" enum:"switch,days,years,amount_sgd,percent,text,account_code" doc:"What it holds: switch is \"true\" or \"false\"; days and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460." example:"days"`
+	Kind                string          `json:"kind" enum:"switch,days,years,amount_sgd,percent,text,account_code,choice" doc:"What it holds: switch is \"true\" or \"false\"; days and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices." example:"days"`
 	Value               string          `json:"value" doc:"Its value on the day asked for, as a string." example:"30"`
 	EffectiveFrom       string          `json:"effective_from,omitempty" format:"date" doc:"The day that value took effect; absent while it has the value it shipped with." example:"2026-11-01"`
 	RecommendedValue    string          `json:"recommended_value" doc:"The value it ships with (FR-ORG-08)." example:"30"`
@@ -45,9 +45,18 @@ type Setting struct {
 	LengthenOnly        bool            `json:"lengthen_only" doc:"A change may only lengthen it." example:"false"`
 	Min                 string          `json:"min,omitempty" doc:"The smallest value a number may take." example:"0"`
 	Max                 string          `json:"max,omitempty" doc:"The largest value a number may take." example:"365"`
+	Choices             []SettingChoice `json:"choices,omitempty" doc:"A choice's values."`
 	Scheduled           []SettingChange `json:"scheduled" doc:"Changes recorded to take effect after that day, by date."`
 	Changes             []SettingChange `json:"changes,omitempty" doc:"Every recorded change, by version; only when one setting is read or changed."`
 	Version             int             `json:"version" doc:"The setting's version: its latest change's, 0 before any. It also makes the ETag." example:"0"`
+}
+
+// SettingChoice is one value a choice may take.
+type SettingChoice string
+
+// Schema implements huma.SchemaProvider: a string, with an example.
+func (SettingChoice) Schema(huma.Registry) *huma.Schema {
+	return &huma.Schema{Type: "string", Description: "One value of a choice setting, such as keep.", Examples: []any{"keep"}}
 }
 
 // SettingUpdate changes a setting: a value or a reset, from a day.
@@ -188,7 +197,7 @@ func settingOf(d settings.Definition, changes []storage.SettingChange, day time.
 	v := settings.On(d, changes, day)
 	out := Setting{Key: d.Key, Group: d.Group, Label: d.Label, Kind: string(d.Kind), Value: v.Value, RecommendedValue: d.Recommended,
 		Status: "recommended", Reason: d.Reason, Guide: d.Guide, Requirement: d.Requirement, NeedsSecondApprover: d.DualControl,
-		SetByPlatform: d.Fixed, LengthenOnly: d.LengthenOnly, Min: d.Min, Max: d.Max, Scheduled: []SettingChange{}, Version: latest(d, changes)}
+		SetByPlatform: d.Fixed, LengthenOnly: d.LengthenOnly, Min: d.Min, Max: d.Max, Choices: choicesOf(d.Choices), Scheduled: []SettingChange{}, Version: latest(d, changes)}
 	if v.Value != d.Recommended {
 		out.Status = "changed"
 	}
@@ -361,4 +370,16 @@ func registerSettings(a *API) {
 			}
 			return out, nil
 		})
+}
+
+// choicesOf are a choice setting's values as the API shows them.
+func choicesOf(values []string) []SettingChoice {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]SettingChoice, len(values))
+	for i, v := range values {
+		out[i] = SettingChoice(v)
+	}
+	return out
 }

@@ -108,7 +108,8 @@
         "claimant_bank_change",
         "payment_batch",
         "contact_member_link",
-        "director_fee"
+        "director_fee",
+        "director_settlement"
       ],
       "examples": [
         "organisation_setting"
@@ -161,7 +162,8 @@
         "payment_batch.approve",
         "payment_batch.reapprove",
         "contact_member_link.change",
-        "director_fee.post"
+        "director_fee.post",
+        "director_settlement.approve"
       ],
       "examples": [
         "organisation_setting.change"

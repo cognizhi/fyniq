@@ -525,6 +525,10 @@ const (
 	// DocumentDirectorConfirmation is a director's or shareholder's confirmation of their balances at a financial year's
 	// end, made by the member who signs in as them with a passkey; posting no entry, append-only (FR-EQ-12; design D13).
 	DocumentDirectorConfirmation DocumentType = "director_confirmation"
+	// DocumentDirectorSettlement is a settlement of what the company owes a director or shareholder: kept as a loan on
+	// terms, or waived (posted Dr 2500/2120 · Cr 3300 or income), once another person approves it (FR-EQ-05, FR-EQ-07, FM-9;
+	// design D10); numbered DS-.
+	DocumentDirectorSettlement DocumentType = "director_settlement"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).

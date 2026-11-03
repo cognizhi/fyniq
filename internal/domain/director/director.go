@@ -239,6 +239,8 @@ func (r originReader) of(l balance.PersonLine, amount money.Money) (string, erro
 		return ledger.OriginPaidPersonally, nil
 	case ledger.SourceDirectorFee: // a director's fee the shareholders voted (FR-EQ-04)
 		return ledger.OriginFee, nil
+	case ledger.SourceDirectorSettlement: // a waiver (FR-EQ-07)
+		return ledger.OriginWaived, nil
 	case ledger.SourceBankTransaction:
 		// Money in credits the person (lent), money out debits them (paid out); a reversal undoes the one it reverses.
 		if credit := amount.Sign() < 0; credit != (l.ReversesEntryID != nil) {

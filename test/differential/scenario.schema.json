@@ -151,7 +151,7 @@
                                          "bill_payment", "invoice", "credit_note", "customer_receipt", "customer_deposit",
                                          "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
                                          "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost",
-                                         "director_fee"]}},
+                                         "director_fee", "director_waiver"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "bank_transaction"}}}, "then": {"$ref": "#/$defs/bankTransaction"}},
@@ -168,7 +168,8 @@
         {"if": {"properties": {"type": {"const": "deposit_refund"}}}, "then": {"$ref": "#/$defs/depositRefund"}},
         {"if": {"properties": {"type": {"const": "write_off"}}}, "then": {"$ref": "#/$defs/writeOff"}},
         {"if": {"properties": {"type": {"const": "pre_incorporation_cost"}}}, "then": {"$ref": "#/$defs/preIncorporationCost"}},
-        {"if": {"properties": {"type": {"const": "director_fee"}}}, "then": {"$ref": "#/$defs/directorFee"}}
+        {"if": {"properties": {"type": {"const": "director_fee"}}}, "then": {"$ref": "#/$defs/directorFee"}},
+        {"if": {"properties": {"type": {"const": "director_waiver"}}}, "then": {"$ref": "#/$defs/directorWaiver"}}
       ]
     },
     "settings": {
@@ -445,6 +446,22 @@
             "oneOf": [{"required": ["distance", "vehicle"]}, {"required": ["gst_code"]}]
           }
         }
+      }
+    },
+    "directorWaiver": {
+      "description": "A waiver of what the company owes a director or shareholder (director_settlement@1, FR-EQ-07, B.7).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "person", "account", "credit", "amount"],
+      "properties": {
+        "type": {"const": "director_waiver"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day it was approved, which it posts on.", "$ref": "#/$defs/date"},
+        "person": {"description": "The director or shareholder, one of people.", "$ref": "#/$defs/documentId"},
+        "account": {"description": "The director's account waived (2500 or 2120).", "type": "string"},
+        "credit": {"description": "What it credits: 3300 Capital contribution, or an income account; not a director's account, a money account or GST control.", "type": "string"},
+        "amount": {"description": "In the base currency.", "$ref": "#/$defs/money"}
       }
     },
     "directorFee": {

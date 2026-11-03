@@ -70,7 +70,8 @@
         "claimant_bank_change",
         "payment_batch",
         "contact_member_link",
-        "director_fee"
+        "director_fee",
+        "director_settlement"
       ],
       "examples": [
         "organisation_setting"

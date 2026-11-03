@@ -658,6 +658,19 @@ var (
 	// their own balances, with a passkey, whatever their right on the row; nobody confirms for another.
 	ConfirmMyDirectorAccount = Policy{Operation: "confirmMyDirectorAccount", Capability: DirectorAccounts, Need: View,
 		Note: "Only the member linked to the director or shareholder, stepped up with a passkey."}
+	// Settlements of founders' balances (FR-EQ-05, FR-EQ-07, FM-9; design D10): an Owner or the Controller drafts one with
+	// its agreement and asks another person to approve it (A on "Director accounts"); never the person settled (APR-15).
+	ListDirectorSettlements           = Policy{Operation: "listDirectorSettlements", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetDirectorSettlement             = Policy{Operation: "getDirectorSettlement", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	CreateDirectorSettlement          = Policy{Operation: "createDirectorSettlement", Capability: DirectorAccounts, Need: Approve}
+	ReplaceDirectorSettlement         = Policy{Operation: "replaceDirectorSettlement", Capability: DirectorAccounts, Need: Approve}
+	RequestDirectorSettlementApproval = Policy{Operation: "requestDirectorSettlementApproval", Capability: DirectorAccounts, Need: Approve,
+		Note: "Another person approves it, never the person settled; the Accountant too when every available approver benefits."}
+	AddDirectorSettlementEvidence    = Policy{Operation: "addDirectorSettlementEvidence", Capability: DirectorAccounts, Need: Approve}
+	ListDirectorSettlementEvidence   = Policy{Operation: "listDirectorSettlementEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetDirectorSettlementEvidence    = Policy{Operation: "getDirectorSettlementEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	RemoveDirectorSettlementEvidence = Policy{Operation: "removeDirectorSettlementEvidence", Capability: DirectorAccounts, Need: Approve,
+		Note: "Only while the settlement is a draft (FR-DOC-07)."}
 	GetPayeeBankDetails            = Policy{Operation: "getPayeeBankDetails", Capability: VendorBankDetails, Need: View}
 	GetPayeeBankChange             = Policy{Operation: "getPayeeBankChange", Capability: VendorBankDetails, Need: View}
 	CreatePayeeBankChange          = Policy{Operation: "createPayeeBankChange", Capability: VendorBankDetails, Need: Create}
@@ -1156,6 +1169,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListExemptStatuses, GetExemptStatus, CreateExemptStatus, ReplaceExemptStatus, RecordExemptStatus,
 	AddExemptStatusEvidence, ListExemptStatusEvidence, GetExemptStatusEvidence, RemoveExemptStatusEvidence,
 	ConfirmMyDirectorAccount,
+	ListDirectorSettlements, GetDirectorSettlement, CreateDirectorSettlement, ReplaceDirectorSettlement, RequestDirectorSettlementApproval,
+	AddDirectorSettlementEvidence, ListDirectorSettlementEvidence, GetDirectorSettlementEvidence, RemoveDirectorSettlementEvidence,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
 	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, SendRemittanceAgain, ReleasePaymentBatch, GetPaymentBatchFile,
