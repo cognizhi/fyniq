@@ -58,7 +58,7 @@ function page(session: Session, org: Organisation = organisation) {
   };
 }
 
-const line = (key: string, extra: Partial<Form["lines"][number]> = {}) => ({ key, account_id: "a", description: "", debit: "", credit: "", currency: "SGD", fx_rate: "", ...extra });
+const line = (key: string, extra: Partial<Form["lines"][number]> = {}) => ({ key, account_id: "a", description: "", debit: "", credit: "", currency: "SGD", fx_rate: "", party_id: "", origin: "", ...extra });
 
 // req: FR-GL-01
 // req: FR-UX-20

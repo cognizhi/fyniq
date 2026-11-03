@@ -7,6 +7,7 @@ import { formatAmount } from "../../format/amount";
 import { date as dateOf } from "../../format/date";
 import { isZero, minus, sign, sum, typed } from "../../format/decimal";
 import { Icon, problemOf } from "../../ui";
+import { enteredOrigins, isDirectorAccount, originWords, useDirectors } from "../founders/data";
 import type { Account } from "./data";
 
 type Draft = components["schemas"]["JournalDraft"];
@@ -19,14 +20,20 @@ export interface Line {
   credit: string;
   currency: string;
   fx_rate: string;
+  // On a director's account (2500, 2120) only: the director or shareholder the amount belongs to, and where it came
+  // from (FR-EQ-01, B.7).
+  party_id: string;
+  origin: string;
 }
 
 let keys = 0;
 export const lineKey = () => `line-${++keys}`;
-export const newLine = (currency: string): Line => ({ key: lineKey(), account_id: "", description: "", debit: "", credit: "", currency, fx_rate: "" });
+export const newLine = (currency: string): Line => ({ key: lineKey(), account_id: "", description: "", debit: "", credit: "", currency, fx_rate: "", party_id: "", origin: "" });
 
 // toLines are saved lines as the editor shows them: a positive amount is a debit, a negative one a credit.
-export function toLines(saved: readonly { account_id: string; description?: string; amount: { amount: string; currency: string }; fx_rate?: string }[]): Line[] {
+export function toLines(
+  saved: readonly { account_id: string; description?: string; amount: { amount: string; currency: string }; fx_rate?: string; party_id?: string; origin?: string }[],
+): Line[] {
   return saved.map((l) => {
     const credit = l.amount.amount.startsWith("-");
     return {
@@ -37,6 +44,8 @@ export function toLines(saved: readonly { account_id: string; description?: stri
       credit: credit ? l.amount.amount.slice(1) : "",
       currency: l.amount.currency,
       fx_rate: l.fx_rate ?? "",
+      party_id: l.party_id ?? "",
+      origin: l.origin ?? "",
     };
   });
 }
@@ -46,8 +55,9 @@ export const blank = (l: Line) => !l.account_id && !l.description.trim() && !l.d
 export type Errors = Record<string, string>; // by "date", "lines", or "<line key>.<field>"
 
 // checkLines turns the typed lines into the lines to send, or says what to fix under each field in errors. Blank
-// lines are left out. The API checks the rest when the journal posts (ENG-24).
-export function checkLines(typedLines: Line[], base: string, errors: Errors): NonNullable<Draft["lines"]> {
+// lines are left out. A line on a director's account needs its person and origin, and no other line sends them (byId
+// says which accounts those are). The API checks the rest when the journal posts (ENG-24, LEDGER-41).
+export function checkLines(typedLines: Line[], base: string, errors: Errors, byId?: Map<string, Account>): NonNullable<Draft["lines"]> {
   const lines: NonNullable<Draft["lines"]> = [];
   for (const l of typedLines) {
     if (blank(l)) continue;
@@ -71,7 +81,17 @@ export function checkLines(typedLines: Line[], base: string, errors: Errors): No
     // A rate left blank is taken from the cascade when the journal is checked and posted (ENG-40, rev 0.71).
     else if (currency !== base && rate && !/^(0|[1-9]\d{0,9})(\.\d{1,10})?$/.test(rate))
       errors[`${l.key}.fx_rate`] = `Enter the rate as ${base} for 1 ${currency}, such as 1.3472, or leave it blank to take the day's rate.`;
-    lines.push({ account_id: l.account_id, amount: { amount, currency }, description: l.description.trim() || undefined, fx_rate: currency !== base && rate ? rate : undefined });
+    const director = isDirectorAccount(byId?.get(l.account_id));
+    if (director && !l.party_id) errors[`${l.key}.party`] = "Choose whose account it is.";
+    if (director && !l.origin) errors[`${l.key}.origin`] = "Choose where the amount came from.";
+    lines.push({
+      account_id: l.account_id,
+      amount: { amount, currency },
+      description: l.description.trim() || undefined,
+      fx_rate: currency !== base && rate ? rate : undefined,
+      party_id: director && l.party_id ? l.party_id : undefined,
+      origin: director && l.origin ? (l.origin as NonNullable<Draft["lines"]>[number]["origin"]) : undefined,
+    });
   }
   return lines;
 }
@@ -164,6 +184,47 @@ function RateHint({ id, currency, on }: { id: string; currency: string; on?: str
   );
 }
 
+// PersonFields are a director's account's line's person and origin (FR-EQ-01): the directors and shareholders to
+// choose from, and where the amount came from.
+export function PersonFields({ line: l, n, set, fieldError, described }: { line: Line; n: number; set: (field: "party_id" | "origin", value: string) => void; fieldError: (key: string) => React.ReactNode; described: (key: string) => string | undefined }) {
+  const people = useDirectors();
+  return (
+    <>
+      <div className="fy-field col-span-2 medium:col-span-6 expanded:col-span-3">
+        <label className="fy-label" htmlFor={`${l.key}-party`}>
+          <span className="fy-sr">Line {n}: </span>
+          Whose account
+        </label>
+        <select className="fy-select" id={`${l.key}-party`} value={l.party_id} onChange={(e) => set("party_id", e.target.value)} aria-invalid={fieldError(`${l.key}.party`) ? true : undefined} aria-describedby={described(`${l.key}.party`)}>
+          <option value="">{people.isLoading ? "Loading the directors…" : "Choose a director or shareholder"}</option>
+          {(people.data ?? []).map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.legal_name}
+            </option>
+          ))}
+          {l.party_id && !(people.data ?? []).some((c) => c.id === l.party_id) && <option value={l.party_id}>A director not listed</option>}
+        </select>
+        {fieldError(`${l.key}.party`)}
+      </div>
+      <div className="fy-field col-span-2 medium:col-span-6 expanded:col-span-3">
+        <label className="fy-label" htmlFor={`${l.key}-origin`}>
+          <span className="fy-sr">Line {n}: </span>
+          Where it came from
+        </label>
+        <select className="fy-select" id={`${l.key}-origin`} value={l.origin} onChange={(e) => set("origin", e.target.value)} aria-invalid={fieldError(`${l.key}.origin`) ? true : undefined} aria-describedby={described(`${l.key}.origin`)}>
+          <option value="">Choose</option>
+          {enteredOrigins.map((o) => (
+            <option key={o} value={o}>
+              {originWords[o]}
+            </option>
+          ))}
+        </select>
+        {fieldError(`${l.key}.origin`)}
+      </div>
+    </>
+  );
+}
+
 // LineEditor edits a journal's lines: the account, description, debit or credit, currency and rate of each, with
 // whether they balance as typed (FR-GL-01). The journal editor and the recurring journal editor share it; on is the
 // journal's date, which a line left without a rate takes its rate for.
@@ -242,6 +303,7 @@ export function LineEditor({ id, lines, onChange, base, choices, byId, errors, t
                   <Icon of={Trash2} />
                 </Button>
               </div>
+              {isDirectorAccount(byId.get(l.account_id)) && <PersonFields line={l} n={n} set={(field, value) => setLine(l.key, field, value)} fieldError={fieldError} described={described} />}
               {(l.currency.trim() || base).toUpperCase() !== base && (
                 <div className="fy-field col-span-2 medium:col-span-4 expanded:col-span-3">
                   <label className="fy-label" htmlFor={`${l.key}-rate`}>

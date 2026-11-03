@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, ChartColumn, ClipboardCheck, Contact, House, Inbox, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, ChartColumn, ClipboardCheck, Contact, HandCoins, House, Inbox, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -115,6 +115,10 @@ export const routes = [
   { kind: "route", id: "recurring-journal", path: "/accounting/journals/recurring/$recurringId", mode: "expert", signedIn: true, help: "accounting.recurring-journal", guide: "accounting.journals#recurring-journals" },
   { kind: "route", id: "periods", path: "/accounting/close", mode: "expert", signedIn: true, help: "accounting.periods", guide: "accounting.periods" },
   { kind: "route", id: "opening-balances", path: "/accounting/opening-balances", mode: "expert", signedIn: true, help: "accounting.opening-balances", guide: "accounting.opening-balances" },
+  // Director accounts (FR-EQ-01, FR-EQ-11, FR-EQ-14; p1-founders-money task 1.6): Expert, as the settlement routes are;
+  // a founder's own account, Money I put in, is Basic.
+  { kind: "route", id: "director-accounts", path: "/accounting/directors", mode: "expert", signedIn: true, help: "accounting.directors", guide: "equity.director-accounts" },
+  { kind: "route", id: "money-i-put-in", path: "/me/money-i-put-in", mode: "basic", signedIn: true, help: "founders.money-i-put-in", guide: "equity.founders-money#see-what-the-company-owes-you" },
   { kind: "route", id: "period-close", path: "/accounting/close/$periodId", mode: "expert", signedIn: true, help: "accounting.period-close", guide: "accounting.periods#close-a-month" },
   { kind: "route", id: "reports", path: "/reports", mode: "basic", signedIn: true, help: "reports.index", guide: "reports.statements" },
   { kind: "route", id: "financial-statement", path: "/reports/statements/$kind", mode: "basic", signedIn: true, help: "reports.statement", guide: "reports.statements" },
@@ -166,6 +170,10 @@ export const actions = [
   { kind: "action", id: "member.remove", mode: "expert", help: "member.remove", guide: "settings.members#remove-someone" },
   { kind: "action", id: "claim.keep-as-loan", mode: "basic", help: "claim.keep-as-loan", guide: "claims.my-claims#keep-it-as-a-loan-to-the-company" },
   { kind: "action", id: "access-review.attest", mode: "expert", help: "access-review.attest", guide: "settings.access-review#attest-the-quarter" },
+  { kind: "action", id: "director-accounts.statement", mode: "expert", help: "director-accounts.statement", guide: "equity.director-accounts#read-a-statement" },
+  { kind: "action", id: "director-accounts.export", mode: "expert", help: "director-accounts.export", guide: "equity.director-accounts#send-it-for-a-balance-confirmation" },
+  { kind: "action", id: "director-accounts.link-member", mode: "expert", help: "director-accounts.link-member", guide: "equity.director-accounts#link-each-director-to-the-member-who-signs-in-as-them" },
+  { kind: "action", id: "journal.line-person", mode: "expert", help: "journal.line-person", guide: "equity.director-accounts#name-the-person-on-a-journal-or-opening-balance" },
   { kind: "action", id: "access-review.export", mode: "expert", help: "access-review.export", guide: "settings.access-review#download-it" },
   { kind: "action", id: "team-mode.switch", mode: "expert", help: "team-mode.switch", guide: "settings.team-mode#switch-the-team-mode" },
   { kind: "action", id: "approval-policy.change", mode: "expert", help: "approval-policy.change", guide: "approvals.policies#change-a-policy" },
@@ -404,6 +412,7 @@ export const actions = [
 export const nav = [
   { kind: "nav", id: "nav.home", route: "/", icon: House, group: "main", roles: "all", bottom: true, mode: "basic", help: "home.overview", guide: "home.overview" },
   { kind: "nav", id: "nav.my-claims", route: "/me/claims", icon: Wallet, group: "personal", roles: ["employee"], mode: "basic", help: "claims.my-claims", guide: "claims.my-claims" },
+  { kind: "nav", id: "nav.money-i-put-in", route: "/me/money-i-put-in", icon: HandCoins, group: "personal", roles: ["owner"], mode: "basic", help: "founders.money-i-put-in", guide: "equity.founders-money#see-what-the-company-owes-you" },
   { kind: "nav", id: "nav.inbox", route: "/inbox", icon: Inbox, group: "main", roles: "all", bottom: true, mode: "basic", help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
   { kind: "nav", id: "nav.contacts", route: "/contacts", icon: Contact, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "accountant", "controller", "owner", "auditor", "tax_agent", "dpo"], mode: "basic", help: "contacts.overview", guide: "contacts.manage" },
   { kind: "nav", id: "nav.sales", route: "/sales/invoices", icon: Receipt, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "basic", help: "nav.sales", guide: "sales.invoices" },
