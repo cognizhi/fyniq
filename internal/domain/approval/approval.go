@@ -109,6 +109,10 @@ const (
 	// issues" approves it, never the person settled (APR-15), and the Accountant too when every available approver
 	// benefits; its key is its id.
 	ObjectDirectorSettlement = "director_settlement"
+	// ObjectDirectorRepayment is what a payment batch repaid a director or shareholder, to void when the bank rejected it
+	// (FR-EQ-05, FR-GL-12, FM-1, FM-9): another person who holds A on "Payment batches" approves it, never the person
+	// repaid (APR-15); its key is its id.
+	ObjectDirectorRepayment = "director_repayment"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -180,6 +184,8 @@ const (
 	OpDirectorFeePost = "director_fee.post"
 	// OpSettlementApprove decides a settlement: a loan kept on its terms, or a waiver posted (director_settlement@1).
 	OpSettlementApprove = "director_settlement.approve"
+	// OpRepaymentVoid voids a director's repayment: its entry reversed, the settlements open again.
+	OpRepaymentVoid = "director_repayment.void"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -205,6 +211,7 @@ var Operations = map[string]string{
 	OpContactMemberLink:  ObjectContactMemberLink,
 	OpDirectorFeePost:    ObjectDirectorFee,
 	OpSettlementApprove:  ObjectDirectorSettlement,
+	OpRepaymentVoid:      ObjectDirectorRepayment,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -281,6 +288,8 @@ var Dependencies = map[string][]string{
 	ObjectDirectorFee: {"status", "amount"},
 	// the settlement's version and status, its amount, and what is owed on its account now: the waiver or loan it decides
 	ObjectDirectorSettlement: {"status", "amount", "owed"},
+	// the repayment's version and status, and what it repaid in the base currency: what the void reverses
+	ObjectDirectorRepayment: {"status", "repaid"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -322,6 +331,7 @@ var Rows = map[string]string{
 	ObjectContactMemberLink:   "Director accounts, settlements, share issues (rev 0.3)",
 	ObjectDirectorFee:         "Director accounts, settlements, share issues (rev 0.3)",
 	ObjectDirectorSettlement:  "Director accounts, settlements, share issues (rev 0.3)",
+	ObjectDirectorRepayment:   "Payment batches",
 }
 
 // The limits of a policy.
@@ -392,6 +402,7 @@ var Policies = map[string]Policy{
 	ObjectContactMemberLink:   {ObjectType: ObjectContactMemberLink, Version: "founder/contact_member_link@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
 	ObjectDirectorFee:         {ObjectType: ObjectDirectorFee, Version: "founder/director_fee@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
 	ObjectDirectorSettlement:  {ObjectType: ObjectDirectorSettlement, Version: "founder/director_settlement@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
+	ObjectDirectorRepayment:   {ObjectType: ObjectDirectorRepayment, Version: "founder/director_repayment@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

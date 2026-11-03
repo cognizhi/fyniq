@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "Its code.",
+      "examples": [
+        "2500"
+      ],
+      "type": "string"
+    },
+    "account_id": {
+      "description": "The director's account it was owed on: 2500 or 2120.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What it repaid of the settlement, in the base currency."
+    },
+    "settlement_id": {
+      "description": "The settlement it repaid.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa9"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "settlement_number": {
+      "description": "The settlement's number.",
+      "examples": [
+        "DS-0001"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "settlement_id",
+    "account_id",
+    "amount"
+  ],
+  "title": "DirectorRepaymentPart",
+  "type": "object"
+}

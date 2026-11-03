@@ -101,3 +101,29 @@ def director_waiver(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
         r.line(d["account"], r.base, amount, amount, party=person),
         r.base_line(d["credit"], money.negate(amount)),
     ])
+
+
+def director_repayment(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
+    """What a payment batch's release repaid a director or shareholder, posted on ``date``, the batch's payment date.
+
+    For each of ``settlements`` Dr its ``account`` (2500 or 2120, a director's account) with its ``amount``, the line naming
+    ``person`` (one of the scenario's ``people``; B.7: paid out); Cr ``account``, a money account in the base currency, with
+    the total (FR-EQ-05, FR-BNK-12).
+    """
+    d = doc.data
+    person = d["person"]
+    if person not in r.scenario.people:
+        raise Rejected("not-a-director")
+    r.money_account(d["account"], r.base)
+    if not d["settlements"]:
+        raise Rejected("no-settlements")
+    lines = []
+    total = money.ZERO
+    for s in d["settlements"]:
+        if r.account(s["account"]).role not in DIRECTOR_ROLES:
+            raise Rejected("not-a-directors-account")
+        amount = r.amount(s["amount"], r.base, sign=1)
+        lines.append(r.line(s["account"], r.base, amount, amount, party=person))
+        total = money.EXACT.add(total, amount)
+    lines.append(r.base_line(d["account"], money.negate(total)))
+    return Posting(lines)

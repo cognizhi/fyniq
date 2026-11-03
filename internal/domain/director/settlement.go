@@ -179,8 +179,9 @@ func Owed(ctx context.Context, u storage.UnitOfWork, base money.Currency, contac
 
 // CheckSettlement is what is wrong with a settlement as drafted, every problem at once (ENG-22): a person who is not a
 // director or shareholder; an account that is not a director's account; an amount not more than zero in the base
-// currency, or more than is owed on the account at the end of today; a route not built yet; or a route's details
-// missing or out of range.
+// currency, or more than is owed on the account at the end of today less what other settlements approved to be repaid
+// still have open; a route not built yet; a route's details missing or out of range; or, to repay, no approved SGD
+// account at a Singapore bank to repay the person into (CodeNoRepayTo).
 func CheckSettlement(ctx context.Context, u storage.UnitOfWork, s Settlement, s2 ledger.Settings, today time.Time) (ledger.Problems, error) {
 	var probs ledger.Problems
 	add := func(code, field, msg, fix string) { probs = append(probs, ledger.Problem{Code: code, Field: field, Message: msg, Fix: fix}) }
@@ -206,8 +207,20 @@ func CheckSettlement(ctx context.Context, u storage.UnitOfWork, s Settlement, s2
 		if err != nil {
 			return nil, err
 		}
+		// What other settlements approved to be repaid still have open is spoken for (design D10).
+		repay, err := PayableSettlements(ctx, u, base)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range repay {
+			if p.Settlement.ContactID == s.ContactID && p.Settlement.AccountID == s.AccountID {
+				if owed, err = owed.Sub(p.Open); err != nil {
+					return nil, err
+				}
+			}
+		}
 		if c, _ := s.Amount.Cmp(owed); c > 0 {
-			add(CodeSettlement, "amount", fmt.Sprintf("the amount %s is more than the %s the company owes on %s", s.Amount, owed, acc.Code),
+			add(CodeSettlement, "amount", fmt.Sprintf("the amount %s is more than the %s the company owes on %s, less what is approved to be repaid", s.Amount, owed, acc.Code),
 				"Settle at most what is owed")
 		}
 	}
@@ -247,9 +260,20 @@ func CheckSettlement(ctx context.Context, u storage.UnitOfWork, s Settlement, s2
 		case n > MaxReason:
 			add(CodeSettlement, "waiver.reason", fmt.Sprintf("the reason has %d characters; the most is %d", n, MaxReason), "Shorten it")
 		}
-	case RouteRepay, RouteConvert:
-		add(CodeSettlement, "route", fmt.Sprintf("the %s route is not built yet", s.Route),
-			"Keep it as a loan or waive it for now; repaying comes with payment batches and converting with the register of share issues")
+	case RouteRepay:
+		if ct.ID == uuid.Nil {
+			break
+		}
+		_, acc, _, err := RepayTo(ctx, u, s.ContactID)
+		if err != nil {
+			return nil, err
+		}
+		if acc == nil {
+			probs = append(probs, noRepayTo(ct.LegalName))
+		}
+	case RouteConvert:
+		add(CodeSettlement, "route", "the convert route is not built yet",
+			"Keep it as a loan, repay it or waive it for now; converting comes with the register of share issues")
 	default:
 		add(CodeSettlement, "route", fmt.Sprintf("the route %q is not one Fyniq knows", s.Route), "Choose keep, repay, convert or waive")
 	}

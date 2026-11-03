@@ -11,7 +11,7 @@
       "type": "string"
     },
     "suggested": {
-      "description": "Every posted SGD bill with something open planned on or before the date, then every approved claim with something owed, none in an approved batch; at most the 500 items a batch holds, oldest first.",
+      "description": "Every posted SGD bill with something open planned on or before the date, then every approved claim with something owed, then every settlement approved to be repaid with something open, none in an approved batch; at most the 500 items a batch holds, oldest first.",
       "items": {
         "$ref": "PaymentBatchItemRef.schema.json"
       },

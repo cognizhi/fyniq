@@ -424,6 +424,19 @@ A waiver of what the company owes a director or shareholder, posted on `date`, t
 contribution, or an income account) with `amount`. The credit is not a director's account, a money account or GST
 control. A loan kept posts nothing.
 
+### Repayments to founders (`director_repayment`, `director_repayment@1`)
+
+From FR-EQ-05, FR-BNK-12, Appendix B.7 and the founders' money design D10 (rev 0.167).
+
+```json
+{"type": "director_repayment", "id": "DR-0001", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "1010",
+ "settlements": [{"account": "2500", "amount": "300.00"}]}
+```
+
+What a payment batch's release repaid a director or shareholder, posted on `date`, the batch's payment date: for each
+of `settlements` Dr its `account` (2500 or 2120, a director's account) with its `amount`, the line naming `person`, one
+of `people`; Cr `account`, a money account in the base currency, with the total.
+
 ### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
 
 From Appendix B.4, §10.2, FR-FA-01, FR-FA-02, FR-FA-03 and the rows of rev 0.149, 0.150 and 0.151.

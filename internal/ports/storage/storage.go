@@ -529,6 +529,10 @@ const (
 	// terms, or waived (posted Dr 2500/2120 · Cr 3300 or income), once another person approves it (FR-EQ-05, FR-EQ-07, FM-9;
 	// design D10); numbered DS-.
 	DocumentDirectorSettlement DocumentType = "director_settlement"
+	// DocumentDirectorRepayment is what a payment batch's release paid a director or shareholder of the settlements
+	// approved to be repaid (posted Dr 2500/2120 · Cr the money account), recorded only with the release (FR-EQ-05,
+	// FR-BNK-12; design D10); numbered DR-.
+	DocumentDirectorRepayment DocumentType = "director_repayment"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -708,7 +712,8 @@ const (
 	// deleted otherwise (FR-CT-03, SOD-1, FM-1).
 	CodePayee = "STORAGE-PAYEE-01"
 	// CodeBatch: a batch is released once, approved and at its current version, and never cancelled once released; a
-	// release's payments are posted payments of its account and date; neither ever changes (FR-BNK-12).
+	// release's payments are posted payments of its account and date; neither ever changes (FR-BNK-12); a director's
+	// repayment is posted only by a release, which links it (FR-EQ-05).
 	CodeBatch = "STORAGE-BATCH-01"
 	// CodeBatchHeld: a bill or claim in an approved, unreleased batch is paid by the batch, not by hand (FR-BNK-12).
 	CodeBatchHeld      = "STORAGE-BATCH-02"

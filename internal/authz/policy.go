@@ -671,6 +671,11 @@ var (
 	GetDirectorSettlementEvidence    = Policy{Operation: "getDirectorSettlementEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
 	RemoveDirectorSettlementEvidence = Policy{Operation: "removeDirectorSettlementEvidence", Capability: DirectorAccounts, Need: Approve,
 		Note: "Only while the settlement is a draft (FR-DOC-07)."}
+	// A director's repayment (FR-EQ-05, FR-BNK-12; design D10): recorded only by a payment batch's release, read as the
+	// batch's payments are, and voided when the bank rejected it on another person's approval, never the person's own.
+	GetDirectorRepayment         = Policy{Operation: "getDirectorRepayment", Capability: PaymentBatches, Need: View, Unqualified: true}
+	RequestDirectorRepaymentVoid = Policy{Operation: "requestDirectorRepaymentVoid", Capability: PaymentBatches, Need: Create, Unqualified: true,
+		Note: "Another person who holds A on \"Payment batches\" approves it, never the person repaid."}
 	GetPayeeBankDetails            = Policy{Operation: "getPayeeBankDetails", Capability: VendorBankDetails, Need: View}
 	GetPayeeBankChange             = Policy{Operation: "getPayeeBankChange", Capability: VendorBankDetails, Need: View}
 	CreatePayeeBankChange          = Policy{Operation: "createPayeeBankChange", Capability: VendorBankDetails, Need: Create}
@@ -1171,6 +1176,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ConfirmMyDirectorAccount,
 	ListDirectorSettlements, GetDirectorSettlement, CreateDirectorSettlement, ReplaceDirectorSettlement, RequestDirectorSettlementApproval,
 	AddDirectorSettlementEvidence, ListDirectorSettlementEvidence, GetDirectorSettlementEvidence, RemoveDirectorSettlementEvidence,
+	GetDirectorRepayment, RequestDirectorRepaymentVoid,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
 	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, SendRemittanceAgain, ReleasePaymentBatch, GetPaymentBatchFile,

@@ -74,7 +74,7 @@
       "type": "string"
     },
     "payments": {
-      "description": "One payment per payee: a supplier's bills as one bill payment, a claimant's claims as one reimbursement.",
+      "description": "One payment per payee: a supplier's bills as one bill payment, a claimant's claims as one reimbursement, a director's settlements as one repayment.",
       "items": {
         "$ref": "PaymentBatchPayment.schema.json"
       },

@@ -182,3 +182,40 @@ def test_a_waiver_that_breaks_a_rule_is_rejected(change, reason):
     waiver.update(change)
     _, ledger = p1_post(waiver)
     assert ledger.reasons == [("DS-9", reason)]
+
+
+# req: FR-EQ-05
+# req: FR-BNK-12
+def test_a_repayment_debits_each_settlements_account_and_credits_the_bank():
+    # B.7: a batch repays P0001 600.00 of a loan and 250.00 of a fee: Dr 2500 600.00 and Dr 2120 250.00 naming them, Cr 1010.
+    loan = {"type": "manual_journal", "id": "JNL-1", "version": 1, "date": "2026-03-01", "memo": "",
+            "lines": [{"account": "1010", "currency": "SGD", "amount": "1000.00"},
+                      {"account": "2500", "currency": "SGD", "amount": "-1000.00", "party": "P0001", "origin": "lent"}]}
+    fee = {"type": "director_fee", "id": "DF-1", "version": 1, "date": "2026-03-02", "person": "P0001", "account": "6050", "amount": "250.00"}
+    repaid = {"type": "director_repayment", "id": "DR-1", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "1010",
+              "settlements": [{"account": "2500", "amount": "600.00"}, {"account": "2120", "amount": "250.00"}]}
+    result, ledger = p1_post(loan, fee, repaid)
+    assert ledger.reasons == []
+    entry = next(e for e in result["entries"] if e["document"] == "DR-1")
+    assert [(ln["account"], ln["amount"], ln.get("party")) for ln in entry["lines"]] == [
+        ("1010", "-850.00", None), ("2120", "250.00", "P0001"), ("2500", "600.00", "P0001")]
+    assert result["people"] == {"P0001": {"2500": "-400.00"}}
+
+
+# req: FR-EQ-05
+@pytest.mark.parametrize(
+    ("change", "reason"),
+    [
+        ({"person": "P0009"}, "not-a-director"),
+        ({"account": "6010"}, "not-a-money-account"),
+        ({"settlements": []}, "no-settlements"),
+        ({"settlements": [{"account": "6010", "amount": "10.00"}]}, "not-a-directors-account"),
+        ({"settlements": [{"account": "2500", "amount": "0.00"}]}, "zero-amount"),
+    ],
+)
+def test_a_repayment_that_breaks_a_rule_is_rejected(change, reason):
+    repaid = {"type": "director_repayment", "id": "DR-9", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "1010",
+              "settlements": [{"account": "2500", "amount": "10.00"}]}
+    repaid.update(change)
+    _, ledger = p1_post(repaid)
+    assert ledger.reasons == [("DR-9", reason)]

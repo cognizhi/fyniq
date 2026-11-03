@@ -19,6 +19,9 @@ import { BatchStatus, batchName, batchPreparers, batchReleasers, type Batch } fr
 type Payment = Batch["payments"][number];
 type Check = components["schemas"]["BillCheck"];
 
+// Who a payment pays, as the batch lists them: a director is repaid what the company owes them (FR-EQ-05).
+const payeeRole: Record<Payment["kind"], string> = { supplier: "Supplier", claimant: "Claimant", director: "Director" };
+
 function Checks({ list }: { list: Check[] }) {
   if (list.length === 0) return null;
   return (
@@ -428,10 +431,10 @@ export function PaymentBatchPage() {
             </thead>
             <tbody>
               {b.payments.map((p) => (
-                <tr key={`${p.payee.kind}-${p.payee.id}`}>
+                <tr key={`${p.kind}-${p.payee.kind}-${p.payee.id}`}>
                   <td data-card="title">
                     {p.payee.name}
-                    <span className="fy-small fy-muted block">{p.payee.kind === "person" ? "Claimant" : "Supplier"}</span>
+                    <span className="fy-small fy-muted block">{payeeRole[p.kind]}</span>
                   </td>
                   <td data-card="meta">
                     <ul className="fy-stack fy-stack--1">

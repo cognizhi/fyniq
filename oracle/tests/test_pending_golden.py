@@ -235,14 +235,17 @@ def test_pending_claims():
 # req: QA-ENG-02
 # req: FR-EQ-03
 # req: FR-EQ-04
+# req: FR-EQ-05
 # req: FR-EQ-07
 def test_pending_founders():
     r = _run("founders")
     # On the books start; a person who is not a director; on a director's account; posted before the books start; GST
     # claimed when the receipt shows none.
     # Then a fee voted to someone who is not a director, and one posted to the director's account itself.
-    # A waiver of an account that is not a director's, and one crediting a money account, are refused too.
-    assert r["rejected"] == ["PIC-0004", "PIC-0005", "PIC-0006", "PIC-0007", "PIC-0008", "DF-0002", "DF-0003", "DS-0002", "DS-0003"]
+    # A waiver of an account that is not a director's, and one crediting a money account, are refused too; so are a
+    # repayment from an account that is not money, and one of an account that is not a director's.
+    assert r["rejected"] == ["PIC-0004", "PIC-0005", "PIC-0006", "PIC-0007", "PIC-0008", "DF-0002", "DF-0003", "DS-0002", "DS-0003", "DR-0003",
+                             "DR-0004"]
     # 1,315.00 with no GST shown: all to 6910, owed to P0001 on 2500.
     assert _lines(r, "PIC-0001") == [("2500", "SGD", "-1315.00", "-1315.00"), ("6910", "SGD", "1315.00", "1315.00")]
     # 3,815.00 with 315.00 GST claimed while registered from the books start: 3,500.00 to 1600, 315.00 to 2200.
@@ -255,12 +258,16 @@ def test_pending_founders():
     assert r["trial_balance"] == {
         "2026-01": {"1600": "3500.00", "2200": "315.00", "2500": "-5130.00", "6910": "1315.00"},  # 1,315.00 + 3,815.00
         "2026-02": {"2500": "-763.00", "6400": "763.00"},
-        "2026-03": {"2120": "-6000.00", "2500": "1000.00", "3300": "-1000.00", "6050": "6000.00"},
+        # The fee, the waiver, and 500.00 + 2,815.00 repaid from the bank.
+        "2026-03": {"1010": "-3315.00", "2120": "-4000.00", "2500": "2315.00", "3300": "-1000.00", "6050": "6000.00"},
     }
     # FR-EQ-07: P0001 waives 1,000.00 of their 2,078.00 as a shareholder: Dr 2500 naming them, Cr 3300.
     assert _lines(r, "DS-0001") == [("2500", "SGD", "1000.00", "1000.00"), ("3300", "SGD", "-1000.00", "-1000.00")]
-    # 1,315.00 + 763.00 - 1,000.00 for P0001; P0002's cost on 2500 and fee on 2120.
-    assert r["people"] == {"P0001": {"2500": "-1078.00"}, "P0002": {"2120": "-6000.00", "2500": "-3815.00"}}
+    # FR-EQ-05: P0002 repaid 2,000.00 of the fee and 815.00 of the cost in one payment: Dr 2120 and 2500 naming them, Cr 1010.
+    assert _lines(r, "DR-0002") == [("1010", "SGD", "-2815.00", "-2815.00"), ("2120", "SGD", "2000.00", "2000.00"),
+                                    ("2500", "SGD", "815.00", "815.00")]
+    # 1,315.00 + 763.00 - 1,000.00 - 500.00 for P0001; P0002's cost on 2500 and fee on 2120, less what was repaid.
+    assert r["people"] == {"P0001": {"2500": "-578.00"}, "P0002": {"2120": "-4000.00", "2500": "-3000.00"}}
 
 
 # req: QA-ENG-02

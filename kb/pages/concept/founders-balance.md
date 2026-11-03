@@ -4,7 +4,7 @@ type: concept
 title: What the company owes a founder (the director's account)
 summary: Money a founder lent, costs paid personally and unpaid pay are owed to them, tracked per founder in their director's account
 sources:
-  - docs/user-guide/founders-money.md sha256:9dbe9631b0b0cc6b59f1c765c26fbb52d1a9c49a74e3705d86d560779ca5b50e
+  - docs/user-guide/founders-money.md sha256:4640be34c6917a4441918136b0947d142d0389bbaafcb147cc22e0e0b4a13e2b
 aliases:
   - director loan
   - money I lent the company

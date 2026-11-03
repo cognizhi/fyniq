@@ -3,7 +3,7 @@
   "additionalProperties": false,
   "properties": {
     "document_id": {
-      "description": "The bill or claim.",
+      "description": "The bill, claim or settlement.",
       "examples": [
         "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
       ],
@@ -11,10 +11,11 @@
       "type": "string"
     },
     "kind": {
-      "description": "A posted bill, or an approved expense claim.",
+      "description": "A posted bill, an approved expense claim, or a settlement approved to be repaid to a director or shareholder.",
       "enum": [
         "bill",
-        "claim"
+        "claim",
+        "director"
       ],
       "examples": [
         "bill"

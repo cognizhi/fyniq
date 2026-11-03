@@ -131,7 +131,7 @@ function NewBatch({ open, onClose }: { open: boolean; onClose: () => void }) {
       setBusy(false);
       return setProblem({
         code: "PB-06",
-        detail: `Nothing is due to be paid by ${date(day)}: no bill is planned to be paid on or before that day, and no approved expense claim is owed.`,
+        detail: `Nothing is due to be paid by ${date(day)}: no bill is planned to be paid on or before that day, no approved expense claim is owed, and no settlement approved to be repaid to a director is open.`,
         fix: "Plan a payment date on each bill to pay (Plan payment, on the bill), or choose a later date.",
       });
     }
@@ -152,7 +152,7 @@ function NewBatch({ open, onClose }: { open: boolean; onClose: () => void }) {
       dismissible={!busy}
       eyebrow="Payment batches"
       title={h.label}
-      description="It starts with the bills planned on or before the date and the claims owed. Keep or remove each one on the next page; nothing is paid until another person approves it and it is released."
+      description="It starts with the bills planned on or before the date, the claims owed and the repayments to directors approved. Keep or remove each one on the next page; nothing is paid until another person approves it and it is released."
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
@@ -239,7 +239,7 @@ export function PaymentBatches() {
             <span>Purchases</span>
           </nav>
           <h1 className="fy-h1">Bills</h1>
-          <p className="fy-secondary">Supplier and claim payments, from prepared to paid. Each step is done by a different person.</p>
+          <p className="fy-secondary">Supplier, claim and director repayments, from prepared to paid. Each step is done by a different person.</p>
         </div>
         {may && (
           <div className="fy-pagehead__actions">

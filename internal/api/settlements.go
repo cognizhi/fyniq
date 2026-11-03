@@ -26,15 +26,17 @@ import (
 // ------------------------------------------------------------------ settlements of founders' balances (FR-EQ-05, FR-EQ-07)
 //
 // What the company owes a director or shareholder on 2500 or 2120 is settled by a route (design D10): kept as a loan on
-// terms, or waived (repaying comes with payment batches, converting with the register of share issues). An Owner or the
+// terms, repaid through a payment batch, or waived (converting comes with the register of share issues). An Owner or the
 // Controller drafts it (A on "Director accounts") with its loan note, minute or deed, and asks for approval
 // (director_settlement.approve), which another person who holds A gives, never the person settled (FM-9, APR-15; the
 // database's FY253), and the Accountant too when every member who could sign is a director with a settlement of their
-// own waiting or decided in the last 30 days ([accountant to confirm]). The approval keeps the loan with no entry, or
-// posts the waiver: Dr 2500/2120 naming the person (waived) · Cr 3300 Capital contribution or an income account.
+// own waiting or decided in the last 30 days ([accountant to confirm]). The approval keeps the loan with no entry, makes a
+// repayment payable by the next payment batch into the person's account in force (its release posts Dr 2500/2120 naming
+// the person (paid out) · Cr the bank), or posts the waiver: Dr 2500/2120 naming the person (waived) · Cr 3300 Capital
+// contribution or an income account.
 
 // SettlementCodes are the codes a settlement's own checks answer.
-var SettlementCodes = []string{director.CodeSettlement, director.CodeNotPerson, director.CodeNotSettlement}
+var SettlementCodes = []string{director.CodeSettlement, director.CodeNotPerson, director.CodeNotSettlement, director.CodeNoRepayTo}
 
 // SettlementTerms are a loan kept's terms.
 type SettlementTerms struct {
@@ -55,7 +57,7 @@ type DirectorSettlementDraft struct {
 	ContactID string            `json:"contact_id" format:"uuid" doc:"The director or shareholder the company owes." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"`
 	AccountID string            `json:"account_id" format:"uuid" doc:"The director's account it is owed on: 2500 or 2120." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"`
 	Amount    Money             `json:"amount" doc:"The amount, in the base currency: at most what is owed on the account today."`
-	Route     string            `json:"route,omitempty" enum:"keep,repay,convert,waive" doc:"keep as a loan on terms, or waive (FR-EQ-07); repay and convert are not built yet. Left out, the organisation's default route (founders.default_route), keep." example:"keep"`
+	Route     string            `json:"route,omitempty" enum:"keep,repay,convert,waive" doc:"keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); or waive (FR-EQ-07); convert is not built yet. Left out, the organisation's default route (founders.default_route), keep." example:"keep"`
 	Terms     *SettlementTerms  `json:"terms,omitempty" doc:"A loan kept's terms."`
 	Waiver    *SettlementWaiver `json:"waiver,omitempty" doc:"A waiver's account, capacity and reason."`
 }
@@ -64,7 +66,7 @@ type DirectorSettlementDraft struct {
 type DirectorSettlement struct {
 	ID               string            `json:"id" format:"uuid" doc:"Its ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa9"`
 	Number           string            `json:"number,omitempty" doc:"Its number, once decided (FR-ORG-04)." example:"DS-0001"`
-	Status           string            `json:"status" enum:"draft,waiting,decided" doc:"draft; waiting for another person's approval; or decided: the loan kept, or the waiver posted." example:"waiting"`
+	Status           string            `json:"status" enum:"draft,waiting,decided" doc:"draft; waiting for another person's approval; or decided: the loan kept, the repayment payable by a payment batch, or the waiver posted." example:"waiting"`
 	Version          int               `json:"version" doc:"The version of its content; with its status it makes the ETag." example:"1"`
 	Date             string            `json:"date" format:"date" doc:"The day it was last drafted." example:"2026-11-03"`
 	ContactID        string            `json:"contact_id" format:"uuid" doc:"The person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"`
@@ -77,6 +79,8 @@ type DirectorSettlement struct {
 	Terms            *SettlementTerms  `json:"terms,omitempty" doc:"A loan kept's terms."`
 	Waiver           *SettlementWaiver `json:"waiver,omitempty" doc:"A waiver's account, capacity and reason."`
 	DeductedEarlier  bool              `json:"deducted_earlier" doc:"A decided waiver of amounts the company deducted earlier as costs (pay or fees on 2120): tagged for the tax computation [verify]." example:"false"`
+	RepayTo          *PayeeAccount     `json:"repay_to,omitempty" doc:"A repayment: the account in force it is paid into, the linked member's own (FR-AP-22) or else the contact's (FR-CT-03), by its last four characters; absent while there is none."`
+	Repaid           *Money            `json:"repaid,omitempty" doc:"A decided repayment: what payment batches have repaid of it, net of voids; the rest is open for the next batch."`
 	Agreements       int               `json:"agreements" doc:"How many files are attached and not removed: asking for approval needs one, the loan note, minute or deed." example:"1"`
 	ApprovalAsked    string            `json:"approval_asked,omitempty" format:"uuid" doc:"The pending request to decide it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"`
 	Checks           []BillCheck       `json:"checks" nullable:"false" doc:"A draft's statuses: ✖ while no agreement is attached, or while it does not fit what is owed now."`
@@ -259,6 +263,28 @@ func (a *API) settlementOf(ctx context.Context, u storage.UnitOfWork, v settleme
 	}
 	if out.Agreements, err = director.Attached(ctx, u, doc.ID); err != nil {
 		return DirectorSettlement{}, err
+	}
+	if s.Route == director.RouteRepay {
+		_, _, bank, err := director.RepayTo(ctx, u, s.ContactID)
+		if err != nil {
+			return DirectorSettlement{}, err
+		}
+		if bank != nil {
+			acc := payeeAccountOf(*bank)
+			out.RepayTo = &acc
+		}
+		if doc.Status == storage.DocumentPosted {
+			p, err := director.PayableOf(ctx, u, v.base, doc.ID)
+			if err != nil {
+				return DirectorSettlement{}, err
+			}
+			repaid, err := s.Amount.Sub(p.Open)
+			if err != nil {
+				return DirectorSettlement{}, err
+			}
+			m := moneyOut(repaid)
+			out.Repaid = &m
+		}
 	}
 	if r, ok := v.asked[doc.ID.String()]; ok {
 		out.Status, out.ApprovalAsked = "waiting", r.ID.String()
@@ -597,7 +623,8 @@ func registerSettlements(a *API) {
 			"who asked, nor the person settled (APR-15, FM-9; the database's FY253); when every member who could sign is a director with a " +
 			"settlement of their own waiting or decided in the last 30 days, a final step the Accountant signs records their review " +
 			"[accountant to confirm]. The envelope carries the ledger impact (FR-APR-02). On the approval a loan kept is decided with no " +
-			"entry, and a waiver posts director_settlement@1 on that day: Dr 2500 or 2120 naming the person (waived), Cr the account " +
+			"entry, a repayment becomes payable by the next payment batch, into the person's account in force (repay_to in the diff), " +
+			"and a waiver posts director_settlement@1 on that day: Dr 2500 or 2120 naming the person (waived), Cr the account " +
 			"chosen; a waiver of 2120 is tagged deducted earlier [verify]. The request holds the settlement's version, status, amount and " +
 			"what is owed, so a change voids it. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview " +
 			"checks it and asks nothing.",
@@ -640,6 +667,15 @@ func registerSettlements(a *API) {
 				amount := s.Amount.String() + " " + s.Amount.Currency().Code
 				diff := []ApprovalDiff{{Field: "status", Before: "draft", After: "decided"}, {Field: "route", After: s.Route}, {Field: "amount", After: amount},
 					{Field: "accountant_review", After: strconv.FormatBool(review)}}
+				if s.Route == director.RouteRepay { // where the next payment batch pays it: the person's account in force now
+					_, _, bank, err := director.RepayTo(ctx, u, s.ContactID)
+					if err != nil {
+						return Approval{}, err
+					}
+					if bank != nil {
+						diff = append(diff, ApprovalDiff{Field: "repay_to", After: accountWords(payeeAccountOf(*bank))})
+					}
+				}
 				if c.Entry != nil {
 					for _, l := range c.Entry.Lines {
 						side, amt := "debit", l.Amount

@@ -221,3 +221,25 @@ func TestAttackASettlementIsDecidedOnlyByApproval(t *testing.T) {
 		t.Errorf("a settlement decided with no approved request: %v", err)
 	}
 }
+
+// A repayment to a director is posted only by the release of a payment batch, which links it in the same transaction
+// (FY254, FR-EQ-05, FM-1): recorded by hand, with no release linking it, it is refused at commit.
+// req: FR-EQ-05
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackARepaymentIsPostedOnlyByABatch(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack director repayment Pte Ltd")
+	payload := []byte(`{"date":"2026-10-15","contact_id":"` + d.director.ID.String() + `","money_account_id":"` + uuid.NewString() + `",` +
+		`"settlements":[]}`)
+	err := store(t, "fyniq_api").Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentDirectorRepayment, Payload: payload})
+		if err != nil {
+			return err
+		}
+		return u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted)
+	})
+	if storage.CodeOf(err) != storage.CodeBatch {
+		t.Errorf("a repayment posted with no release linking it: %v", err)
+	}
+}

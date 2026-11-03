@@ -11,11 +11,23 @@
       "description": "What it pays: the sum of its items, in SGD."
     },
     "items": {
-      "description": "The payee's bills or claims it pays, as the batch lists them.",
+      "description": "The payee's bills, claims or settlements it pays, as the batch lists them.",
       "items": {
         "$ref": "PaymentBatchItem.schema.json"
       },
       "type": "array"
+    },
+    "kind": {
+      "description": "What it pays: a supplier's bills (a bill payment), a claimant's claims (a reimbursement), or a director's or shareholder's settlements approved to be repaid (a director's repayment, FR-EQ-05). A director who is also a claimant gets two payments.",
+      "enum": [
+        "supplier",
+        "claimant",
+        "director"
+      ],
+      "examples": [
+        "supplier"
+      ],
+      "type": "string"
     },
     "paid": {
       "description": "Released: bank import matched the payment to its statement line.",
@@ -29,7 +41,7 @@
       "description": "Whom it pays."
     },
     "payment_id": {
-      "description": "Released: the bill payment or reimbursement the release posted.",
+      "description": "Released: the bill payment, reimbursement or director's repayment the release posted.",
       "examples": [
         "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10"
       ],
@@ -44,14 +56,14 @@
       "type": "boolean"
     },
     "rejected": {
-      "description": "Released: the payment was voided, as when the bank rejected it; its bills or claims are open again.",
+      "description": "Released: the payment was voided, as when the bank rejected it; its bills, claims or settlements are open again.",
       "examples": [
         false
       ],
       "type": "boolean"
     },
     "remittance": {
-      "description": "A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, failed when sending it gave up after its attempts (⚠: tell the supplier another way), or no_email when the supplier has no remittance address (⚠). Absent for a claimant.",
+      "description": "A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, failed when sending it gave up after its attempts (⚠: tell the supplier another way), or no_email when the supplier has no remittance address (⚠). Absent for a claimant or a director.",
       "enum": [
         "waiting",
         "queued",
@@ -66,6 +78,7 @@
     }
   },
   "required": [
+    "kind",
     "payee",
     "payments_frozen",
     "amount",
