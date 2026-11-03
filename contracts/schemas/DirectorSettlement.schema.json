@@ -107,6 +107,14 @@
       "$ref": "Money.schema.json",
       "description": "What the company owes the person on the account today."
     },
+    "repaid": {
+      "$ref": "Money.schema.json",
+      "description": "A decided repayment: what payment batches have repaid of it, net of voids; the rest is open for the next batch."
+    },
+    "repay_to": {
+      "$ref": "PayeeAccount.schema.json",
+      "description": "A repayment: the account in force it is paid into, the linked member's own (FR-AP-22) or else the contact's (FR-CT-03), by its last four characters; absent while there is none."
+    },
     "route": {
       "description": "The route.",
       "enum": [
@@ -121,7 +129,7 @@
       "type": "string"
     },
     "status": {
-      "description": "draft; waiting for another person's approval; or decided: the loan kept, or the waiver posted.",
+      "description": "draft; waiting for another person's approval; or decided: the loan kept, the repayment payable by a payment batch, or the waiver posted.",
       "enum": [
         "draft",
         "waiting",

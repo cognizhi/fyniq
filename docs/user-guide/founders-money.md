@@ -72,6 +72,14 @@ is linked to you, ask an Owner to link your contact to you in Accounting › Dir
 another person approves the link. If you owe the company instead, it says **In debit**: repay it,
 or ask your accountant.
 
+## Repaid through a payment batch
+
+When repaying you is approved, the next payment batch pays it into your own bank account: the one in **Settings ›
+Profile and security** if your contact is linked to you, or else your contact's bank details. Repaying can't be chosen
+until that account is approved. Another person approves the batch and the Payment releaser releases it, as for any
+payment, and you never approve your own repayment. The company never repays more than it owes you on the payment date.
+If the bank rejects the payment, it is voided on another person's approval, and the amount is owed to you again.
+
 ## Confirm your balances at the year end
 
 After each financial year ends, **Money I put in** asks you to confirm what the company owed you,

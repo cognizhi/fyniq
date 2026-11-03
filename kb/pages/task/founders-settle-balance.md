@@ -2,9 +2,9 @@
 key: founders.settle-balance
 type: task
 title: Settle what the company owes a founder
-summary: The five ways to settle a founder's balance, the recommended default (keep as a loan, convert at the first priced round) and the steps
+summary: The five ways to settle a founder's balance, the recommended default (a loan, converted at the first priced round), and repaying through a batch
 sources:
-  - docs/user-guide/founders-money.md sha256:9dbe9631b0b0cc6b59f1c765c26fbb52d1a9c49a74e3705d86d560779ca5b50e
+  - docs/user-guide/founders-money.md sha256:4640be34c6917a4441918136b0947d142d0389bbaafcb147cc22e0e0b4a13e2b
 data_class: general
 taint: trusted
 status: draft
@@ -48,6 +48,16 @@ compiled_at: 2026-11-03
 4. For a conversion: after approval the company secretary files with ACRA; attach the ACRA
    acknowledgement; Fyniq posts the conversion on the date ACRA registered it.
    (src: docs/user-guide/founders-money.md#steps)
+
+## Repaid through a payment batch
+
+- Once repaying is approved, the next payment batch pays it into the founder's own bank account (**Settings › Profile and
+  security**) if their contact is linked to them, or else the contact's bank details; repaying can't be chosen until
+  that account is approved. (src: docs/user-guide/founders-money.md#repaid-through-a-payment-batch)
+- Another person approves the batch and the Payment releaser releases it, as for any payment ([[purchases.payment-batches]]);
+  the founder never approves their own repayment. (src: docs/user-guide/founders-money.md#repaid-through-a-payment-batch)
+- The company never repays more than it owes the founder on the payment date; a payment the bank rejects is voided on
+  another person's approval, and the amount is owed again. (src: docs/user-guide/founders-money.md#repaid-through-a-payment-batch)
 
 ## Messages and fixes
 

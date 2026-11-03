@@ -2,22 +2,23 @@
 key: purchases.payment-batches
 type: task
 title: Pay suppliers and claims in a payment batch
-summary: Prepare a batch of approved bills and claims, have another person approve it, release it, pay it from the payment list, and see it paid
+summary: Prepare a batch of approved bills, claims and repayments to directors, have another person approve it, release it, pay it from the payment list, and see it paid
 sources:
-  - docs/user-guide/payment-batches.md sha256:f9a9ef741e3d1b059d4896544d8c64b3f2d8f908f4bd517dc78bb42aa2e3fd59
+  - docs/user-guide/payment-batches.md sha256:414e3d8b26d4f62971a46c9bc1b29556f6b41ef059150c1e3bd368ce01ad64e5
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-29
+compiled_at: 2026-11-03
 aliases:
   - payment batch
   - pay suppliers
   - bulk payment
   - payment run
   - pay claims
+  - repay a director
   - release payments
   - payment list
   - FAST
@@ -30,8 +31,8 @@ aliases:
 
 ## What it is
 
-- A payment batch pays approved bills and expense claims together, from one SGD bank account on one date, by FAST or GIRO.
-- Each supplier gets one payment for all its bills in the batch; each person one payment for all their claims.
+- A payment batch pays approved bills, expense claims and repayments to directors together, from one SGD bank account on one date, by FAST or GIRO.
+- Each supplier gets one payment for all its bills in the batch; each person one payment for all their claims; a director or shareholder one more payment for the repayments approved for them ([[founders.settle-balance]]).
 - One person prepares it, another approves it, and the Payment releaser releases it.
 - It pays SGD to Singapore bank accounts only; overseas and foreign-currency payments are still recorded by hand.
 
@@ -41,6 +42,7 @@ aliases:
 
 - The bank account it is paid from is set up in **Banking**, in SGD ([[banking.add-account]]).
 - Each supplier has an approved SGD account at a Singapore bank under **Contacts › Bank details** ([[contacts.manage]]); each person who claims has their own approved account under **Settings › Profile and security** ([[preferences.security]]).
+- A director or shareholder is repaid into their own approved account if a member is linked to them, or else into their contact's bank details.
 - An Accountant or an AP specialist prepares a batch; the Controller approves it; the Payment releaser releases it.
 
 (src: docs/user-guide/payment-batches.md#before-you-start)
@@ -48,8 +50,9 @@ aliases:
 ## Prepare a batch
 
 - **Purchases › Bills › Batches**, **New batch**: the bank account, the payment date, FAST or GIRO, then **Prepare the batch**.
-- It starts with the bills planned to be paid on or before the date and the claims still owed; remove anything not to pay now on the batch's page.
+- It starts with the bills planned to be paid on or before the date, the claims still owed and the repayments to directors approved; remove anything not to pay now on the batch's page.
 - An item shows why it cannot be paid: already paid, not in SGD, a withholding-tax decision pending, in another approved batch, or a payee with no approved bank account.
+- A repayment to a director is held if it is more than the company owes them on the payment date.
 - A supplier or person whose bank details are changing is held until the change is approved, rejected or withdrawn.
 
 (src: docs/user-guide/payment-batches.md#prepare-a-batch)
@@ -91,7 +94,7 @@ aliases:
 - A supplier is then emailed remittance advice to its remittance address, once; one with no remittance email is warned of before release and sent nothing.
 - If sending the advice fails after several tries, the payment shows **Remittance not sent**: someone who prepares batches selects **Send again** with a reason (sent once more, still at most once), or tells the supplier another way.
 - When a statement line names the batch's number and its amount is one payment's alone, Fyniq matches the line to that payment by itself, within the limit for one line ([[banking.auto-reconciled]]), and the advice goes out as when a person matches it.
-- A payment the bank rejects is voided on its own, and its bills or claims are open again.
+- A payment the bank rejects is voided on its own, and its bills or claims are open again; a repayment to a director is voided on another person's approval, never the director's own, and is then open for the next batch.
 
 (src: docs/user-guide/payment-batches.md#paid-and-remittance-advice)
 

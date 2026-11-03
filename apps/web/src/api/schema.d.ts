@@ -2972,6 +2972,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/director-repayments/{repayment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a repayment to a director
+         * @description What a payment batch's release repaid a director or shareholder (FR-EQ-05, FR-BNK-12): the settlements it repaid, the batch, whether bank import matched it, and the lines it posted (Dr 2500 or 2120 naming the person, Cr the bank). Read-only; no side effects.
+         */
+        get: operations["getDirectorRepayment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-repayments/{repayment_id}/void-approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for approval to void a repayment to a director
+         * @description Asks another person's approval to void a repayment, as when the bank rejected it (FR-GL-12, FM-1), in every team mode: the answer is 202 with an approval request, which a person who holds A on "Payment batches" approves, stepped up, never the one who asked nor the person repaid (APR-15, FM-9). On the approval it is voided on the date given: a reversing entry and reversing allocations, so its settlements are open for the next batch. Needs a person signed in who passed step-up, and If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+         */
+        post: operations["requestDirectorRepaymentVoid"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/director-settlements": {
         parameters: {
             query?: never;
@@ -3031,7 +3071,7 @@ export interface paths {
         put?: never;
         /**
          * Ask for approval of a settlement
-         * @description Asks another person to approve a drafted settlement at the version read (FR-EQ-05, FR-APR-01), in every team mode. It needs its loan note, minute or deed attached (FOUNDER-30) and must fit what is owed now. The answer is 202 with an approval request, which a person who holds A on "Director accounts, settlements, share issues" approves, stepped up: never the one who asked, nor the person settled (APR-15, FM-9; the database's FY253); when every member who could sign is a director with a settlement of their own waiting or decided in the last 30 days, a final step the Accountant signs records their review [accountant to confirm]. The envelope carries the ledger impact (FR-APR-02). On the approval a loan kept is decided with no entry, and a waiver posts director_settlement@1 on that day: Dr 2500 or 2120 naming the person (waived), Cr the account chosen; a waiver of 2120 is tagged deducted earlier [verify]. The request holds the settlement's version, status, amount and what is owed, so a change voids it. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+         * @description Asks another person to approve a drafted settlement at the version read (FR-EQ-05, FR-APR-01), in every team mode. It needs its loan note, minute or deed attached (FOUNDER-30) and must fit what is owed now. The answer is 202 with an approval request, which a person who holds A on "Director accounts, settlements, share issues" approves, stepped up: never the one who asked, nor the person settled (APR-15, FM-9; the database's FY253); when every member who could sign is a director with a settlement of their own waiting or decided in the last 30 days, a final step the Accountant signs records their review [accountant to confirm]. The envelope carries the ledger impact (FR-APR-02). On the approval a loan kept is decided with no entry, a repayment becomes payable by the next payment batch, into the person's account in force (repay_to in the diff), and a waiver posts director_settlement@1 on that day: Dr 2500 or 2120 naming the person (waived), Cr the account chosen; a waiver of 2120 is tagged deducted earlier [verify]. The request holds the settlement's version, status, amount and what is owed, so a change voids it. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
          */
         post: operations["requestDirectorSettlementApproval"];
         delete?: never;
@@ -6359,7 +6399,7 @@ export interface paths {
         put?: never;
         /**
          * Prepare a payment batch
-         * @description Saves a draft batch (FR-BNK-12; PRD-001 rev 0.154): an SGD bank account, a payment date, FAST or GIRO, and the approved bills and expense claims it pays, each whole, for what is open on it. Saving checks its form only; getPaymentBatch shows what stops it being asked for: an item not posted or not open, a bill not in SGD or waiting for withholding (FR-AP-19), an item in another approved batch, a payee with no approved Singapore account, or one whose change of bank account waits (PAYEE-12). Side effects: the batch and its audit event; nothing is paid or posted. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Saves a draft batch (FR-BNK-12; PRD-001 rev 0.154): an SGD bank account, a payment date, FAST or GIRO, and the approved bills, expense claims and settlements to repay to a director (FR-EQ-05) it pays, each whole, for what is open on it. Saving checks its form only; getPaymentBatch shows what stops it being asked for: an item not posted or not open, a bill not in SGD or waiting for withholding (FR-AP-19), a repayment of more than the company owes the director on the payment date (PB-25), an item in another approved batch, a payee with no approved Singapore account, or one whose change of bank account waits (PAYEE-12). Side effects: the batch and its audit event; nothing is paid or posted. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["createPaymentBatch"];
         delete?: never;
@@ -6377,7 +6417,7 @@ export interface paths {
         };
         /**
          * Suggest a payment batch's items for a date
-         * @description What a new batch for a payment date starts with (FR-AP-13, FR-BNK-12): every posted SGD bill with something open whose planned payment date is on or before it, then every approved expense claim with something owed, oldest first, none in an approved batch. A suggestion never adds itself: send the items you keep with createPaymentBatch. Read-only; no side effects.
+         * @description What a new batch for a payment date starts with (FR-AP-13, FR-BNK-12): every posted SGD bill with something open whose planned payment date is on or before it, then every approved expense claim with something owed, then every settlement approved to be repaid to a director or shareholder with something open (FR-EQ-05), oldest first, none in an approved batch. A suggestion never adds itself: send the items you keep with createPaymentBatch. Read-only; no side effects.
          */
         get: operations["getPaymentBatchSuggestion"];
         put?: never;
@@ -6523,7 +6563,7 @@ export interface paths {
         put?: never;
         /**
          * Release a payment batch
-         * @description Releases an approved batch (FR-BNK-12, design D4, D5): the Payment releaser, a person stepped up in the last 5 minutes. Every check runs again, and the batch's latest approval must still hold its payees' accounts and total (else PB-17: ask for its approval again). In Standard mode the releaser neither prepared, asked for nor approved the batch (SOD-2), nor the account change of a payee it pays (SOD-1); in Founder mode they may have, and each such release is logged for the weekly review (FM-3). Side effects, in one transaction: one bill payment per supplier and one reimbursement per claimant, posted on the batch's payment date as recording them by hand does (Dr 2010 or 2150, Cr the money account) and referenced with the batch's number; the payment list (payment-list@1), sealed (SEC-11) with the SHA-256 of the file; the release and the links, audited with the file's name and hash only. Download the list with getPaymentBatchFile and key it into the bank. Needs If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and releases nothing.
+         * @description Releases an approved batch (FR-BNK-12, design D4, D5): the Payment releaser, a person stepped up in the last 5 minutes. Every check runs again, and the batch's latest approval must still hold its payees' accounts and total (else PB-17: ask for its approval again). In Standard mode the releaser neither prepared, asked for nor approved the batch (SOD-2), nor the account change of a payee it pays (SOD-1); in Founder mode they may have, and each such release is logged for the weekly review (FM-3). Side effects, in one transaction: one bill payment per supplier and one reimbursement per claimant, posted on the batch's payment date as recording them by hand does (Dr 2010 or 2150, Cr the money account), and one repayment per director or shareholder (director_repayment@1: Dr 2500 or 2120 naming the person, Cr the money account; FR-EQ-05), each referenced with the batch's number; the payment list (payment-list@1), sealed (SEC-11) with the SHA-256 of the file; the release and the links, audited with the file's name and hash only. Download the list with getPaymentBatchFile and key it into the bank. Needs If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and releases nothing.
          */
         post: operations["releasePaymentBatch"];
         delete?: never;
@@ -9621,13 +9661,13 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment";
             /**
              * @description What executes on its approval.
              * @example organisation_setting.change
              * @enum {string}
              */
-            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change" | "director_fee.post" | "director_settlement.approve";
+            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change" | "director_fee.post" | "director_settlement.approve" | "director_repayment.void";
             /**
              * @description The approval policy's version it keeps (G4-057).
              * @example founder/organisation_setting@2026-10-20.1
@@ -9764,7 +9804,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -9806,7 +9846,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -15648,6 +15688,108 @@ export interface components {
              */
             next_cursor?: string;
         };
+        DirectorRepayment: {
+            /**
+             * Format: uuid
+             * @description The pending request to void it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1
+             */
+            approval_asked?: string;
+            /**
+             * Format: uuid
+             * @description The payment batch whose release paid it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10
+             */
+            batch_id?: string;
+            /**
+             * Format: uuid
+             * @description The director or shareholder repaid.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+             */
+            contact_id: string;
+            /**
+             * Format: date
+             * @description The batch's payment date: the day it posted.
+             * @example 2026-11-30
+             */
+            date: string;
+            /**
+             * Format: uuid
+             * @description The repayment's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            id: string;
+            /** @description The lines its entry wrote: debits positive. */
+            ledger_impact: components["schemas"]["EntryLine"][];
+            /**
+             * @description Their name.
+             * @example Mei Lin Tan
+             */
+            legal_name: string;
+            /**
+             * Format: uuid
+             * @description The bank account it left.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+             */
+            money_account_id: string;
+            /**
+             * @description Its number from the repayment sequence (FR-ORG-04).
+             * @example DR-0001
+             */
+            number?: string;
+            /**
+             * @description Bank import matched it to its statement line.
+             * @example false
+             */
+            paid: boolean;
+            /**
+             * @description The batch's number, as the payment list carries it.
+             * @example PB-0007
+             */
+            reference?: string;
+            /** @description What it repaid of each settlement. */
+            settlements: components["schemas"]["DirectorRepaymentPart"][];
+            /**
+             * @description posted by the batch's release; reversed by a void, as when the bank rejected it.
+             * @example posted
+             * @enum {string}
+             */
+            status: "posted" | "reversed";
+            /** @description What it repaid, in the base currency. */
+            total: components["schemas"]["Money"];
+            /**
+             * Format: int64
+             * @description The version of its content; with the status it makes the ETag.
+             * @example 1
+             */
+            version: number;
+        };
+        DirectorRepaymentPart: {
+            /**
+             * @description Its code.
+             * @example 2500
+             */
+            account_code?: string;
+            /**
+             * Format: uuid
+             * @description The director's account it was owed on: 2500 or 2120.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+             */
+            account_id: string;
+            /** @description What it repaid of the settlement, in the base currency. */
+            amount: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The settlement it repaid.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa9
+             */
+            settlement_id: string;
+            /**
+             * @description The settlement's number.
+             * @example DS-0001
+             */
+            settlement_number?: string;
+        };
         DirectorSettlement: {
             /**
              * @description Its code.
@@ -15718,6 +15860,10 @@ export interface components {
             number?: string;
             /** @description What the company owes the person on the account today. */
             owed: components["schemas"]["Money"];
+            /** @description A decided repayment: what payment batches have repaid of it, net of voids; the rest is open for the next batch. */
+            repaid?: components["schemas"]["Money"];
+            /** @description A repayment: the account in force it is paid into, the linked member's own (FR-AP-22) or else the contact's (FR-CT-03), by its last four characters; absent while there is none. */
+            repay_to?: components["schemas"]["PayeeAccount"];
             /**
              * @description The route.
              * @example keep
@@ -15725,7 +15871,7 @@ export interface components {
              */
             route: "keep" | "repay" | "convert" | "waive";
             /**
-             * @description draft; waiting for another person's approval; or decided: the loan kept, or the waiver posted.
+             * @description draft; waiting for another person's approval; or decided: the loan kept, the repayment payable by a payment batch, or the waiver posted.
              * @example waiting
              * @enum {string}
              */
@@ -15757,7 +15903,7 @@ export interface components {
              */
             contact_id: string;
             /**
-             * @description keep as a loan on terms, or waive (FR-EQ-07); repay and convert are not built yet. Left out, the organisation's default route (founders.default_route), keep.
+             * @description keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); or waive (FR-EQ-07); convert is not built yet. Left out, the organisation's default route (founders.default_route), keep.
              * @example keep
              * @enum {string}
              */
@@ -21786,7 +21932,7 @@ export interface components {
              * @example 2026-10-31
              */
             payment_date: string;
-            /** @description One payment per payee: a supplier's bills as one bill payment, a claimant's claims as one reimbursement. */
+            /** @description One payment per payee: a supplier's bills as one bill payment, a claimant's claims as one reimbursement, a director's settlements as one repayment. */
             payments: components["schemas"]["PaymentBatchPayment"][];
             /**
              * @description Who saved its current version: an actor of the audit trail.
@@ -21817,13 +21963,13 @@ export interface components {
         };
         PaymentBatchCancel: {
             /**
-             * @description Why it is cancelled: its bills and claims are free for another batch, or to pay by hand.
+             * @description Why it is cancelled: its bills, claims and settlements are free for another batch, or to pay bills and claims by hand.
              * @example The supplier asked to be paid by cheque
              */
             reason: string;
         };
         PaymentBatchDraft: {
-            /** @description The bills and claims it pays, each whole, for what is open on it; at most 500. */
+            /** @description The bills, claims and settlements to repay it pays, each whole, for what is open on it; at most 500. */
             items: components["schemas"]["PaymentBatchItemRef"][];
             /**
              * @description FAST or GIRO.
@@ -21888,16 +22034,16 @@ export interface components {
             date?: string;
             /**
              * Format: uuid
-             * @description The bill or claim.
+             * @description The bill, claim or settlement.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
              */
             document_id: string;
             /**
-             * @description A posted bill, or an approved expense claim.
+             * @description A posted bill, an approved expense claim, or a settlement approved to be repaid to a director or shareholder (FR-EQ-05).
              * @example bill
              * @enum {string}
              */
-            kind: "bill" | "claim";
+            kind: "bill" | "claim" | "director";
             /**
              * @description Its number.
              * @example BILL-0042
@@ -21909,16 +22055,16 @@ export interface components {
         PaymentBatchItemRef: {
             /**
              * Format: uuid
-             * @description The bill or claim.
+             * @description The bill, claim or settlement.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
              */
             document_id: string;
             /**
-             * @description A posted bill, or an approved expense claim.
+             * @description A posted bill, an approved expense claim, or a settlement approved to be repaid to a director or shareholder.
              * @example bill
              * @enum {string}
              */
-            kind: "bill" | "claim";
+            kind: "bill" | "claim" | "director";
         };
         PaymentBatchPage: {
             items: components["schemas"]["PaymentBatch"][];
@@ -21936,7 +22082,7 @@ export interface components {
              */
             id: string;
             /**
-             * @description A supplier, paid its bills; or a claimant, paid back their claims.
+             * @description A contact (a supplier, or a director or shareholder with no member linked), or a member (a claimant, or a director or shareholder repaid into the member's own account).
              * @example vendor
              * @enum {string}
              */
@@ -21952,8 +22098,14 @@ export interface components {
             account?: components["schemas"]["PayeeAccount"];
             /** @description What it pays: the sum of its items, in SGD. */
             amount: components["schemas"]["Money"];
-            /** @description The payee's bills or claims it pays, as the batch lists them. */
+            /** @description The payee's bills, claims or settlements it pays, as the batch lists them. */
             items: components["schemas"]["PaymentBatchItem"][];
+            /**
+             * @description What it pays: a supplier's bills (a bill payment), a claimant's claims (a reimbursement), or a director's or shareholder's settlements approved to be repaid (a director's repayment, FR-EQ-05). A director who is also a claimant gets two payments.
+             * @example supplier
+             * @enum {string}
+             */
+            kind: "supplier" | "claimant" | "director";
             /**
              * @description Released: bank import matched the payment to its statement line.
              * @example false
@@ -21963,7 +22115,7 @@ export interface components {
             payee: components["schemas"]["PaymentBatchPayee"];
             /**
              * Format: uuid
-             * @description Released: the bill payment or reimbursement the release posted.
+             * @description Released: the bill payment, reimbursement or director's repayment the release posted.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10
              */
             payment_id?: string;
@@ -21973,12 +22125,12 @@ export interface components {
              */
             payments_frozen: boolean;
             /**
-             * @description Released: the payment was voided, as when the bank rejected it; its bills or claims are open again.
+             * @description Released: the payment was voided, as when the bank rejected it; its bills, claims or settlements are open again.
              * @example false
              */
             rejected: boolean;
             /**
-             * @description A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, failed when sending it gave up after its attempts (⚠: tell the supplier another way), or no_email when the supplier has no remittance address (⚠). Absent for a claimant.
+             * @description A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, failed when sending it gave up after its attempts (⚠: tell the supplier another way), or no_email when the supplier has no remittance address (⚠). Absent for a claimant or a director.
              * @example sent
              * @enum {string}
              */
@@ -22032,7 +22184,7 @@ export interface components {
              * @example 2026-10-31
              */
             payment_date: string;
-            /** @description Every posted SGD bill with something open planned on or before the date, then every approved claim with something owed, none in an approved batch; at most the 500 items a batch holds, oldest first. */
+            /** @description Every posted SGD bill with something open planned on or before the date, then every approved claim with something owed, then every settlement approved to be repaid with something open, none in an approved batch; at most the 500 items a batch holds, oldest first. */
             suggested: components["schemas"]["PaymentBatchItemRef"][];
         };
         Period: {
@@ -24877,7 +25029,7 @@ export interface components {
              * @example journal
              * @enum {string}
              */
-            document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "fixed_asset" | "asset_disposal" | "payment_batch" | "pre_incorporation_cost" | "director_fee" | "director_settlement";
+            document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "fixed_asset" | "asset_disposal" | "payment_batch" | "pre_incorporation_cost" | "director_fee" | "director_settlement" | "director_repayment";
             /**
              * @description The number the next document takes, as printed.
              * @example JNL-0042
@@ -28772,7 +28924,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Not Found: `API-NOT-FOUND-01` Not found; `APPLY-01` Not a customer credit application; `APPLY-10` Not a customer refund; `BILL-01` Not a bill; `BILLPAY-01` Not a payment of bills; `CLAIM-01` Not an expense claim; `CLAIM-12` Not a reimbursement of expense claims; `CLAIM-28` Not a cash advance; `CREDIT-01` Not a credit application; `CREDIT-10` Not a supplier refund; `DEPOSIT-01` Not a customer deposit; `INVOICE-01` Not an invoice; `JOURNAL-01` Not a manual journal; `PAYEE-01` Not a change of bank details; `PO-01` Not a purchase order; `RECEIPT-01` Not a customer receipt; `WRITEOFF-01` Not a write-off. */
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `APPLY-01` Not a customer credit application; `APPLY-10` Not a customer refund; `BILL-01` Not a bill; `BILLPAY-01` Not a payment of bills; `CLAIM-01` Not an expense claim; `CLAIM-12` Not a reimbursement of expense claims; `CLAIM-28` Not a cash advance; `CREDIT-01` Not a credit application; `CREDIT-10` Not a supplier refund; `DEPOSIT-01` Not a customer deposit; `FOUNDER-31` Not a repayment to a director; `INVOICE-01` Not an invoice; `JOURNAL-01` Not a manual journal; `PAYEE-01` Not a change of bank details; `PO-01` Not a purchase order; `RECEIPT-01` Not a customer receipt; `WRITEOFF-01` Not a write-off. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -28781,7 +28933,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APPLY-06` The application is not posted; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `BILL-02` The bill is not a draft; `BILL-03` The bill is not posted; `BILL-13` Payments settle the bill; `BILLPAY-06` The payment is not posted; `CLAIM-02` The claim is not a draft; `CLAIM-15` The reimbursement is not posted; `CLAIM-31` The advance cannot be voided as it stands; `CREDIT-06` The application is not posted; `DEPOSIT-06` The deposit is not posted; `DEPOSIT-08` Invoices or refunds use the deposit; `FOUNDER-18` The fee is posted; `FOUNDER-29` The settlement is decided; `INVOICE-02` The invoice is not a draft; `INVOICE-03` The invoice is not issued; `INVOICE-13` Receipts or credits settle the invoice; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `PO-10` The order is not a draft; `RECEIPT-06` The receipt is not posted; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DOC-04` An edit posts its reversal and its new version together; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way; `STORAGE-PAYEE-01` Bank details do not change that way; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-TEMPLATE-01` The template does not change that way; `TPL-12` That version is in force already; `WRITEOFF-07` The write-off is not a draft; `WRITEOFF-08` The write-off is not posted. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APPLY-06` The application is not posted; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `BILL-02` The bill is not a draft; `BILL-03` The bill is not posted; `BILL-13` Payments settle the bill; `BILLPAY-06` The payment is not posted; `CLAIM-02` The claim is not a draft; `CLAIM-15` The reimbursement is not posted; `CLAIM-31` The advance cannot be voided as it stands; `CREDIT-06` The application is not posted; `DEPOSIT-06` The deposit is not posted; `DEPOSIT-08` Invoices or refunds use the deposit; `FOUNDER-18` The fee is posted; `FOUNDER-29` The settlement is decided; `FOUNDER-33` Not an approved repayment with that much open; `FOUNDER-34` The repayment is not posted; `INVOICE-02` The invoice is not a draft; `INVOICE-03` The invoice is not issued; `INVOICE-13` Receipts or credits settle the invoice; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `PO-10` The order is not a draft; `RECEIPT-06` The receipt is not posted; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DOC-04` An edit posts its reversal and its new version together; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way; `STORAGE-PAYEE-01` Bank details do not change that way; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-TEMPLATE-01` The template does not change that way; `TPL-12` That version is in force already; `WRITEOFF-07` The write-off is not a draft; `WRITEOFF-08` The write-off is not posted. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -28817,7 +28969,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APPLY-02` The saved application cannot be read; `APPLY-07` The void is dated before the application; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `CLAIM-16` The void is dated before the reimbursement; `CLAIM-18` A trip is incomplete; `CLAIM-19` No rate per km is set for the vehicle; `CLAIM-24` The line needs its receipt; `CLAIM-25` The claim does not say why it is late; `CLAIM-26` The receipt is on another record; `CLAIM-27` The receipt file is not on the claim; `CLAIM-32` The claim cannot settle that advance; `CLAIM-36` The claim cannot be kept as a loan; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `DEPOSIT-02` The saved deposit cannot be read; `DEPOSIT-07` The void is dated before the deposit; `FOUNDER-15` Not a director's fee; `FOUNDER-16` The director's fee does not fit; `FOUNDER-17` The fee has no shareholders' resolution; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `FOUNDER-30` The settlement has no agreement; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit; `LEDGER-41` A director's account line needs its person; `LEDGER-43` The director's fee does not fit the rule; `LEDGER-44` The waiver does not fit the rule; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PAYEE-02` The saved change cannot be read; `PAYEE-03` Not an active vendor; `PAYEE-04` The currency does not fit; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-09` The call-back note is too long; `PAYEE-11` The account's evidence is not attached; `PAYEE-14` That is the account in force already; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APPLY-02` The saved application cannot be read; `APPLY-07` The void is dated before the application; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `CLAIM-16` The void is dated before the reimbursement; `CLAIM-18` A trip is incomplete; `CLAIM-19` No rate per km is set for the vehicle; `CLAIM-24` The line needs its receipt; `CLAIM-25` The claim does not say why it is late; `CLAIM-26` The receipt is on another record; `CLAIM-27` The receipt file is not on the claim; `CLAIM-32` The claim cannot settle that advance; `CLAIM-36` The claim cannot be kept as a loan; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `DEPOSIT-02` The saved deposit cannot be read; `DEPOSIT-07` The void is dated before the deposit; `FOUNDER-15` Not a director's fee; `FOUNDER-16` The director's fee does not fit; `FOUNDER-17` The fee has no shareholders' resolution; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `FOUNDER-30` The settlement has no agreement; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit; `LEDGER-41` A director's account line needs its person; `LEDGER-43` The director's fee does not fit the rule; `LEDGER-44` The waiver does not fit the rule; `LEDGER-45` The repayment does not fit the rule; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PAYEE-02` The saved change cannot be read; `PAYEE-03` Not an active vendor; `PAYEE-04` The currency does not fit; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-09` The call-back note is too long; `PAYEE-11` The account's evidence is not attached; `PAYEE-14` That is the account in force already; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -50322,6 +50474,273 @@ export interface operations {
             };
         };
     };
+    getDirectorRepayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The repayment's ID. */
+                repayment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorRepayment"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestDirectorRepaymentVoid: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The repayment's ID. */
+                repayment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Reversal"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `FOUNDER-31` Not a repayment to a director. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `FOUNDER-33` Not an approved repayment with that much open; `FOUNDER-34` The repayment is not posted; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listDirectorSettlements: {
         parameters: {
             query?: {
@@ -50516,7 +50935,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `FOUNDER-32` No account to repay the person into; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -50761,7 +51180,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `FOUNDER-32` No account to repay the person into; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -50936,7 +51355,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `FOUNDER-30` The settlement has no agreement; `LEDGER-01` The journal has no date; `LEDGER-04` An account does not exist; `LEDGER-41` A director's account line needs its person; `LEDGER-44` The waiver does not fit the rule. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `FOUNDER-30` The settlement has no agreement; `FOUNDER-32` No account to repay the person into; `LEDGER-01` The journal has no date; `LEDGER-04` An account does not exist; `LEDGER-41` A director's account line needs its person; `LEDGER-44` The waiver does not fit the rule. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -75507,7 +75926,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description The document type. */
-                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "fixed_asset" | "asset_disposal" | "payment_batch" | "pre_incorporation_cost" | "director_fee" | "director_settlement";
+                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "fixed_asset" | "asset_disposal" | "payment_batch" | "pre_incorporation_cost" | "director_fee" | "director_settlement" | "director_repayment";
             };
             cookie?: never;
         };
@@ -75591,7 +76010,7 @@ export interface operations {
             };
             path: {
                 /** @description The document type. */
-                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "fixed_asset" | "asset_disposal" | "payment_batch" | "pre_incorporation_cost" | "director_fee" | "director_settlement";
+                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off" | "customer_refund" | "customer_deposit" | "quote" | "sales_order" | "statement" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "fixed_asset" | "asset_disposal" | "payment_batch" | "pre_incorporation_cost" | "director_fee" | "director_settlement" | "director_repayment";
             };
             cookie?: never;
         };
@@ -76357,7 +76776,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill or an approved claim; `PB-15` Too many items for one batch; `PB-16` The notes are too long. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill, an approved claim or a settlement to repay; `PB-15` Too many items for one batch; `PB-16` The notes are too long. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -76678,7 +77097,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill or an approved claim; `PB-15` Too many items for one batch; `PB-16` The notes are too long. */
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill, an approved claim or a settlement to repay; `PB-15` Too many items for one batch; `PB-16` The notes are too long. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -76826,7 +77245,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill or an approved claim; `PB-09` The bill is not in SGD; `PB-10` Nothing is open on the item; `PB-12` The payee has no approved account; `PB-15` Too many items for one batch; `PB-16` The notes are too long. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill, an approved claim or a settlement to repay; `PB-09` The bill is not in SGD; `PB-10` Nothing is open on the item; `PB-12` The payee has no approved account; `PB-15` Too many items for one batch; `PB-16` The notes are too long; `PB-25` The company owes the director less than the batch repays. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -77393,7 +77812,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill or an approved claim; `PB-09` The bill is not in SGD; `PB-10` Nothing is open on the item; `PB-12` The payee has no approved account; `PB-15` Too many items for one batch; `PB-16` The notes are too long. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill, an approved claim or a settlement to repay; `PB-09` The bill is not in SGD; `PB-10` Nothing is open on the item; `PB-12` The payee has no approved account; `PB-15` Too many items for one batch; `PB-16` The notes are too long; `PB-25` The company owes the director less than the batch repays. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -77527,7 +77946,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill or an approved claim; `PB-09` The bill is not in SGD; `PB-10` Nothing is open on the item; `PB-12` The payee has no approved account; `PB-15` Too many items for one batch; `PB-16` The notes are too long; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill, an approved claim or a settlement to repay; `PB-09` The bill is not in SGD; `PB-10` Nothing is open on the item; `PB-12` The payee has no approved account; `PB-15` Too many items for one batch; `PB-16` The notes are too long; `PB-25` The company owes the director less than the batch repays; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
             422: {
                 headers: {
                     [name: string]: unknown;

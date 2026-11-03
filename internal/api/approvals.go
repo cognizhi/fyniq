@@ -60,9 +60,9 @@ type ApprovalSignature struct {
 // and its signatures.
 type Approval struct {
 	ID              string              `json:"id" format:"uuid" doc:"The request's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
-	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit,recurring_invoice,connector,bank_rule,expense_claim,claim_reimbursement,cash_advance,asset_disposal,fixed_asset,payee_bank_change,claimant_bank_change,payment_batch,contact_member_link,director_fee,director_settlement" doc:"What it changes." example:"organisation_setting"`
+	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order,document_template,invoice,customer_receipt,write_off,customer_credit_application,customer_refund,customer_deposit,recurring_invoice,connector,bank_rule,expense_claim,claim_reimbursement,cash_advance,asset_disposal,fixed_asset,payee_bank_change,claimant_bank_change,payment_batch,contact_member_link,director_fee,director_settlement,director_repayment" doc:"What it changes." example:"organisation_setting"`
 	ObjectKey       string              `json:"object_key" doc:"Which one: the setting's key, the membership's ID, the invitation's code hash, the object type whose approval policy changes, the statutory pack version, or organisation for the team mode." example:"bank.tolerance_base"`
-	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member.remove,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void,recurring_invoice.approve,connector.change,bank_rule.auto_apply,expense_claim.post,claim_reimbursement.void,cash_advance.void,asset_disposal.void,fixed_asset.void,payee_bank_change.approve,claimant_bank_change.approve,payment_batch.approve,payment_batch.reapprove,contact_member_link.change,director_fee.post,director_settlement.approve" doc:"What executes on its approval." example:"organisation_setting.change"`
+	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member.remove,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve,document_template.publish,invoice.post,invoice.void,invoice.edit,customer_receipt.void,write_off.post,write_off.void,customer_credit_application.void,customer_refund.void,customer_deposit.void,recurring_invoice.approve,connector.change,bank_rule.auto_apply,expense_claim.post,claim_reimbursement.void,cash_advance.void,asset_disposal.void,fixed_asset.void,payee_bank_change.approve,claimant_bank_change.approve,payment_batch.approve,payment_batch.reapprove,contact_member_link.change,director_fee.post,director_settlement.approve,director_repayment.void" doc:"What executes on its approval." example:"organisation_setting.change"`
 	Summary         string              `json:"summary" doc:"What it does, in a sentence." example:"Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20"`
 	Status          string              `json:"status" enum:"pending,approved,rejected,void,expired" doc:"pending waits for approval; approved executed it; void means its record, a dependency, its approval policy or the team mode changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days." example:"pending"`
 	StatusReason    string              `json:"status_reason,omitempty" doc:"Why it was rejected or voided." example:"the setting changed after the request"`
@@ -685,6 +685,15 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		for k, v := range deps {
 			e.Dependencies[k] = v
 		}
+	case approval.ObjectDirectorRepayment: // the repayment's version and status, and what it repaid (FR-EQ-05)
+		version, deps, err := a.repaymentDependencies(ctx, u, c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = version
+		for k, v := range deps {
+			e.Dependencies[k] = v
+		}
 	case approval.ObjectDirectorSettlement: // the settlement's version and status, its amount and what is owed now (FR-EQ-05)
 		version, deps, err := a.settlementDependencies(ctx, u, c.ObjectKey)
 		if err != nil {
@@ -1193,6 +1202,8 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 		return feeExecutable(ctx, u, r, signer)
 	case approval.OpSettlementApprove: // FR-EQ-05, FM-9: never the person settled (APR-15)
 		return settlementExecutable(ctx, u, r, signer)
+	case approval.OpRepaymentVoid: // FR-EQ-05, FM-9: never the person repaid (APR-15)
+		return repaymentExecutable(ctx, u, r, signer)
 	case approval.OpBatchApprove, approval.OpBatchReapprove: // FM-1: whoever prepared the batch never approves it
 		return batchExecutable(ctx, u, r, signer)
 	case approval.OpBillPost: // SOD-3: whoever prepared the bill never approves its post
@@ -1595,6 +1606,8 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		}
 		_, _, err = a.fees.PostIn(ctx, u, id)
 		return err
+	case approval.OpRepaymentVoid: // FR-EQ-05: the repayment voided on the date asked, its settlements open again
+		return a.executeRepaymentVoid(ctx, u, r, s)
 	case approval.OpSettlementApprove: // FR-EQ-05, FR-EQ-07: the loan kept on its terms, or the waiver posted, today
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {
@@ -1805,7 +1818,7 @@ func registerApprovals(a *API) {
 		CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale, CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion, storage.CodeMembership,
 		storage.CodeParty, CodeOwnLink, director.CodeOwnFee, director.CodeFeePosted, director.CodeNoVote, director.CodeNotFee, director.CodeFee,
 		ledger.CodeDirectorFee, approval.CodeBeneficiary, director.CodeSettled, director.CodeNoAgreement, director.CodeSettlement, director.CodeNotSettlement,
-		ledger.CodeWaiver},
+		ledger.CodeWaiver, ledger.CodeRepayment, director.CodeNotRepayment, director.CodeNotPosted, director.CodeNotRepaid},
 		append(append(append(append(append(append(append(locks, ApprovalCodes...), MemberCodes...), SettingCodes...), PolicyCodes...), PackCodes...), PasskeyCodes...),
 			append(append(append(append(JournalApprovalCodes(), PayeeApprovalCodes()...), BillApprovalCodes()...), PaymentApprovalCodes()...), append(append(append(ApplicationApprovalCodes(), RefundApprovalCodes()...), OrderApprovalCodes()...), append(append(append(TemplateApprovalCodes(), InvoiceApprovalCodes()...), ReceiptApprovalCodes()...), append(append(append(WriteOffApprovalCodes(), CustomerApplicationApprovalCodes()...), CustomerRefundApprovalCodes()...), append(append(append(DepositApprovalCodes(), ClaimApprovalCodes()...), ReimbursementApprovalCodes()...), AdvanceApprovalCodes()...)...)...)...)...)...)...),
 		func(ctx context.Context, in *approvalDecideInput) (*approvalWriteOutput, error) {

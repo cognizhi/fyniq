@@ -12,7 +12,7 @@ const releaser = { ...ownerSession, roles: ["payment_releaser"] } as Session;
 const sgd = (amount: string) => ({ amount, currency: "SGD" });
 const account = { currency: "SGD", kind: "singapore" as const, bic: "DBSSSGSG", bank_country: "SG", account_name: "Northwind", number_kind: "account" as const, account_number_last4: "6789" };
 const item = (number: string, open: string, checks: unknown[] = []) => ({ kind: "bill" as const, document_id: `d-${number}`, number, date: "2026-10-02", open: sgd(open), checks });
-const northwind = { payee: { kind: "vendor" as const, id: "v1", name: "Northwind Analytics Pte Ltd" }, account, payments_frozen: false, amount: sgd("327.00"), items: [item("BILL-0041", "109.00"), item("BILL-0042", "218.00")], paid: false, rejected: false };
+const northwind = { kind: "supplier" as const, payee: { kind: "vendor" as const, id: "v1", name: "Northwind Analytics Pte Ltd" }, account, payments_frozen: false, amount: sgd("327.00"), items: [item("BILL-0041", "109.00"), item("BILL-0042", "218.00")], paid: false, rejected: false };
 const base = {
   id: "b1", status: "draft" as const, money_account_id: "a1", money_account_name: "DBS SGD current", payment_date: "2026-10-31", method: "fast" as const,
   payments: [northwind], total: sgd("327.00"), checks: [], reapproval_needed: false, version: 1,
@@ -118,7 +118,7 @@ describe("payment batches", () => {
   it("shows a released batch's payments as paid or waiting, the remittance sent or not, and downloads its payment list; axe finds nothing", async () => {
     const paid = { ...northwind, payment_id: "p1", paid: true, remittance: "sent" as const };
     const gaveUp = { ...northwind, payee: { kind: "vendor" as const, id: "v2", name: "Quiet Supplier Pte Ltd" }, payment_id: "p3", paid: false, remittance: "failed" as const };
-    const waiting = { ...northwind, payee: { kind: "person" as const, id: "u1", name: "Tan Ah Kow" }, payment_id: "p2", account: undefined, amount: sgd("27.30") };
+    const waiting = { ...northwind, kind: "claimant" as const, payee: { kind: "person" as const, id: "u1", name: "Tan Ah Kow" }, payment_id: "p2", account: undefined, amount: sgd("27.30") };
     const release = { released_by: { kind: "user", id: "u2", name: "Mei Lin Tan" }, released_at: "2026-10-31T01:30:00Z", approval_id: "a1", writer: "payment-list@1",
       file_name: "PB-0003-payment-list.csv", sha256: "ab".repeat(32), payments: [{ payment_id: "p1" }, { payment_id: "p2" }] };
     const seen = page({ ...base, status: "released", number: "PB-0003", payments: [paid, waiting, gaveUp], release }, releaser, {
@@ -129,11 +129,25 @@ describe("payment batches", () => {
     expect(screen.getAllByText("Waiting for the bank")).toHaveLength(2);
     expect(screen.getByText("Remittance not sent")).toBeTruthy();
     expect(screen.getByText(/Released by Mei Lin Tan/)).toBeTruthy();
+    expect(screen.getByText("Claimant")).toBeTruthy();
     await noViolations(document.body);
     fireEvent.click(screen.getByRole("button", { name: "Download payment list" }));
     expect(await screen.findByText(/Downloaded PB-0003-payment-list.csv/)).toBeTruthy();
     expect(seen.some((s) => s.path === "/v1/payment-batches/b1/file")).toBe(true);
     expect(screen.queryByRole("button", { name: /Send the remittance advice/ })).toBeNull(); // the releaser does not prepare batches
+  });
+
+  // req: FR-EQ-05
+  // req: equity/founders-money Repay
+  it("lists a director's repayment apart from their claims, both to the same person; axe finds nothing", async () => {
+    const claims = { ...northwind, kind: "claimant" as const, payee: { kind: "person" as const, id: "u1", name: "Tan Ah Kow" }, items: [item("CLM-0007", "27.30")], amount: sgd("27.30") };
+    const repaid = { ...claims, kind: "director" as const, items: [{ ...item("DS-0001", "400.00"), kind: "director" as const }], amount: sgd("400.00") };
+    page({ ...base, payments: [claims, repaid], total: sgd("427.30") }, accountant);
+    expect(await screen.findByText("Director")).toBeTruthy();
+    expect(screen.getByText("Claimant")).toBeTruthy();
+    expect(screen.getAllByText("Tan Ah Kow")).toHaveLength(2);
+    expect(screen.getByText("DS-0001")).toBeTruthy();
+    await noViolations(document.body);
   });
 
   // req: banking/bank-transactions A failed advice is sent again by a person (rev 0.160)

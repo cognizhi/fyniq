@@ -11,7 +11,7 @@
       "type": "string"
     },
     "kind": {
-      "description": "A supplier, paid its bills; or a claimant, paid back their claims.",
+      "description": "A contact (a supplier, or a director or shareholder with no member linked), or a member (a claimant, or a director or shareholder repaid into the member's own account).",
       "enum": [
         "vendor",
         "person"

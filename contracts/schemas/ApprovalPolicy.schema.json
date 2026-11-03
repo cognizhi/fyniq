@@ -61,7 +61,8 @@
         "payment_batch",
         "contact_member_link",
         "director_fee",
-        "director_settlement"
+        "director_settlement",
+        "director_repayment"
       ],
       "examples": [
         "organisation_setting"

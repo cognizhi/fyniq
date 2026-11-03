@@ -109,7 +109,8 @@
         "payment_batch",
         "contact_member_link",
         "director_fee",
-        "director_settlement"
+        "director_settlement",
+        "director_repayment"
       ],
       "examples": [
         "organisation_setting"
@@ -163,7 +164,8 @@
         "payment_batch.reapprove",
         "contact_member_link.change",
         "director_fee.post",
-        "director_settlement.approve"
+        "director_settlement.approve",
+        "director_repayment.void"
       ],
       "examples": [
         "organisation_setting.change"

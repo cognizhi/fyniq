@@ -143,9 +143,26 @@ the person on the ledger with its API (1.1 to 1.5), then the pages (1.6).
   Built: a loan kept is decided with no entry, its terms kept (interest, repayment day or on demand, subordinated); a
   waiver posts `director_settlement@1` (LEDGER-44) on the day approved, Dr 2500/2120 naming the person (waived), Cr the
   account chosen; a waiver of 2120 is tagged `deducted_earlier` [verify]. The oracle's `director_waiver` states the legs.
-- [ ] 4.3 Repay (D10): the payment batch item kind `director`, the `director_repayment` posted on release to the
+- [x] 4.3 Repay (D10): the payment batch item kind `director`, the `director_repayment` posted on release to the
   person's account in force, and matching by bank import. Tests: through a batch from approval to match.
   `// req: FR-EQ-05`, `// req: FR-BNK-12`
+  Built:
+  - **The route.** It is drafted only while the person has an approved SGD account at a Singapore bank (FOUNDER-32):
+    the linked member's own, else the contact's as a vendor. The request's diff shows the account (`repay_to`).
+  - **What is owed.** A settlement may not exceed what is owed less what other settlements approved to be repaid still
+    have open.
+  - **Decision.** Approving it decides it with no entry; it is then payable.
+  - **The batch.** It suggests it and pays it as the item kind `director`, one payment per director, apart from their
+    claims. It refuses one that is more than the company owes the person on the payment date (PB-25).
+  - **The release.** It records a `director_repayment` (DR-, migrations 000214 and 000215) under
+    `director_repayment@1` (LEDGER-45): Dr 2500/2120 naming the person (paid out), Cr the bank, allocated to each
+    settlement. The database posts one only with a release linking it (FY254).
+  - **Bank import.** It matches the repayment as other money recorded for a batch, by itself when the line names the
+    batch.
+  - **Rejected by the bank.** `requestDirectorRepaymentVoid` voids it on the approval of another person who holds A
+    on "Payment batches", never the person (APR-15); the settlement is open again.
+  - **Oracle.** `director_repayment` states the legs.
+  - **Not tested yet:** releasing in Standard mode with a director paid; the founder-facing Settle page (4.4).
 - [ ] 4.4 The Settle a balance page, with the routes, the ledger impact and the approvals. `// req: FR-EQ-05`
 
 ## 5. Conversion and the register of share issues (slice 5)

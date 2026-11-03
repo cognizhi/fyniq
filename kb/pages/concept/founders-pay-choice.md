@@ -4,7 +4,7 @@ type: concept
 title: Founder pay choices
 summary: No salary (the recommended default), salary paid, deferred, director's fee or shares; deferral still triggers CPF and tax
 sources:
-  - docs/user-guide/founders-money.md sha256:9dbe9631b0b0cc6b59f1c765c26fbb52d1a9c49a74e3705d86d560779ca5b50e
+  - docs/user-guide/founders-money.md sha256:4640be34c6917a4441918136b0947d142d0389bbaafcb147cc22e0e0b4a13e2b
   - docs/user-guide/director-accounts.md sha256:7f7c765c06f7ab9b62e4b56deed903eee4c975fcb607ceddfe389964702249a2
 data_class: general
 taint: trusted

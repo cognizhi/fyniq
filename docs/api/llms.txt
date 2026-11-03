@@ -191,6 +191,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/director-pay-choices/{choice_id}/evidence/{evidence_id}` (getDirectorPayChoiceEvidence): Get a pay choice's file
 - `DELETE /v1/director-pay-choices/{choice_id}/evidence/{evidence_id}` (removeDirectorPayChoiceEvidence): Remove a file from a drafted pay choice
 - `POST /v1/director-pay-choices/{choice_id}/record` (recordDirectorPayChoice): Record a director's pay choice
+- `GET /v1/director-repayments/{repayment_id}` (getDirectorRepayment): Get a repayment to a director
+- `POST /v1/director-repayments/{repayment_id}/void-approval` (requestDirectorRepaymentVoid): Ask for approval to void a repayment to a director
 - `GET /v1/director-settlements` (listDirectorSettlements): List settlements of founders' balances
 - `POST /v1/director-settlements` (createDirectorSettlement): Draft a settlement of a founder's balance
 - `GET /v1/director-settlements/{settlement_id}` (getDirectorSettlement): Get a settlement of a founder's balance

@@ -30,8 +30,9 @@ type PaymentBatchRelease struct {
 // PaymentBatches keep the releases of payment batches and the payments each posted. A release is audited on its batch,
 // with the file's name and hash only; a link on its payment. The database refuses a release of a batch that is not
 // approved at its current version, a second release, and any change or deletion (CodeBatch); a link to a payment that
-// is not a posted bill payment or reimbursement of the batch's account and date (CodeBatch); and, at commit, a payment
-// recorded by hand of a bill or claim in an approved, unreleased batch (CodeBatchHeld).
+// is not a posted bill payment, reimbursement or director's repayment of the batch's account and date (CodeBatch); and,
+// at commit, a payment recorded by hand of a bill or claim in an approved, unreleased batch (CodeBatchHeld), or a
+// director's repayment posted with no release linking it (CodeBatch).
 type PaymentBatches interface {
 	Release(ctx context.Context, r PaymentBatchRelease) (PaymentBatchRelease, error)
 	// ReleaseOf is a batch's release, nil while it has none.
