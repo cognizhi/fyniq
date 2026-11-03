@@ -151,7 +151,8 @@
                                          "bill_payment", "invoice", "credit_note", "customer_receipt", "customer_deposit",
                                          "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
                                          "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost",
-                                         "director_fee", "director_waiver", "director_repayment"]}},
+                                         "director_fee", "director_waiver", "director_repayment",
+                                         "director_conversion"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "bank_transaction"}}}, "then": {"$ref": "#/$defs/bankTransaction"}},
@@ -170,7 +171,8 @@
         {"if": {"properties": {"type": {"const": "pre_incorporation_cost"}}}, "then": {"$ref": "#/$defs/preIncorporationCost"}},
         {"if": {"properties": {"type": {"const": "director_fee"}}}, "then": {"$ref": "#/$defs/directorFee"}},
         {"if": {"properties": {"type": {"const": "director_waiver"}}}, "then": {"$ref": "#/$defs/directorWaiver"}},
-        {"if": {"properties": {"type": {"const": "director_repayment"}}}, "then": {"$ref": "#/$defs/directorRepayment"}}
+        {"if": {"properties": {"type": {"const": "director_repayment"}}}, "then": {"$ref": "#/$defs/directorRepayment"}},
+        {"if": {"properties": {"type": {"const": "director_conversion"}}}, "then": {"$ref": "#/$defs/directorConversion"}}
       ]
     },
     "settings": {
@@ -490,6 +492,25 @@
             }
           }
         }
+      }
+    },
+    "directorConversion": {
+      "description": "A founder's balance converted to shares from the register of share issues (share_issue@1, FR-EQ-06, B.7, RND-SHARE).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "person", "account", "class", "amount", "price"],
+      "properties": {
+        "type": {"const": "director_conversion"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day ACRA's register of members shows the allotment, which it posts on.", "$ref": "#/$defs/date"},
+        "person": {"description": "The director or shareholder, one of people.", "$ref": "#/$defs/documentId"},
+        "account": {"description": "The director's account converted (2500 or 2120).", "type": "string"},
+        "class": {"description": "The share-capital account of the class allotted (3010 or 3020).", "type": "string"},
+        "amount": {"description": "The balance converted, in the base currency: RND-SHARE allots whole shares for it and the rest stays owed.", "$ref": "#/$defs/money"},
+        "price": {"description": "The price per share, at most 6 decimals.", "type": "string"},
+        "fair_value_price": {"description": "Under the fair-value basis: the shares' fair value per share.", "type": "string"},
+        "difference": {"description": "Under the fair-value basis: the income or expense account the difference goes to.", "type": "string"}
       }
     },
     "directorFee": {

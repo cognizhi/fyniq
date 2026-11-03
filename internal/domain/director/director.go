@@ -243,6 +243,8 @@ func (r originReader) of(l balance.PersonLine, amount money.Money) (string, erro
 		return ledger.OriginWaived, nil
 	case ledger.SourceDirectorRepayment: // repaid through a payment batch (FR-EQ-05), or its void
 		return ledger.OriginPaidOut, nil
+	case ledger.SourceShareIssue: // converted to shares from the register (FR-EQ-06)
+		return ledger.OriginConverted, nil
 	case ledger.SourceBankTransaction:
 		// Money in credits the person (lent), money out debits them (paid out); a reversal undoes the one it reverses.
 		if credit := amount.Sign() < 0; credit != (l.ReversesEntryID != nil) {

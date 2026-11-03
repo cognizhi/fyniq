@@ -22,8 +22,12 @@
       "format": "uuid",
       "type": "string"
     },
+    "conversion": {
+      "$ref": "SettlementConversion.schema.json",
+      "description": "A conversion's class, price and basis, capacity and measurement basis."
+    },
     "route": {
-      "description": "keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); or waive (FR-EQ-07); convert is not built yet. Left out, the organisation's default route (founders.default_route), keep.",
+      "description": "keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); convert to shares, approved now and effective once ACRA registers the allotment (FR-EQ-06); or waive (FR-EQ-07). Left out, the organisation's default route (founders.default_route), keep.",
       "enum": [
         "keep",
         "repay",

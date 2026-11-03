@@ -2,6 +2,8 @@ package journal
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -39,7 +41,7 @@ func checkSettlement(ctx context.Context, u storage.UnitOfWork, s director.Settl
 // CreateIn saves a settlement as a draft in u, the caller's unit of work, dated today. One that does not fit writes
 // nothing and answers every problem.
 func (DirectorSettlements) CreateIn(ctx context.Context, u storage.UnitOfWork, s director.Settlement, today time.Time) (storage.Document, error) {
-	s.Date, s.DeductedEarlier = today, false
+	s.Date, s.DeductedEarlier, s.ApprovedOn = today, false, nil
 	b, _, err := checkSettlement(ctx, u, s, today)
 	if err != nil {
 		return storage.Document{}, err
@@ -67,7 +69,7 @@ func DraftSettlement(ctx context.Context, u storage.UnitOfWork, id uuid.UUID) (s
 
 // ReviseIn saves a new version of a draft settlement in u, dated today; the caller locked it with DraftSettlement.
 func (DirectorSettlements) ReviseIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, s director.Settlement, today time.Time) (storage.Document, error) {
-	s.Date, s.DeductedEarlier = today, false
+	s.Date, s.DeductedEarlier, s.ApprovedOn = today, false, nil
 	b, _, err := checkSettlement(ctx, u, s, today)
 	if err != nil {
 		return storage.Document{}, err
@@ -75,8 +77,8 @@ func (DirectorSettlements) ReviseIn(ctx context.Context, u storage.UnitOfWork, i
 	return u.Documents().Revise(ctx, id, b)
 }
 
-// CheckedSettlement is a draft settlement as approving it would decide it: a waiver's entry as a dry run (FR-APR-02), none for a
-// loan kept.
+// CheckedSettlement is a draft settlement as approving it would decide it: a waiver's entry, or a conversion's as it
+// would post once effective, as a dry run (FR-APR-02); none for a loan kept or a repayment.
 type CheckedSettlement struct {
 	Settlement director.Settlement
 	Entry      *ledger.Entry
@@ -94,8 +96,19 @@ func (DirectorSettlements) Impact(ctx context.Context, u storage.UnitOfWork, doc
 		return CheckedSettlement{}, err
 	}
 	out := CheckedSettlement{Settlement: s}
-	if s.Route == director.RouteWaive {
+	switch s.Route {
+	case director.RouteWaive:
 		e, err := ledger.PostDirectorWaiver(s.Rule(doc, today), settings)
+		if err != nil {
+			return CheckedSettlement{}, err
+		}
+		out.Entry = &e
+	case director.RouteConvert: // as it would post if ACRA registered it today
+		c, _, err := s.ConversionRule(doc.ID, today, doc.Number, settings.Base)
+		if err != nil {
+			return CheckedSettlement{}, err
+		}
+		e, err := ledger.PostConversion(c, settings)
 		if err != nil {
 			return CheckedSettlement{}, err
 		}
@@ -105,11 +118,23 @@ func (DirectorSettlements) Impact(ctx context.Context, u storage.UnitOfWork, doc
 }
 
 // Check runs a draft settlement through what asking for its approval needs: Impact, and its agreement attached (a loan
-// note or minute for a loan kept, a deed or minute for a waiver: FOUNDER-30).
+// note or minute for a loan kept, a deed or minute for a waiver; for a conversion, each of its four documents:
+// FOUNDER-30).
 func (s DirectorSettlements) Check(ctx context.Context, u storage.UnitOfWork, doc storage.Document, today time.Time) (CheckedSettlement, error) {
 	c, err := s.Impact(ctx, u, doc, today)
 	if err != nil {
 		return CheckedSettlement{}, err
+	}
+	if c.Settlement.Route == director.RouteConvert {
+		missing, err := director.MissingDocuments(ctx, u, doc.ID)
+		if err != nil {
+			return CheckedSettlement{}, err
+		}
+		if len(missing) > 0 {
+			return CheckedSettlement{}, &director.Error{Code: director.CodeNoAgreement, Message: "the conversion has no " + strings.Join(missing, ", no ") + " attached",
+				Fix: "Attach each of the shareholders' approval, the board resolution, the conversion agreement and the balance confirmation, as its evidence type"}
+		}
+		return c, nil
 	}
 	n, err := director.Attached(ctx, u, doc.ID)
 	if err != nil {
@@ -137,6 +162,18 @@ func (s DirectorSettlements) ApproveIn(ctx context.Context, u storage.UnitOfWork
 		return doc, nil, err
 	}
 	var stored *storage.Entry
+	if st.Route == director.RouteConvert { // the day it was approved: the effective date and the lapse count from it (D11, D12)
+		st.ApprovedOn = &today
+		b, err := director.EncodeSettlement(st)
+		if err != nil {
+			return doc, nil, err
+		}
+		number := doc.Number
+		if doc, err = u.Documents().Revise(ctx, id, b); err != nil {
+			return doc, nil, err
+		}
+		doc.Number = number
+	}
 	if st.Route == director.RouteWaive {
 		settings, err := loadSettings(ctx, u)
 		if err != nil {
@@ -179,4 +216,140 @@ func replayDirectorWaiver(doc storage.Document, s ledger.Settings, e storage.Ent
 		return ledger.Entry{}, err
 	}
 	return ledger.ReplayDirectorWaiver(e.RuleVersion, st.Rule(doc, e.PostingDate), s)
+}
+
+// Effective is what makes an approved conversion effective (FR-EQ-06, FR-EQ-09; design D11): ACRA's lodgement reference,
+// the resolutions it rests on, the effective date (the day ACRA's register of members shows the allotment), the
+// organisation's today, the day the approval lapses (design D12), and who records it.
+type Effective struct {
+	LodgementRef   string
+	ResolutionRefs string
+	EffectiveOn    time.Time
+	Today          time.Time
+	LapsesOn       time.Time
+	RecordedBy     uuid.UUID
+}
+
+// EffectiveIn makes an approved conversion effective in u, the caller's unit of work: the effective date no later than
+// today, no earlier than the approval and no later than the day it lapses (CodeEffective), what is owed on the account
+// on that day at least the amount converted, then the conversion posted from the register on that date (share_issue@1)
+// and the issue recorded with its entry, never backdated (FY255). A period that is closed refuses it (INV-03): reopening
+// the period is the fix, never a later date.
+func (s DirectorSettlements) EffectiveIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, e Effective) (storage.ShareIssue, storage.Entry, error) {
+	doc, err := u.Documents().Lock(ctx, id)
+	if err != nil {
+		return storage.ShareIssue{}, storage.Entry{}, err
+	}
+	st, err := director.ReadSettlement(doc)
+	if err != nil {
+		return storage.ShareIssue{}, storage.Entry{}, err
+	}
+	if doc.Status != storage.DocumentPosted || st.Route != director.RouteConvert {
+		return storage.ShareIssue{}, storage.Entry{}, &director.Error{Code: director.CodeNotApproved, Message: "only an approved conversion becomes effective",
+			Fix: "Ask for the conversion's approval first"}
+	}
+	if done, err := u.ShareIssues().OfSettlement(ctx, id); err != nil {
+		return storage.ShareIssue{}, storage.Entry{}, err
+	} else if done != nil {
+		return storage.ShareIssue{}, storage.Entry{}, &director.Error{Code: director.CodeNotApproved, Message: "the conversion is effective already",
+			Fix: "Nothing to record: its shares are in the register"}
+	}
+	day := func(t time.Time) string { return t.Format(time.DateOnly) }
+	approved := e.Today
+	if st.ApprovedOn != nil {
+		approved = *st.ApprovedOn
+	}
+	switch {
+	case e.EffectiveOn.After(e.Today):
+		return storage.ShareIssue{}, storage.Entry{}, &director.Error{Code: director.CodeEffective, Message: fmt.Sprintf("the effective date %s is after today", day(e.EffectiveOn)),
+			Fix: "Enter the day ACRA's register of members shows the allotment, once it does"}
+	case e.EffectiveOn.Before(approved):
+		return storage.ShareIssue{}, storage.Entry{}, &director.Error{Code: director.CodeEffective, Message: fmt.Sprintf("the effective date %s is before the approval on %s", day(e.EffectiveOn), day(approved)),
+			Fix: "Enter the day ACRA's register shows the allotment: never earlier than its approval"}
+	case !e.LapsesOn.IsZero() && e.EffectiveOn.After(e.LapsesOn):
+		return storage.ShareIssue{}, storage.Entry{}, &director.Error{Code: director.CodeEffective, Message: fmt.Sprintf("the shareholders' approval lapsed on %s, the date by which the next AGM must be held", day(e.LapsesOn)),
+			Fix: "Draft the conversion again for a new approval"}
+	}
+	settings, err := loadSettings(ctx, u)
+	if err != nil {
+		return storage.ShareIssue{}, storage.Entry{}, err
+	}
+	issueID, err := uuid.NewV7()
+	if err != nil {
+		return storage.ShareIssue{}, storage.Entry{}, err
+	}
+	rule, shares, err := st.ConversionRule(issueID, e.EffectiveOn, strings.TrimSpace(doc.Number+" "+shares(st)), settings.Base)
+	if err != nil {
+		return storage.ShareIssue{}, storage.Entry{}, err
+	}
+	owed, err := director.Owed(ctx, u, settings.Base, st.ContactID, st.AccountID, e.EffectiveOn)
+	if err != nil {
+		return storage.ShareIssue{}, storage.Entry{}, err
+	}
+	if c, _ := shares.Converted.Cmp(owed); c > 0 {
+		return storage.ShareIssue{}, storage.Entry{}, &director.Error{Code: director.CodeSettlement,
+			Message: fmt.Sprintf("the company owes %s on the account on %s, less than the %s converted", owed, day(e.EffectiveOn), shares.Converted),
+			Fix: "Draft the conversion again for what is owed"}
+	}
+	entry, err := ledger.PostConversion(rule, settings)
+	if err != nil {
+		return storage.ShareIssue{}, storage.Entry{}, err
+	}
+	stored, err := u.Ledger().Append(ctx, toStorage(entry, nil))
+	if err != nil {
+		return storage.ShareIssue{}, storage.Entry{}, err
+	}
+	issue, err := u.ShareIssues().Record(ctx, storage.ShareIssue{ID: issueID, HolderID: st.ContactID, ClassAccountID: rule.Class,
+		Shares: storage.Decimal(shares.Count.Text('f')), Price: storage.Decimal(st.Conversion.Price), Currency: settings.Base.Code,
+		Amount: storage.Decimal(rule.Equity.String()), Consideration: storage.ConsiderationDebtCapitalised, ResolutionRefs: e.ResolutionRefs,
+		LodgementRef: e.LodgementRef, EffectiveOn: e.EffectiveOn, SettlementID: &id, EntryID: &stored.ID, RecordedBy: e.RecordedBy, RecordedAt: e.Today})
+	if err != nil {
+		return storage.ShareIssue{}, storage.Entry{}, err
+	}
+	if s.AfterPosting != nil {
+		if err := s.AfterPosting(ctx, u, doc, stored); err != nil {
+			return storage.ShareIssue{}, storage.Entry{}, err
+		}
+	}
+	return issue, stored, nil
+}
+
+// shares says how many shares a conversion allots at its price, for the entry's memo.
+func shares(s director.Settlement) string {
+	if s.Conversion == nil {
+		return ""
+	}
+	return "converted at " + s.Conversion.Price + " a share"
+}
+
+// replayConversion posts a conversion's share issue again as its entry posted it (ENG-06), from the issue and the
+// settlement it decided.
+func replayConversion(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, e storage.Entry) (ledger.Entry, error) {
+	id, err := uuid.Parse(e.Source.ID)
+	if err != nil {
+		return ledger.Entry{}, err
+	}
+	all, err := u.ShareIssues().List(ctx)
+	if err != nil {
+		return ledger.Entry{}, err
+	}
+	for _, x := range all {
+		if x.ID != id || x.SettlementID == nil {
+			continue
+		}
+		doc, err := u.Documents().Get(ctx, *x.SettlementID)
+		if err != nil {
+			return ledger.Entry{}, err
+		}
+		st, err := director.ReadSettlement(doc)
+		if err != nil {
+			return ledger.Entry{}, err
+		}
+		c, _, err := st.ConversionRule(id, e.PostingDate, e.Memo, s.Base)
+		if err != nil {
+			return ledger.Entry{}, err
+		}
+		return ledger.ReplayConversion(e.RuleVersion, c, s)
+	}
+	return ledger.Entry{}, fmt.Errorf("share issue %s: no conversion in the register names it", id)
 }

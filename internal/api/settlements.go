@@ -52,40 +52,64 @@ type SettlementWaiver struct {
 	Reason          string `json:"reason" maxLength:"1000" doc:"Why the person waives it." example:"Waived ahead of the seed round"`
 }
 
+// SettlementConversion is what a balance converted to shares is (FR-EQ-06, design D11).
+type SettlementConversion struct {
+	ClassAccountID      string `json:"class_account_id" format:"uuid" doc:"The class: its share-capital account, 3010 ordinary or 3020 preference." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"`
+	Price               string `json:"price" doc:"The price per share in the base currency, a decimal string with at most 6 decimals." example:"1.20"`
+	PriceBasis          string `json:"price_basis,omitempty" enum:"latest_priced_round,valuation,unanimous" doc:"Where the price comes from: the latest priced round, an independent valuation, or a price every shareholder approves. Left out, the setting founders.price_basis." example:"latest_priced_round"`
+	Capacity            string `json:"capacity" enum:"lender,employee,shareholder" doc:"The capacity in which the founder converts." example:"lender"`
+	Measurement         string `json:"measurement,omitempty" enum:"carrying,fair_value" doc:"The measurement basis the accountant picks: the carrying amount (the default) or the shares' fair value with the difference in profit or loss." example:"carrying"`
+	FairValuePrice      string `json:"fair_value_price,omitempty" doc:"Under fair value: the shares' fair value per share." example:"1.25"`
+	DifferenceAccountID string `json:"difference_account_id,omitempty" format:"uuid" doc:"Under fair value: the profit-or-loss account the difference goes to." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d71"`
+	Note                string `json:"note,omitempty" maxLength:"1000" doc:"Under fair value: the accountant's note on the basis." example:"Measured at the seed round's price, as the founder converts as a lender"`
+}
+
+// SettlementShares are what a conversion allots under RND-SHARE.
+type SettlementShares struct {
+	Shares    string `json:"shares" doc:"The whole shares allotted." example:"10288"`
+	Converted Money  `json:"converted" doc:"What they convert: round(shares × price)."`
+	Remainder Money  `json:"remainder" doc:"What stays owed on the director's account."`
+}
+
 // DirectorSettlementDraft is a settlement as drafted.
 type DirectorSettlementDraft struct {
-	ContactID string            `json:"contact_id" format:"uuid" doc:"The director or shareholder the company owes." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"`
-	AccountID string            `json:"account_id" format:"uuid" doc:"The director's account it is owed on: 2500 or 2120." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"`
-	Amount    Money             `json:"amount" doc:"The amount, in the base currency: at most what is owed on the account today."`
-	Route     string            `json:"route,omitempty" enum:"keep,repay,convert,waive" doc:"keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); or waive (FR-EQ-07); convert is not built yet. Left out, the organisation's default route (founders.default_route), keep." example:"keep"`
-	Terms     *SettlementTerms  `json:"terms,omitempty" doc:"A loan kept's terms."`
-	Waiver    *SettlementWaiver `json:"waiver,omitempty" doc:"A waiver's account, capacity and reason."`
+	ContactID  string                `json:"contact_id" format:"uuid" doc:"The director or shareholder the company owes." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"`
+	AccountID  string                `json:"account_id" format:"uuid" doc:"The director's account it is owed on: 2500 or 2120." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"`
+	Amount     Money                 `json:"amount" doc:"The amount, in the base currency: at most what is owed on the account today."`
+	Route      string                `json:"route,omitempty" enum:"keep,repay,convert,waive" doc:"keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); convert to shares, approved now and effective once ACRA registers the allotment (FR-EQ-06); or waive (FR-EQ-07). Left out, the organisation's default route (founders.default_route), keep." example:"keep"`
+	Terms      *SettlementTerms      `json:"terms,omitempty" doc:"A loan kept's terms."`
+	Waiver     *SettlementWaiver     `json:"waiver,omitempty" doc:"A waiver's account, capacity and reason."`
+	Conversion *SettlementConversion `json:"conversion,omitempty" doc:"A conversion's class, price and basis, capacity and measurement basis."`
 }
 
 // DirectorSettlement is a settlement, drafted, waiting for approval, or decided.
 type DirectorSettlement struct {
-	ID               string            `json:"id" format:"uuid" doc:"Its ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa9"`
-	Number           string            `json:"number,omitempty" doc:"Its number, once decided (FR-ORG-04)." example:"DS-0001"`
-	Status           string            `json:"status" enum:"draft,waiting,decided" doc:"draft; waiting for another person's approval; or decided: the loan kept, the repayment payable by a payment batch, or the waiver posted." example:"waiting"`
-	Version          int               `json:"version" doc:"The version of its content; with its status it makes the ETag." example:"1"`
-	Date             string            `json:"date" format:"date" doc:"The day it was last drafted." example:"2026-11-03"`
-	ContactID        string            `json:"contact_id" format:"uuid" doc:"The person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"`
-	LegalName        string            `json:"legal_name" doc:"Their name." example:"Mei Lin Tan"`
-	AccountID        string            `json:"account_id" format:"uuid" doc:"The director's account." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"`
-	AccountCode      string            `json:"account_code,omitempty" doc:"Its code." example:"2500"`
-	Amount           Money             `json:"amount" doc:"The amount settled."`
-	Owed             Money             `json:"owed" doc:"What the company owes the person on the account today."`
-	Route            string            `json:"route" enum:"keep,repay,convert,waive" doc:"The route." example:"keep"`
-	Terms            *SettlementTerms  `json:"terms,omitempty" doc:"A loan kept's terms."`
-	Waiver           *SettlementWaiver `json:"waiver,omitempty" doc:"A waiver's account, capacity and reason."`
-	DeductedEarlier  bool              `json:"deducted_earlier" doc:"A decided waiver of amounts the company deducted earlier as costs (pay or fees on 2120): tagged for the tax computation [verify]." example:"false"`
-	RepayTo          *PayeeAccount     `json:"repay_to,omitempty" doc:"A repayment: the account in force it is paid into, the linked member's own (FR-AP-22) or else the contact's (FR-CT-03), by its last four characters; absent while there is none."`
-	Repaid           *Money            `json:"repaid,omitempty" doc:"A decided repayment: what payment batches have repaid of it, net of voids; the rest is open for the next batch."`
-	Agreements       int               `json:"agreements" doc:"How many files are attached and not removed: asking for approval needs one, the loan note, minute or deed." example:"1"`
-	ApprovalAsked    string            `json:"approval_asked,omitempty" format:"uuid" doc:"The pending request to decide it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"`
-	Checks           []BillCheck       `json:"checks" nullable:"false" doc:"A draft's statuses: ✖ while no agreement is attached, or while it does not fit what is owed now."`
-	LedgerImpact     []EntryLine       `json:"ledger_impact" nullable:"false" doc:"A waiver's entry: the lines it would post as a dry run while undecided (FR-APR-02), and the lines it posted once decided; empty for a loan kept."`
-	AccountantReview bool              `json:"accountant_review" doc:"Its request has a final step the Accountant signs, as every member who could sign benefits from a settlement of their own (FM-9) [accountant to confirm]." example:"false"`
+	ID               string                `json:"id" format:"uuid" doc:"Its ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa9"`
+	Number           string                `json:"number,omitempty" doc:"Its number, once decided (FR-ORG-04)." example:"DS-0001"`
+	Status           string                `json:"status" enum:"draft,waiting,decided,effective" doc:"draft; waiting for another person's approval; decided: the loan kept, the repayment payable by a payment batch, the waiver posted, or the conversion approved and pending ACRA's register; or effective: the conversion's shares in the register and posted." example:"waiting"`
+	Version          int                   `json:"version" doc:"The version of its content; with its status it makes the ETag." example:"1"`
+	Date             string                `json:"date" format:"date" doc:"The day it was last drafted." example:"2026-11-03"`
+	ContactID        string                `json:"contact_id" format:"uuid" doc:"The person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"`
+	LegalName        string                `json:"legal_name" doc:"Their name." example:"Mei Lin Tan"`
+	AccountID        string                `json:"account_id" format:"uuid" doc:"The director's account." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"`
+	AccountCode      string                `json:"account_code,omitempty" doc:"Its code." example:"2500"`
+	Amount           Money                 `json:"amount" doc:"The amount settled."`
+	Owed             Money                 `json:"owed" doc:"What the company owes the person on the account today."`
+	Route            string                `json:"route" enum:"keep,repay,convert,waive" doc:"The route." example:"keep"`
+	Terms            *SettlementTerms      `json:"terms,omitempty" doc:"A loan kept's terms."`
+	Waiver           *SettlementWaiver     `json:"waiver,omitempty" doc:"A waiver's account, capacity and reason."`
+	DeductedEarlier  bool                  `json:"deducted_earlier" doc:"A decided waiver of amounts the company deducted earlier as costs (pay or fees on 2120): tagged for the tax computation [verify]." example:"false"`
+	RepayTo          *PayeeAccount         `json:"repay_to,omitempty" doc:"A repayment: the account in force it is paid into, the linked member's own (FR-AP-22) or else the contact's (FR-CT-03), by its last four characters; absent while there is none."`
+	Repaid           *Money                `json:"repaid,omitempty" doc:"A decided repayment: what payment batches have repaid of it, net of voids; the rest is open for the next batch."`
+	Conversion       *SettlementConversion `json:"conversion,omitempty" doc:"A conversion's class, price and basis, capacity and measurement basis."`
+	Shares           *SettlementShares     `json:"shares,omitempty" doc:"A conversion: the whole shares RND-SHARE allots, what they convert and what stays owed."`
+	LapsesOn         string                `json:"lapses_on,omitempty" format:"date" doc:"An approved conversion not yet effective: the day the shareholders' approval lapses, the date by which the next AGM must be held [verify]; after it a new approval is needed." example:"2027-06-30"`
+	ShareIssue       *ShareIssue           `json:"share_issue,omitempty" doc:"An effective conversion: its share issue in the register."`
+	Agreements       int                   `json:"agreements" doc:"How many files are attached and not removed: asking for approval needs one, the loan note, minute or deed." example:"1"`
+	ApprovalAsked    string                `json:"approval_asked,omitempty" format:"uuid" doc:"The pending request to decide it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"`
+	Checks           []BillCheck           `json:"checks" nullable:"false" doc:"A draft's statuses: ✖ while no agreement is attached, or while it does not fit what is owed now."`
+	LedgerImpact     []EntryLine           `json:"ledger_impact" nullable:"false" doc:"A waiver's entry: the lines it would post as a dry run while undecided (FR-APR-02), and the lines it posted once decided; empty for a loan kept."`
+	AccountantReview bool                  `json:"accountant_review" doc:"Its request has a final step the Accountant signs, as every member who could sign benefits from a settlement of their own (FM-9) [accountant to confirm]." example:"false"`
 }
 
 // DirectorSettlementPage is a page of settlements, the latest first.
@@ -119,6 +143,21 @@ type replaceSettlementInput struct {
 	IfMatchHeader
 	PreferHeader
 	Body DirectorSettlementDraft
+}
+
+// SettlementEffective is what records a conversion as registered by ACRA.
+type SettlementEffective struct {
+	LodgementRef   string `json:"lodgement_ref" minLength:"1" maxLength:"100" doc:"ACRA's lodgement reference for the allotment." example:"AA2026113000456"`
+	ResolutionRefs string `json:"resolution_refs" minLength:"1" maxLength:"500" doc:"The shareholders' approval and the board resolution, by reference." example:"Written resolution of 6 Oct 2026; board resolution of 8 Oct 2026"`
+	EffectiveOn    string `json:"effective_on" format:"date" doc:"The day ACRA's register of members shows the allotment: no later than today, no earlier than the approval." example:"2026-11-30"`
+}
+
+type settlementEffectiveInput struct {
+	DirectorSettlementPath
+	KeyHeader
+	IfMatchHeader
+	PreferHeader
+	Body SettlementEffective
 }
 
 type settlementCommandInput struct {
@@ -192,6 +231,24 @@ func settlementIn(ctx context.Context, u storage.UnitOfWork, d DirectorSettlemen
 		}
 		s.Waiver = &director.Waiver{CreditAccountID: credit, Capacity: w.Capacity, Reason: strings.TrimSpace(w.Reason)}
 	}
+	if c := d.Conversion; c != nil {
+		class, err := uuid.Parse(c.ClassAccountID)
+		if err != nil {
+			fields = append(fields, FieldProblem{Code: CodeInvalid, Field: "body.conversion.class_account_id", Message: "is not an ID", Fix: "Send the share-capital account's ID"})
+		}
+		s.Conversion = &director.Conversion{ClassAccountID: class, Price: strings.TrimSpace(c.Price), PriceBasis: c.PriceBasis, Capacity: c.Capacity,
+			Measurement: cmpOr(c.Measurement, director.MeasurementCarrying), FairValuePrice: strings.TrimSpace(c.FairValuePrice), Note: strings.TrimSpace(c.Note)}
+		if s.Conversion.PriceBasis == "" {
+			if s.Conversion.PriceBasis, err = director.DefaultPriceBasis(ctx, u, today); err != nil {
+				return s, err
+			}
+		}
+		if c.DifferenceAccountID != "" {
+			if s.Conversion.DifferenceAccountID, err = uuid.Parse(c.DifferenceAccountID); err != nil {
+				fields = append(fields, FieldProblem{Code: CodeInvalid, Field: "body.conversion.difference_account_id", Message: "is not an ID", Fix: "Send the account's ID"})
+			}
+		}
+	}
 	if len(fields) > 0 {
 		return s, invalid(fields)
 	}
@@ -201,6 +258,7 @@ func settlementIn(ctx context.Context, u storage.UnitOfWork, d DirectorSettlemen
 // settlementView is what showing settlements needs once: the base currency, the chart, the persons' names, today, and
 // each settlement's pending request.
 type settlementView struct {
+	profile  storage.OrganisationProfile
 	base     money.Currency
 	accounts map[uuid.UUID]storage.Account
 	names    map[uuid.UUID]string
@@ -227,6 +285,11 @@ func (a *API) settlementView(ctx context.Context, u storage.UnitOfWork) (settlem
 	if v.today, err = orgToday(ctx, a, u); err != nil {
 		return v, err
 	}
+	o, err := u.Organisation(ctx)
+	if err != nil {
+		return v, err
+	}
+	v.profile = o.Profile
 	requests, err := u.Approvals().List(ctx, string(approval.Pending))
 	if err != nil {
 		return v, err
@@ -265,6 +328,30 @@ func (a *API) settlementOf(ctx context.Context, u storage.UnitOfWork, v settleme
 	if out.Agreements, err = director.Attached(ctx, u, doc.ID); err != nil {
 		return DirectorSettlement{}, err
 	}
+	if c := s.Conversion; c != nil {
+		out.Conversion = &SettlementConversion{ClassAccountID: c.ClassAccountID.String(), Price: c.Price, PriceBasis: c.PriceBasis, Capacity: c.Capacity,
+			Measurement: c.Measurement, FairValuePrice: c.FairValuePrice, Note: c.Note}
+		if c.DifferenceAccountID != uuid.Nil {
+			out.Conversion.DifferenceAccountID = c.DifferenceAccountID.String()
+		}
+		if sh, _, err := s.Shares(v.base); err == nil {
+			out.Shares = &SettlementShares{Shares: sh.Count.Text('f'), Converted: moneyOut(sh.Converted), Remainder: moneyOut(sh.Remainder)}
+		}
+		if doc.Status == storage.DocumentPosted {
+			issue, err := u.ShareIssues().OfSettlement(ctx, doc.ID)
+			if err != nil {
+				return DirectorSettlement{}, err
+			}
+			if issue != nil {
+				x := shareIssueOf(*issue, v.names[issue.HolderID], v.accounts[issue.ClassAccountID].Code)
+				out.ShareIssue = &x
+			} else if s.ApprovedOn != nil {
+				if lapses, ok := director.LapsesOn(v.profile, *s.ApprovedOn); ok {
+					out.LapsesOn = dateOf(lapses)
+				}
+			}
+		}
+	}
 	if s.Route == director.RouteRepay {
 		_, _, bank, err := director.RepayTo(ctx, u, s.ContactID)
 		if err != nil {
@@ -293,12 +380,30 @@ func (a *API) settlementOf(ctx context.Context, u storage.UnitOfWork, v settleme
 	}
 	if doc.Status == storage.DocumentPosted {
 		out.Status = "decided"
-		if s.Route == director.RouteWaive {
+		switch {
+		case s.Route == director.RouteWaive:
 			e, err := u.Ledger().ByIdentity(ctx, ledger.DirectorWaiverIdentity(doc.ID, doc.Version, ledger.RuleDirectorWaiver))
 			if err != nil {
 				return DirectorSettlement{}, err
 			}
 			out.LedgerImpact = entryOf(e).Lines
+		case out.ShareIssue != nil && out.ShareIssue.EntryID != "": // effective: what the register posted
+			out.Status = "effective"
+			e, err := u.Ledger().Entry(ctx, uuid.MustParse(out.ShareIssue.EntryID))
+			if err != nil {
+				return DirectorSettlement{}, err
+			}
+			out.LedgerImpact = entryOf(e).Lines
+		case s.Route == director.RouteConvert: // approved, pending ACRA: what it would post if registered today
+			settings, err := journal.LoadSettings(ctx, u)
+			if err != nil {
+				return DirectorSettlement{}, err
+			}
+			if c, _, err := s.ConversionRule(doc.ID, v.today, doc.Number, v.base); err == nil {
+				if e, err := ledger.PostConversion(c, settings); err == nil {
+					out.LedgerImpact = impactOf(e)
+				}
+			}
 		}
 		return out, nil
 	}
@@ -312,14 +417,7 @@ func (a *API) settlementOf(ctx context.Context, u storage.UnitOfWork, v settleme
 		p := problemFrom(ctx, err)
 		out.Checks = append(out.Checks, BillCheck{Severity: "error", Code: p.Code, Message: strings.TrimSuffix(p.Detail, "."), Fix: strings.TrimSuffix(p.Fix, ".")})
 	case c.Entry != nil:
-		for i, l := range c.Entry.Lines {
-			line := EntryLine{LineNo: i + 1, AccountID: l.AccountID.String(), Amount: moneyOut(l.Amount), FXRate: "1", FXRateSource: "base", BaseAmount: moneyOut(l.Base),
-				Description: l.Description}
-			if l.Party != uuid.Nil {
-				line.PartyID = l.Party.String()
-			}
-			out.LedgerImpact = append(out.LedgerImpact, line)
-		}
+		out.LedgerImpact = impactOf(*c.Entry)
 	}
 	return out, nil
 }
@@ -542,7 +640,7 @@ func registerSettlements(a *API) {
 			return &settlementOutput{Status: w.Status, Applied: applied(w), Body: w.Body}
 		}
 		status := "draft"
-		if w.Body.Status == "decided" {
+		if w.Body.Status == "decided" || w.Body.Status == "effective" {
 			status = "posted"
 		}
 		return &settlementOutput{Status: w.Status, ETag: etag(w.Body.Version, status), Location: "/v1/director-settlements/" + w.Body.ID,
@@ -554,7 +652,8 @@ func registerSettlements(a *API) {
 		DefaultStatus: http.StatusCreated, Summary: "Draft a settlement of a founder's balance",
 		Description: "Drafts a settlement of what the company owes a director or shareholder on 2500 or 2120 (FR-EQ-05): at most what is owed " +
 			"today less what other settlements approved to be repaid still have open, by a route (keep as a loan on terms; repay through " +
-			"a payment batch, into the person's approved account (FOUNDER-32 while there is none); or waive with the account it credits, " +
+			"a payment batch, into the person's approved account (FOUNDER-32 while there is none); convert to shares, with the class, the " +
+			"price per share and its basis, the capacity and the measurement basis, the shares by RND-SHARE; or waive with the account it credits, " +
 			"the capacity and the reason; the default route is the setting founders.default_route). Attach the loan note, minute or deed with addDirectorSettlementEvidence, then " +
 			"ask for approval with requestDirectorSettlementApproval. Side effects: the draft, audit events. Every problem comes back " +
 			"together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.",
@@ -621,6 +720,77 @@ func registerSettlements(a *API) {
 		return answer(w), nil
 	})
 
+	register(a, authz.RecordConversionEffective, huma.Operation{
+		OperationID: "recordConversionEffective", Method: http.MethodPost, Path: "/v1/director-settlements/{settlement_id}/effective",
+		Tags: []string{"Founders"}, Summary: "Record a conversion as registered by ACRA",
+		Description: "Makes an approved conversion of a founder's balance effective (FR-EQ-06, FR-EQ-09, design D11): ACRA's lodgement " +
+			"reference, the resolutions it rests on, and the effective date, the day ACRA's electronic register of members shows the " +
+			"allotment: no later than today, no earlier than the approval, and no later than the day the shareholders' approval lapses " +
+			"(lapses_on; FOUNDER-36). In one transaction it posts the conversion from the register on that date, never backdated " +
+			"(share_issue@1: Dr 2500 or 2120 naming the person, converted; Cr the class's share capital; under fair value, the " +
+			"difference to the account chosen), and records the share issue with its entry. A period that is closed refuses it: " +
+			"reopen the period, never a later date. Needs a person signed in who passed step-up, never the person converting " +
+			"(APR-15), and If-Match with the settlement's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and " +
+			"saves nothing.",
+	}, append([]string{director.CodeNotApproved, director.CodeEffective, director.CodeSettlement, ledger.CodeConversion, storage.CodeShareIssue,
+		approval.CodeBeneficiary, CodeSessionRequired, CodeStepUpRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid}, postingCodes()...),
+		func(ctx context.Context, in *settlementEffectiveInput) (*settlementOutput, error) {
+			id, err := parseID("settlement_id", in.SettlementID)
+			if err != nil {
+				return nil, err
+			}
+			if strings.TrimSpace(in.IfMatch) == "" {
+				return nil, checkIfMatch(in.IfMatch, "")
+			}
+			on, err := time.Parse(time.DateOnly, in.Body.EffectiveOn)
+			if err != nil {
+				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.effective_on", Message: "is not a date", Fix: "Send the date as YYYY-MM-DD"}})
+			}
+			p, err := a.steppedUpPerson(ctx, "Recording a conversion as registered")
+			if err != nil {
+				return nil, err
+			}
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (DirectorSettlement, error) {
+				doc, err := u.Documents().Lock(ctx, id)
+				if err != nil {
+					return DirectorSettlement{}, err
+				}
+				if !director.IsSettlement(doc) {
+					return DirectorSettlement{}, ports.ErrNotFound
+				}
+				if err := checkIfMatch(in.IfMatch, settlementETag(doc)); err != nil {
+					return DirectorSettlement{}, err
+				}
+				st, err := director.ReadSettlement(doc)
+				if err != nil {
+					return DirectorSettlement{}, err
+				}
+				if c, err := u.Contacts().Get(ctx, st.ContactID); err != nil {
+					return DirectorSettlement{}, err
+				} else if c.MemberUserID != nil && *c.MemberUserID == p.UserID {
+					return DirectorSettlement{}, problem(approval.CodeBeneficiary, "The conversion is yours, so another person records it (FM-9).",
+						"Ask another person who holds the approval right on director accounts")
+				}
+				v, err := a.settlementView(ctx, u)
+				if err != nil {
+					return DirectorSettlement{}, err
+				}
+				var lapses time.Time
+				if st.ApprovedOn != nil {
+					lapses, _ = director.LapsesOn(v.profile, *st.ApprovedOn)
+				}
+				if _, _, err := a.settlements.EffectiveIn(ctx, u, id, journal.Effective{LodgementRef: strings.TrimSpace(in.Body.LodgementRef),
+					ResolutionRefs: strings.TrimSpace(in.Body.ResolutionRefs), EffectiveOn: on, Today: v.today, LapsesOn: lapses, RecordedBy: p.UserID}); err != nil {
+					return DirectorSettlement{}, err
+				}
+				return shown(ctx, u, id)
+			})
+			if err != nil {
+				return nil, err
+			}
+			return answer(w), nil
+		})
+
 	register(a, authz.RequestDirectorSettlementApproval, huma.Operation{
 		OperationID: "requestDirectorSettlementApproval", Method: http.MethodPost, Path: "/v1/director-settlements/{settlement_id}/approval",
 		Tags: []string{"Founders"}, Summary: "Ask for approval of a settlement", DefaultStatus: http.StatusAccepted,
@@ -637,6 +807,7 @@ func registerSettlements(a *API) {
 			"checks it and asks nothing.",
 	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, director.CodeSettled, director.CodeNoAgreement, CodeIdempotencyReused, CodeIdempotencyBusy,
 		CodeIdempotencyOld, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, storage.CodeRetry, storage.CodeLockTimeout, ledger.CodeWaiver, ledger.CodeParty,
+		ledger.CodeConversion,
 		ledger.CodeUnknownAccount, ledger.CodeNoDate}, SettlementCodes...),
 		func(ctx context.Context, in *settlementCommandInput) (*settlementRequestOutput, error) {
 			id, err := parseID("settlement_id", in.SettlementID)
@@ -674,6 +845,14 @@ func registerSettlements(a *API) {
 				amount := s.Amount.String() + " " + s.Amount.Currency().Code
 				diff := []ApprovalDiff{{Field: "status", Before: "draft", After: "decided"}, {Field: "route", After: s.Route}, {Field: "amount", After: amount},
 					{Field: "accountant_review", After: strconv.FormatBool(review)}}
+				if cv := s.Conversion; s.Route == director.RouteConvert && cv != nil { // what the shareholders approve (FR-EQ-06)
+					if sh, _, err := s.Shares(v.base); err == nil {
+						diff = append(diff, ApprovalDiff{Field: "shares", After: sh.Count.Text('f') + " at " + cv.Price + " a share (" + cv.PriceBasis + ")"},
+							ApprovalDiff{Field: "converted", After: sh.Converted.String() + " " + sh.Converted.Currency().Code},
+							ApprovalDiff{Field: "stays owed", After: sh.Remainder.String() + " " + sh.Remainder.Currency().Code})
+					}
+					diff = append(diff, ApprovalDiff{Field: "capacity", After: cv.Capacity}, ApprovalDiff{Field: "measurement", After: cv.Measurement})
+				}
 				if s.Route == director.RouteRepay { // where the next payment batch pays it: the person's account in force now
 					_, _, bank, err := director.RepayTo(ctx, u, s.ContactID)
 					if err != nil {

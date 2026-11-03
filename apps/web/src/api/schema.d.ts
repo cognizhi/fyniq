@@ -3027,7 +3027,7 @@ export interface paths {
         put?: never;
         /**
          * Draft a settlement of a founder's balance
-         * @description Drafts a settlement of what the company owes a director or shareholder on 2500 or 2120 (FR-EQ-05): at most what is owed today less what other settlements approved to be repaid still have open, by a route (keep as a loan on terms; repay through a payment batch, into the person's approved account (FOUNDER-32 while there is none); or waive with the account it credits, the capacity and the reason; the default route is the setting founders.default_route). Attach the loan note, minute or deed with addDirectorSettlementEvidence, then ask for approval with requestDirectorSettlementApproval. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         * @description Drafts a settlement of what the company owes a director or shareholder on 2500 or 2120 (FR-EQ-05): at most what is owed today less what other settlements approved to be repaid still have open, by a route (keep as a loan on terms; repay through a payment batch, into the person's approved account (FOUNDER-32 while there is none); convert to shares, with the class, the price per share and its basis, the capacity and the measurement basis, the shares by RND-SHARE; or waive with the account it credits, the capacity and the reason; the default route is the setting founders.default_route). Attach the loan note, minute or deed with addDirectorSettlementEvidence, then ask for approval with requestDirectorSettlementApproval. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
          */
         post: operations["createDirectorSettlement"];
         delete?: never;
@@ -3074,6 +3074,26 @@ export interface paths {
          * @description Asks another person to approve a drafted settlement at the version read (FR-EQ-05, FR-APR-01), in every team mode. It needs its loan note, minute or deed attached (FOUNDER-30) and must fit what is owed now. The answer is 202 with an approval request, which a person who holds A on "Director accounts, settlements, share issues" approves, stepped up: never the one who asked, nor the person settled (APR-15, FM-9; the database's FY253); when every member who could sign is a director with a settlement of their own waiting or decided in the last 30 days, a final step the Accountant signs records their review [accountant to confirm]. The envelope carries the ledger impact (FR-APR-02). On the approval a loan kept is decided with no entry, a repayment becomes payable by the next payment batch, into the person's account in force (repay_to in the diff), and a waiver posts director_settlement@1 on that day: Dr 2500 or 2120 naming the person (waived), Cr the account chosen; a waiver of 2120 is tagged deducted earlier [verify]. The request holds the settlement's version, status, amount and what is owed, so a change voids it. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
          */
         post: operations["requestDirectorSettlementApproval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-settlements/{settlement_id}/effective": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a conversion as registered by ACRA
+         * @description Makes an approved conversion of a founder's balance effective (FR-EQ-06, FR-EQ-09, design D11): ACRA's lodgement reference, the resolutions it rests on, and the effective date, the day ACRA's electronic register of members shows the allotment: no later than today, no earlier than the approval, and no later than the day the shareholders' approval lapses (lapses_on; FOUNDER-36). In one transaction it posts the conversion from the register on that date, never backdated (share_issue@1: Dr 2500 or 2120 naming the person, converted; Cr the class's share capital; under fair value, the difference to the account chosen), and records the share issue with its entry. A period that is closed refuses it: reopen the period, never a later date. Needs a person signed in who passed step-up, never the person converting (APR-15), and If-Match with the settlement's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["recordConversionEffective"];
         delete?: never;
         options?: never;
         head?: never;
@@ -15853,6 +15873,8 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
              */
             contact_id: string;
+            /** @description A conversion's class, price and basis, capacity and measurement basis. */
+            conversion?: components["schemas"]["SettlementConversion"];
             /**
              * Format: date
              * @description The day it was last drafted.
@@ -15870,6 +15892,12 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa9
              */
             id: string;
+            /**
+             * Format: date
+             * @description An approved conversion not yet effective: the day the shareholders' approval lapses, the date by which the next AGM must be held [verify]; after it a new approval is needed.
+             * @example 2027-06-30
+             */
+            lapses_on?: string;
             /** @description A waiver's entry: the lines it would post as a dry run while undecided (FR-APR-02), and the lines it posted once decided; empty for a loan kept. */
             ledger_impact: components["schemas"]["EntryLine"][];
             /**
@@ -15894,12 +15922,16 @@ export interface components {
              * @enum {string}
              */
             route: "keep" | "repay" | "convert" | "waive";
+            /** @description An effective conversion: its share issue in the register. */
+            share_issue?: components["schemas"]["ShareIssue"];
+            /** @description A conversion: the whole shares RND-SHARE allots, what they convert and what stays owed. */
+            shares?: components["schemas"]["SettlementShares"];
             /**
-             * @description draft; waiting for another person's approval; or decided: the loan kept, the repayment payable by a payment batch, or the waiver posted.
+             * @description draft; waiting for another person's approval; decided: the loan kept, the repayment payable by a payment batch, the waiver posted, or the conversion approved and pending ACRA's register; or effective: the conversion's shares in the register and posted.
              * @example waiting
              * @enum {string}
              */
-            status: "draft" | "waiting" | "decided";
+            status: "draft" | "waiting" | "decided" | "effective";
             /** @description A loan kept's terms. */
             terms?: components["schemas"]["SettlementTerms"];
             /**
@@ -15926,8 +15958,10 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
              */
             contact_id: string;
+            /** @description A conversion's class, price and basis, capacity and measurement basis. */
+            conversion?: components["schemas"]["SettlementConversion"];
             /**
-             * @description keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); or waive (FR-EQ-07); convert is not built yet. Left out, the organisation's default route (founders.default_route), keep.
+             * @description keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); convert to shares, approved now and effective once ACRA registers the allotment (FR-EQ-06); or waive (FR-EQ-07). Left out, the organisation's default route (founders.default_route), keep.
              * @example keep
              * @enum {string}
              */
@@ -25329,6 +25363,82 @@ export interface components {
              */
             value?: string;
         };
+        SettlementConversion: {
+            /**
+             * @description The capacity in which the founder converts.
+             * @example lender
+             * @enum {string}
+             */
+            capacity: "lender" | "employee" | "shareholder";
+            /**
+             * Format: uuid
+             * @description The class: its share-capital account, 3010 ordinary or 3020 preference.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30
+             */
+            class_account_id: string;
+            /**
+             * Format: uuid
+             * @description Under fair value: the profit-or-loss account the difference goes to.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d71
+             */
+            difference_account_id?: string;
+            /**
+             * @description Under fair value: the shares' fair value per share.
+             * @example 1.25
+             */
+            fair_value_price?: string;
+            /**
+             * @description The measurement basis the accountant picks: the carrying amount (the default) or the shares' fair value with the difference in profit or loss.
+             * @example carrying
+             * @enum {string}
+             */
+            measurement?: "carrying" | "fair_value";
+            /**
+             * @description Under fair value: the accountant's note on the basis.
+             * @example Measured at the seed round's price, as the founder converts as a lender
+             */
+            note?: string;
+            /**
+             * @description The price per share in the base currency, a decimal string with at most 6 decimals.
+             * @example 1.20
+             */
+            price: string;
+            /**
+             * @description Where the price comes from: the latest priced round, an independent valuation, or a price every shareholder approves. Left out, the setting founders.price_basis.
+             * @example latest_priced_round
+             * @enum {string}
+             */
+            price_basis?: "latest_priced_round" | "valuation" | "unanimous";
+        };
+        SettlementEffective: {
+            /**
+             * Format: date
+             * @description The day ACRA's register of members shows the allotment: no later than today, no earlier than the approval.
+             * @example 2026-11-30
+             */
+            effective_on: string;
+            /**
+             * @description ACRA's lodgement reference for the allotment.
+             * @example AA2026113000456
+             */
+            lodgement_ref: string;
+            /**
+             * @description The shareholders' approval and the board resolution, by reference.
+             * @example Written resolution of 6 Oct 2026; board resolution of 8 Oct 2026
+             */
+            resolution_refs: string;
+        };
+        SettlementShares: {
+            /** @description What they convert: round(shares × price). */
+            converted: components["schemas"]["Money"];
+            /** @description What stays owed on the director's account. */
+            remainder: components["schemas"]["Money"];
+            /**
+             * @description The whole shares allotted.
+             * @example 10288
+             */
+            shares: string;
+        };
         SettlementTerms: {
             /**
              * @description The interest a year, as a percentage; 0, an interest-free loan, when left out.
@@ -29135,7 +29245,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APPLY-02` The saved application cannot be read; `APPLY-07` The void is dated before the application; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `CLAIM-16` The void is dated before the reimbursement; `CLAIM-18` A trip is incomplete; `CLAIM-19` No rate per km is set for the vehicle; `CLAIM-24` The line needs its receipt; `CLAIM-25` The claim does not say why it is late; `CLAIM-26` The receipt is on another record; `CLAIM-27` The receipt file is not on the claim; `CLAIM-32` The claim cannot settle that advance; `CLAIM-36` The claim cannot be kept as a loan; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `DEPOSIT-02` The saved deposit cannot be read; `DEPOSIT-07` The void is dated before the deposit; `FOUNDER-15` Not a director's fee; `FOUNDER-16` The director's fee does not fit; `FOUNDER-17` The fee has no shareholders' resolution; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `FOUNDER-30` The settlement has no agreement; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit; `LEDGER-41` A director's account line needs its person; `LEDGER-43` The director's fee does not fit the rule; `LEDGER-44` The waiver does not fit the rule; `LEDGER-45` The repayment does not fit the rule; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PAYEE-02` The saved change cannot be read; `PAYEE-03` Not an active vendor; `PAYEE-04` The currency does not fit; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-09` The call-back note is too long; `PAYEE-11` The account's evidence is not attached; `PAYEE-14` That is the account in force already; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APPLY-02` The saved application cannot be read; `APPLY-07` The void is dated before the application; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `CLAIM-16` The void is dated before the reimbursement; `CLAIM-18` A trip is incomplete; `CLAIM-19` No rate per km is set for the vehicle; `CLAIM-24` The line needs its receipt; `CLAIM-25` The claim does not say why it is late; `CLAIM-26` The receipt is on another record; `CLAIM-27` The receipt file is not on the claim; `CLAIM-32` The claim cannot settle that advance; `CLAIM-36` The claim cannot be kept as a loan; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `DEPOSIT-02` The saved deposit cannot be read; `DEPOSIT-07` The void is dated before the deposit; `FOUNDER-15` Not a director's fee; `FOUNDER-16` The director's fee does not fit; `FOUNDER-17` The fee has no shareholders' resolution; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `FOUNDER-30` The settlement has no agreement; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit; `LEDGER-41` A director's account line needs its person; `LEDGER-43` The director's fee does not fit the rule; `LEDGER-44` The waiver does not fit the rule; `LEDGER-45` The repayment does not fit the rule; `LEDGER-46` The conversion does not fit the rule; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PAYEE-02` The saved change cannot be read; `PAYEE-03` Not an active vendor; `PAYEE-04` The currency does not fit; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-09` The call-back note is too long; `PAYEE-11` The account's evidence is not attached; `PAYEE-14` That is the account in force already; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -51521,7 +51631,173 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `FOUNDER-30` The settlement has no agreement; `FOUNDER-32` No account to repay the person into; `LEDGER-01` The journal has no date; `LEDGER-04` An account does not exist; `LEDGER-41` A director's account line needs its person; `LEDGER-44` The waiver does not fit the rule. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `FOUNDER-30` The settlement has no agreement; `FOUNDER-32` No account to repay the person into; `LEDGER-01` The journal has no date; `LEDGER-04` An account does not exist; `LEDGER-41` A director's account line needs its person; `LEDGER-44` The waiver does not fit the rule; `LEDGER-46` The conversion does not fit the rule. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordConversionEffective: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The settlement's ID. */
+                settlement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettlementEffective"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorSettlement"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-15` The person settled does not approve their own settlement; `TEAM-04` Your roles conflict for this action. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `FOUNDER-35` Not an approved conversion waiting for ACRA; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-SHARE-01` The register of share issues does not change that way. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-28` The settlement does not fit; `FOUNDER-36` The effective date does not fit; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-46` The conversion does not fit the rule; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
             422: {
                 headers: {
                     [name: string]: unknown;

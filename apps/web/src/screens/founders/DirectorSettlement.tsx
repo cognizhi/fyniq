@@ -33,7 +33,7 @@ const drafters = ["owner", "controller"];
 const routes: { route: Route | "safe"; title: string; words: string; later?: string }[] = [
   { route: "repay", title: "Repay in cash", words: "The next payment batch pays it into their approved bank account, and the balance goes down. Not income for them." },
   { route: "keep", title: "Keep as a loan", words: "Nothing posts. The terms go in a loan note or board minute, and the balance is confirmed at each year end." },
-  { route: "convert", title: "Convert to shares", words: "The balance becomes share capital on the date ACRA records the allotment.", later: "Comes with the register of share issues" },
+  { route: "convert", title: "Convert to shares", words: "The balance becomes share capital on the date ACRA records the allotment. Needs the shareholders' approval, a board resolution, a conversion agreement and their balance confirmation." },
   { route: "waive", title: "Waive", words: "They give up the amount. It posts to capital contribution or other income, with a reason." },
   { route: "safe", title: "Convert to a SAFE or note", words: "The amount turns into shares at the next priced round.", later: "Comes with the equity register" },
 ];
@@ -45,9 +45,28 @@ const routeTitle = (r: Route) => routes.find((x) => x.route === r)?.title ?? r;
 const creditable = (a: Account) =>
   a.active && !a.group && !a.money_account && !directorRoles.includes(a.role ?? "") && a.role !== "share-capital" && a.role !== "gst-control" && (a.type === "equity" || a.type === "revenue");
 
-type Form = { route: Route; account_id: string; amount: string; interest_rate: string; repay_on: string; subordinated: boolean; credit_account_id: string; capacity: "shareholder" | "other"; reason: string };
+type Conversion = components["schemas"]["SettlementConversion"];
 
-const blank = (route: Route, account: string): Form => ({ route, account_id: account, amount: "", interest_rate: "0", repay_on: "", subordinated: false, credit_account_id: "", capacity: "shareholder", reason: "" });
+type Form = {
+  route: Route;
+  account_id: string;
+  amount: string;
+  interest_rate: string;
+  repay_on: string;
+  subordinated: boolean;
+  credit_account_id: string;
+  capacity: "shareholder" | "other";
+  reason: string;
+  conversion: { class_account_id: string; price: string; price_basis: NonNullable<Conversion["price_basis"]> | ""; capacity: Conversion["capacity"]; measurement: NonNullable<Conversion["measurement"]>; fair_value_price: string; difference_account_id: string; note: string };
+};
+
+const blankConversion: Form["conversion"] = { class_account_id: "", price: "", price_basis: "", capacity: "lender", measurement: "carrying", fair_value_price: "", difference_account_id: "", note: "" };
+
+const blank = (route: Route, account: string): Form => ({ route, account_id: account, amount: "", interest_rate: "0", repay_on: "", subordinated: false, credit_account_id: "", capacity: "shareholder", reason: "", conversion: blankConversion });
+
+// The price bases and capacities of a conversion, in the PRD's words (FR-EQ-06).
+const priceBases: Record<NonNullable<Conversion["price_basis"]>, string> = { latest_priced_round: "The latest priced round", valuation: "An independent valuation", unanimous: "A price every shareholder approves" };
+const capacities: Record<Conversion["capacity"], string> = { lender: "A lender", employee: "An employee", shareholder: "A shareholder" };
 
 function formOf(s: Settlement): Form {
   return {
@@ -60,10 +79,27 @@ function formOf(s: Settlement): Form {
     credit_account_id: s.waiver?.credit_account_id ?? "",
     capacity: s.waiver?.capacity ?? "shareholder",
     reason: s.waiver?.reason ?? "",
+    conversion: s.conversion
+      ? { ...blankConversion, ...s.conversion, price_basis: s.conversion.price_basis ?? "", measurement: s.conversion.measurement ?? "carrying", fair_value_price: s.conversion.fair_value_price ?? "", difference_account_id: s.conversion.difference_account_id ?? "", note: s.conversion.note ?? "" }
+      : blankConversion,
   };
 }
 
 function StatusChip({ s }: { s: Settlement }) {
+  if (s.status === "effective")
+    return (
+      <span className="fy-chip fy-chip--good">
+        <Icon of={CircleCheck} />
+        Effective
+      </span>
+    );
+  if (s.status === "decided" && s.route === "convert")
+    return (
+      <span className="fy-chip fy-chip--serious">
+        <Icon of={ClockAlert} />
+        Approved, waiting for ACRA
+      </span>
+    );
   if (s.status === "decided")
     return (
       <span className="fy-chip fy-chip--good">
@@ -94,7 +130,9 @@ function Impact({ s, codes, name }: { s: Settlement; codes: Map<string, Account>
       ? `Nothing posts: ${amount} stays owed to ${name} as a loan on these terms.`
       : s.route === "repay"
         ? `Once approved, the next payment batch pays ${amount} to ${name}, and what the company owes them goes down by it.`
-        : `${amount} stops being owed to ${name} and goes to ${codes.get(s.waiver?.credit_account_id ?? "")?.name ?? "the account chosen"}.`;
+        : s.route === "convert"
+          ? `When ACRA records the allotment, ${s.shares ? `${formatAmount(s.shares.converted.amount)} ${s.shares.converted.currency}` : amount} moves from what the company owes ${name} to their shareholding${s.shares && !isZero(s.shares.remainder.amount) ? `, and ${formatAmount(s.shares.remainder.amount)} ${s.shares.remainder.currency} stays owed` : ""}.`
+          : `${amount} stops being owed to ${name} and goes to ${codes.get(s.waiver?.credit_account_id ?? "")?.name ?? "the account chosen"}.`;
   return (
     <section className="fy-card" aria-labelledby="ds-impact">
       <div className="fy-card__head">
@@ -102,6 +140,7 @@ function Impact({ s, codes, name }: { s: Settlement; codes: Map<string, Account>
           {s.status === "decided" ? "What it posted" : "What it posts"}
         </h2>
         {s.route === "waive" && <span className="fy-small fy-muted">On the day it is approved</span>}
+        {s.route === "convert" && s.status !== "effective" && <span className="fy-small fy-muted">On the day ACRA registers it, never backdated</span>}
       </div>
       <div className="fy-card__body fy-stack fy-stack--2">
         <p className="fy-small">{plain}</p>
@@ -142,6 +181,66 @@ function Impact({ s, codes, name }: { s: Settlement; codes: Map<string, Account>
   );
 }
 
+// EffectiveForm records an approved conversion as registered by ACRA (FR-EQ-06, FR-EQ-09): the lodgement reference, the
+// resolutions and the day ACRA's register shows the allotment, which it posts on, never backdated.
+function EffectiveForm({ s, etag, name, onDone, onRead }: { s: Settlement; etag: string; name: string; onDone: (text: string) => void; onRead: () => void }) {
+  const id = useId();
+  const confirm = useConfirm();
+  const [form, setForm] = useState({ lodgement_ref: "", resolution_refs: "", effective_on: "" });
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const [key] = useState(newKey);
+  const record = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setProblem(null);
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/director-settlements/{settlement_id}/effective", {
+        params: { path: { settlement_id: s.id }, header: { "If-Match": etag, "Idempotency-Key": key } },
+        body: { lodgement_ref: form.lodgement_ref.trim(), resolution_refs: form.resolution_refs.trim(), effective_on: form.effective_on },
+      }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    onDone(`${s.number ?? "The conversion"} is effective: ${name}'s shares are in the register.`);
+    onRead();
+  };
+  return (
+    <form className="fy-stack fy-stack--3" onSubmit={(e) => void record(e)} noValidate aria-labelledby={`${id}-title`}>
+      <h3 className="fy-h3" id={`${id}-title`} title={helpText("director-settlement.effective").tooltip}>
+        When ACRA registers it
+      </h3>
+      <p className="fy-small">
+        Approved, it posts nothing until ACRA's register of members shows the allotment.
+        {s.lapses_on && ` The shareholders' approval lapses on ${date(s.lapses_on)}, the date by which the next AGM must be held; after it a new approval is needed.`}
+      </p>
+      {problem && <Refusal problem={problem} title="The conversion was not recorded" />}
+      <div className="fy-field">
+        <label className="fy-label" htmlFor={`${id}-ref`}>
+          ACRA lodgement reference
+        </label>
+        <input className="fy-input" id={`${id}-ref`} maxLength={100} value={form.lodgement_ref} onChange={(e) => setForm({ ...form, lodgement_ref: e.target.value })} />
+      </div>
+      <div className="fy-field">
+        <label className="fy-label" htmlFor={`${id}-res`}>
+          Resolutions
+        </label>
+        <input className="fy-input" id={`${id}-res`} maxLength={500} value={form.resolution_refs} onChange={(e) => setForm({ ...form, resolution_refs: e.target.value })} />
+      </div>
+      <div className="fy-field">
+        <label className="fy-label" htmlFor={`${id}-on`}>
+          Registered on
+        </label>
+        <input className="fy-input" type="date" id={`${id}-on`} value={form.effective_on} onChange={(e) => setForm({ ...form, effective_on: e.target.value })} />
+        <span className="fy-help">The day ACRA's register shows the allotment. It posts on that day and is never backdated.</span>
+      </div>
+      <Button variant="primary" type="submit" disabled={busy || !form.lodgement_ref.trim() || !form.resolution_refs.trim() || !form.effective_on}>
+        {busy ? "Recording…" : "Record as registered"}
+      </Button>
+    </form>
+  );
+}
+
 export function DirectorSettlement() {
   const { contactId } = useParams({ strict: false }) as { contactId: string };
   const id = useId();
@@ -175,6 +274,7 @@ export function DirectorSettlement() {
   // A route chosen before the balances arrive still lands on the first account the company owes the person on.
   const f = form ? { ...form, account_id: form.account_id || (balances[0]?.account_id ?? "") } : blank(list.data?.default_route ?? "keep", balances[0]?.account_id ?? "");
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm({ ...f, [k]: v });
+  const setConv = <K extends keyof Form["conversion"]>(k: K, v: Form["conversion"][K]) => setForm({ ...f, conversion: { ...f.conversion, [k]: v } });
   const editable = mayDraft && (!open || open.s.status === "draft");
 
   const read = async (settlementId: string) => {
@@ -200,6 +300,8 @@ export function DirectorSettlement() {
     if (f.route === "keep" && (typed(f.interest_rate) === null || f.interest_rate.startsWith("-"))) errs.interest_rate = "Enter the interest a year as a percentage, such as 0.";
     if (f.route === "waive" && !f.credit_account_id) errs.credit = "Choose the account the waiver credits.";
     if (f.route === "waive" && !f.reason.trim()) errs.reason = "Say why they waive it.";
+    if (f.route === "convert" && !f.conversion.class_account_id) errs.class = "Choose the class of shares allotted.";
+    if (f.route === "convert" && (!typed(f.conversion.price) || isZero(typed(f.conversion.price) ?? "0"))) errs.price = "Enter the price per share, such as 1.20.";
     setErrors(errs);
     if (Object.keys(errs).length > 0 || !amount) return;
     const body = {
@@ -209,6 +311,20 @@ export function DirectorSettlement() {
       route: f.route,
       ...(f.route === "keep" ? { terms: { interest_rate: typed(f.interest_rate) ?? "0", ...(f.repay_on ? { repay_on: f.repay_on } : {}), subordinated: f.subordinated } } : {}),
       ...(f.route === "waive" ? { waiver: { credit_account_id: f.credit_account_id, capacity: f.capacity, reason: f.reason.trim() } } : {}),
+      ...(f.route === "convert"
+        ? {
+            conversion: {
+              class_account_id: f.conversion.class_account_id,
+              price: typed(f.conversion.price) ?? f.conversion.price,
+              ...(f.conversion.price_basis ? { price_basis: f.conversion.price_basis } : {}),
+              capacity: f.conversion.capacity,
+              measurement: f.conversion.measurement,
+              ...(f.conversion.measurement === "fair_value"
+                ? { fair_value_price: typed(f.conversion.fair_value_price) ?? f.conversion.fair_value_price, difference_account_id: f.conversion.difference_account_id, note: f.conversion.note.trim() }
+                : {}),
+            },
+          }
+        : {}),
     };
     setBusy(true);
     setProblem(null);
@@ -290,7 +406,7 @@ export function DirectorSettlement() {
       {problem && <Refusal problem={problem} title="The settlement was not saved" />}
 
       <ol className="fy-steps fy-steps--wrap" aria-label="Settlement progress">
-        {["Route", "Details", "Evidence and approval", "Decided"].map((label, i) => (
+        {["Route", "Details", "Evidence and approval", f.route === "convert" ? "Effective" : "Decided"].map((label, i) => (
           <li key={label} className={i + 1 < step ? "fy-step fy-step--done" : "fy-step"} aria-current={i + 1 === step ? "step" : undefined}>
             <span className="fy-step__n">{i + 1}</span>
             {label}
@@ -430,6 +546,95 @@ export function DirectorSettlement() {
                     </div>
                   </>
                 )}
+                {f.route === "convert" && (
+                  <>
+                    <div className="fy-field">
+                      <label className="fy-label" htmlFor={`${id}-class`}>
+                        Class of shares
+                      </label>
+                      <select className="fy-input" id={`${id}-class`} value={f.conversion.class_account_id} onChange={(e) => setConv("class_account_id", e.target.value)} {...field("class")}>
+                        <option value="">Choose</option>
+                        {(chart.data ?? []).filter((a) => a.role === "share-capital" && a.active && !a.group).map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.code} {a.name}
+                          </option>
+                        ))}
+                      </select>
+                      {error("class")}
+                    </div>
+                    <div className="fy-field">
+                      <label className="fy-label" htmlFor={`${id}-price`}>
+                        Price per share ({base})
+                      </label>
+                      <input className="fy-input fy-num" inputMode="decimal" id={`${id}-price`} value={f.conversion.price} onChange={(e) => setConv("price", e.target.value)} {...field("price")} />
+                      {error("price")}
+                    </div>
+                    <div className="fy-field">
+                      <label className="fy-label" htmlFor={`${id}-basis`}>
+                        Price basis
+                      </label>
+                      <select className="fy-input" id={`${id}-basis`} value={f.conversion.price_basis} onChange={(e) => setConv("price_basis", e.target.value as Form["conversion"]["price_basis"])}>
+                        <option value="">The organisation's default</option>
+                        {Object.entries(priceBases).map(([k, v]) => (
+                          <option key={k} value={k}>
+                            {v}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="fy-help">A price away from the latest round or a valuation moves value between shareholders.</span>
+                    </div>
+                    <div className="fy-field">
+                      <label className="fy-label" htmlFor={`${id}-as`}>
+                        They convert as
+                      </label>
+                      <select className="fy-input" id={`${id}-as`} value={f.conversion.capacity} onChange={(e) => setConv("capacity", e.target.value as Form["conversion"]["capacity"])}>
+                        {Object.entries(capacities).map(([k, v]) => (
+                          <option key={k} value={k}>
+                            {v}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="fy-field fy-expert-only">
+                      <label className="fy-label" htmlFor={`${id}-measure`}>
+                        Measurement basis
+                      </label>
+                      <select className="fy-input" id={`${id}-measure`} value={f.conversion.measurement} onChange={(e) => setConv("measurement", e.target.value as Form["conversion"]["measurement"])}>
+                        <option value="carrying">The carrying amount (the default)</option>
+                        <option value="fair_value">The shares' fair value, the difference in profit or loss</option>
+                      </select>
+                    </div>
+                    {f.conversion.measurement === "fair_value" && (
+                      <>
+                        <div className="fy-field">
+                          <label className="fy-label" htmlFor={`${id}-fair`}>
+                            Fair value per share ({base})
+                          </label>
+                          <input className="fy-input fy-num" inputMode="decimal" id={`${id}-fair`} value={f.conversion.fair_value_price} onChange={(e) => setConv("fair_value_price", e.target.value)} />
+                        </div>
+                        <div className="fy-field">
+                          <label className="fy-label" htmlFor={`${id}-difference`}>
+                            Difference to
+                          </label>
+                          <select className="fy-input" id={`${id}-difference`} value={f.conversion.difference_account_id} onChange={(e) => setConv("difference_account_id", e.target.value)}>
+                            <option value="">Choose</option>
+                            {(chart.data ?? []).filter((a) => a.active && !a.group && !a.money_account && (a.type === "revenue" || a.type === "expense")).map((a) => (
+                              <option key={a.id} value={a.id}>
+                                {a.code} {a.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="fy-field fy-span-2">
+                          <label className="fy-label" htmlFor={`${id}-note`}>
+                            The accountant's note
+                          </label>
+                          <input className="fy-input" id={`${id}-note`} maxLength={1000} value={f.conversion.note} onChange={(e) => setConv("note", e.target.value)} />
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
               </fieldset>
               {editable && (
                 <div className="fy-card__foot fy-row justify-end gap-2">
@@ -455,6 +660,17 @@ export function DirectorSettlement() {
                 </li>
               ))}
             </ul>
+          )}
+          {open?.s.shares && (
+            <section className="fy-card fy-card--pad fy-row fy-row--wrap fy-row--between gap-3" aria-label="Shares allotted">
+              <span className="fy-stack" style={{ gap: 0 }}>
+                <span className="fy-small fy-muted">Shares to allot</span>
+                <span className="fy-num fy-strong">{Number.isSafeInteger(Number(open.s.shares.shares)) ? Number(open.s.shares.shares).toLocaleString("en-SG") : open.s.shares.shares}</span>
+              </span>
+              <span className="fy-small fy-muted">
+                Rounded down to whole shares<span className="fy-expert-only"> (RND-SHARE)</span>; {formatAmount(open.s.shares.remainder.amount)} {open.s.shares.remainder.currency} stays owed
+              </span>
+            </section>
           )}
           {open && <Impact s={open.s} codes={codes} name={name} />}
           {open?.s.repaid && (
@@ -487,7 +703,15 @@ export function DirectorSettlement() {
                     Open the request
                   </Link>
                 )}
-                {open.s.status === "decided" && <p className="fy-small">Decided as {open.s.number}.</p>}
+                {open.s.status === "decided" && open.s.route !== "convert" && <p className="fy-small">Decided as {open.s.number}.</p>}
+                {open.s.status === "decided" && open.s.route === "convert" && mayDraft && (
+                  <EffectiveForm s={open.s} etag={open.etag} name={name} onDone={(text) => setStatus({ text })} onRead={() => void read(open.s.id)} />
+                )}
+                {open.s.status === "effective" && open.s.share_issue && (
+                  <p className="fy-small">
+                    {open.s.number} is effective from {date(open.s.share_issue.effective_on)}: {open.s.share_issue.shares} shares in the register, ACRA's reference {open.s.share_issue.lodgement_ref}.
+                  </p>
+                )}
               </section>
             </>
           ) : (

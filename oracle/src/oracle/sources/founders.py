@@ -1,7 +1,9 @@
 """A cost a founder paid before the books start (``pre_incorporation_cost@1``), from PRD-001 FR-EQ-03 and Appendix B.7
 ("Cost a founder paid personally, kept as a loan") and the founders' money design D7 (rev 0.167); and a director's fee
 (``director_fee@1``), from FR-EQ-04, §10.2 and design D8; and a waiver of what the company owes one
-(``director_settlement@1``), from FR-EQ-07, Appendix B.7 and design D10.
+(``director_settlement@1``), from FR-EQ-07, Appendix B.7 and design D10; a repayment through a payment batch
+(``director_repayment@1``) and a conversion to shares from the register of share issues (``share_issue@1``), from
+FR-EQ-05, FR-EQ-06 and designs D10 and D11.
 
 The document is the cost as the accountant decided it: the date it posts on (``date``: the books start, or the day of
 the decision when the books start's month is closed), the day it was paid (``incurred``, before the books start), the
@@ -16,6 +18,7 @@ the GST when claimed; and Cr ``director_loan`` (2500) with the gross, the line n
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from typing import Any
 
 from oracle import money
@@ -126,4 +129,42 @@ def director_repayment(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
         lines.append(r.line(s["account"], r.base, amount, amount, party=person))
         total = money.EXACT.add(total, amount)
     lines.append(r.base_line(d["account"], money.negate(total)))
+    return Posting(lines)
+
+
+def director_conversion(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
+    """A founder's balance converted to shares from the register of share issues, posted on ``date``, the day ACRA's
+    register shows the allotment (FR-EQ-06, Appendix B.7).
+
+    ``RND-SHARE`` allots n whole shares for ``amount`` at ``price``; Dr ``account`` (2500 or 2120, a director's account)
+    with the converted amount round(n x price), the line naming ``person``; Cr ``class`` (a share-capital account) with
+    the converted amount, or under fair value with round(n x ``fair_value_price``), the difference to ``difference``, an
+    income or expense account (Dr a loss, Cr a gain). The remainder stays owed.
+    """
+    d = doc.data
+    person = d["person"]
+    if person not in r.scenario.people:
+        raise Rejected("not-a-director")
+    if r.account(d["account"]).role not in DIRECTOR_ROLES:
+        raise Rejected("not-a-directors-account")
+    share_class = r.scenario.accounts.get(d["class"])
+    if share_class is None or share_class.role != "share-capital" or share_class.group or not share_class.active:
+        raise Rejected("not-share-capital")
+    amount = r.amount(d["amount"], r.base, sign=1)
+    price = r.quantity(d["price"])
+    shares, converted, _ = money.rnd_share(amount, price, r.minor(r.base))
+    if shares == 0:
+        raise Rejected("no-whole-share")
+    lines = [r.line(d["account"], r.base, converted, converted, party=person)]
+    if "fair_value_price" not in d:
+        lines.append(r.base_line(d["class"], money.negate(converted)))
+        return Posting(lines)
+    fair = r.quantity(d["fair_value_price"])
+    equity = money.rnd_line(Decimal(shares), fair, r.minor(r.base))
+    lines.append(r.base_line(d["class"], money.negate(equity)))
+    if equity != converted:
+        difference = r.account(d.get("difference", ""))
+        if difference.type not in ("revenue", "expense") or d["difference"] in r.settings.money_accounts:
+            raise Rejected("account-not-allowed")
+        lines.append(r.base_line(d["difference"], money.EXACT.subtract(equity, converted)))
     return Posting(lines)

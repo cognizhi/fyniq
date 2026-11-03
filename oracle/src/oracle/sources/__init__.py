@@ -38,4 +38,5 @@ RULE_SETS: dict[str, RuleSet] = {
     "director_fee": founders.director_fee,
     "director_waiver": founders.director_waiver,
     "director_repayment": founders.director_repayment,
+    "director_conversion": founders.director_conversion,
 }

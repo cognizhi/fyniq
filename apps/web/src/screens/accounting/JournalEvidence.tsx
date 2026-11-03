@@ -61,7 +61,7 @@ const kindsOf = {
   "pay-choice": ["board minute", "directors' resolution", "signed letter"],
   "director-fee": ["shareholders' resolution", "AGM minutes", "written resolution"],
   "exempt-status": ["ACRA business profile", "register of members"],
-  "director-settlement": ["loan note", "board minute", "deed of waiver", "directors' resolution"],
+  "director-settlement": ["loan note", "board minute", "deed of waiver", "directors' resolution", "shareholders' approval", "board resolution", "conversion agreement", "balance confirmation"],
 };
 
 // nouns name each record in the panel's words.
