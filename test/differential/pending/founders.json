@@ -5,7 +5,7 @@
  "currencies": {"SGD": 2},
  "as_of": "2026-03-31",
  "settings": {
-  "accounts": {"gst": "2200", "director_loan": "2500"},
+  "accounts": {"gst": "2200", "director_loan": "2500", "deferred_remuneration": "2120"},
   "money_accounts": {"1010": "SGD"},
   "books_start": "2026-01-01",
   "gst": {"registered_from": "2026-01-01", "rates": [{"from": "2024-01-01", "percent": "9"}]}
@@ -13,8 +13,10 @@
  "accounts": [
   {"code": "1010", "type": "asset", "group": false, "active": true},
   {"code": "1600", "type": "asset", "group": false, "active": true},
+  {"code": "2120", "type": "liability", "group": false, "active": true, "role": "deferred-remuneration"},
   {"code": "2200", "type": "liability", "group": false, "active": true},
   {"code": "2500", "type": "liability", "group": false, "active": true, "role": "director-loan"},
+  {"code": "6050", "type": "expense", "group": false, "active": true},
   {"code": "6400", "type": "expense", "group": false, "active": true},
   {"code": "6910", "type": "expense", "group": false, "active": true}
  ],
@@ -35,7 +37,10 @@
   {"type": "pre_incorporation_cost", "id": "PIC-0007", "version": 1, "date": "2025-12-31", "incurred": "2025-12-01", "person": "P0001",
    "account": "6400", "gross": "10.00"},
   {"type": "pre_incorporation_cost", "id": "PIC-0008", "version": 1, "date": "2026-01-01", "incurred": "2025-12-01", "person": "P0001",
-   "account": "6400", "gross": "10.00", "claim_gst": true}
+   "account": "6400", "gross": "10.00", "claim_gst": true},
+  {"type": "director_fee", "id": "DF-0001", "version": 1, "date": "2026-03-31", "person": "P0002", "account": "6050", "amount": "6000.00"},
+  {"type": "director_fee", "id": "DF-0002", "version": 1, "date": "2026-03-31", "person": "P0009", "account": "6050", "amount": "10.00"},
+  {"type": "director_fee", "id": "DF-0003", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2120", "amount": "10.00"}
  ],
  "reversals": []
 }

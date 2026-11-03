@@ -180,7 +180,7 @@ A scenario with a P1 document must have `settings` and `as_of`, or it is invalid
 - `settings.accounts` names the system accounts by key (Appendix B.5): `receivable` (1100), `payable`
   (2010), `gst` (2200), `prepayments` (1210), `deferred_revenue` (2400), `fx` (7030), `bank_charges`
   (6460, a setting), `withholding_tax` (2330), `customer_deposits` (2410), `claims_payable` (2150),
-  `advances` (1250), `director_loan` (2500), `depreciation` (6610), `accumulated_depreciation` (1590), `disposal` (7050, a setting)
+  `advances` (1250), `director_loan` (2500), `deferred_remuneration` (2120), `depreciation` (6610), `accumulated_depreciation` (1590), `disposal` (7050, a setting)
   and `disposal_clearing` (1160, a setting). Each named account must be in `accounts`. A document that
   needs a key the organisation has not set is rejected.
 - `settings.books_start` is the first day of the books: an asset's depreciation posts from the later of
@@ -396,6 +396,19 @@ day the person paid it (before the books start), `person` one of `people`. It po
 `gross` less `gst` when `claim_gst` (only while GST-registered on `date`), Dr `gst` (2200) with the GST claimed, and Cr
 `director_loan` (2500) with `gross`, the line naming the person. The account is not a director's account, a money
 account or GST control.
+
+### Directors' fees (`director_fee`, `director_fee@1`)
+
+From FR-EQ-04, §10.2 and the founders' money design D8 (rev 0.167).
+
+```json
+{"type": "director_fee", "id": "DF-0001", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "6050",
+ "amount": "6000.00"}
+```
+
+A fee the shareholders voted, posted on `date`, the day the director became entitled to it: Dr `account` (6050
+Directors' fees) with `amount`, Cr `deferred_remuneration` (2120) with `amount`, the line naming `person`, one of
+`people`. The account is not a director's account, a money account or GST control.
 
 ### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
 

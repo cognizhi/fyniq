@@ -79,6 +79,7 @@ P1_ACCOUNTS = [
     {"code": "2330", "type": "liability", "group": False, "active": True},
     {"code": "2400", "type": "liability", "group": False, "active": True},
     {"code": "2410", "type": "liability", "group": False, "active": True},
+    {"code": "2120", "type": "liability", "group": False, "active": True, "role": "deferred-remuneration"},
     {"code": "2500", "type": "liability", "group": False, "active": True, "role": "director-loan"},
     {"code": "2999", "type": "liability", "group": False, "active": True},
     {"code": "3010", "type": "equity", "group": False, "active": True, "role": "share-capital"},
@@ -87,6 +88,7 @@ P1_ACCOUNTS = [
     {"code": "4020", "type": "revenue", "group": False, "active": True},
     {"code": "4095", "type": "revenue", "group": False, "active": True},  # discounts allowed
     {"code": "6010", "type": "expense", "group": False, "active": True},
+    {"code": "6050", "type": "expense", "group": False, "active": True},  # directors' fees
     {"code": "6110", "type": "expense", "group": False, "active": True},
     {"code": "6460", "type": "expense", "group": False, "active": True},
     {"code": "6610", "type": "expense", "group": False, "active": True},  # depreciation
@@ -109,6 +111,7 @@ P1_SETTINGS = {
         "claims_payable": "2150",
         "advances": "1250",
         "director_loan": "2500",
+        "deferred_remuneration": "2120",
         "depreciation": "6610",
         "accumulated_depreciation": "1590",
         "disposal": "7050",

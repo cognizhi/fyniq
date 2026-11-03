@@ -55,6 +55,20 @@ one from the month it changes, and the new one applies from then. Salary deferre
 is due at the end of each month and the salary is taxed, though it is not paid, so ask your
 accountant first. Payroll applies the choice once it is built.
 
+## Record a director's fee
+
+A fee the shareholders voted to a director is recorded on their card:
+
+1. Select **Fees**, then enter the day of the general meeting that voted it, the fee and the
+   period it is for.
+2. Attach the shareholders' resolution or the meeting's minutes.
+3. Select **Ask for approval**.
+
+An Owner or the Controller records it. Another person who holds the approval right approves it,
+never the director it is paid to. On approval it posts to 6050 Directors' fees on the day it was
+voted, and the director's account on 2120 shows it as owed to them until it is paid. A posted fee
+never changes: correct it with a journal to the director's account.
+
 ## Name the person on a journal or opening balance
 
 On a journal line or an opening balance on 2500 or 2120, choose **Whose account** and **Where it
@@ -86,6 +100,8 @@ Select **PDF for confirmation** to download the statement as a PDF to send to th
 | You are the member being linked, so another person approves it | Ask another Owner or the Controller to approve the link |
 | The pay choice has no signed decision attached | Attach the board minute or resolution, then record it |
 | The pay choice is recorded, so it changes no more | Record a new choice from the month it changes |
+| The fee has no shareholders' resolution attached | Attach the resolution or the minutes, then ask for approval |
+| The fee is paid to you, so another person approves it | Ask another Owner or the Controller to approve it |
 
 ## Related
 

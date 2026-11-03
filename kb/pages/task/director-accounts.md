@@ -4,7 +4,7 @@ type: task
 title: Director accounts, each founder's statement, and naming the person on 2500 and 2120
 summary: 2500 and 2120 by person; marking directors, linking their member, naming the person on journal lines; statements and their PDF
 sources:
-  - docs/user-guide/director-accounts.md sha256:49955797e9ba427632e1691c13085302fe53c08dbff5cdd825ea0bb90967577b
+  - docs/user-guide/director-accounts.md sha256:a1c9c728d0bd590242dd217e928551d2f98b6c5e7b21900af561625317c850fb
 data_class: general
 taint: trusted
 status: published
@@ -64,6 +64,16 @@ aliases:
   attached. Details: [[founders.pay-choice]].
   (src: docs/user-guide/director-accounts.md#record-a-pay-choice)
 
+## Directors' fees
+
+- **Fees** on a director's card records a fee the shareholders voted: the day of the meeting, the
+  fee and the period, with the shareholders' resolution or minutes attached, then **Ask for
+  approval**. (src: docs/user-guide/director-accounts.md#record-a-directors-fee)
+- Another person who holds the approval right approves it, never the director paid; it then posts
+  to 6050 Directors' fees on the day voted, owed to the director on 2120 until paid. A posted fee
+  never changes: a journal to the director's account corrects it.
+  (src: docs/user-guide/director-accounts.md#record-a-directors-fee)
+
 ## Name the person on a line
 
 - On a journal or opening balance line on 2500 or 2120, choose **Whose account** and **Where it
@@ -91,5 +101,7 @@ aliases:
 | Account is not a director's account, so the line names no person | Leave the person out, or post to the director's account |
 | Amounts on 2500 and 2120 name no director or shareholder | Reverse those journals and post them again with each person |
 | You are the member being linked, so another person approves it | Ask another Owner or the Controller |
+| The fee has no shareholders' resolution attached | Attach the resolution or minutes, then ask for approval |
+| The fee is paid to you, so another person approves it | Ask another Owner or the Controller |
 
 (src: docs/user-guide/director-accounts.md#common-problems)

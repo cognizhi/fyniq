@@ -2740,6 +2740,122 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/director-fees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List directors' fees
+         * @description The directors' fees the shareholders voted, drafted, waiting for approval and posted, the latest entitlement first, a page at a time, narrowed by director (FR-EQ-04). Needs the right to read every director's account. Read-only; no side effects.
+         */
+        get: operations["listDirectorFees"];
+        put?: never;
+        /**
+         * Record a director's fee
+         * @description Records, as a draft, a director's fee the shareholders voted (FR-EQ-04): the director, the day they became entitled to it, the period it is for, the amount, and the account (6050 Directors' fees when left out). Attach the shareholders' resolution with addDirectorFeeEvidence, then ask for approval with requestDirectorFeePost. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["createDirectorFee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-fees/{fee_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a director's fee
+         * @description Returns a fee with its ETag: the director, the day they became entitled to it, the period, the amount and account, its resolutions, the pending request to post it, and once posted the lines its entry wrote (FR-EQ-04). Read-only; no side effects.
+         */
+        get: operations["getDirectorFee"];
+        /**
+         * Change a drafted director's fee
+         * @description Saves a new version of a fee not posted yet, checked as recording it is (FR-EQ-04); a pending request to post it then no longer matches, and nothing executes until it is asked for again. A posted fee changes no more (FOUNDER-18). Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        put: operations["replaceDirectorFee"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-fees/{fee_id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a director's fee's files
+         * @description The files attached to a director's fee, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.
+         */
+        get: operations["listDirectorFeeEvidence"];
+        put?: never;
+        /**
+         * Attach the shareholders' resolution to a director's fee
+         * @description Attaches a file, such as the shareholders' resolution or the meeting's minutes, to a drafted fee (FR-EQ-04, FR-DOC-05), as multipart/form-data: asking for its approval needs one. The file's type is decided from its content; it is scanned for malware and its image metadata, such as location, is stripped before it is stored (FR-DOC-08). Side effects: the file in the staging store, its evidence row and its audit event with the SHA-256 of the file as received and as stored (FR-DOC-07); once the fee is posted its files are committed to the retention-locked store (FR-DOC-13). An Owner or the Controller attaches. Needs If-Match with the fee's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing.
+         */
+        post: operations["addDirectorFeeEvidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-fees/{fee_id}/evidence/{evidence_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a director's fee's file
+         * @description Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.
+         */
+        get: operations["getDirectorFeeEvidence"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove a file from a drafted director's fee
+         * @description Takes a file off a fee not posted yet (FR-DOC-07). Once posted its evidence is append-only, and the database refuses. The row stays, marked removed, for the audit trail; the staged file is deleted by the next sweep. Side effects: the removal and its audit event. Needs If-Match with the file's ETag. Prefer: return=preview checks it and saves nothing.
+         */
+        delete: operations["removeDirectorFeeEvidence"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-fees/{fee_id}/post-approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for approval to post a director's fee
+         * @description Asks another person to approve a drafted fee at the version read (FR-EQ-04, FR-APR-01): a fee posts only this way, in every team mode. It needs the shareholders' resolution attached (FOUNDER-17) and must pass the posting rule. The answer is 202 with an approval request, which a person who holds A on "Director accounts, settlements, share issues" approves, stepped up: never the one who asked, nor the director the fee is paid to (FOUNDER-19, FM-9; the database's FY252). On the approval it posts director_fee@1 as the approver, numbered DF-: Dr 6050 Directors' fees, Cr 2120 Deferred remuneration payable naming the director, on the day they became entitled to it. The request holds the fee's version, status and amount, so a change voids it. Needs If-Match with the fee's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+         */
+        post: operations["requestDirectorFeePost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/director-pay-choices": {
         parameters: {
             query?: never;
@@ -9253,13 +9369,13 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee";
             /**
              * @description What executes on its approval.
              * @example organisation_setting.change
              * @enum {string}
              */
-            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change";
+            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change" | "director_fee.post";
             /**
              * @description The approval policy's version it keeps (G4-057).
              * @example founder/organisation_setting@2026-10-20.1
@@ -9396,7 +9512,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -9438,7 +9554,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -14739,6 +14855,252 @@ export interface components {
              * @enum {string}
              */
             role: "director-loan" | "deferred-remuneration";
+        };
+        DirectorFee: {
+            /**
+             * @description That account's code.
+             * @example 6050
+             */
+            account_code?: string;
+            /**
+             * Format: uuid
+             * @description The account it is a cost on.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d50
+             */
+            account_id: string;
+            /**
+             * @description That account's name.
+             * @example Directors' fees
+             */
+            account_name?: string;
+            /** @description The fee. */
+            amount: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The pending request to post it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1
+             */
+            approval_asked?: string;
+            /** @description A draft's status: ✖ while no shareholders' resolution is attached. */
+            checks: components["schemas"]["BillCheck"][];
+            /**
+             * Format: uuid
+             * @description The director.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+             */
+            contact_id: string;
+            /**
+             * Format: date
+             * @description The day they became entitled to it, which it posts on.
+             * @example 2026-11-30
+             */
+            entitled_on: string;
+            /**
+             * Format: uuid
+             * @description Its ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fd1
+             */
+            id: string;
+            /** @description getDirectorFee only, once posted: the lines its entry wrote, debits positive. */
+            ledger_impact: components["schemas"]["EntryLine"][];
+            /**
+             * @description Their name.
+             * @example Mei Lin Tan
+             */
+            legal_name: string;
+            /**
+             * @description Its memo.
+             * @example Directors' fee 2026, voted at the AGM
+             */
+            memo?: string;
+            /**
+             * @description Its number, once posted (FR-ORG-04).
+             * @example DF-0001
+             */
+            number?: string;
+            /**
+             * Format: date
+             * @description The first day of the period it is for.
+             * @example 2026-01-01
+             */
+            period_from: string;
+            /**
+             * Format: date
+             * @description The last day of that period.
+             * @example 2026-12-31
+             */
+            period_to: string;
+            /**
+             * Format: int64
+             * @description How many files are attached and not removed: asking for approval needs one, the shareholders' resolution.
+             * @example 1
+             */
+            resolutions: number;
+            /**
+             * @description draft; waiting for another person's approval; or posted to the director's account on 2120.
+             * @example waiting
+             * @enum {string}
+             */
+            status: "draft" | "waiting" | "posted";
+            /**
+             * Format: int64
+             * @description The version of its content; with its status it makes the ETag.
+             * @example 1
+             */
+            version: number;
+        };
+        DirectorFeeDraft: {
+            /**
+             * Format: uuid
+             * @description The account it is a cost on; left out, the chart's 6050 Directors' fees.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d50
+             */
+            account_id?: string;
+            /** @description The fee, in the base currency. */
+            amount: components["schemas"]["Money"];
+            /**
+             * Format: uuid
+             * @description The director: a contact marked director.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+             */
+            contact_id: string;
+            /**
+             * Format: date
+             * @description The day the director became entitled to it: the general meeting that voted it. It posts on this day.
+             * @example 2026-11-30
+             */
+            entitled_on: string;
+            /**
+             * @description What it is, in a few words.
+             * @example Directors' fee 2026, voted at the AGM
+             */
+            memo?: string;
+            /**
+             * Format: date
+             * @description The first day of the period it is for.
+             * @example 2026-01-01
+             */
+            period_from: string;
+            /**
+             * Format: date
+             * @description The last day of that period.
+             * @example 2026-12-31
+             */
+            period_to: string;
+        };
+        DirectorFeeEvidence: {
+            /**
+             * @description The personal data it holds (FR-DOC-09).
+             * @example general
+             * @enum {string}
+             */
+            data_class: "general" | "personal" | "bank" | "payroll" | "identity";
+            /**
+             * @description What the file is.
+             * @example shareholders' resolution
+             */
+            evidence_type: string;
+            /**
+             * Format: uuid
+             * @description The fee it is attached to.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fd1
+             */
+            fee_id: string;
+            /**
+             * @description The name it was uploaded with: data, never a path.
+             * @example agm-minutes.pdf
+             */
+            file_name: string;
+            /**
+             * Format: uuid
+             * @description The file's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21
+             */
+            id: string;
+            /**
+             * @description Its type, decided from its content.
+             * @example application/pdf
+             */
+            media_type: string;
+            /**
+             * @description A short note.
+             * @example AGM minutes of 30 Nov 2026
+             */
+            note?: string;
+            /**
+             * @description The SHA-256 of the file as received, in hexadecimal.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            original_sha256: string;
+            /**
+             * Format: date
+             * @description The date it relates to.
+             * @example 2026-01-02
+             */
+            relates_on?: string;
+            /**
+             * Format: date-time
+             * @description Once final: kept, and never deletable, until then (FR-DOC-02).
+             * @example 2034-01-01T00:00:00+08:00
+             */
+            retain_until?: string;
+            /**
+             * @description The SHA-256 of the file as stored, in hexadecimal: image metadata such as location is stripped first.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256: string;
+            /**
+             * Format: int64
+             * @description Its size as stored, in bytes.
+             * @example 48213
+             */
+            size_bytes: number;
+            /**
+             * @description How it arrived.
+             * @example upload
+             * @enum {string}
+             */
+            source: "upload" | "paste" | "email" | "api" | "generated";
+            /**
+             * @description Attached (in staging while the fee is a draft), removed, or final: committed to the retention-locked store, append-only.
+             * @example attached
+             * @enum {string}
+             */
+            state: "attached" | "removed" | "final";
+            /**
+             * Format: date-time
+             * @description When it was attached.
+             * @example 2026-11-03T09:15:00Z
+             */
+            uploaded_at: string;
+            /**
+             * @description Who uploaded it: an actor of the audit trail.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            uploaded_by: string;
+            /**
+             * Format: int64
+             * @description The file's version; it makes the ETag.
+             * @example 1
+             */
+            version: number;
+        };
+        DirectorFeeEvidencePage: {
+            /** @description The files on this page, removed ones included. */
+            items: components["schemas"]["DirectorFeeEvidence"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjAxOTIifQ
+             */
+            next_cursor?: string;
+        };
+        DirectorFeePage: {
+            items: components["schemas"]["DirectorFee"][];
+            /**
+             * @description Pass it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjIwMjYtMTEtMzB8MDE5MiJ9
+             */
+            next_cursor?: string;
         };
         DirectorMovement: {
             /**
@@ -27612,7 +27974,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `FOUNDER-04` Another person approves your own link; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9). */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `FOUNDER-04` Another person approves your own link; `FOUNDER-19` The director paid does not approve their own fee; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -27630,7 +27992,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APPLY-06` The application is not posted; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `BILL-02` The bill is not a draft; `BILL-03` The bill is not posted; `BILL-13` Payments settle the bill; `BILLPAY-06` The payment is not posted; `CLAIM-02` The claim is not a draft; `CLAIM-15` The reimbursement is not posted; `CLAIM-31` The advance cannot be voided as it stands; `CREDIT-06` The application is not posted; `DEPOSIT-06` The deposit is not posted; `DEPOSIT-08` Invoices or refunds use the deposit; `INVOICE-02` The invoice is not a draft; `INVOICE-03` The invoice is not issued; `INVOICE-13` Receipts or credits settle the invoice; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `PO-10` The order is not a draft; `RECEIPT-06` The receipt is not posted; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DOC-04` An edit posts its reversal and its new version together; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way; `STORAGE-PAYEE-01` Bank details do not change that way; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-TEMPLATE-01` The template does not change that way; `TPL-12` That version is in force already; `WRITEOFF-07` The write-off is not a draft; `WRITEOFF-08` The write-off is not posted. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APPLY-06` The application is not posted; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `BILL-02` The bill is not a draft; `BILL-03` The bill is not posted; `BILL-13` Payments settle the bill; `BILLPAY-06` The payment is not posted; `CLAIM-02` The claim is not a draft; `CLAIM-15` The reimbursement is not posted; `CLAIM-31` The advance cannot be voided as it stands; `CREDIT-06` The application is not posted; `DEPOSIT-06` The deposit is not posted; `DEPOSIT-08` Invoices or refunds use the deposit; `FOUNDER-18` The fee is posted; `INVOICE-02` The invoice is not a draft; `INVOICE-03` The invoice is not issued; `INVOICE-13` Receipts or credits settle the invoice; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `PO-10` The order is not a draft; `RECEIPT-06` The receipt is not posted; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DOC-04` An edit posts its reversal and its new version together; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way; `STORAGE-PAYEE-01` Bank details do not change that way; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-TEMPLATE-01` The template does not change that way; `TPL-12` That version is in force already; `WRITEOFF-07` The write-off is not a draft; `WRITEOFF-08` The write-off is not posted. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -27666,7 +28028,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APPLY-02` The saved application cannot be read; `APPLY-07` The void is dated before the application; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `CLAIM-16` The void is dated before the reimbursement; `CLAIM-18` A trip is incomplete; `CLAIM-19` No rate per km is set for the vehicle; `CLAIM-24` The line needs its receipt; `CLAIM-25` The claim does not say why it is late; `CLAIM-26` The receipt is on another record; `CLAIM-27` The receipt file is not on the claim; `CLAIM-32` The claim cannot settle that advance; `CLAIM-36` The claim cannot be kept as a loan; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `DEPOSIT-02` The saved deposit cannot be read; `DEPOSIT-07` The void is dated before the deposit; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit; `LEDGER-41` A director's account line needs its person; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PAYEE-02` The saved change cannot be read; `PAYEE-03` Not an active vendor; `PAYEE-04` The currency does not fit; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-09` The call-back note is too long; `PAYEE-11` The account's evidence is not attached; `PAYEE-14` That is the account in force already; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APPLY-02` The saved application cannot be read; `APPLY-07` The void is dated before the application; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `CLAIM-16` The void is dated before the reimbursement; `CLAIM-18` A trip is incomplete; `CLAIM-19` No rate per km is set for the vehicle; `CLAIM-24` The line needs its receipt; `CLAIM-25` The claim does not say why it is late; `CLAIM-26` The receipt is on another record; `CLAIM-27` The receipt file is not on the claim; `CLAIM-32` The claim cannot settle that advance; `CLAIM-36` The claim cannot be kept as a loan; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `DEPOSIT-02` The saved deposit cannot be read; `DEPOSIT-07` The void is dated before the deposit; `FOUNDER-15` Not a director's fee; `FOUNDER-16` The director's fee does not fit; `FOUNDER-17` The fee has no shareholders' resolution; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit; `LEDGER-41` A director's account line needs its person; `LEDGER-43` The director's fee does not fit the rule; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PAYEE-02` The saved change cannot be read; `PAYEE-03` Not an active vendor; `PAYEE-04` The currency does not fit; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-09` The call-back note is too long; `PAYEE-11` The account's evidence is not attached; `PAYEE-14` That is the account in force already; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -46776,6 +47138,1204 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listDirectorFees: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only this director's fees. */
+                contact_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorFeePage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid; `FOUNDER-15` Not a director's fee; `FOUNDER-16` The director's fee does not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createDirectorFee: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorFeeDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorFee"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorFee"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-15` Not a director's fee; `FOUNDER-16` The director's fee does not fit; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getDirectorFee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The fee's ID. */
+                fee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorFee"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-15` Not a director's fee; `FOUNDER-16` The director's fee does not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replaceDirectorFee: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The fee's ID. */
+                fee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorFeeDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorFee"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `FOUNDER-18` The fee is posted; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-15` Not a director's fee; `FOUNDER-16` The director's fee does not fit; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listDirectorFeeEvidence: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The fee's ID. */
+                fee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorFeeEvidencePage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid; `FOUNDER-15` Not a director's fee. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    addDirectorFeeEvidence: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The fee's ID. */
+                fee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * @description The personal data it holds (FR-DOC-09); general by default. Payroll and identity files wait for payroll permissions.
+                     * @example general
+                     * @enum {string}
+                     */
+                    data_class?: "general" | "personal" | "bank";
+                    /**
+                     * @description What the file is, such as receipt, board resolution or screenshot.
+                     * @example receipt
+                     */
+                    evidence_type: string;
+                    /**
+                     * Format: binary
+                     * @description The file: PDF, PNG, JPEG, WebP, CSV, plain text, XLSX, DOCX (no macros), EML or MSG, up to 25 MB. Its type is decided from its content, never from its name or Content-Type.
+                     * @example %PDF-1.7 … (the file's bytes)
+                     */
+                    file: string;
+                    /**
+                     * @description A short note.
+                     * @example Paid by PayNow
+                     */
+                    note?: string;
+                    /**
+                     * Format: date
+                     * @description The date it relates to.
+                     * @example 2026-10-20
+                     */
+                    relates_on?: string;
+                    /**
+                     * @description How a person added it: upload (the default) or paste. An integration's file is always api.
+                     * @example upload
+                     * @enum {string}
+                     */
+                    source?: "upload" | "paste";
+                };
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorFeeEvidence"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorFeeEvidence"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `FOUNDER-18` The fee is posted; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open; `FOUNDER-15` Not a director's fee. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getDirectorFeeEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The fee's ID. */
+                fee_id: string;
+                /** @description The file's ID. */
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorFeeEvidence"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-15` Not a director's fee. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    removeDirectorFeeEvidence: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The fee's ID. */
+                fee_id: string;
+                /** @description The file's ID. */
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorFeeEvidence"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `FOUNDER-18` The fee is posted; `STORAGE-EVIDENCE-01` Evidence is append-only once its record is final; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `FOUNDER-15` Not a director's fee. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestDirectorFeePost: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The fee's ID. */
+                fee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `FOUNDER-18` The fee is posted; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-15` Not a director's fee; `FOUNDER-16` The director's fee does not fit; `FOUNDER-17` The fee has no shareholders' resolution; `LEDGER-01` The journal has no date; `LEDGER-04` An account does not exist; `LEDGER-22` A system account is missing; `LEDGER-41` A director's account line needs its person; `LEDGER-43` The director's fee does not fit the rule. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;

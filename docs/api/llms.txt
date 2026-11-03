@@ -173,6 +173,15 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/director-accounts` (listDirectorAccounts): List the director accounts
 - `GET /v1/director-accounts/{contact_id}/statement` (getDirectorStatement): Work out a director's statement
 - `GET /v1/director-accounts/{contact_id}/statement/export` (exportDirectorStatement): Export a director's statement
+- `GET /v1/director-fees` (listDirectorFees): List directors' fees
+- `POST /v1/director-fees` (createDirectorFee): Record a director's fee
+- `GET /v1/director-fees/{fee_id}` (getDirectorFee): Get a director's fee
+- `PUT /v1/director-fees/{fee_id}` (replaceDirectorFee): Change a drafted director's fee
+- `GET /v1/director-fees/{fee_id}/evidence` (listDirectorFeeEvidence): List a director's fee's files
+- `POST /v1/director-fees/{fee_id}/evidence` (addDirectorFeeEvidence): Attach the shareholders' resolution to a director's fee
+- `GET /v1/director-fees/{fee_id}/evidence/{evidence_id}` (getDirectorFeeEvidence): Get a director's fee's file
+- `DELETE /v1/director-fees/{fee_id}/evidence/{evidence_id}` (removeDirectorFeeEvidence): Remove a file from a drafted director's fee
+- `POST /v1/director-fees/{fee_id}/post-approval` (requestDirectorFeePost): Ask for approval to post a director's fee
 - `GET /v1/director-pay-choices` (listDirectorPayChoices): List directors' pay choices
 - `POST /v1/director-pay-choices` (createDirectorPayChoice): Draft a director's pay choice
 - `GET /v1/director-pay-choices/{choice_id}` (getDirectorPayChoice): Get a director's pay choice
