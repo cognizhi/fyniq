@@ -50,12 +50,15 @@ func checksOf(t *testing.T, s storage.Store, org, period uuid.UUID, today time.T
 //     nothing, the S$1,350.00 waiting more than 30 days on 1 December, and a signed reconciliation with a difference.
 //   - The cash position on 31 October, once the S$1,350.00 went to suspense: DBS −S$1,261.00 and the USD wallet's USD
 //     100.00 at 1.36, S$136.00; −S$1,125.00 in all.
+//   - The USD wallet reconciles in its own currency (ENG-43): its book balance is USD 100.00, not the S$135.00 the
+//     books carry it at, so a statement of USD 100.00 leaves nothing.
 //
 // req: FR-BNK-10
 // req: FR-GL-07
 // req: FM-5
 // req: FR-BNK-11
 // req: FR-BNK-13
+// req: ENG-43
 // asvs: V2.3.5
 func TestReconciliationIsPreparedThenSignedByAnother(t *testing.T) {
 	preparer := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "preparer"}})
@@ -187,6 +190,21 @@ func TestReconciliationIsPreparedThenSignedByAnother(t *testing.T) {
 			c.Rows[1].Balance.String() != "100.00" || c.Rows[1].Value.String() != "136.00" || c.Rows[1].Rate.String() != "1.36" ||
 			!c.Rows[1].RateOf.Equal(porttest.Day(10, 31)) || c.Total.String() != "-1125.00" || len(c.Missing) != 0 {
 			t.Errorf("the cash position: %+v", c)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// The USD wallet in its own currency.
+	if err := s.Do(preparer, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		statement := moneyOf(t, "100.00", "USD")
+		r, err := banking.Prepare(ctx, u, banking.ReconcileRequest{MoneyAccountID: b.usd.ID, PeriodID: b.Oct.ID, StatementBalance: &statement, At: now})
+		if err != nil {
+			return err
+		}
+		if two(r.BookBalance) != "100.00" || two(r.Difference) != "0.00" || r.UnreconciledCount != 0 {
+			t.Errorf("the USD wallet's reconciliation: %+v", r)
 		}
 		return nil
 	}); err != nil {

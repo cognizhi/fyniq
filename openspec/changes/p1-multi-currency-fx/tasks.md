@@ -62,9 +62,11 @@
 - [x] 3.5 The close check: ✖ a period with a foreign-currency balance on a `revalue` account and no current revaluation, naming a missing rate. Tests `// req: FR-GL-07` and `// req: FR-GL-04`
   (22 Oct 2026, PRD rev 0.73: close check `revaluation`, Appendix C.2 #59, after the reversals. Test:
   `TestTheMonthEndRevaluation`.)
-- [ ] 3.6 AR and AP documents and unapplied credits revalued one by one against their stored rates, replacing the control accounts' lines (with `p1-sales` and `p1-purchases`). Tests `// req: FR-GL-04` (G4-039 in full)
+- [x] 3.6 AR and AP documents and unapplied credits revalued one by one against their stored rates, replacing the control accounts' lines (with `p1-sales` and `p1-purchases`). Tests `// req: FR-GL-04` (G4-039 in full)
   (23 Oct 2026, PRD-001 rev 0.92, the AP half: `fx.SubLedgers`, `payables.Documents`; test `TestBillsAreRevaluedOneByOne`.
-  **Left:** AR with `p1-sales`)
+  **Left:** AR with `p1-sales`. 4 Nov 2026: the AR half came with `p1-sales` (rev 0.119): `receivables.Documents`, its
+  invoices, credit notes and customers' credits, in `journal.SubLedgers` beside AP's; test
+  `TestTheARSubLedgerReconcilesWith1100`, and the differential's `golden/fx-revaluation.json` compares both, G4-039 in full.)
 - [x] 3.7 The scheduler runs a period's revaluation itself once its last day's rates are in, under the system principal (FR-AUT-01, FR-AUT-02): the worker needs the right to write revaluation documents, a change to its grants reviewed with the security checklist. Tests `// req: FR-AUT-01`
   (22 Oct 2026, PRD rev 0.75, the founder's decision: it posts by itself. `fx.revalue` daily at 03:05 in Singapore; `journal.RevalueDue`/`RevalueDueAll`; `create_scheduled_revaluation`, EXECUTE for `fyniq_worker` only (FY169); threat model T9 to T11. Test `TestTheSchedulerRevaluesAnEndedMonth`)
 
@@ -76,13 +78,24 @@
 - [ ] 4.2 GST on foreign-currency documents: sales at the GST exchange-rate source, then `RND-FX` and `RND-GST-EXCL`; purchases at the stated SGD GST with the difference to 7030, or none stated with the GST in the cost and ⚠; an average rate refused. Tests `// req: ENG-42` (G4-023)
   (22 Oct 2026, PRD rev 0.74: the purchases' half is built, `ledger.ForeignInputTax`, the difference being net + stated
   GST − gross so the entry balances; test `TestForeignInputTaxIsAsStatedInSGD` (G4-023). Left: the sales' half, which
-  needs `RND-GST-EXCL` and the GST exchange-rate source setting, both with `p1-sales`.)
-- [ ] 4.3 Settlements and documents call 4.1 and 4.2 (with `p1-sales`, `p1-purchases` and `p1-bank-import-reconcile`). Tests `// req: ENG-41` and `// req: ENG-42`
+  needs `RND-GST-EXCL` and the GST exchange-rate source setting, both with `p1-sales`. 4 Nov 2026: the sales' half came
+  with `p1-sales` (rev 0.116): `RND-GST-EXCL` of an invoice's nets in SGD at its own rate, which stands for the GST
+  exchange-rate source [verify]; test `TestInvoicesPostThroughThePostingService`. **Left:** an average rate refused on a
+  document (`fx.Found.Average` reports one; no document refuses it yet).)
+- [x] 4.3 Settlements and documents call 4.1 and 4.2 (with `p1-sales`, `p1-purchases` and `p1-bank-import-reconcile`). Tests `// req: ENG-41` and `// req: ENG-42`
+  (4 Nov 2026: payments of bills, receipts, write-offs, refunds and matched bank lines settle at the documents' stored
+  rates with the realised FX to 7030 (ENG-41), and bills, vendor credits and claims take the stated SGD GST while
+  invoices take `RND-GST-EXCL` of their nets in SGD (ENG-42); tests tagged `// req: ENG-41` and `// req: ENG-42` in
+  `billpayment_test.go`, `receipt_test.go`, `bill_test.go`, `invoice_test.go` and `ledger/settlement_test.go`, and
+  the differential compares every one against the oracle. An average rate's refusal stays with 4.2.)
 - [x] 4.4 Foreign-currency money accounts show the currency balance and the base balance. Tests `// req: ENG-43`
   (22 Oct 2026, PRD rev 0.74: `listForeignMoneyAccounts` from `balance.Foreign`, at the end of the period that holds
   today; the Currencies page's **Money accounts in other currencies**. Tests: `TestForeignMoneyAccountsKeepBothBalances`,
   `Currencies.test.tsx`, a matrix row.)
-- [ ] 4.5 Reconciliation in the account currency (with `p1-bank-import-reconcile`). Tests `// req: ENG-43`
+- [x] 4.5 Reconciliation in the account currency (with `p1-bank-import-reconcile`). Tests `// req: ENG-43`
+  (4 Nov 2026: `banking.Prepare` reconciles a money account in its own currency, its book balance from the balance
+  service (`p1-bank-import-reconcile` 6.1); `TestReconciliationIsPreparedThenSignedByAnother` now reconciles the USD
+  wallet too: USD 100.00 against a statement of USD 100.00, nothing over, whatever the S$135.00 the books carry it at.)
 
 ## 5. Screens
 
