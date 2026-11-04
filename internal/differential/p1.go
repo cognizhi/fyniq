@@ -114,6 +114,8 @@ type p1 struct {
 	used     map[string]money.Money   // the settlement differences cleared each month (YYYY-MM), against its cap
 	issued   map[string]*issued       // the posted invoices credit notes credit, by the scenario's ID
 	deposits map[string]*deposit.Open // the posted customer deposits, as invoices and refunds use them
+	advances map[string]*advance      // the posted cash advances, as claims and refunds settle them
+	assets   map[string]*registered   // the assets in the register, by the scenario's ID
 }
 
 // scheduled is one entry the scheduler posts after every document: a spread's release or an asset's depreciation.
@@ -126,7 +128,8 @@ type scheduled struct {
 
 func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, error) {
 	r := &p1{s: s, base: base, settings: settings, open: map[string]*openDocument{}, used: map[string]money.Money{},
-		issued: map[string]*issued{}, deposits: map[string]*deposit.Open{}}
+		issued: map[string]*issued{}, deposits: map[string]*deposit.Open{}, advances: map[string]*advance{},
+		assets: map[string]*registered{}}
 	if s.AsOf != "" {
 		r.asOf, _ = time.Parse(time.DateOnly, s.AsOf)
 	}
@@ -147,7 +150,8 @@ func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, erro
 	return r, nil
 }
 
-// post posts document i, or reports it rejected.
+// post posts document i, or reports it rejected. A document that posts nothing of its own (an asset in the register)
+// comes back accepted with an entry of no lines.
 func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 	date, err := time.Parse(time.DateOnly, d.Date)
 	if err != nil {
@@ -176,6 +180,16 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return r.depositRefund(d, date)
 	case "write_off":
 		return r.writeOff(d, date)
+	case "expense_claim":
+		return r.expenseClaim(d, date)
+	case "claim_reimbursement":
+		return r.claimReimbursement(d, date)
+	case "cash_advance":
+		return r.cashAdvance(d, date)
+	case "fixed_asset":
+		return ledger.Entry{}, r.fixedAsset(i, d, date) // a registered asset posts no entry of its own
+	case "asset_disposal":
+		return r.assetDisposal(d, date)
 	}
 	return ledger.Entry{}, false
 }
@@ -306,6 +320,7 @@ func (r *p1) schedule(i int, doc string, releases []ledger.Release, post func(le
 // scheduledEntries are the scheduler's entries: one per document, kind and date, its lines together, ordered by date
 // and then by the document's place in the scenario (README, "P1 entries").
 func (r *p1) scheduledEntries() []scheduled {
+	r.depreciation()
 	type key struct {
 		index int
 		kind  string

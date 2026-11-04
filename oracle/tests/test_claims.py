@@ -57,18 +57,52 @@ def test_the_mileage_rate_is_the_vehicles_in_force_on_the_claims_date():
 
 
 # req: FR-AP-17
-def test_a_usd_claim_is_reimbursed_in_sgd_at_the_cascades_rate():
-    # USD 50.00 at 1.35 = 67.50 owed on 2150; reimbursed from the SGD account at 1.33: 66.50; 7030 -1.00.
+def test_a_usd_claim_owes_sgd_and_is_reimbursed_in_sgd():
+    # USD 50.00 at 1.35: 6010 takes USD 50.00 carried at 50.00 × 1.35 = 67.50. What the company owes the
+    # claimant is fixed in SGD (SFRS(I) 1-21): 2150 SGD -67.50. Reimbursed from the SGD account with S$67.50
+    # and no rate: 1010 -67.50, 2150 +67.50, nothing to 7030 whatever the rate on the day.
     result, _ = p1_post(
         claim("EC-1", "2026-03-05", "USD", bill_line("6010", "50.00", "OP"), rate="1.35"),
-        settlement("claim_reimbursement", "RE-1", "2026-03-31", "1010", "USD", ("EC-1", "50.00"), rate="1.33"),
+        settlement("claim_reimbursement", "RE-1", "2026-03-31", "1010", "SGD", ("EC-1", "67.50")),
     )
-    assert lines_of(result, "EC-1") == [("2150", "USD", "-50.00", "-67.50"), ("6010", "USD", "50.00", "67.50")]
-    assert lines_of(result, "RE-1") == [
-        ("1010", "SGD", "-66.50", "-66.50"),
-        ("2150", "USD", "50.00", "67.50"),
-        ("7030", "SGD", "-1.00", "-1.00"),
-    ]
+    assert lines_of(result, "EC-1") == [("2150", "SGD", "-67.50", "-67.50"), ("6010", "USD", "50.00", "67.50")]
+    assert lines_of(result, "RE-1") == [("1010", "SGD", "-67.50", "-67.50"), ("2150", "SGD", "67.50", "67.50")]
+
+
+# req: FR-AP-17
+def test_what_a_foreign_claim_owes_is_converted_line_by_line():
+    # Two USD 0.01 lines at 1.5: each 0.01 × 1.5 = 0.015 -> 0.02 (RND-FX, half away from zero), so 2150 takes
+    # 0.02 + 0.02 = 0.04, not RND-FX of the 0.02 total (0.03). Each cost line carries its own 0.02: no 7030.
+    result, _ = p1_post(claim("EC-1", "2026-03-05", "USD", bill_line("6010", "0.01", "OP"), bill_line("6110", "0.01", "OP"),
+                              rate="1.5"))
+    assert lines_of(result, "EC-1") == [("2150", "SGD", "-0.04", "-0.04"), ("6010", "USD", "0.01", "0.02"),
+                                        ("6110", "USD", "0.01", "0.02")]
+
+
+# req: FR-AP-17
+# req: ENG-42
+def test_a_foreign_claims_stated_sgd_gst_against_the_gst_at_its_rate_goes_to_7030():
+    # USD 100.00 + 9.00 GST (TX) at 1.35, the receipt stating S$12.20 GST, registered: 2200 claims the 12.20
+    # stated; 6010 USD 100.00 at 135.00; 2150 owes RND-FX(109.00 × 1.35) = 147.15. 135.00 + 12.20 - 147.15 = 0.05
+    # (12.20 stated against 9.00 × 1.35 = 12.15): 7030 -0.05.
+    result, _ = p1_post(claim("EC-1", "2026-03-05", "USD", bill_line("6010", "100.00", "TX", "9.00", gst_base="12.20"),
+                              rate="1.35"))
+    assert lines_of(result, "EC-1") == [("2150", "SGD", "-147.15", "-147.15"), ("2200", "SGD", "12.20", "12.20"),
+                                        ("6010", "USD", "100.00", "135.00"), ("7030", "SGD", "-0.05", "-0.05")]
+
+
+# req: FR-AP-17
+@pytest.mark.parametrize(
+    "more",
+    [{"currency": "USD", "fx_rate": "1.33", "fx_rate_source": "document"},  # in USD at the day's rate
+     {"fx_rate": "1.33", "fx_rate_source": "document"},  # in SGD, but with a rate
+     {"base_amount": "67.50"}],  # in SGD, but with what the account paid
+)
+def test_a_reimbursement_is_in_the_base_currency_only(more):
+    # What a claim owes is in SGD, so it is paid in SGD with no rate and no FX; anything else is refused whole.
+    usd = claim("EC-1", "2026-03-05", "USD", bill_line("6010", "50.00", "OP"), rate="1.35")
+    paid = {**settlement("claim_reimbursement", "RE-9", "2026-03-31", "1010", "SGD", ("EC-1", "67.50")), **more}
+    _refused([usd, paid], "RE-9", "reimbursement-not-in-base")
 
 
 # req: FR-AP-17
@@ -143,9 +177,9 @@ def test_a_claim_kept_as_a_loan_without_claimable_input_tax():
 
 # req: FR-EQ-02
 def test_a_usd_claim_kept_as_a_loan():
-    # USD 50.00 at 1.35: 6010 USD 50.00 (67.50); 2500 USD -50.00 (-67.50) naming P0001, as 2150 would take it.
+    # USD 50.00 at 1.35: 6010 USD 50.00 (67.50); 2500 SGD -67.50 naming P0001, as 2150 would take it (in SGD).
     result, _ = p1_post(claim("EC-1", "2026-03-10", "USD", bill_line("6010", "50.00", "OP"), rate="1.35", loan="P0001"))
-    assert lines_of(result, "EC-1") == [("2500", "USD", "-50.00", "-67.50"), ("6010", "USD", "50.00", "67.50")]
+    assert lines_of(result, "EC-1") == [("2500", "SGD", "-67.50", "-67.50"), ("6010", "USD", "50.00", "67.50")]
 
 
 def _refused(documents, doc_id, reason):

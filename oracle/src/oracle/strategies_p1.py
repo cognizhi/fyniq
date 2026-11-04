@@ -12,8 +12,8 @@ only on a transfer paid from a base-currency account. For purchases: parts recor
 base-currency bills (the 3% of a foreign bill's tolerance is a reading), and no payment of a bill that
 withholds tax (its open amount is what it owes after withholding, which the generator does not track).
 
-For assets: no GST on a disposal's proceeds (whether the amount received includes it is a reading) and
-no books' start (the opening balances' share of 1590 is not in a scenario). For sales: receipts, write-offs and deposits deducted only against invoices that charge no GST (so
+For assets: proceeds received name a supply code whenever the organisation is registered on the
+disposal's date, and may name none otherwise (FR-FA-03, B.6 rev 0.169), and no books' start (the opening balances' share of 1590 is not in a scenario). For sales: receipts, write-offs and deposits deducted only against invoices that charge no GST (so
 the generator knows what each owes without computing GST), and receipts in full only on base-currency
 invoices.
 
@@ -82,10 +82,12 @@ SALES_REJECTED = ["receipt-more-than-open", "invoice-spread-not-revenue", "invoi
                   "write-off-more-than-open", "invoice-wrong-code", "deposit-wrong-code"]
 CLAIMS_POSTING = ["claim", "claim", "claim-trips", "claim-foreign", "claim-advance", "reimburse", "reimburse",
                   "advance", "advance-refund"]
-CLAIMS_REJECTED = ["reimburse-more-than-open", "claim-trip-foreign", "advance-refund-too-much", "claim-wrong-code"]
+CLAIMS_REJECTED = ["reimburse-more-than-open", "claim-trip-foreign", "advance-refund-too-much", "claim-wrong-code",
+                   "reimburse-in-another-currency"]
 ASSETS_POSTING = ["asset", "asset", "asset-residual", "asset-later-start", "dispose-money", "dispose-clearing",
                   "dispose-write-off"]
-ASSETS_REJECTED = ["dispose-unknown", "dispose-twice", "asset-on-expense", "dispose-wrong-code"]
+ASSETS_REJECTED = ["dispose-unknown", "dispose-twice", "asset-on-expense", "dispose-wrong-code",
+                   "dispose-registered-no-code"]
 KINDS = {"bank": BANK_POSTING * 3 + BANK_REJECTED, "purchases": PURCHASES_POSTING * 2 + PURCHASES_REJECTED,
          "sales": SALES_POSTING * 2 + SALES_REJECTED, "claims": CLAIMS_POSTING * 2 + CLAIMS_REJECTED,
          "assets": ASSETS_POSTING * 2 + ASSETS_REJECTED}
@@ -97,13 +99,18 @@ WALLETS = {"SGD": "1010", "USD": "1021", "JPY": "1022", "KWD": "1023"}
 class _Book:
     """What the generator built so far: what a settlement may settle and what each has open."""
 
-    def __init__(self) -> None:
+    def __init__(self, gst: dict[str, Any] | None = None) -> None:
+        self.gst = gst or {}  # the scenario's GST settings, drawn first, so a document can depend on them
         self.open: dict[str, tuple[str, Decimal]] = {}  # bill -> (currency, open amount)
         self.invoices: dict[str, tuple[str, Decimal]] = {}  # invoice charging no GST -> (currency, open)
         self.deposits: dict[str, tuple[str, Decimal]] = {}  # deposit -> (currency, what is left)
-        self.claims: dict[str, tuple[str, Decimal]] = {}  # claim -> (currency, what is owed)
+        self.claims: dict[str, Decimal] = {}  # claim -> what is owed, in SGD (FR-AP-17: owed in the base currency)
         self.advances: dict[str, Decimal] = {}  # advance -> what is left
         self.assets: dict[str, bool] = {}  # registered asset -> disposed
+
+    def registered(self, day: date) -> bool:
+        start, end = self.gst.get("registered_from"), self.gst.get("registered_to")
+        return start is not None and start <= day.isoformat() and (end is None or day.isoformat() <= end)
 
 
 def _accounts() -> list[dict[str, Any]]:
@@ -508,29 +515,32 @@ def _claims_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _
         book.advances[target] = money.EXACT.subtract(amount, refund)
         return {"type": "cash_advance", **base, "account": "1010", "amount": _text(refund, 2), "refund_of": target}, POST
     if kind.startswith("reimburse"):
-        open_ = [c for c, (_, owed) in sorted(book.claims.items()) if owed > 0]
+        open_ = [c for c, owed in sorted(book.claims.items()) if owed > 0]
         doc: dict[str, Any] = {"type": "claim_reimbursement", **base, "parts": []}
         if not open_:
             doc.update(account="1010", currency="SGD", parts=[{"document": "EC-NONE", "amount": "1.00"}])
             return doc, REJECT
         target = draw(st.sampled_from(open_))
-        currency, owed = book.claims[target]
-        minor = CURRENCIES[currency]
-        unit = Decimal(1).scaleb(-minor, context=money.EXACT)
+        owed = book.claims[target]
+        unit = Decimal("0.01")
+        if kind == "reimburse-in-another-currency":  # FR-AP-17 (decided): in SGD only, with no rate
+            doc.update(account="1010", currency=draw(st.sampled_from(["USD", "JPY"])), fx_rate=draw(_rate()),
+                       fx_rate_source="document", parts=[{"document": target, "amount": "1"}])
+            return doc, REJECT
         if kind == "reimburse-more-than-open":
             amount = money.EXACT.add(owed, unit)
         else:
-            amount = owed if draw(st.booleans()) or owed <= unit else draw(_split(owed, 2, minor))[0]
-            book.claims[target] = (currency, money.EXACT.subtract(owed, amount))
-        doc.update(account="1010", currency=currency, parts=[{"document": target, "amount": _text(amount, minor)}])
-        if currency != "SGD":
-            doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"  # reimbursed in SGD at the cascade's
+            amount = owed if draw(st.booleans()) or owed <= unit else draw(_split(owed, 2, 2))[0]
+            book.claims[target] = money.EXACT.subtract(owed, amount)
+        # What a claim owes is in SGD (FR-AP-17, SFRS(I) 1-21): reimbursed in SGD, with no rate and no FX.
+        doc.update(account=draw(st.sampled_from(["1010", "1011"])), currency="SGD",
+                   parts=[{"document": target, "amount": _text(amount, 2)}])
         return doc, REJECT if kind in REJECTED_KINDS else POST
 
     # A claim.
     currency = draw(st.sampled_from(["USD", "JPY"])) if kind in ("claim-foreign", "claim-trip-foreign") else "SGD"
     minor = CURRENCIES[currency]
-    lines, owed = [], Decimal(0)
+    lines, owed, receipts = [], Decimal(0), []  # receipts: each receipt line's net plus GST, in the claim's currency
     for _ in range(draw(st.integers(1, 3))):
         if kind in ("claim-trips", "claim-trip-foreign") or (kind == "claim" and draw(st.integers(0, 2)) == 0):
             vehicle = draw(st.sampled_from(sorted(MILEAGE)))
@@ -552,9 +562,12 @@ def _claims_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _
             line["gst"] = _text(gst, minor)
         lines.append(line)
         owed = money.EXACT.add(owed, money.EXACT.add(net, gst))
+        receipts.append(money.EXACT.add(net, gst))
     doc = {"type": "expense_claim", **base, "currency": currency, "lines": lines}
     if currency != "SGD":
         doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
+        # What the company owes, in SGD: each receipt line at the claim's rate under RND-FX, summed (FR-AP-17).
+        owed = money.total([money.rnd_fx(amount, Decimal(doc["fx_rate"]), 2) for amount in receipts])
     if kind in ("claim-trip-foreign", "claim-wrong-code"):
         return doc, REJECT
     if kind == "claim-advance":
@@ -565,7 +578,7 @@ def _claims_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _
             taken = min(owed, book.advances[target])
             book.advances[target] = money.EXACT.subtract(book.advances[target], taken)
             owed = money.EXACT.subtract(owed, taken)
-    book.claims[doc_id] = (currency, owed)
+    book.claims[doc_id] = owed
     return doc, POST
 
 
@@ -584,13 +597,19 @@ def _assets_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _
             return doc, REJECT
         doc["asset"] = target = draw(st.sampled_from(live))
         amount = _text(draw(_cents(2, 6)), 2)
-        if kind == "dispose-wrong-code":  # FR-FA-03: output tax on what is received, so a supply code
+        if kind == "dispose-registered-no-code" and book.registered(day):
+            # FR-FA-03: a registered seller's sale is a taxable supply, so its proceeds name their supply code.
+            doc["proceeds"] = {"account": draw(st.sampled_from(["1010", "1011"])), "amount": amount}
+            return doc, REJECT
+        if kind in ("dispose-wrong-code", "dispose-registered-no-code"):  # FR-FA-03: output tax, so a supply code
             doc["proceeds"] = {"account": draw(st.sampled_from(["1010", "1011"])), "amount": amount,
                                "gst_code": draw(st.sampled_from(_NOT_SUPPLY))}
             return doc, REJECT
         book.assets[target] = True
         if kind == "dispose-money":
             doc["proceeds"] = {"account": draw(st.sampled_from(["1010", "1011"])), "amount": amount}
+            if book.registered(day) or draw(st.booleans()):  # a code is optional only while not registered
+                doc["proceeds"]["gst_code"] = draw(st.sampled_from(_SUPPLY_CODES))
         elif kind == "dispose-clearing":
             doc["proceeds"] = {"account": "1160", "amount": amount}
         return doc, POST
@@ -615,7 +634,8 @@ def p1_scenarios_with_intent(
     """A scenario of P1 documents from ``sources`` (with SGD as the base) and each one's intent."""
     kinds = [kind for source in sources for kind in KINDS[source]]
     documents, intent = [], {}
-    book = _Book()
+    settings = draw(_settings())
+    book = _Book(settings["gst"])
     days = sorted(draw(st.lists(_DATES, min_size=1, max_size=10)))
     for i, day in enumerate(days):
         kind = draw(st.sampled_from(kinds))
@@ -639,7 +659,7 @@ def p1_scenarios_with_intent(
         "base_currency": "SGD",
         "currencies": dict(CURRENCIES),
         "as_of": (last + timedelta(days=draw(st.integers(0, 400)))).isoformat(),
-        "settings": draw(_settings()),
+        "settings": settings,
         "accounts": _accounts(),
         "documents": documents,
         "reversals": [],

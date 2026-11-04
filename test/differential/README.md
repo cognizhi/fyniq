@@ -159,16 +159,17 @@ posts one of each, its figures worked out by hand in `oracle/tests/test_golden.p
 | `version` | Read but not used (P0 posts version 1 of each journal) | ENG-03 (an entry names its document's version) | Always 1 |
 | `fx_rate_source` values | Any non-empty string; not used in the result | ENG-03, ENG-40 (a rate typed on the document has the source "document") | `"document"`; `"base"` too on a base-currency line built to be rejected |
 
-## P1 sources (`cmd/scenario-run` reads the bank, purchases and sales; the rest are pending)
+## P1 sources (`cmd/scenario-run` reads all but the founders' documents; those are pending)
 
 From P1 a scenario may hold documents of other sources beside manual journals, each posted by its
 rule set (PRD-001 §10.2, Appendix B; the oracle's `oracle/src/oracle/sources/`). The format grows
 additively, still `fyniq-scenario@1`: a scenario of manual journals only is unchanged, and so is its
 result. **The engine's `cmd/scenario-run` reads the bank shapes** (`p1-bank-import-reconcile` 4.8;
 `internal/differential/p1.go`), **the purchases** (`p1-purchases` 10.4; `p1_purchases.go`) **and the sales**
-(`p1-sales` 9.3; `p1_sales.go`), so the Go gate posts `golden/bank.json`, `golden/purchases.json` and
-`golden/sales.json` through both sides and `make differential` draws those scenarios
-(`DIFFERENTIAL_SOURCES=bank,purchases,sales` in the Makefile). It does not read the other
+(`p1-sales` 9.3; `p1_sales.go`), **the claims** (`p1-expense-claims` 9.2; `p1_claims.go`) **and the assets**
+(`p1-fixed-assets` 8.2; `p1_assets.go`), so the Go gate posts their golden cases through both sides and
+`make differential` draws those scenarios (`DIFFERENTIAL_SOURCES=bank,purchases,sales,claims,assets` in the
+Makefile). It does not read the other
 sources yet: their golden cases wait in [`pending/`](pending/README.md) with their
 figures worked out by hand, and `make differential` draws them only once their source is named in
 `FYNIQ_DIFFERENTIAL_SOURCES`. Teaching `cmd/scenario-run` each source is an engine-session task in
@@ -367,8 +368,8 @@ is open) and debits the account with that carrying amount, in the base currency.
 
 ### Expense claims (`expense_claim`, `expense_claim@1` and `@2`), reimbursements (`claim_reimbursement`, `claim_reimbursement@1`) and cash advances (`cash_advance`, `cash_advance@1`)
 
-From §10.2, §10.4, Appendix B.7, FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20, FR-EQ-02 and the rows of rev 0.147,
-0.148, 0.151 and 0.167.
+From §10.2, §10.4, Appendix B.7, FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20, FR-EQ-02, the rows of rev 0.147,
+0.148, 0.151 and 0.167, and the owner's decision on foreign claims (SFRS(I) 1-21) [accountant to confirm].
 
 ```json
 {"type": "expense_claim", "id": "EC-0001", "version": 1, "date": "2026-03-05", "currency": "SGD",
@@ -379,19 +380,25 @@ From §10.2, §10.4, Appendix B.7, FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20, FR-EQ
 A receipt line is costed as a bill's line (a purchase code, rule 4; its input tax claimable on TX and IM
 when registered, its `business_share`). A trip (`distance` in km and `vehicle`, never a GST code) costs
 `RND-MILEAGE` of the distance at the vehicle's rate in force on the claim's date, with no GST, and only
-in a base-currency claim. Each line's cost goes to its account at `RND-FX`, the input tax to 2200; what the employee is owed
-goes first to 1250, up to what is left of the `advance` it settles (a base-currency claim), and the rest
-to 2150 at `RND-FX`; 7030 balances. A `claim_reimbursement` is a settlement (the shape of a payment of
-bills) of posted claims on 2150, with no part in full and nothing unapplied; a base-currency account
-reimbursing a claim in another currency gives the rate (the cascade's), the difference to 7030. A
-`cash_advance` (a base-currency money account and an amount) posts Dr 1250, Cr the money account; with
-`refund_of` it is what is left of that advance coming back, at most what is left: Dr the money account,
-Cr 1250.
+in a base-currency claim. Each line's cost goes to its account in the claim's currency at `RND-FX`, the
+input tax to 2200. What the employee is owed is in the **base currency** (FR-AP-17; SFRS(I) 1-21: the
+company owes a fixed SGD amount, what they were out of pocket): each receipt line's net plus its stated
+GST at the claim's rate under `RND-FX`, line by line, summed, and each trip's amount. It goes first to
+1250, up to what is left of the `advance` it settles (a base-currency claim), and the rest to 2150, a
+base-currency line; 7030 takes what balances (the `RND-FX` cents between a line's parts, and the stated
+GST in base against the GST at the rate).
+
+A `claim_reimbursement` is a settlement (the shape of a payment of bills) of posted claims on 2150 in
+the base currency only, from a base-currency money account, at most what each owes, with no rate and so
+no FX: it is rejected whole when its `currency` is not the base, or it has `fx_rate`, `fx_rate_source`,
+`base_amount`, `unapplied` or a part `in_full`. A `cash_advance` (a base-currency money account and an
+amount) posts Dr 1250, Cr the money account; with `refund_of` it is what is left of that advance coming
+back, at most what is left: Dr the money account, Cr 1250.
 
 A claim kept as a loan to the company (`"loan": "<person>"`, one of `people`; FR-EQ-02, `expense_claim@2`)
-credits `director_loan` (2500) instead of 2150, as 2150 would be credited, and the line names the person
-(`party`): what the director paid stays owed to them there. It settles no `advance`, and no reimbursement
-settles it.
+credits `director_loan` (2500) instead of 2150, as 2150 would be credited (in the base currency), and the
+line names the person (`party`): what the director paid stays owed to them there. It settles no
+`advance`, and no reimbursement settles it.
 
 ### Costs before the books start (`pre_incorporation_cost`, `pre_incorporation_cost@1`)
 
@@ -489,8 +496,11 @@ before the disposal's month (the opening balances' included); proceeds into a ba
 bear GST, `RND-GST-INCL` of the amount, when registered and the code carries it; proceeds on
 `disposal_clearing` (an invoice to the buyer credited it) bear none here; no `proceeds` is a write-off.
 `disposal` takes the gain or loss, whatever balances. No month from the disposal's on depreciates. It is
-rejected for an asset not registered or already disposed of, dated before the asset, or proceeds received
-whose GST code is not a supply code (rule 4); proceeds received with no code bear no GST.
+rejected for an asset not registered or already disposed of, dated before the asset, proceeds received
+whose GST code is not a supply code (rule 4, whatever the registration), or proceeds received with no
+code while the organisation is registered on the disposal's date: a registered seller's sale is a
+taxable supply, and 2200 takes its GST at "the proceeds' GST code's rate" (FR-FA-03). While not
+registered a code is optional, and proceeds received with none bear no GST.
 
 ### P1 readings
 
@@ -509,13 +519,14 @@ comparison with the engine shows any difference, and the decision settles it.
 | The cross-currency transfer rule | Each leg at its own rate, the fee to bank charges, the rest to 7030 | Rev 0.140; rev 0.155, §10.2 (SFRS(I) 1-21) [accountant to confirm] | Generated |
 | A release in the document's own month | Dated the document's day (never before the deferral it releases) | Rev 0.155, FR-GL-03 | Generated |
 | A money-out part coded SR, or a money-in part coded TX or IM | GST at the code, whatever the direction | Rev 0.155, Appendix B.1 (a refund) [accountant to confirm] | Not generated |
-| A bill's, a vendor credit's or a claim's receipt line coded NA or a supply code (SR, ZR, ES, OS) | Rejected whole: a purchase document takes Appendix B.6's purchase codes, and NA has no direction | FR-AP-02 ("GST input tax codes"), FR-AP-03 ("entered as a bill is"), FR-AP-17 (rev 0.155, a claim line "costed as a bill's line"), Appendix B.6 | Generated (rejected) |
-| An invoice's or a credit note's line, a part-payment deposit or a disposal's proceeds received coded NA or a purchase code | Rejected whole: a supply document takes Appendix B.6's supply codes; proceeds received with no code bear no GST | FR-AP-02 (bills the "mirror of invoices"), FR-AR-04, FR-AR-09 ("output GST when received"), FR-FA-03 ("output tax"), Appendix B.6; inferred for invoices, which FR-AR-03 gives a "GST code" [to confirm] | Generated (rejected) |
+| A bill's, a vendor credit's or a claim's receipt line coded NA or a supply code (SR, ZR, ES, OS) | Rejected whole: a purchase document takes Appendix B.6's purchase codes, and NA has no direction | FR-AP-02 ("GST input tax codes"), FR-AP-03 ("entered as a bill is"), FR-AP-17 (rev 0.155, a claim line "costed as a bill's line"), Appendix B.6 (rev 0.169) | Generated (rejected) |
+| An invoice's or a credit note's line, a part-payment deposit or a disposal's proceeds received coded NA or a purchase code | Rejected whole, whatever the registration: a supply document takes Appendix B.6's supply codes | FR-AP-02 (bills the "mirror of invoices"), FR-AR-04, FR-AR-09 ("output GST when received"), FR-FA-03 ("output tax"), Appendix B.6 (rev 0.169) | Generated (rejected) |
+| A disposal's proceeds received with no GST code | Rejected while the organisation is registered on the disposal's date (a taxable supply names its supply code; none would leave its output tax undeclared); while not registered, posted with no GST | FR-FA-03 (rev 0.155, "the proceeds' GST code's rate"), Appendix B.6 (rev 0.169), §10.2 "Asset disposal" | Generated (rejected while registered; posted while not) |
 | Several credit notes linked to one invoice | Together they credit at most the invoice's total before the deposits it deducts | Rev 0.155, FR-AR-04 (INVOICE-15), superseding the cap per credit note [accountant to confirm] | Not generated (`golden/sales.json`) |
 | A P1 document whose lines but one round to nothing in base (USD 0.01 deposited at 0.0001) | Rejected: an entry has at least two lines | Rev 0.155, INV-05 | Not generated (rates of at least 0.01) |
-| A claim's line in another currency | Costed as a bill's (its cost in the claim's currency, 2150 at the claim's rate), reimbursed at the cascade's rate with the difference to 7030 | Rev 0.155, FR-AP-17 | Generated |
+| A claim's line in another currency | Costed as a bill's (its cost in the claim's currency at the claim's rate); 2150 (or 2500 for a loan) takes what is owed in the base currency, each receipt line's net plus GST under `RND-FX` at the claim's rate, summed, 7030 what balances; reimbursed in the base currency only, with no rate and no FX. *Superseded:* 2150 in the claim's currency, reimbursed at the cascade's rate with the difference to 7030 | FR-AP-17 (rev 0.7 "reimbursed in SGD", rev 0.155 "2150 at the claim's rate"), SFRS(I) 1-21 (a fixed SGD amount owed); the owner's decision [accountant to confirm] | Generated (a reimbursement in another currency: generated, rejected) |
 | A claim larger than what is left of its advance | 1250 takes what is left, 2150 the rest | Rev 0.155, FR-AP-17 | Generated |
-| GST on a disposal's proceeds received | `RND-GST-INCL` of the amount received (as for money in, B.1) | Rev 0.155, FR-FA-03 (IRAS: "based on the consideration received") [accountant to confirm] | Not generated (`pending/assets.json`) |
+| GST on a disposal's proceeds received | `RND-GST-INCL` of the amount received (as for money in, B.1) | Rev 0.155, FR-FA-03 (IRAS: "based on the consideration received") [accountant to confirm] | Generated (SR while registered), and `golden/assets.json` |
 | A disposal's accumulated depreciation before the books' start | Cleared with the rest: the opening balances hold it on 1590 | Appendix B.4 ("earlier depreciation is part of opening balances") | Not generated (no books' start) |
 | A partial disposal, and a void of an asset | Not in the format yet | FR-FA-03, FR-FA-01 (rev 0.151) | Not generated |
 | Giving an asset away | Not in the format: a deemed supply at its open market value, which Fyniq does not post in P1 | Rev 0.155, FR-FA-03 [accountant to confirm] | Not generated |
@@ -676,7 +687,7 @@ through both implementations; `make differential` lets Hypothesis search 1,000 m
 (`FYNIQ_DIFFERENTIAL_EXAMPLES`) and saves the smallest disagreeing scenario as
 `golden/shrunk-<hash>.json`, to be committed as a golden case once the cause is fixed. It draws P1
 scenarios too for the sources in `FYNIQ_DIFFERENTIAL_SOURCES` (comma-separated), which the Makefile
-sets to the sources `cmd/scenario-run` reads: `bank,purchases,sales`. The engine's
+sets to the sources `cmd/scenario-run` reads: `bank,purchases,sales,claims,assets`. The engine's
 side reads scenarios with the same schemas (`schemas.go` embeds them) and runs as `cmd/scenario-run`.
 
 ```bash

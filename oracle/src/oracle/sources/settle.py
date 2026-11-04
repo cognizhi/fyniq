@@ -13,7 +13,8 @@ A settlement names a money account, the documents' currency and what it settles 
 * an unapplied amount on the control account at the settlement's rate (a credit);
 * the money account with what it paid or received: the total at the settlement's rate when the
   account is in the documents' currency, or, for a base-currency account and documents in another
-  currency, what it paid (``base_amount``) or the total at the given rate (the cascade's, for a claim);
+  currency, what it paid (``base_amount``) or the total at the given rate (a claim's reimbursement is in
+  the base currency only, :mod:`oracle.sources.claims`);
 * 7030 with what balances the entry in the base currency: each part's realised FX (ENG-41), the
   ``RND-FX`` cents between the lines and the difference of a part recorded in full.
 

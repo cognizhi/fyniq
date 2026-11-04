@@ -2,7 +2,7 @@
 
 They wait for cmd/scenario-run to read the P1 shapes (pending/README.md); the oracle must match the
 hand-worked figures now. Every figure comes from the comment beside it (QA-ENG-01). A case keeps its
-hand-worked figures here once cmd/scenario-run reads its source and it moves to golden/ (bank, purchases, sales).
+hand-worked figures here once cmd/scenario-run reads its source and it moves to golden/ (bank, purchases, sales, claims, assets).
 """
 
 from pathlib import Path
@@ -12,7 +12,7 @@ from oracle.scenario import load_scenario
 
 PENDING = Path(__file__).resolve().parents[2] / "test" / "differential" / "pending"
 GOLDEN = PENDING.parent / "golden"
-MOVED = {"bank", "purchases", "sales"}  # the cases the engine reads now, in golden/
+MOVED = {"bank", "purchases", "sales", "claims", "assets"}  # the cases the engine reads now, in golden/
 
 
 def _run(name: str) -> dict:
@@ -214,16 +214,16 @@ def test_pending_claims():
                                     ("6010", "SGD", "450.00", "450.00")]
     # 7.25 km -> 7.3 × 0.25 = 1.825 -> 1.83, and 100 km × 0.60 = 60.00.
     assert _lines(r, "EC-0004") == [("2150", "SGD", "-61.83", "-61.83"), ("6110", "SGD", "61.83", "61.83")]
-    # USD 50.00 carried at 67.50, reimbursed at 1.33 = 66.50: 1.00 to 7030.
-    assert _lines(r, "RE-0001") == [("1010", "SGD", "-66.50", "-66.50"), ("2150", "USD", "50.00", "67.50"),
-                                    ("7030", "SGD", "-1.00", "-1.00")]
+    # USD 50.00 at 1.35 = 67.50 to 6010; what the company owes is fixed in SGD (FR-AP-17, SFRS(I) 1-21): 2150 -67.50.
+    assert _lines(r, "EC-0003") == [("2150", "SGD", "-67.50", "-67.50"), ("6010", "USD", "50.00", "67.50")]
+    # Reimbursed in SGD with the S$67.50 owed and no rate: no FX, nothing to 7030.
+    assert _lines(r, "RE-0001") == [("1010", "SGD", "-67.50", "-67.50"), ("2150", "SGD", "67.50", "67.50")]
     assert r["trial_balance"] == {
         "2026-03": {
-            "1010": "-694.77",  # -500.00 - 66.50 - 128.27; 1250 and 2150 are back at nothing
+            "1010": "-695.77",  # -500.00 - 67.50 - 128.27; 1250 and 2150 are back at nothing
             "2200": "9.00",
             "6010": "617.50",  # 100.00 + 450.00 + 67.50
             "6110": "69.27",  # 7.44 + 61.83
-            "7030": "-1.00",
         },
         # 300.00 advanced and refunded; P0001 paid 200.00 + 18.00 GST and keeps it as a loan (FR-EQ-02, B.7).
         "2026-04": {"2200": "18.00", "2500": "-218.00", "6010": "200.00"},
