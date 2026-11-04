@@ -15,7 +15,10 @@ withholds tax (its open amount is what it owes after withholding, which the gene
 For assets: proceeds received name a supply code whenever the organisation is registered on the
 disposal's date, and may name none otherwise (FR-FA-03, B.6 rev 0.169), and no books' start (the opening balances' share of 1590 is not in a scenario). For sales: receipts, write-offs and deposits deducted only against invoices that charge no GST (so
 the generator knows what each owes without computing GST), and receipts in full only on base-currency
-invoices.
+invoices; a foreign invoice whose GST is S$0.00 in base and whose entry is left all in its currency, out of balance
+there, is meant to be refused (README, "P1 readings"; INV-01). For claims: what the claimant paid (``paid``) on a third of the receipt lines of a claim in another currency,
+a few cents and up to 3% off the line at the claim's rate, and a third of the claims settling an advance in another
+currency.
 
 For the founders' money (README, "Costs before the books start" to "Conversions of founders' balances to
 shares"): the people ``P0001`` and ``P0002``, the director's accounts 2500 and 2120 with their roles and
@@ -100,8 +103,11 @@ SALES_REJECTED = ["receipt-more-than-open", "invoice-spread-not-revenue", "invoi
                   "write-off-more-than-open", "invoice-wrong-code", "deposit-wrong-code"]
 CLAIMS_POSTING = ["claim", "claim", "claim-trips", "claim-foreign", "claim-advance", "reimburse", "reimburse",
                   "advance", "advance-refund"]
+# The "claim-paid-" kinds state what the claimant paid where it may not be (README, "Expense claims"): on a line of a
+# base-currency claim, on a trip, or not a valid base-currency amount above zero.
+PAID_REJECTED = ["claim-paid-on-base", "claim-paid-on-trip", "claim-paid-invalid"]
 CLAIMS_REJECTED = ["reimburse-more-than-open", "claim-trip-foreign", "advance-refund-too-much", "claim-wrong-code",
-                   "reimburse-in-another-currency"]
+                   "reimburse-in-another-currency", *PAID_REJECTED]
 ASSETS_POSTING = ["asset", "asset", "asset-residual", "asset-later-start", "dispose-money", "dispose-clearing",
                   "dispose-write-off"]
 ASSETS_REJECTED = ["dispose-unknown", "dispose-twice", "asset-on-expense", "dispose-wrong-code",
@@ -139,6 +145,7 @@ class _Book:
         self.gst = gst or {}  # the scenario's GST settings, drawn first, so a document can depend on them
         self.open: dict[str, tuple[str, Decimal]] = {}  # bill -> (currency, open amount)
         self.invoices: dict[str, tuple[str, Decimal]] = {}  # invoice charging no GST -> (currency, open)
+        self.invoice_base: dict[str, tuple[Decimal | None, Decimal]] = {}  # invoice -> (its rate, its open base)
         self.deposits: dict[str, tuple[str, Decimal]] = {}  # deposit -> (currency, what is left)
         self.claims: dict[str, Decimal] = {}  # claim -> what is owed, in SGD (FR-AP-17: owed in the base currency)
         self.advances: dict[str, Decimal] = {}  # advance -> what is left
@@ -446,14 +453,19 @@ def _sales_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _B
         currency, left = book.invoices[target]
         minor = CURRENCIES[currency]
         unit = Decimal(1).scaleb(-minor, context=money.EXACT)
+        meant = REJECT if kind in REJECTED_KINDS else POST
         if kind == "write-off-more-than-open":
             amount = money.EXACT.add(left, unit)
         else:
             amount = left if draw(st.booleans()) or left <= unit else draw(_split(left, 2, minor))[0]
-            book.invoices[target] = (currency, money.EXACT.subtract(left, amount))
+            if _carrying(book, target, amount, left).is_zero():
+                # Its base is S$0.00, so the account's line drops out and 1100's is left alone (README, "P1 readings").
+                meant = REJECT
+            else:
+                _settle_invoice(book, target, amount, left)
         doc = {"type": "write_off", **base, "invoice": target, "amount": _text(amount, minor),
                "account": draw(st.sampled_from(["6010", "7030", "4010"]))}
-        return doc, REJECT if kind in REJECTED_KINDS else POST
+        return doc, meant
 
     # An invoice or a credit note.
     currency = draw(st.sampled_from(["USD", "JPY", "KWD"])) if kind == "invoice-foreign" else "SGD"
@@ -471,7 +483,7 @@ def _sales_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _B
     minor = CURRENCIES[currency]
     tracked = deducting or kind in ("invoice", "invoice-foreign", "invoice-discount") and draw(st.booleans())
     codes = ["ZR", "ES", "OS"] if tracked else _SUPPLY_CODES
-    lines, total = [], Decimal(0)
+    lines, total, nets = [], Decimal(0), []  # nets: each line's (GST code, net), in the invoice's currency
     for i in range(draw(st.integers(1, 3))):
         line: dict[str, Any] = {"account": draw(st.sampled_from(REVENUES)), "gst_code": draw(st.sampled_from(codes))}
         if kind == "invoice-wrong-code" and i == 0:  # a bill's mirror (FR-AP-02): supply codes only
@@ -496,11 +508,14 @@ def _sales_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _B
                 line["account"] = draw(st.sampled_from(EXPENSES + OTHER))
         lines.append(line)
         total = money.EXACT.add(total, net)
+        nets.append((line["gst_code"], net))
     credit = kind == "credit-note" or kind == "invoice-wrong-code" and draw(st.booleans())
     doc = {"type": "credit_note" if credit else "invoice", **base, "currency": currency, "lines": lines}
     if currency != "SGD":
         doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
     meant = REJECT if kind in REJECTED_KINDS else POST
+    if kind == "invoice-foreign" and _left_unbalanced_in_its_currency(nets, Decimal(doc["fx_rate"]), day, book, minor):
+        meant = REJECT  # README, "P1 readings": all in one currency and out of balance in it (INV-01)
     if unknown_deposit:
         doc["deposits"] = [{"deposit": "DP-NONE", "amount": "1.00"}]
     if deducting:
@@ -514,7 +529,53 @@ def _sales_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _B
         doc["deposits"] = [{"deposit": source, "amount": _text(used, minor)}]
     if tracked and meant == POST:
         book.invoices[doc_id] = (currency, total)
+        rate = Decimal(doc["fx_rate"]) if currency != "SGD" else None
+        book.invoice_base[doc_id] = (rate, total if rate is None else money.rnd_fx(total, rate, 2))  # its 1100 line
     return doc, meant
+
+
+def _carrying(book: _Book, invoice: str, amount: Decimal, left: Decimal) -> Decimal:
+    """What settling ``amount`` of what is left of a tracked invoice takes off 1100 in base: what is left of its base
+    when it settles all that is left, else ``RND-FX`` of the amount at the invoice's stored rate (README, "Invoices":
+    a write-off)."""
+    rate, open_base = book.invoice_base[invoice]
+    if amount == left:
+        return open_base
+    return amount if rate is None else money.rnd_fx(amount, rate, 2)
+
+
+def _settle_invoice(book: _Book, invoice: str, amount: Decimal, left: Decimal) -> None:
+    currency, _ = book.invoices[invoice]
+    rate, open_base = book.invoice_base[invoice]
+    book.invoice_base[invoice] = (rate, money.EXACT.subtract(open_base, _carrying(book, invoice, amount, left)))
+    book.invoices[invoice] = (currency, money.EXACT.subtract(left, amount))
+
+
+def _left_unbalanced_in_its_currency(nets: list[tuple[str, Decimal]], rate: Decimal, day: date, book: _Book,
+                                     minor: int) -> bool:
+    """Whether an invoice in another currency (no spread, no deposit) is left all in its currency without balancing
+    in it (README, "P1 readings"; INV-01): 1100 takes its nets plus their ``RND-GST-EXCL`` in its currency and each
+    revenue line its net, so it is out of balance there by that GST; it stays all in that currency when the GST in base
+    (2200) is S$0.00 and 7030 is nothing (USD 0.10 on SR at 0.1, registered: USD 0.11 against 0.10)."""
+    if not book.registered(day):
+        return False
+    rates = [row for row in book.gst.get("rates", ()) if row["from"] <= day.isoformat()]
+    taxed = [net for code, net in nets if code == "SR"]
+    if not rates or not taxed:
+        return False
+    percent = Decimal(max(rates, key=lambda row: row["from"])["percent"])
+
+    def gst(amounts: list[Decimal], units: int) -> Decimal:
+        if book.gst.get("per_line", False):
+            return money.total([money.round_quotient(money.EXACT.multiply(a, percent), Decimal(100), units)
+                                for a in amounts])
+        return money.round_quotient(money.EXACT.multiply(money.total(amounts), percent), Decimal(100), units)
+
+    in_currency = gst(taxed, minor)
+    if in_currency.is_zero() or not gst([money.rnd_fx(net, rate, 2) for net in taxed], 2).is_zero():
+        return False
+    customer = money.rnd_fx(money.EXACT.add(money.total([net for _, net in nets]), in_currency), rate, 2)
+    return money.EXACT.subtract(customer, money.total([money.rnd_fx(net, rate, 2) for _, net in nets])).is_zero()
 
 
 @st.composite
@@ -540,7 +601,7 @@ def _receipt(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book) -> t
         units = int(left.scaleb(2, context=money.EXACT))
         amount = money.EXACT.subtract(left, Decimal(draw(st.integers(0, min(100, units - 1)))).scaleb(-2))
         doc.update(account="1010", parts=[{"document": target, "amount": _text(amount, 2), "in_full": True}])
-        book.invoices[target] = (currency, Decimal(0))
+        _settle_invoice(book, target, left, left)  # in full: all that is left, its base too
         return doc, POST
     amount = left if draw(st.booleans()) or left <= unit else draw(_split(left, 2, minor))[0]
     doc["parts"] = [{"document": target, "amount": _text(amount, minor)}]
@@ -553,7 +614,7 @@ def _receipt(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book) -> t
         doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
     if draw(st.integers(0, 4)) == 0:
         doc["unapplied"] = _text(draw(_cents(minor, 3)), minor)
-    book.invoices[target] = (currency, money.EXACT.subtract(left, amount))
+    _settle_invoice(book, target, amount, left)
     return doc, POST
 
 
@@ -600,12 +661,15 @@ def _claims_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _
                    parts=[{"document": target, "amount": _text(amount, 2)}])
         return doc, REJECT if kind in REJECTED_KINDS else POST
 
-    # A claim.
-    currency = draw(st.sampled_from(["USD", "JPY"])) if kind in ("claim-foreign", "claim-trip-foreign") else "SGD"
+    # A claim. One settling an advance is in another currency a third of the time (UC-EXP-03: it owes SGD).
+    foreign = kind in ("claim-foreign", "claim-trip-foreign", "claim-paid-invalid") or \
+        (kind == "claim-advance" and draw(st.integers(0, 2)) == 0)
+    currency = draw(st.sampled_from(["USD", "JPY"])) if foreign else "SGD"
     minor = CURRENCIES[currency]
-    lines, owed, receipts = [], Decimal(0), []  # receipts: each receipt line's net plus GST, in the claim's currency
+    lines, owed, receipts = [], Decimal(0), []  # receipts: each receipt line and its net plus GST (claim's currency)
     for _ in range(draw(st.integers(1, 3))):
-        if kind in ("claim-trips", "claim-trip-foreign") or (kind == "claim" and draw(st.integers(0, 2)) == 0):
+        if kind in ("claim-trips", "claim-trip-foreign", "claim-paid-on-trip") or \
+                (kind == "claim" and draw(st.integers(0, 2)) == 0):
             vehicle = draw(st.sampled_from(sorted(MILEAGE)))
             distance = Decimal(draw(st.integers(1, 99999))).scaleb(-draw(st.integers(0, 2)), context=money.EXACT)
             amount = money.rnd_mileage(distance, MILEAGE[vehicle], 2)
@@ -625,13 +689,25 @@ def _claims_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _
             line["gst"] = _text(gst, minor)
         lines.append(line)
         owed = money.EXACT.add(owed, money.EXACT.add(net, gst))
-        receipts.append(money.EXACT.add(net, gst))
+        receipts.append((line, money.EXACT.add(net, gst)))
+    if kind in ("claim-paid-on-base", "claim-paid-on-trip"):  # a base-currency claim's line is already what was paid
+        lines[0]["paid"] = _text(draw(_cents(2, 4)), 2)
     doc = {"type": "expense_claim", **base, "currency": currency, "lines": lines}
     if currency != "SGD":
         doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
-        # What the company owes, in SGD: each receipt line at the claim's rate under RND-FX, summed (FR-AP-17).
-        owed = money.total([money.rnd_fx(amount, Decimal(doc["fx_rate"]), 2) for amount in receipts])
-    if kind in ("claim-trip-foreign", "claim-wrong-code"):
+        # What the company owes, in SGD: each receipt line at the claim's rate under RND-FX, or what the claimant states
+        # they paid for it (rev 0.169), summed (FR-AP-17).
+        owed = Decimal(0)
+        for i, (line, amount) in enumerate(receipts):
+            at_rate = money.rnd_fx(amount, Decimal(doc["fx_rate"]), 2)
+            if kind == "claim-paid-invalid" and i == 0:
+                line["paid"] = draw(_paid_invalid(at_rate))
+            elif draw(st.integers(0, 2)) == 0:
+                paid = draw(_paid(at_rate))
+                line["paid"] = _text(paid, 2)
+                at_rate = paid
+            owed = money.EXACT.add(owed, at_rate)
+    if kind in CLAIMS_REJECTED:
         return doc, REJECT
     if owed.is_zero():  # every receipt rounds to nothing in base (README, "P1 readings": a claim that owes S$0.00)
         return doc, REJECT
@@ -645,6 +721,24 @@ def _claims_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _
             owed = money.EXACT.subtract(owed, taken)
     book.claims[doc_id] = owed
     return doc, POST
+
+
+@st.composite
+def _paid(draw: st.DrawFn, at_rate: Decimal) -> Decimal:
+    """What a claimant states they paid for a receipt (FR-AP-17 rev 0.169): its amount at the claim's rate, a few cents
+    and up to 3% off either way (a card's rate and spread), and above zero."""
+    hundredths = Decimal(draw(st.integers(-300, 300)))  # of a percent: up to 3% either way
+    percent = money.round_quotient(money.EXACT.multiply(at_rate, hundredths), Decimal(10000), 2)
+    cents = Decimal(draw(st.integers(-5, 5))).scaleb(-2, context=money.EXACT)
+    paid = money.EXACT.add(money.EXACT.add(at_rate, percent), cents)
+    return paid if paid > 0 else Decimal("0.01")
+
+
+@st.composite
+def _paid_invalid(draw: st.DrawFn, at_rate: Decimal) -> str:
+    """A ``paid`` the claim refuses: not above zero, or not a valid base-currency amount (rule 1, ENG-44)."""
+    text = _text(max(at_rate, Decimal("0.01")), 2)
+    return draw(st.sampled_from(["0", "0.00", f"-{text}", f"{text}1", "1e2", "12,00", " 1.00", "+1.00", "1.", ".50"]))
 
 
 @st.composite

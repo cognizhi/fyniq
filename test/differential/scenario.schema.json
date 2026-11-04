@@ -472,6 +472,7 @@
               "gst": {"$ref": "#/$defs/money"},
               "gst_base": {"$ref": "#/$defs/money"},
               "business_share": {"type": "string"},
+              "paid": {"description": "A receipt line of a claim in another currency: the base-currency amount the claimant states they paid for it, net and GST together, owed instead of the line at the claim's rate, the difference to 7030 (FR-AP-17 rev 0.169). Refused on a base-currency claim, on a trip, or when not above zero.", "$ref": "#/$defs/money"},
               "distance": {"description": "A trip's distance in km (RND-MILEAGE).", "type": "string"},
               "vehicle": {"description": "A trip's vehicle type, a key of settings.mileage_rates.", "type": "string"}
             },

@@ -54,7 +54,22 @@
   {"type": "expense_claim", "id": "EC-0008", "version": 1, "date": "2026-04-10", "currency": "SGD", "loan": "P0002",
    "lines": [{"account": "6010", "amount": "10.00", "gst_code": "OP"}]},
   {"type": "claim_reimbursement", "id": "RE-0004", "version": 1, "date": "2026-04-30", "account": "1010", "currency": "SGD",
-   "parts": [{"document": "EC-0006", "amount": "218.00"}]}
+   "parts": [{"document": "EC-0006", "amount": "218.00"}]},
+  {"type": "cash_advance", "id": "ADV-0003", "version": 1, "date": "2026-04-12", "account": "1011", "amount": "150.00"},
+  {"type": "expense_claim", "id": "EC-0009", "version": 1, "date": "2026-04-14", "currency": "USD",
+   "fx_rate": "1.35", "fx_rate_source": "document", "advance": "ADV-0003",
+   "lines": [{"account": "6010", "amount": "100.00", "gst_code": "TX", "gst": "9.00", "gst_base": "12.20", "paid": "148.02"},
+             {"account": "6110", "amount": "20.00", "gst_code": "OP"}]},
+  {"type": "expense_claim", "id": "EC-0010", "version": 1, "date": "2026-04-15", "currency": "USD",
+   "fx_rate": "1.35", "fx_rate_source": "document",
+   "lines": [{"account": "6010", "amount": "40.00", "gst_code": "OP", "paid": "53.80"}]},
+  {"type": "expense_claim", "id": "EC-0011", "version": 1, "date": "2026-04-16", "currency": "SGD",
+   "lines": [{"account": "6010", "amount": "40.00", "gst_code": "OP", "paid": "40.00"}]},
+  {"type": "expense_claim", "id": "EC-0012", "version": 1, "date": "2026-04-17", "currency": "USD",
+   "fx_rate": "1.35", "fx_rate_source": "document",
+   "lines": [{"account": "6010", "amount": "40.00", "gst_code": "OP", "paid": "0.00"}]},
+  {"type": "claim_reimbursement", "id": "RE-0005", "version": 1, "date": "2026-04-30", "account": "1010", "currency": "SGD",
+   "parts": [{"document": "EC-0009", "amount": "25.02"}, {"document": "EC-0010", "amount": "53.80"}]}
  ],
  "reversals": []
 }

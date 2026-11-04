@@ -418,7 +418,19 @@ func (r *p1) within(amount money.Money, person string, account uuid.UUID, day ti
 // a claim of USD 0.02 at 0.1, which owes S$0.00. A document that posts nothing of its own fits. Each source asks before
 // it changes what later documents read, so a refused document leaves no trace, as in the oracle.
 func (r *p1) fits(e ledger.Entry) bool {
-	return len(e.Lines) == 0 || len(canonical(e.Lines, r.codeOf, r.personOf, r.base)) >= 2
+	if len(e.Lines) == 0 {
+		return true
+	}
+	// The database also refuses an entry all in one currency that does not balance in it (INV-01), as when every
+	// base-currency leg rounds to nothing: a USD invoice of 0.10 at 0.1 whose GST is S$0.00 leaves USD 0.11 against 0.10.
+	cur, sum := e.Lines[0].Amount.Currency(), money.Zero(e.Lines[0].Amount.Currency())
+	for _, l := range e.Lines {
+		if l.Amount.Currency() != cur {
+			return len(canonical(e.Lines, r.codeOf, r.personOf, r.base)) >= 2
+		}
+		sum, _ = sum.Add(l.Amount)
+	}
+	return sum.IsZero() && len(canonical(e.Lines, r.codeOf, r.personOf, r.base)) >= 2
 }
 
 // fitsColumns reports whether every line's amount and base amount fit NUMERIC(20,4) (§11.3, ENG-44).

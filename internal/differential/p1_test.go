@@ -186,14 +186,26 @@ func TestP1SalesCreditDepositsAndWriteOffs(t *testing.T) {
 // owes a fixed S$67.50 (FR-AP-17, rev 0.169) and RE-0001 pays exactly that. EC-0004's 7.3 km × 0.25 = 1.83 and
 // 100 km × 0.60 = 60.00 owe 61.83; RE-0002 pays 66.44 + 61.83 = 128.27, and RE-0003's 0.01 more is refused. EC-0006
 // is kept as a loan, 218.00 on 2500 naming P0001; a trip in USD, a loan with an advance, a loan to someone not among
-// the people and a reimbursement of the loan are refused.
+// the people and a reimbursement of the loan are refused. EC-0009, in USD at 1.35, states it paid S$148.02 for a
+// TX receipt of USD 109.00 whose GST it states as S$12.20, and owes an OP receipt of USD 20.00 at the rate, 27.00:
+// 175.02 owed, 150.00 of it settling ADV-0003 and 25.02 on 2150, with 7030 taking 175.02 − 135.00 − 27.00 − 12.20 =
+// 0.82. EC-0010 states S$53.80 for USD 40.00 at 1.35 (54.00), 7030 taking −0.20. `paid` on an SGD claim, and of 0.00,
+// are refused.
 // req: FR-AP-16
 // req: FR-AP-17
 // req: FR-EQ-02
 // req: QA-ENG-02
 func TestP1ClaimsOweAFixedSGDAmount(t *testing.T) {
+	date := func(r Result, doc string) string { // a document's posting date, as its entry gives it
+		for _, e := range r.Entries {
+			if e.Document == doc {
+				return e.PostingDate
+			}
+		}
+		return ""
+	}
 	r := run(t, load(t, "claims.json"))
-	if want := []string{"RE-0003", "EC-0005", "EC-0007", "EC-0008", "RE-0004"}; !reflect.DeepEqual(r.Rejected, want) {
+	if want := []string{"RE-0003", "EC-0005", "EC-0007", "EC-0008", "RE-0004", "EC-0011", "EC-0012"}; !reflect.DeepEqual(r.Rejected, want) {
 		t.Errorf("rejected %v, want %v", r.Rejected, want)
 	}
 	byKey := map[string][]EntryLine{}
@@ -210,6 +222,9 @@ func TestP1ClaimsOweAFixedSGDAmount(t *testing.T) {
 		"post RE-0001 2026-03-31": {el("1010", "SGD", "-67.50", "-67.50"), el("2150", "SGD", "67.50", "67.50")},
 		"post EC-0004 2026-03-12": {el("2150", "SGD", "-61.83", "-61.83"), el("6110", "SGD", "61.83", "61.83")},
 		"post EC-0006 2026-04-08": {el("2200", "SGD", "18.00", "18.00"), loan, el("6010", "SGD", "200.00", "200.00")},
+		"post EC-0009 " + date(r, "EC-0009"): {el("1250", "SGD", "-150.00", "-150.00"), el("2150", "SGD", "-25.02", "-25.02"),
+			el("2200", "SGD", "12.20", "12.20"), el("6010", "USD", "100.00", "135.00"), el("6110", "USD", "20.00", "27.00"), el("7030", "SGD", "0.82", "0.82")},
+		"post EC-0010 " + date(r, "EC-0010"): {el("2150", "SGD", "-53.80", "-53.80"), el("6010", "USD", "40.00", "54.00"), el("7030", "SGD", "-0.20", "-0.20")},
 	} {
 		if got := byKey[key]; !reflect.DeepEqual(got, lines) {
 			t.Errorf("%s: %v, want %v", key, got, lines)

@@ -202,10 +202,12 @@ def test_pending_sales():
 # req: FR-EQ-02
 def test_pending_claims():
     r = _run("claims")
-    # EC-0004 is paid; a trip in USD; a loan settling an advance; a loan to no director; a loan reimbursed.
-    assert r["rejected"] == ["RE-0003", "EC-0005", "EC-0007", "EC-0008", "RE-0004"]
+    # EC-0004 is paid; a trip in USD; a loan settling an advance; a loan to no director; a loan reimbursed; `paid` on an
+    # SGD claim and `paid` of nothing (FR-AP-17 rev 0.169: the SGD paid is stated for a claim in another currency).
+    assert r["rejected"] == ["RE-0003", "EC-0005", "EC-0007", "EC-0008", "RE-0004", "EC-0011", "EC-0012"]
     assert [e["document"] for e in r["entries"]] == ["ADV-0001", "EC-0001", "EC-0002", "EC-0003", "EC-0004", "RE-0001",
-                                                     "RE-0002", "ADV-0002", "ADV-0002R", "EC-0006"]
+                                                     "RE-0002", "ADV-0002", "ADV-0002R", "EC-0006", "ADV-0003",
+                                                     "EC-0009", "EC-0010", "RE-0005"]
     # 100.00 + 9.00 GST and 12.35 km -> 12.4 × 0.60 = 7.44: 116.44 taken from the 500.00 advance.
     assert _lines(r, "EC-0001") == [("1250", "SGD", "-116.44", "-116.44"), ("2200", "SGD", "9.00", "9.00"),
                                     ("6010", "SGD", "100.00", "100.00"), ("6110", "SGD", "7.44", "7.44")]
@@ -218,6 +220,18 @@ def test_pending_claims():
     assert _lines(r, "EC-0003") == [("2150", "SGD", "-67.50", "-67.50"), ("6010", "USD", "50.00", "67.50")]
     # Reimbursed in SGD with the S$67.50 owed and no rate: no FX, nothing to 7030.
     assert _lines(r, "RE-0001") == [("1010", "SGD", "-67.50", "-67.50"), ("2150", "SGD", "67.50", "67.50")]
+    # FR-AP-17 rev 0.169, the README's example: USD at 1.35. USD 100.00 + 9.00 GST (TX), S$12.20 GST stated, S$148.02
+    # paid: 2200 claims 12.20, 6010 USD 100.00 at 135.00, owed 148.02 (not RND-FX(109.00 x 1.35) = 147.15); USD 20.00
+    # (OP) to 6110 at 27.00, owed at the rate. Owed 175.02: 1250 takes the 150.00 left of ADV-0003 (a USD claim settles
+    # an SGD advance, UC-EXP-03), 2150 the other 25.02. 7030: 175.02 - 135.00 - 27.00 - 12.20 = 0.82.
+    assert _lines(r, "EC-0009") == [("1250", "SGD", "-150.00", "-150.00"), ("2150", "SGD", "-25.02", "-25.02"),
+                                    ("2200", "SGD", "12.20", "12.20"), ("6010", "USD", "100.00", "135.00"),
+                                    ("6110", "USD", "20.00", "27.00"), ("7030", "SGD", "0.82", "0.82")]
+    # USD 40.00 (OP) at 1.35 = 54.00 to 6010; S$53.80 paid is owed on 2150, the 0.20 below the rate a credit to 7030.
+    assert _lines(r, "EC-0010") == [("2150", "SGD", "-53.80", "-53.80"), ("6010", "USD", "40.00", "54.00"),
+                                    ("7030", "SGD", "-0.20", "-0.20")]
+    # Both reimbursed in SGD with what each owes, 25.02 + 53.80 = 78.82, and no rate.
+    assert _lines(r, "RE-0005") == [("1010", "SGD", "-78.82", "-78.82"), ("2150", "SGD", "78.82", "78.82")]
     assert r["trial_balance"] == {
         "2026-03": {
             "1010": "-695.77",  # -500.00 - 67.50 - 128.27; 1250 and 2150 are back at nothing
@@ -225,8 +239,17 @@ def test_pending_claims():
             "6010": "617.50",  # 100.00 + 450.00 + 67.50
             "6110": "69.27",  # 7.44 + 61.83
         },
-        # 300.00 advanced and refunded; P0001 paid 200.00 + 18.00 GST and keeps it as a loan (FR-EQ-02, B.7).
-        "2026-04": {"2200": "18.00", "2500": "-218.00", "6010": "200.00"},
+        # 300.00 advanced and refunded; P0001 paid 200.00 + 18.00 GST and keeps it as a loan (FR-EQ-02, B.7). Then 150.00
+        # advanced from 1011 and used up by EC-0009 (1250 back at nothing), and 2150's 25.02 + 53.80 reimbursed from 1010.
+        "2026-04": {
+            "1010": "-78.82",  # RE-0005
+            "1011": "-150.00",  # -300.00 + 300.00 - 150.00
+            "2200": "30.20",  # 18.00 + 12.20
+            "2500": "-218.00",
+            "6010": "389.00",  # 200.00 + 135.00 + 54.00
+            "6110": "27.00",
+            "7030": "0.62",  # 0.82 - 0.20
+        },
     }
     # The 2500 line names the person; what the company owes them stays there.
     entry = next(e for e in r["entries"] if e["document"] == "EC-0006")

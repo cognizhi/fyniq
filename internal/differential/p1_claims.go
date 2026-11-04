@@ -52,6 +52,7 @@ type claimDoc struct {
 		GSTCode       string `json:"gst_code"`
 		GST           string `json:"gst"`
 		GSTBase       string `json:"gst_base"`
+		Paid          string `json:"paid"`
 		BusinessShare string `json:"business_share"`
 		Distance      string `json:"distance"`
 		Vehicle       string `json:"vehicle"`
@@ -79,7 +80,7 @@ func (r *p1) expenseClaim(d Document, date time.Time) (ledger.Entry, bool) {
 	registered := r.registered(date)
 	for _, l := range x.Lines {
 		if l.Distance != "" || l.Vehicle != "" { // a trip in the claimant's own vehicle, always in the base currency
-			if cur != r.base {
+			if cur != r.base || l.Paid != "" {
 				return ledger.Entry{}, false
 			}
 			perKm, ok := r.mileageRate(l.Vehicle, date)
@@ -125,6 +126,13 @@ func (r *p1) expenseClaim(d Document, date time.Time) (ledger.Entry, bool) {
 				return ledger.Entry{}, false
 			}
 			line.StatedBase = &stated
+		}
+		if l.Paid != "" { // what the claimant states they paid in the base currency, owed instead (FR-AP-17 rev 0.169)
+			paid, ok := r.amount(l.Paid, r.base.Code)
+			if !ok || cur == r.base || paid.Sign() <= 0 {
+				return ledger.Entry{}, false
+			}
+			line.Paid = &paid
 		}
 		c.Lines = append(c.Lines, line)
 	}
