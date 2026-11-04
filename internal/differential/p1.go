@@ -11,6 +11,7 @@ import (
 	"github.com/cockroachdb/apd/v3"
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/deposit"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
@@ -111,6 +112,8 @@ type p1 struct {
 	pending  []scheduled
 	open     map[string]*openDocument // the posted documents settlements settle, by the scenario's ID
 	used     map[string]money.Money   // the settlement differences cleared each month (YYYY-MM), against its cap
+	issued   map[string]*issued       // the posted invoices credit notes credit, by the scenario's ID
+	deposits map[string]*deposit.Open // the posted customer deposits, as invoices and refunds use them
 }
 
 // scheduled is one entry the scheduler posts after every document: a spread's release or an asset's depreciation.
@@ -122,7 +125,8 @@ type scheduled struct {
 }
 
 func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, error) {
-	r := &p1{s: s, base: base, settings: settings, open: map[string]*openDocument{}, used: map[string]money.Money{}}
+	r := &p1{s: s, base: base, settings: settings, open: map[string]*openDocument{}, used: map[string]money.Money{},
+		issued: map[string]*issued{}, deposits: map[string]*deposit.Open{}}
 	if s.AsOf != "" {
 		r.asOf, _ = time.Parse(time.DateOnly, s.AsOf)
 	}
@@ -160,6 +164,18 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return r.bill(i, d, date, true)
 	case ledger.SourceBillPayment:
 		return r.billPayment(d, date)
+	case "invoice":
+		return r.invoice(i, d, date, false)
+	case "credit_note":
+		return r.invoice(i, d, date, true)
+	case "customer_deposit":
+		return r.customerDeposit(d, date)
+	case "customer_receipt":
+		return r.customerReceipt(d, date)
+	case "deposit_refund":
+		return r.depositRefund(d, date)
+	case "write_off":
+		return r.writeOff(d, date)
 	}
 	return ledger.Entry{}, false
 }

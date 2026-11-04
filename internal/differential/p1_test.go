@@ -141,3 +141,38 @@ func TestP1PurchasesSettleWhatIsOpen(t *testing.T) {
 		}
 	}
 }
+
+// The sales of golden/sales.json, worked out by hand (README, "Invoices ..."): INV-0004 is 100.00 zero-rated and
+// deducts 100.00 of DP-0001's 1,090.00 (S$90.00 of GST), so under RND-DEPOSIT 2410 takes 100.00 less 90 × 100 ÷ 1,090
+// = 8.26 of GST, and 1100 nothing. CN-0001 (10.95) and CN-0002 (20.10 + 1.81) credit INV-0001's 32.86 together, so
+// CN-0003's 0.01 is refused (FR-AR-04, rev 0.155). RF-0001 refunds 545.00 of the 990.00 left: 990.00 × 545 ÷ 990 of
+// its base and 81.74 × 545 ÷ 990 = 45.00 of its GST. RC-0001 receives USD 9,710.00 of INV-0005 at 1.32 against 1.35,
+// a loss of 291.30, and WO-0001 writes off the USD 290.00 left, clearing its 391.50. RC-0003's 11.00 is above
+// INV-0002's 10.95, and INV-0006 spreads an expense, so both are refused.
+// req: FR-AR-03
+// req: FR-AR-04
+// req: FR-AR-09
+// req: FR-AR-17
+// req: ENG-41
+// req: QA-ENG-02
+func TestP1SalesCreditDepositsAndWriteOffs(t *testing.T) {
+	r := run(t, load(t, "sales.json"))
+	if want := []string{"CN-0003", "RC-0003", "INV-0006"}; !reflect.DeepEqual(r.Rejected, want) {
+		t.Errorf("rejected %v, want %v", r.Rejected, want)
+	}
+	byKey := map[string][]EntryLine{}
+	for _, e := range r.Entries {
+		byKey[e.Kind+" "+e.Document+" "+e.PostingDate] = e.Lines
+	}
+	for key, lines := range map[string][]EntryLine{
+		"post INV-0004 2026-03-31": {el("2200", "SGD", "8.26", "8.26"), el("2410", "SGD", "91.74", "91.74"), el("4020", "SGD", "-100.00", "-100.00")},
+		"post CN-0002 2026-04-03":  {el("1100", "SGD", "-21.91", "-21.91"), el("2200", "SGD", "1.81", "1.81"), el("4010", "SGD", "20.10", "20.10")},
+		"post RF-0001 2026-04-10":  {el("1010", "SGD", "-545.00", "-545.00"), el("2200", "SGD", "45.00", "45.00"), el("2410", "SGD", "500.00", "500.00")},
+		"post RC-0001 2026-03-20":  {el("1021", "USD", "9710.00", "12817.20"), el("1100", "USD", "-9710.00", "-13108.50"), el("7030", "SGD", "291.30", "291.30")},
+		"post WO-0001 2026-04-30":  {el("1100", "USD", "-290.00", "-391.50"), el("7030", "SGD", "391.50", "391.50")},
+	} {
+		if got := byKey[key]; !reflect.DeepEqual(got, lines) {
+			t.Errorf("%s: %v, want %v", key, got, lines)
+		}
+	}
+}

@@ -159,15 +159,16 @@ posts one of each, its figures worked out by hand in `oracle/tests/test_golden.p
 | `version` | Read but not used (P0 posts version 1 of each journal) | ENG-03 (an entry names its document's version) | Always 1 |
 | `fx_rate_source` values | Any non-empty string; not used in the result | ENG-03, ENG-40 (a rate typed on the document has the source "document") | `"document"`; `"base"` too on a base-currency line built to be rejected |
 
-## P1 sources (`cmd/scenario-run` reads the bank and purchases; the rest are pending)
+## P1 sources (`cmd/scenario-run` reads the bank, purchases and sales; the rest are pending)
 
 From P1 a scenario may hold documents of other sources beside manual journals, each posted by its
 rule set (PRD-001 §10.2, Appendix B; the oracle's `oracle/src/oracle/sources/`). The format grows
 additively, still `fyniq-scenario@1`: a scenario of manual journals only is unchanged, and so is its
 result. **The engine's `cmd/scenario-run` reads the bank shapes** (`p1-bank-import-reconcile` 4.8;
-`internal/differential/p1.go`) **and the purchases** (`p1-purchases` 10.4; `p1_purchases.go`), so the Go
-gate posts `golden/bank.json` and `golden/purchases.json` through both sides and `make differential` draws
-those scenarios (`DIFFERENTIAL_SOURCES=bank,purchases` in the Makefile). It does not read the other
+`internal/differential/p1.go`), **the purchases** (`p1-purchases` 10.4; `p1_purchases.go`) **and the sales**
+(`p1-sales` 9.3; `p1_sales.go`), so the Go gate posts `golden/bank.json`, `golden/purchases.json` and
+`golden/sales.json` through both sides and `make differential` draws those scenarios
+(`DIFFERENTIAL_SOURCES=bank,purchases,sales` in the Makefile). It does not read the other
 sources yet: their golden cases wait in [`pending/`](pending/README.md) with their
 figures worked out by hand, and `make differential` draws them only once their source is named in
 `FYNIQ_DIFFERENTIAL_SOURCES`. Teaching `cmd/scenario-run` each source is an engine-session task in
@@ -502,15 +503,15 @@ comparison with the engine shows any difference, and the decision settles it.
 
 | Shape | Oracle | Requirement | Generated |
 |---|---|---|---|
-| The currency of a foreign bank line's parts | The part's account and 2200 take base-currency lines ("the rest" of the base amount) | Rev 0.155, Appendix B.1 [accountant to confirm] | Not generated (`pending/bank.json`) |
-| GST on a foreign bank line | `RND-GST-INCL` of the part's base amount | Rev 0.141 ("of its signed gross in the base currency"); rev 0.155, Appendix B.1 [accountant to confirm] | Not generated (`pending/bank.json`) |
+| The currency of a foreign bank line's parts | The part's account and 2200 take base-currency lines ("the rest" of the base amount) | Rev 0.155, Appendix B.1 [accountant to confirm] | Not generated (`golden/bank.json`) |
+| GST on a foreign bank line | `RND-GST-INCL` of the part's base amount | Rev 0.141 ("of its signed gross in the base currency"); rev 0.155, Appendix B.1 [accountant to confirm] | Not generated (`golden/bank.json`) |
 | The currency of a transfer's fee | The paying leg's | Rev 0.155, §10.2 [accountant to confirm] | Only base-currency fees |
 | The cross-currency transfer rule | Each leg at its own rate, the fee to bank charges, the rest to 7030 | Rev 0.140; rev 0.155, §10.2 (SFRS(I) 1-21) [accountant to confirm] | Generated |
 | A release in the document's own month | Dated the document's day (never before the deferral it releases) | Rev 0.155, FR-GL-03 | Generated |
 | A money-out part coded SR, or a money-in part coded TX or IM | GST at the code, whatever the direction | Rev 0.155, Appendix B.1 (a refund) [accountant to confirm] | Not generated |
 | A bill's, a vendor credit's or a claim's receipt line coded NA or a supply code (SR, ZR, ES, OS) | Rejected whole: a purchase document takes Appendix B.6's purchase codes, and NA has no direction | FR-AP-02 ("GST input tax codes"), FR-AP-03 ("entered as a bill is"), FR-AP-17 (rev 0.155, a claim line "costed as a bill's line"), Appendix B.6 | Generated (rejected) |
 | An invoice's or a credit note's line, a part-payment deposit or a disposal's proceeds received coded NA or a purchase code | Rejected whole: a supply document takes Appendix B.6's supply codes; proceeds received with no code bear no GST | FR-AP-02 (bills the "mirror of invoices"), FR-AR-04, FR-AR-09 ("output GST when received"), FR-FA-03 ("output tax"), Appendix B.6; inferred for invoices, which FR-AR-03 gives a "GST code" [to confirm] | Generated (rejected) |
-| Several credit notes linked to one invoice | Together they credit at most the invoice's total before the deposits it deducts | Rev 0.155, FR-AR-04 (INVOICE-15), superseding the cap per credit note [accountant to confirm] | Not generated (`pending/sales.json`) |
+| Several credit notes linked to one invoice | Together they credit at most the invoice's total before the deposits it deducts | Rev 0.155, FR-AR-04 (INVOICE-15), superseding the cap per credit note [accountant to confirm] | Not generated (`golden/sales.json`) |
 | A P1 document whose lines but one round to nothing in base (USD 0.01 deposited at 0.0001) | Rejected: an entry has at least two lines | Rev 0.155, INV-05 | Not generated (rates of at least 0.01) |
 | A claim's line in another currency | Costed as a bill's (its cost in the claim's currency, 2150 at the claim's rate), reimbursed at the cascade's rate with the difference to 7030 | Rev 0.155, FR-AP-17 | Generated |
 | A claim larger than what is left of its advance | 1250 takes what is left, 2150 the rest | Rev 0.155, FR-AP-17 | Generated |
@@ -675,7 +676,7 @@ through both implementations; `make differential` lets Hypothesis search 1,000 m
 (`FYNIQ_DIFFERENTIAL_EXAMPLES`) and saves the smallest disagreeing scenario as
 `golden/shrunk-<hash>.json`, to be committed as a golden case once the cause is fixed. It draws P1
 scenarios too for the sources in `FYNIQ_DIFFERENTIAL_SOURCES` (comma-separated), which the Makefile
-sets to the sources `cmd/scenario-run` reads: `bank,purchases`. The engine's
+sets to the sources `cmd/scenario-run` reads: `bank,purchases,sales`. The engine's
 side reads scenarios with the same schemas (`schemas.go` embeds them) and runs as `cmd/scenario-run`.
 
 ```bash

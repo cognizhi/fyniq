@@ -248,7 +248,7 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 ## 9. The oracle and finishing
 
-- [ ] 9.1 The invoice, receipt, credit, deposit, write-off and spread rules in the independent oracle, with scenario
+- [x] 9.1 The invoice, receipt, credit, deposit, write-off and spread rules in the independent oracle, with scenario
   shapes and differential tests: an oracle session (QA-ENG-01), never a build session
   (27 Oct 2026, the oracle session, whose author has not read the engine: the oracle's half is written.
   `invoice@1` (`RND-LINE` with a discount, `RND-GST-EXCL` per subtotal or per line on the base nets, ENG-42's
@@ -258,13 +258,19 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   `deposit_refund@1`, `write_off@1` and the releases are in `oracle/src/oracle/sources/sales.py`. Hand-worked tests
   are in `oracle/tests/test_sales.py` (G4-022, G4-038, the deposits' shares), INV-07's AR property is in
   `test_p1_properties.py`, and the golden case is `test/differential/pending/sales.json`; the shapes are in
-  `test/differential/README.md`. **Left:** the differential, once 9.3 lets the engine read the shapes; applying
-  customer credits (`customer_credit_application@1`) and refunds of credits (`customer_refund@1`) are not in the
+  `test/differential/README.md`. 4 Nov 2026: the differential agrees, now that 9.3 lets the engine read the
+  shapes. Not in the format yet: applying customer credits (`customer_credit_application@1`) and refunds of credits (`customer_refund@1`) are not in the
   format yet)
-- [ ] 9.3 (engine session) `cmd/scenario-run` reads the `invoice`, `credit_note`, `customer_receipt`,
+- [x] 9.3 (engine session) `cmd/scenario-run` reads the `invoice`, `credit_note`, `customer_receipt`,
   `customer_deposit`, `deposit_refund` and `write_off` shapes of `fyniq-scenario@1` and posts them through their
   rule sets and `invoice_release@1`, writing P1 entries in their canonical form (`test/differential/README.md`,
   "P1 sources"); then `test/differential/pending/sales.json` moves to `golden/` and `sales` joins
   `FYNIQ_DIFFERENTIAL_SOURCES`. Verified by `make test` and `make differential` agreeing to the cent; a
   disagreement is settled from the PRD ("P1 readings", decided in PRD-001 rev 0.155). `// req: QA-ENG-02`
+  (4 Nov 2026, the engine session: `internal/differential/p1_sales.go` reads each document as the sales services do:
+  supply codes only and a linked credit note's tax point at its invoice's date (`invoice.Prepare`), the credit notes
+  of one invoice capped together (task 3.3), deposits deducted and refunded through `deposit.Open.Use`, receipts as
+  the purchases' settlements on 1100 with the tolerance cap shared, write-offs at most what is open. The golden case
+  agreed at once, `TestP1SalesCreditDepositsAndWriteOffs` holds its hand-worked figures, and `sales` joins the
+  Makefile's `DIFFERENTIAL_SOURCES`.)
 - [ ] 9.2 Finish with `make check` and `make test`
