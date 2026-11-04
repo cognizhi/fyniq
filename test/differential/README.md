@@ -388,8 +388,9 @@ is open) and debits the account with that carrying amount, in the base currency.
 
 ### Expense claims (`expense_claim`, `expense_claim@1` and `@2`), reimbursements (`claim_reimbursement`, `claim_reimbursement@1`) and cash advances (`cash_advance`, `cash_advance@1`)
 
-From §10.2, §10.4, Appendix B.7, FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20, FR-EQ-02, the rows of rev 0.147,
-0.148, 0.151 and 0.167, and the owner's decision on foreign claims (SFRS(I) 1-21) [accountant to confirm].
+From §10.2, §10.4, Appendix B.7, FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20, FR-EQ-02, UC-EXP-03, the rows of
+rev 0.147, 0.148, 0.151, 0.167 and 0.169, and the owner's decision on foreign claims (SFRS(I) 1-21)
+[accountant to confirm].
 
 ```json
 {"type": "expense_claim", "id": "EC-0001", "version": 1, "date": "2026-03-05", "currency": "SGD",
@@ -402,11 +403,52 @@ when registered, its `business_share`). A trip (`distance` in km and `vehicle`, 
 `RND-MILEAGE` of the distance at the vehicle's rate in force on the claim's date, with no GST, and only
 in a base-currency claim. Each line's cost goes to its account in the claim's currency at `RND-FX`, the
 input tax to 2200. What the employee is owed is in the **base currency** (FR-AP-17; SFRS(I) 1-21: the
-company owes a fixed SGD amount, what they were out of pocket): each receipt line's net plus its stated
-GST at the claim's rate under `RND-FX`, line by line, summed, and each trip's amount. It goes first to
-1250, up to what is left of the `advance` it settles (a base-currency claim), and the rest to 2150, a
-base-currency line; 7030 takes what balances (the `RND-FX` cents between a line's parts, and the stated
-GST in base against the GST at the rate).
+company owes a fixed SGD amount, what they were out of pocket): for each receipt line, what the claimant
+states they paid for it (`paid`, below) or else its net plus its stated GST at the claim's rate under
+`RND-FX`, line by line, summed, and each trip's amount. It goes first to 1250, up to what is left of the
+`advance` it settles (a claim in any currency: what it owes is in the base currency, rev 0.169, and
+UC-EXP-03's IDR receipts settle an SGD advance), and the rest to 2150, a base-currency line; 7030 takes
+what balances (the `RND-FX` cents between a line's parts, the stated GST in base against the GST at the
+rate, and what was paid against the line at the rate).
+
+**What the claimant paid** (`paid`; FR-AP-17 rev 0.169: "2150 takes each receipt line's amount, net and
+GST, at the claim's rate under `RND-FX`, line by line, or the SGD the claimant states they paid, with the
+difference to 7030 when the claim posts") [accountant to confirm]. A receipt line of a claim in another
+currency may state, in the base currency, what left the claimant's account for that receipt, net and GST
+together (a card's or a wallet's charge, which carries its own rate and spread). Here S$150.00 is advanced,
+and a claim in USD settles it:
+
+```json
+{"type": "cash_advance", "id": "ADV-0003", "version": 1, "date": "2026-04-12", "account": "1011", "amount": "150.00"}
+```
+
+```json
+{"type": "expense_claim", "id": "EC-0009", "version": 1, "date": "2026-04-14", "currency": "USD",
+ "fx_rate": "1.35", "fx_rate_source": "document", "advance": "ADV-0003",
+ "lines": [{"account": "6010", "amount": "100.00", "gst_code": "TX", "gst": "9.00", "gst_base": "12.20",
+            "paid": "148.02"},
+           {"account": "6110", "amount": "20.00", "gst_code": "OP"}]}
+```
+
+- **What is owed.** For a line with `paid`, 2150 (or 2500 for a loan) takes `paid` instead of the line's
+  net and GST at the claim's rate; a line without it is owed at the rate as before, and the claim owes
+  the sum. The reimbursement pays that sum in the base currency, with no FX.
+- **The difference.** `paid` changes only what is owed: the line's cost still goes to its account in the
+  claim's currency at the claim's rate, and its input tax to 2200 as without it. 7030 takes what balances,
+  so `paid` above the line at the rate is a debit to 7030 and below it a credit, in the claim's entry.
+- **With `gst_base`.** The two are independent: `gst_base` (the GST stated in the base currency, ENG-42)
+  sets the input tax 2200 claims, `paid` what is owed; neither is checked against the other, and 7030
+  takes both differences. Above, registered: 6010 USD 100.00 at 135.00 and 6110 USD 20.00 at 27.00; 2200
+  12.20; owed 148.02 (not `RND-FX` of 109.00 × 1.35 = 147.15) + 27.00 = 175.02; 7030 the 0.82 that
+  balances (0.87 paid above the rate less the 0.05 of GST stated above 9.00 × 1.35).
+- **With an advance.** What is owed, `paid` included, goes first to 1250 up to what is left of the
+  advance, the rest to 2150: with 150.00 left of ADV-0003, 1250 −150.00 and 2150 −25.02.
+- **No tolerance.** Any `paid` above zero is owed as stated, however far from the line at the rate (P1
+  readings).
+- **Refused.** The claim is rejected whole when `paid` is on a line of a base-currency claim (that line's
+  amount is already what was paid) or on a trip (a trip is costed at the mileage rate, in a base-currency
+  claim only), or is not a valid base-currency amount (rule 1: a plain decimal at most at the base
+  currency's minor units), or is not above zero.
 
 A `claim_reimbursement` is a settlement (the shape of a payment of bills) of posted claims on 2150 in
 the base currency only, from a base-currency money account, at most what each owes, with no rate and so
@@ -417,8 +459,8 @@ back, at most what is left: Dr the money account, Cr 1250.
 
 A claim kept as a loan to the company (`"loan": "<person>"`, one of `people`; FR-EQ-02, `expense_claim@2`)
 credits `director_loan` (2500) instead of 2150, as 2150 would be credited (in the base currency), and the
-line names the person (`party`): what the director paid stays owed to them there. It settles no
-`advance`, and no reimbursement settles it.
+line names the person (`party`): what the director paid stays owed to them there, `paid` included. It
+settles no `advance`, and no reimbursement settles it.
 
 ### Costs before the books start (`pre_incorporation_cost`, `pre_incorporation_cost@1`)
 
@@ -657,9 +699,15 @@ comparison with the engine shows any difference, and the decision settles it.
 | A disposal's proceeds received with no GST code | Rejected while the organisation is registered on the disposal's date (a taxable supply names its supply code; none would leave its output tax undeclared); while not registered, posted with no GST | FR-FA-03 (rev 0.155, "the proceeds' GST code's rate"), Appendix B.6 (rev 0.169), §10.2 "Asset disposal" | Generated (rejected while registered; posted while not) |
 | Several credit notes linked to one invoice | Together they credit at most the invoice's total before the deposits it deducts | Rev 0.155, FR-AR-04 (INVOICE-15), superseding the cap per credit note [accountant to confirm] | Not generated (`golden/sales.json`) |
 | A waiver, a conversion, or a repayment's settlements on one account (together), of more than the company owes the person on that director's account at the end of the document's date | Rejected whole. What is owed is the credit, positive, in base, of the lines naming the person on that account in the entries of the documents before it in the scenario dated on or before its date (a refused document leaves none; reversals come after every document, so none counts); nothing owed refuses any amount. A conversion is checked on its `amount` as entered, before `RND-SHARE` | FR-EQ-05 (rev 0.168: a settlement is drafted for at most what is owed that day, and a batch refuses a repayment of more than is owed on the payment date, PB-25) | Generated (rejected) |
-| A P1 document whose lines but one, or all, round to nothing in base in canonical form (USD 0.01 deposited at 0.0001; a claim of two USD 0.01 receipts at 0.1, which owes S$0.00) | Rejected, leaving no trace in what later documents read: an entry has at least two lines, and a single-currency entry balances in its currency | Rev 0.155, INV-01, INV-05 | Generated (claims at 0.1: `golden/shrunk-5fba8ee29c.json`) |
-| A claim's line in another currency | Costed as a bill's (its cost in the claim's currency at the claim's rate); 2150 (or 2500 for a loan) takes what is owed in the base currency, each receipt line's net plus GST under `RND-FX` at the claim's rate, summed, 7030 what balances; reimbursed in the base currency only, with no rate and no FX. *Superseded:* 2150 in the claim's currency, reimbursed at the cascade's rate with the difference to 7030 | FR-AP-17 (rev 0.7 "reimbursed in SGD", rev 0.155 "2150 at the claim's rate"), SFRS(I) 1-21 (a fixed SGD amount owed); the owner's decision [accountant to confirm] | Generated (a reimbursement in another currency: generated, rejected) |
+| A P1 document whose lines but one, or all, round to nothing in base in canonical form (USD 0.01 deposited at 0.0001; a claim of two USD 0.01 receipts at 0.1, which owes S$0.00), or whose entry is left all in one currency without balancing in it, whatever its number of lines (a claim of USD 0.01 on each of two accounts at 0.1; a USD 0.10 invoice coded SR at 0.1, whose GST is S$0.00, leaving USD 0.11 against 0.10) | Rejected, leaving no trace in what later documents read: an entry has at least two lines, and an entry whose lines are all in one currency balances in it, as the database refuses otherwise (db/migrations/000004, "does not balance") | Rev 0.155, INV-01, INV-05 | Generated (claims and invoices at 0.1: `golden/shrunk-5fba8ee29c.json`) |
+| A claim's line in another currency | Costed as a bill's (its cost in the claim's currency at the claim's rate); 2150 (or 2500 for a loan) takes what is owed in the base currency, each receipt line's net plus GST under `RND-FX` at the claim's rate, or the `paid` the claimant states for it (rev 0.169), summed, 7030 what balances; reimbursed in the base currency only, with no rate and no FX. *Superseded:* 2150 in the claim's currency, reimbursed at the cascade's rate with the difference to 7030 | FR-AP-17 (rev 0.7 "reimbursed in SGD", rev 0.155 "2150 at the claim's rate"), SFRS(I) 1-21 (a fixed SGD amount owed); the owner's decision [accountant to confirm] | Generated (a reimbursement in another currency: generated, rejected) |
 | A claim larger than what is left of its advance | 1250 takes what is left, 2150 the rest | Rev 0.155, FR-AP-17 | Generated |
+| `paid` per receipt line or per claim | Per receipt line: each line of a claim in another currency may state what was paid for it; a line without `paid` is owed at the claim's rate, and the claim owes the sum. A total paid for the whole claim is not in the format | FR-AP-17 rev 0.169 ("each receipt line's amount, net and GST, at the claim's rate under `RND-FX`, line by line, or the SGD the claimant states they paid"; a card statement shows each charge apart) [accountant to confirm] | Generated (on some lines of a foreign claim) |
+| A tolerance on `paid` | None: any `paid` above zero is owed as stated, however far from the line at the rate, and the whole difference goes to 7030. A policy check in the product may flag a large one; the posting is the same | FR-AP-17 rev 0.169 (left to the accountant: "a tolerance on a stated SGD amount, so a reimbursement above the actual spend does not become taxable pay") [accountant to confirm] | Generated (a few cents to 3% off the line at the rate) |
+| Where `paid`'s difference goes | 7030, in the claim's entry on its date, a card's spread over the claim's rate included; the line's cost stays at the claim's rate | FR-AP-17 rev 0.169 ("with the difference to 7030 when the claim posts"; left to the accountant: "whether a card's spread over the spot rate belongs in 7030") [accountant to confirm] | Generated |
+| `paid` against `gst_base` or the line's GST | Not checked against either: `gst_base` sets the input tax claimed (ENG-42), `paid` what is owed, and 7030 takes both differences | FR-AP-17 rev 0.169, ENG-42 (the PRD relates neither to the other) [accountant to confirm] | Generated (`paid` beside a GST at the rate; `gst_base` in `golden/claims.json`) |
+| `paid` on a base-currency claim or on a trip, not above zero, or not a valid base-currency amount | Rejected whole | FR-AP-17 rev 0.169 ("the SGD the claimant states they paid": for a claim in another currency; a trip is costed at the mileage rate, FR-AP-16), ENG-44 | Generated (rejected) |
+| A claim in another currency that settles an advance | 1250 takes what is left of the advance from what the claim owes in the base currency (`paid` included), 2150 the rest. *Superseded:* refused unless the claim is in the base currency (2150 was in the claim's currency) | FR-AP-17 rev 0.155 and rev 0.169 (what is owed is a fixed SGD amount), UC-EXP-03 (Appendix J.1: IDR receipts settle an S$800 advance) [accountant to confirm, with rev 0.169] | Generated |
 | GST on a disposal's proceeds received | `RND-GST-INCL` of the amount received (as for money in, B.1) | Rev 0.155, FR-FA-03 (IRAS: "based on the consideration received") [accountant to confirm] | Generated (SR while registered), and `golden/assets.json` |
 | A disposal's accumulated depreciation before the books' start | Cleared with the rest: the opening balances hold it on 1590 | Appendix B.4 ("earlier depreciation is part of opening balances") | Not generated (no books' start) |
 | A partial disposal, and a void of an asset | Not in the format yet | FR-FA-03, FR-FA-01 (rev 0.151) | Not generated |

@@ -282,6 +282,16 @@ def _refused(documents, doc_id, reason):
     assert dict(ledger.reasons)[doc_id] == reason
 
 
+# req: INV-01
+def test_an_invoice_left_all_in_usd_without_balancing_in_it_is_rejected():
+    # README, "P1 readings": USD 0.10 on SR at 0.1, registered at 9%. GST in USD 0.009 -> 0.01, so 1100 takes USD 0.11
+    # (0.011 -> S$0.01) and 4010 USD -0.10 (-0.01 -> S$-0.01); the GST on the S$0.01 net is 0.0009 -> S$0.00, so 2200
+    # and 7030 drop out. Left: USD 0.11 against USD 0.10, all in USD and out of balance by USD 0.01, which the
+    # database refuses. The invoice is refused whole.
+    _refused([invoice("INV-9", "2026-03-05", "USD", invoice_line("4010", "0.10"), rate="0.1")], "INV-9",
+             "unbalanced-currency")
+
+
 DP = deposit("DP-1", "2026-03-01", "1010", "SGD", "1090.00")
 INV = invoice("INV-1", "2026-03-02", "SGD", invoice_line("4010", "100.00"))
 

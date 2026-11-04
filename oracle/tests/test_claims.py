@@ -106,6 +106,139 @@ def test_a_reimbursement_is_in_the_base_currency_only(more):
 
 
 # req: FR-AP-17
+@pytest.mark.parametrize(
+    ("paid", "fx"),
+    [
+        ("68.20", "0.70"),  # paid S$0.70 more than the line at the rate: 7030 a debit (a loss)
+        ("66.90", "-0.60"),  # paid S$0.60 less: 7030 a credit (a gain)
+    ],
+)
+def test_a_line_paid_above_or_below_its_amount_at_the_rate_owes_what_was_paid(paid, fx):
+    # Rev 0.169: "or the SGD the claimant states they paid, with the difference to 7030 when the claim posts".
+    # USD 50.00 (OP) at 1.35: 6010 still takes USD 50.00 at 67.50; 2150 owes the S$ paid instead of 67.50; 7030 the
+    # rest: 67.50 - 68.20 = -0.70 balanced by +0.70; 67.50 - 66.90 = 0.60 balanced by -0.60. Reimbursed in SGD with
+    # what was paid and no rate: nothing more to 7030.
+    result, _ = p1_post(
+        claim("EC-1", "2026-03-05", "USD", bill_line("6010", "50.00", "OP", paid=paid), rate="1.35"),
+        settlement("claim_reimbursement", "RE-1", "2026-03-31", "1010", "SGD", ("EC-1", paid)),
+    )
+    assert lines_of(result, "EC-1") == [("2150", "SGD", f"-{paid}", f"-{paid}"), ("6010", "USD", "50.00", "67.50"),
+                                        ("7030", "SGD", fx, fx)]
+    assert lines_of(result, "RE-1") == [("1010", "SGD", f"-{paid}", f"-{paid}"), ("2150", "SGD", paid, paid)]
+
+
+# The README's example (section "Expense claims"): USD at 1.35, registered. Line 1: USD 100.00 + 9.00 GST on TX, the
+# receipt stating S$12.20 GST, the card charging S$148.02; line 2: USD 20.00 on OP, with nothing paid stated.
+PAID_LINES = (bill_line("6010", "100.00", "TX", "9.00", gst_base="12.20", paid="148.02"),
+              bill_line("6110", "20.00", "OP"))
+
+
+# req: FR-AP-17
+# req: ENG-42
+def test_paid_on_one_line_beside_a_line_owed_at_the_rate_and_the_gst_stated_in_sgd():
+    # 2200 claims the 12.20 stated (gst_base decides the input tax, not paid). 6010 USD 100.00 at 135.00 (the GST is
+    # all claimed, so none stays in the cost); 6110 USD 20.00 at 27.00. Owed: 148.02 paid (not RND-FX(109.00 x 1.35)
+    # = 147.15) + 27.00 at the rate = 175.02 on 2150. 135.00 + 27.00 + 12.20 - 175.02 = -0.82: 7030 +0.82 (0.87 paid
+    # above the rate, less the 0.05 of GST stated above 9.00 x 1.35 = 12.15).
+    result, _ = p1_post(claim("EC-1", "2026-03-05", "USD", *PAID_LINES, rate="1.35"))
+    assert lines_of(result, "EC-1") == [("2150", "SGD", "-175.02", "-175.02"), ("2200", "SGD", "12.20", "12.20"),
+                                        ("6010", "USD", "100.00", "135.00"), ("6110", "USD", "20.00", "27.00"),
+                                        ("7030", "SGD", "0.82", "0.82")]
+
+
+# req: FR-AP-17
+def test_a_foreign_claim_with_a_paid_line_settles_an_advance_first():
+    # UC-EXP-03: foreign receipts settle an SGD advance; what the claim owes is in SGD (rev 0.169), paid included.
+    # S$150.00 advanced; the claim above owes 175.02: 1250 takes the 150.00 left, 2150 the other 25.02. Its other
+    # lines are as above. A refund then finds nothing left, and the 25.02 is reimbursed.
+    result, ledger = p1_post(
+        advance("ADV-1", "2026-03-01", "150.00"),
+        claim("EC-1", "2026-03-05", "USD", *PAID_LINES, rate="1.35", advance="ADV-1"),
+        advance("ADV-1R", "2026-03-20", "0.01", refund_of="ADV-1"),
+        settlement("claim_reimbursement", "RE-1", "2026-03-31", "1010", "SGD", ("EC-1", "25.02")),
+    )
+    assert lines_of(result, "EC-1") == [("1250", "SGD", "-150.00", "-150.00"), ("2150", "SGD", "-25.02", "-25.02"),
+                                        ("2200", "SGD", "12.20", "12.20"), ("6010", "USD", "100.00", "135.00"),
+                                        ("6110", "USD", "20.00", "27.00"), ("7030", "SGD", "0.82", "0.82")]
+    assert lines_of(result, "RE-1") == [("1010", "SGD", "-25.02", "-25.02"), ("2150", "SGD", "25.02", "25.02")]
+    assert ledger.reasons == [("ADV-1R", "more-than-left-of-advance")]
+
+
+# req: FR-AP-17
+def test_an_advance_larger_than_what_was_paid_keeps_the_rest():
+    # S$500.00 advanced; USD 50.00 at 1.35 (67.50) paid S$68.20: 1250 takes all 68.20, nothing is owed on 2150, 7030
+    # +0.70. 500.00 - 68.20 = 431.80 is left and comes back whole; nothing is open to reimburse.
+    result, ledger = p1_post(
+        advance("ADV-1", "2026-03-01", "500.00"),
+        claim("EC-1", "2026-03-05", "USD", bill_line("6010", "50.00", "OP", paid="68.20"), rate="1.35", advance="ADV-1"),
+        advance("ADV-1R", "2026-03-20", "431.80", refund_of="ADV-1"),
+        settlement("claim_reimbursement", "RE-1", "2026-03-31", "1010", "SGD", ("EC-1", "0.01")),
+    )
+    assert lines_of(result, "EC-1") == [("1250", "SGD", "-68.20", "-68.20"), ("6010", "USD", "50.00", "67.50"),
+                                        ("7030", "SGD", "0.70", "0.70")]
+    assert lines_of(result, "ADV-1R") == [("1010", "SGD", "431.80", "431.80"), ("1250", "SGD", "-431.80", "-431.80")]
+    assert ledger.reasons == [("RE-1", "more-than-open")]
+
+
+# req: FR-AP-17
+# req: FR-EQ-02
+def test_a_paid_line_kept_as_a_loan_owes_the_director_what_they_paid():
+    # As 2150 would: 2500 SGD -68.20 naming P0001; 6010 USD 50.00 at 67.50; 7030 +0.70.
+    result, _ = p1_post(claim("EC-1", "2026-03-10", "USD", bill_line("6010", "50.00", "OP", paid="68.20"), rate="1.35",
+                              loan="P0001"))
+    assert lines_of(result, "EC-1") == [("2500", "SGD", "-68.20", "-68.20"), ("6010", "USD", "50.00", "67.50"),
+                                        ("7030", "SGD", "0.70", "0.70")]
+    assert result["people"] == {"P0001": {"2500": "-68.20"}}
+
+
+# req: FR-AP-17
+def test_a_paid_line_owes_its_cent_where_the_line_at_the_rate_rounds_to_nothing():
+    # Two USD 0.01 lines at 0.1: each 0.001 -> 0.00 (RND-FX). Without paid the claim owes S$0.00 and is refused (P1
+    # readings); with S$0.01 paid on the first it owes 0.01 + 0.00 = 0.01. The cost lines stay USD 0.01 at 0.00 (rev
+    # 0.24: a non-zero foreign line whose base rounds to nothing posts); 7030 +0.01 balances.
+    result, _ = p1_post(claim("EC-1", "2026-03-05", "USD", bill_line("6010", "0.01", "OP", paid="0.01"),
+                              bill_line("6110", "0.01", "OP"), rate="0.1"))
+    assert lines_of(result, "EC-1") == [("2150", "SGD", "-0.01", "-0.01"), ("6010", "USD", "0.01", "0.00"),
+                                        ("6110", "USD", "0.01", "0.00"), ("7030", "SGD", "0.01", "0.01")]
+
+
+# req: FR-AP-17
+# req: ENG-44
+@pytest.mark.parametrize(
+    ("document", "reason"),
+    [
+        # The SGD the claimant paid is stated for a claim in another currency; a base-currency line is what was paid.
+        (claim("EC-9", "2026-03-05", "SGD", bill_line("6010", "10.00", "OP", paid="10.00")), "paid-on-base-claim"),
+        # A trip is costed at the mileage rate (FR-AP-16), and only in a base-currency claim.
+        (claim("EC-9", "2026-03-05", "SGD", {**trip("6110", "10"), "paid": "6.00"}), "paid-on-trip"),
+        # Not above zero, or not a valid amount in the base currency (rule 1, ENG-44).
+        (claim("EC-9", "2026-03-05", "USD", bill_line("6010", "10.00", "OP", paid="0.00"), rate="1.35"), "zero-amount"),
+        (claim("EC-9", "2026-03-05", "USD", bill_line("6010", "10.00", "OP", paid="-13.50"), rate="1.35"), "wrong-sign"),
+        (claim("EC-9", "2026-03-05", "USD", bill_line("6010", "10.00", "OP", paid="13.505"), rate="1.35"),
+         "amount-too-many-decimals"),
+        (claim("EC-9", "2026-03-05", "USD", bill_line("6010", "10.00", "OP", paid="1.35e1"), rate="1.35"),
+         "amount-not-plain-decimal"),
+        (claim("EC-9", "2026-03-05", "USD", bill_line("6010", "10.00", "OP", paid="13,50"), rate="1.35"),
+         "amount-not-plain-decimal"),
+        # One bad line refuses the claim whole, the good lines beside it included.
+        (claim("EC-9", "2026-03-05", "USD", bill_line("6110", "5.00", "OP", paid="6.80"),
+               bill_line("6010", "10.00", "OP", paid="0"), rate="1.35"), "zero-amount"),
+    ],
+)
+def test_a_claim_with_a_paid_it_may_not_state_is_rejected(document, reason):
+    _refused([document], document["id"], reason)
+
+
+# req: INV-01
+def test_a_claim_whose_receipts_on_two_accounts_owe_nothing_is_rejected():
+    # README, "P1 readings": USD 0.01 on each of two accounts at 0.1 (each 0.001 -> 0.00 under RND-FX) owes S$0.00, so
+    # 2150 drops out and the entry is left as 6010 USD 0.01 and 6110 USD 0.01, both at 0.00: all in USD and USD 0.02
+    # out of balance, which the database refuses. The claim is refused whole.
+    _refused([claim("EC-9", "2026-03-05", "USD", bill_line("6010", "0.01", "ZP"), bill_line("6110", "0.01", "OP"),
+                    rate="0.1")], "EC-9", "unbalanced-currency")
+
+
+# req: FR-AP-17
 def test_an_advance_settled_by_claims_and_its_remainder_refunded():
     # 500.00 advanced. A claim of 116.44 settles against it: 1250 -116.44, nothing to 2150. A second of
     # 450.00 takes the 383.56 left and owes 66.44 on 2150. A refund then finds nothing left.
@@ -203,8 +336,6 @@ EC = claim("EC-1", "2026-03-05", "SGD", trip("6110", "100"))
          "vehicle-without-distance"),
         (claim("EC-9", "2026-03-05", "SGD"), "no-lines"),
         (claim("EC-9", "2026-03-05", "SGD", trip("6110", "10"), advance="EC-1"), "not-a-posted-advance"),
-        (claim("EC-9", "2026-03-05", "USD", bill_line("6010", "1.00", "OP"), rate="1.3", advance="ADV-1"),
-         "advance-currency"),
         (advance("ADV-9", "2026-03-05", "10.00", account="1021"), "money-account-currency"),
         (advance("ADV-9", "2026-03-05", "10.00", refund_of="EC-1"), "not-a-posted-advance"),
         (settlement("claim_reimbursement", "RE-9", "2026-03-31", "1010", "SGD", ("EC-1", "59.50", True)),

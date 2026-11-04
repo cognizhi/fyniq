@@ -16,7 +16,8 @@ from oracle.ledger import Ledger
 from oracle.scenario import parse_json, scenario_from_json
 from oracle.sources.settle import OpenItem
 from oracle.strategies import POST, REJECT
-from oracle.strategies_p1 import FOUNDERS_REJECTED, KINDS, OVER_OWED, SOURCES, p1_scenarios, p1_scenarios_with_intent
+from oracle.strategies_p1 import (CLAIMS_REJECTED, FOUNDERS_REJECTED, KINDS, OVER_OWED, SOURCES, p1_scenarios,
+                                  p1_scenarios_with_intent)
 
 
 # req: QA-ENG-01
@@ -186,6 +187,79 @@ def test_the_founders_source_draws_each_of_its_kinds_as_meant(kind):
             # every other kind is refused for its own rule: the oracle checks what is owed last, so a kind refused for
             # what is owed would have drawn on more than is owed.
             assert (reasons.get(doc_id) == "more-than-owed") == (kind in OVER_OWED), (doc_id, reasons)
+
+
+# What refuses each "claim-paid-" kind (README, "Expense claims": `paid` on a base-currency claim or a trip, not above
+# zero, or not a valid base-currency amount).
+PAID_REASONS = {
+    "claim-paid-on-base": {"paid-on-base-claim"},
+    "claim-paid-on-trip": {"paid-on-trip"},
+    "claim-paid-invalid": {"zero-amount", "wrong-sign", "amount-too-many-decimals", "amount-not-plain-decimal"},
+}
+_FIND = settings(max_examples=2000, database=None, phases=[Phase.generate], suppress_health_check=list(HealthCheck))
+
+
+def _claims_drawn(kind):
+    return find(p1_scenarios_with_intent(("claims",)), lambda pair: kind in pair[1].kinds.values(), settings=_FIND)
+
+
+# req: QA-ENG-02, FR-AP-07, FR-AP-16, FR-AP-17
+@pytest.mark.parametrize("kind", sorted(set(KINDS["claims"])))
+def test_the_claims_source_draws_each_of_its_kinds_as_meant(kind):
+    # Each kind of the claims source is drawn, and the oracle posts or refuses it as the generator meant; a kind built to
+    # be refused is meant to be refused, and a "claim-paid-" kind is refused for its `paid`.
+    data, intent = _claims_drawn(kind)
+    ledger = Ledger(scenario_from_json(data))
+    reasons = dict(ledger.reasons)
+    for doc_id, built in intent.kinds.items():
+        if built == kind:
+            assert (doc_id in ledger.rejected) == (intent.documents[doc_id] == REJECT), reasons
+            if kind in CLAIMS_REJECTED:
+                assert intent.documents[doc_id] == REJECT
+            if kind in PAID_REASONS:
+                assert reasons[doc_id] in PAID_REASONS[kind], (doc_id, reasons)
+
+
+def _posted_claim(data, ledger, test):
+    return any(d["type"] == "expense_claim" and d["id"] not in ledger.rejected and test(d) for d in data["documents"])
+
+
+# req: FR-AP-17
+@pytest.mark.parametrize(
+    "shape",
+    [
+        lambda d: any("paid" in ln for ln in d["lines"]),  # a receipt line stating what was paid (rev 0.169)
+        lambda d: d["currency"] != "SGD" and "advance" in d,  # a foreign claim settling an advance (UC-EXP-03)
+        lambda d: d["currency"] != "SGD" and "advance" in d and any("paid" in ln for ln in d["lines"]),
+    ],
+    ids=["paid", "foreign-advance", "paid-advance"],
+)
+def test_the_claims_source_posts_paid_lines_and_foreign_claims_settling_advances(shape):
+    find(p1_scenarios(("claims",)), lambda data: _posted_claim(data, Ledger(scenario_from_json(data)), shape),
+         settings=_FIND)
+
+
+# req: FR-AP-17
+@given(p1_scenarios(("claims",)))
+def test_a_claim_owes_what_was_paid_or_the_line_at_the_rate_and_7030_takes_the_rest(data):
+    # A posted claim in another currency (receipts only: a trip is refused there) credits 2150 and 1250 together with,
+    # per receipt line, its `paid` or else RND-FX of its net plus GST at the claim's rate, summed (rev 0.169).
+    ledger = Ledger(scenario_from_json(data))
+    accounts = data["settings"]["accounts"]
+    for doc in data["documents"]:
+        if doc["type"] != "expense_claim" or doc["id"] in ledger.rejected or doc["currency"] == "SGD":
+            continue
+        rate = Decimal(doc["fx_rate"])
+        owed = Decimal(0)
+        for ln in doc["lines"]:
+            if "paid" in ln:
+                owed += Decimal(ln["paid"])
+            else:
+                owed += money.rnd_fx(Decimal(ln["amount"]) + Decimal(ln.get("gst", "0")), rate, 2)
+        entry = next(e for e in ledger.entries if e.document == doc["id"] and e.kind == "post")
+        credited = -sum((ln.base_amount for ln in entry.lines
+                         if ln.account in (accounts["claims_payable"], accounts["advances"])), Decimal(0))
+        assert credited == owed, (doc, entry)
 
 
 # req: FR-EQ-01

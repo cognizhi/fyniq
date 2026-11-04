@@ -39,7 +39,9 @@ The trial balance is the base-currency total per account per calendar month of t
 
 From P1 the ledger also posts the **P1 sources** (bank lines and transfers, ...), each through its
 rule set in :mod:`oracle.sources`, in scenario order with the manual journals. A source's entry is
-written in its canonical form (:func:`oracle.book.canonical`); a registered asset posts none. What a
+written in its canonical form (:func:`oracle.book.canonical`); a registered asset posts none. A source's entry
+that keeps fewer than two lines, or is left all in one currency without balancing in it, refuses its
+document (INV-01; README, "P1 readings"). What a
 source schedules (a spread's releases, an asset's depreciation) posts after every document and
 reversal, when dated on or before ``as_of`` (ENG-05: up to "today", never the future), one entry per
 document, kind and date; a later document may end a schedule (a disposal ends its asset's).
@@ -266,6 +268,11 @@ class Ledger:
                 raise Rejected("base-out-of-range")  # §11.3: NUMERIC(20,4)
             if posting.lines and len(lines) < 2:  # every other leg rounded to nothing (README, "P1 readings")
                 raise Rejected("entry-rounds-to-one-line")
+            # INV-01 (README, "P1 readings"): an entry left all in one currency balances in it, whatever its number of
+            # lines, or the database refuses it ("does not balance"): USD 0.01 on each of two accounts at 0.1 owes
+            # S$0.00; a USD 0.10 invoice on SR at 0.1 leaves USD 0.11 against 0.10 once its GST is S$0.00.
+            if len({ln.currency for ln in lines}) == 1 and not money.total([ln.amount for ln in lines]).is_zero():
+                raise Rejected("unbalanced-currency")
         except Rejected as exc:
             self._reject(document.id, exc.reason)
             return
