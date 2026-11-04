@@ -54,6 +54,10 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 100
+          },
+          "revalue": {
+            "description": "Optional (FR-COA-02, FR-GL-04 rev 0.72): a monetary item, revalued at each month end at the period-end rate (README, \"Month-end revaluation\"). Only on an asset or a liability, never on the accounts the settings name prepayments or deferred_revenue (COA-10); a scenario with one needs settings naming unrealised_fx, and as_of.",
+            "type": "boolean"
           }
         }
       }
@@ -215,7 +219,7 @@
           "type": "object",
           "propertyNames": {"enum": ["receivable", "payable", "gst", "prepayments", "deferred_revenue", "fx", "bank_charges",
                                      "withholding_tax", "customer_deposits", "claims_payable", "advances", "director_loan", "deferred_remuneration",
-                                     "depreciation", "accumulated_depreciation", "disposal", "disposal_clearing"]},
+                                     "depreciation", "accumulated_depreciation", "disposal", "disposal_clearing", "unrealised_fx"]},
           "additionalProperties": {"$ref": "#/$defs/accountCode"}
         },
         "money_accounts": {
@@ -233,6 +237,26 @@
             "required": ["vehicle", "from", "rate"],
             "properties": {"vehicle": {"type": "string", "minLength": 1}, "from": {"$ref": "#/$defs/date"},
                            "rate": {"$ref": "#/$defs/plainDecimal"}}
+          }
+        },
+        "period_end_rates": {
+          "description": "Each currency's rate for a month's last day, the rate cascade's result (ENG-40) with its source, which the month-end revaluation reads (FR-GL-04; README, \"Month-end revaluation\"): a stored rate (fx_rate, base per one unit) or a quote and its form, stored under RND-RATE. A date that is not a month's last day, the base currency or one not in currencies, two rows for one currency and date, a rate or quote that is not a plain positive decimal with at most 10 integer digits and 10 decimals, or a quote whose stored rate is not one, makes the scenario invalid.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["date", "currency", "fx_rate_source"],
+            "dependentRequired": {"quote": ["form"], "form": ["quote"]},
+            "oneOf": [{"required": ["fx_rate"]}, {"required": ["quote"]}],
+            "properties": {
+              "date": {"$ref": "#/$defs/date"},
+              "currency": {"$ref": "#/$defs/currencyCode"},
+              "fx_rate": {"description": "Base per one unit of the currency, stored as is.", "type": "string"},
+              "quote": {"description": "The rate as the source quotes it, in its form (RND-RATE).", "type": "string"},
+              "form": {"description": "RND-RATE's forms (rev 0.70): base per one unit, base per 100 units, or foreign currency per one unit of the base.",
+                       "enum": ["base-per-unit", "base-per-100", "foreign-per-base"]},
+              "fx_rate_source": {"$ref": "#/$defs/rateSource"}
+            }
           }
         },
         "tolerance": {

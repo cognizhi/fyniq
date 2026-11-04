@@ -82,7 +82,13 @@ runner should fail the same way). The input is not a `fyniq-scenario@1` document
   P1 document, or an edit of the opening balances dated another day or with `reverse_on`;
 - two accounts have the role `retained-earnings`, `depreciation` or `income-tax-expense`, or one of
   them is on an account of the wrong type (equity, expense and expense), or `statements` is true with no
-  `retained-earnings` account (section "Statements"), or `kpis` comes without `statements` (section "KPIs").
+  `retained-earnings` account (section "Statements"), or `kpis` comes without `statements` (section "KPIs");
+- a rule of the month-end revaluation is broken (section "Month-end revaluation"): `revalue` on an account that is not
+  an asset or a liability or on the prepayments or deferred revenue account, a flagged account without `as_of` or
+  without `settings.accounts.unrealised_fx` naming an active revenue or expense account that is not a group and has no
+  role, a flagged account in a scenario with `statements`, or a period-end rate dated other than a month's last day, in
+  the base currency or one not in `currencies`, a second for its currency and date, or whose rate or quote is not a
+  valid rate (a quote's stored rate included).
 
 **A document is rejected** (it is listed in `rejected`, and none of its lines posts). A journal posts
 only when it meets every rule:
@@ -137,7 +143,8 @@ rejected for the reasons in section "Edits of a posted journal".
 
 - `entries`: the posted documents in scenario order (kind `post`), then the posted reversals and edits in
   scenario order (a void's `reversal`; an edit's `reversal`, then its `replacement`), then the scheduled entries
-  (section "P1 entries"); lines in the document's order.
+  (section "P1 entries": releases, depreciation, automatic reversals, and the month-end `revaluation` and its
+  `revaluation_reversal`); lines in the document's order.
 - Every amount is a plain decimal string at exactly its currency's minor units (`"100.00"`,
   `"12345"`, `"2.263"`); a base amount at the base currency's. Zero is `"0.00"`, never `"-0.00"`.
 - `rejected`: the refused documents (`"JNL-0003"`), reversals (`"JNL-0001/reversal"`) and edits
@@ -183,7 +190,7 @@ the bank, `p1_purchases.go`, `p1_sales.go`, `p1_claims.go`, `p1_assets.go` and `
 tasks of `p1-bank-import-reconcile`, `p1-purchases`, `p1-sales`, `p1-expense-claims` and `p1-fixed-assets`), so the
 Go gate posts their golden cases in [`golden/`](golden/README.md) through both sides, and `make differential` draws
 the sources the generator has, and the statements and KPIs over them
-(`DIFFERENTIAL_SOURCES=bank,purchases,sales,claims,assets,founders,general-ledger,statements,kpis` in the Makefile; the founders'
+(`DIFFERENTIAL_SOURCES=bank,purchases,sales,claims,assets,founders,general-ledger,fx,statements,kpis` in the Makefile; the founders'
 source gives the scenario two people, their director's accounts and a books' start, and both sides' `party` on each
 line and `people` totals are compared). The engine states the statements and the KPIs too (sections "Statements" and
 "KPIs"), and the general ledger's shapes of `p1-general-ledger-close` (task 8.1: the opening balances, automatic
@@ -201,8 +208,8 @@ A scenario with a P1 document must have `settings` and `as_of`, or it is invalid
 - `settings.accounts` names the system accounts by key (Appendix B.5): `receivable` (1100), `payable`
   (2010), `gst` (2200), `prepayments` (1210), `deferred_revenue` (2400), `fx` (7030), `bank_charges`
   (6460, a setting), `withholding_tax` (2330), `customer_deposits` (2410), `claims_payable` (2150),
-  `advances` (1250), `director_loan` (2500), `deferred_remuneration` (2120), `depreciation` (6610), `accumulated_depreciation` (1590), `disposal` (7050, a setting)
-  and `disposal_clearing` (1160, a setting). Each named account must be in `accounts`. A document that
+  `advances` (1250), `director_loan` (2500), `deferred_remuneration` (2120), `depreciation` (6610), `accumulated_depreciation` (1590), `disposal` (7050, a setting),
+  `disposal_clearing` (1160, a setting) and `unrealised_fx` (7040, B.5 rev 0.31; section "Month-end revaluation"). Each named account must be in `accounts`. A document that
   needs a key the organisation has not set is rejected.
 - `settings.books_start` is the first day of the books: an asset's depreciation posts from the later of
   its start and this day's month (FR-FA-02), and the opening balances are dated on it (FR-GL-06).
@@ -214,6 +221,8 @@ A scenario with a P1 document must have `settings` and `as_of`, or it is invalid
   left out takes that default.
 - `settings.money_accounts` maps each bank, card, wallet or cash account to the currency it holds
   (FR-BNK-01); each must be in `accounts` and its currency in `currencies`.
+- `settings.period_end_rates` gives each currency's rate for a month's last day, as a rate or as a quote stored under
+  `RND-RATE`, which the month-end revaluation reads (section "Month-end revaluation").
 - `settings.gst` holds the registration, `registered_from` and `registered_to` (both inclusive; no
   `registered_from` means never registered), `per_line` for `RND-GST-EXCL` per line instead of per
   subtotal, and `rates`, the standard rate as a percentage from each date (the sg-gst pack, ENG-31).
@@ -258,7 +267,9 @@ entries keep their lines in the journal's order, as before.
 
 Scheduled entries come after every document, reversal and edit, `kind` `release` (a spread's),
 `depreciation` (an asset's) or `auto_reversal` (a journal's): one entry per document, kind and date, ordered by
-date, then by the document's place in the scenario, then by kind. A release and a depreciation are in canonical
+date, then by the document's place in the scenario, then by kind. A month's `revaluation` and its
+`revaluation_reversal` (section "Month-end revaluation") are scheduled too, in canonical form, and come after every
+document's scheduled entries of their date. A release and a depreciation are in canonical
 form; an automatic reversal negates its journal's entry line by line, in its order, as a reversal does. A registered
 asset posts no entry of its own.
 
@@ -677,6 +688,154 @@ still post, when:
    "at the version read"): a document's version is the one it is written with, then each posted edit's;
 4. its content breaks its document's rules: a journal's rules 1 to 10, or the opening balances' rules above.
 
+### Month-end revaluation (FR-GL-04), `RND-RATE` and GST in another currency (ENG-42)
+
+From FR-GL-04 (rev 0.8, 0.72, 0.73, 0.75, 0.92 and 0.119), INV-05, ENG-40, ENG-41, ENG-42, §10.2 ("FX revaluation
+(month end)"), Appendix B.5 (rev 0.31: "7040 Unrealised FX gain or loss"), `RND-RATE` (§10.4, rev 0.24 and 0.70) and
+G4-039, written for `p1-multi-currency-fx` task 6.1 from the PRD, not from the engine (QA-ENG-01). `cmd/scenario-run`
+reads them (`internal/differential/p1_fx.go`, through `ledger.Revalue`): the golden case is
+[`golden/fx-revaluation.json`](golden/README.md), and the generator's source `fx` is in `DIFFERENTIAL_SOURCES`. A scenario with no account marked `revalue`
+and no `period_end_rates` is unchanged, and so is its result. What the PRD leaves open is in "P1 readings" (the rows
+from "When a month is revalued" on).
+
+#### The revalued accounts and the period-end rates
+
+```text
+{"code": "1021", "type": "asset", "group": false, "active": true, "revalue": true}
+```
+
+`"revalue": true` is the account's revalue flag (FR-COA-02; FR-GL-04 rev 0.72: "an account's revalue flag marks a
+monetary item; only an asset or a liability may carry it, never prepayments or deferred revenue (COA-10)"). The
+standard chart sets it on the money accounts, 1100, 2010, 1250, 2500 and 2120; a scenario sets it where it wants. A
+flag on an account that is not an asset or a liability, or on the account `settings.accounts` names `prepayments` or
+`deferred_revenue`, makes the scenario invalid (the chart refuses it). A scenario with a flagged account needs
+`as_of` and `settings` whose `accounts` name `unrealised_fx` (7040), an active revenue or expense account that is not
+a group and has no role ("FX-07 no unrealised-FX account" refuses a run in the product), or it is invalid.
+
+```text
+"period_end_rates": [
+  {"date": "2026-03-31", "currency": "USD", "fx_rate": "1.30", "fx_rate_source": "monthly table 2026-03"},
+  {"date": "2026-04-30", "currency": "JPY", "quote": "0.9012", "form": "base-per-100", "fx_rate_source": "MAS daily feed of 2026-04-30"},
+  {"date": "2026-04-30", "currency": "KWD", "quote": "0.2265", "form": "foreign-per-base", "fx_rate_source": "MAS daily feed of 2026-04-30"}
+]
+```
+
+`settings.period_end_rates` gives a currency's rate for a month's last day, the rate cascade's result for that day
+with its source ("with the rate from the cascade (ENG-40) for the period's last day, stored with its source"): either
+`fx_rate`, a stored rate (base per one unit, as a document's), or a `quote` with its `form`, which `RND-RATE` stores
+(below). Each row's date is a month's last day, its currency is in `currencies` and is not the base, and a currency has
+at most one row a date; a rate or a quote is a plain positive decimal with at most 10 integer digits and 10 decimals.
+Anything else makes the scenario invalid: these are rates the organisation has stored.
+
+#### `RND-RATE`
+
+"A rate quoted as base currency per n units of the foreign currency (n = 1 or 100) is stored as round(quote ÷ n, 10);
+a rate quoted as foreign currency per one unit of the base currency is stored as round(1 ÷ quote, 10); half-up" (§10.4;
+rev 0.70: "the forms named base-per-unit, base-per-100 and foreign-per-base"). The quotient is exact and rounded once,
+half away from zero (open question 53: "10 decimal places, half away from zero"), to 10 decimals: `base-per-100`
+0.9012 is 0.009012 SGD per yen, and `foreign-per-base` 0.2265 is 4.4150110375 (1 ÷ 0.2265 = 4.41501103752...). A quote
+whose stored rate is not a valid rate (0 once rounded, or 10^10 or more) makes the scenario invalid, since it could not
+have been stored.
+
+`RND-RATE` enters a scenario in two places only. A document's `fx_rate` is already the stored rate, base per one unit
+(ENG-11: "a manual journal's rate is entered as base per one unit"; the cascade's result for every other document), so
+neither side converts it. The two are:
+
+1. the quotes of `period_end_rates` (the feed's and the organisation's rates are "stored this way", rev 0.70);
+2. the rate a base-currency money account's payment of bills in another currency implies for what it keeps unapplied:
+   `RND-RATE` of what it paid (`base_amount`) ÷ the total in the bills' currency, the parts and the unapplied amount
+   together (rev 0.77, `rounding.Implied`; section "Bills ..."), round(paid ÷ total, 10). The supplier's credit is
+   carried at `RND-FX` of the unapplied amount at that rate, and the revaluation reads it at that rate. A receipt into
+   a base-currency account for invoices in another currency keeps its unapplied amount the same way.
+
+#### What a month's revaluation reads
+
+The month is revalued at its last day D. It reads the entries posted so far dated on or before D: the documents',
+the reversals' and edits', and the scheduled entries (releases, depreciation, automatic reversals), but no revaluation
+or its reversal: each month's revaluation is reversed on the next month's first day, on or before the next D, so
+"nothing is counted twice". Each flagged account's balance in each currency other than the base is read as
+**items** ("per item and currency"):
+
+- **The receivable and payable accounts** (those `settings.accounts` names `receivable` and `payable`), when
+  flagged, document by document (rev 0.92 and 0.119): each posted invoice, credit note, bill and vendor credit in that
+  currency dated on or before D, and each customer's or supplier's credit (the `unapplied` amount of a receipt or a
+  payment, FR-AR-18) dated on or before D. Each is at what is open of it on D, its amount less the parts settlements and
+  write-offs dated on or before D settled of it, and its carrying amount, its line's base amount at its stored rate less
+  the carrying amounts those settled ("each open bill and supplier credit in a foreign currency is an item, at what is
+  open of it and the carrying amount the AP sub-ledger gives it at its stored rate"). An item is signed as its line on
+  the account: an invoice, a vendor credit and a supplier's credit are debits; a bill, a credit note and a customer's
+  credit are credits. What the account holds in that currency beyond them is **one more item**, the account's balance
+  less the documents' items ("what 2010 holds beyond its documents (a manual journal, an earlier account-level line) is
+  an item of its own, so 2010 ends the period at the rate"), and a settlement dated before the document it settles is
+  part of it.
+- **Every other flagged account** (a money account, 1250, 2500, 2120, a manual journal's account): its balance in that
+  currency, the sum of its lines' amounts and base amounts, as one item; on a director's account one item for each
+  person, whose line names that person (FR-EQ-01: "every journal line on 2500 or 2120 carries that contact as its
+  sub-ledger key").
+
+An item is **open** when its amount or its carrying amount is not zero: a balance of nothing in the currency that keeps
+a base amount (a USD wallet that received at one rate and paid at another: USD 0.00 carried at S$5.00) is open, and is
+revalued to S$0.00.
+
+#### The revaluation entry and its reversal
+
+A month is revalued when every currency of an open item has a period-end rate for D (rev 0.75: the scheduler runs it
+"once the period has ended and every currency has a rate for its last day"). When one has none, the month's
+revaluation waits and posts nothing at all (the close check, C.2 #59, names the missing rate), and the next month is
+revalued on its own. A month with no open item posts nothing.
+
+Each open item's change is `RND-FX`(its amount × the period-end rate) − its carrying amount ("unrealised = `RND-FX`(open
+foreign amount × period-end rate) − carrying base"); an item already at the rate changes nothing. The entry, kind
+`revaluation`, document `revaluation-YYYY-MM` (its month), dated D, posts:
+
+- each change as a **base-only line** (INV-05: "transaction-currency amount 0, base amount not 0") on the item's account
+  in the item's currency, naming the item's person on a director's account;
+- `unrealised_fx` (7040), a base-currency line, the changes' sum negated: a loss is a debit and a gain a credit (§10.2:
+  "Open FC items and FC bank balances, or 7040 unrealised FX loss | 7040 unrealised FX gain, or the items").
+
+It is written in canonical form (section "P1 entries"): one line per account, currency and person, so 7040's losses
+and gains are one line, their net (rev 0.72 posts one line for the losses and one for the gains), and lines that net to
+nothing are left out. When every change is zero the month posts nothing ("an item already at the rate posts
+nothing"). An entry that posts has at least two lines and balances in base by construction; its base-only lines
+balance in their currency (every amount is 0).
+
+"The entry reverses on day 1 of the next period": kind `revaluation_reversal`, the same document, dated the next
+month's first day, negating the revaluation's lines as stored, amount and base amount (ENG-14), in its order. Every
+period of a scenario is open, so it posts on that day ("at once when that period is open").
+
+Both are scheduled entries (section "P1 entries"), and post when dated on or before `as_of`, the scheduler's one run
+after every document, reversal and edit: with `as_of` on 31 March, March's revaluation posts and its reversal (1
+April) waits; with `as_of` on 30 March, neither posts. Among the scheduled entries of their date they come last, after
+every document's (a revaluation reads the whole day). Months are revalued from the month of the first posted entry to
+the last month whose last day is on or before `as_of`.
+
+**Settlements are unchanged.** A receipt, payment or write-off settles a document at its stored rate whatever the
+revaluations before it, and 7030 takes the realised FX (ENG-41: "`RND-FX`(the amount settled × the settlement rate) −
+`RND-FX`(the amount settled × the document's stored rate)") within what balances the entry (sections "Bills ..." and
+"Invoices ..."): the revaluation's reversal on day 1 leaves the carrying amount at the stored rate, "so a later
+settlement measures realised FX against the document's stored rate (ENG-14, ENG-41) and nothing is counted twice".
+G4-039: an invoice of USD 10,000.00 at 1.35 (S$13,500.00); 31 March at 1.30: Dr 7040 500.00, Cr 1100 USD 0.00 /
+S$500.00, reversed on 1 April; 15 April USD 4,000.00 received at 1.32 into the USD wallet: Dr 1021 USD 4,000.00 /
+S$5,280.00, Dr 7030 120.00, Cr 1100 USD 4,000.00 / S$5,400.00; 30 April at 1.33: USD 6,000.00 carried at S$8,100.00 is
+S$7,980.00, Dr 7040 120.00, Cr 1100 120.00 (and, with 1021 flagged, its USD 4,000.00 carried at S$5,280.00 is
+S$5,320.00, Dr 1021 40.00, so 7040 takes the net 80.00).
+
+#### GST on documents in another currency (ENG-42)
+
+"GST on foreign-currency documents is reported in SGD." What each source does, all stated in its section above:
+
+- **Purchases** (bills, vendor credits, claims' receipt lines): the input tax is "the SGD GST stated on the supplier's
+  tax invoice" (`gst_base`), never a recomputation at the book rate; "the difference between the stated GST and the
+  GST at the book rate posts to 7030 on the same entry" (rev 0.74: "net + stated GST − gross"), which is what 7030 takes
+  to balance the entry. With no `gst_base`, "the bill still posts, the GST stays in the cost (as for code BL)" and
+  nothing is claimed (the ⚠ is not in the result). G4-023: USD 1,000.00 + GST 90.00 at 1.34 stating S$121.50: Dr 6010
+  1,340.00, Dr 2200 121.50, Cr 2010 1,460.60, Cr 7030 0.90.
+- **Sales** (invoices, credit notes): "converted at the organisation's GST exchange-rate source ..., then `RND-FX` and
+  `RND-GST-EXCL`": 2200 takes `RND-GST-EXCL` of the nets in SGD, 1100 the customer's total in the invoice's currency at
+  `RND-FX`, and the cents between them go to 7030 (rev 0.116). The invoice's own rate stands for the GST
+  exchange-rate source ("P1 readings").
+- **Money in and out** (bank lines' parts, deposits, a disposal's proceeds): `RND-GST-INCL` of the base amount.
+
 ### P1 readings
 
 PRD-001 rev 0.155 decided the P1 shapes the PRD had left open, on the best current recommendation
@@ -715,7 +874,7 @@ comparison with the engine shows any difference, and the decision settles it.
 | A foreign bank line's part on an account marked revalue | Still open: the format has no revalue flag, so the oracle posts it as any part, in the base currency | Rev 0.155, Appendix B.1 (not yet decided) | Not generated |
 | The tolerance of a foreign bill paid in full | 3% of what it owes at its stored rate (its 2010 line) | Rev 0.155, FR-BNK-08 [accountant to confirm] | Not generated (only base-currency bills in full) |
 | The month's differences across sources | Bills' and invoices' differences share the month's cap, in absolute value | Rev 0.155, FR-BNK-08 [accountant to confirm] | Generated (always within the cap) |
-| An unapplied amount from a base-currency account paying foreign bills | At the rate the payment implies (`RND-RATE` of what it paid ÷ the total) | Rev 0.77 | Not generated |
+| An unapplied amount from a base-currency account paying foreign bills | At the rate the payment implies (`RND-RATE` of what it paid ÷ the total) | Rev 0.77 | Generated by the `fx` source (section "Month-end revaluation"), which revalues it |
 | A bill's lines in another currency | The cost lines in the bill's currency; 2200, 1210 and 7030 in the base currency | Appendix B.2 ("net in document currency"), rev 0.83 | Generated |
 | An opening balance on a revenue or an expense account | Posts as any other balance: books that start part-way through a financial year carry its income and costs so far (FR-ORG-02: "first year may be short or long"; the opening balances' guide lists those accounts "if the books start part-way through a year") | FR-GL-06 rev 0.49, FR-ORG-02 [accountant to confirm] | Generated |
 | A zero balance in the opening balances, or two on one account | A zero line rejects them, as a journal's does (rule 3; rev 0.66: "the content must pass the posting rules"); lines on one account and person are netted into one balance (canonical form), and the balances are rejected when fewer than two lines are left | FR-GL-06 rev 0.49 and 0.66, ENG-24 [accountant to confirm] | Generated (a zero line) |
@@ -724,6 +883,19 @@ comparison with the engine shows any difference, and the decision settles it.
 | An automatic reversal after an edit or a void | The scheduler runs after every document, reversal and edit: it reverses the journal's current entry (an edit's replacement) on its current version's `reverse_on`, and a journal voided before it has nothing to reverse | FR-GL-02 rev 0.55 ("the reversal is part of the journal as it was approved"), FR-GL-12 (an entry is reversed at most once) [accountant to confirm] | Generated |
 | A void dated after the journal's `reverse_on` | Posts on its date, and no automatic reversal follows: the void was made before the scheduler ran. In the product the scheduler may have reversed it first, and the void is then refused (a second reversal) | FR-GL-02 rev 0.55, FR-GL-12 (the scenario does not say when an action is made, only in what order) [accountant to confirm] | Generated |
 | An edit's replacement dated in another month than the entry it replaces | Posts: the replaced entry is reversed in its own month and the replacement in its own, both open | FR-GL-12 rev 0.58 ("both months must be open") | Generated |
+| When a month is revalued | Once its last day is on or before `as_of`, as every scheduled entry, by the scheduler's one run after every document, reversal and edit: a back-dated posting is already in, so a month is revalued once, never stale. The product runs it "once the period has ended" and again when a back-dated posting makes it stale, posting "the difference since" ("the totals are the same") | FR-GL-04 rev 0.73 and 0.75, ENG-05 [accountant to confirm] | Generated |
+| A month whose open item's currency has no period-end rate | Its revaluation waits and posts nothing at all, its other currencies included; the next month is revalued on its own, since each revaluation is reversed on the next month's first day | FR-GL-04 rev 0.75 ("once ... every currency has a rate for its last day"), C.2 #59 [accountant to confirm] | Generated (a month without one rate) |
+| A foreign balance of nothing that keeps a base amount (USD 0.00 at S$5.00) | An open item, revalued to S$0.00: its change is minus its carrying amount | FR-GL-04 ("unrealised = `RND-FX`(open foreign amount × period-end rate) − carrying base"; rev 0.92: "so 2010 ends the period at the rate") [accountant to confirm] | Generated (a wallet paying at another rate) |
+| The receivable's and payable's documents and what else the account holds | Each open document and each credit is an item at its stored rate; the rest of the account's balance in the currency (a manual journal's line, a settlement dated before its document) is one more item | FR-GL-04 rev 0.92 and 0.119, INV-07 rev 0.78 ("each posted bill dated on or before the day ..., less its allocations by then") [accountant to confirm] | Generated (manual journals on 1100 and 2010 in USD) |
+| A settlement, write-off or credit dated after the month end | Not read: a document is open on D by what settled it on or before D | FR-GL-04 ("at what is open of it"), INV-07 rev 0.78 | Generated |
+| 7040's lines | One line, the net of the losses and the gains, in canonical form; the base-only lines one per account, currency and person | FR-GL-04 rev 0.72 ("one line for the losses and one for the gains"), README "P1 entries" | Generated |
+| A director's account in another currency | One item per person, its base-only line naming the person | FR-EQ-01 ("every journal line on 2500 or 2120 carries that contact as its sub-ledger key"), INV-13 [accountant to confirm] | Not generated (the founders' documents are in the base currency). **Open:** the product revalues each account's balance in a currency as one item, whose line names no person, so `cmd/scenario-run` does too; the two disagree on this shape, and a line on 2500 or 2120 without its person may be refused by the database (4 Nov 2026, to settle before a director's account is flagged with a balance in another currency) |
+| The statements of a scenario with a revalued account | Not in the format yet: a scenario with both is invalid. The revaluation moves cash accounts' base amounts with no cash flow, and IAS 7 shows "the effect of exchange rate changes on cash" apart from operating, investing and financing, a line FR-RPT-01's layout does not have yet | FR-RPT-01, FR-GL-04 (not yet decided) | Not generated (the statements' generator drops the flags) |
+| Where `RND-RATE` enters a scenario | The quotes of `period_end_rates` and the rate a base-currency account's payment or receipt implies for its unapplied amount; a document's `fx_rate` is the stored rate already, so no quote appears on a document | `RND-RATE` (rev 0.24, 0.70), ENG-11, rev 0.77 | Generated (quotes in each form; a payment from SGD keeping an unapplied amount) |
+| An average of the monthly table's duplicate rates | Not in the format: a period-end rate is one rate or one quote. The product rounds the average once under `RND-RATE` | ENG-40 rev 0.70 ("the average is rounded once under `RND-RATE`") | Not generated |
+| A rate the cascade averaged, on a document | Not in the format: `fx_rate_source` is free text, so neither side knows a rate is an average or refuses one ("an average never sets a GST amount"; rev 0.74: "an average rate is refused") | ENG-40, ENG-42 rev 0.74 (not yet modelled) | Not generated |
+| The GST exchange-rate source of an invoice in another currency | The invoice's own rate, until `p1-gst` adds the organisation's setting | ENG-42 rev 0.116 ("the invoice's own rate stands in for it `[verify]`") [accountant to confirm] | Generated |
+| `gst_base` on a line with no GST in the bill's currency | Claims nothing: the line charges no GST, so the SGD figure is not read (it is read only beside the GST charged, as for G4-023) | ENG-42 ("the difference between the stated GST and the GST at the book rate"), FR-AP-20 [accountant to confirm] | Not generated (`gst_base` only beside `gst`) |
 
 ## Statements
 
@@ -911,9 +1083,9 @@ through both implementations; `make differential` lets Hypothesis search 1,000 m
 `golden/shrunk-<hash>.json`, to be committed as a golden case once the cause is fixed. It draws P1
 scenarios too for the sources in `FYNIQ_DIFFERENTIAL_SOURCES` (comma-separated), which the Makefile
 sets to every source `cmd/scenario-run` reads, with the statements and the KPIs:
-`bank,purchases,sales,claims,assets,founders,general-ledger,statements,kpis` (`make differential DIFFERENTIAL_SOURCES=founders` draws
-one alone; the variable in the environment does not, since the Makefile sets it). The generator's `general-ledger`
-source (opening balances, automatic reversals and edits) joins that list once `cmd/scenario-run` reads its shapes. The engine's
+`bank,purchases,sales,claims,assets,founders,general-ledger,fx,statements,kpis` (`make differential DIFFERENTIAL_SOURCES=founders`
+draws one alone; the variable in the environment does not, since the Makefile sets it); `fx` is the month-end
+revaluation, `RND-RATE`'s quotes and realised FX (section "Month-end revaluation"). The engine's
 side reads scenarios with the same schemas (`schemas.go` embeds them) and runs as `cmd/scenario-run`.
 
 ```bash

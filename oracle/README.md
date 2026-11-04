@@ -33,7 +33,9 @@ credit notes, customer receipts, deposits, deposit refunds, write-offs and invoi
 `write_off@1`); expense claims, their reimbursements and cash advances (`expense_claim@1`,
 `claim_reimbursement@1`, `cash_advance@1`, `RND-MILEAGE`); the fixed asset register's depreciation and
 disposals (`asset_depreciation@1`, `asset_disposal@1`); and the general ledger's opening balances, journals that reverse
-by themselves and edits of posted journals (FR-GL-02, FR-GL-06, FR-GL-12, task 8.1 of `p1-general-ledger-close`). Their
+by themselves and edits of posted journals (FR-GL-02, FR-GL-06, FR-GL-12, task 8.1 of `p1-general-ledger-close`); and the
+month-end revaluation of foreign-currency monetary items with its reversal, and `RND-RATE`'s quotes (FR-GL-04, INV-05,
+task 6.1 of `p1-multi-currency-fx`, `src/oracle/revaluation.py`, whose golden case waits in `test/differential/pending/`). Their
 scenario shapes, the canonical form of their entries and the readings where the PRD leaves a shape
 open are in [`test/differential/README.md`](../test/differential/README.md), "P1 sources". The
 engine's `cmd/scenario-run` does not read them yet, so their golden cases wait in
@@ -58,14 +60,15 @@ The scenario and result formats, and the rules a comparator relies on, are in
 
 | Path | Holds |
 |---|---|
-| `src/oracle/money.py` | Parsing at the precision boundary; the named rounding policies (`RND-FX`, `RND-GST-EXCL`, `RND-GST-INCL`, `ALLOC-EVEN`, `RND-LINE`, `RND-GST-SHARE`, `RND-WHT`, `RND-DISCOUNT`, `RND-DEPOSIT`, `RND-MILEAGE`, `RND-RATE` of a payment); exact sums and formatting |
+| `src/oracle/money.py` | Parsing at the precision boundary; the named rounding policies (`RND-FX`, `RND-GST-EXCL`, `RND-GST-INCL`, `ALLOC-EVEN`, `RND-LINE`, `RND-GST-SHARE`, `RND-WHT`, `RND-DISCOUNT`, `RND-DEPOSIT`, `RND-MILEAGE`, `RND-RATE` of a payment and of a quote); exact sums and formatting |
 | `src/oracle/scenario.py` | Reading and checking `fyniq-scenario@1`; checking `fyniq-scenario-result@1` |
 | `src/oracle/ledger.py` | The manual journal's rules, reversals and edits, the opening balances, the P1 sources' dispatch and schedules (automatic reversals included), the trial balance |
+| `src/oracle/revaluation.py` | The month-end revaluation (FR-GL-04): the open items on the accounts marked revalue, document by document on 1100 and 2010, their base-only lines against 7040, and the reversal on the next month's first day |
 | `src/oracle/book.py` | Lines, entries, scheduled entries, rejections and the canonical form of a P1 entry |
 | `src/oracle/rules.py` | What every P1 rule set checks the same way: the boundary, rates, accounts, GST, spreads |
 | `src/oracle/sources/` | One rule set per P1 source (`bank.py`, `purchases.py`, `sales.py`, `claims.py`, `assets.py`) and the settlement of posted documents by money (`settle.py`) |
 | `src/oracle/strategies.py` | Hypothesis strategies that generate manual-journal scenarios (task 2.4) |
-| `src/oracle/strategies_p1.py` | Hypothesis strategies for the P1 sources, with each document's intent |
+| `src/oracle/strategies_p1.py` | Hypothesis strategies for the P1 sources, with each document's intent; the `fx` source marks accounts revalue and draws period-end rates |
 | `src/oracle/strategies_gl.py` | The general ledger's source of `strategies_p1`: opening balances, journals that reverse by themselves, voids and edits, each built to an intent |
 | `tests/` | Hand-worked journals, rejections and P1 documents (`# req: QA-ENG-01`), the pending golden cases, the format, properties, the CLI |
 

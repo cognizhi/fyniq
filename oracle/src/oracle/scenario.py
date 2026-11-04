@@ -24,7 +24,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from functools import cache
 from pathlib import Path
@@ -33,6 +33,8 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import best_match
+
+from oracle import money
 
 SCENARIO_SCHEMA = "fyniq-scenario@1"
 RESULT_SCHEMA = "fyniq-scenario-result@1"
@@ -72,6 +74,7 @@ class Account:
     report_group: str | None = None  # the statements' attributes (FR-COA-02); README, "Statements"
     function: str | None = None
     cash_flow_line: str | None = None
+    revalue: bool = False  # a monetary item, revalued at each month end (FR-COA-02, FR-GL-04 rev 0.72)
 
 
 @dataclass(frozen=True)
@@ -146,6 +149,16 @@ class GSTSettings:
 
 
 @dataclass(frozen=True)
+class PeriodEndRate:
+    """A currency's rate for a month's last day (FR-GL-04, ENG-40), stored base per one unit (``RND-RATE``)."""
+
+    day: date
+    currency: str
+    rate: Decimal
+    source: str
+
+
+@dataclass(frozen=True)
 class Settings:
     """The organisation's settings the P1 rule sets read (README, "Settings")."""
 
@@ -154,6 +167,7 @@ class Settings:
     gst: GSTSettings
     books_start: date | None
     data: MappingProxyType[str, Any]
+    period_end_rates: tuple[PeriodEndRate, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -270,7 +284,36 @@ def _dates_in(value: Any, where: str) -> None:
             _dates_in(item, f"{where}/{i}")
 
 
-def _settings(raw: dict[str, Any], accounts: dict[str, Account], currencies: dict[str, int]) -> Settings:
+def _period_end_rates(raw: list[Any], currencies: dict[str, int], base: str) -> tuple[PeriodEndRate, ...]:
+    """README, "Month-end revaluation": each a rate stored for a month's last day, or a quote stored under RND-RATE."""
+    rates: list[PeriodEndRate] = []
+    for i, row in enumerate(raw):
+        where = f"settings/period_end_rates/{i}"
+        day = _date(row["date"], f"{where}/date")
+        if (day + timedelta(days=1)).day != 1:
+            raise ScenarioError(f"{where}/date: {day.isoformat()} is not a month's last day")
+        currency = row["currency"]
+        _shape(_CURRENCY, currency, f"{where}/currency")
+        if currency not in currencies:
+            raise ScenarioError(f"{where}/currency: {currency} is not in currencies")
+        if currency == base:
+            raise ScenarioError(f"{where}/currency: {currency} is the base currency, which has no rate")
+        if any(r.currency == currency and r.day == day for r in rates):
+            raise ScenarioError(f"{where}: a second rate for {currency} on {day.isoformat()}")
+        try:
+            if "fx_rate" in row:
+                rate = money.parse_rate(row["fx_rate"])
+            else:
+                rate = money.rnd_rate_quote(money.parse_rate(row["quote"]), row["form"])
+        except money.FormatError as exc:
+            raise ScenarioError(f"{where}: not a rate ({exc.reason})") from exc
+        if not rate > money.ZERO or rate >= money.RATE_LIMIT:  # RND-RATE gave what no rate can be stored as
+            raise ScenarioError(f"{where}/quote: its stored rate {rate} is not a rate")
+        rates.append(PeriodEndRate(day, currency, rate, row["fx_rate_source"]))
+    return tuple(rates)
+
+
+def _settings(raw: dict[str, Any], accounts: dict[str, Account], currencies: dict[str, int], base: str) -> Settings:
     _dates_in(raw, "settings")
     named = dict(raw.get("accounts", {}))
     for key, code in named.items():
@@ -307,7 +350,8 @@ def _settings(raw: dict[str, Any], accounts: dict[str, Account], currencies: dic
     )
     books_start = date.fromisoformat(raw["books_start"]) if "books_start" in raw else None
     return Settings(
-        MappingProxyType(named), MappingProxyType(money_accounts), gst, books_start, _frozen(raw)
+        MappingProxyType(named), MappingProxyType(money_accounts), gst, books_start, _frozen(raw),
+        _period_end_rates(raw.get("period_end_rates", []), currencies, base),
     )
 
 
@@ -331,7 +375,8 @@ def scenario_from_json(data: Any) -> Scenario:
         if raw["code"] in accounts:
             raise ScenarioError(f"accounts/{i}: the code {raw['code']!r} appears twice")
         accounts[raw["code"]] = Account(raw["code"], raw["type"], raw["group"], raw["active"], raw.get("role"),
-                                        raw.get("report_group"), raw.get("function"), raw.get("cash_flow_line"))
+                                        raw.get("report_group"), raw.get("function"), raw.get("cash_flow_line"),
+                                        raw.get("revalue", False))
     for role, kind in _SINGLE_ROLES.items():
         holders = [a for a in accounts.values() if a.role == role]
         if len(holders) > 1:
@@ -374,7 +419,7 @@ def scenario_from_json(data: Any) -> Scenario:
                               content["memo"], _lines(content["lines"]), reverse_on))
 
     as_of = _date(data["as_of"], "as_of") if "as_of" in data else None
-    settings = _settings(data["settings"], accounts, currencies) if "settings" in data else None
+    settings = _settings(data["settings"], accounts, currencies, base) if "settings" in data else None
     # README, "P1 sources": the rule sets read the settings, and "today" (ENG-05) is as_of. The opening balances
     # read the books' start, and an automatic reversal posts once its date is on or before as_of (FR-GL-02).
     sources = [d for d in documents if d.type != "manual_journal"]
@@ -386,7 +431,8 @@ def scenario_from_json(data: Any) -> Scenario:
         first = sources[0] if sources else reversing[0]
         what = f"is a {first.type}" if sources else "reverses by itself"
         raise ScenarioError(f"documents: {getattr(first, 'id', None) or first.document} {what}, which needs as_of")
-    if as_of is not None and (sources or reversing):
+    revalued = _revalued(accounts, settings, as_of, statements)
+    if as_of is not None and (sources or reversing or revalued):
         for item in (*documents, *reversals):
             if item.date > as_of:
                 raise ScenarioError(f"as_of: {as_of} is before {item.date.isoformat()}, a date in the scenario")
@@ -427,6 +473,32 @@ def scenario_from_json(data: Any) -> Scenario:
         _shape(_DOCUMENT_ID, person, f"people/{i}")
     return Scenario(data["name"], base, currencies, accounts, tuple(documents), tuple(reversals), as_of, settings,
                     statements, kpis, people)
+
+
+def _revalued(accounts: dict[str, Account], settings: Settings | None, as_of: date | None, statements: bool) -> bool:
+    """README, "Month-end revaluation": the revalue flag's rules (COA-10), and what a revaluation needs."""
+    flagged = [a for a in accounts.values() if a.revalue]
+    if not flagged:
+        return False
+    for account in flagged:
+        if account.type not in ("asset", "liability"):
+            raise ScenarioError(f"accounts: {account.code} is revalued, but only an asset or a liability is (COA-10)")
+    if settings is None or as_of is None:
+        raise ScenarioError(f"accounts: {flagged[0].code} is revalued at month end, which needs settings and as_of")
+    for key in ("prepayments", "deferred_revenue"):
+        code = settings.accounts.get(key)
+        if code is not None and accounts[code].revalue:
+            raise ScenarioError(f"accounts: {code} is the {key} account, which is never revalued (COA-10)")
+    code = settings.accounts.get("unrealised_fx")
+    if code is None:
+        raise ScenarioError("settings/accounts: a revalued account needs unrealised_fx, the unrealised FX account")
+    account = accounts[code]
+    if account.type not in ("revenue", "expense") or account.group or not account.active or account.role is not None:
+        raise ScenarioError(f"settings/accounts/unrealised_fx: {code} is not an active revenue or expense account "
+                            "that is not a group and has no role")
+    if statements:
+        raise ScenarioError("statements: the statements of a scenario with a revalued account are not in the format yet")
+    return True
 
 
 def _lines(raw: Any) -> tuple[Line, ...]:

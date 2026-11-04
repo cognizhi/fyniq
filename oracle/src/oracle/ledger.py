@@ -61,6 +61,10 @@ edits"), written from FR-GL-02, FR-GL-06, FR-GL-12, §10.2 and INV-13:
   the new version's entry on its date, both or neither. An edit of a journal never posted or reversed, a
   version that does not follow, or content the rules refuse is refused and changes nothing.
 
+From P1 the scheduler also revalues the accounts marked ``revalue`` at each month end (FR-GL-04), in
+:mod:`oracle.revaluation`: base-only lines at the period-end rate against the unrealised FX account, reversed on the
+next month's first day (README, "Month-end revaluation").
+
 A scenario with ``"statements": true`` also gets every month's financial statements, read from the
 posted entries by :mod:`oracle.statements` (FR-RPT-01), and one with ``kpis`` every stated month's KPIs, read
 from those statements and the trial balance by :mod:`oracle.kpis` (FR-KPI-02).
@@ -76,6 +80,7 @@ from typing import Any
 
 from oracle import money
 from oracle.book import Entry, PostedLine, Rejected, Scheduled, canonical
+from oracle.revaluation import revaluations
 from oracle.rules import Rules
 from oracle.scenario import RESULT_SCHEMA, Document, Edit, Line, Reversal, Scenario, Source, check_result
 from oracle.sources import RULE_SETS
@@ -309,6 +314,11 @@ class Ledger:
             day = journal.reverse_on
             if day is not None and as_of is not None and day <= as_of and doc_id not in self._reversed:
                 due.append(((day, journal.index, "auto_reversal"), _negated(journal.entry, "auto_reversal", day)))
+        # The month-end revaluations (FR-GL-04) read every other entry, scheduled ones included, and come after every
+        # document's scheduled entries of their date (README, "Month-end revaluation").
+        after = len(self.scenario.documents)
+        for entry in revaluations(self.scenario, [*self.entries, *(e for _, e in due)], self.books):
+            due.append(((entry.posting_date, after, entry.kind), entry))
         for _, entry in sorted(due, key=lambda item: item[0]):
             if entry.kind == "auto_reversal":
                 self._reversed.add(entry.document)

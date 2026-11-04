@@ -303,6 +303,26 @@ def rnd_rate(paid_base: Decimal, amount: Decimal) -> Decimal:
     return round_quotient(paid_base, amount, RATE_DECIMALS)
 
 
+RATE_FORMS = ("base-per-unit", "base-per-100", "foreign-per-base")
+"""The forms a rate is quoted in (``RND-RATE``, rev 0.70): base per one unit, base per 100 units, foreign per base."""
+
+
+def rnd_rate_quote(quote: Decimal, form: str) -> Decimal:
+    """``RND-RATE`` (§10.4, rev 0.24 and 0.70) of a quote: the stored rate, base currency per one unit.
+
+    "A rate quoted as base currency per n units of the foreign currency (n = 1 or 100) is stored as round(quote ÷ n,
+    10); a rate quoted as foreign currency per one unit of the base currency is stored as round(1 ÷ quote, 10)":
+    the exact quotient, rounded once to 10 decimals, half away from zero (open question 53).
+    """
+    if form == "base-per-unit":
+        return round_quotient(quote, Decimal(1), RATE_DECIMALS)
+    if form == "base-per-100":
+        return round_quotient(quote, HUNDRED, RATE_DECIMALS)
+    if form == "foreign-per-base":
+        return round_quotient(Decimal(1), quote, RATE_DECIMALS)
+    raise ValueError(f"RND-RATE: no form {form!r}")
+
+
 def rnd_mileage(distance_km: Decimal, rate_per_km: Decimal, minor_units: int) -> Decimal:
     """``RND-MILEAGE`` (§10.4, rev 0.7): round(distance to 0.1 km, half up) × rate, rounded to the cent,
     half up, per trip. Half up is half away from zero, as everywhere in §10.4."""

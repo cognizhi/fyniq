@@ -108,7 +108,16 @@
 
 ## 6. The oracle (for the oracle session; never written from the engine)
 
-- [ ] 6.1 `RND-RATE`, base-only revaluation lines and their reversal, realised FX and the ENG-42 GST difference as scenario shapes, generator kinds and golden cases, written from the PRD rules by an author who has not read the engine (QA-ENG-01)
+- [x] 6.1 `RND-RATE`, base-only revaluation lines and their reversal, realised FX and the ENG-42 GST difference as scenario shapes, generator kinds and golden cases, written from the PRD rules by an author who has not read the engine (QA-ENG-01)
+  (4 Nov 2026: a fresh oracle session, given the PRD rules only, wrote the month-end revaluation (`revalue` flags,
+  `period_end_rates` with `RND-RATE`'s quote forms, items document by document on the receivable and payable accounts
+  with the rest as one more, the entry on the last day and its reversal on the next first day, a month waiting for a
+  missing rate) into `test/differential/README.md`, with its readings, the oracle, the generator source `fx` and
+  `golden/fx-revaluation.json` (March to June 2026, worked by hand); realised FX and ENG-42 were already stated and are
+  summarised. The engine session taught `cmd/scenario-run` them through `ledger.Revalue` and the sub-ledgers' rules
+  (`internal/differential/p1_fx.go`): the two sides agreed on the golden case at the first run and over generated
+  scenarios, and `fx` joined `DIFFERENTIAL_SOURCES`. Open: a director's account flagged with a balance in another
+  currency, revalued per person in the oracle's reading and as one item in the product; not generated.)
 
 ## 7. Finish
 

@@ -265,7 +265,6 @@ def write_off(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     ]
 
     def apply() -> None:
-        item.settled = money.EXACT.add(item.settled, amount)
-        item.settled_base = money.EXACT.add(item.settled_base, carrying)
+        item.settle(doc.date, amount, carrying)
 
     return Posting(lines, effects=[apply])

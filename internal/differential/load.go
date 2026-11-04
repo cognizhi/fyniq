@@ -271,6 +271,38 @@ func p1Format(s Scenario) string {
 		}
 		seen[a.Role] = true
 	}
+	// The month-end revaluation (README, "The revalued accounts and the period-end rates").
+	flagged := false
+	for _, a := range s.Accounts {
+		if !a.Revalue {
+			continue
+		}
+		flagged = true
+		switch {
+		case a.Type != "asset" && a.Type != "liability":
+			return fmt.Sprintf("account %s is marked revalue but is %s: only an asset or a liability may be (COA-10)", a.Code, a.Type)
+		case s.Settings != nil && (s.Settings.Accounts["prepayments"] == a.Code || s.Settings.Accounts["deferred_revenue"] == a.Code):
+			return fmt.Sprintf("account %s is marked revalue but holds prepayments or deferred revenue (COA-10)", a.Code)
+		}
+	}
+	if flagged {
+		var code string
+		if s.Settings != nil {
+			code = s.Settings.Accounts["unrealised_fx"]
+		}
+		a, ok := codes[code]
+		switch {
+		case s.AsOf == "" || code == "":
+			return "a scenario with an account marked revalue needs as_of and settings.accounts.unrealised_fx"
+		case !ok || !a.Active || a.Group || a.Role != "" || a.Type != "revenue" && a.Type != "expense":
+			return fmt.Sprintf("settings.accounts.unrealised_fx names %s, which is not an active revenue or expense account without a role", code)
+		case s.Statements:
+			return "the statements of a scenario with an account marked revalue are not in the format yet"
+		}
+	}
+	if reason := checkPeriodEndRates(s); reason != "" {
+		return reason
+	}
 	if s.Statements && !seen["retained-earnings"] {
 		return "statements need an account with the role retained-earnings"
 	}

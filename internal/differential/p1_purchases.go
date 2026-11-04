@@ -159,7 +159,11 @@ func (r *p1) bill(i int, d Document, date time.Time, credit bool) (ledger.Entry,
 	}
 	if credit {
 		e, err := ledger.PostVendorCredit(b, r.settings)
-		return e, err == nil
+		if err != nil || !r.fits(e) {
+			return ledger.Entry{}, false
+		}
+		r.hold(d.ID, date, e, ledger.RoleAccountsPayable)
+		return e, true
 	}
 	if x.Withholding != nil {
 		b.Withholding = &ledger.Withholding{RatePercent: x.Withholding.Percent}
@@ -173,6 +177,7 @@ func (r *p1) bill(i int, d Document, date time.Time, credit bool) (ledger.Entry,
 		return ledger.Entry{}, false
 	}
 	r.keepOpen(d.ID, "bill", e, ledger.RoleAccountsPayable)
+	r.hold(d.ID, date, e, ledger.RoleAccountsPayable)
 	return e, true
 }
 
@@ -307,6 +312,7 @@ func (r *p1) settlement(d Document, date time.Time, kind string) (ledger.BillPay
 func (r *p1) settled(date time.Time, settlements []ledger.Settlement, ids map[string]string) {
 	month := date.Format("2006-01")
 	for _, s := range settlements {
+		r.moveHeld(ids[s.DocumentID.String()], date, s) // what the revaluation reads of it at a month's end
 		o := r.open[ids[s.DocumentID.String()]]
 		if o == nil {
 			continue
@@ -332,6 +338,7 @@ func (r *p1) billPayment(d Document, date time.Time) (ledger.Entry, bool) {
 		return ledger.Entry{}, false
 	}
 	r.settled(date, settlements, r.idsOf(d))
+	r.holdCredit(d.ID, date, e, ledger.RoleAccountsPayable, settlements)
 	return e, true
 }
 

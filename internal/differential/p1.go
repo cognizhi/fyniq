@@ -31,6 +31,8 @@ type Settings struct {
 	MileageRates  []MileageRate     `json:"mileage_rates,omitempty"`
 	Tolerance     map[string]string `json:"tolerance,omitempty"`
 	GST           *GSTSettings      `json:"gst,omitempty"`
+	// PeriodEndRates are the currencies' rates for months' last days, which the month-end revaluation reads (FR-GL-04).
+	PeriodEndRates []PeriodEndRate `json:"period_end_rates,omitempty"`
 }
 
 // MileageRate is the rate per km for a vehicle type from a date (FR-AP-16).
@@ -101,6 +103,13 @@ func applySettings(s Scenario, settings ledger.Settings) {
 			settings.Accounts[id] = a
 		}
 	}
+	if code, ok := s.Settings.Accounts["unrealised_fx"]; ok { // the month-end revaluation's 7040 (B.5, FR-GL-04)
+		id := stableID("account", code)
+		if a, known := settings.Accounts[id]; known {
+			a.UnrealisedFX = true
+			settings.Accounts[id] = a
+		}
+	}
 	for code, cur := range s.Settings.MoneyAccounts {
 		id := stableID("account", code)
 		if a, known := settings.Accounts[id]; known {
@@ -120,6 +129,7 @@ type p1 struct {
 	codeOf   map[uuid.UUID]string
 	personOf map[uuid.UUID]string
 	named    map[[2]uuid.UUID][]named // the posted lines naming a person, by person and account
+	held     map[string]*held         // the receivable's and payable's documents in other currencies, for the revaluation
 	pending  []scheduled
 	open     map[string]*openDocument // the posted documents settlements settle, by the scenario's ID
 	used     map[string]money.Money   // the settlement differences cleared each month (YYYY-MM), against its cap
@@ -143,7 +153,7 @@ type scheduled struct {
 func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, error) {
 	r := &p1{s: s, base: base, settings: settings, open: map[string]*openDocument{}, used: map[string]money.Money{},
 		issued: map[string]*issued{}, deposits: map[string]*deposit.Open{}, advances: map[string]*advance{},
-		assets: map[string]*registered{}, codeOf: map[uuid.UUID]string{}, personOf: map[uuid.UUID]string{}, named: map[[2]uuid.UUID][]named{}}
+		assets: map[string]*registered{}, codeOf: map[uuid.UUID]string{}, personOf: map[uuid.UUID]string{}, named: map[[2]uuid.UUID][]named{}, held: map[string]*held{}}
 	for id, a := range settings.Accounts {
 		r.codeOf[id] = a.Code
 	}
