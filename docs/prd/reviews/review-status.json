@@ -371,6 +371,30 @@
    "screens": [
     "checks"
    ]
+  },
+  {
+   "id": "founders",
+   "title": "The founders' money read without an accountant",
+   "reviewer": "the accountant",
+   "status": "pending",
+   "pr": null,
+   "short": "The founders' settlements, waivers and conversions await review by the accountant",
+   "message": "A settlement asks the accountant to sign too only when every other approver is a founder with a settlement of their own, a waiver of fees or deferred pay is marked as deducted earlier for the tax computation, and a conversion's shareholders' approval lapses on the date by which the next AGM must be held, worked out from the financial years, on our best current reading. Check them before you rely on them.",
+   "sections": [
+    "PRD-001 §8.22",
+    "§6.4 (FM-9)"
+   ],
+   "requirements": [
+    "FR-EQ-05",
+    "FR-EQ-07",
+    "FR-EQ-09",
+    "FR-EQ-10",
+    "FM-9"
+   ],
+   "screens": [
+    "director-accounts",
+    "director-settlement"
+   ]
   }
  ]
 }
