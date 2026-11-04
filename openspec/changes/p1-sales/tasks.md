@@ -122,13 +122,17 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   `deposits` and `deposits-unsupported` (INV-07, C.2 #2). Tests: `TestPostDepositRefund`,
   `TestDepositsAreRefundedAndReconciled`, `TestDepositsAreRefundedThroughTheAPI`. The oracle posts none of 3.2 yet:
   task 9.1.)
-- [ ] 3.3 (engine session) PRD-001 rev 0.155: the credit notes linked to one invoice credit at most its total
+- [x] 3.3 (engine session) PRD-001 rev 0.155: the credit notes linked to one invoice credit at most its total
   together (its total before any deposit it deducts) [accountant to confirm]. Issuing one is refused (INVOICE-15)
   when it credits more than the invoice's other issued, unvoided linked credit notes leave; a void frees what it
   credited. Update `docs/user-guide/invoices.md` ("Credit notes" and INVOICE-15's row) and compile it into `kb/`.
   - Tests: two linked credit notes within the total issue; a third beyond it is refused; after a void it issues.
     `// req: FR-AR-04`. The oracle already follows the rule, and `test/differential/pending/sales.json` holds the
     case, so 9.3's differential shows the difference until this is built.
+  - (4 Nov 2026, built: `Documents.CreditNotesOf` lists an invoice's issued, unvoided credit notes, and
+    `invoice.Prepare` caps a credit note at what they leave of what the invoice charged, saying so in INVOICE-15's
+    message; `docs/user-guide/invoices.md` and `kb/pages/task/sales-invoices.md` say it. Test:
+    `TestLinkedCreditNotesCreditTheInvoiceTotalTogether`.)
 
 ## 4. Quotes and sales orders
 
