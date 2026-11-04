@@ -81,6 +81,17 @@ Source: PRD-001 §8.13 · Priority M · Phase P1
 - **AND** debt/equity is blank when equity ≤ 0
 - **AND** the margins are blank when revenue is 0
 
+#### Scenario: Divisors not above zero and the first month (rev 0.170)
+- **WHEN** the KPIs are shown
+- **THEN** DSO and DPO are blank when the three-month average revenue or costs is not above zero, the current and quick ratios when current liabilities are not above zero, and CAC payback when ARPA × gross margin is not above zero
+- **AND** the burn multiple and revenue growth are blank in the books' first month, which has no month before [accountant to confirm]
+
+#### Scenario: Margins, booked MRR and rounding (rev 0.170)
+- **WHEN** the KPIs are computed
+- **THEN** a margin is `RND-PERCENT` of the figure against the size of the revenue, keeping the figure's sign
+- **AND** booked MRR counts only postable revenue accounts, not other income, whose report group names a subscription stream
+- **AND** every KPI is `RND-KPI` of its exact value, rounded once, never from a rounded average or quotient [accountant to confirm]
+
 #### Scenario: G4-047 No subscription or CRM data
 - **GIVEN** no subscription or CRM data is connected
 - **WHEN** the KPIs are shown
