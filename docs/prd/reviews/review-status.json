@@ -313,6 +313,64 @@
     "invoice-record",
     "fixed-assets"
    ]
+  },
+  {
+   "id": "statements",
+   "title": "The financial statements' layout and the management reports",
+   "reviewer": "the accountant",
+   "status": "pending",
+   "pr": null,
+   "short": "The statements' layout and the management reports await review by the accountant",
+   "message": "The P&L, the balance sheet and the cash flow are laid out from each account's chart attributes on our best current reading of SFRS for Small Entities, and the management reports count sales and spend net of GST from the invoices and bills. Check them before you rely on them or file them.",
+   "sections": [
+    "PRD-001 §8.12"
+   ],
+   "requirements": [
+    "FR-RPT-01",
+    "FR-RPT-03"
+   ],
+   "screens": [
+    "financial-statement",
+    "management-report"
+   ]
+  },
+  {
+   "id": "kpis",
+   "title": "The KPI definitions read without an accountant",
+   "reviewer": "the accountant",
+   "status": "pending",
+   "pr": null,
+   "short": "The KPI definitions await review by the accountant",
+   "message": "Booked MRR counts the revenue of accounts whose report group names a subscription stream, the costs behind DPO are the cost of sales and the operating expenses, and spend by function follows each expense account's function, on our best current reading. Check them before you rely on them or share them.",
+   "sections": [
+    "PRD-001 §8.13"
+   ],
+   "requirements": [
+    "FR-KPI-02",
+    "FR-KPI-03"
+   ],
+   "screens": [
+    "kpis"
+   ]
+  },
+  {
+   "id": "checks",
+   "title": "The checks' rules read without an accountant",
+   "reviewer": "an accountant or tax agent",
+   "status": "pending",
+   "pr": null,
+   "short": "Two of the checks' rules await review by an accountant or tax agent",
+   "message": "A balance-sheet account with no cash-flow line is flagged for review rather than blocking the close, and the input tax claimed on a bill still unpaid 12 months after its due date is flagged to be repaid, on our best current reading of IRAS's guidance. Check what they find before you rely on it.",
+   "sections": [
+    "PRD-001 §8.15",
+    "Appendix C (C.1 #5, C.2 #48)"
+   ],
+   "requirements": [
+    "FR-CTL-01"
+   ],
+   "screens": [
+    "checks"
+   ]
   }
  ]
 }
