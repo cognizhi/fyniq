@@ -556,8 +556,9 @@ asking for them keeps every month's balance below 10^16: while it draws one, the
 seven integer digits, draws no journal near the limit, and refuses a scenario unless everything it could post, in
 amount and in base (amount × rate), totals below 10^15 (`strategies_statements.reach`); `scenario-run` stops with
 "outside the format" (exit 1) on a hand-written scenario beyond the limit. The owner's decision with an independent advisor (4 Nov 2026): the limit belongs to
-storage, which already refuses, and modelling it on both sides would need the database's line-by-line running sums
-and the scheduler's retries.
+storage, which already refuses (each entry's lines are added to the period's balance in one statement), and modelling
+it on both sides would add a refusal to every source, the scheduler's retries of a release or depreciation included,
+for balances no company reaches.
 
 **The chart's attributes.** An account may carry `report_group` (free text: the line it is shown under;
 an account without one is shown under its code), `function` (`COGS`, `R&D`, `S&M`, `G&A` or `Other`;
