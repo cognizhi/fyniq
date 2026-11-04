@@ -73,7 +73,8 @@ Choose **Sell or write off**, then:
 - **The whole asset or part of it.** For part, enter the part of its cost that went; its
   depreciation goes with it in proportion, and the rest depreciates on.
 - **The proceeds.** Money received into a bank, cash or wallet account, with its GST code when the
-  company is GST-registered (usually SR); the bank line is matched to it later. Or a sales invoice
+  company is GST-registered (usually SR); a code given is always one for supplies (SR, ZR, ES or
+  OS). The bank line is matched to it later. Or a sales invoice
   to the buyer, whose line is on the disposal clearing account (1160 Asset disposal clearing in the
   standard chart). Or none, for a write-off.
 

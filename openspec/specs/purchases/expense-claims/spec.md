@@ -205,6 +205,11 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **WHEN** a foreign-currency claim is reimbursed
 - **THEN** it is reimbursed in SGD at the rate cascade (ENG-40) and the difference goes to 7030
 
+#### Scenario: A foreign-currency claim owes a fixed SGD amount (rev 0.169)
+- **WHEN** a claim in another currency posts [accountant to confirm]
+- **THEN** 2150 takes each receipt line's amount at the claim's rate under `RND-FX`, line by line, or the SGD the claimant states they paid, the difference to 7030 when it posts
+- **AND** the reimbursement pays that SGD amount, with no FX when it is paid
+
 #### Scenario: Claim deadline applies
 - **WHEN** a claim is submitted
 - **THEN** the claim deadline of the expense policy (FR-AP-15) applies

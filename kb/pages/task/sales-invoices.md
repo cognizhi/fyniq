@@ -4,14 +4,14 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:02952521f656020a489bc4e427d046c43b5bbcf847eb9ac832cdee157171055e
+  - docs/user-guide/invoices.md sha256:f3b5935e246f7ad3316cc688638403136aad812ca66f579cf0b2f6c8f982bf56
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-26
+compiled_at: 2026-11-04
 aliases:
   - invoice
   - sales invoice
@@ -131,7 +131,8 @@ aliases:
 
 ## Credit notes
 
-- **New credit note** gives a customer credit, linked under **Invoice it credits** to the issued invoice it corrects or standalone; a linked one adjusts GST at that invoice's date's rates and credits at most its total, and is numbered from the credit note sequence.
+- **New credit note** gives a customer credit, linked under **Invoice it credits** to the issued invoice it corrects or standalone; a linked one adjusts GST at that invoice's date's rates, and it is numbered from the credit note sequence.
+- Together, the issued credit notes of one invoice credit at most its total before any deposit it deducts; voiding one frees what it credited.
 
 (src: docs/user-guide/invoices.md#credit-notes)
 
@@ -150,7 +151,7 @@ aliases:
 ## Common problems
 
 - INVOICE-05: choose an active customer. INVOICE-06: choose a code for supplies (SR, ZR, ES or OS). INVOICE-07: a due date on or after the invoice date, or blank.
-- INVOICE-09: a quantity and a price with up to 6 decimals, a discount from 0 to 100. INVOICE-10: **Ask for approval**. INVOICE-13: void its receipts and credit applications first. INVOICE-15: an issued invoice of the same customer and currency, for at least the credit.
+- INVOICE-09: a quantity and a price with up to 6 decimals, a discount from 0 to 100. INVOICE-10: **Ask for approval**. INVOICE-13: void its receipts and credit applications first. INVOICE-15: an issued invoice of the same customer and currency, for at least the credit; its other credit notes may already credit its total, so credit less or void one of them.
 - RECEIPT-05: record at most what is open. RECEIPT-11: leave it open or write the rest off. SALESDOC-04: add the customer's billing email or give an address. SALESDOC-05: add the missing detail in Settings › Organisation or on the customer.
 
 (src: docs/user-guide/invoices.md#common-problems)

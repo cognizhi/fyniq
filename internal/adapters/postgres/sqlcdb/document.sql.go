@@ -68,6 +68,63 @@ func (q *Queries) BillsOfOrder(ctx context.Context, orderID string) ([]BillsOfOr
 	return items, nil
 }
 
+const creditNotesOfInvoice = `-- name: CreditNotesOfInvoice :many
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at,
+       coalesce(v.payload->>'date', '')::text AS date
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+WHERE d.type = 'credit_note' AND d.status = 'posted'
+  AND v.payload->>'invoice_id' = $1::text
+ORDER BY d.id
+`
+
+type CreditNotesOfInvoiceRow struct {
+	ID             uuid.UUID
+	Type           string
+	Status         string
+	CurrentVersion int32
+	Payload        []byte
+	Number         *string
+	CreatedBy      *string
+	PostedBy       *string
+	PostedAt       *time.Time
+	Date           string
+}
+
+// The issued credit notes, not voided, whose current version credits the invoice (FR-AR-04; rev 0.155): together they
+// credit at most its total.
+func (q *Queries) CreditNotesOfInvoice(ctx context.Context, invoiceID string) ([]CreditNotesOfInvoiceRow, error) {
+	rows, err := q.db.Query(ctx, creditNotesOfInvoice, invoiceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CreditNotesOfInvoiceRow
+	for rows.Next() {
+		var i CreditNotesOfInvoiceRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Status,
+			&i.CurrentVersion,
+			&i.Payload,
+			&i.Number,
+			&i.CreatedBy,
+			&i.PostedBy,
+			&i.PostedAt,
+			&i.Date,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const dueReversals = `-- name: DueReversals :many
 SELECT d.id
 FROM fyniq.document d
