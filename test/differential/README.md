@@ -159,15 +159,17 @@ posts one of each, its figures worked out by hand in `oracle/tests/test_golden.p
 | `version` | Read but not used (P0 posts version 1 of each journal) | ENG-03 (an entry names its document's version) | Always 1 |
 | `fx_rate_source` values | Any non-empty string; not used in the result | ENG-03, ENG-40 (a rate typed on the document has the source "document") | `"document"`; `"base"` too on a base-currency line built to be rejected |
 
-## P1 sources (pending: `cmd/scenario-run` does not read them yet)
+## P1 sources (`cmd/scenario-run` reads bank lines and transfers; the rest are pending)
 
 From P1 a scenario may hold documents of other sources beside manual journals, each posted by its
 rule set (PRD-001 §10.2, Appendix B; the oracle's `oracle/src/oracle/sources/`). The format grows
 additively, still `fyniq-scenario@1`: a scenario of manual journals only is unchanged, and so is its
-result. **The engine's `cmd/scenario-run` does not read these shapes yet**, so the Go gate and
-`make differential` do not compare them: their golden cases wait in [`pending/`](pending/README.md)
-with their figures worked out by hand, and `make differential` draws them only for the sources named
-in `FYNIQ_DIFFERENTIAL_SOURCES`. Teaching `cmd/scenario-run` each source is an engine-session task in
+result. **The engine's `cmd/scenario-run` reads the bank shapes** (`p1-bank-import-reconcile` 4.8;
+`internal/differential/p1.go`), so the Go gate posts `golden/bank.json` through both sides and
+`make differential` draws bank scenarios (`FYNIQ_DIFFERENTIAL_SOURCES=bank` in the Makefile). It does
+not read the other sources yet: their golden cases wait in [`pending/`](pending/README.md) with their
+figures worked out by hand, and `make differential` draws them only once their source is named in
+`FYNIQ_DIFFERENTIAL_SOURCES`. Teaching `cmd/scenario-run` each source is an engine-session task in
 its OpenSpec change.
 
 ### Settings and `as_of`
@@ -661,8 +663,8 @@ The comparison itself (QA-ENG-02): `make test` runs `TestTheEngineAgreesWithTheO
 through both implementations; `make differential` lets Hypothesis search 1,000 more
 (`FYNIQ_DIFFERENTIAL_EXAMPLES`) and saves the smallest disagreeing scenario as
 `golden/shrunk-<hash>.json`, to be committed as a golden case once the cause is fixed. It draws P1
-scenarios too for the sources in `FYNIQ_DIFFERENTIAL_SOURCES` (comma-separated: `bank`), once
-`cmd/scenario-run` reads them. The engine's
+scenarios too for the sources in `FYNIQ_DIFFERENTIAL_SOURCES` (comma-separated), which the Makefile
+sets to the sources `cmd/scenario-run` reads: `bank`. The engine's
 side reads scenarios with the same schemas (`schemas.go` embeds them) and runs as `cmd/scenario-run`.
 
 ```bash

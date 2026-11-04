@@ -22,6 +22,9 @@ GO_IMAGES := api ai mcp worker executor render migrate jobs
 # ten.
 GO_TEST_TIMEOUT := 45m
 MUTATION_PKGS := internal/domain/money internal/domain/rounding internal/domain/ledger
+# The P1 sources `make differential` draws beside manual journals: those cmd/scenario-run reads (test/differential/README.md,
+# "P1 sources"). An engine session adds a source here when it teaches cmd/scenario-run the source's shapes.
+DIFFERENTIAL_SOURCES ?= bank
 FLAVOURS ?= release local
 # The platform `make images` builds: empty for the Docker engine's own (linux/arm64 on Apple silicon), or
 # linux/amd64 or linux/arm64 (NFR-IMG-08)
@@ -110,7 +113,7 @@ mutation: ## Mutation tests on money, rounding and the engine (QA-ENG-04): effic
 
 differential: ## The full differential run (QA-ENG-02): Hypothesis looks for a scenario where the engine and the oracle disagree, and saves the shrunk one as a golden case
 	@mkdir -p .data/bin && $(MISE) go build -tags local -o .data/bin/scenario-run ./cmd/scenario-run
-	@cd oracle && FYNIQ_SCENARIO_RUN=$(CURDIR)/.data/bin/scenario-run $(MISE) uv run --locked python -m pytest -q -p no:cacheprovider ../test/differential/test_engine_agrees.py
+	@cd oracle && FYNIQ_SCENARIO_RUN=$(CURDIR)/.data/bin/scenario-run FYNIQ_DIFFERENTIAL_SOURCES=$(DIFFERENTIAL_SOURCES) $(MISE) uv run --locked python -m pytest -q -p no:cacheprovider ../test/differential/test_engine_agrees.py
 
 scan: ## Security scans (SEC-21): gosec, Semgrep, gitleaks, grype, Checkov, licences, actionlint, zizmor; waivers in compliance/scan-waivers.toml; reports in .data/scan/
 	@$(MISE) python3 scripts/scan.py
