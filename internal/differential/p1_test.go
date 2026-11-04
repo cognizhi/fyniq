@@ -259,3 +259,42 @@ func TestP1AssetsDepreciateAndDispose(t *testing.T) {
 		}
 	}
 }
+
+// The founders' money of golden/founders.json, worked out by hand (README, "Costs before the books start" to
+// "Conversions"): P0001 paid 1,315.00 and 763.00 before the books start, waived 1,000.00 to 3300 and was repaid 500.00,
+// owing them 578.00 on 2500; P0002 paid 3,815.00 (315.00 of GST claimed), was voted a 6,000.00 fee on 2120 and repaid
+// 2,000.00 of it and 815.00 of the loan. RND-SHARE converts 99.60 of P0001's 100.00 at 1.20 (83 shares, 0.40 left), 299.60
+// of 300.00 at 0.70 (428 shares) worth 321.00 at fair value, a loss of 21.40; 1,000.00 of P0002's loan at 2.00 worth
+// 750.00, a gain of 250.00; and 1,498.90 of their fees at 1.30 (1,153 shares). What each is still owed: P0001 2500 −178.80;
+// P0002 2120 −2,501.10, 2500 −2,000.00.
+// req: FR-EQ-01
+// req: FR-EQ-03
+// req: FR-EQ-04
+// req: FR-EQ-05
+// req: FR-EQ-06
+// req: FR-EQ-07
+// req: RND-SHARE
+// req: QA-ENG-02
+func TestP1FoundersMoneyByPerson(t *testing.T) {
+	r := run(t, load(t, "founders.json"))
+	want := map[string]map[string]string{"P0001": {"2500": "-178.80"}, "P0002": {"2120": "-2501.10", "2500": "-2000.00"}}
+	if !reflect.DeepEqual(r.People, want) {
+		t.Errorf("people %v, want %v", r.People, want)
+	}
+	byDoc := map[string][]EntryLine{}
+	for _, e := range r.Entries {
+		byDoc[e.Document] = e.Lines
+	}
+	party := func(l EntryLine, p string) EntryLine { l.Party = p; return l }
+	for doc, lines := range map[string][]EntryLine{
+		"SI-0001":  {party(el("2500", "SGD", "99.60", "99.60"), "P0001"), el("3010", "SGD", "-99.60", "-99.60")},
+		"SI-0002":  {party(el("2500", "SGD", "1000.00", "1000.00"), "P0002"), el("3010", "SGD", "-750.00", "-750.00"), el("4900", "SGD", "-250.00", "-250.00")},
+		"SI-0003":  {party(el("2500", "SGD", "299.60", "299.60"), "P0001"), el("3010", "SGD", "-321.00", "-321.00"), el("7060", "SGD", "21.40", "21.40")},
+		"SI-0004":  {party(el("2120", "SGD", "1498.90", "1498.90"), "P0002"), el("3010", "SGD", "-1498.90", "-1498.90")},
+		"PIC-0002": {el("1600", "SGD", "3500.00", "3500.00"), el("2200", "SGD", "315.00", "315.00"), party(el("2500", "SGD", "-3815.00", "-3815.00"), "P0002")},
+	} {
+		if got := byDoc[doc]; !reflect.DeepEqual(got, lines) {
+			t.Errorf("%s: %v, want %v", doc, got, lines)
+		}
+	}
+}

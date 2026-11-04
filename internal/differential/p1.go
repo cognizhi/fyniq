@@ -190,6 +190,16 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return ledger.Entry{}, r.fixedAsset(i, d, date) // a registered asset posts no entry of its own
 	case "asset_disposal":
 		return r.assetDisposal(d, date)
+	case "pre_incorporation_cost":
+		return r.preIncorporationCost(d, date)
+	case "director_fee":
+		return r.directorFee(d, date)
+	case "director_waiver":
+		return r.directorWaiver(d, date)
+	case "director_repayment":
+		return r.directorRepayment(d, date)
+	case "director_conversion":
+		return r.directorConversion(d, date)
 	}
 	return ledger.Entry{}, false
 }

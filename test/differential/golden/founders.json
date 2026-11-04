@@ -3,7 +3,7 @@
  "name": "pending-founders",
  "base_currency": "SGD",
  "currencies": {"SGD": 2},
- "as_of": "2026-03-31",
+ "as_of": "2026-04-30",
  "settings": {
   "accounts": {"gst": "2200", "director_loan": "2500", "deferred_remuneration": "2120"},
   "money_accounts": {"1010": "SGD"},
@@ -16,10 +16,13 @@
   {"code": "2120", "type": "liability", "group": false, "active": true, "role": "deferred-remuneration"},
   {"code": "2200", "type": "liability", "group": false, "active": true},
   {"code": "2500", "type": "liability", "group": false, "active": true, "role": "director-loan"},
+  {"code": "3010", "type": "equity", "group": false, "active": true, "role": "share-capital"},
   {"code": "3300", "type": "equity", "group": false, "active": true},
+  {"code": "4900", "type": "revenue", "group": false, "active": true},
   {"code": "6050", "type": "expense", "group": false, "active": true},
   {"code": "6400", "type": "expense", "group": false, "active": true},
-  {"code": "6910", "type": "expense", "group": false, "active": true}
+  {"code": "6910", "type": "expense", "group": false, "active": true},
+  {"code": "7060", "type": "expense", "group": false, "active": true}
  ],
  "people": ["P0001", "P0002"],
  "documents": [
@@ -52,7 +55,19 @@
   {"type": "director_repayment", "id": "DR-0003", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "6400",
    "settlements": [{"account": "2500", "amount": "10.00"}]},
   {"type": "director_repayment", "id": "DR-0004", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "1010",
-   "settlements": [{"account": "6400", "amount": "10.00"}]}
+   "settlements": [{"account": "6400", "amount": "10.00"}]},
+  {"type": "director_conversion", "id": "SI-0001", "version": 1, "date": "2026-04-15", "person": "P0001", "account": "2500",
+   "class": "3010", "amount": "100.00", "price": "1.20"},
+  {"type": "director_conversion", "id": "SI-0002", "version": 1, "date": "2026-04-15", "person": "P0002", "account": "2500",
+   "class": "3010", "amount": "1000.00", "price": "2.00", "fair_value_price": "1.50", "difference": "4900"},
+  {"type": "director_conversion", "id": "SI-0003", "version": 1, "date": "2026-04-20", "person": "P0001", "account": "2500",
+   "class": "3010", "amount": "300.00", "price": "0.70", "fair_value_price": "0.75", "difference": "7060"},
+  {"type": "director_conversion", "id": "SI-0004", "version": 1, "date": "2026-04-20", "person": "P0002", "account": "2120",
+   "class": "3010", "amount": "1500.00", "price": "1.30"},
+  {"type": "director_conversion", "id": "SI-0005", "version": 1, "date": "2026-04-30", "person": "P0001", "account": "2500",
+   "class": "3300", "amount": "10.00", "price": "1.00"},
+  {"type": "director_conversion", "id": "SI-0006", "version": 1, "date": "2026-04-30", "person": "P0001", "account": "2500",
+   "class": "3010", "amount": "0.50", "price": "1.20"}
  ],
  "reversals": []
 }

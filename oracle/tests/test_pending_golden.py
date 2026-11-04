@@ -2,7 +2,7 @@
 
 They wait for cmd/scenario-run to read the P1 shapes (pending/README.md); the oracle must match the
 hand-worked figures now. Every figure comes from the comment beside it (QA-ENG-01). A case keeps its
-hand-worked figures here once cmd/scenario-run reads its source and it moves to golden/ (bank, purchases, sales, claims, assets).
+hand-worked figures here once cmd/scenario-run reads its source and it moves to golden/ (bank, purchases, sales, claims, assets, founders).
 """
 
 from pathlib import Path
@@ -12,7 +12,7 @@ from oracle.scenario import load_scenario
 
 PENDING = Path(__file__).resolve().parents[2] / "test" / "differential" / "pending"
 GOLDEN = PENDING.parent / "golden"
-MOVED = {"bank", "purchases", "sales", "claims", "assets"}  # the cases the engine reads now, in golden/
+MOVED = {"bank", "purchases", "sales", "claims", "assets", "founders"}  # the cases the engine reads now, in golden/
 
 
 def _run(name: str) -> dict:
@@ -246,9 +246,10 @@ def test_pending_founders():
     # claimed when the receipt shows none.
     # Then a fee voted to someone who is not a director, and one posted to the director's account itself.
     # A waiver of an account that is not a director's, and one crediting a money account, are refused too; so are a
-    # repayment from an account that is not money, and one of an account that is not a director's.
+    # repayment from an account that is not money, and one of an account that is not a director's. Then a conversion
+    # to 3300, which is not share capital, and one of 0.50, too small for one share at 1.20.
     assert r["rejected"] == ["PIC-0004", "PIC-0005", "PIC-0006", "PIC-0007", "PIC-0008", "DF-0002", "DF-0003", "DS-0002", "DS-0003", "DR-0003",
-                             "DR-0004"]
+                             "DR-0004", "SI-0005", "SI-0006"]
     # 1,315.00 with no GST shown: all to 6910, owed to P0001 on 2500.
     assert _lines(r, "PIC-0001") == [("2500", "SGD", "-1315.00", "-1315.00"), ("6910", "SGD", "1315.00", "1315.00")]
     # 3,815.00 with 315.00 GST claimed while registered from the books start: 3,500.00 to 1600, 315.00 to 2200.
@@ -263,14 +264,33 @@ def test_pending_founders():
         "2026-02": {"2500": "-763.00", "6400": "763.00"},
         # The fee, the waiver, and 500.00 + 2,815.00 repaid from the bank.
         "2026-03": {"1010": "-3315.00", "2120": "-4000.00", "2500": "2315.00", "3300": "-1000.00", "6050": "6000.00"},
+        # The conversions: 2500 99.60 + 1,000.00 + 299.60; 2120 1,498.90; 3010 99.60 + 750.00 + 321.00 + 1,498.90.
+        "2026-04": {"2120": "1498.90", "2500": "1399.20", "3010": "-2669.50", "4900": "-250.00", "7060": "21.40"},
     }
     # FR-EQ-07: P0001 waives 1,000.00 of their 2,078.00 as a shareholder: Dr 2500 naming them, Cr 3300.
     assert _lines(r, "DS-0001") == [("2500", "SGD", "1000.00", "1000.00"), ("3300", "SGD", "-1000.00", "-1000.00")]
     # FR-EQ-05: P0002 repaid 2,000.00 of the fee and 815.00 of the cost in one payment: Dr 2120 and 2500 naming them, Cr 1010.
     assert _lines(r, "DR-0002") == [("1010", "SGD", "-2815.00", "-2815.00"), ("2120", "SGD", "2000.00", "2000.00"),
                                     ("2500", "SGD", "815.00", "815.00")]
-    # 1,315.00 + 763.00 - 1,000.00 - 500.00 for P0001; P0002's cost on 2500 and fee on 2120, less what was repaid.
-    assert r["people"] == {"P0001": {"2500": "-578.00"}, "P0002": {"2120": "-4000.00", "2500": "-3000.00"}}
+    # FR-EQ-06, RND-SHARE: 100.00 at 1.20 is 83.33 shares, so 83: 83 × 1.20 = 99.60 converted (84 would be 100.80),
+    # Dr 2500 naming P0001, Cr 3010; the 0.40 left stays owed.
+    assert _lines(r, "SI-0001") == [("2500", "SGD", "99.60", "99.60"), ("3010", "SGD", "-99.60", "-99.60")]
+    # 1,000.00 at 2.00 is 500 shares, 1,000.00 converted; on the fair-value basis at 1.50 they are worth 750.00, which
+    # 3010 takes: the debt extinguished above the shares' value is a gain of 250.00 to 4900.
+    assert _lines(r, "SI-0002") == [("2500", "SGD", "1000.00", "1000.00"), ("3010", "SGD", "-750.00", "-750.00"),
+                                    ("4900", "SGD", "-250.00", "-250.00")]
+    # 300.00 at 0.70 is 428.57 shares, so 428: 428 × 0.70 = 299.60 converted (429 would be 300.30), 0.40 left owed; at
+    # a fair value of 0.75 they are worth 428 × 0.75 = 321.00: a loss of 321.00 - 299.60 = 21.40 to 7060.
+    assert _lines(r, "SI-0003") == [("2500", "SGD", "299.60", "299.60"), ("3010", "SGD", "-321.00", "-321.00"),
+                                    ("7060", "SGD", "21.40", "21.40")]
+    # From P0002's fees on 2120: 1,500.00 at 1.30 is 1,153.85 shares, so 1,153: 1,153 × 1.30 = 1,498.90 converted
+    # (1,154 would be 1,500.20), 1.10 left owed.
+    assert _lines(r, "SI-0004") == [("2120", "SGD", "1498.90", "1498.90"), ("3010", "SGD", "-1498.90", "-1498.90")]
+    entry = next(e for e in r["entries"] if e["document"] == "SI-0004")
+    assert [(ln["account"], ln.get("party")) for ln in entry["lines"]] == [("2120", "P0002"), ("3010", None)]
+    # P0001: 1,315.00 + 763.00 - 1,000.00 - 500.00 = 578.00 owed, less 99.60 and 299.60 converted: 178.80.
+    # P0002: the fee's 4,000.00 left on 2120 less 1,498.90 converted; the cost's 3,000.00 on 2500 less 1,000.00.
+    assert r["people"] == {"P0001": {"2500": "-178.80"}, "P0002": {"2120": "-2501.10", "2500": "-2000.00"}}
 
 
 # req: QA-ENG-02
