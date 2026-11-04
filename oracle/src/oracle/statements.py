@@ -10,9 +10,12 @@ revenue and expense account is placed by its role, type and function, in this or
 
 1. the account with the role ``income-tax-expense``: income tax;
 2. a revenue account: other income when its function is Other, else revenue (the streams);
-3. an expense account whose function is COGS: cost of sales;
-4. an expense account in the report group of the account with the role ``depreciation``: depreciation
-   and amortisation;
+3. an expense account in the report group of the depreciation account: depreciation and amortisation,
+   before its function is read (EBITDA excludes depreciation and amortisation by definition, rev 0.159
+   [accountant to confirm]). The depreciation account is the one with the role ``depreciation`` or, when
+   no account has that role, the one the settings' ``depreciation`` key names (one system role in the
+   product); with no report group, its group is the account alone;
+4. an expense account whose function is COGS: cost of sales;
 5. an expense account whose function is Other: finance costs and other expenses;
 6. any other expense account: operating expenses (by report group, and by function with no function
    counted as Other).
@@ -23,24 +26,34 @@ costs and other expenses; net profit = profit before tax + income tax. Each line
 ``RND-PERCENT`` of revenue, and none when the revenue is zero.
 
 **Balance sheet** at the month's last day. A balance-sheet account (asset, liability or equity) is
-placed by its cash-flow line; the account with the role ``retained-earnings`` is always in equity,
+placed by its cash-flow line, and only on its own side (rev 0.159 [accountant to confirm]): an asset
+with Cash & cash equivalents, Receivables or Other current assets in current assets, and with Capital
+expenditure or Depreciation & amortisation in non-current assets; a liability with Payables & accruals,
+Payroll liabilities, Tax liabilities or Deferred revenue in current liabilities, and with Borrowings in
+borrowings; an equity account with Share capital or Dividends & other equity in equity. The account with
+the role ``retained-earnings`` is always in equity,
 and its report group also holds the profit to date (every earlier year's and this year's: FR-GL-10
 folds the years into retained earnings, and FR-RPT-01 shows the year's profit inside them). Assets are
 debit positive; liabilities, borrowings and equity credit positive. An account whose cash-flow line is
-missing or outside the standard chart's set sits in no section and is named by the check. A person whose
+missing, outside the standard chart's set or of the other side (a liability on Share capital, an equity
+account on Cash & cash equivalents) sits in no section and is named by the check ``unplaced``; it breaks
+``balances``, which stays total assets = total liabilities + equity. A person whose
 lines on the directors' accounts (roles ``director-loan`` and ``deferred-remuneration``) net to a debit
 owes the company: their balances on those accounts show on the advances account of the settings instead
 (FR-EQ-11, ``p1-founders-money`` design D14), with no posting; a scenario without one shows them as they are.
 
-**Cash flow, indirect** (money in positive). Each entry of the month is *investing* when it has a line
-on a capital-expenditure account, else *financing* when it has a line on a borrowings or equity
-account, else *operating*: FR-RPT-01 classifies transactions ("a transaction that moved no money ... is
-left out of investing and financing"). An entry's cash is the sum of its lines on the cash accounts
-(cash-flow line Cash & cash equivalents). Investing and financing are their entries' cash. Operating
-is net profit; plus the depreciation and amortisation the operating entries put on accumulated
-depreciation; less the profit or loss of the investing and financing entries (a gain on a disposal, a
-cost a director paid personally); less each working-capital line's change from the operating entries.
-That reconciliation equals the operating entries' cash exactly when every account they move is placed.
+**Cash flow, indirect** (money in positive), on the same placement. Each entry of the month is
+*investing* when it has a line on a capital-expenditure asset, else *financing* when it has a line on an
+account placed in borrowings or equity, else *operating*: FR-RPT-01 classifies transactions ("a
+transaction that moved no money ... is left out of investing and financing"). An entry's cash is the sum
+of its lines on the cash accounts (assets on Cash & cash equivalents). Investing and financing are their
+entries' cash. Operating is net profit; plus the depreciation and amortisation the operating entries put
+on accumulated depreciation (assets on that line); less the profit or loss of the investing and
+financing entries (a gain on a disposal, a cost a director paid personally); less each working-capital
+line's change from the operating entries (an account placed in current assets other than cash, or in
+current liabilities, by its line); less the operating entries' lines on every other account, which sit in
+no section (``other_accounts``, p1-reports design D3, rev 0.159 [accountant to confirm]). So operating is
+always the operating entries' cash, ``ties`` always holds, and net burn is the true cash.
 An investing or financing entry with no line on a cash account moved no money: it is listed apart as
 non-cash, a conversion of a founder's balance labelled "Converted to shares" and a waiver "Waived" (FR-EQ-10).
 The check ``ties`` is opening cash + net change = closing cash.
@@ -85,6 +98,9 @@ SECTIONS = {
 WORKING_CAPITAL = ("Receivables", "Other current assets", "Payables & accruals", "Payroll liabilities",
                    "Tax liabilities", "Deferred revenue")
 ASSET_SECTIONS = ("current_assets", "non_current_assets")
+# The type of account each section takes (rev 0.159): a line of the other side places nothing.
+_SIDE = {"current_assets": "asset", "non_current_assets": "asset", "current_liabilities": "liability",
+         "borrowings": "liability", "equity": "equity"}
 CLAIM_SECTIONS = ("current_liabilities", "borrowings", "equity")
 PL_LINES = ("revenue", "cost_of_sales", "gross_profit", "operating_expenses", "ebitda",
             "depreciation_and_amortisation", "operating_profit", "other_income", "finance_costs_and_other_expenses",
@@ -123,10 +139,17 @@ def is_balance_sheet(account: Account) -> bool:
 
 
 def balance_sheet_section(account: Account) -> str | None:
-    """The balance-sheet section of an asset, liability or equity account, or None (unplaced)."""
+    """The balance-sheet section of an asset, liability or equity account, or None (unplaced): its cash-flow
+    line places it only on its own side (an asset in assets, a liability in liabilities, equity in equity)."""
     if account.role == "retained-earnings":
         return "equity"
-    return SECTIONS.get(account.cash_flow_line or "")
+    section = SECTIONS.get(account.cash_flow_line or "")
+    return section if section is not None and _SIDE[section] == account.type else None
+
+
+def is_cash(account: Account) -> bool:
+    """A cash account: an asset on Cash & cash equivalents."""
+    return account.type == "asset" and account.role != "retained-earnings" and account.cash_flow_line == CASH
 
 
 def profit_and_loss_section(account: Account, depreciation_group: str | None) -> str:
@@ -135,10 +158,10 @@ def profit_and_loss_section(account: Account, depreciation_group: str | None) ->
         return "income_tax"
     if account.type == "revenue":
         return "other_income" if account.function == "Other" else "revenue"
+    if depreciation_group is not None and _group(account) == depreciation_group:
+        return "depreciation_and_amortisation"  # before COGS: EBITDA excludes it by definition
     if account.function == "COGS":
         return "cost_of_sales"
-    if depreciation_group is not None and _group(account) == depreciation_group:
-        return "depreciation_and_amortisation"
     if account.function == "Other":
         return "finance_costs_and_other_expenses"
     return "operating_expenses"
@@ -151,11 +174,15 @@ class Statements:
         self.accounts = scenario.accounts
         self.minor = scenario.currencies[scenario.base_currency]
         self.entries = entries
+        settings = scenario.settings
+        # The depreciation account: the role, or else the settings' key, one system role in the product (rev 0.159).
         depreciation = [a for a in self.accounts.values() if a.role == "depreciation"]
+        named = settings.accounts.get("depreciation") if settings is not None else None
+        if not depreciation and named in self.accounts:
+            depreciation = [self.accounts[named]]
         self.depreciation_group = _group(depreciation[0]) if depreciation else None
         self.retained = next(a for a in self.accounts.values() if a.role == "retained-earnings")
         self.types = {d.id: d.type for d in scenario.documents if isinstance(d, Source)}
-        settings = scenario.settings
         self.advances = settings.accounts.get("advances") if settings is not None else None
 
     # ------------------------------------------------------------------ placing
@@ -164,13 +191,13 @@ class Statements:
         return balance_sheet_section(account) if is_balance_sheet(account) else None
 
     def _is_cash(self, code: str) -> bool:
-        account = self.accounts[code]
-        return is_balance_sheet(account) and account.role != "retained-earnings" and account.cash_flow_line == CASH
+        return is_cash(self.accounts[code])
 
     def classify(self, entry: Entry) -> str:
         """``investing``, ``financing`` or ``operating``: the cash flow section of an entry."""
         moved = [self.accounts[ln.account] for ln in entry.lines if is_balance_sheet(self.accounts[ln.account])]
-        if any(a.role != "retained-earnings" and a.cash_flow_line == CAPITAL_EXPENDITURE for a in moved):
+        if any(balance_sheet_section(a) == "non_current_assets" and a.cash_flow_line == CAPITAL_EXPENDITURE
+               for a in moved):
             return "investing"
         if any(balance_sheet_section(a) in ("borrowings", "equity") for a in moved):
             return "financing"
@@ -326,7 +353,7 @@ class Statements:
 
     def _cash_flow(self, entries: list[Entry], net_profit: Decimal, opening: Decimal,
                    closing: Decimal) -> tuple[dict[str, Any], Decimal]:
-        depreciation = results = investing = financing = money.ZERO
+        depreciation = results = investing = financing = other = money.ZERO
         working: defaultdict[str, Decimal] = defaultdict(lambda: money.ZERO)
         non_cash = []
         for entry in entries:
@@ -349,14 +376,17 @@ class Statements:
                 continue
             for ln in entry.lines:
                 account = self.accounts[ln.account]
-                if not is_balance_sheet(account) or account.role == "retained-earnings":
+                if not is_balance_sheet(account) or is_cash(account):
                     continue
-                if account.cash_flow_line == DEPRECIATION:
+                section = balance_sheet_section(account)
+                if section == "non_current_assets" and account.cash_flow_line == DEPRECIATION:
                     depreciation = money.EXACT.subtract(depreciation, ln.base_amount)
-                elif account.cash_flow_line in WORKING_CAPITAL:
+                elif section in ("current_assets", "current_liabilities"):
                     working[account.cash_flow_line] = money.EXACT.subtract(working[account.cash_flow_line],
                                                                            ln.base_amount)
-        operating = _sum((net_profit, depreciation, results, *working.values()))
+                else:  # in no section (an operating entry moves no capital expenditure, borrowings or equity)
+                    other = money.EXACT.subtract(other, ln.base_amount)
+        operating = _sum((net_profit, depreciation, results, *working.values(), other))
         net_change = _sum((operating, investing, financing))
         cf = {
             "operating": {
@@ -366,6 +396,7 @@ class Statements:
                 "working_capital": {
                     line: self._fmt(working[line]) for line in WORKING_CAPITAL if not working[line].is_zero()
                 },
+                "other_accounts": self._fmt(other),
                 "total": self._fmt(operating),
             },
             "investing": self._fmt(investing),

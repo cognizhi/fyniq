@@ -18,9 +18,10 @@ const (
 )
 
 // Subscription says whether an account earns subscription revenue: a revenue account whose report group names a
-// subscription stream (design D1; [accountant to confirm]).
+// subscription stream (design D1; [accountant to confirm]), and not other income (its function Other), which the
+// statements keep out of revenue.
 func Subscription(a storage.Account) bool {
-	return a.Type == storage.Revenue && strings.Contains(strings.ToLower(a.ReportGroup), "subscription")
+	return a.Type == storage.Revenue && a.Function != "Other" && strings.Contains(strings.ToLower(a.ReportGroup), "subscription")
 }
 
 // Read gathers the figures the KPIs of the month at index last of all need, all read at revision (design D2): the last

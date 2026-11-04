@@ -61,7 +61,9 @@ def test_each_revenue_and_expense_account_goes_to_the_first_section_that_applies
     assert _pl("4010", "revenue") == "revenue"
     assert _pl("4020", "revenue", function="G&A") == "revenue"  # only Other moves revenue out of the streams
     assert _pl("4900", "revenue", function="Other") == "other_income"
-    assert _pl("5010", "expense", function="COGS", report_group="D&A") == "cost_of_sales"  # COGS before D&A
+    # The depreciation account's group before the function (rev 0.159): EBITDA excludes D&A by definition.
+    assert _pl("5010", "expense", function="COGS", report_group="D&A") == "depreciation_and_amortisation"
+    assert _pl("5020", "expense", function="COGS", report_group="Hosting") == "cost_of_sales"
     assert _pl("6620", "expense", function="Other", report_group="D&A") == "depreciation_and_amortisation"
     assert _pl("7010", "expense", function="Other") == "finance_costs_and_other_expenses"
     assert _pl("6010", "expense", function="R&D") == "operating_expenses"
@@ -77,10 +79,22 @@ def test_a_balance_sheet_account_is_placed_by_its_cash_flow_line():
         return balance_sheet_section(Account("x", kind, False, True, role=role, cash_flow_line=line_))
 
     assert section("asset", "Cash & cash equivalents") == "current_assets"
+    assert section("asset", "Receivables") == "current_assets"
+    assert section("asset", "Other current assets") == "current_assets"
+    assert section("asset", "Capital expenditure") == "non_current_assets"
     assert section("asset", "Depreciation & amortisation") == "non_current_assets"
-    assert section("liability", "Receivables") == "current_assets"  # the line decides, not the type
+    for line_ in ("Payables & accruals", "Payroll liabilities", "Tax liabilities", "Deferred revenue"):
+        assert section("liability", line_) == "current_liabilities"
     assert section("liability", "Borrowings") == "borrowings"
     assert section("equity", "Share capital") == "equity"
+    assert section("equity", "Dividends & other equity") == "equity"
+    # A line places an account only on its own side (rev 0.159): any other combination is unplaced.
+    assert section("liability", "Receivables") is None
+    assert section("liability", "Share capital") is None
+    assert section("equity", "Cash & cash equivalents") is None
+    assert section("equity", "Borrowings") is None
+    assert section("asset", "Borrowings") is None
+    assert section("asset", "Payables & accruals") is None
     assert section("equity", None, role="retained-earnings") == "equity"
     assert section("equity", "Receivables", role="retained-earnings") == "equity"  # its role wins
     assert section("asset", None) is None
@@ -115,6 +129,81 @@ def test_an_entry_with_a_line_on_a_cash_account_moved_money_even_when_its_cash_n
         accounts=chart,
     )["2026-01"]["cash_flow"]
     assert (cf["investing"], cf["non_cash"]) == ("0.00", [])
+
+
+# req: FR-RPT-01, INV-10, INV-11
+def test_an_unplaced_account_breaks_only_balances_and_the_cash_flow_keeps_its_movement():
+    # 1990 (an asset with no line) and 2990 (a liability with no line) sit in no section.
+    chart = [*CHART, _account("1990", "asset", report_group="Suspense"),
+             _account("2990", "liability", report_group="Accruals, unplaced")]
+    s = _statements(
+        journal("J1", "2026-01-05", line("1990", "SGD", "50.00"), line("1010", "SGD", "-50.00")),  # 50.00 left the bank
+        journal("J2", "2026-01-06", line("6010", "SGD", "30.00"), line("2990", "SGD", "-30.00")),  # a cost accrued to it
+        accounts=chart,
+    )["2026-01"]
+    cf = s["cash_flow"]
+    # Operating: net profit -30.00; other accounts -(+50.00) - (-30.00) = -20.00; total -50.00, the 50.00 that left.
+    assert cf["operating"] == {"net_profit": "-30.00", "depreciation_and_amortisation": "0.00",
+                               "investing_and_financing_results": "0.00", "working_capital": {},
+                               "other_accounts": "-20.00", "total": "-50.00"}
+    assert (cf["net_change"], cf["opening_cash"], cf["closing_cash"]) == ("-50.00", "0.00", "-50.00")
+    # Assets -50.00 (the bank); liabilities 0.00 and equity -30.00 (the loss): 20.00 apart, the two unplaced balances.
+    assert (s["balance_sheet"]["total_assets"], s["balance_sheet"]["total_liabilities_and_equity"]) == ("-50.00", "-30.00")
+    assert s["checks"] == {"balances": False, "ties": True, "equity": True, "unplaced": ["1990", "2990"]}
+
+
+# req: FR-RPT-01, INV-10, INV-11
+def test_a_line_of_the_other_side_places_nothing():
+    # 2990 is a liability on Share capital and 3990 an equity account on Cash & cash equivalents: both unplaced.
+    chart = [*CHART, _account("2990", "liability", cash_flow_line="Share capital"),
+             _account("3990", "equity", cash_flow_line="Cash & cash equivalents")]
+    s = _statements(
+        # Money in against the liability: not financing (2990 is in no section), so operating, with the 200.00 in
+        # other accounts.
+        journal("J1", "2026-01-05", line("1010", "SGD", "200.00"), line("2990", "SGD", "-200.00")),
+        # 3990 is not cash: 100.00 moved to it leaves 1010, operating, other accounts -(+100.00).
+        journal("J2", "2026-01-06", line("3990", "SGD", "100.00"), line("1010", "SGD", "-100.00")),
+        accounts=chart,
+    )["2026-01"]
+    cf = s["cash_flow"]
+    assert (cf["operating"]["other_accounts"], cf["operating"]["total"]) == ("100.00", "100.00")  # 200.00 - 100.00
+    assert (cf["financing"], cf["closing_cash"]) == ("0.00", "100.00")  # 3990's 100.00 is not cash
+    assert s["balance_sheet"]["equity"] == {"total": "0.00", "groups": {}}  # 3990 is not in equity
+    assert s["checks"] == {"balances": False, "ties": True, "equity": True, "unplaced": ["2990", "3990"]}
+
+
+# req: FR-RPT-01
+def test_a_cogs_account_in_the_depreciation_group_is_depreciation_below_ebitda():
+    chart = [*CHART, _account("6610", "expense", role="depreciation", report_group="D&A"),
+             _account("5010", "expense", report_group="D&A", function="COGS"),
+             _account("1590", "asset", report_group="Equipment", cash_flow_line="Depreciation & amortisation")]
+    pl = _statements(
+        journal("J1", "2026-01-05", line("1010", "SGD", "1000.00"), line("4010", "SGD", "-1000.00")),
+        # Amortisation of software used to deliver the service: COGS by function, but in the depreciation group.
+        journal("J2", "2026-01-31", line("5010", "SGD", "30.00"), line("1590", "SGD", "-30.00")),
+        accounts=chart,
+    )["2026-01"]["profit_and_loss"]
+    # Gross profit and EBITDA are the 1,000.00 of revenue; the 30.00 is below EBITDA: operating profit 970.00.
+    assert (pl["cost_of_sales"]["total"], pl["gross_profit"], pl["ebitda"]) == ("0.00", "1000.00", "1000.00")
+    assert (pl["depreciation_and_amortisation"]["total"], pl["operating_profit"]) == ("-30.00", "970.00")
+
+
+# req: FR-RPT-01
+def test_with_no_depreciation_role_the_settings_name_the_depreciation_account():
+    # No account has the role; the settings' depreciation key names 6610, in Group D. 6620, an expense in Group D
+    # with function Other, is depreciation and amortisation with it, not a finance cost.
+    chart = [*CHART, _account("6610", "expense", report_group="Group D"),
+             _account("6620", "expense", report_group="Group D", function="Other"),
+             _account("1590", "asset", report_group="Equipment", cash_flow_line="Depreciation & amortisation")]
+    docs = [journal("J1", "2026-01-31", line("6610", "SGD", "20.00"), line("6620", "SGD", "5.00"),
+                    line("1590", "SGD", "-25.00"))]
+    pl = _statements(*docs, accounts=chart, settings={"accounts": {"depreciation": "6610"}})["2026-01"]["profit_and_loss"]
+    assert pl["depreciation_and_amortisation"] == {"total": "-25.00", "groups": {"Group D": "-25.00"}}  # 20.00 + 5.00
+    assert pl["finance_costs_and_other_expenses"]["total"] == "0.00"
+    # Without the settings' key there is no depreciation account: 6610 has no function (operating expenses) and
+    # 6620 is a finance cost.
+    pl = _statements(*docs, accounts=chart)["2026-01"]["profit_and_loss"]
+    assert (pl["operating_expenses"]["total"], pl["finance_costs_and_other_expenses"]["total"]) == ("-20.00", "-5.00")
 
 
 # req: FR-RPT-01, INV-10

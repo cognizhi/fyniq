@@ -221,7 +221,7 @@
               "type": "object",
               "additionalProperties": false,
               "required": ["net_profit", "depreciation_and_amortisation", "investing_and_financing_results",
-                           "working_capital", "total"],
+                           "working_capital", "other_accounts", "total"],
               "properties": {
                 "net_profit": {"$ref": "#/$defs/decimal"},
                 "depreciation_and_amortisation": {"$ref": "#/$defs/decimal"},
@@ -230,6 +230,10 @@
                   "description": "Cash-flow line -> its change; a line whose change is zero may be left out.",
                   "type": "object",
                   "additionalProperties": {"$ref": "#/$defs/decimal"}
+                },
+                "other_accounts": {
+                  "description": "Minus the operating entries' lines on accounts that sit in no section (D3, rev 0.159), so the total is the operating entries' cash.",
+                  "$ref": "#/$defs/decimal"
                 },
                 "total": {"$ref": "#/$defs/decimal"}
               }

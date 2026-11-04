@@ -105,9 +105,13 @@ today's.
 
 ## Common problems
 
-- **A red note says the statement does not balance or tie.** The books' own checks should prevent
-  it: report it to the accountant.
-- **Accounts sit in no section.** An account has a cash-flow line the statements do not know. Give
-  it one of the standard chart's cash-flow lines in Accounting → Chart of accounts.
+- **The balance sheet does not balance.** An account with a balance sits in no section, so total
+  assets and total liabilities and equity differ by it: the note below names it.
+- **Accounts sit in no section.** An account has no cash-flow line, one the statements do not know,
+  or one of the other side (a liability on Share capital, for example). The cash flow still shows
+  its movements, under **Other accounts**. Give it one of the standard chart's cash-flow lines for
+  its type in Accounting → Chart of accounts.
+- **A red note says the cash flow does not tie.** The books' own checks should prevent it: report
+  it to the accountant.
 - **The books have no months for this choice.** Open the financial year in Accounting → Periods and
   close, or choose other months.

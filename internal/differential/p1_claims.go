@@ -143,7 +143,7 @@ func (r *p1) expenseClaim(d Document, date time.Time) (ledger.Entry, bool) {
 		c.Advances, _ = r.setting("advances")
 	}
 	e, err := post(c, r.settings)
-	if err != nil {
+	if err != nil || !r.fits(e) {
 		return ledger.Entry{}, false
 	}
 	if adv != nil { // what it settles of the advance: the least of what it owes and what is open (FR-AP-17)
@@ -159,7 +159,7 @@ func (r *p1) expenseClaim(d Document, date time.Time) (ledger.Entry, bool) {
 				settles = adv.open
 			}
 			c.Settles = &settles
-			if e, err = post(c, r.settings); err != nil {
+			if e, err = post(c, r.settings); err != nil || !r.fits(e) {
 				return ledger.Entry{}, false
 			}
 			adv.open, _ = adv.open.Sub(settles)
@@ -195,7 +195,7 @@ func (r *p1) claimReimbursement(d Document, date time.Time) (ledger.Entry, bool)
 		re.Claims = append(re.Claims, ledger.PaidClaim{ClaimID: stableID("document", part.Document), Amount: amount})
 	}
 	e, settlements, err := ledger.PostClaimReimbursement(re, r.settings)
-	if err != nil {
+	if err != nil || !r.fits(e) {
 		return ledger.Entry{}, false
 	}
 	r.settled(date, settlements, r.idsOf(d))
@@ -232,7 +232,7 @@ func (r *p1) cashAdvance(d Document, date time.Time) (ledger.Entry, bool) {
 		a.Refund = true
 	}
 	e, err := ledger.PostCashAdvance(a, r.settings)
-	if err != nil {
+	if err != nil || !r.fits(e) {
 		return ledger.Entry{}, false
 	}
 	if of != nil {

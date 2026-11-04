@@ -112,20 +112,32 @@ def test_without_a_subscription_stream_booked_mrr_and_what_needs_it_are_undefine
               counts={"2026-01": {"paying_customers": 3, "new_customers": 1, "customers_lost": 1}})["2026-01"]
     assert [k[key] for key in ("booked_mrr", "arr", "arpa", "ltv", "ltv_to_cac", "cac_payback", "burn_multiple")] == [None] * 7
     assert k["cac"] == "300.00"  # needs no MRR
-    # Other income is never a stream, whatever its group says.
+    # Other income is never a stream, whatever its group says: with it the only subscription-named account, there is no
+    # stream, so booked MRR, ARR and ARPA are undefined though customers are entered.
     chart = [a if a["code"] != "4010" else _account("4010", "revenue", report_group="Subscriptions", function="Other")
              for a in CHART]
-    assert _kpis(_sale("S1", "2026-01-02", "900.00"), accounts=chart)["2026-01"]["booked_mrr"] is None
+    k = _kpis(_sale("S1", "2026-01-02", "900.00"), accounts=chart,
+              counts={"2026-01": {"paying_customers": 3, "new_customers": 1, "customers_lost": 1}})["2026-01"]
+    assert (k["booked_mrr"], k["arr"], k["arpa"]) == (None, None, None)
+    # A group heading carries no figures: with a subscription-named heading the only one, there is no stream either.
+    chart = [*(a if a["code"] != "4010" else _account("4010", "revenue", report_group="Sales") for a in CHART),
+             {**_account("4000", "revenue", report_group="Subscription revenue"), "group": True}]
+    k = _kpis(_sale("S1", "2026-01-02", "900.00"), accounts=chart,
+              counts={"2026-01": {"paying_customers": 3, "new_customers": 1, "customers_lost": 1}})["2026-01"]
+    assert (k["booked_mrr"], k["arr"], k["arpa"]) == (None, None, None)
 
 
 # req: FR-KPI-02
 def test_the_burn_multiple_needs_burn_and_new_arr():
-    docs = [_sale("S1", "2026-01-02", "100.00"), _cost("C1", "2026-01-03", "1000.00"),
+    # The books start in December with a cost alone: their first month has no month before it, so no new ARR.
+    docs = [_cost("C0", "2025-12-03", "10.00"),
+            _sale("S1", "2026-01-02", "100.00"), _cost("C1", "2026-01-03", "1000.00"),
             _sale("S2", "2026-02-02", "150.00"), _cost("C2", "2026-02-03", "1000.00"),
             _sale("S3", "2026-03-02", "150.00"), _cost("C3", "2026-03-03", "1000.00"),
             _sale("S4", "2026-04-02", "100.00"), _cost("C4", "2026-04-03", "1000.00")]
     k = _kpis(*docs)
-    assert k["2026-01"]["burn_multiple"] == "0.8"  # 900.00 ÷ 1,200.00 of new ARR
+    assert k["2025-12"]["burn_multiple"] is None  # the first stated month
+    assert k["2026-01"]["burn_multiple"] == "0.8"  # 900.00 ÷ (1,200.00 - December's 0.00) of new ARR
     assert k["2026-02"]["burn_multiple"] == "1.4"  # 850.00 ÷ (1,800.00 - 1,200.00) = 1.417
     assert k["2026-03"]["burn_multiple"] is None  # ARR did not grow
     assert k["2026-04"]["burn_multiple"] is None  # ARR shrank to 1,200.00
@@ -134,6 +146,52 @@ def test_the_burn_multiple_needs_burn_and_new_arr():
     k = _kpis(_sale("S1", "2026-01-02", "5000.00", account="4020"),
               _sale("S2", "2026-02-02", "100.00"), _cost("C2", "2026-02-03", "1000.00"))
     assert (k["2026-02"]["runway"], k["2026-02"]["burn_multiple"]) == ("not-burning", "0.8")
+
+
+# req: FR-KPI-02, FR-KPI-03
+def test_the_books_first_month_has_no_month_before_it():
+    # January is the first stated month: it burns 900.00 (1,000.00 out, 100.00 in) for 1,200.00 of ARR, but with no
+    # month before it there is no new ARR to divide by, and no growth (rev 0.161).
+    k = _kpis(_sale("S1", "2026-01-02", "100.00"), _cost("C1", "2026-01-03", "1000.00"))["2026-01"]
+    assert (k["net_burn"], k["arr"]) == ("900.00", "1200.00")
+    assert (k["burn_multiple"], k["revenue_growth"]) == (None, None)
+
+
+# req: FR-KPI-02, FR-KPI-03
+def test_a_kpi_whose_divisor_is_not_above_zero_is_undefined():
+    docs = [
+        # January: 500.00 invoiced on credit; a supplier refunds 200.00 (costs -200.00); a supplier paid 50.00 ahead,
+        # so payables are a 50.00 debit and current liabilities -50.00.
+        journal("S1", "2026-01-05", line("1100", "SGD", "500.00"), line("4020", "SGD", "-500.00")),
+        journal("R1", "2026-01-06", line("1010", "SGD", "200.00"), line("6010", "SGD", "-200.00")),
+        journal("P1", "2026-01-07", line("2010", "SGD", "50.00"), line("1010", "SGD", "-50.00")),
+        # February: 800.00 refunded to a customer (revenue -800.00); 100.00 of costs on account.
+        journal("S2", "2026-02-05", line("4020", "SGD", "800.00"), line("1010", "SGD", "-800.00")),
+        journal("C2", "2026-02-06", line("6010", "SGD", "100.00"), line("2010", "SGD", "-100.00")),
+    ]
+    k = _kpis(*docs)
+    jan, feb = k["2026-01"], k["2026-02"]
+    # January: DSO 500.00 × 30 ÷ 500.00 = 30.0; costs -200.00 are not above zero, so no DPO; current liabilities
+    # -50.00 are not above zero, so neither ratio.
+    assert (jan["dso"], jan["dpo"], jan["current_ratio"], jan["quick_ratio"]) == ("30.0", None, None, None)
+    # February: revenue 500.00 - 800.00 = -300.00 and costs -200.00 + 100.00 = -100.00 over the two months, neither
+    # above zero. Current liabilities -50.00 + 100.00 = 50.00: cash 200.00 - 50.00 - 800.00 = -650.00 and
+    # receivables 500.00, so both ratios are (-650.00 + 500.00) ÷ 50.00 = -3.0.
+    assert (feb["dso"], feb["dpo"], feb["current_ratio"], feb["quick_ratio"]) == (None, None, "-3.0", "-3.0")
+
+
+# req: FR-KPI-02, FR-KPI-03
+def test_cac_payback_needs_a_margin_per_account_above_zero():
+    # 0.05 of subscription revenue costs 0.10 to deliver: gross profit -0.05, a margin of -100%. One paying customer,
+    # new this month: ARPA 0.05; no S&M spend, so CAC 0.00 ÷ 1 = 0.00. ARPA × margin = 0.05 × -1 = -0.05, not above
+    # zero, so the payback is undefined rather than 0.00 ÷ -0.05 = 0.0.
+    chart = [*CHART, _account("5010", "expense", function="COGS")]
+    docs = [_sale("S1", "2026-01-02", "0.05"),
+            journal("C1", "2026-01-03", line("5010", "SGD", "0.10"), line("1010", "SGD", "-0.10"))]
+    k = _kpis(*docs, accounts=chart, counts={"2026-01": {"paying_customers": 1, "new_customers": 1, "customers_lost": 0}})
+    jan = k["2026-01"]
+    assert (jan["booked_mrr"], jan["gross_margin"], jan["arpa"], jan["cac"]) == ("0.05", "-100.0", "0.05", "0.00")
+    assert jan["cac_payback"] is None
 
 
 # req: RND-KPI

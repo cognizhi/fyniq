@@ -165,7 +165,7 @@ func (r *p1) assetDisposal(d Document, date time.Time) (ledger.Entry, bool) {
 		}
 	}
 	e, err := ledger.PostAssetDisposal(p, r.settings)
-	if err != nil {
+	if err != nil || !r.fits(e) {
 		return ledger.Entry{}, false
 	}
 	a.disposed = month

@@ -4,14 +4,14 @@ type: task
 title: Read the start-up KPIs and enter the month's customer counts
 summary: A month's KPIs beside the month before, how each is worked out, why one shows a dash, and entering the customer counts
 sources:
-  - docs/user-guide/kpis.md sha256:45f813938e895b95882dffc4bc33e2d96627cab45c7e1b4fdd875764d23ba131
+  - docs/user-guide/kpis.md sha256:f0bf371b8f5ce903d2b01db6ff5aa62b6d4fcd5a43cd8dbe165e9473a3047074
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-29
+compiled_at: 2026-11-04
 aliases:
   - KPIs
   - start-up metrics
@@ -40,7 +40,7 @@ aliases:
 
 ## Booked and contracted MRR
 
-- **Booked MRR**: the subscription revenue the ledger recognised in the month, from revenue accounts whose report group names a subscription stream.
+- **Booked MRR**: the subscription revenue the ledger recognised in the month, from revenue accounts whose report group names a subscription stream (not other income, and not a group heading).
 - **Contracted MRR**: the monthly value of the subscriptions active at the month's end, what is signed. It needs subscription data, which arrives in a later phase; until then it says so.
 - Which revenue counts as subscription revenue waits for the accountant's confirmation.
 

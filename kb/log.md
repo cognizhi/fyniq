@@ -313,3 +313,4 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-04] compile | docs/user-guide/invoices.md → task/sales-invoices (the credit notes of one invoice credit at most its total together, p1-sales 3.3)
 ## [2026-11-04] compile | docs/user-guide/fixed-assets.md → task/accounting-fixed-assets (a disposal's GST code is always a supply code, B.6 rev 0.169)
+## [2026-11-04] compile | docs/user-guide/financial-statements.md, kpis.md → task/reports-statements, task/reports-kpis (a balance sheet with an unplaced account does not balance, its movements under Other accounts; subscription accounts exclude other income and headings)

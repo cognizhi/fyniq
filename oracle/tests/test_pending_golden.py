@@ -2,7 +2,7 @@
 
 They wait for cmd/scenario-run to read the P1 shapes (pending/README.md); the oracle must match the
 hand-worked figures now. Every figure comes from the comment beside it (QA-ENG-01). A case keeps its
-hand-worked figures here once cmd/scenario-run reads its source and it moves to golden/ (bank, purchases, sales, claims, assets, founders).
+hand-worked figures here once cmd/scenario-run reads its source and it moves to golden/ (bank, purchases, sales, claims, assets, founders, statements).
 """
 
 from pathlib import Path
@@ -12,7 +12,7 @@ from oracle.scenario import load_scenario
 
 PENDING = Path(__file__).resolve().parents[2] / "test" / "differential" / "pending"
 GOLDEN = PENDING.parent / "golden"
-MOVED = {"bank", "purchases", "sales", "claims", "assets", "founders"}  # the cases the engine reads now, in golden/
+MOVED = {"bank", "purchases", "sales", "claims", "assets", "founders", "statements"}  # the cases the engine reads now, in golden/
 
 
 def _run(name: str) -> dict:
@@ -346,7 +346,7 @@ _NO_PROFIT = {
     "net_profit": "0.00",
 }  # no percentages: a revenue of zero has none (RND-PERCENT)
 _NO_CASH_FLOW = {"net_profit": "0.00", "depreciation_and_amortisation": "0.00", "investing_and_financing_results": "0.00",
-                 "working_capital": {}, "total": "0.00"}
+                 "working_capital": {}, "other_accounts": "0.00", "total": "0.00"}
 
 
 # req: FR-RPT-01, INV-10, INV-11, RND-PERCENT, QA-ENG-02
@@ -411,7 +411,7 @@ def test_pending_statements():
                       "investing_and_financing_results": "800.00",
                       "working_capital": {"Receivables": "-308.00", "Payables & accruals": "500.00",
                                           "Tax liabilities": "108.00"},
-                      "total": "-1299.79"},
+                      "other_accounts": "0.00", "total": "-1299.79"},
         "investing": "-3270.00",
         "financing": "10000.00",
         "net_change": "5430.21",
@@ -474,7 +474,7 @@ def test_pending_statements():
                       "investing_and_financing_results": "16.67",
                       "working_capital": {"Other current assets": "-1200.00", "Payables & accruals": "-500.00",
                                           "Tax liabilities": "280.00", "Deferred revenue": "600.00"},
-                      "total": "2679.99"},
+                      "other_accounts": "0.00", "total": "2679.99"},
         "investing": "2950.00",
         "financing": "-1350.00",
         "net_change": "4279.99",
@@ -497,16 +497,18 @@ def test_pending_statements():
     assert mar["checks"] == {"balances": True, "ties": True, "equity": True, "unplaced": []}
 
     # 50.00 paid to 1990, which has no cash-flow line: it sits in no section, so the balance sheet is 50.00 short
-    # and the cash flow misses the 50.00 that left the bank. Both checks say so, and name the account.
+    # and `balances` fails, naming it. The cash flow keeps its movement in operating's other accounts, -(+50.00), so
+    # operating is the 50.00 that left the bank and `ties` holds (D3, rev 0.159).
     apr = s["2026-04"]
     assert apr["profit_and_loss"] == _NO_PROFIT
     assert apr["balance_sheet"]["current_assets"] == _section(
         "11168.20", {"Cash and bank": "9660.20", "Prepayments": "1200.00", "Trade receivables": "308.00"})
     assert (apr["balance_sheet"]["total_assets"], apr["balance_sheet"]["total_liabilities_and_equity"]) == (
         "11128.20", "11178.20")
-    assert apr["cash_flow"] == {"operating": _NO_CASH_FLOW, "investing": "0.00", "financing": "0.00",
-                                "net_change": "0.00", "opening_cash": "9710.20", "closing_cash": "9660.20", "non_cash": []}
-    assert apr["checks"] == {"balances": False, "ties": False, "equity": True, "unplaced": ["1990"]}
+    assert apr["cash_flow"] == {"operating": {**_NO_CASH_FLOW, "other_accounts": "-50.00", "total": "-50.00"},
+                                "investing": "0.00", "financing": "0.00", "net_change": "-50.00",
+                                "opening_cash": "9710.20", "closing_cash": "9660.20", "non_cash": []}
+    assert apr["checks"] == {"balances": False, "ties": True, "equity": True, "unplaced": ["1990"]}
 
 
 # req: FR-KPI-02, FR-KPI-03, RND-KPI, QA-ENG-02
@@ -516,7 +518,7 @@ def test_pending_kpis():
     # January: 4010 is the subscription stream; 10 paying customers, all new; 3 people.
     assert k["2026-01"] == {
         "booked_mrr": "1200.00", "arr": "14400.00", "contracted_mrr": None,
-        "revenue_growth": None,  # nothing posted the month before
+        "revenue_growth": None,  # the books' first month: no month before it
         "gross_margin": "83.4",  # 1,000.20 ÷ 1,200.00 = 83.35%
         "spend_by_function": {"R&D": "2000.00", "S&M": "500.00", "G&A": "883.33"},  # rent 800.00 + depreciation 83.33
         "net_burn": "4569.79",  # -(-1,299.79 operating - 3,270.00 investing)
@@ -526,7 +528,7 @@ def test_pending_kpis():
         "cac": "50.00",  # 500.00 ÷ 10
         "ltv": None, "ltv_to_cac": None,  # no churn
         "cac_payback": "0.5",  # 50.00 ÷ (120.00 × 0.8335) = 0.4999
-        "burn_multiple": "0.3",  # 4,569.79 ÷ 14,400.00 of new ARR
+        "burn_multiple": None,  # the books' first month: no month before it, so no new ARR
         "current_ratio": "17.0", "quick_ratio": "17.0",  # 5,738.21 ÷ 338.00; cash and receivables are all of it
         "working_capital": "5400.21",
         "debt_to_equity": None,  # equity -2,483.12
@@ -566,10 +568,14 @@ def test_pending_kpis():
     assert [mar[key] for key in ("arpa", "churn", "cac", "ltv", "ltv_to_cac", "cac_payback")] == [None] * 6  # not entered
     assert mar["dso"] == "8.7"  # 308.00 ÷ (3,200.00 ÷ 3 ÷ 30) = 8.6625
     assert (mar["headcount"], mar["revenue_per_employee"]) == ("4", "0.00")
-    # April: counts without headcount; the 50.00 to an unplaced account is in neither the cash flow nor its burn.
+    # April: counts without headcount; the 50.00 to an unplaced account is in operating, so April burns 50.00; the
+    # February-to-April average, (-5,629.99 + 0.00 + 50.00) ÷ 3, is still not above zero.
     apr = k["2026-04"]
-    assert (apr["revenue_growth"], apr["net_burn"], apr["runway"]) == (None, "0.00", "not-burning")
+    assert (apr["revenue_growth"], apr["net_burn"], apr["runway"]) == (None, "50.00", "not-burning")
+    assert apr["burn_multiple"] is None  # ARR 0.00, not grown from March's 0.00
     assert (apr["arpa"], apr["churn"], apr["cac"], apr["ltv"]) == ("0.00", "0.0", None, None)  # no new customers
     assert (apr["current_ratio"], apr["quick_ratio"], apr["working_capital"]) == ("15.6", "13.9", "10450.20")
     assert apr["dso"] == "13.9"  # February to April: 308.00 ÷ (2,000.00 ÷ 3 ÷ 30) = 13.86
+    # February to April's costs: -99.99 (the software reversed) + 0.00 + 0.00, not above zero: DPO undefined.
+    assert apr["dpo"] is None
     assert (apr["headcount"], apr["revenue_per_employee"]) == (None, None)

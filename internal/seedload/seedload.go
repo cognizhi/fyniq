@@ -112,6 +112,8 @@ func Load(ctx context.Context, store storage.Store, org uuid.UUID, c seed.Compan
 				if std.Type == n.Type { // the attributes of an account of the same kind only, such as a money account's
 					n.AccountAttributes = std.AccountAttributes
 				}
+			} else if x, ok := seed.ExtraPlacements[a.Code]; ok {
+				n.ReportGroup, n.CashFlowLine = x.ReportGroup, x.CashFlowLine
 			}
 			acc, err := u.Accounts().Create(ctx, n)
 			if err != nil {

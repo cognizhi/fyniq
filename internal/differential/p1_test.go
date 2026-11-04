@@ -3,9 +3,11 @@ package differential
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -296,5 +298,101 @@ func TestP1FoundersMoneyByPerson(t *testing.T) {
 		if got := byDoc[doc]; !reflect.DeepEqual(got, lines) {
 			t.Errorf("%s: %v, want %v", doc, got, lines)
 		}
+	}
+}
+
+// The statements and KPIs of golden/statements.json, worked out by hand (README, "Statements" and "KPIs"): in April
+// 50.00 is paid to 1990, an account with no cash-flow line. It sits in no section, so the balance sheet does not
+// balance and `unplaced` names it, but the cash flow keeps it under Other accounts: operating −50.00, the net change
+// −50.00, and the cash flow ties; net burn is the true 50.00. February's reversed cost adds 99.99 to profit, so its
+// operating expenses are +99.99 and the three months to April average costs below zero: DPO is undefined. January is
+// the books' first month, so its burn multiple is undefined.
+// req: FR-RPT-01
+// req: INV-10
+// req: INV-11
+// req: FR-KPI-03
+// req: QA-ENG-02
+func TestP1StatementsAndKPIs(t *testing.T) {
+	r := run(t, load(t, "statements.json"))
+	if r.Statements == nil || r.KPIs == nil {
+		t.Fatal("no statements or KPIs")
+	}
+	at := func(tree map[string]any, path ...string) any {
+		var x any = tree
+		for _, p := range path {
+			m, ok := x.(map[string]any)
+			if !ok {
+				return nil
+			}
+			x = m[p]
+		}
+		return x
+	}
+	st, kpis := *r.Statements, *r.KPIs
+	for _, c := range []struct {
+		tree map[string]any
+		path []string
+		want any
+	}{
+		{st, []string{"2026-04", "cash_flow", "operating", "other_accounts"}, "-50.00"},
+		{st, []string{"2026-04", "cash_flow", "operating", "total"}, "-50.00"},
+		{st, []string{"2026-04", "cash_flow", "net_change"}, "-50.00"},
+		{st, []string{"2026-04", "checks", "balances"}, false},
+		{st, []string{"2026-04", "checks", "ties"}, true},
+		{st, []string{"2026-02", "profit_and_loss", "operating_expenses", "total"}, "99.99"},
+		{kpis, []string{"2026-04", "net_burn"}, "50.00"},
+		{kpis, []string{"2026-04", "dpo"}, nil},
+		{kpis, []string{"2026-01", "burn_multiple"}, nil},
+	} {
+		if got := at(c.tree, c.path...); !reflect.DeepEqual(got, c.want) {
+			t.Errorf("%v: %v, want %v", c.path, got, c.want)
+		}
+	}
+	if got := at(st, "2026-04", "checks", "unplaced"); !reflect.DeepEqual(got, []any{"1990"}) {
+		t.Errorf("April's unplaced accounts: %v", got)
+	}
+}
+
+// A scenario asking for the statements keeps every month's balance below 10^16: the database refuses the posting that
+// would take one there, which neither side models, so the runner stops and names the balance instead of laying
+// statements on a figure the product could not hold (README, "Balances within NUMERIC(20,4)").
+// req: QA-ENG-02
+// req: INV-05
+func TestP1StatementsStopAtABalanceTheDatabaseCannotHold(t *testing.T) {
+	var s Scenario
+	err := json.Unmarshal([]byte(`{"schema": "fyniq-scenario@1", "name": "beyond", "base_currency": "SGD", "currencies": {"SGD": 2},
+		"accounts": [{"code": "1000", "type": "asset", "group": false, "active": true},
+			{"code": "1001", "type": "asset", "group": false, "active": true},
+			{"code": "9100", "type": "equity", "group": false, "active": true, "role": "retained-earnings"}],
+		"documents": [
+			{"type": "manual_journal", "id": "JNL-0001", "version": 1, "date": "2025-11-01", "memo": "", "lines": [
+				{"account": "1000", "currency": "SGD", "amount": "-0.01"}, {"account": "1001", "currency": "SGD", "amount": "0.01"}]},
+			{"type": "manual_journal", "id": "JNL-0002", "version": 1, "date": "2025-11-01", "memo": "", "lines": [
+				{"account": "1001", "currency": "SGD", "amount": "9999999999999999.99"},
+				{"account": "1000", "currency": "SGD", "amount": "-9999999999999999.99"}]}],
+		"reversals": [], "statements": true}`), &s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = RunEngine(s)
+	if err == nil || !strings.Contains(err.Error(), "account 1000's balance for 2025-11 is -10000000000000000.00 SGD") ||
+		!strings.Contains(err.Error(), "outside the format") {
+		t.Errorf("the statements beyond NUMERIC(20,4): %v", err)
+	}
+	s.Statements = false
+	if r := run(t, s); len(r.Rejected) != 0 { // without statements both sides accept it, as the README says
+		t.Errorf("rejected %v", r.Rejected)
+	}
+	// Only a period's balance is bounded: the statements sum the months without a limit, so figures above 10^16 from
+	// months that each fit are laid, as the product's own financials and KPIs lay them.
+	s.Statements, s.Documents = true, nil
+	s.Accounts[1].CashFlowLine = "Cash & cash equivalents"
+	for i, date := range []string{"2025-11-01", "2025-12-01"} {
+		s.Documents = append(s.Documents, Document{Type: "manual_journal", ID: fmt.Sprintf("BIG-%d", i+1), Version: 1, Date: date,
+			Lines: []Line{{Account: "1001", Currency: "SGD", Amount: "9000000000000000.00"}, {Account: "1000", Currency: "SGD", Amount: "-9000000000000000.00"}}})
+	}
+	r := run(t, s)
+	if got := (*r.Statements)["2025-12"].(map[string]any)["balance_sheet"].(map[string]any)["current_assets"].(map[string]any)["groups"].(map[string]any)["1001"]; got != "18000000000000000.00" {
+		t.Errorf("1001 at the end of December: %v", got)
 	}
 }

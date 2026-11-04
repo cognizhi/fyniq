@@ -153,7 +153,8 @@ type Value struct {
 	Entered   bool // it used the month's entered counts
 }
 
-var work = apd.BaseContext.WithPrecision(40)
+// work is wide enough that the products of a ratio's figures are exact; only the one division a KPI makes is cut.
+var work = apd.BaseContext.WithPrecision(100)
 
 func dec(m money.Money) *apd.Decimal { return m.Decimal() }
 
@@ -191,14 +192,24 @@ func add(a, b *apd.Decimal) *apd.Decimal {
 
 func n(i int64) *apd.Decimal { return apd.New(i, 0) }
 
-// average is the exact mean of the figures.
-func average(xs []*apd.Decimal) *apd.Decimal {
+// sum is the exact total of the figures.
+func sum(xs []*apd.Decimal) *apd.Decimal {
 	total := new(apd.Decimal)
 	for _, x := range xs {
 		total = add(total, x)
 	}
-	return quo(total, n(int64(len(xs))))
+	return total
 }
+
+// ratio is an exact fraction. A KPI built from other quotients multiplies them as fractions and divides once, so
+// RND-KPI rounds its exact value (§10.4): dividing by a quotient already cut to the working precision can land a tie
+// on the wrong side, as cash ÷ (0.08 ÷ 3) did.
+type ratio struct{ num, den *apd.Decimal }
+
+func (r ratio) times(s ratio) ratio { return ratio{mul(r.num, s.num), mul(r.den, s.den)} }
+func (r ratio) per(s ratio) ratio   { return ratio{mul(r.num, s.den), mul(r.den, s.num)} }
+func (r ratio) value() *apd.Decimal { return quo(r.num, r.den) }
+func (r ratio) sign() int           { return r.num.Sign() * r.den.Sign() }
 
 // Compute works out every KPI for the last of months: at most the last three months of one financial year, earliest
 // first, each with its figures (design D1: the three-month averages use the months of the financial year that exist).
@@ -214,67 +225,70 @@ func Compute(months []Month, before *Month, base money.Currency) []Value {
 		positive := func(x money.Money) bool { return x.Sign() > 0 }
 		counts := m.Counts != nil && m.Counts.HasCustomers
 		rev := dec(m.Revenue)
+		// A margin is RND-PERCENT of the figure against the size of the revenue, with the figure's sign: the statements'
+		// % of revenue, so a month of net refunds shows its loss as a negative margin.
 		margin := func(of money.Money) {
 			if m.Revenue.IsZero() {
 				none(NoRevenue)
 				return
 			}
-			set(mul(quo(dec(of), rev), hundred))
+			size := new(apd.Decimal).Abs(rev)
+			set(quo(mul(dec(of), hundred), size))
 		}
-		// arpa, churn and the gross margin as fractions, for the unit economics; ok false with why when one has no value.
-		arpa := func() (*apd.Decimal, string) {
+		// arpa, churn and the gross margin as fractions, for the unit economics; why says why one has no value.
+		arpa := func() (ratio, string) {
 			switch {
 			case m.Subscription == nil:
-				return nil, NoSubscription
+				return ratio{}, NoSubscription
 			case !counts:
-				return nil, NoCounts
+				return ratio{}, NoCounts
 			case m.Counts.Paying <= 0:
-				return nil, NoPaying
+				return ratio{}, NoPaying
 			}
-			return quo(dec(*m.Subscription), n(m.Counts.Paying)), ""
+			return ratio{dec(*m.Subscription), n(m.Counts.Paying)}, ""
 		}
-		churn := func() (*apd.Decimal, string) {
+		churn := func() (ratio, string) {
 			if !counts {
-				return nil, NoCounts
+				return ratio{}, NoCounts
 			}
 			start := m.Counts.Paying - m.Counts.New + m.Counts.Lost
 			if start <= 0 {
-				return nil, NoStart
+				return ratio{}, NoStart
 			}
-			return quo(n(m.Counts.Lost), n(start)), ""
+			return ratio{n(m.Counts.Lost), n(start)}, ""
 		}
-		gm := func() (*apd.Decimal, string) {
+		gm := func() (ratio, string) { // the gross margin KPI's fraction: against the size of the revenue
 			if m.Revenue.IsZero() {
-				return nil, NoRevenue
+				return ratio{}, NoRevenue
 			}
-			return quo(dec(m.GrossProfit), rev), ""
+			return ratio{dec(m.GrossProfit), new(apd.Decimal).Abs(rev)}, ""
 		}
-		cac := func() (*apd.Decimal, string) {
+		cac := func() (ratio, string) {
 			switch {
 			case !counts:
-				return nil, NoCounts
+				return ratio{}, NoCounts
 			case m.Counts.New <= 0:
-				return nil, NoNew
+				return ratio{}, NoNew
 			}
-			return quo(dec(m.SM), n(m.Counts.New)), ""
+			return ratio{dec(m.SM), n(m.Counts.New)}, ""
 		}
-		ltv := func() (*apd.Decimal, string) {
+		ltv := func() (ratio, string) {
 			a, why := arpa()
 			if why != "" {
-				return nil, why
+				return ratio{}, why
 			}
 			g, why := gm()
 			if why != "" {
-				return nil, why
+				return ratio{}, why
 			}
 			c, why := churn()
 			if why != "" {
-				return nil, why
+				return ratio{}, why
 			}
-			if c.IsZero() {
-				return nil, NoChurn
+			if c.sign() == 0 {
+				return ratio{}, NoChurn
 			}
-			return quo(mul(a, g), c), ""
+			return a.times(g).per(c), ""
 		}
 		switch d.Key {
 		case "cash":
@@ -310,7 +324,7 @@ func Compute(months []Month, before *Month, base money.Currency) []Value {
 			default:
 				b := dec(before.Revenue)
 				b.Abs(b)
-				set(mul(quo(sub(rev, dec(before.Revenue)), b), hundred))
+				set(quo(mul(sub(rev, dec(before.Revenue)), hundred), b))
 			}
 		case "gross_margin":
 			margin(m.GrossProfit)
@@ -331,35 +345,35 @@ func Compute(months []Month, before *Month, base money.Currency) []Value {
 			for _, x := range months {
 				burns = append(burns, dec(x.NetBurn))
 			}
-			avg := average(burns)
-			if avg.Sign() <= 0 {
+			// cash ÷ (total ÷ months) = cash × months ÷ total, with one division
+			if total := sum(burns); total.Sign() <= 0 {
 				v.Words = "Not burning"
 			} else {
-				set(quo(dec(m.Cash), avg))
+				set(quo(mul(dec(m.Cash), n(int64(len(burns)))), total))
 			}
 		case "arpa":
 			if a, why := arpa(); why != "" {
 				none(why)
 			} else {
-				set(a)
+				set(a.value())
 			}
 		case "churn":
 			if c, why := churn(); why != "" {
 				none(why)
 			} else {
-				set(mul(c, hundred))
+				set(quo(mul(c.num, hundred), c.den))
 			}
 		case "cac":
 			if c, why := cac(); why != "" {
 				none(why)
 			} else {
-				set(c)
+				set(c.value())
 			}
 		case "ltv":
 			if l, why := ltv(); why != "" {
 				none(why)
 			} else {
-				set(l)
+				set(l.value())
 			}
 		case "ltv_cac":
 			l, why := ltv()
@@ -369,10 +383,10 @@ func Compute(months []Month, before *Month, base money.Currency) []Value {
 				none(why)
 			case why2 != "":
 				none(why2)
-			case c.IsZero():
+			case c.sign() == 0:
 				none(NoNew)
 			default:
-				set(quo(l, c))
+				set(l.per(c).value())
 			}
 		case "cac_payback":
 			c, why := cac()
@@ -386,11 +400,11 @@ func Compute(months []Month, before *Month, base money.Currency) []Value {
 			case why3 != "":
 				none(why3)
 			default:
-				per := mul(a, g)
-				if per.Sign() <= 0 {
+				per := a.times(g)
+				if per.sign() <= 0 {
 					none(NoMargin)
 				} else {
-					set(quo(c, per))
+					set(c.per(per).value())
 				}
 			}
 		case "burn_multiple":
@@ -438,13 +452,14 @@ func Compute(months []Month, before *Month, base money.Currency) []Value {
 					xs = append(xs, dec(x.Costs))
 				}
 			}
-			daily := quo(average(xs), n(30))
-			if daily.Sign() <= 0 {
+			// balance ÷ (total ÷ months ÷ 30) = balance × months × 30 ÷ total, with one division
+			total, days := sum(xs), n(int64(len(xs))*30)
+			if total.Sign() <= 0 {
 				none(NoAverage)
 			} else if d.Key == "dso" {
-				set(quo(dec(m.Receivables), daily))
+				set(quo(mul(dec(m.Receivables), days), total))
 			} else {
-				set(quo(dec(m.Payables), daily))
+				set(quo(mul(dec(m.Payables), days), total))
 			}
 		case "headcount":
 			if m.Counts == nil || m.Counts.Headcount == nil {

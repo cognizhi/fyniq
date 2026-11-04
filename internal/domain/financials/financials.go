@@ -155,8 +155,8 @@ func plSection(a storage.Account, depreciationGroup string) string {
 		return KeyRevenue
 	case a.Role == "income-tax-expense":
 		return KeyIncomeTax
-	case depreciationGroup != "" && a.ReportGroup == depreciationGroup:
-		return KeyDepreciation
+	case a.Type == storage.Expense && (a.Role == "depreciation" || depreciationGroup != "" && a.ReportGroup == depreciationGroup):
+		return KeyDepreciation // the depreciation account itself, with or without a report group
 	case a.Function == "COGS":
 		return KeyCostOfSales
 	case a.Function == "Other":
@@ -314,6 +314,13 @@ func Lay(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Reque
 	}
 	if err != nil {
 		return Statement{}, err
+	}
+	if r.Kind == BalanceSheet {
+		// BS_Chk compares the balance sheet's own totals (design D3): an account in no section leaves them apart even
+		// while the ledger balances, which the close's trial-balance check already guards.
+		if totals, err = l.apart(s.Blocks); err != nil {
+			return Statement{}, err
+		}
 	}
 	s.Checks = l.checks(totals)
 	if r.Kind == BalanceSheet {
@@ -656,9 +663,24 @@ func (l layout) trialBalance() ([]Block, error) {
 	return append(blocks, measure(KeyTotal, "Total", total)), nil
 }
 
-// checks are a statement's checks (INV-10): the books balance in every column (BS_Chk, and INV-09 for the trial
-// balance), and every balance-sheet account with figures sits in a section (BS_Uncl). Every P&L account always does
-// (PL_Chk).
+// apart is what each column's total assets differ from its total liabilities and equity by.
+func (l layout) apart(blocks []Block) ([]money.Money, error) {
+	var assets, both []money.Money
+	for _, b := range blocks {
+		switch b.Key {
+		case KeyTotalAssets:
+			assets = b.Totals
+		case KeyLiabilitiesEquity:
+			both = b.Totals
+		}
+	}
+	return combine(assets, minus(both))
+}
+
+// checks are a statement's checks (INV-10): the balance sheet balances in every column, its total assets equal to its
+// total liabilities and equity (BS_Chk; totals are what they differ by), and the trial balance's debits equal its
+// credits (INV-09; totals are its net); and every balance-sheet account with figures sits in a section (BS_Uncl).
+// Every P&L account always does (PL_Chk).
 func (l layout) checks(totals []money.Money) []Check {
 	var out []Check
 	if l.kind == BalanceSheet || l.kind == TrialBalance {
@@ -668,10 +690,17 @@ func (l layout) checks(totals []money.Money) []Check {
 				off = append(off, fmt.Sprintf("%s %s", t, l.base))
 			}
 		}
-		if len(off) > 0 {
+		switch {
+		case len(off) > 0 && l.kind == BalanceSheet:
+			out = append(out, Check{Key: "balances", Title: "The balance sheet does not balance",
+				Detail: "Total assets and total liabilities and equity differ by " + strings.Join(off, ", ") +
+					": an account with a balance sits in no section; give it a cash-flow line of the standard chart"})
+		case len(off) > 0:
 			out = append(out, Check{Key: "balances", Title: "The books do not balance",
 				Detail: "Debits and credits differ by " + strings.Join(off, ", ") + ": the ledger's own checks should have refused this; report it"})
-		} else {
+		case l.kind == BalanceSheet:
+			out = append(out, Check{Key: "balances", OK: true, Title: "Total assets equal total liabilities and equity"})
+		default:
 			out = append(out, Check{Key: "balances", OK: true, Title: "Debits equal credits"})
 		}
 	}

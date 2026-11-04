@@ -89,6 +89,14 @@ func applySettings(s Scenario, settings ledger.Settings) {
 		}
 		id := stableID("account", s.Settings.Accounts[k])
 		if a, known := settings.Accounts[id]; known {
+			// The rules find each system account by its role, so the settings' account holds it alone: another account
+			// the chart gave the same role (the statements' depreciation account) yields it for posting.
+			for other, b := range settings.Accounts {
+				if b.Role == role && other != id {
+					b.Role = ""
+					settings.Accounts[other] = b
+				}
+			}
 			a.Role = role
 			settings.Accounts[id] = a
 		}
@@ -109,6 +117,7 @@ type p1 struct {
 	settings ledger.Settings
 	asOf     time.Time
 	codes    pack.Version // the sg-gst codes (Appendix B.6); the scenario's own settings give the rates
+	codeOf   map[uuid.UUID]string
 	pending  []scheduled
 	open     map[string]*openDocument // the posted documents settlements settle, by the scenario's ID
 	used     map[string]money.Money   // the settlement differences cleared each month (YYYY-MM), against its cap
@@ -129,7 +138,10 @@ type scheduled struct {
 func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, error) {
 	r := &p1{s: s, base: base, settings: settings, open: map[string]*openDocument{}, used: map[string]money.Money{},
 		issued: map[string]*issued{}, deposits: map[string]*deposit.Open{}, advances: map[string]*advance{},
-		assets: map[string]*registered{}}
+		assets: map[string]*registered{}, codeOf: map[uuid.UUID]string{}}
+	for id, a := range settings.Accounts {
+		r.codeOf[id] = a.Code
+	}
 	if s.AsOf != "" {
 		r.asOf, _ = time.Parse(time.DateOnly, s.AsOf)
 	}
@@ -359,6 +371,14 @@ func (r *p1) scheduledEntries() []scheduled {
 	return out
 }
 
+// fits reports whether an entry can be stored. The database refuses an entry of fewer than two lines (INV-01), and in
+// canonical form a P1 entry whose other legs round to nothing in base has one or none (README, "P1 readings"): such as
+// a claim of USD 0.02 at 0.1, which owes S$0.00. A document that posts nothing of its own fits. Each source asks before
+// it changes what later documents read, so a refused document leaves no trace, as in the oracle.
+func (r *p1) fits(e ledger.Entry) bool {
+	return len(e.Lines) == 0 || len(canonical(e.Lines, r.codeOf, r.base)) >= 2
+}
+
 // canonical is a P1 entry's lines in canonical form (README, "P1 entries"): one line per account and currency with
 // the sums of its amounts and base amounts, the lines whose sums are both zero left out, sorted by account and then
 // currency. A director's account's line keeps the person its lines name.
@@ -428,7 +448,7 @@ func (r *p1) bankTransaction(i int, d Document, date time.Time) (ledger.Entry, b
 		t.Parts = append(t.Parts, ledger.BankPart{AccountID: account(p.Account), Amount: a, GSTRate: gst, Months: p.SpreadMonths})
 	}
 	e, err := ledger.PostBankTransaction(t, r.settings)
-	if err != nil {
+	if err != nil || !r.fits(e) {
 		return ledger.Entry{}, false
 	}
 	releases, err := ledger.BankTransactionReleases(t, e, r.settings)

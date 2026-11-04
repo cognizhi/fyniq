@@ -10,6 +10,7 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"slices"
 	"time"
 
@@ -55,6 +56,10 @@ type Account struct {
 	Group  bool   `json:"group"`
 	Active bool   `json:"active"`
 	Role   string `json:"role,omitempty"`
+	// The attributes the statements read (FR-COA-02; README, "Statements").
+	ReportGroup  string `json:"report_group,omitempty"`
+	Function     string `json:"function,omitempty"`
+	CashFlowLine string `json:"cash_flow_line,omitempty"`
 }
 
 // Document is one document version: a manual journal, or a P1 source's document, whose own shape Raw holds.
@@ -120,6 +125,10 @@ type Result struct {
 	TrialBalance map[string]map[string]string `json:"trial_balance"` // month → account → base total
 	// People is each person's base total on each director's account (FR-EQ-01); absent when no line names one.
 	People map[string]map[string]string `json:"people,omitempty"`
+	// Statements and KPIs are each month's, when the scenario asks for them (README, "Statements" and "KPIs"): present,
+	// and empty when nothing posted, whenever it does.
+	Statements *map[string]any `json:"statements,omitempty"`
+	KPIs       *map[string]any `json:"kpis,omitempty"`
 }
 
 // Entry is one posted entry.
@@ -186,6 +195,7 @@ func RunEngine(s Scenario) (Result, error) {
 	totals := map[string]map[string]money.Money{}
 	people := map[string]map[string]money.Money{}
 	// record writes an entry: a manual journal's lines as entered, any other in canonical form (README, "P1 entries").
+	var book []booked // the entries posted, for the statements
 	record := func(doc, kind string, e ledger.Entry, p1 bool) {
 		out := Entry{Document: doc, Kind: kind, PostingDate: e.PostingDate.Format(time.DateOnly)}
 		month := e.PostingDate.Format("2006-01")
@@ -196,6 +206,7 @@ func RunEngine(s Scenario) (Result, error) {
 		if p1 {
 			lines = canonical(lines, codeOf, base)
 		}
+		book = append(book, booked{doc: doc, kind: kind, entry: e, lines: lines})
 		for _, l := range lines {
 			code := codeOf[l.AccountID]
 			line := EntryLine{Account: code, Currency: l.Amount.Currency().Code, Amount: l.Amount.String(), BaseAmount: l.Base.String()}
@@ -225,8 +236,8 @@ func RunEngine(s Scenario) (Result, error) {
 		if d.Type != ledger.SourceManualJournal {
 			e, ok := sources.post(i, d)
 			// The database refuses an entry of fewer than two lines (db/migrations/000004, INV-01), such as one whose
-			// lines but one round to nothing in base (README, "P1 readings").
-			if !ok || len(e.Lines) == 1 {
+			// lines but one round to nothing in base (README, "P1 readings"); the sources that keep state ask first.
+			if !ok || !sources.fits(e) {
 				res.Rejected = append(res.Rejected, d.ID)
 				continue
 			}
@@ -286,6 +297,16 @@ func RunEngine(s Scenario) (Result, error) {
 				res.People[person] = map[string]string{}
 			}
 			res.People[person][code] = total.String()
+		}
+	}
+	if s.Statements {
+		st, kpis, err := state(s, settings, base, book)
+		if err != nil {
+			return Result{}, fmt.Errorf("scenario %q: the statements: %w", s.Name, err)
+		}
+		res.Statements = &st
+		if kpis != nil {
+			res.KPIs = &kpis
 		}
 	}
 	return res, nil
@@ -403,6 +424,68 @@ func Compare(engine, oracle Result) error {
 				return fmt.Errorf("person %s account %s: engine %s, oracle %s", p, a, cmp.Or(ev, "0"), cmp.Or(ov, "0"))
 			}
 		}
+	}
+	return sameStatements(engine, oracle)
+}
+
+// sameStatements compares two results' statements and KPIs (README, "Statements" and "KPIs"): every figure exactly,
+// a missing report group, function or line read as zero; the checks, the non-cash lists and the percentages as they
+// are; and a KPI undefined (null) only against null. It names the first difference.
+func sameStatements(engine, oracle Result) error {
+	present := func(m *map[string]any) any {
+		if m == nil {
+			return nil
+		}
+		return *m
+	}
+	if (engine.Statements == nil) != (oracle.Statements == nil) {
+		return fmt.Errorf("statements: engine %v, oracle %v", engine.Statements != nil, oracle.Statements != nil)
+	}
+	if err := sameTree(present(engine.Statements), present(oracle.Statements), "statements", false); err != nil {
+		return err
+	}
+	if (engine.KPIs == nil) != (oracle.KPIs == nil) {
+		return fmt.Errorf("kpis: engine %v, oracle %v", engine.KPIs != nil, oracle.KPIs != nil)
+	}
+	return sameTree(present(engine.KPIs), present(oracle.KPIs), "kpis", true)
+}
+
+// sameTree compares two JSON values below path; kpis makes null match only null.
+func sameTree(a, b any, path string, kpis bool) error {
+	am, aok := a.(map[string]any)
+	bm, bok := b.(map[string]any)
+	if aok || bok {
+		keys := map[string]bool{}
+		for k := range am {
+			keys[k] = true
+		}
+		for k := range bm {
+			keys[k] = true
+		}
+		for _, k := range sortedKeys(keys) {
+			if err := sameTree(am[k], bm[k], path+"/"+k, kpis); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	_, alist := a.([]any)
+	_, blist := b.([]any)
+	_, abool := a.(bool)
+	_, bbool := b.(bool)
+	if alist || blist || abool || bbool {
+		if !reflect.DeepEqual(a, b) {
+			return fmt.Errorf("%s: engine %v, oracle %v", path, a, b)
+		}
+		return nil
+	}
+	as, _ := a.(string)
+	bs, _ := b.(string)
+	if kpis && (a == nil) != (b == nil) {
+		return fmt.Errorf("%s: engine %v, oracle %v", path, a, b)
+	}
+	if !sameAmount(as, bs) {
+		return fmt.Errorf("%s: engine %s, oracle %s", path, cmp.Or(as, "0"), cmp.Or(bs, "0"))
 	}
 	return nil
 }

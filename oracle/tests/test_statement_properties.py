@@ -13,7 +13,7 @@ from hypothesis import strategies as st
 from oracle import money
 from oracle.ledger import Ledger
 from oracle.scenario import scenario_from_json
-from oracle.statements import is_balance_sheet
+from oracle.statements import is_balance_sheet, is_cash
 from oracle.strategies import scenarios
 from oracle.strategies_p1 import p1_scenarios
 from oracle.strategies_statements import with_statements
@@ -74,20 +74,23 @@ def test_the_profit_is_the_trial_balances_revenue_and_expense_and_the_lines_add_
 
 # req: INV-10, INV-11, FR-RPT-01
 @given(GENERATED)
-def test_with_every_account_placed_the_balance_sheet_balances_and_the_cash_flow_ties(data):
+def test_with_every_account_placed_the_balance_sheet_balances_and_the_cash_flow_always_ties(data):
     _, result = _run(data)
     previous = None
     for s in result["statements"].values():
         bs, cf, equity, checks = s["balance_sheet"], s["cash_flow"], s["equity_movement"], s["checks"]
+        assert checks["ties"]  # an unplaced account's movement stays in operating's other accounts (D3)
         if not checks["unplaced"]:
-            assert checks["balances"] and checks["ties"]
+            assert checks["balances"]
+            assert _d(cf["operating"]["other_accounts"]).is_zero()
         assert checks["equity"]
         assert checks["balances"] == (bs["total_assets"] == bs["total_liabilities_and_equity"])
         assert checks["ties"] == (_sum([cf["opening_cash"], cf["net_change"]]) == _d(cf["closing_cash"]))
         assert _d(cf["net_change"]) == _sum([cf["operating"]["total"], cf["investing"], cf["financing"]])
         op = cf["operating"]
         assert _d(op["total"]) == _sum([op["net_profit"], op["depreciation_and_amortisation"],
-                                        op["investing_and_financing_results"], *op["working_capital"].values()])
+                                        op["investing_and_financing_results"], *op["working_capital"].values(),
+                                        op["other_accounts"]])
         assert op["net_profit"] == s["profit_and_loss"]["net_profit"] == equity["profit"]
         assert equity["closing"] == bs["equity"]["total"]
         for key in ("current_assets", "non_current_assets", "current_liabilities", "borrowings", "equity"):
@@ -107,9 +110,7 @@ def test_non_cash_entries_are_investing_or_financing_and_touch_no_cash(data):
     for s in result["statements"].values():
         for item in s["cash_flow"]["non_cash"]:
             entry = entries[(item["document"], item["kind"], item["posting_date"])]
-            assert not any(accounts[ln.account].cash_flow_line == "Cash & cash equivalents"
-                           and accounts[ln.account].role != "retained-earnings"
-                           and is_balance_sheet(accounts[ln.account]) for ln in entry.lines)
+            assert not any(is_cash(accounts[ln.account]) for ln in entry.lines)
 
 
 # req: QA-ENG-02
@@ -130,12 +131,13 @@ def test_the_generator_reaches_every_shape_of_the_statements():
             seen["income tax"] += not _d(pl["income_tax"]).is_zero()
             seen["percentages"] += "percent_of_revenue" in pl
             seen["unplaced"] += bool(checks["unplaced"])
-            seen["not tied"] += not checks["ties"]
+            seen["not balanced"] += not checks["balances"]
+            seen["other accounts"] += not _d(cf["operating"]["other_accounts"]).is_zero()
 
     collect()
     assert all(seen[shape] for shape in ("non-cash", "investing", "financing", "results taken out",
                                          "depreciation added back", "income tax", "percentages", "unplaced",
-                                         "not tied")), seen
+                                         "not balanced", "other accounts")), seen
 
 
 WITH_KPIS = st.one_of(with_statements(scenarios(), kpis=True), with_statements(p1_scenarios(), kpis=True))

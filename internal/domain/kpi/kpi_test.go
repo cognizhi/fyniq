@@ -149,6 +149,27 @@ func TestTheWorkbooksUndefinedStatesCarryOver(t *testing.T) {
 	}
 }
 
+// RND-KPI rounds a KPI's exact value once: runway, DSO and DPO divide by the months' total, never by an average already
+// cut to the working precision. Net burn 0.08, 0.00 and 0.00 with cash −0.02 is −0.02 × 3 ÷ 0.08 = −0.75 months, half
+// away to −0.8 (the differential search's shrunk-f70bd2c61d, where dividing by 0.08 ÷ 3 gave −0.7); revenue and costs
+// 0.08, 0.00 and 0.00 with 0.01 owed each way is 0.01 × 90 ÷ 0.08 = 11.25 days, half away to 11.3.
+// req: RND-KPI
+// req: FR-KPI-03
+func TestAKPIIsRoundedOnceFromItsExactValue(t *testing.T) {
+	zero := money.Zero(sgd)
+	first, quiet := october(), october()
+	first.NetBurn, first.Revenue, first.Costs = m("0.08"), m("0.08"), m("0.08")
+	quiet.NetBurn, quiet.Revenue, quiet.Costs = zero, zero, zero
+	last := quiet
+	last.Cash, last.Receivables, last.Payables = m("-0.02"), m("0.01"), m("0.01")
+	got := shown(Compute([]Month{first, quiet, last}, &quiet, sgd))
+	for k, w := range map[string]string{"runway": "-0.8", "dso": "11.3", "dpo": "11.3"} {
+		if got[k] != w {
+			t.Errorf("%s = %q, want %q", k, got[k], w)
+		}
+	}
+}
+
 // Every definition is complete: a key once, a version naming it, a unit, a source, a formula and a date basis; and
 // every KPI that can be undefined says when.
 // req: FR-KPI-03

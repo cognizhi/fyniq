@@ -699,6 +699,43 @@ func TestAttackAmountsOffScaleNaNOrOutOfRangeFail(t *testing.T) {
 	}
 }
 
+// The materialised balance is NUMERIC(20,4) as well (§11.3): a posting that would take an account's balance for the
+// period to 10^16 is refused whole, never truncated, and the posting before it stays as it was. The differential pair
+// does not model this boundary (test/differential/README.md, "P1 readings"), so this test is its proof.
+// req: INV-05
+// req: INV-08
+// req: QA-ENG-05
+// asvs: V2.2.1
+func TestAttackABalanceBeyondItsColumnRefusesThePosting(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Attack balance range Pte Ltd")
+	c := conn(t, "fyniq_api")
+	postRaw(t, c, b, "near-the-limit", "2026-10-14", "9999999999999999.99")
+	entries := count(t, b.Org, "journal_entry")
+	err := asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		id, err := entry(ctx, tx, "over-the-limit", "2026-10-15")
+		if err != nil {
+			return err
+		}
+		if err := line(ctx, tx, id, 1, b.Bank.ID, "SGD", "0.01", "1", "0.01"); err != nil {
+			return err
+		}
+		return line(ctx, tx, id, 2, b.Sales.ID, "SGD", "-0.01", "1", "-0.01")
+	})
+	wantState(t, "a posting taking the month's balance to 10^16", err, "22003")
+	if n := count(t, b.Org, "journal_entry"); n != entries {
+		t.Errorf("%d entries after the refusal; want %d", n, entries)
+	}
+	var amount, base string
+	err = asOrg(ctx, conn(t, "fyniq_readonly"), b.Org, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, "SELECT amount::text, base_amount::text FROM fyniq.balance WHERE account_id = $1 AND period_id = $2",
+			b.Bank.ID, b.Oct.ID).Scan(&amount, &base)
+	})
+	if err != nil || amount != "9999999999999999.9900" || base != "9999999999999999.9900" {
+		t.Errorf("the bank's October balance is %s (base %s), %v; want the first posting's 9999999999999999.99", amount, base, err)
+	}
+}
+
 // req: INV-06
 // req: SEC-02
 // req: QA-ENG-05

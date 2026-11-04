@@ -4,14 +4,14 @@ type: task
 title: Read the financial statements
 summary: The profit and loss, balance sheet, cash flow and trial balance for any run of months, comparisons, tracing a figure to its lines, and re-running at a revision
 sources:
-  - docs/user-guide/financial-statements.md sha256:d237993822feda62064239a45563ffd2c9cb5f13915e03936f3999a8a425cdf9
+  - docs/user-guide/financial-statements.md sha256:df9e4d15fbce7b8d91f0cbf82ba7b3131d3c8f865d446a60d7cf24c647757139
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-29
+compiled_at: 2026-11-04
 aliases:
   - financial statements
   - profit and loss
@@ -87,8 +87,9 @@ aliases:
 
 ## Common problems
 
-- A red note that the statement does not balance or tie: the books' own checks should prevent it; report it to the accountant.
-- Accounts in no section: give the account one of the standard chart's cash-flow lines in Accounting → Chart of accounts.
+- The balance sheet does not balance: an account with a balance sits in no section, and the note names it.
+- Accounts in no section: no cash-flow line, one the statements do not know, or one of the other side; the cash flow still shows their movements under **Other accounts**. Give each a cash-flow line for its type in Accounting → Chart of accounts.
+- A red note that the cash flow does not tie: the books' own checks should prevent it; report it to the accountant.
 - No months for the choice: open the financial year in Accounting → Periods and close, or choose other months.
 
 (src: docs/user-guide/financial-statements.md#common-problems)

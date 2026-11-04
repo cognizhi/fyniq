@@ -55,6 +55,9 @@ type NonCash struct {
 	// Label names what it was, when its source says it (FR-EQ-10; p1-founders-money design D14): "Converted to shares"
 	// for a founder's balance converted from the register, "Waived" for a waiver; "" otherwise.
 	Label string
+	// Entry is the entry, and Section where it would have sat had it moved cash: KeyInvesting or KeyFinancing.
+	Entry   uuid.UUID
+	Section string
 }
 
 // nonCashLabels are the labels of the founders' non-cash transactions, by source type (FR-EQ-10).
@@ -97,7 +100,9 @@ func cashRole(a storage.Account) role {
 		return depreciation
 	case a.Type == storage.Asset && line == capitalLine:
 		return capital
-	case (a.Type == storage.Asset || a.Type == storage.Liability) && (slices.Contains(currentAssets, line) || slices.Contains(currentLiabilities, line)):
+	// Working capital follows the balance sheet's placement (design D2): an asset on a current-asset line other than
+	// cash, a liability on a current-liability line. Any other line on the wrong side places nothing: Other accounts.
+	case a.Type == storage.Asset && slices.Contains(currentAssets[1:], line), a.Type == storage.Liability && slices.Contains(currentLiabilities, line):
 		return workingCapital
 	case a.Type == storage.Liability && line == borrowingsLine, a.Type == storage.Equity && (a.Role == storage.RoleRetainedEarnings || slices.Contains(equityLines, line)):
 		return borrowingOrEquity
@@ -229,7 +234,7 @@ func (f *flow) position(tb balance.TrialBalance, byID map[uuid.UUID]storage.Acco
 			if err := accrue(cashTo, row.Base); err != nil {
 				return err
 			}
-		case a.Type == storage.Equity || profitAndLoss(a):
+		case bsSection(a) == KeyEquity || profitAndLoss(a): // the balance sheet's equity, which BS_EqChk reconciles to
 			if err := accrue(equityTo, row.Base.Neg()); err != nil {
 				return err
 			}
@@ -277,7 +282,7 @@ func (f *flow) read(e storage.Entry, byID map[uuid.UUID]storage.Account, base mo
 				if err := accrue(&f.cashStart, x.base); err != nil {
 					return err
 				}
-			case x.a.Type == storage.Equity || x.r == profitOrLoss:
+			case bsSection(x.a) == KeyEquity || x.r == profitOrLoss:
 				if err := accrue(&f.equityStart, x.base.Neg()); err != nil {
 					return err
 				}
@@ -287,6 +292,9 @@ func (f *flow) read(e storage.Entry, byID map[uuid.UUID]storage.Account, base mo
 	}
 	for _, x := range lines {
 		var err error
+		if x.r == other { // an account in no line of the cash flow, whatever the entry: the check names it (D3)
+			f.others[x.a.Code+" "+x.a.Name] = true
+		}
 		switch {
 		case x.r == profitOrLoss:
 			if err = accrue(&f.profit, x.base.Neg()); err == nil && act != operating {
@@ -298,13 +306,12 @@ func (f *flow) read(e storage.Entry, byID map[uuid.UUID]storage.Account, base mo
 		case x.r == workingCapital:
 			err = addKey(f.working, strings.TrimSpace(x.a.CashFlowLine), x.base.Neg())
 		default:
-			f.others[x.a.Code+" "+x.a.Name] = true
 			err = accrue(&f.other, x.base.Neg())
 		}
 		if err != nil {
 			return err
 		}
-		if x.a.Type == storage.Equity {
+		if bsSection(x.a) == KeyEquity { // an equity account in no section is unplaced, not a movement in equity
 			to := &f.otherEquity
 			switch {
 			case strings.TrimSpace(x.a.CashFlowLine) != shareCapitalLine:
@@ -329,7 +336,12 @@ func (f *flow) read(e storage.Entry, byID map[uuid.UUID]storage.Account, base mo
 				}
 			}
 		}
-		f.nonCash = append(f.nonCash, NonCash{Date: e.PostingDate, Source: e.Source, Memo: e.Memo, Amount: debits, Label: nonCashLabels[e.Source.Type]})
+		section := KeyFinancing
+		if act == investing {
+			section = KeyInvesting
+		}
+		f.nonCash = append(f.nonCash, NonCash{Date: e.PostingDate, Source: e.Source, Memo: e.Memo, Amount: debits, Label: nonCashLabels[e.Source.Type],
+			Entry: e.ID, Section: section})
 	case act == investing && cashOf.Sign() < 0:
 		return accrue(&f.paidOut, cashOf)
 	case act == investing:

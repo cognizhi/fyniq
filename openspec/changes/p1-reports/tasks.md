@@ -43,7 +43,7 @@
   (28 Oct 2026, the rest: ✖ `statements-ties` and `statements-equity`, which a sound ledger never shows; ⚠
   `statements-cash` for an account in no line of the cash flow.)
 
-- [ ] 1.5 (oracle session) The statements' totals in the independent oracle, on the sample company: the P&L, the
+- [x] 1.5 (oracle session) The statements' totals in the independent oracle, on the sample company: the P&L, the
   balance sheet, the cash flow and the movement in equity, written from rev 0.159's layout, never from the engine
   (QA-ENG-01). `// req: QA-ENG-02`
   (29 Oct 2026, the oracle session, whose author has not read the engine: the oracle's half is written.
@@ -58,6 +58,20 @@
   company: its generated scenarios carry no chart attributes, and the standard chart is the engine's data, so an
   engine session writes them into `sample-company-seed-*.json`, teaches `cmd/scenario-run` the statements, moves
   `pending/statements.json` to `golden/` and adds `statements` to `FYNIQ_DIFFERENTIAL_SOURCES`.)
+  (4 Nov 2026, the engine session: `cmd/scenario-run` states the statements through the product's own `financials.Lay`,
+  read through an in-memory store of the posted entries (`internal/differential/statements.go`, `memstore.go`); the
+  sample company's golden scenarios carry the standard chart's attributes and ask for them, and `statements,kpis`
+  join the Makefile's `DIFFERENTIAL_SOURCES`; `pending/statements.json` moved to `golden/`. Settled on the way, each
+  [accountant to confirm] under rev 0.159, the first with an independent advisor: the balance sheet's `balances`
+  check compares its own totals (it tested the trial balance, which always nets to zero), while the cash flow keeps an
+  unplaced account's movement under Other accounts and ties; a cash-flow line places an account only on its own
+  side, the cash flow following the balance sheet; the depreciation account itself is always in depreciation and
+  amortisation, before cost of sales; the movement in equity covers the balance sheet's equity section only; the
+  cash flow's check names an unplaced account any entry moved; and the sample company's own balance-sheet accounts
+  get cash-flow lines (`seed.ExtraPlacements`), so its balance sheet balances. A scenario asking for the statements
+  keeps every month's balance below NUMERIC(20,4)'s 10^16, which the database enforces by refusing the posting (the
+  owner's decision with an independent advisor, 4 Nov 2026; `TestAttackABalanceBeyondItsColumnRefusesThePosting`);
+  figures summed across months above it are laid.)
 
 ## 2. The screens
 
