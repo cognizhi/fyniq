@@ -14,7 +14,10 @@ source shares:
   one the organisation has not set is rejected.
 * **GST** (Appendix B conventions): the rate is the one in force at the tax point when the organisation
   is GST-registered then and the code is standard-rated (SR, TX, IM); otherwise 0. The codes are
-  Appendix B.6's twelve.
+  Appendix B.6's twelve. A purchase document (a bill, a vendor credit, a claim's receipt) takes only
+  the codes whose direction is Purchase, FR-AP-02's "GST input tax codes"; a supply document (an
+  invoice, a credit note, a deposit, a disposal's proceeds) only those whose direction is Supply, the
+  output tax of FR-AR-09 and FR-FA-03; a bank line's part takes any (Appendix B.1, a refund).
 * **Spreads** (FR-GL-03, Appendix B.1 and B.2, ENG-05): the deferral account takes the whole amount when
   the document posts, and the releases follow under ``ALLOC-EVEN``, one a month, each dated the first
   day of its month or, for a month that starts before the document, the document's date.
@@ -34,6 +37,8 @@ from oracle.scenario import Account, Scenario
 
 GST_CODES = frozenset({"SR", "ZR", "ES", "OS", "TX", "IM", "ZP", "BL", "NR", "EP", "OP", "NA"})
 STANDARD_RATED = frozenset({"SR", "TX", "IM"})
+SUPPLY_CODES = frozenset({"SR", "ZR", "ES", "OS"})  # Appendix B.6, direction Supply
+PURCHASE_CODES = frozenset({"TX", "IM", "ZP", "BL", "NR", "EP", "OP"})  # Appendix B.6, direction Purchase
 MAX_SPREAD_MONTHS = 120  # FR-GL-03: 1 to 120 months
 QUANTITY_DECIMALS = 6  # ENG-11: quantities and unit prices with up to 6 decimal places
 QUANTITY_LIMIT = Decimal(10) ** 14  # NUMERIC(20,6): at most 14 integer digits
@@ -157,9 +162,15 @@ class Rules:
         return held
 
     # ---------------------------------------------------------------- GST
-    def gst_code(self, code: str) -> str:
+    def gst_code(self, code: str, direction: str | None = None) -> str:
+        """One of Appendix B.6's twelve; with ``direction`` (``"supply"`` or ``"purchase"``), one of that
+        direction's codes: NA, whose direction is none, is neither (FR-AP-02, FR-AR-09, FR-FA-03)."""
         if code not in GST_CODES:
             raise Rejected("unknown-gst-code")
+        if direction == "purchase" and code not in PURCHASE_CODES:
+            raise Rejected("gst-code-not-purchase")
+        if direction == "supply" and code not in SUPPLY_CODES:
+            raise Rejected("gst-code-not-supply")
         return code
 
     def registered(self, day: date) -> bool:
@@ -170,9 +181,9 @@ class Rules:
             and (gst.registered_to is None or day <= gst.registered_to)
         )
 
-    def gst_percent(self, code: str, day: date) -> Decimal:
+    def gst_percent(self, code: str, day: date, direction: str | None = None) -> Decimal:
         """The GST rate (a percentage) for ``code`` at the tax point ``day``, or 0 (Appendix B)."""
-        self.gst_code(code)
+        self.gst_code(code, direction)
         if code not in STANDARD_RATED or not self.registered(day):
             return money.ZERO
         in_force = [r.percent for r in self.settings.gst.rates if r.start <= day]

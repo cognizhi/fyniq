@@ -105,3 +105,39 @@ func TestP1EntriesAndReleases(t *testing.T) {
 		}
 	}
 }
+
+// The bills and payments of golden/purchases.json, worked out by hand (README, "Bills ..."): BILL-0001 is USD 1,000.00
+// at 1.34 (6010 1,340.00) with S$121.50 of GST stated, so 2010 takes USD 1,090.00 = 1,460.60 and 7030 the 0.90 left;
+// PAY-0001 pays it at 1.30, 1,417.00, a gain of 43.60 to 7030. PAY-0002 pays 1,089.50 of BILL-0002's 1,090.00 in full,
+// 0.50 within the S$1.00 tolerance, to 7030. BILL-0003 spreads 1,200.00 over 12 months from January, so its date in
+// March releases January to March's 100.00 each in one entry, and 1 April the fourth. PAY-0003 pays 500.00 of its
+// 1,308.00 and keeps 20.00 unapplied; PAY-0004's 900.00 is above the 808.00 left, and BILL-0005 spreads an asset's
+// cost, so both are refused.
+// req: FR-AP-02
+// req: ENG-41
+// req: FR-BNK-08
+// req: FR-GL-03
+// req: QA-ENG-02
+func TestP1PurchasesSettleWhatIsOpen(t *testing.T) {
+	r := run(t, load(t, "purchases.json"))
+	if want := []string{"BILL-0005", "PAY-0004"}; !reflect.DeepEqual(r.Rejected, want) {
+		t.Errorf("rejected %v, want %v", r.Rejected, want)
+	}
+	byKey := map[string][]EntryLine{}
+	for _, e := range r.Entries {
+		byKey[e.Kind+" "+e.Document+" "+e.PostingDate] = e.Lines
+	}
+	for key, lines := range map[string][]EntryLine{
+		"post BILL-0001 2026-03-05": {el("2010", "USD", "-1090.00", "-1460.60"), el("2200", "SGD", "121.50", "121.50"), el("6010", "USD", "1000.00", "1340.00"),
+			el("7030", "SGD", "-0.90", "-0.90")},
+		"post PAY-0001 2026-03-20":     {el("1021", "USD", "-1090.00", "-1417.00"), el("2010", "USD", "1090.00", "1460.60"), el("7030", "SGD", "-43.60", "-43.60")},
+		"post PAY-0002 2026-03-25":     {el("1010", "SGD", "-1089.50", "-1089.50"), el("2010", "SGD", "1090.00", "1090.00"), el("7030", "SGD", "-0.50", "-0.50")},
+		"post PAY-0003 2026-04-02":     {el("1010", "SGD", "-520.00", "-520.00"), el("2010", "SGD", "520.00", "520.00")},
+		"release BILL-0003 2026-03-15": {el("1210", "SGD", "-300.00", "-300.00"), el("6010", "SGD", "300.00", "300.00")},
+		"release BILL-0003 2026-04-01": {el("1210", "SGD", "-100.00", "-100.00"), el("6010", "SGD", "100.00", "100.00")},
+	} {
+		if got := byKey[key]; !reflect.DeepEqual(got, lines) {
+			t.Errorf("%s: %v, want %v", key, got, lines)
+		}
+	}
+}

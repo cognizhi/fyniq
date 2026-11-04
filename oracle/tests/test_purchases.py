@@ -344,6 +344,24 @@ def test_a_bill_that_breaks_a_rule_is_rejected(document, reason):
     _refused([document], document["id"], reason)
 
 
+# req: FR-AP-02
+@pytest.mark.parametrize("code", ["NA", "SR", "ZR", "ES", "OS"])
+def test_a_bill_line_takes_only_an_input_tax_code(code):
+    # A bill's lines carry "GST input tax codes" (FR-AP-02): Appendix B.6's codes whose direction is
+    # Purchase (TX, IM, ZP, BL, NR, EP, OP). SR, ZR, ES and OS are supply codes and NA has no direction,
+    # so a line coded with one is refused and the bill posts nothing: the differential's smallest case,
+    # one SGD line of 0.01 coded NA.
+    _refused([bill("BILL-9", "2026-03-05", "SGD", bill_line("6110", "0.01", code))], "BILL-9", "gst-code-not-purchase")
+
+
+# req: FR-AP-03
+@pytest.mark.parametrize("code", ["NA", "SR"])
+def test_a_vendor_credit_line_takes_only_an_input_tax_code(code):
+    # A vendor credit is "entered as a bill is" (FR-AP-03), its lines a bill's lines reversed: input tax codes only.
+    _refused([bill("VC-9", "2026-03-05", "SGD", bill_line("6010", "10.00", code), kind="vendor_credit")], "VC-9",
+             "gst-code-not-purchase")
+
+
 VC = bill("VC-1", "2026-03-05", "SGD", bill_line("6010", "50.00", "NR"), kind="vendor_credit")
 
 

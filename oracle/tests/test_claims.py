@@ -185,3 +185,12 @@ EC = claim("EC-1", "2026-03-05", "SGD", trip("6110", "100"))
 )
 def test_a_claim_document_that_breaks_a_rule_is_rejected(document, reason):
     _refused([advance("ADV-1", "2026-03-01", "500.00"), EC, document], document["id"], reason)
+
+
+# req: FR-AP-17
+@pytest.mark.parametrize("code", ["NA", "SR"])
+def test_a_receipt_line_takes_only_an_input_tax_code(code):
+    # A claim's receipt line is costed as a bill's line (FR-AP-17, rev 0.155; its input tax under FR-AP-20's
+    # rules for "bills, claims and card lines"), so it takes a bill line's codes, those of direction Purchase
+    # (Appendix B.6, FR-AP-02): SR is a supply code and NA has no direction, so the claim is refused whole.
+    _refused([claim("EC-9", "2026-03-05", "SGD", bill_line("6010", "10.00", code))], "EC-9", "gst-code-not-purchase")
