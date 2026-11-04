@@ -106,11 +106,14 @@ def test_with_every_account_placed_the_balance_sheet_balances_and_the_cash_flow_
 def test_non_cash_entries_are_investing_or_financing_and_touch_no_cash(data):
     ledger, result = _run(data)
     accounts = ledger.scenario.accounts
-    entries = {(e.document, e.kind, e.posting_date.isoformat()): e for e in ledger.entries}
+    # One document may have two entries of a kind on a day (two edits of a journal on its date), so a key names a list.
+    entries: dict[tuple[str, str, str], list] = {}
+    for e in ledger.entries:
+        entries.setdefault((e.document, e.kind, e.posting_date.isoformat()), []).append(e)
     for s in result["statements"].values():
         for item in s["cash_flow"]["non_cash"]:
-            entry = entries[(item["document"], item["kind"], item["posting_date"])]
-            assert not any(is_cash(accounts[ln.account]) for ln in entry.lines)
+            candidates = entries[(item["document"], item["kind"], item["posting_date"])]
+            assert any(not any(is_cash(accounts[ln.account]) for ln in entry.lines) for entry in candidates)
 
 
 # req: QA-ENG-02

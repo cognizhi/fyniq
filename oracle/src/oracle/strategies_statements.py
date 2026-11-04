@@ -23,6 +23,11 @@ and distance × mileage rate), with those of every document it names (the bill a
 disposal disposes of), at the largest rate among them, times eight for the lines one figure can land on (spreads,
 depreciation, disposal, settlement). A month's balance, and every running sum on the way, is at most that sum,
 which must stay below 10^15. P1 scenarios stay below it as drawn (about 10^14 at most), so the guard seldom fires.
+An edit's lines count twice (its replacement, and the reversal of it by a later edit, a void or the scheduler), and
+a journal that reverses by itself once more.
+
+The statements of a scenario with opening balances are not in the format yet (README, "P1 readings"), so the general
+ledger's opening balances, and the edits naming them, are dropped from a scenario drawn here.
 """
 
 from __future__ import annotations
@@ -88,6 +93,10 @@ def with_statements(draw: st.DrawFn, base: st.SearchStrategy[dict[str, Any]], kp
         scenario = draw(base)
     finally:
         BOUNDED.reset(token)
+    openings = {d["id"] for d in scenario["documents"] if d.get("type") == "opening_balances"}
+    if openings:  # not in the format with the statements yet
+        scenario = {**scenario, "documents": [d for d in scenario["documents"] if d["id"] not in openings],
+                    "reversals": [r for r in scenario["reversals"] if r.get("document") not in openings]}
     accounts = [draw(_attributes(account)) for account in scenario["accounts"]]
     retained = {"code": RETAINED, "type": "equity", "group": False, "active": True, "role": "retained-earnings"}
     if draw(st.booleans()):
@@ -166,13 +175,17 @@ def reach(scenario: dict[str, Any]) -> tuple[Decimal, Decimal]:
     """Upper bounds on the sum of every line ``scenario`` could post, as absolute values: in amount (all
     currencies together) and in base. Each month's balance of each account, per currency, is at most these."""
     documents = {d["id"]: d for d in scenario["documents"] if isinstance(d.get("id"), str)}
-    reversals = Counter(r.get("document") for r in scenario.get("reversals") or [])
+    corrections = scenario.get("reversals") or []
+    reversals = Counter(r.get("document") for r in corrections)  # an edit reverses the entry before it, too
+    edits = [r["edit"] for r in corrections if isinstance(r.get("edit"), dict)]
     rates = [_plain(m.get("rate")) for m in (scenario.get("settings") or {}).get("mileage_rates") or []]
     mileage = max([Decimal(1), *(r for r in rates if r is not None)])
     amount = base = Decimal(0)
-    for doc in scenario["documents"]:
-        times = 1 + reversals[doc.get("id")]
-        if doc.get("type") == "manual_journal":
+    for doc in [*scenario["documents"], *({**e, "type": "edit"} for e in edits)]:
+        times = 1 + reversals[doc.get("id")] + ("reverse_on" in doc)
+        if doc.get("type") == "edit":
+            times = 2 + ("reverse_on" in doc)
+        if doc.get("type") in ("manual_journal", "edit"):
             for line in doc.get("lines") or []:
                 figure = _plain(line.get("amount")) or Decimal(0)
                 amount += times * figure

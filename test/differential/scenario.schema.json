@@ -101,7 +101,7 @@
       }
     },
     "as_of": {
-      "description": "The organisation's business date, 'today' (ENG-05): scheduled entries (releases) dated on or before it post. Required, and on or after every date in the scenario, when a document is not a manual journal.",
+      "description": "The organisation's business date, 'today' (ENG-05): scheduled entries (releases, depreciation, automatic reversals) dated on or before it post. Required, and on or after every document's, reversal's and edit's date, when a document is not a manual journal or a journal (or an edit) has reverse_on.",
       "$ref": "#/$defs/date"
     },
     "settings": {"$ref": "#/$defs/settings"},
@@ -111,20 +111,48 @@
       "items": {"$ref": "#/$defs/document"}
     },
     "reversals": {
-      "description": "Applied in array order, after every document.",
+      "description": "The corrections of posted journals, applied in array order after every document: a reversal (a void), or an edit, the next version of a manual journal or of the opening balances (FR-GL-12; README, \"Edits of a posted journal\").",
       "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["document", "date"],
-        "properties": {
-          "document": {"description": "The ID of the manual journal whose posted entry is reversed.", "type": "string"},
-          "date": {"$ref": "#/$defs/date"}
-        }
-      }
+      "items": {"oneOf": [{"$ref": "#/$defs/reversal"}, {"$ref": "#/$defs/edit"}]}
     }
   },
   "$defs": {
+    "reversal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document", "date"],
+      "properties": {
+        "document": {"description": "The ID of the manual journal whose posted entry is reversed.", "type": "string"},
+        "date": {"$ref": "#/$defs/date"}
+      }
+    },
+    "edit": {
+      "description": "An edit of a posted manual journal or of the opening balances (FR-GL-12, FR-GL-06 rev 0.66): its current entry is reversed on that entry's own date and the new version's entry posts on its date.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document", "edit"],
+      "properties": {
+        "document": {"description": "The ID of the manual journal or the opening balances edited.", "type": "string"},
+        "edit": {"$ref": "#/$defs/journalVersion"}
+      }
+    },
+    "journalVersion": {
+      "description": "The new version's content: the next version number, its date, memo and lines, and for a journal its own reverse_on. For the opening balances the date is the books' start and there is no reverse_on.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "date", "memo", "lines"],
+      "properties": {
+        "version": {"description": "The journal's current version plus one; any other is refused (README, \"Edits of a posted journal\").", "type": "integer", "minimum": 1},
+        "date": {"$ref": "#/$defs/date"},
+        "memo": {"type": "string"},
+        "lines": {"type": "array", "items": {"$ref": "#/$defs/journalLine"}},
+        "reverse_on": {"$ref": "#/$defs/reverseOn"}
+      }
+    },
+    "reverseOn": {
+      "description": "The day the journal reverses by itself (FR-GL-02 rev 0.55): after its own date, or the journal is refused (JOURNAL-11); the scheduler posts the reversal once this day is on or before as_of.",
+      "$ref": "#/$defs/date"
+    },
     "currencyCode": {"type": "string", "pattern": "^[A-Z]{3}$"},
     "count": {"description": "A whole number entered for a month (FR-KPI-02 rev 0.161).", "type": "integer", "minimum": 0, "maximum": 1000000000},
     "accountCode": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$"},
@@ -138,7 +166,7 @@
       "type": "string",
       "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
     },
-    "version": {"description": "Read but not used: every document posts its version 1.", "type": "integer", "minimum": 1},
+    "version": {"description": "Read but not used by the P1 sources: each posts the version it is written with. A manual journal's or the opening balances' edit names the next one (README, \"Edits of a posted journal\").", "type": "integer", "minimum": 1},
     "money": {"description": "A decimal string, checked by the posting rules (ENG-44): a bad one rejects its document.", "type": "string"},
     "percent": {"description": "A percentage, e.g. \"9\" for 9%.", "type": "string", "pattern": "^(0|[1-9][0-9]{0,2})(\\.[0-9]{1,4})?$"},
     "rate": {"description": "Base per unit of the amount's currency (ENG-11). Only for amounts not in the base currency, and always with fx_rate_source.", "type": "string"},
@@ -147,7 +175,7 @@
       "description": "One document; its type picks its shape.",
       "type": "object",
       "required": ["type"],
-      "properties": {"type": {"enum": ["manual_journal", "bank_transaction", "bank_transfer", "bill", "vendor_credit",
+      "properties": {"type": {"enum": ["manual_journal", "opening_balances", "bank_transaction", "bank_transfer", "bill", "vendor_credit",
                                          "bill_payment", "invoice", "credit_note", "customer_receipt", "customer_deposit",
                                          "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
                                          "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost",
@@ -155,6 +183,7 @@
                                          "director_conversion"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
+        {"if": {"properties": {"type": {"const": "opening_balances"}}}, "then": {"$ref": "#/$defs/openingBalances"}},
         {"if": {"properties": {"type": {"const": "bank_transaction"}}}, "then": {"$ref": "#/$defs/bankTransaction"}},
         {"if": {"properties": {"type": {"const": "bank_transfer"}}}, "then": {"$ref": "#/$defs/bankTransfer"}},
         {"if": {"properties": {"type": {"enum": ["bill", "vendor_credit"]}}}, "then": {"$ref": "#/$defs/bill"}},
@@ -670,6 +699,25 @@
         "memo": {"type": "string"},
         "lines": {
           "description": "Any number of lines: fewer than two is a rejection, not a scenario error.",
+          "type": "array",
+          "items": {"$ref": "#/$defs/journalLine"}
+        },
+        "reverse_on": {"$ref": "#/$defs/reverseOn"}
+      }
+    },
+    "openingBalances": {
+      "description": "The organisation's opening balances (FR-GL-06 rev 0.49): one document at most, dated the books' start (settings/books_start), every line in the base currency, posted as entered when they net to zero; share capital may take a line (INV-13).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "memo", "lines"],
+      "properties": {
+        "type": {"const": "opening_balances"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"type": "integer", "minimum": 1},
+        "date": {"description": "The books' start; any other day makes the scenario invalid.", "$ref": "#/$defs/date"},
+        "memo": {"description": "Where the balances come from.", "type": "string"},
+        "lines": {
+          "description": "The balances, as journal lines in the base currency (debit positive). Fewer than two is a rejection.",
           "type": "array",
           "items": {"$ref": "#/$defs/journalLine"}
         }

@@ -70,12 +70,18 @@ type Document struct {
 	Date    string `json:"date"`
 	Memo    string `json:"memo"`
 	Lines   []Line `json:"lines"`
+	// ReverseOn is when a manual journal reverses by itself (FR-GL-02; README, "Automatic reversals").
+	ReverseOn string `json:"reverse_on,omitempty"`
 	// Raw is a P1 document as written, which its source reads its own shape from (README, "P1 sources").
 	Raw json.RawMessage `json:"-"`
 }
 
-// UnmarshalJSON reads a manual journal into the fields above; a P1 document fills only its type, ID, version and date
-// and keeps the rest as written in Raw, since its lines have shapes of their own.
+// OpeningBalances is the type of the opening balances, written as a journal's lines (FR-GL-06; README, "Opening
+// balances").
+const OpeningBalances = "opening_balances"
+
+// UnmarshalJSON reads a manual journal or the opening balances into the fields above; a P1 document fills only its
+// type, ID, version and date and keeps the rest as written in Raw, since its lines have shapes of their own.
 func (d *Document) UnmarshalJSON(b []byte) error {
 	var head struct {
 		Type    string `json:"type"`
@@ -86,7 +92,7 @@ func (d *Document) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &head); err != nil {
 		return err
 	}
-	if head.Type == ledger.SourceManualJournal {
+	if head.Type == ledger.SourceManualJournal || head.Type == OpeningBalances {
 		type plain Document
 		var p plain
 		if err := json.Unmarshal(b, &p); err != nil {
@@ -110,10 +116,21 @@ type Line struct {
 	Origin       string `json:"origin,omitempty"` // where that amount came from
 }
 
-// Reversal reverses the posted entry of a document on a date.
+// Reversal reverses the posted entry of a document on a date (a void), or, with Edit, posts the document's next
+// version (FR-GL-12; README, "Edits of a posted journal").
 type Reversal struct {
 	Document string `json:"document"`
-	Date     string `json:"date"`
+	Date     string `json:"date,omitempty"`
+	Edit     *Edit  `json:"edit,omitempty"`
+}
+
+// Edit is the next version of a posted manual journal or of the opening balances.
+type Edit struct {
+	Version   int    `json:"version"`
+	Date      string `json:"date"`
+	Memo      string `json:"memo"`
+	Lines     []Line `json:"lines"`
+	ReverseOn string `json:"reverse_on,omitempty"`
 }
 
 // Result is what an implementation produced from a scenario.
@@ -204,7 +221,7 @@ func RunEngine(s Scenario) (Result, error) {
 		}
 		lines := e.Lines
 		if p1 {
-			lines = canonical(lines, codeOf, base)
+			lines = canonical(lines, codeOf, personOf, base)
 		}
 		book = append(book, booked{doc: doc, kind: kind, entry: e, lines: lines})
 		sources.note(e) // what a later settlement may settle
@@ -232,9 +249,42 @@ func RunEngine(s Scenario) (Result, error) {
 		res.Entries = append(res.Entries, out)
 	}
 
-	posted := map[string]ledger.Entry{}
+	// current is each posted manual journal's and the opening balances' current entry, version and automatic reversal
+	// date, which a void reverses, an edit replaces and the scheduler reverses (README, "Opening balances, automatic
+	// reversals and edits").
+	type journalState struct {
+		index     int
+		typ       string
+		entry     ledger.Entry
+		version   int
+		reverseOn string
+	}
+	current := map[string]*journalState{}
+	// entryOf posts a version of a manual journal (rules 1 to 10) or of the opening balances (their rules, in canonical
+	// form), or reports it rejected.
+	entryOf := func(d Document) (ledger.Entry, bool) {
+		j, ok := journalOf(d, base, s.Currencies)
+		if !ok {
+			return ledger.Entry{}, false
+		}
+		if d.Type == OpeningBalances {
+			e, err := ledger.PostOpening(j, settings)
+			if err != nil {
+				return ledger.Entry{}, false
+			}
+			e.Lines = canonical(e.Lines, codeOf, personOf, base) // one balance per account, currency and person
+			return e, len(e.Lines) >= 2 && fitsColumns(e.Lines)
+		}
+		if d.ReverseOn != "" { // rule 10: the automatic reversal is after the journal (FR-GL-02, JOURNAL-11)
+			if on, err := time.Parse(time.DateOnly, d.ReverseOn); err != nil || !on.After(j.Date) {
+				return ledger.Entry{}, false
+			}
+		}
+		e, err := ledger.PostJournal(j, settings)
+		return e, err == nil
+	}
 	for i, d := range s.Documents {
-		if d.Type != ledger.SourceManualJournal {
+		if d.Type != ledger.SourceManualJournal && d.Type != OpeningBalances {
 			e, ok := sources.post(i, d)
 			// The database refuses an entry of fewer than two lines (db/migrations/000004, INV-01), such as one whose
 			// lines but one round to nothing in base (README, "P1 readings"); the sources that keep state ask first.
@@ -247,36 +297,69 @@ func RunEngine(s Scenario) (Result, error) {
 			}
 			continue
 		}
-		j, ok := journalOf(d, base, s.Currencies)
+		e, ok := entryOf(d)
 		if !ok {
 			res.Rejected = append(res.Rejected, d.ID)
 			continue
 		}
-		e, err := ledger.PostJournal(j, settings)
-		if err != nil {
-			res.Rejected = append(res.Rejected, d.ID)
-			continue
-		}
-		posted[d.ID] = e
+		current[d.ID] = &journalState{index: i, typ: d.Type, entry: e, version: d.Version, reverseOn: d.ReverseOn}
 		record(d.ID, "post", e, false)
 	}
 	for _, r := range s.Reversals {
-		e, ok := posted[r.Document]
+		c, ok := current[r.Document]
+		if r.Edit != nil {
+			// An edit reverses the current entry on its own date and posts the next version's, both or neither, at its
+			// place; a document never posted, voided, or edited out of version order is not edited (FR-GL-12).
+			x := r.Edit
+			var e ledger.Entry
+			if ok && x.Version == c.version+1 {
+				e, ok = entryOf(Document{Type: c.typ, ID: r.Document, Version: x.Version, Date: x.Date, Memo: x.Memo, Lines: x.Lines, ReverseOn: x.ReverseOn})
+			} else {
+				ok = false
+			}
+			var rev ledger.Entry
+			if ok {
+				var err error
+				rev, err = ledger.Reverse(c.entry, c.entry.PostingDate, "")
+				ok = err == nil
+			}
+			if !ok {
+				res.Rejected = append(res.Rejected, r.Document+"/edit")
+				continue
+			}
+			record(r.Document, "reversal", rev, false)
+			record(r.Document, "replacement", e, false)
+			c.entry, c.version, c.reverseOn = e, x.Version, x.ReverseOn
+			continue
+		}
 		date, err := time.Parse(time.DateOnly, r.Date)
 		if !ok || err != nil {
 			res.Rejected = append(res.Rejected, r.Document+"/reversal")
 			continue
 		}
-		rev, err := ledger.Reverse(e, date, "")
+		rev, err := ledger.Reverse(c.entry, date, "")
 		if err != nil {
 			res.Rejected = append(res.Rejected, r.Document+"/reversal")
 			continue
 		}
-		delete(posted, r.Document) // a document is reversed once
+		delete(current, r.Document) // a document is reversed once
 		record(r.Document, "reversal", rev, false)
 	}
+	// The scheduler runs once, at as_of, after every document, void and edit: it reverses each journal still posted on
+	// its current version's reverse_on, when that day has come (FR-GL-02, ENG-05).
+	if asOf, err := time.Parse(time.DateOnly, s.AsOf); err == nil {
+		for id, c := range current {
+			on, err := time.Parse(time.DateOnly, c.reverseOn)
+			if err != nil || on.After(asOf) {
+				continue
+			}
+			if rev, err := ledger.Reverse(c.entry, on, ""); err == nil {
+				sources.pending = append(sources.pending, scheduled{index: c.index, doc: id, kind: "auto_reversal", entry: rev, asStored: true})
+			}
+		}
+	}
 	for _, x := range sources.scheduledEntries() {
-		record(x.doc, x.kind, x.entry, true)
+		record(x.doc, x.kind, x.entry, !x.asStored)
 	}
 	for month, accounts := range totals {
 		res.TrialBalance[month] = map[string]string{}

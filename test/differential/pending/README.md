@@ -12,8 +12,8 @@ an engine session teaches `cmd/scenario-run` a source's shapes (or the statement
 and settles any disagreement from the PRD (README, "P1 readings"); an engine bug is a failing golden
 case, and the oracle never changes to match the engine.
 
-No case waits here now: `cmd/scenario-run` reads every P1 source and states the statements and the KPIs (4 Nov 2026).
-A new source's golden case starts here, as these did.
+`cmd/scenario-run` reads every P1 source, the general ledger's shapes included, and states the statements and the KPIs
+(4 Nov 2026). No case waits here now.
 
 | File | Source | What |
 |---|---|---|

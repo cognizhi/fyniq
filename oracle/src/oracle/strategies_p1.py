@@ -30,6 +30,11 @@ it is a cent above), and may carry a settlement within what is owed on the other
 README leaves a claim otherwise open); a fair value always names its ``difference``, an income account for a
 gain and an expense account for a loss; and no loan claims (``expense_claim@2``).
 
+For the general ledger (README, "Opening balances, automatic reversals and edits"; :mod:`oracle.strategies_gl`):
+opening balances at the books' start, manual journals that may reverse by themselves, and the voids and edits of
+``reversals``, with the founders' chart, people and books' start; a director's opening balance counts in what the
+founders' documents after it may draw on.
+
 The generator keeps what it built so far in a :class:`_Book` (the bills and invoices a settlement may
 settle and what each has open, the deposits and what is left of each), so a document built to post
 really can.
@@ -43,11 +48,11 @@ from typing import Any
 
 from hypothesis import strategies as st
 
-from oracle import money
+from oracle import money, strategies_gl
 from oracle.scenario import SCENARIO_SCHEMA
 from oracle.strategies import POST, REJECT, Intent
 
-SOURCES = ("bank", "purchases", "sales", "claims", "assets", "founders")
+SOURCES = ("bank", "purchases", "sales", "claims", "assets", "founders", "general-ledger")
 
 CURRENCIES = {"SGD": 2, "USD": 2, "JPY": 0, "KWD": 3}
 MONEY_ACCOUNTS = {"1010": "SGD", "1011": "SGD", "1021": "USD", "1022": "JPY", "1023": "KWD"}
@@ -111,7 +116,8 @@ FOUNDERS_REJECTED = ["not-a-person", "not-directors-account", "cost-account-not-
                      "repay-not-money", "convert-not-share-capital", "convert-no-whole-share", *OVER_OWED]
 KINDS = {"bank": BANK_POSTING * 3 + BANK_REJECTED, "purchases": PURCHASES_POSTING * 2 + PURCHASES_REJECTED,
          "sales": SALES_POSTING * 2 + SALES_REJECTED, "claims": CLAIMS_POSTING * 2 + CLAIMS_REJECTED,
-         "assets": ASSETS_POSTING * 2 + ASSETS_REJECTED, "founders": FOUNDERS_POSTING * 2 + FOUNDERS_REJECTED}
+         "assets": ASSETS_POSTING * 2 + ASSETS_REJECTED, "founders": FOUNDERS_POSTING * 2 + FOUNDERS_REJECTED,
+         "general-ledger": strategies_gl.KINDS}
 REJECTED_KINDS = frozenset(BANK_REJECTED + PURCHASES_REJECTED + SALES_REJECTED + CLAIMS_REJECTED + ASSETS_REJECTED
                            + FOUNDERS_REJECTED)
 MILEAGE = {"car": Decimal("0.60"), "motorcycle": Decimal("0.25")}
@@ -858,12 +864,25 @@ def p1_scenarios_with_intent(
     book = _Book(settings["gst"])
     days = sorted(draw(st.lists(_DATES, min_size=1, max_size=10)))
     accounts = _accounts()
-    if "founders" in sources:  # README, "Settings and as_of": the books start on or before the first date
+    ledger = "general-ledger" in sources
+    if "founders" in sources or ledger:  # README, "Settings and as_of": the books start on or before the first date
         month = days[0].year * 12 + days[0].month - 1 - draw(st.integers(0, 3))  # the first's month, or up to 3 before
         book.books_start = date(month // 12, month % 12 + 1, 1)
         settings["books_start"] = book.books_start.isoformat()
         settings["accounts"].update({key: code for key, (code, _) in DIRECTOR_ACCOUNTS.items()})
         accounts += _founders_accounts()
+    tracked: list[strategies_gl.Tracked] = []  # the general ledger's journals and opening balances
+    if ledger:
+        accounts += strategies_gl.accounts()
+        assert book.books_start is not None
+        if draw(st.integers(0, 3)) > 0:  # the opening balances, first, at the books' start (FR-GL-06)
+            kind = draw(st.sampled_from(strategies_gl.OPENING_KINDS))
+            document, meant, credits = draw(strategies_gl.opening_balances("OB-0001", book.books_start, kind))
+            documents.append(document)
+            intent["OB-0001"], built["OB-0001"] = meant, kind
+            tracked.append(strategies_gl.Tracked("OB-0001", "opening_balances", meant == POST, 1, book.books_start))
+            for person, account, owed in credits if meant == POST else []:
+                book.credit((person, account), owed)  # what the company owes them from the books' start
     for i, day in enumerate(days):
         kind = draw(st.sampled_from(kinds))
         doc_id = f"P1-{i + 1:04d}"
@@ -877,12 +896,17 @@ def p1_scenarios_with_intent(
             document, meant = draw(_claims_document(doc_id, day, kind, book))
         elif kind in KINDS["assets"]:
             document, meant = draw(_assets_document(doc_id, day, kind, book))
+        elif kind in KINDS["general-ledger"]:
+            document, meant, kind = draw(strategies_gl.journal(doc_id, day, kind))
+            tracked.append(strategies_gl.Tracked(doc_id, "manual_journal", meant == POST, 1, day))
         else:
             document, meant, kind = draw(_founders_document(doc_id, day, kind, book))
         documents.append(document)
         intent[doc_id] = meant
         built[doc_id] = kind
+    reversals, corrections = draw(strategies_gl.corrections(tracked, book.books_start)) if ledger else ([], [])
     last = max(date.fromisoformat(d["date"]) for d in documents)
+    last = max(last, strategies_gl.corrections_last_day(reversals) or last)
     scenario = {
         "schema": SCENARIO_SCHEMA,
         "name": name,
@@ -892,11 +916,11 @@ def p1_scenarios_with_intent(
         "settings": settings,
         "accounts": accounts,
         "documents": documents,
-        "reversals": [],
+        "reversals": reversals,
     }
-    if "founders" in sources:
+    if "founders" in sources or ledger:
         scenario["people"] = list(PEOPLE)
-    return scenario, Intent(intent, built)
+    return scenario, Intent(intent, built, tuple(corrections))
 
 
 def p1_scenarios(sources: tuple[str, ...] = SOURCES, name: str = "generated-p1") -> st.SearchStrategy[dict[str, Any]]:

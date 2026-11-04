@@ -118,6 +118,7 @@ type p1 struct {
 	asOf     time.Time
 	codes    pack.Version // the sg-gst codes (Appendix B.6); the scenario's own settings give the rates
 	codeOf   map[uuid.UUID]string
+	personOf map[uuid.UUID]string
 	named    map[[2]uuid.UUID][]named // the posted lines naming a person, by person and account
 	pending  []scheduled
 	open     map[string]*openDocument // the posted documents settlements settle, by the scenario's ID
@@ -134,14 +135,20 @@ type scheduled struct {
 	doc   string
 	kind  string
 	entry ledger.Entry
+	// asStored keeps the entry's lines as they are, an automatic reversal's negating its journal's line by line,
+	// instead of the canonical form.
+	asStored bool
 }
 
 func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, error) {
 	r := &p1{s: s, base: base, settings: settings, open: map[string]*openDocument{}, used: map[string]money.Money{},
 		issued: map[string]*issued{}, deposits: map[string]*deposit.Open{}, advances: map[string]*advance{},
-		assets: map[string]*registered{}, codeOf: map[uuid.UUID]string{}, named: map[[2]uuid.UUID][]named{}}
+		assets: map[string]*registered{}, codeOf: map[uuid.UUID]string{}, personOf: map[uuid.UUID]string{}, named: map[[2]uuid.UUID][]named{}}
 	for id, a := range settings.Accounts {
 		r.codeOf[id] = a.Code
+	}
+	for _, p := range s.People {
+		r.personOf[stableID("party", p)] = p
 	}
 	if s.AsOf != "" {
 		r.asOf, _ = time.Parse(time.DateOnly, s.AsOf)
@@ -411,18 +418,30 @@ func (r *p1) within(amount money.Money, person string, account uuid.UUID, day ti
 // a claim of USD 0.02 at 0.1, which owes S$0.00. A document that posts nothing of its own fits. Each source asks before
 // it changes what later documents read, so a refused document leaves no trace, as in the oracle.
 func (r *p1) fits(e ledger.Entry) bool {
-	return len(e.Lines) == 0 || len(canonical(e.Lines, r.codeOf, r.base)) >= 2
+	return len(e.Lines) == 0 || len(canonical(e.Lines, r.codeOf, r.personOf, r.base)) >= 2
 }
 
-// canonical is a P1 entry's lines in canonical form (README, "P1 entries"): one line per account and currency with
-// the sums of its amounts and base amounts, the lines whose sums are both zero left out, sorted by account and then
-// currency. A director's account's line keeps the person its lines name.
-func canonical(lines []ledger.Line, codeOf map[uuid.UUID]string, base money.Currency) []ledger.Line {
-	type key struct{ code, cur string }
+// fitsColumns reports whether every line's amount and base amount fit NUMERIC(20,4) (§11.3, ENG-44).
+func fitsColumns(lines []ledger.Line) bool {
+	for _, l := range lines {
+		for _, x := range []money.Money{l.Amount, l.Base} {
+			if _, err := money.ParseStored(x.String(), x.Currency()); err != nil {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// canonical is a P1 entry's lines in canonical form (README, "P1 entries"): one line per account, currency and person
+// with the sums of its amounts and base amounts, the lines whose sums are both zero left out, sorted by account, then
+// currency, then person (a line naming none first).
+func canonical(lines []ledger.Line, codeOf, personOf map[uuid.UUID]string, base money.Currency) []ledger.Line {
+	type key struct{ code, cur, person string }
 	sums := map[key]*ledger.Line{}
 	var keys []key
 	for _, l := range lines {
-		k := key{codeOf[l.AccountID], l.Amount.Currency().Code}
+		k := key{codeOf[l.AccountID], l.Amount.Currency().Code, personOf[l.Party]}
 		s, ok := sums[k]
 		if !ok {
 			s = &ledger.Line{AccountID: l.AccountID, Amount: money.Zero(l.Amount.Currency()), Base: money.Zero(base), Party: l.Party}
@@ -432,7 +451,9 @@ func canonical(lines []ledger.Line, codeOf map[uuid.UUID]string, base money.Curr
 		s.Amount, _ = s.Amount.Add(l.Amount)
 		s.Base, _ = s.Base.Add(l.Base)
 	}
-	slices.SortFunc(keys, func(a, b key) int { return cmp.Or(cmp.Compare(a.code, b.code), cmp.Compare(a.cur, b.cur)) })
+	slices.SortFunc(keys, func(a, b key) int {
+		return cmp.Or(cmp.Compare(a.code, b.code), cmp.Compare(a.cur, b.cur), cmp.Compare(a.person, b.person))
+	})
 	out := make([]ledger.Line, 0, len(keys))
 	for _, k := range keys {
 		if s := sums[k]; !s.Amount.IsZero() || !s.Base.IsZero() {

@@ -53,6 +53,10 @@ from `cmd/seed` (2.4) and the merge gate (3.1).
   generator gives half of its charts one, with the people `P0001` and `P0002`.
 - Documents post in array order; then each reversal reverses the posted entry of its document on
   its date. Every date falls in a calendar-month period, and all periods are open.
+- (PRD-001 rev 0.49 to 0.66) `reversals` holds the corrections of posted journals in the order they are made: a
+  reversal (a void, `{document, date}`) or an edit (`{document, edit}`, the next version); a manual journal may
+  carry `reverse_on`; and a document may be the opening balances. Section "Opening balances, automatic reversals
+  and edits" below.
 
 ### Invalid scenario or rejected document
 
@@ -72,6 +76,10 @@ runner should fail the same way). The input is not a `fyniq-scenario@1` document
 - a date is not a real calendar date (`2026-02-30`);
 - a P1 rule of the format is broken (section "P1 sources" below: no `settings` or `as_of`, an `as_of`
   before a date in the scenario, a reversal of a P1 document, a settings account not in `accounts`);
+- a rule of the general ledger's shapes is broken (section "Opening balances, automatic reversals and edits"): a
+  second `opening_balances`, opening balances without `settings.books_start` or dated another day, opening
+  balances with `statements`, a `reverse_on` without `as_of`, a reversal of the opening balances, an edit of a
+  P1 document, or an edit of the opening balances dated another day or with `reverse_on`;
 - two accounts have the role `retained-earnings`, `depreciation` or `income-tax-expense`, or one of
   them is on an account of the wrong type (equity, expense and expense), or `statements` is true with no
   `retained-earnings` account (section "Statements"), or `kpis` comes without `statements` (section "KPIs").
@@ -98,11 +106,15 @@ only when it meets every rule:
 9. (PRD-001 rev 0.167) Every line on a director's account has a `party` that is one of `people` and an
    `origin` that is one of `lent`, `paid_personally`, `pay`, `fee`, `paid_out` and `other`; no other line
    has either (FR-EQ-01, Appendix B.7). A scenario with no `people` has none, so any `party` is refused.
+10. (PRD-001 rev 0.55) A `reverse_on`, when there is one, is after the journal's date (FR-GL-02, JOURNAL-11:
+    "a reversal date on or before the journal's date is refused when it posts").
 
 A reversal is rejected when its document is unknown or was rejected, when the document was
 already reversed (a document is reversed at most once), or when it is dated before the document's
 entry (FR-GL-12); a refused reversal leaves the document unreversed, so a later one can still post. A posted reversal negates every line of
-the original entry as stored (amount and base amount; never re-converted, ENG-14), on its own date.
+the original entry as stored (amount and base amount; never re-converted, ENG-14), on its own date. After an
+edit, the document's entry is the edit's replacement: a reversal negates it and is dated on or after it. An edit is
+rejected for the reasons in section "Edits of a posted journal".
 
 ## Result
 
@@ -123,12 +135,14 @@ the original entry as stored (amount and base amount; never re-converted, ENG-14
 }
 ```
 
-- `entries`: the posted documents in scenario order, then the posted reversals in scenario order;
-  lines in the document's order.
+- `entries`: the posted documents in scenario order (kind `post`), then the posted reversals and edits in
+  scenario order (a void's `reversal`; an edit's `reversal`, then its `replacement`), then the scheduled entries
+  (section "P1 entries"); lines in the document's order.
 - Every amount is a plain decimal string at exactly its currency's minor units (`"100.00"`,
   `"12345"`, `"2.263"`); a base amount at the base currency's. Zero is `"0.00"`, never `"-0.00"`.
-- `rejected`: the refused documents (`"JNL-0003"`) and reversals (`"JNL-0001/reversal"`) in the
-  order they were refused, documents first. A key can repeat (a third reversal of one document).
+- `rejected`: the refused documents (`"JNL-0003"`), reversals (`"JNL-0001/reversal"`) and edits
+  (`"JNL-0001/edit"`) in the order they were refused, documents first. A key can repeat (a third reversal of one
+  document, a second refused edit).
   No reason codes, so neither side depends on the other's codes; `python -m oracle run --explain`
   prints the oracle's reasons on stderr for people.
 - `trial_balance`: each posting month (`YYYY-MM`) maps each account to its base-currency total for
@@ -156,7 +170,7 @@ posts one of each, its figures worked out by hand in `oracle/tests/test_golden.p
 | A line to an account with the role `share-capital` | Rejected | INV-13; ENG-24 ("the invariants of §10.7 apply as well") | Generated |
 | An amount written with trailing zeros beyond the minor units (`"12345.0"` for JPY) | Rejected | ENG-44 (decimal places counted as written) | Generated |
 | A single-currency foreign journal that balances in its currency but not in base after `RND-FX` | Rejected (a manual journal has no rounding line) | ENG-24 rule 7 ("the engine never adds, drops or changes a line") | Generated |
-| `version` | Read but not used (P0 posts version 1 of each journal) | ENG-03 (an entry names its document's version) | Always 1 |
+| `version` | Read; a document posts the version it is written with, and (rev 0.54) an edit names the next one (section "Edits of a posted journal") | ENG-03 (an entry names its document's version), FR-GL-12 | Always 1; an edit's next, or (refused) another |
 | `fx_rate_source` values | Any non-empty string; not used in the result | ENG-03, ENG-40 (a rate typed on the document has the source "document") | `"document"`; `"base"` too on a base-currency line built to be rejected |
 
 ## P1 sources (`cmd/scenario-run` reads every one)
@@ -169,18 +183,21 @@ the bank, `p1_purchases.go`, `p1_sales.go`, `p1_claims.go`, `p1_assets.go` and `
 tasks of `p1-bank-import-reconcile`, `p1-purchases`, `p1-sales`, `p1-expense-claims` and `p1-fixed-assets`), so the
 Go gate posts their golden cases in [`golden/`](golden/README.md) through both sides, and `make differential` draws
 the sources the generator has, and the statements and KPIs over them
-(`DIFFERENTIAL_SOURCES=bank,purchases,sales,claims,assets,founders,statements,kpis` in the Makefile; the founders'
+(`DIFFERENTIAL_SOURCES=bank,purchases,sales,claims,assets,founders,general-ledger,statements,kpis` in the Makefile; the founders'
 source gives the scenario two people, their director's accounts and a books' start, and both sides' `party` on each
 line and `people` totals are compared). The engine states the statements and the KPIs too (sections "Statements" and
-"KPIs").
+"KPIs"), and the general ledger's shapes of `p1-general-ledger-close` (task 8.1: the opening balances, automatic
+reversals and edits, section "Opening balances, automatic reversals and edits"; golden case
+[`golden/general-ledger.json`](golden/README.md), generator source `general-ledger`).
 
 ### Settings and `as_of`
 
 A scenario with a P1 document must have `settings` and `as_of`, or it is invalid:
 
-- `as_of` is the organisation's business date ("today", ENG-05). It is on or after every document's
-  and reversal's date. Scheduled entries (a spread's releases) post when dated on or before it; later
-  ones are the future and never post.
+- `as_of` is the organisation's business date ("today", ENG-05). It is on or after every document's,
+  reversal's and edit's date. Scheduled entries (a spread's releases, an asset's depreciation, a journal's
+  automatic reversal) post when dated on or before it; later ones are the future and never post. A scenario
+  with a `reverse_on` needs `as_of` too, even with manual journals only.
 - `settings.accounts` names the system accounts by key (Appendix B.5): `receivable` (1100), `payable`
   (2010), `gst` (2200), `prepayments` (1210), `deferred_revenue` (2400), `fx` (7030), `bank_charges`
   (6460, a setting), `withholding_tax` (2330), `customer_deposits` (2410), `claims_payable` (2150),
@@ -188,7 +205,7 @@ A scenario with a P1 document must have `settings` and `as_of`, or it is invalid
   and `disposal_clearing` (1160, a setting). Each named account must be in `accounts`. A document that
   needs a key the organisation has not set is rejected.
 - `settings.books_start` is the first day of the books: an asset's depreciation posts from the later of
-  its start and this day's month (FR-FA-02).
+  its start and this day's month (FR-FA-02), and the opening balances are dated on it (FR-GL-06).
 - `settings.mileage_rates` lists the rate per km for each vehicle type from each date (FR-AP-16; a
   policy setting under dual control, not a statutory rate): `{"vehicle": "car", "from": "2026-01-01",
   "rate": "0.60"}`.
@@ -231,15 +248,19 @@ A P1 document is rejected whole (it posts nothing) when any of these fails, besi
 
 ### P1 entries
 
-A P1 document posts at most one entry, `kind` `post`, on its date. To keep the comparison independent of
+A P1 document posts at most one entry, `kind` `post`, on its date (the opening balances too, on theirs, the books'
+start; an edit adds a `reversal` and a `replacement`). To keep the comparison independent of
 how each side splits a leg into lines, a P1 entry is written in its **canonical form**: one line per
-(account, currency), whose amount and base amount are the sums of that account's lines in that
-currency, lines whose sums are both zero left out, sorted by account and then currency. A manual
-journal's entries keep their lines in the journal's order, as before.
+(account, currency, person), whose amount and base amount are the sums of that account's lines in that
+currency naming that person (a director's account's lines stay apart by person, FR-EQ-01), lines whose sums are
+both zero left out, sorted by account, then currency, then person (a line naming none first). A manual journal's
+entries keep their lines in the journal's order, as before.
 
-Scheduled entries come after every document and reversal, `kind` `release` (a spread's) or
-`depreciation` (an asset's): one entry per document, kind and date, in canonical form, ordered by date,
-then by the document's place in the scenario. A registered asset posts no entry of its own.
+Scheduled entries come after every document, reversal and edit, `kind` `release` (a spread's),
+`depreciation` (an asset's) or `auto_reversal` (a journal's): one entry per document, kind and date, ordered by
+date, then by the document's place in the scenario, then by kind. A release and a depreciation are in canonical
+form; an automatic reversal negates its journal's entry line by line, in its order, as a reversal does. A registered
+asset posts no entry of its own.
 
 ### Bank lines (`bank_transaction`, `bank_transaction@1`) and transfers (`bank_transfer`, `bank_transfer@1`)
 
@@ -503,6 +524,117 @@ code while the organisation is registered on the disposal's date: a registered s
 taxable supply, and 2200 takes its GST at "the proceeds' GST code's rate" (FR-FA-03). While not
 registered a code is optional, and proceeds received with none bear no GST.
 
+### Opening balances, automatic reversals and edits
+
+The general ledger's shapes of `p1-general-ledger-close` (task 8.1), from FR-GL-01, FR-GL-02, FR-GL-06, FR-GL-12,
+§10.2 ("Opening balances: as entered at books start; must net to zero"; "Edits of posted documents: reversal of
+the previous version's entries + entries of the new version"), INV-13, ENG-14 and ENG-24, as PRD-001 rev 0.48 to
+0.66 built and rev 0.58 confirmed them. A scenario of manual journals with none of them is unchanged, and so is its
+result. `cmd/scenario-run` reads them (`internal/differential/differential.go`; `golden/general-ledger.json`). What the PRD leaves open is in
+"P1 readings" (its last rows), read by the oracle session of task 8.1 and not yet recorded in the PRD: each stands
+until the accountant reviews it.
+
+#### Opening balances (`opening_balances`, `opening_balances@1`)
+
+```json
+{"type": "opening_balances", "id": "OB", "version": 1, "date": "2026-01-01", "memo": "Trial balance at 31 Dec 2025",
+ "lines": [{"account": "1010", "currency": "SGD", "amount": "25000.00"},
+           {"account": "1500", "currency": "SGD", "amount": "3600.00"},
+           {"account": "3010", "currency": "SGD", "amount": "-10000.00"},
+           {"account": "2500", "currency": "SGD", "amount": "-18600.00", "party": "P0001", "origin": "lent"}]}
+```
+
+Each account's balance on the day the books start, as journal lines (debit positive). The organisation has one
+set ("one document, saved as a draft a version at a time and posted once"), so a scenario has at most one
+`opening_balances`; a second makes it invalid. They are dated `settings.books_start` ("posted once, as entered, at
+the books start"): a scenario with opening balances needs `settings` with `books_start`, and `as_of`, and any other
+`date` makes it invalid, since the product never dates them otherwise.
+
+They post one entry, kind `post`, on the books' start, when they meet a manual journal's rules 1 to 9 (ENG-24; rev
+0.66: "the content must pass the posting rules"), with two differences:
+
+- **Every line is in the base currency** ("every line is in the base currency, a line in another currency being
+  refused (LEDGER-17), because open invoices and bills in other currencies come with sales and purchases"). A line
+  in another currency rejects them, with or without a rate; a rate on a base-currency line rejects them (rule 5).
+- **Share capital may take a line** (rev 0.49: "share capital may take a line"; INV-13: "Share-capital accounts
+  change only through the register of share issues or opening balances"). A manual journal, and a journal's edit,
+  still may not (rule 4).
+
+So they are rejected whole when they do not net to zero (the balance check, Appendix C.1 #6, LEDGER-09), have fewer
+than two lines or a zero line, reach an unknown, inactive or group account, or put a line on a director's account
+without its person and origin, or a person on another account (rule 9: "every journal line on 2500 or 2120 carries
+that contact as its sub-ledger key", FR-EQ-01 rev 0.167). Their entry is in the canonical form of a P1 entry (one
+line per account, currency and person; the opening balances' guide: "each account's balance"), which must keep two
+lines and fit NUMERIC(20,4).
+A director's balance credited here is what the company owes the person from the books' start, so a waiver,
+repayment or conversion after it may draw on it ("P1 readings": what is owed reads the entries of the documents
+before it). They are never voided (a reversal naming them makes the scenario invalid): they change by an edit
+(rev 0.66), below.
+
+#### Automatic reversals (`reverse_on`, FR-GL-02)
+
+```json
+{"type": "manual_journal", "id": "JNL-0002", "version": 1, "date": "2026-03-31", "memo": "March accrual",
+ "reverse_on": "2026-04-01",
+ "lines": [{"account": "6010", "currency": "SGD", "amount": "1200.00"},
+           {"account": "2999", "currency": "SGD", "amount": "-1200.00"}]}
+```
+
+A manual journal may carry `reverse_on`, "the date it reverses by itself, after its own date (JOURNAL-11)": one on
+or before the journal's date rejects the journal whole (rule 10). "Once the journal posts, the scheduler reverses
+it on that date", with no approval of its own, once the day is on or before `as_of` ("each posted journal due by
+its organisation's own today", rev 0.55; ENG-05); a later one waits and does not post.
+
+The automatic reversal is a scheduled entry, kind `auto_reversal`, dated `reverse_on`, placed with the releases and
+depreciation (section "P1 entries"). It negates the journal's entry as stored, line by line in its order, amount
+and base amount (ENG-14), as a reversal does. The scheduler runs once, at `as_of`, after every document, reversal
+and edit of the scenario, so:
+
+- a journal reversed by then (a void in `reversals`, whatever its date) has nothing left to reverse ("an entry is
+  reversed at most once"): no automatic reversal posts, and nothing is refused;
+- a journal edited by then reverses its current entry, the edit's replacement, on its current version's
+  `reverse_on` ("the reversal is part of the journal as it was approved"); an edit without `reverse_on` takes the
+  reversal away.
+
+A scenario cannot edit a journal after its automatic reversal (the product refuses that, as any change to a
+reversed journal).
+
+#### Edits of a posted journal (an `edit` in `reversals`)
+
+```json
+{"document": "JNL-0002", "edit": {"version": 2, "date": "2026-03-31", "memo": "March accrual, corrected",
+ "reverse_on": "2026-04-01",
+ "lines": [{"account": "6010", "currency": "SGD", "amount": "1350.00"},
+           {"account": "2999", "currency": "SGD", "amount": "-1350.00"}]}}
+```
+
+An edit is the next version of a posted manual journal or of the opening balances, written in `reversals` at the
+place it is made, with the content a document of that type has (`version`, `date`, `memo`, `lines` and, for a
+journal, `reverse_on`). "In one transaction it saves the next version, reverses the entry the journal had on that
+entry's own date and posts the new version's entry on its date" (rev 0.54; rev 0.58: "the replaced entry is
+reversed on its own date, so an edit makes its month right"). So it posts two entries at its place in the result,
+both or neither ("the database refuses an edit without both postings"):
+
+1. kind `reversal`: the journal's current entry negated as stored, line by line, on that entry's own date;
+2. kind `replacement`: the new version's entry on its `date`, a journal's in its line order, the opening balances'
+   in canonical form.
+
+The replacement becomes the journal's entry: a later void negates it and is dated on or after it, a later edit
+reverses it, and its `reverse_on` is the one the scheduler reads. The opening balances' edit posts both at the books'
+start (rev 0.66: "a reversal of the entry they had and the new entry, both at the books start"): its `date` is the
+books' start and it has no `reverse_on`, or the scenario is invalid. An edit naming a P1 document makes the scenario
+invalid (edits of other documents are not in the format yet), as a reversal of one does.
+
+An edit is rejected (`"<id>/edit"` in `rejected`) and changes nothing, so a later edit naming the same version can
+still post, when:
+
+1. its document never posted: unknown, or rejected (rev 0.54: "an edit is its own command on a posted journal");
+2. its document is reversed by a void earlier in `reversals` ("the database refuses ... any change to a reversed
+   journal");
+3. its `version` is not the document's current version plus one ("it saves the next version"; FR-GL-01 rev 0.48:
+   "at the version read"): a document's version is the one it is written with, then each posted edit's;
+4. its content breaks its document's rules: a journal's rules 1 to 10, or the opening balances' rules above.
+
 ### P1 readings
 
 PRD-001 rev 0.155 decided the P1 shapes the PRD had left open, on the best current recommendation
@@ -537,6 +669,13 @@ comparison with the engine shows any difference, and the decision settles it.
 | The month's differences across sources | Bills' and invoices' differences share the month's cap, in absolute value | Rev 0.155, FR-BNK-08 [accountant to confirm] | Generated (always within the cap) |
 | An unapplied amount from a base-currency account paying foreign bills | At the rate the payment implies (`RND-RATE` of what it paid ÷ the total) | Rev 0.77 | Not generated |
 | A bill's lines in another currency | The cost lines in the bill's currency; 2200, 1210 and 7030 in the base currency | Appendix B.2 ("net in document currency"), rev 0.83 | Generated |
+| An opening balance on a revenue or an expense account | Posts as any other balance: books that start part-way through a financial year carry its income and costs so far (FR-ORG-02: "first year may be short or long"; the opening balances' guide lists those accounts "if the books start part-way through a year") | FR-GL-06 rev 0.49, FR-ORG-02 [accountant to confirm] | Generated |
+| A zero balance in the opening balances, or two on one account | A zero line rejects them, as a journal's does (rule 3; rev 0.66: "the content must pass the posting rules"); lines on one account and person are netted into one balance (canonical form), and the balances are rejected when fewer than two lines are left | FR-GL-06 rev 0.49 and 0.66, ENG-24 [accountant to confirm] | Generated (a zero line) |
+| A director's opening balance | Names its person and origin, as every line on 2500 or 2120 does, and counts in what the company owes the person from the books' start | FR-EQ-01 rev 0.167 and 0.168 (FY250), INV-13 ("the per-person sub-ledgers equal 2500 and 2120") [accountant to confirm] | Generated (credits, the company owing the person) |
+| The statements of a scenario with opening balances | Not in the format yet: a scenario with both is invalid. The opening position is not a cash flow of the books' first month, and how the statements open on it (opening cash, the equity movement's opening, the KPIs' first month) is still to decide | FR-RPT-01, FR-GL-06 (not yet decided) | Not generated (the statements' generator drops the opening balances) |
+| An automatic reversal after an edit or a void | The scheduler runs after every document, reversal and edit: it reverses the journal's current entry (an edit's replacement) on its current version's `reverse_on`, and a journal voided before it has nothing to reverse | FR-GL-02 rev 0.55 ("the reversal is part of the journal as it was approved"), FR-GL-12 (an entry is reversed at most once) [accountant to confirm] | Generated |
+| A void dated after the journal's `reverse_on` | Posts on its date, and no automatic reversal follows: the void was made before the scheduler ran. In the product the scheduler may have reversed it first, and the void is then refused (a second reversal) | FR-GL-02 rev 0.55, FR-GL-12 (the scenario does not say when an action is made, only in what order) [accountant to confirm] | Generated |
+| An edit's replacement dated in another month than the entry it replaces | Posts: the replaced entry is reversed in its own month and the replacement in its own, both open | FR-GL-12 rev 0.58 ("both months must be open") | Generated |
 
 ## Statements
 
@@ -724,8 +863,9 @@ through both implementations; `make differential` lets Hypothesis search 1,000 m
 `golden/shrunk-<hash>.json`, to be committed as a golden case once the cause is fixed. It draws P1
 scenarios too for the sources in `FYNIQ_DIFFERENTIAL_SOURCES` (comma-separated), which the Makefile
 sets to every source `cmd/scenario-run` reads, with the statements and the KPIs:
-`bank,purchases,sales,claims,assets,founders,statements,kpis` (`make differential DIFFERENTIAL_SOURCES=founders` draws
-one alone; the variable in the environment does not, since the Makefile sets it). The engine's
+`bank,purchases,sales,claims,assets,founders,general-ledger,statements,kpis` (`make differential DIFFERENTIAL_SOURCES=founders` draws
+one alone; the variable in the environment does not, since the Makefile sets it). The generator's `general-ledger`
+source (opening balances, automatic reversals and edits) joins that list once `cmd/scenario-run` reads its shapes. The engine's
 side reads scenarios with the same schemas (`schemas.go` embeds them) and runs as `cmd/scenario-run`.
 
 ```bash
