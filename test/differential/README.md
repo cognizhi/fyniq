@@ -159,15 +159,16 @@ posts one of each, its figures worked out by hand in `oracle/tests/test_golden.p
 | `version` | Read but not used (P0 posts version 1 of each journal) | ENG-03 (an entry names its document's version) | Always 1 |
 | `fx_rate_source` values | Any non-empty string; not used in the result | ENG-03, ENG-40 (a rate typed on the document has the source "document") | `"document"`; `"base"` too on a base-currency line built to be rejected |
 
-## P1 sources (`cmd/scenario-run` reads bank lines and transfers; the rest are pending)
+## P1 sources (`cmd/scenario-run` reads the bank and purchases; the rest are pending)
 
 From P1 a scenario may hold documents of other sources beside manual journals, each posted by its
 rule set (PRD-001 §10.2, Appendix B; the oracle's `oracle/src/oracle/sources/`). The format grows
 additively, still `fyniq-scenario@1`: a scenario of manual journals only is unchanged, and so is its
 result. **The engine's `cmd/scenario-run` reads the bank shapes** (`p1-bank-import-reconcile` 4.8;
-`internal/differential/p1.go`), so the Go gate posts `golden/bank.json` through both sides and
-`make differential` draws bank scenarios (`FYNIQ_DIFFERENTIAL_SOURCES=bank` in the Makefile). It does
-not read the other sources yet: their golden cases wait in [`pending/`](pending/README.md) with their
+`internal/differential/p1.go`) **and the purchases** (`p1-purchases` 10.4; `p1_purchases.go`), so the Go
+gate posts `golden/bank.json` and `golden/purchases.json` through both sides and `make differential` draws
+those scenarios (`DIFFERENTIAL_SOURCES=bank,purchases` in the Makefile). It does not read the other
+sources yet: their golden cases wait in [`pending/`](pending/README.md) with their
 figures worked out by hand, and `make differential` draws them only once their source is named in
 `FYNIQ_DIFFERENTIAL_SOURCES`. Teaching `cmd/scenario-run` each source is an engine-session task in
 its OpenSpec change.
@@ -213,9 +214,14 @@ A P1 document is rejected whole (it posts nothing) when any of these fails, besi
    ENG-40); a base-currency amount has neither.
 3. Every account a line posts to exists, is active, is not a group account (INV-04) and is not a
    share-capital account (INV-13: only the register of share issues posts there, rev 0.49).
-4. A GST code is one of Appendix B.6's twelve. GST is charged when the organisation is registered on
-   the document's date (its tax point) and the code is standard-rated (SR, TX, IM), at the rate in force
-   then (a registered date with no rate in force rejects the document); otherwise it is 0.
+4. A GST code is one of Appendix B.6's twelve, of the direction its document takes: a bill's, a vendor
+   credit's and a claim's receipt line take a purchase code (TX, IM, ZP, BL, NR, EP, OP; FR-AP-02's "GST
+   input tax codes"); an invoice's and a credit note's lines, a part-payment deposit and a disposal's
+   proceeds a supply code (SR, ZR, ES, OS; the output tax of FR-AR-09 and FR-FA-03); a bank line's part
+   any of the twelve (Appendix B.1, a refund). NA, which has no direction, is only a bank line's part's.
+   GST is charged when the organisation is registered on the document's date (its tax point) and the
+   code is standard-rated (SR, TX, IM), at the rate in force then (a registered date with no rate in
+   force rejects the document); otherwise it is 0.
 5. A spread is 1 to 120 months (FR-GL-03); its deferral account takes the whole amount when the
    document posts, and each month's `ALLOC-EVEN` part is released to the category, dated the first day
    of its month or, for a month that starts before the document, the document's date. A month whose
@@ -293,8 +299,9 @@ released monthly. 2010 takes the total (nets and stated GST) at `RND-FX`, less, 
 (`{"percent": "15"}`), the supplier's amount withheld, while 2330 takes `RND-WHT` of the net total in the
 base currency. 7030 takes what balances the entry. A vendor credit posts a bill's legs negated and is
 never spread or withheld. A bill is rejected when it has no lines, a line has both or neither of an
-amount and a quantity, its total is not positive, a spread is not on an expense with a cost, or
-`gst_base` is on a base-currency bill.
+amount and a quantity, a line's GST code is not a purchase code (rule 4: NA and the supply codes are
+refused), its total is not positive, a spread is not on an expense with a cost, or `gst_base` is on a
+base-currency bill; a vendor credit likewise.
 
 ```json
 {"type": "bill_payment", "id": "PAY-0001", "version": 1, "date": "2026-03-20", "account": "1021",
@@ -348,7 +355,8 @@ invoice's currency, at `RND-FX`, less what the deposits take; 7030 what balances
 part less the GST part, and the output GST line is reduced by the GST part. A credit note posts an
 invoice's legs negated; it is never spread and deducts no deposit; with `invoice` it names the invoice
 it credits (in its currency, dated on or before it, at most its total) and takes GST at that invoice's
-date.
+date. An invoice or a credit note whose line's GST code is not a supply code (rule 4: NA and the
+purchase codes are refused) is rejected, as is a part-payment deposit whose code is not one.
 
 A `customer_receipt` is a settlement (the shape of a payment of bills) of posted invoices on 1100,
 mirrored: 1100 is credited, the money account debited, a part in full is a loss on 7030, and `unapplied`
@@ -367,10 +375,10 @@ From §10.2, §10.4, Appendix B.7, FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20, FR-EQ
            {"account": "6110", "distance": "12.35", "vehicle": "car"}]}
 ```
 
-A receipt line is costed as a bill's line (its input tax claimable on TX and IM when registered, its
-`business_share`). A trip (`distance` in km and `vehicle`, never a GST code) costs `RND-MILEAGE` of the
-distance at the vehicle's rate in force on the claim's date, with no GST, and only in a base-currency
-claim. Each line's cost goes to its account at `RND-FX`, the input tax to 2200; what the employee is owed
+A receipt line is costed as a bill's line (a purchase code, rule 4; its input tax claimable on TX and IM
+when registered, its `business_share`). A trip (`distance` in km and `vehicle`, never a GST code) costs
+`RND-MILEAGE` of the distance at the vehicle's rate in force on the claim's date, with no GST, and only
+in a base-currency claim. Each line's cost goes to its account at `RND-FX`, the input tax to 2200; what the employee is owed
 goes first to 1250, up to what is left of the `advance` it settles (a base-currency claim), and the rest
 to 2150 at `RND-FX`; 7030 balances. A `claim_reimbursement` is a settlement (the shape of a payment of
 bills) of posted claims on 2150, with no part in full and nothing unapplied; a base-currency account
@@ -480,7 +488,8 @@ before the disposal's month (the opening balances' included); proceeds into a ba
 bear GST, `RND-GST-INCL` of the amount, when registered and the code carries it; proceeds on
 `disposal_clearing` (an invoice to the buyer credited it) bear none here; no `proceeds` is a write-off.
 `disposal` takes the gain or loss, whatever balances. No month from the disposal's on depreciates. It is
-rejected for an asset not registered or already disposed of, or dated before the asset.
+rejected for an asset not registered or already disposed of, dated before the asset, or proceeds received
+whose GST code is not a supply code (rule 4); proceeds received with no code bear no GST.
 
 ### P1 readings
 
@@ -499,6 +508,8 @@ comparison with the engine shows any difference, and the decision settles it.
 | The cross-currency transfer rule | Each leg at its own rate, the fee to bank charges, the rest to 7030 | Rev 0.140; rev 0.155, §10.2 (SFRS(I) 1-21) [accountant to confirm] | Generated |
 | A release in the document's own month | Dated the document's day (never before the deferral it releases) | Rev 0.155, FR-GL-03 | Generated |
 | A money-out part coded SR, or a money-in part coded TX or IM | GST at the code, whatever the direction | Rev 0.155, Appendix B.1 (a refund) [accountant to confirm] | Not generated |
+| A bill's, a vendor credit's or a claim's receipt line coded NA or a supply code (SR, ZR, ES, OS) | Rejected whole: a purchase document takes Appendix B.6's purchase codes, and NA has no direction | FR-AP-02 ("GST input tax codes"), FR-AP-03 ("entered as a bill is"), FR-AP-17 (rev 0.155, a claim line "costed as a bill's line"), Appendix B.6 | Generated (rejected) |
+| An invoice's or a credit note's line, a part-payment deposit or a disposal's proceeds received coded NA or a purchase code | Rejected whole: a supply document takes Appendix B.6's supply codes; proceeds received with no code bear no GST | FR-AP-02 (bills the "mirror of invoices"), FR-AR-04, FR-AR-09 ("output GST when received"), FR-FA-03 ("output tax"), Appendix B.6; inferred for invoices, which FR-AR-03 gives a "GST code" [to confirm] | Generated (rejected) |
 | Several credit notes linked to one invoice | Together they credit at most the invoice's total before the deposits it deducts | Rev 0.155, FR-AR-04 (INVOICE-15), superseding the cap per credit note [accountant to confirm] | Not generated (`pending/sales.json`) |
 | A P1 document whose lines but one round to nothing in base (USD 0.01 deposited at 0.0001) | Rejected: an entry has at least two lines | Rev 0.155, INV-05 | Not generated (rates of at least 0.01) |
 | A claim's line in another currency | Costed as a bill's (its cost in the claim's currency, 2150 at the claim's rate), reimbursed at the cascade's rate with the difference to 7030 | Rev 0.155, FR-AP-17 | Generated |
@@ -664,7 +675,7 @@ through both implementations; `make differential` lets Hypothesis search 1,000 m
 (`FYNIQ_DIFFERENTIAL_EXAMPLES`) and saves the smallest disagreeing scenario as
 `golden/shrunk-<hash>.json`, to be committed as a golden case once the cause is fixed. It draws P1
 scenarios too for the sources in `FYNIQ_DIFFERENTIAL_SOURCES` (comma-separated), which the Makefile
-sets to the sources `cmd/scenario-run` reads: `bank`. The engine's
+sets to the sources `cmd/scenario-run` reads: `bank,purchases`. The engine's
 side reads scenarios with the same schemas (`schemas.go` embeds them) and runs as `cmd/scenario-run`.
 
 ```bash

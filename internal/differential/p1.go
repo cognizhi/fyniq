@@ -109,6 +109,8 @@ type p1 struct {
 	asOf     time.Time
 	codes    pack.Version // the sg-gst codes (Appendix B.6); the scenario's own settings give the rates
 	pending  []scheduled
+	open     map[string]*openDocument // the posted documents settlements settle, by the scenario's ID
+	used     map[string]money.Money   // the settlement differences cleared each month (YYYY-MM), against its cap
 }
 
 // scheduled is one entry the scheduler posts after every document: a spread's release or an asset's depreciation.
@@ -120,7 +122,7 @@ type scheduled struct {
 }
 
 func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, error) {
-	r := &p1{s: s, base: base, settings: settings}
+	r := &p1{s: s, base: base, settings: settings, open: map[string]*openDocument{}, used: map[string]money.Money{}}
 	if s.AsOf != "" {
 		r.asOf, _ = time.Parse(time.DateOnly, s.AsOf)
 	}
@@ -152,6 +154,12 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return r.bankTransaction(i, d, date)
 	case ledger.SourceBankTransfer:
 		return r.bankTransfer(d, date)
+	case ledger.SourceBill:
+		return r.bill(i, d, date, false)
+	case ledger.SourceVendorCredit:
+		return r.bill(i, d, date, true)
+	case ledger.SourceBillPayment:
+		return r.billPayment(d, date)
 	}
 	return ledger.Entry{}, false
 }

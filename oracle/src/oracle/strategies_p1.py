@@ -59,26 +59,33 @@ EXPENSES = ["6010", "6020", "6110", "6460", "7030"]
 REVENUES = ["4010", "4020", "4030"]
 OTHER = ["1500", "2050", "2999"]  # an asset, an accrual, suspense: P&L-free parts
 _DATES = st.dates(date(2025, 6, 1), date(2027, 3, 31))
-_CODES_IN = ["SR", "SR", "ZR", "ES", "OS", "NA"]
-_CODES_OUT = ["TX", "TX", "IM", "ZP", "BL", "NR", "EP", "OP", "NA"]
+# Appendix B.6's directions: a supply document takes the supply codes, a purchase document the purchase
+# codes (FR-AP-02, FR-AR-09, FR-FA-03); a bank line's part takes any, NA included (Appendix B.1).
+_SUPPLY_CODES = ["SR", "SR", "ZR", "ES", "OS"]
+_PURCHASE_CODES = ["TX", "TX", "IM", "ZP", "BL", "NR", "EP", "OP"]
+_CODES_IN = [*_SUPPLY_CODES, "NA"]
+_CODES_OUT = [*_PURCHASE_CODES, "NA"]
+_NOT_PURCHASE = ["NA", "SR", "ZR", "ES", "OS"]  # refused on a bill's, a vendor credit's or a receipt's line
+_NOT_SUPPLY = ["NA", "TX", "IM", "ZP", "BL", "NR", "EP", "OP"]  # refused on an invoice's line, a deposit, proceeds
 
 BANK_POSTING = ["bank-line", "bank-line", "bank-split", "bank-spread", "transfer-same", "transfer-cross"]
 BANK_REJECTED = ["bank-parts-mismatch", "bank-part-on-money", "bank-part-on-control", "bank-spread-not-p-and-l",
                  "transfer-unbalanced", "transfer-missing-rate"]
 PURCHASES_POSTING = ["bill", "bill", "bill-foreign", "bill-spread", "bill-quantity", "bill-withholding",
                      "vendor-credit", "pay", "pay", "pay-in-full", "pay-from-base", "pay-unapplied"]
-PURCHASES_REJECTED = ["bill-spread-not-expense", "pay-more-than-open", "pay-beyond-tolerance", "pay-unknown-bill"]
+PURCHASES_REJECTED = ["bill-spread-not-expense", "pay-more-than-open", "pay-beyond-tolerance", "pay-unknown-bill",
+                      "bill-wrong-code"]
 SALES_POSTING = ["invoice", "invoice", "invoice-foreign", "invoice-discount", "invoice-spread", "credit-note",
                  "receipt", "receipt", "receipt-in-full", "receipt-from-base", "deposit", "deposit-security",
                  "invoice-deducting", "deposit-refund", "write-off"]
 SALES_REJECTED = ["receipt-more-than-open", "invoice-spread-not-revenue", "invoice-deducting-too-much",
-                  "write-off-more-than-open"]
+                  "write-off-more-than-open", "invoice-wrong-code", "deposit-wrong-code"]
 CLAIMS_POSTING = ["claim", "claim", "claim-trips", "claim-foreign", "claim-advance", "reimburse", "reimburse",
                   "advance", "advance-refund"]
-CLAIMS_REJECTED = ["reimburse-more-than-open", "claim-trip-foreign", "advance-refund-too-much"]
+CLAIMS_REJECTED = ["reimburse-more-than-open", "claim-trip-foreign", "advance-refund-too-much", "claim-wrong-code"]
 ASSETS_POSTING = ["asset", "asset", "asset-residual", "asset-later-start", "dispose-money", "dispose-clearing",
                   "dispose-write-off"]
-ASSETS_REJECTED = ["dispose-unknown", "dispose-twice", "asset-on-expense"]
+ASSETS_REJECTED = ["dispose-unknown", "dispose-twice", "asset-on-expense", "dispose-wrong-code"]
 KINDS = {"bank": BANK_POSTING * 3 + BANK_REJECTED, "purchases": PURCHASES_POSTING * 2 + PURCHASES_REJECTED,
          "sales": SALES_POSTING * 2 + SALES_REJECTED, "claims": CLAIMS_POSTING * 2 + CLAIMS_REJECTED,
          "assets": ASSETS_POSTING * 2 + ASSETS_REJECTED}
@@ -230,7 +237,7 @@ def _purchase_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book:
     lines, total = [], Decimal(0)
     for i in range(draw(st.integers(1, 4))):
         line: dict[str, Any] = {"account": draw(st.sampled_from(EXPENSES + ["1500"])),
-                                "gst_code": draw(st.sampled_from(_CODES_OUT))}
+                                "gst_code": draw(st.sampled_from(_PURCHASE_CODES))}
         if kind == "bill-quantity":
             quantity = Decimal(draw(st.integers(1, 10**4))).scaleb(-draw(st.integers(0, 3)), context=money.EXACT)
             price = Decimal(draw(st.integers(1, 10**8))).scaleb(-draw(st.integers(0, 6)), context=money.EXACT)
@@ -259,9 +266,14 @@ def _purchase_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book:
                 line["spread_from"] = (day - timedelta(days=draw(st.integers(-90, 200)))).isoformat()
         if kind == "bill-spread-not-expense" and i == 0:
             line["account"], line["spread_months"] = draw(st.sampled_from(["1500", "2050"])), 12
+        if kind == "bill-wrong-code" and i == 0:  # FR-AP-02: "GST input tax codes" only
+            line["gst_code"] = draw(st.sampled_from(_NOT_PURCHASE))
+            line.pop("gst", None)
+            line.pop("gst_base", None)
         lines.append(line)
         total = money.EXACT.add(total, money.EXACT.add(net, gst))
-    doc: dict[str, Any] = {"type": "vendor_credit" if kind == "vendor-credit" else "bill", "id": doc_id, "version": 1,
+    credit = kind == "vendor-credit" or kind == "bill-wrong-code" and draw(st.booleans())
+    doc: dict[str, Any] = {"type": "vendor_credit" if credit else "bill", "id": doc_id, "version": 1,
                            "date": day.isoformat(), "currency": currency, "lines": lines}
     if currency != "SGD":
         doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
@@ -320,7 +332,7 @@ def _payment(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _Book) ->
 @st.composite
 def _sales_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _Book) -> tuple[dict[str, Any], str]:
     base = {"id": doc_id, "version": 1, "date": day.isoformat()}
-    if kind in ("deposit", "deposit-security"):
+    if kind in ("deposit", "deposit-security", "deposit-wrong-code"):
         currency = draw(st.sampled_from(["SGD", "SGD", "USD"]))
         amount = draw(_cents(CURRENCIES[currency], 6))
         if currency != "SGD" and amount < 1:  # a whole unit at least, so its base is at least a cent
@@ -330,9 +342,13 @@ def _sales_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _B
                "amount": _text(amount, CURRENCIES[currency]),
                "kind": "security" if kind == "deposit-security" else "part_payment"}
         if kind == "deposit":
-            doc["gst_code"] = draw(st.sampled_from(_CODES_IN))
+            doc["gst_code"] = draw(st.sampled_from(_SUPPLY_CODES))
+        if kind == "deposit-wrong-code":  # FR-AR-09: output GST, so a supply code
+            doc["gst_code"] = draw(st.sampled_from(_NOT_SUPPLY))
         if currency != "SGD":
             doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
+        if kind == "deposit-wrong-code":
+            return doc, REJECT
         book.deposits[doc_id] = (currency, amount)
         return doc, POST
     if kind == "deposit-refund":
@@ -384,10 +400,12 @@ def _sales_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _B
             currency, left = book.deposits[source]
     minor = CURRENCIES[currency]
     tracked = deducting or kind in ("invoice", "invoice-foreign", "invoice-discount") and draw(st.booleans())
-    codes = ["ZR", "ES", "OS", "NA"] if tracked else _CODES_IN
+    codes = ["ZR", "ES", "OS"] if tracked else _SUPPLY_CODES
     lines, total = [], Decimal(0)
     for i in range(draw(st.integers(1, 3))):
         line: dict[str, Any] = {"account": draw(st.sampled_from(REVENUES)), "gst_code": draw(st.sampled_from(codes))}
+        if kind == "invoice-wrong-code" and i == 0:  # a bill's mirror (FR-AP-02): supply codes only
+            line["gst_code"] = draw(st.sampled_from(_NOT_SUPPLY))
         if kind == "invoice-discount":
             quantity = Decimal(draw(st.integers(1, 999)))
             price = Decimal(draw(st.integers(1, 10**6))).scaleb(-draw(st.integers(0, 4)), context=money.EXACT)
@@ -408,7 +426,8 @@ def _sales_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _B
                 line["account"] = draw(st.sampled_from(EXPENSES + OTHER))
         lines.append(line)
         total = money.EXACT.add(total, net)
-    doc = {"type": "credit_note" if kind == "credit-note" else "invoice", **base, "currency": currency, "lines": lines}
+    credit = kind == "credit-note" or kind == "invoice-wrong-code" and draw(st.booleans())
+    doc = {"type": "credit_note" if credit else "invoice", **base, "currency": currency, "lines": lines}
     if currency != "SGD":
         doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
     meant = REJECT if kind in REJECTED_KINDS else POST
@@ -524,7 +543,9 @@ def _claims_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _
             continue
         net = draw(_cents(minor, 4))
         line: dict[str, Any] = {"account": draw(st.sampled_from(EXPENSES)), "amount": _text(net, minor),
-                                "gst_code": draw(st.sampled_from(_CODES_OUT))}
+                                "gst_code": draw(st.sampled_from(_PURCHASE_CODES))}
+        if kind == "claim-wrong-code" and not lines:  # costed as a bill's line (FR-AP-17): a purchase code
+            line["gst_code"] = draw(st.sampled_from(_NOT_PURCHASE))
         gst = Decimal(0)
         if line["gst_code"] in ("TX", "IM") and draw(st.booleans()):
             gst = money.round_quotient(money.EXACT.multiply(net, Decimal(9)), Decimal(100), minor)
@@ -534,7 +555,7 @@ def _claims_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _
     doc = {"type": "expense_claim", **base, "currency": currency, "lines": lines}
     if currency != "SGD":
         doc["fx_rate"], doc["fx_rate_source"] = draw(_rate()), "document"
-    if kind == "claim-trip-foreign":
+    if kind in ("claim-trip-foreign", "claim-wrong-code"):
         return doc, REJECT
     if kind == "claim-advance":
         left = [a for a, amount in sorted(book.advances.items()) if amount > 0]
@@ -562,8 +583,12 @@ def _assets_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _
             doc["asset"] = draw(st.sampled_from(gone))
             return doc, REJECT
         doc["asset"] = target = draw(st.sampled_from(live))
-        book.assets[target] = True
         amount = _text(draw(_cents(2, 6)), 2)
+        if kind == "dispose-wrong-code":  # FR-FA-03: output tax on what is received, so a supply code
+            doc["proceeds"] = {"account": draw(st.sampled_from(["1010", "1011"])), "amount": amount,
+                               "gst_code": draw(st.sampled_from(_NOT_SUPPLY))}
+            return doc, REJECT
+        book.assets[target] = True
         if kind == "dispose-money":
             doc["proceeds"] = {"account": draw(st.sampled_from(["1010", "1011"])), "amount": amount}
         elif kind == "dispose-clearing":

@@ -75,7 +75,7 @@ def cost_line(r: Rules, raw: Any, currency: str, minor: int, registered: bool) -
     """A purchase line's net, cost (net plus the GST not claimed), input tax claimed (FR-AP-20, ENG-42,
     ``RND-GST-SHARE``, in the base currency) and the GST its invoice states."""
     net = line_net(r, raw, currency, minor, discount_allowed=False)
-    code = r.gst_code(raw["gst_code"])
+    code = r.gst_code(raw["gst_code"], "purchase")  # FR-AP-02: "GST input tax codes"
     gst = r.amount(raw.get("gst", "0"), currency, zero=True)
     share = r.percent(raw.get("business_share", "100"))
     foreign = currency != r.base
