@@ -118,6 +118,7 @@ type p1 struct {
 	asOf     time.Time
 	codes    pack.Version // the sg-gst codes (Appendix B.6); the scenario's own settings give the rates
 	codeOf   map[uuid.UUID]string
+	named    map[[2]uuid.UUID][]named // the posted lines naming a person, by person and account
 	pending  []scheduled
 	open     map[string]*openDocument // the posted documents settlements settle, by the scenario's ID
 	used     map[string]money.Money   // the settlement differences cleared each month (YYYY-MM), against its cap
@@ -138,7 +139,7 @@ type scheduled struct {
 func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, error) {
 	r := &p1{s: s, base: base, settings: settings, open: map[string]*openDocument{}, used: map[string]money.Money{},
 		issued: map[string]*issued{}, deposits: map[string]*deposit.Open{}, advances: map[string]*advance{},
-		assets: map[string]*registered{}, codeOf: map[uuid.UUID]string{}}
+		assets: map[string]*registered{}, codeOf: map[uuid.UUID]string{}, named: map[[2]uuid.UUID][]named{}}
 	for id, a := range settings.Accounts {
 		r.codeOf[id] = a.Code
 	}
@@ -369,6 +370,40 @@ func (r *p1) scheduledEntries() []scheduled {
 		out[i] = *merged[k]
 	}
 	return out
+}
+
+// named is a posted line on a director's account naming its person: its day and its base amount.
+type named struct {
+	day  time.Time
+	base money.Money
+}
+
+// note keeps the lines of an entry that name a person, for what a later settlement may settle.
+func (r *p1) note(e ledger.Entry) {
+	for _, l := range e.Lines {
+		if l.Party != uuid.Nil {
+			k := [2]uuid.UUID{l.Party, l.AccountID}
+			r.named[k] = append(r.named[k], named{e.PostingDate, l.Base})
+		}
+	}
+}
+
+// owed is what the company owes person on account at the end of day (README, "P1 readings"; FR-EQ-05): the credit,
+// positive, of the lines naming them there in the entries posted before, dated on or before day.
+func (r *p1) owed(person string, account uuid.UUID, day time.Time) money.Money {
+	sum := money.Zero(r.base)
+	for _, x := range r.named[[2]uuid.UUID{stableID("party", person), account}] {
+		if !x.day.After(day) {
+			sum, _ = sum.Sub(x.base)
+		}
+	}
+	return sum
+}
+
+// within reports whether amount is at most what is owed person on account at the end of day.
+func (r *p1) within(amount money.Money, person string, account uuid.UUID, day time.Time) bool {
+	c, err := amount.Cmp(r.owed(person, account, day))
+	return err == nil && c <= 0
 }
 
 // fits reports whether an entry can be stored. The database refuses an entry of fewer than two lines (INV-01), and in

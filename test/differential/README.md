@@ -169,8 +169,9 @@ the bank, `p1_purchases.go`, `p1_sales.go`, `p1_claims.go`, `p1_assets.go` and `
 tasks of `p1-bank-import-reconcile`, `p1-purchases`, `p1-sales`, `p1-expense-claims` and `p1-fixed-assets`), so the
 Go gate posts their golden cases in [`golden/`](golden/README.md) through both sides, and `make differential` draws
 the sources the generator has, and the statements and KPIs over them
-(`DIFFERENTIAL_SOURCES=bank,purchases,sales,claims,assets,statements,kpis` in the Makefile; the founders' documents
-are compared on their golden case only). The engine states the statements and the KPIs too (sections "Statements" and
+(`DIFFERENTIAL_SOURCES=bank,purchases,sales,claims,assets,founders,statements,kpis` in the Makefile; the founders'
+source gives the scenario two people, their director's accounts and a books' start, and both sides' `party` on each
+line and `people` totals are compared). The engine states the statements and the KPIs too (sections "Statements" and
 "KPIs").
 
 ### Settings and `as_of`
@@ -436,7 +437,7 @@ From FR-EQ-07, Appendix B.7 and the founders' money design D10 (rev 0.167).
 ```
 
 A waiver of what the company owes a director or shareholder, posted on `date`, the day it was approved: Dr `account`
-(2500 or 2120, a director's account) with `amount`, the line naming `person`, one of `people`; Cr `credit` (3300 Capital
+(2500 or 2120, a director's account) with `amount`, at most what is owed there ("P1 readings"), the line naming `person`, one of `people`; Cr `credit` (3300 Capital
 contribution, or an income account) with `amount`. The credit is not a director's account, a money account or GST
 control. A loan kept posts nothing.
 
@@ -451,7 +452,8 @@ From FR-EQ-05, FR-BNK-12, Appendix B.7 and the founders' money design D10 (rev 0
 
 What a payment batch's release repaid a director or shareholder, posted on `date`, the batch's payment date: for each
 of `settlements` Dr its `account` (2500 or 2120, a director's account) with its `amount`, the line naming `person`, one
-of `people`; Cr `account`, a money account in the base currency, with the total.
+of `people`; Cr `account`, a money account in the base currency, with the total. The settlements on one account total
+at most what is owed there ("P1 readings").
 
 ### Conversions of founders' balances to shares (`director_conversion`, `share_issue@1`)
 
@@ -462,7 +464,8 @@ From FR-EQ-06, FR-EQ-08, Appendix B.7, `RND-SHARE` and the founders' money desig
  "class": "3010", "amount": "100.00", "price": "1.20"}
 ```
 
-A founder's balance converted to shares, posted on `date`, the day ACRA's register shows the allotment. `RND-SHARE`
+A founder's balance converted to shares, posted on `date`, the day ACRA's register shows the allotment; `amount` is at
+most what is owed on `account` ("P1 readings"). `RND-SHARE`
 allots n whole shares for `amount` at `price` (83 shares here, 99.60 converted, 0.40 left owed): Dr `account` (2500 or
 2120, a director's account) with round(n × `price`), the line naming `person`; Cr `class` (a share-capital account) with
 the same, or, when `fair_value_price` is given, with round(n × `fair_value_price`) and the difference to `difference`, an
@@ -521,6 +524,7 @@ comparison with the engine shows any difference, and the decision settles it.
 | An invoice's or a credit note's line, a part-payment deposit or a disposal's proceeds received coded NA or a purchase code | Rejected whole, whatever the registration: a supply document takes Appendix B.6's supply codes | FR-AP-02 (bills the "mirror of invoices"), FR-AR-04, FR-AR-09 ("output GST when received"), FR-FA-03 ("output tax"), Appendix B.6 (rev 0.169) | Generated (rejected) |
 | A disposal's proceeds received with no GST code | Rejected while the organisation is registered on the disposal's date (a taxable supply names its supply code; none would leave its output tax undeclared); while not registered, posted with no GST | FR-FA-03 (rev 0.155, "the proceeds' GST code's rate"), Appendix B.6 (rev 0.169), §10.2 "Asset disposal" | Generated (rejected while registered; posted while not) |
 | Several credit notes linked to one invoice | Together they credit at most the invoice's total before the deposits it deducts | Rev 0.155, FR-AR-04 (INVOICE-15), superseding the cap per credit note [accountant to confirm] | Not generated (`golden/sales.json`) |
+| A waiver, a conversion, or a repayment's settlements on one account (together), of more than the company owes the person on that director's account at the end of the document's date | Rejected whole. What is owed is the credit, positive, in base, of the lines naming the person on that account in the entries of the documents before it in the scenario dated on or before its date (a refused document leaves none; reversals come after every document, so none counts); nothing owed refuses any amount. A conversion is checked on its `amount` as entered, before `RND-SHARE` | FR-EQ-05 (rev 0.168: a settlement is drafted for at most what is owed that day, and a batch refuses a repayment of more than is owed on the payment date, PB-25) | Generated (rejected) |
 | A P1 document whose lines but one, or all, round to nothing in base in canonical form (USD 0.01 deposited at 0.0001; a claim of two USD 0.01 receipts at 0.1, which owes S$0.00) | Rejected, leaving no trace in what later documents read: an entry has at least two lines, and a single-currency entry balances in its currency | Rev 0.155, INV-01, INV-05 | Generated (claims at 0.1: `golden/shrunk-5fba8ee29c.json`) |
 | A claim's line in another currency | Costed as a bill's (its cost in the claim's currency at the claim's rate); 2150 (or 2500 for a loan) takes what is owed in the base currency, each receipt line's net plus GST under `RND-FX` at the claim's rate, summed, 7030 what balances; reimbursed in the base currency only, with no rate and no FX. *Superseded:* 2150 in the claim's currency, reimbursed at the cascade's rate with the difference to 7030 | FR-AP-17 (rev 0.7 "reimbursed in SGD", rev 0.155 "2150 at the claim's rate"), SFRS(I) 1-21 (a fixed SGD amount owed); the owner's decision [accountant to confirm] | Generated (a reimbursement in another currency: generated, rejected) |
 | A claim larger than what is left of its advance | 1250 takes what is left, 2150 the rest | Rev 0.155, FR-AP-17 | Generated |
@@ -719,7 +723,9 @@ through both implementations; `make differential` lets Hypothesis search 1,000 m
 (`FYNIQ_DIFFERENTIAL_EXAMPLES`) and saves the smallest disagreeing scenario as
 `golden/shrunk-<hash>.json`, to be committed as a golden case once the cause is fixed. It draws P1
 scenarios too for the sources in `FYNIQ_DIFFERENTIAL_SOURCES` (comma-separated), which the Makefile
-sets to the sources `cmd/scenario-run` reads: `bank,purchases,sales,claims,assets`. The engine's
+sets to every source `cmd/scenario-run` reads, with the statements and the KPIs:
+`bank,purchases,sales,claims,assets,founders,statements,kpis` (`make differential DIFFERENTIAL_SOURCES=founders` draws
+one alone; the variable in the environment does not, since the Makefile sets it). The engine's
 side reads scenarios with the same schemas (`schemas.go` embeds them) and runs as `cmd/scenario-run`.
 
 ```bash

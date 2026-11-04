@@ -207,6 +207,7 @@ func RunEngine(s Scenario) (Result, error) {
 			lines = canonical(lines, codeOf, base)
 		}
 		book = append(book, booked{doc: doc, kind: kind, entry: e, lines: lines})
+		sources.note(e) // what a later settlement may settle
 		for _, l := range lines {
 			code := codeOf[l.AccountID]
 			line := EntryLine{Account: code, Currency: l.Amount.Currency().Code, Amount: l.Amount.String(), BaseAmount: l.Base.String()}

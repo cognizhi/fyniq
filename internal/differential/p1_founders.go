@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/apd/v3"
+	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -92,7 +93,7 @@ func (r *p1) directorWaiver(d Document, date time.Time) (ledger.Entry, bool) {
 		return ledger.Entry{}, false
 	}
 	amount, ok := r.amount(x.Amount, r.base.Code)
-	if !ok {
+	if !ok || !r.within(amount, x.Person, account(x.Account), date) { // at most what is owed (FR-EQ-05)
 		return ledger.Entry{}, false
 	}
 	e, err := ledger.PostDirectorWaiver(ledger.DirectorWaiver{ID: stableID("document", d.ID), Version: max(d.Version, 1), PostOn: date,
@@ -109,11 +110,21 @@ func (r *p1) directorRepayment(d Document, date time.Time) (ledger.Entry, bool) 
 	}
 	rp := ledger.DirectorRepayment{ID: stableID("document", d.ID), Version: max(d.Version, 1), Date: date, Party: stableID("party", x.Person),
 		Account: account(x.Account)}
+	settles := map[uuid.UUID]money.Money{} // by account, together at most what is owed there (FR-EQ-05, PB-25)
 	for i, s := range x.Settlements {
 		amount, ok := r.amount(s.Amount, r.base.Code)
 		if !ok {
 			return ledger.Entry{}, false
 		}
+		sum, ok := settles[account(s.Account)]
+		if !ok {
+			sum = money.Zero(r.base)
+		}
+		total, err := sum.Add(amount)
+		if err != nil || !r.within(total, x.Person, account(s.Account), date) {
+			return ledger.Entry{}, false
+		}
+		settles[account(s.Account)] = total
 		rp.Settlements = append(rp.Settlements, ledger.RepaidSettlement{SettlementID: stableID("settlement", fmt.Sprintf("%s/%d", d.ID, i+1)),
 			Account: account(s.Account), Amount: amount})
 	}
@@ -131,7 +142,7 @@ func (r *p1) directorConversion(d Document, date time.Time) (ledger.Entry, bool)
 		return ledger.Entry{}, false
 	}
 	amount, ok := r.amount(x.Amount, r.base.Code)
-	if !ok {
+	if !ok || !r.within(amount, x.Person, account(x.Account), date) { // at most what is owed (FR-EQ-05)
 		return ledger.Entry{}, false
 	}
 	price, err := money.ParseUnitPrice(x.Price, r.base, "price")

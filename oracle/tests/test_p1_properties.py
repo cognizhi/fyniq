@@ -8,14 +8,15 @@ import json
 from datetime import date
 from decimal import Decimal
 
-from hypothesis import given
+import pytest
+from hypothesis import HealthCheck, Phase, find, given, settings
 
 from oracle import money
 from oracle.ledger import Ledger
 from oracle.scenario import parse_json, scenario_from_json
 from oracle.sources.settle import OpenItem
 from oracle.strategies import POST, REJECT
-from oracle.strategies_p1 import SOURCES, p1_scenarios, p1_scenarios_with_intent
+from oracle.strategies_p1 import FOUNDERS_REJECTED, KINDS, OVER_OWED, SOURCES, p1_scenarios, p1_scenarios_with_intent
 
 
 # req: QA-ENG-01
@@ -164,4 +165,37 @@ def test_1590_holds_the_depreciation_of_the_assets_still_in_the_register(data):
 
 # req: QA-ENG-02
 def test_every_source_has_generator_kinds():
-    assert SOURCES == ("bank", "purchases", "sales", "claims", "assets")
+    assert SOURCES == ("bank", "purchases", "sales", "claims", "assets", "founders")
+    assert set(SOURCES) == set(KINDS)
+
+
+# req: QA-ENG-02, FR-EQ-03, FR-EQ-04, FR-EQ-05, FR-EQ-06, FR-EQ-07
+@pytest.mark.parametrize("kind", sorted(set(KINDS["founders"])))
+def test_the_founders_source_draws_each_of_its_kinds_as_meant(kind):
+    # Each kind of the founders' source is drawn, and the oracle posts or refuses it as the generator meant.
+    data, intent = find(p1_scenarios_with_intent(("founders",)), lambda pair: kind in pair[1].kinds.values(),
+                        settings=settings(max_examples=2000, database=None, phases=[Phase.generate],
+                                          suppress_health_check=list(HealthCheck)))
+    ledger = Ledger(scenario_from_json(data))
+    reasons = dict(ledger.reasons)
+    for doc_id, built in intent.kinds.items():
+        if built == kind:
+            assert (doc_id in ledger.rejected) == (intent.documents[doc_id] == REJECT), reasons
+            assert (intent.documents[doc_id] == REJECT) == (kind in FOUNDERS_REJECTED)
+            # A waiver, repayment or conversion of more than is owed is refused for that (README, "P1 readings"), and
+            # every other kind is refused for its own rule: the oracle checks what is owed last, so a kind refused for
+            # what is owed would have drawn on more than is owed.
+            assert (reasons.get(doc_id) == "more-than-owed") == (kind in OVER_OWED), (doc_id, reasons)
+
+
+# req: FR-EQ-01
+@given(p1_scenarios(("founders",)))
+def test_each_line_on_a_directors_account_names_a_person_and_their_totals_add_up_to_it(data):
+    result = Ledger(scenario_from_json(data)).result()
+    director = {a["code"] for a in data["accounts"] if a.get("role") in ("director-loan", "deferred-remuneration")}
+    lines = [ln for e in result["entries"] for ln in e["lines"]]
+    assert all((ln["account"] in director) == ("party" in ln) for ln in lines)
+    assert all(ln["party"] in data["people"] for ln in lines if "party" in ln)
+    for code in director:
+        posted = sum((Decimal(ln["base_amount"]) for ln in lines if ln["account"] == code), Decimal(0))
+        assert posted == sum((Decimal(p.get(code, "0")) for p in result.get("people", {}).values()), Decimal(0))

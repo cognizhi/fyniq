@@ -31,7 +31,7 @@ default, generation is unchanged.
 from __future__ import annotations
 
 from contextvars import ContextVar
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
@@ -131,9 +131,11 @@ def _divisor_decimals(a: int) -> int:
 
 @dataclass(frozen=True)
 class Intent:
-    """What the generator meant for each document: ``post``, ``reject`` or ``open``."""
+    """What the generator meant for each document: ``post``, ``reject`` or ``open``; and, for a P1 source that
+    records it, the kind each document was built as (``kinds``)."""
 
     documents: dict[str, str]
+    kinds: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
