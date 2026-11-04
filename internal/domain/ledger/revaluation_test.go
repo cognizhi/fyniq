@@ -144,6 +144,42 @@ func TestRevalueRefusesWhatIsNotAMonetaryForeignItem(t *testing.T) {
 	}
 }
 
+// A director's account is revalued person by person, each line naming whose it is (B.7, FR-EQ-01; the database refuses a
+// line on 2500 or 2120 that names no one, FY250): an item of a director's account names its person, and an item of any
+// other account names none. USD 1,000.00 Mei Lin lent, carried at S$1,350.00, is S$1,330.00 at 1.33: a S$20.00 gain on
+// 2500 naming her, and 7040 −20.00.
+// req: FR-GL-04
+// req: FR-EQ-01
+func TestRevalueNamesThePersonOnADirectorsAccount(t *testing.T) {
+	loan := Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000002500"), Code: "2500", Active: true, Revalue: true, Role: RoleDirectorLoan}
+	s := Settings{Base: sgd, Accounts: map[uuid.UUID]Account{ar.ID: ar, loan.ID: loan, unrealised.ID: unrealised}}
+	mei := uuid.MustParse("0192f1a0-0000-7000-8000-0000000000a1")
+	run := Revaluation{ID: runID, Version: 1, Date: time.Date(2026, 10, 31, 0, 0, 0, 0, time.UTC), Unrealised: unrealised.ID}
+
+	it := item(t, loan, "-1000.00", "-1350.00", "1.33")
+	it.Party = mei
+	run.Items = []RevaluationItem{it}
+	e, err := Revalue(run, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(e.Lines) != 2 || e.Lines[0].Party != mei || e.Lines[0].Base.String() != "20.00" || e.Lines[1].Party != uuid.Nil {
+		t.Errorf("the lines: %v", e.Lines)
+	}
+
+	nameless := item(t, loan, "-1000.00", "-1350.00", "1.33")
+	run.Items = []RevaluationItem{nameless}
+	if _, err := Revalue(run, s); !slices.Contains(codes(err), CodeParty) {
+		t.Errorf("a director's account revalued as one balance: %v", err)
+	}
+	named := item(t, ar, "100.00", "135.00", "1.33")
+	named.Party = mei
+	run.Items = []RevaluationItem{named}
+	if _, err := Revalue(run, s); !slices.Contains(codes(err), CodeParty) {
+		t.Errorf("a receivable naming a person: %v", err)
+	}
+}
+
 // Each revaluation rule version reproduces exactly what it produced over the same runs (ENG-06), as the journal rules
 // do: its golden file in testdata/replay changes only by review, and a changed rule is a new version.
 // req: ENG-06

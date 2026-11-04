@@ -32,6 +32,7 @@ type RevaluationItem struct {
 	Carrying  money.Money // its base value in the books, in the base currency
 	Rate      money.Rate  // the foreign currency into the base, with its source (ENG-40)
 	Of        string      // the document it is, such as BILL-0007; empty for an account's balance
+	Party     uuid.UUID   // whose balance it is on a director's account (FR-EQ-01); uuid.Nil on any other
 }
 
 // Change is the item's unrealised gain (positive, a debit) or loss: RND-FX(open × rate) − carrying (FR-GL-04).
@@ -89,6 +90,10 @@ func Revalue(r Revaluation, s Settings) (Entry, error) {
 		case !a.Revalue:
 			add(CodeNotRevalued, f("account_id"), fmt.Sprintf("account %s is not marked for revaluation", a.Code), "Mark it in the chart, or leave it out")
 			continue
+		case a.DirectorAccount() != (it.Party != uuid.Nil): // B.7, FR-EQ-01: every line on it names whose it is (FY250)
+			add(CodeParty, f("party_id"), fmt.Sprintf("account %s is revalued per person on a director's account, and only there", a.Code),
+				"Revalue a director's account person by person, naming each, and any other account as one balance")
+			continue
 		}
 		if cur == s.Base || it.Carrying.Currency() != s.Base || it.Rate.From != cur || it.Rate.To != s.Base {
 			add(CodeItem, f("rate"), fmt.Sprintf("the item is in %s, carried in %s, at a rate from %s into %s", cur, it.Carrying.Currency(), it.Rate.From, it.Rate.To),
@@ -107,7 +112,7 @@ func Revalue(r Revaluation, s Settings) (Entry, error) {
 		if it.Of != "" {
 			desc = it.Of + ": " + desc
 		}
-		out.Lines = append(out.Lines, Line{AccountID: it.AccountID, Amount: money.Zero(cur), Rate: it.Rate, Base: change, Description: desc})
+		out.Lines = append(out.Lines, Line{AccountID: it.AccountID, Amount: money.Zero(cur), Rate: it.Rate, Base: change, Description: desc, Party: it.Party})
 		if change.Sign() > 0 {
 			gains, _ = gains.Add(change)
 		} else {
