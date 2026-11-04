@@ -68,6 +68,18 @@ WHERE d.type = 'invoice' AND d.status <> 'reversed'
   AND v.payload->'lines' @> jsonb_build_array(jsonb_build_object('quote', jsonb_build_object('quote_id', sqlc.arg(quote_id)::text)))
 ORDER BY d.id;
 
+-- name: CreditNotesOfInvoice :many
+-- The issued credit notes, not voided, whose current version credits the invoice (FR-AR-04; rev 0.155): together they
+-- credit at most its total.
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at,
+       coalesce(v.payload->>'date', '')::text AS date
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+WHERE d.type = 'credit_note' AND d.status = 'posted'
+  AND v.payload->>'invoice_id' = sqlc.arg(invoice_id)::text
+ORDER BY d.id;
+
 -- name: WaitingReversals :many
 -- Posted journals whose automatic reversal waits (FR-GL-02, FR-AUT-02; rev 0.58): no period that is not closed covers
 -- its date, so the scheduler cannot post it until one is opened or reopened. Earliest reversal first, then ID, after

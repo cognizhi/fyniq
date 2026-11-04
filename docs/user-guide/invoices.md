@@ -135,9 +135,10 @@ edit**.
 
 Select **New credit note** to give a customer credit. Link it to the customer's issued invoice it
 corrects under **Invoice it credits**, or leave it standalone. A linked credit note adjusts GST at the
-rates of that invoice's date and credits at most its total. It is entered, saved and issued as an
-invoice is, numbered from the credit note sequence, and it takes what it credits off what the
-customer owes.
+rates of that invoice's date. Together, the issued credit notes of one invoice credit at most its total
+before any deposit it deducts, and voiding one frees what it credited. A credit note is entered, saved
+and issued as an invoice is, numbered from the credit note sequence, and it takes what it credits off
+what the customer owes.
 
 ## Spread revenue over months
 
@@ -163,7 +164,7 @@ again; once it is issued its files are kept, and never deleted, for as long as t
 | Receipts or credits settle the invoice (INVOICE-13) | Void its receipts and credit applications first, then void or edit it |
 | More than the invoice has open (RECEIPT-05) | Record at most what is open; the rest is kept as the customer's credit |
 | What is left is above the settlement tolerance (RECEIPT-11) | Leave the invoice open, or write the rest off |
-| The credit note cannot credit that invoice (INVOICE-15) | Choose an issued invoice of the same customer and currency, for at least the credit |
+| The credit note cannot credit that invoice (INVOICE-15) | Choose an issued invoice of the same customer and currency, for at least the credit. The invoice's other credit notes may already credit its total: credit less, or void one of them |
 | The customer has no billing email (SALESDOC-04) | Add the customer's billing email, or give the address to send it to |
 | The tax invoice lacks a particular IRAS requires (SALESDOC-05) | Add the missing detail in Settings › Organisation or on the customer, then send it again |
 

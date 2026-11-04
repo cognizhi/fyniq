@@ -401,12 +401,12 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 	// The invoice a credit note credits: its GST is adjusted at the rate of the supply it corrects, so the credit note
 	// reads the sg-gst version and the registration in force on that invoice's date, its tax point [verify].
 	taxPoint := d.Date
-	var limit *money.Money
+	var limit *creditLimit
 	if d.Credits != uuid.Nil {
 		if !credit {
 			add(CodeCredited, "invoice_id", "an invoice credits no other invoice", "Remove the invoice it names, or enter a credit note")
 		} else {
-			on, total, problems, err := credited(ctx, u, d, base)
+			on, total, problems, err := credited(ctx, u, doc.ID, d, base)
 			if err != nil {
 				return Prepared{}, nil, err
 			}
@@ -527,19 +527,33 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 	out.Invoice = inv
 	if out.Totals, err = ledger.TotalsOf(inv); err != nil {
 		add(ledger.CodeGSTRate, "lines", err.Error(), "Choose each line's GST code again: its rate comes from the sg-gst pack")
-	} else if limit != nil && out.Totals.Total.Currency() == limit.Currency() {
-		if c, err := out.Totals.Total.Cmp(*limit); err == nil && c > 0 {
-			add(CodeCredited, "lines", fmt.Sprintf("the credit note's total is %s %s, more than the %s %s of the invoice it credits", out.Totals.Total,
-				d.Currency, *limit, limit.Currency()), "Credit at most the invoice's total")
+	} else if limit != nil && out.Totals.Total.Currency() == limit.left.Currency() {
+		if c, err := out.Totals.Total.Cmp(limit.left); err == nil && c > 0 {
+			if limit.left.Equal(limit.charged) {
+				add(CodeCredited, "lines", fmt.Sprintf("the credit note's total is %s %s, more than the %s %s of the invoice it credits", out.Totals.Total,
+					d.Currency, limit.charged, d.Currency), "Credit at most the invoice's total")
+			} else {
+				add(CodeCredited, "lines", fmt.Sprintf("the credit note's total is %s %s, more than the %s %s the invoice's other credit notes leave of its %s %s",
+					out.Totals.Total, d.Currency, limit.left, d.Currency, limit.charged, d.Currency),
+					"Credit at most what is left of the invoice's total, or void a credit note that credits it")
+			}
 		}
 	}
 	return out, probs, nil
 }
 
-// credited reads the invoice a credit note names (FR-AR-04): its date, the credit note's tax point; its total in its
-// currency as its entry debited accounts receivable, the most the credit note credits; and why it cannot be credited:
-// not an issued invoice of the credit note's customer, in its currency, dated on or before it.
-func credited(ctx context.Context, u storage.UnitOfWork, d Draft, base money.Currency) (time.Time, *money.Money, ledger.Problems, error) {
+// creditLimit is what an issued invoice charged in its currency, and what the other issued credit notes that credit it
+// leave of that: the most one more credit note credits (FR-AR-04; rev 0.155, [accountant to confirm]: the credit notes
+// linked to one invoice credit at most its total together, its total before any deposit it deducts).
+type creditLimit struct {
+	charged, left money.Money
+}
+
+// credited reads the invoice a credit note names (FR-AR-04): its date, the credit note's tax point; what it charged and
+// what the other issued, unvoided credit notes of it leave (a void frees what one credited), the most credit note self
+// credits; and why it cannot be credited: not an issued invoice of the credit note's customer, in its currency, dated on
+// or before it.
+func credited(ctx context.Context, u storage.UnitOfWork, self uuid.UUID, d Draft, base money.Currency) (time.Time, *creditLimit, ledger.Problems, error) {
 	var probs ledger.Problems
 	add := func(msg, fix string) {
 		probs = append(probs, ledger.Problem{Code: CodeCredited, Field: "invoice_id", Message: msg, Fix: fix})
@@ -582,14 +596,54 @@ func credited(ctx context.Context, u storage.UnitOfWork, d Draft, base money.Cur
 	if err != nil {
 		return time.Time{}, nil, nil, err
 	}
-	return inv.Date, &total, probs, nil
+	out := creditLimit{charged: total, left: total}
+	notes, err := u.Documents().CreditNotesOf(ctx, doc.ID)
+	if err != nil {
+		return time.Time{}, nil, nil, err
+	}
+	for _, n := range notes {
+		if n.ID == self {
+			continue
+		}
+		took, err := receivable(ctx, u, ledger.CreditNoteIdentity(n.ID, n.Version, ledger.RuleCreditNote), inv.Currency)
+		if err != nil {
+			return time.Time{}, nil, nil, err
+		}
+		if out.left, err = out.left.Add(took); err != nil { // a credit note's credit to accounts receivable is negative
+			return time.Time{}, nil, nil, err
+		}
+	}
+	return inv.Date, &out, probs, nil
 }
 
 // Charged is what an issued invoice charged in its currency, net and GST: what its entry debited to accounts
 // receivable, and what the deposits it deducts took (FR-AR-09).
 func Charged(ctx context.Context, u storage.UnitOfWork, doc storage.Document, cur money.Currency) (money.Money, error) {
+	out, err := receivable(ctx, u, ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleInvoice), cur)
+	if err != nil {
+		return out, err
+	}
+	allocs, err := u.Allocations().OfSource(ctx, doc.ID) // the deposits it deducts, net of the uses its edits reversed
+	if err != nil {
+		return out, err
+	}
+	for _, a := range allocs {
+		x, err := money.ParseStored(string(a.Amount), cur)
+		if err != nil {
+			return out, err
+		}
+		if out, err = out.Add(x); err != nil {
+			return out, err
+		}
+	}
+	return out, nil
+}
+
+// receivable is what the entry with the posting identity put on accounts receivable in cur: a debit for an invoice, a
+// credit for a credit note.
+func receivable(ctx context.Context, u storage.UnitOfWork, identity string, cur money.Currency) (money.Money, error) {
 	out := money.Zero(cur)
-	e, err := u.Ledger().ByIdentity(ctx, ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleInvoice))
+	e, err := u.Ledger().ByIdentity(ctx, identity)
 	if err != nil {
 		return out, err
 	}
@@ -605,19 +659,6 @@ func Charged(ctx context.Context, u storage.UnitOfWork, doc storage.Document, cu
 			continue
 		}
 		x, err := money.ParseStored(string(l.Amount), cur)
-		if err != nil {
-			return out, err
-		}
-		if out, err = out.Add(x); err != nil {
-			return out, err
-		}
-	}
-	allocs, err := u.Allocations().OfSource(ctx, doc.ID) // the deposits it deducts, net of the uses its edits reversed
-	if err != nil {
-		return out, err
-	}
-	for _, a := range allocs {
-		x, err := money.ParseStored(string(a.Amount), cur)
 		if err != nil {
 			return out, err
 		}
