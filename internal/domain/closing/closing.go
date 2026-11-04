@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/deposit"
+	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/financials"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
@@ -230,6 +231,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		return nil, err
 	}
 	out = append(out, assets...)
+	directors, err := directorChecks(ctx, u, cur, p)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, directors...)
 	deposits, err := depositsChecks(ctx, u, cur, p)
 	if err != nil {
 		return nil, err
@@ -421,6 +427,85 @@ func assetChecks(ctx context.Context, u storage.UnitOfWork, p storage.Period) ([
 			strings.Join(lines, ", ") + ": register each in Accounting › Fixed assets, so it depreciates"})
 	}
 	return out, nil
+}
+
+// directorChecks reconcile the director's accounts, 2500 and 2120, with their people at the period's end (INV-07;
+// p1-founders-money design D4): every line names its person (B.7), so their balances add up to the accounts by
+// construction, and ✖ names an amount on them that names no one, which only a line posted before the accounts named
+// their person can be. Nothing is said when the accounts hold nothing.
+func directorChecks(ctx context.Context, u storage.UnitOfWork, cur money.Currency, p storage.Period) ([]Check, error) {
+	people, err := balance.People(ctx, u, cur, p.EndsOn)
+	if err != nil || len(people) == 0 {
+		return nil, err
+	}
+	confirmed, err := confirmationChecks(ctx, u, people, p)
+	if err != nil {
+		return nil, err
+	}
+	for _, x := range people {
+		if x.Party != uuid.Nil {
+			continue
+		}
+		for _, v := range x.Accounts {
+			if !v.IsZero() {
+				return append([]Check{{"directors", Failed, "Director accounts hold amounts that name no one",
+					fmt.Sprintf("%s %s on 2500 and 2120 names no director or shareholder: reverse those lines and post them again with their person", x.Net, cur.Code)}},
+					confirmed...), nil
+			}
+		}
+	}
+	return append([]Check{{"directors", OK, "Every amount on the director accounts names its person", ""}}, confirmed...), nil
+}
+
+// confirmationChecks are, at the close of a financial year's last month, whether every director or shareholder with a
+// balance confirmed their balances at the year's end (FR-EQ-12, design D13): ⚠ naming those whose confirmation is
+// missing or shows other balances than the ledger holds now, and those who cannot confirm because no member is linked
+// to them; ✔ otherwise. Nothing is said for any other month.
+func confirmationChecks(ctx context.Context, u storage.UnitOfWork, people []balance.PersonBalance, p storage.Period) ([]Check, error) {
+	o, err := u.Organisation(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !director.IsYearEnd(o.Profile, p.EndsOn) {
+		return nil, nil
+	}
+	confirmations, err := director.ConfirmationsOf(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+	var waiting, unlinked []string
+	for _, x := range people {
+		if x.Party == uuid.Nil || x.Net.IsZero() && len(x.Accounts) == 0 {
+			continue
+		}
+		state := director.StateOf(director.LatestFor(confirmations[x.Party], p.EndsOn), x.Accounts)
+		if state == director.Confirmed {
+			continue
+		}
+		c, err := u.Contacts().Get(ctx, x.Party)
+		if err != nil {
+			return nil, err
+		}
+		switch {
+		case c.MemberUserID == nil:
+			unlinked = append(unlinked, c.LegalName)
+		case state == director.ChangedSince:
+			waiting = append(waiting, c.LegalName+" (changed since they confirmed)")
+		default:
+			waiting = append(waiting, c.LegalName)
+		}
+	}
+	if len(waiting) == 0 && len(unlinked) == 0 {
+		return []Check{{"directors-confirmed", OK, "Every director confirmed their balances at the year's end", ""}}, nil
+	}
+	var parts []string
+	if len(waiting) > 0 {
+		parts = append(parts, strings.Join(waiting, ", ")+" to confirm with a passkey in Money I put in")
+	}
+	if len(unlinked) > 0 {
+		parts = append(parts, strings.Join(unlinked, ", ")+" with no member linked: link the member in Director accounts first")
+	}
+	return []Check{{"directors-confirmed", Warning, "Directors' balances at the year's end are not all confirmed", strings.Join(parts, "; ")}}, nil
 }
 
 // deferralChecks reconcile the holding accounts of spreads, 1210 Prepayments and 2400 Deferred revenue, with the

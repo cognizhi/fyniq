@@ -8,6 +8,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
+	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -17,9 +18,10 @@ import (
 // CodeBatchNoRemittance is a supplier in a batch with no remittance email (⚠): it is paid, and sent no advice (design D8).
 const CodeBatchNoRemittance = "PB-23"
 
-// releasedPayments are a released batch's payments as the release posted them, in its order: each payee, what it paid of
-// each item, whether bank import matched it to its statement line (paid, design D8) or it was voided (rejected), and a
-// supplier's remittance advice; with the total, and whether every payment is paid.
+// releasedPayments are a released batch's payments as the release posted them, in its order: each payee (for a
+// director's repayment, the member or contact repaid into, as the batch named them), what it paid of each item, whether
+// bank import matched it to its statement line (paid, design D8) or it was voided (rejected), and a supplier's
+// remittance advice; with the total, and whether every payment is paid.
 func (a *API) releasedPayments(ctx context.Context, u storage.UnitOfWork, posted []PaymentBatchPosted) ([]PaymentBatchPayment, Money, bool, error) {
 	out := []PaymentBatchPayment{}
 	total := money.Zero(paymentbatch.SGD)
@@ -63,7 +65,7 @@ func (a *API) releasedPayments(ctx context.Context, u storage.UnitOfWork, posted
 			if err != nil {
 				return nil, Money{}, false, err
 			}
-			pay.Payee = PaymentBatchPayee{Kind: "vendor", ID: d.SupplierID.String(), Name: c.LegalName}
+			pay.Kind, pay.Payee = "supplier", PaymentBatchPayee{Kind: "vendor", ID: d.SupplierID.String(), Name: c.LegalName}
 			for _, x := range d.Bills {
 				if err := add(paymentbatch.KindBill, x.BillID, x.Amount); err != nil {
 					return nil, Money{}, false, err
@@ -98,9 +100,37 @@ func (a *API) releasedPayments(ctx context.Context, u storage.UnitOfWork, posted
 			if err := a.name(ctx, u, &person); err != nil {
 				return nil, Money{}, false, err
 			}
-			pay.Payee = PaymentBatchPayee{Kind: "person", ID: person.ID, Name: person.Name}
+			pay.Kind, pay.Payee = "claimant", PaymentBatchPayee{Kind: "person", ID: person.ID, Name: person.Name}
 			for _, x := range r.Claims {
 				if err := add(paymentbatch.KindClaim, x.ClaimID, x.Amount); err != nil {
+					return nil, Money{}, false, err
+				}
+			}
+		case storage.DocumentDirectorRepayment: // a director's settlements, repaid into the account in force (FR-EQ-05)
+			r, err := director.ReadRepayment(doc)
+			if err != nil {
+				return nil, Money{}, false, err
+			}
+			who, _, _, err := director.RepayTo(ctx, u, r.ContactID)
+			if err != nil {
+				return nil, Money{}, false, err
+			}
+			pay.Kind, pay.Payee = "director", PaymentBatchPayee{Kind: "vendor", ID: r.ContactID.String()}
+			if who.IsPerson() {
+				person := Person{Kind: "user", ID: who.PersonID.String()}
+				if err := a.name(ctx, u, &person); err != nil {
+					return nil, Money{}, false, err
+				}
+				pay.Payee = PaymentBatchPayee{Kind: "person", ID: person.ID, Name: person.Name}
+			} else {
+				c, err := u.Contacts().Get(ctx, r.ContactID)
+				if err != nil {
+					return nil, Money{}, false, err
+				}
+				pay.Payee.Name = c.LegalName
+			}
+			for _, x := range r.Settlements {
+				if err := add(paymentbatch.KindDirector, x.SettlementID, x.Amount); err != nil {
 					return nil, Money{}, false, err
 				}
 			}

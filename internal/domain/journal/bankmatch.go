@@ -382,10 +382,11 @@ func (s BankTransactions) Unmatch(ctx context.Context, org, lineID uuid.UUID, re
 
 // recordedTypes are the documents recorded by hand that move money through a money account: in for money in, out for
 // money out. A cash advance is both: an advance goes out, its refund comes in; the amount's sign tells which. A
-// disposal's money comes in: a sale's proceeds (FR-FA-03).
+// disposal's money comes in: a sale's proceeds (FR-FA-03). A director's repayment goes out, released from a batch
+// (FR-EQ-05).
 var recordedTypes = map[bool][]storage.DocumentType{
 	true:  {storage.DocumentCustomerReceipt, storage.DocumentCustomerDeposit, storage.DocumentSupplierRefund, storage.DocumentCashAdvance, storage.DocumentAssetDisposal},
-	false: {storage.DocumentBillPayment, storage.DocumentCustomerRefund, storage.DocumentClaimReimbursement, storage.DocumentCashAdvance},
+	false: {storage.DocumentBillPayment, storage.DocumentCustomerRefund, storage.DocumentClaimReimbursement, storage.DocumentCashAdvance, storage.DocumentDirectorRepayment},
 }
 
 // RecordedFor are the documents recorded by hand for a line's money (design D5): posted receipts, payments, deposits
@@ -480,6 +481,8 @@ func moves(ctx context.Context, u storage.UnitOfWork, doc storage.Document, line
 		identities = []string{ledger.CashAdvanceIdentity(doc.ID, doc.Version, ledger.RuleCashAdvance)}
 	case storage.DocumentAssetDisposal: // a sale's money received (FR-FA-03)
 		identities = []string{ledger.AssetDisposalIdentity(doc.ID, doc.Version, ledger.RuleAssetDisposal)}
+	case storage.DocumentDirectorRepayment: // what a batch repaid a director (FR-EQ-05)
+		identities = []string{ledger.DirectorRepaymentIdentity(doc.ID, doc.Version, ledger.RuleDirectorRepayment)}
 	}
 	var e storage.Entry
 	found := false

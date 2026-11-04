@@ -2,16 +2,16 @@
 key: claims.make-a-claim
 type: task
 title: Claim back money spent for the company
-summary: How a member claims a receipt or a trip in My claims, attaches the receipt and submits it, completes company-card lines, and uses a cash advance
+summary: How a member claims a receipt or a trip in My claims, submits it, completes card lines, uses a cash advance, or keeps it as a loan
 sources:
-  - docs/user-guide/claims-my-claims.md sha256:73ef83977b8361d2e4db0a2ddbd4085b60bb02c94f9a3f363af9aa0fb34ac0bd
+  - docs/user-guide/claims-my-claims.md sha256:b25229e4fd97d03d971bf3596f4b264521c25c56e346ff555ac0a2f538a338d7
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-26
+compiled_at: 2026-11-03
 aliases:
   - expense claim
   - reimbursement
@@ -93,6 +93,14 @@ aliases:
   advance** settle what is open, anything above is paid back, and what is left is refunded by bank
   transfer. One still open after the claim deadline is flagged.
   (src: docs/user-guide/claims-my-claims.md#cash-advances)
+
+## Kept as a loan to the company
+
+- A director or shareholder whose contact is linked to them chooses under **Paid personally**:
+  **Reimburse me**, or **Keep it as a loan to the company**, owed to them on their director account
+  in **Money I put in**. Another founder approves it; it settles no cash advance; GST still needs a
+  receipt addressed to the company. (src: docs/user-guide/claims-my-claims.md#keep-it-as-a-loan-to-the-company)
+- What the company owes a founder, and how it is settled: [[founders.balance]].
 
 ## After approval
 

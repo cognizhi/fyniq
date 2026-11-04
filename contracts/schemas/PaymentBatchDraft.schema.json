@@ -3,7 +3,7 @@
   "additionalProperties": false,
   "properties": {
     "items": {
-      "description": "The bills and claims it pays, each whole, for what is open on it; at most 500.",
+      "description": "The bills, claims and settlements to repay it pays, each whole, for what is open on it; at most 500.",
       "items": {
         "$ref": "PaymentBatchItemRef.schema.json"
       },

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account it is a cost on; left out, the chart's 6050 Directors' fees.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "The fee, in the base currency."
+    },
+    "contact_id": {
+      "description": "The director: a contact marked director.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "entitled_on": {
+      "description": "The day the director became entitled to it: the general meeting that voted it. It posts on this day.",
+      "examples": [
+        "2026-11-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "memo": {
+      "description": "What it is, in a few words.",
+      "examples": [
+        "Directors' fee 2026, voted at the AGM"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "period_from": {
+      "description": "The first day of the period it is for.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "period_to": {
+      "description": "The last day of that period.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contact_id",
+    "entitled_on",
+    "period_from",
+    "period_to",
+    "amount"
+  ],
+  "title": "DirectorFeeDraft",
+  "type": "object"
+}

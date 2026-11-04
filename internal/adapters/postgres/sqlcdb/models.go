@@ -561,6 +561,9 @@ type FyniqContact struct {
 	DiscountPercent  *string
 	DiscountDays     *int16
 	CustomerGroupID  *uuid.UUID
+	IsDirector       bool
+	IsShareholder    bool
+	MemberUserID     *uuid.UUID
 }
 
 type FyniqContactDocumentTemplate struct {
@@ -572,6 +575,17 @@ type FyniqContactDocumentTemplate struct {
 	TemplateID     *uuid.UUID
 	SetBy          string
 	SetAt          time.Time
+}
+
+type FyniqConversionStep struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	SettlementID   uuid.UUID
+	Kind           string
+	OnDate         time.Time
+	Reference      *string
+	RecordedBy     uuid.UUID
+	RecordedAt     time.Time
 }
 
 type FyniqCurrencies struct {
@@ -1063,6 +1077,7 @@ type FyniqJournalLine struct {
 	BaseAmount     string
 	Description    *string
 	RecordedAt     time.Time
+	PartyID        *uuid.UUID
 }
 
 type FyniqKpiInput struct {
@@ -1546,6 +1561,26 @@ type FyniqSalesReminder struct {
 	Reason         *string
 	DecidedBy      string
 	DecidedAt      time.Time
+}
+
+type FyniqShareIssue struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	HolderID       uuid.UUID
+	ClassAccountID uuid.UUID
+	Shares         string
+	Price          string
+	Currency       string
+	MinorUnits     int16
+	Amount         string
+	Consideration  string
+	ResolutionRefs string
+	LodgementRef   *string
+	EffectiveOn    time.Time
+	SettlementID   *uuid.UUID
+	EntryID        *uuid.UUID
+	RecordedBy     uuid.UUID
+	RecordedAt     time.Time
 }
 
 type FyniqSodOverride struct {

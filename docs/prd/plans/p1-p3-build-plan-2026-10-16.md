@@ -182,7 +182,9 @@ decisions of the same day (PRD-001 rev 0.167): a director account belongs to a c
 linked to a member, and every line on 2500 or 2120 names it; repay, keep, convert to shares and waive come first, and the
 SAFE or note route with `p1-equity-register`; exempt-private-company status is recorded until the corporate profile takes
 it over; the founder pay choice is recorded from go-live, the pay run's part and C.2 #24 coming with `p1-payroll-link`.
-`RND-SHARE` moves to it from `p1-equity-register`, since a conversion needs it first.
+`RND-SHARE` moves to it from `p1-equity-register`, since a conversion needs it first. It was built the same day, in
+#363 to #380 (PRD-001 rev 0.168), except what waits for `p1-equity-register` (the SAFE or note route, cash issues),
+`p1-payroll-link` (deferred pay in the pay run, C.2 #24) and `p1-gst` (the "before GST registration" flag).
 
 **Wave 5 · Reports, planning, checks and compliance.**
 

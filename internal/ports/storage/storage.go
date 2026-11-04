@@ -114,6 +114,8 @@ type UnitOfWork interface {
 	// PayeeBankAccounts are the account numbers of the changes of vendors' bank details (FR-CT-03).
 	PayeeBankAccounts() PayeeBankAccounts
 	PaymentBatches() PaymentBatches
+	ShareIssues() ShareIssues
+	ConversionSteps() ConversionSteps
 	// ReportExports are the exports that run in the background (FR-RPT-09).
 	ReportExports() ReportExports
 	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).
@@ -267,6 +269,7 @@ type AccountLine struct {
 	BaseAmount      Decimal
 	Description     string
 	Number          string
+	PartyID         *uuid.UUID // the person of a line on a director's account (B.7), else nil
 }
 
 // Balances is the materialised balances cache (INV-08).
@@ -509,6 +512,29 @@ const (
 	// (FR-BNK-12; rev 0.154): approved by a second person, whose approval posts it (numbered PB-) with no entry, and
 	// released once, which records its payments.
 	DocumentPaymentBatch DocumentType = "payment_batch"
+	// DocumentPreIncorporationCost is a cost a director or shareholder paid before the books start, which the accountant
+	// decides and which posts to their account on 2500 (FR-EQ-03; p1-founders-money design D7).
+	DocumentPreIncorporationCost DocumentType = "pre_incorporation_cost"
+	// DocumentDirectorPayChoice is a director's or shareholder's pay choice from a month on, recorded with the signed
+	// decision and posting no entry; append-only, a later one supersedes it from its month (FR-EQ-04; design D8).
+	DocumentDirectorPayChoice DocumentType = "director_pay_choice"
+	// DocumentDirectorFee is a director's fee the shareholders voted: posted Dr 6050 · Cr 2120 to the director once
+	// another person approves it, never the director (FR-EQ-04; design D8).
+	DocumentDirectorFee DocumentType = "director_fee"
+	// DocumentExemptStatus is the organisation's exempt-private-company status from a day on, recorded with its evidence
+	// (the ACRA business profile) and posting no entry; append-only, a later one supersedes it (FR-EQ-11; design D9).
+	DocumentExemptStatus DocumentType = "exempt_status"
+	// DocumentDirectorConfirmation is a director's or shareholder's confirmation of their balances at a financial year's
+	// end, made by the member who signs in as them with a passkey; posting no entry, append-only (FR-EQ-12; design D13).
+	DocumentDirectorConfirmation DocumentType = "director_confirmation"
+	// DocumentDirectorSettlement is a settlement of what the company owes a director or shareholder: kept as a loan on
+	// terms, or waived (posted Dr 2500/2120 · Cr 3300 or income), once another person approves it (FR-EQ-05, FR-EQ-07, FM-9;
+	// design D10); numbered DS-.
+	DocumentDirectorSettlement DocumentType = "director_settlement"
+	// DocumentDirectorRepayment is what a payment batch's release paid a director or shareholder of the settlements
+	// approved to be repaid (posted Dr 2500/2120 · Cr the money account), recorded only with the release (FR-EQ-05,
+	// FR-BNK-12; design D10); numbered DR-.
+	DocumentDirectorRepayment DocumentType = "director_repayment"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -572,6 +598,7 @@ type NewLine struct {
 	FXRateSource string
 	BaseAmount   Decimal
 	Description  string
+	PartyID      *uuid.UUID // the director or shareholder of a line on 2500 or 2120, required there and refused elsewhere (B.7, FY250)
 }
 
 // Entry is a posted journal entry.
@@ -601,6 +628,7 @@ type Line struct {
 	BaseCurrency string
 	BaseAmount   Decimal
 	Description  string
+	PartyID      *uuid.UUID // the person of a line on a director's account (B.7), else nil
 }
 
 // Balance is the cached total of one account, period and currency.
@@ -684,12 +712,19 @@ const (
 	// CodePayee: a vendor's bank account belongs to a draft change of its bank details, comes into force only with the
 	// change approved by a second person, goes out of force only when a later change is, and is never changed or
 	// deleted otherwise (FR-CT-03, SOD-1, FM-1).
-	CodePayee          = "STORAGE-PAYEE-01"
+	CodePayee = "STORAGE-PAYEE-01"
 	// CodeBatch: a batch is released once, approved and at its current version, and never cancelled once released; a
-	// release's payments are posted payments of its account and date; neither ever changes (FR-BNK-12).
+	// release's payments are posted payments of its account and date; neither ever changes (FR-BNK-12); a director's
+	// repayment is posted only by a release, which links it (FR-EQ-05).
 	CodeBatch = "STORAGE-BATCH-01"
 	// CodeBatchHeld: a bill or claim in an approved, unreleased batch is paid by the batch, not by hand (FR-BNK-12).
-	CodeBatchHeld = "STORAGE-BATCH-02"
+	CodeBatchHeld      = "STORAGE-BATCH-02"
+	// CodeShareIssue: the register of share issues is append-only, its classes share capital and its holders directors
+	// or shareholders, and share capital moves only with it (FR-EQ-08, INV-13).
+	CodeShareIssue = "STORAGE-SHARE-01"
+	// CodeConversionStep: a conversion's ACRA steps are recorded between its approval and its effective date, and never
+	// changed (FR-EQ-09).
+	CodeConversionStep = "STORAGE-SHARE-02"
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
 	CodeBanner         = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends
@@ -715,6 +750,10 @@ const (
 	// CodeEvidence: evidence keeps what it is, is removed only from a draft, is append-only once its record is
 	// not a draft, keeps a retain-until that only moves later, and is never deleted (FR-DOC-02, FR-DOC-07).
 	CodeEvidence = "STORAGE-EVIDENCE-01"
+	// CodeParty: a line on a director's account (2500, 2120) names a director or shareholder, and no other line names a
+	// person; a contact named by a line stays one; a contact's member changes only under its approved request (B.7,
+	// FR-EQ-01, FM-1).
+	CodeParty = "STORAGE-PARTY-01"
 )
 
 // ErrPreviewed is what Do returns for a preview that passed every check the commit would run: nothing

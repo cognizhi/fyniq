@@ -214,6 +214,27 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 			}
 		}
 	}
+	// How it is settled (FR-EQ-02, rev 0.167): kept as a loan to the company, what is owed goes to the claimant's director
+	// account, 2500, so they must sign in as a director or shareholder; such a claim settles no cash advance.
+	switch d.SettleTo {
+	case "", SettleReimburse:
+	case SettleLoan:
+		if d.AdvanceID != nil {
+			add(CodeSettleTo, "settle_to", "a claim kept as a loan settles no cash advance", "Leave the advance out, or have the claim reimbursed")
+		}
+		person, err := u.Contacts().OfMember(ctx, d.ClaimantID)
+		switch {
+		case errors.Is(err, ports.ErrNotFound) || err == nil && !person.Director && !person.Shareholder:
+			add(CodeSettleTo, "settle_to", "the claimant signs in as no director or shareholder, so the claim is reimbursed",
+				"Have it reimbursed, or ask an Owner to link your contact to you in Accounting › Director accounts")
+		case err != nil:
+			return Prepared{}, nil, err
+		default:
+			c.Loan = person.ID
+		}
+	default:
+		add(CodeSettleTo, "settle_to", fmt.Sprintf("%q is not how a claim is settled", d.SettleTo), "Choose reimburse or loan")
+	}
 	out.Claim = c
 	return out, probs, nil
 }

@@ -16,7 +16,7 @@ import (
 // The codes of a contact's rules.
 const (
 	CodeName     = "CT-01" // the legal name is blank or too long
-	CodeRole     = "CT-02" // neither a customer nor a vendor
+	CodeRole     = "CT-02" // neither a customer, a vendor, a director nor a shareholder
 	CodeEmail    = "CT-03" // not an email address
 	CodeCountry  = "CT-04" // not a country code
 	CodeCurrency = "CT-05" // not a currency Fyniq knows
@@ -51,8 +51,9 @@ func Check(d storage.ContactDetails) []Problem {
 	if strings.TrimSpace(d.LegalName) == "" || len([]rune(d.LegalName)) > 200 {
 		add(CodeName, "legal_name", "is blank or longer than 200 characters", "Enter the contact's legal name")
 	}
-	if !d.Customer && !d.Vendor {
-		add(CodeRole, "customer", "the contact is neither a customer nor a vendor", "Mark it as a customer, a vendor or both")
+	if !d.Customer && !d.Vendor && !d.Director && !d.Shareholder {
+		add(CodeRole, "customer", "the contact is neither a customer, a vendor, a director nor a shareholder",
+			"Mark it as a customer, a vendor, a director or a shareholder, or several")
 	}
 	for field, v := range map[string]string{"billing_email": d.BillingEmail, "remittance_email": d.RemittanceEmail} {
 		if v == "" {

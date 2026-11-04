@@ -248,8 +248,19 @@ func TestSampleCompanyGoldenTrialBalance(t *testing.T) {
 	}
 	ids := map[string]uuid.UUID{}
 	codes := map[uuid.UUID]string{}
+	people := map[string]uuid.UUID{} // the directors, as contacts: a line on 2500 or 2120 names one (FR-EQ-01)
 	var periods []uuid.UUID
 	if err := s.Do(ctx, org.ID, func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, p := range company.People {
+			if !p.Director {
+				continue
+			}
+			ct, err := u.Contacts().Create(ctx, storage.ContactDetails{LegalName: p.Name, Director: true, Shareholder: true, Country: "SG"})
+			if err != nil {
+				return err
+			}
+			people[p.ID] = ct.ID
+		}
 		for _, a := range company.Accounts {
 			acc, err := u.Accounts().Create(ctx, storage.NewAccount{Code: a.Code, Name: a.Name, Type: accountType(a.Code), Role: storage.AccountRole(a.Role)})
 			if err != nil {
@@ -283,7 +294,7 @@ func TestSampleCompanyGoldenTrialBalance(t *testing.T) {
 		for _, l := range jnl.Lines {
 			signed := cents(t, l.Debit) - cents(t, l.Credit)
 			want[l.Account] += signed
-			d.Lines = append(d.Lines, ledger.JournalLine{AccountID: ids[l.Account], Amount: money.FromMinor(signed, sgd)})
+			d.Lines = append(d.Lines, ledger.JournalLine{AccountID: ids[l.Account], Amount: money.FromMinor(signed, sgd), Party: people[l.Person], Origin: l.Origin})
 		}
 		doc, err := svc.Create(ctx, org.ID, d)
 		if err != nil {

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "agm_due_on": {
+      "description": "The date by which the next AGM must be held, when the approval lapses: as recorded, or worked out from the financial years [verify].",
+      "examples": [
+        "2027-06-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "allotment_lodged_on": {
+      "description": "The day the return of allotment was lodged with the conversion agreement (s63, s63B).",
+      "examples": [
+        "2026-10-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "approval_lodged_on": {
+      "description": "The day their approval was lodged with ACRA: due within 14 days of the resolution (s161(5), s186).",
+      "examples": [
+        "2026-10-12"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "flags": {
+      "description": "What the steps raise today: ⏰ due, or ⚠ warning. Empty once effective.",
+      "items": {
+        "$ref": "ConversionFlag.schema.json"
+      },
+      "type": "array"
+    },
+    "resolved_on": {
+      "description": "The day the shareholders resolved to issue the shares.",
+      "examples": [
+        "2026-10-06"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "steps": {
+      "description": "Every step recorded, earliest first: a later one of a kind supersedes the earlier.",
+      "items": {
+        "$ref": "ConversionStep.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "agm_due_on",
+    "steps",
+    "flags"
+  ],
+  "title": "ConversionACRA",
+  "type": "object"
+}

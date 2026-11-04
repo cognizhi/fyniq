@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "converted": {
+      "$ref": "Money.schema.json",
+      "description": "What they convert: round(shares × price)."
+    },
+    "remainder": {
+      "$ref": "Money.schema.json",
+      "description": "What stays owed on the director's account."
+    },
+    "shares": {
+      "description": "The whole shares allotted.",
+      "examples": [
+        "10288"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "shares",
+    "converted",
+    "remainder"
+  ],
+  "title": "SettlementShares",
+  "type": "object"
+}

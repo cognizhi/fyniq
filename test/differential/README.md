@@ -47,7 +47,10 @@ from `cmd/seed` (2.4) and the merge gate (3.1).
   (INV-13; 3010 and 3020 in the default chart). Both sides refuse those lines (change
   `p0-manual-journal-rules`); half of the generated charts have such an account. The statements read
   three more roles, `retained-earnings`, `depreciation` and `income-tax-expense`, and the attributes
-  `report_group`, `function` and `cash_flow_line` (section "Statements").
+  `report_group`, `function` and `cash_flow_line` (section "Statements"). (PRD-001 rev 0.167)
+  `director-loan` (2500) and `deferred-remuneration` (2120) mark the director's accounts: each line on
+  one names its `party`, one of the scenario's `people`, and its `origin` (rule 9; FR-EQ-01, B.7). The
+  generator gives half of its charts one, with the people `P0001` and `P0002`.
 - Documents post in array order; then each reversal reverses the posted entry of its document on
   its date. Every date falls in a calendar-month period, and all periods are open.
 
@@ -92,6 +95,9 @@ only when it meets every rule:
 7. The base amounts, each computed by `RND-FX` (round(amount × rate, the base currency's minor units),
    half away from zero), sum to zero. A base-currency line's base amount is its amount.
 8. When every line shares one currency, the amounts also sum to zero in that currency.
+9. (PRD-001 rev 0.167) Every line on a director's account has a `party` that is one of `people` and an
+   `origin` that is one of `lent`, `paid_personally`, `pay`, `fee`, `paid_out` and `other`; no other line
+   has either (FR-EQ-01, Appendix B.7). A scenario with no `people` has none, so any `party` is refused.
 
 A reversal is rejected when its document is unknown or was rejected, when the document was
 already reversed (a document is reversed at most once), or when it is dated before the document's
@@ -128,6 +134,11 @@ the original entry as stored (amount and base amount; never re-converted, ENG-14
 - `trial_balance`: each posting month (`YYYY-MM`) maps each account to its base-currency total for
   that month. The oracle leaves out accounts whose total is zero and keeps a month in which every
   account nets to zero (`{}`). **A comparator reads a missing account, or a missing month, as zero.**
+- (PRD-001 rev 0.167) A posted line on a director's account carries its `party`, and a reversal's line
+  keeps it; the comparator compares it with the line. `people`, present only when a posted line names
+  a person, maps each person to each director's account to the base-currency total of every posted
+  line naming them there: the sub-ledger of 2500 and 2120 (FR-EQ-01). Totals of zero are left out, and
+  a comparator reads a missing person or account as zero.
 
 ## Decided in PRD-001 rev 0.24
 
@@ -169,7 +180,7 @@ A scenario with a P1 document must have `settings` and `as_of`, or it is invalid
 - `settings.accounts` names the system accounts by key (Appendix B.5): `receivable` (1100), `payable`
   (2010), `gst` (2200), `prepayments` (1210), `deferred_revenue` (2400), `fx` (7030), `bank_charges`
   (6460, a setting), `withholding_tax` (2330), `customer_deposits` (2410), `claims_payable` (2150),
-  `advances` (1250), `depreciation` (6610), `accumulated_depreciation` (1590), `disposal` (7050, a setting)
+  `advances` (1250), `director_loan` (2500), `deferred_remuneration` (2120), `depreciation` (6610), `accumulated_depreciation` (1590), `disposal` (7050, a setting)
   and `disposal_clearing` (1160, a setting). Each named account must be in `accounts`. A document that
   needs a key the organisation has not set is rejected.
 - `settings.books_start` is the first day of the books: an asset's depreciation posts from the later of
@@ -343,9 +354,10 @@ stays a credit with the customer. A `write_off` (`invoice`, `amount` at most wha
 reason's) credits 1100 at the invoice's stored rate (all that is left of its line when it takes all that
 is open) and debits the account with that carrying amount, in the base currency.
 
-### Expense claims (`expense_claim`, `expense_claim@1`), reimbursements (`claim_reimbursement`, `claim_reimbursement@1`) and cash advances (`cash_advance`, `cash_advance@1`)
+### Expense claims (`expense_claim`, `expense_claim@1` and `@2`), reimbursements (`claim_reimbursement`, `claim_reimbursement@1`) and cash advances (`cash_advance`, `cash_advance@1`)
 
-From §10.2, §10.4, FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20 and the rows of rev 0.147, 0.148 and 0.151.
+From §10.2, §10.4, Appendix B.7, FR-AP-07, FR-AP-16, FR-AP-17, FR-AP-20, FR-EQ-02 and the rows of rev 0.147,
+0.148, 0.151 and 0.167.
 
 ```json
 {"type": "expense_claim", "id": "EC-0001", "version": 1, "date": "2026-03-05", "currency": "SGD",
@@ -364,6 +376,81 @@ reimbursing a claim in another currency gives the rate (the cascade's), the diff
 `cash_advance` (a base-currency money account and an amount) posts Dr 1250, Cr the money account; with
 `refund_of` it is what is left of that advance coming back, at most what is left: Dr the money account,
 Cr 1250.
+
+A claim kept as a loan to the company (`"loan": "<person>"`, one of `people`; FR-EQ-02, `expense_claim@2`)
+credits `director_loan` (2500) instead of 2150, as 2150 would be credited, and the line names the person
+(`party`): what the director paid stays owed to them there. It settles no `advance`, and no reimbursement
+settles it.
+
+### Costs before the books start (`pre_incorporation_cost`, `pre_incorporation_cost@1`)
+
+From FR-EQ-03, Appendix B.7 and the founders' money design D7 (rev 0.167).
+
+```json
+{"type": "pre_incorporation_cost", "id": "PIC-0001", "version": 1, "date": "2026-01-01", "incurred": "2025-11-03",
+ "person": "P0001", "account": "1500", "gross": "3815.00", "gst": "315.00", "claim_gst": true}
+```
+
+The cost as the accountant decided it: `date` is the day it posts (on or after `settings.books_start`), `incurred` the
+day the person paid it (before the books start), `person` one of `people`. It posts Dr `account` with `gross`, or with
+`gross` less `gst` when `claim_gst` (only while GST-registered on `date`), Dr `gst` (2200) with the GST claimed, and Cr
+`director_loan` (2500) with `gross`, the line naming the person. The account is not a director's account, a money
+account or GST control.
+
+### Directors' fees (`director_fee`, `director_fee@1`)
+
+From FR-EQ-04, §10.2 and the founders' money design D8 (rev 0.167).
+
+```json
+{"type": "director_fee", "id": "DF-0001", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "6050",
+ "amount": "6000.00"}
+```
+
+A fee the shareholders voted, posted on `date`, the day the director became entitled to it: Dr `account` (6050
+Directors' fees) with `amount`, Cr `deferred_remuneration` (2120) with `amount`, the line naming `person`, one of
+`people`. The account is not a director's account, a money account or GST control.
+
+### Waivers of founders' balances (`director_waiver`, `director_settlement@1`)
+
+From FR-EQ-07, Appendix B.7 and the founders' money design D10 (rev 0.167).
+
+```json
+{"type": "director_waiver", "id": "DS-0001", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500",
+ "credit": "3300", "amount": "400.00"}
+```
+
+A waiver of what the company owes a director or shareholder, posted on `date`, the day it was approved: Dr `account`
+(2500 or 2120, a director's account) with `amount`, the line naming `person`, one of `people`; Cr `credit` (3300 Capital
+contribution, or an income account) with `amount`. The credit is not a director's account, a money account or GST
+control. A loan kept posts nothing.
+
+### Repayments to founders (`director_repayment`, `director_repayment@1`)
+
+From FR-EQ-05, FR-BNK-12, Appendix B.7 and the founders' money design D10 (rev 0.167).
+
+```json
+{"type": "director_repayment", "id": "DR-0001", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "1010",
+ "settlements": [{"account": "2500", "amount": "300.00"}]}
+```
+
+What a payment batch's release repaid a director or shareholder, posted on `date`, the batch's payment date: for each
+of `settlements` Dr its `account` (2500 or 2120, a director's account) with its `amount`, the line naming `person`, one
+of `people`; Cr `account`, a money account in the base currency, with the total.
+
+### Conversions of founders' balances to shares (`director_conversion`, `share_issue@1`)
+
+From FR-EQ-06, FR-EQ-08, Appendix B.7, `RND-SHARE` and the founders' money design D11 (rev 0.167).
+
+```json
+{"type": "director_conversion", "id": "SI-0001", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500",
+ "class": "3010", "amount": "100.00", "price": "1.20"}
+```
+
+A founder's balance converted to shares, posted on `date`, the day ACRA's register shows the allotment. `RND-SHARE`
+allots n whole shares for `amount` at `price` (83 shares here, 99.60 converted, 0.40 left owed): Dr `account` (2500 or
+2120, a director's account) with round(n × `price`), the line naming `person`; Cr `class` (a share-capital account) with
+the same, or, when `fair_value_price` is given, with round(n × `fair_value_price`) and the difference to `difference`, an
+income or expense account (Dr a loss, Cr a gain).
 
 ### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
 
@@ -466,7 +553,10 @@ in that order. `percent_of_revenue` has each of the twelve lines under `RND-PERC
 **Balance sheet** at the month's last day: each placed account's balance, assets debit positive,
 liabilities, borrowings and equity credit positive, by section and report group. The retained-earnings
 account's group also holds the profit to date (every posted revenue and expense line so far: FR-GL-10
-folds earlier years into retained earnings, and FR-RPT-01 puts the year's profit inside them).
+folds earlier years into retained earnings, and FR-RPT-01 puts the year's profit inside them). A person
+whose lines on the director's accounts (`director-loan`, `deferred-remuneration`) net to a debit owes the
+company: with an `advances` account in the settings, their balances on those accounts show on it instead,
+with no posting (FR-EQ-11, `p1-founders-money` design D14).
 
 **Cash flow**, indirect, money in positive. Each of the month's entries is *investing* when it has a line
 on a capital-expenditure account, else *financing* when it has a line on a borrowings or equity account,
@@ -480,13 +570,15 @@ else *operating*. An entry's cash is the sum of its lines on cash accounts.
   and `total`, their sum, which equals the operating entries' cash whenever every account they move is
   placed.
 - `non_cash`: the investing and financing entries with no line on a cash account (FR-RPT-01: "a
-  transaction that moved no money ... is left out of investing and financing and listed apart").
+  transaction that moved no money ... is left out of investing and financing and listed apart"). A
+  `director_conversion`'s has the `label` "Converted to shares" and a `director_waiver`'s "Waived" (FR-EQ-10).
 - `net_change` = operating + investing + financing; `opening_cash` and `closing_cash` are the cash
   accounts' balances at the month before's end and the month's.
 
 **Movement in equity**: `opening` (the month before's closing; nothing before the first month),
-`profit` (the month's net profit), `share_capital` (the change in accounts on the Share capital line),
-`other` (the change in every other equity-section account, retained earnings' own lines included) and
+`profit` (the month's net profit), `share_capital` (shares issued for cash: the change in accounts on the
+Share capital line from every entry but a conversion), `share_capital_non_cash` (a `director_conversion`'s
+change on that line: shares issued for non-cash consideration, FR-EQ-10), `other` (the change in every other equity-section account, retained earnings' own lines included) and
 `closing`, the balance sheet's equity.
 
 **Checks**: `balances`, total assets equal total liabilities and equity (INV-10, BS_Chk); `ties`,

@@ -4,14 +4,15 @@ type: concept
 title: Founder pay choices
 summary: No salary (the recommended default), salary paid, deferred, director's fee or shares; deferral still triggers CPF and tax
 sources:
-  - docs/user-guide/founders-money.md sha256:b2ff34f027f280effc67d5d0c2c074e13386e8313c5a1cb9365a4c074b7f2629
+  - docs/user-guide/founders-money.md sha256:5bb0d08e258456d44a69cfe4b4347560673bfae95b5661de6b8e3777804096c8
+  - docs/user-guide/director-accounts.md sha256:7efb8ff780815a1360810e4fafe6f294d1e83819acbd302bf33f207e6b14a3ff
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-13
+compiled_at: 2026-11-03
 ---
 
 # Founder pay choices
@@ -25,8 +26,18 @@ compiled_at: 2026-10-13
 - Exception: a founder holding an **Employment Pass** may be required by its conditions to be
   paid the declared salary; ask the accountant before choosing "no salary".
   (src: docs/user-guide/founders-money.md#the-recommended-defaults)
-- It is a setting: Settings → Founders' money → Pay choice per director.
+- It is changed in Accounting › Director accounts → Change pay choice.
   (src: docs/user-guide/founders-money.md#the-recommended-defaults)
+
+## Record a pay choice
+
+- Each person's card shows the choice in force this month; with none recorded, **No salary**.
+  (src: docs/user-guide/director-accounts.md#record-a-pay-choice)
+- **Change pay choice**: the month it applies from and the choice, then the signed decision (board
+  minute or directors' resolution) attached, then **Record the pay choice**; an Owner or the
+  Controller records it. (src: docs/user-guide/director-accounts.md#record-a-pay-choice)
+- A recorded choice never changes: a new one from a later month applies from then. Payroll
+  applies the choice once it is built. (src: docs/user-guide/director-accounts.md#record-a-pay-choice)
 
 ## The choices
 
@@ -46,3 +57,6 @@ Unpaid pay becomes part of the founder's balance: [[founders.balance]].
 
 - **✖ Pay deferred without a recorded pay choice**: record the pay choice for that director and
   month, or pay the salary. (src: docs/user-guide/founders-money.md#common-problems)
+- **The pay choice has no signed decision attached**: attach the minute or resolution, then record
+  it; **the pay choice is recorded, so it changes no more**: record a new choice from the month it
+  changes. (src: docs/user-guide/director-accounts.md#common-problems)

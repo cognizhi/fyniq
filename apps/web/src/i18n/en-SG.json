@@ -132,6 +132,114 @@
       "label": "Remove from the company",
       "tooltip": "End their membership and every role, expired ones too. Once the company has a second member, another Owner approves it."
     },
+    "accounting.directors": {
+      "label": "Director accounts",
+      "tooltip": "What the company owes each director and shareholder on 2500 and 2120, and what they owe it, by where each amount came from."
+    },
+    "director-accounts.pay-choice": {
+      "label": "Change pay choice",
+      "tooltip": "Record the person's pay choice from a month on, with the signed decision: no salary, salary paid, salary deferred, director's fee, or shares instead of pay."
+    },
+    "director-accounts.exempt": {
+      "label": "Record exempt status",
+      "tooltip": "Record whether the company is an exempt private company from a day on, with the ACRA business profile; it decides what an account in debit means."
+    },
+    "exempt-status.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the ACRA business profile that shows the status."
+    },
+    "accounting.director-settlement": {
+      "label": "Settle a balance",
+      "tooltip": "Choose how what the company owes a director or shareholder is settled: repay it through a payment batch, keep it as a loan, or waive it; another person approves it."
+    },
+    "director-accounts.settle": {
+      "label": "Settle",
+      "tooltip": "Repay, keep as a loan or waive what the company owes this person, with the agreement attached; another person approves it, never them."
+    },
+    "director-settlement.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the agreement the settlement rests on: the loan note or board minute, or the deed of waiver."
+    },
+    "director-settlement.acra-step": {
+      "label": "Record the step",
+      "tooltip": "Record a conversion's ACRA step as it happens: the resolution, the approval lodged within 14 days, the AGM date, the return of allotment."
+    },
+    "equity.share-issues": {
+      "label": "Register of share issues",
+      "tooltip": "Every allotment of shares, with its holder, class, number, price, consideration, resolutions and ACRA reference."
+    },
+    "share-issues.record-before-books": {
+      "label": "Record shares issued before the books start",
+      "tooltip": "Record the incorporation subscription and any other shares issued before the books start; no entry posts, as the opening balances hold their share capital."
+    },
+    "director-accounts.share-issues": {
+      "label": "Register of share issues",
+      "tooltip": "Every allotment of shares, the shares issued before the books start and the conversions ACRA registered."
+    },
+    "director-settlement.effective": {
+      "label": "Record as registered",
+      "tooltip": "Record ACRA's lodgement reference and the day its register of members shows the allotment: the conversion posts on that day, never backdated."
+    },
+    "director-settlement.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Send the settlement to another person who holds the approval right on director accounts; never the person settled."
+    },
+    "director-accounts.fees": {
+      "label": "Fees",
+      "tooltip": "Record a director's fee the shareholders voted, with their resolution, for another person to approve; it is then owed to the director on 2120."
+    },
+    "director-fee.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the shareholders' resolution, or the minutes of the general meeting that voted the fee."
+    },
+    "pay-choice.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the signed decision: the board minute or directors' resolution that sets the pay choice."
+    },
+    "accounting.pre-incorporation": {
+      "label": "Costs before incorporation",
+      "tooltip": "Costs the founders paid themselves before the books start, each waiting for the accountant's decision, then owed to them on 2500."
+    },
+    "pre-incorporation.add": {
+      "label": "Add a cost",
+      "tooltip": "Record a cost a director or shareholder paid before the books start, with its receipt, for the accountant to decide."
+    },
+    "pre-incorporation.change": {
+      "label": "Change",
+      "tooltip": "Correct the cost while it still needs a decision."
+    },
+    "pre-incorporation.decide": {
+      "label": "Decide",
+      "tooltip": "Choose the treatment, the account and whether its GST is claimed. The decision posts the cost to the person's account at once."
+    },
+    "pre-incorporation-cost.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the receipt or invoice the person paid. The accountant decides the cost only once it is attached."
+    },
+    "founders.money-i-put-in": {
+      "label": "Money I put in",
+      "tooltip": "What the company owes you for money you lent, costs you paid and pay or fees not yet paid."
+    },
+    "director-accounts.statement": {
+      "label": "Statement",
+      "tooltip": "The person's account from one day to another: the opening balance, the amounts by where they came from, and the closing balance."
+    },
+    "director-accounts.export": {
+      "label": "PDF for confirmation",
+      "tooltip": "The statement as a PDF to send for a balance confirmation, what the company owes the person shown positive; or its movements as CSV."
+    },
+    "director-accounts.related-parties": {
+      "label": "Related parties",
+      "tooltip": "Each director and shareholder as at the day: what the company owes them by nature, and the year's fees, conversions and waivers, for the notes to the accounts."
+    },
+    "director-accounts.link-member": {
+      "label": "Link member",
+      "tooltip": "Choose the member who signs in as this director or shareholder: they see their own account and never approve their own settlement. Another person approves it."
+    },
+    "journal.line-person": {
+      "label": "Whose account",
+      "tooltip": "On a director's account (2500, 2120), the director or shareholder the amount belongs to, and where it came from."
+    },
     "settings.access-review": {
       "label": "Access review",
       "tooltip": "Who can do what, live: roles, sign-ins, role conflicts, external users and integrations. An Owner attests it each quarter."
@@ -1291,6 +1399,10 @@
     "public.download": {
       "label": "Download the PDF",
       "tooltip": "Save the document as the sender issued it, to keep for your records."
+    },
+    "claim.keep-as-loan": {
+      "label": "Keep it as a loan to the company",
+      "tooltip": "For a director or shareholder: what you paid stays owed to you on your director account, in Money I put in, instead of being paid back now."
     },
     "claims.my-claims": {
       "label": "My claims",

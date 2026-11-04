@@ -13,9 +13,14 @@ import (
 // The expense claim's source type and rule version (FR-AP-07, FR-AP-16, FR-AP-17; posting rules "Posting an expense
 // claim", "Mileage claim" and "Cash advance to an employee", PRD-001 §10.2; p1-expense-claims design D2). A change to
 // the rule is a new version; an old version keeps producing what it produced (ENG-06).
+//
+// expense_claim@2 (PRD-001 rev 0.167; p1-founders-money design D6) is the rule of a claim a director or shareholder
+// keeps as a loan to the company (FR-EQ-02, B.7): what the company owes them goes to their director's account (2500)
+// instead of 2150. A claim reimbursed as usual still posts under expense_claim@1, whose output is unchanged.
 const (
-	SourceExpenseClaim = "expense_claim"
-	RuleExpenseClaim   = "expense_claim@1"
+	SourceExpenseClaim   = "expense_claim"
+	RuleExpenseClaim     = "expense_claim@1"
+	RuleExpenseClaimLoan = "expense_claim@2"
 )
 
 // RoleExpenseClaimsPayable is the account what the company owes its claimants is credited to (B.5: 2150).
@@ -56,6 +61,9 @@ type Claim struct {
 	Lines    []ClaimLine
 	Settles  *money.Money
 	Advances uuid.UUID
+	// Loan is the director or shareholder the claimant signs in as, when they keep the claim as a loan to the company
+	// (FR-EQ-02): what is owed goes to their director's account, 2500, under expense_claim@2. uuid.Nil: reimbursed.
+	Loan uuid.UUID
 }
 
 // ExpenseClaimIdentity is the posting identity of a claim version under a rule version (§11.4).
@@ -75,8 +83,25 @@ func ExpenseClaimIdentity(id uuid.UUID, version int, rule string) string {
 //   - and what makes the entry balance in the base currency to 7030 FX & rounding: the base paid against the amount at
 //     the rate, the stated GST against the GST at the rate, and any cent RND-FX leaves between a line's parts.
 //
-// Every rule is checked first and every failure returned together (ENG-22): the claim is rejected whole.
+// Every rule is checked first and every failure returned together (ENG-22): the claim is rejected whole. A claim kept
+// as a loan posts under PostExpenseClaimLoan.
 func PostExpenseClaim(c Claim, s Settings) (Entry, error) {
+	if c.Loan != uuid.Nil {
+		return Entry{}, Problems{{CodeParty, "settle_to", "a claim kept as a loan posts under expense_claim@2, not expense_claim@1",
+			"Post it again: the claim's rule follows how it is settled"}}
+	}
+	return postExpenseClaim(c, s, RuleExpenseClaim)
+}
+
+// PostExpenseClaimLoan turns one version of an approved claim a director or shareholder keeps as a loan to the company
+// into its entry (expense_claim@2; FR-EQ-02, Appendix B.7 "Cost a founder paid personally, kept as a loan"): as
+// expense_claim@1, but Cr their director's account (2500) with the gross, naming them, instead of 2150; input tax only
+// when the line meets FR-AP-20, else the GST stays in the cost. A claim kept as a loan settles no cash advance.
+func PostExpenseClaimLoan(c Claim, s Settings) (Entry, error) {
+	return postExpenseClaim(c, s, RuleExpenseClaimLoan)
+}
+
+func postExpenseClaim(c Claim, s Settings, rule string) (Entry, error) {
 	var probs Problems
 	add := func(code, field, msg, fix string) { probs = append(probs, Problem{code, field, msg, fix}) }
 	if c.Date.IsZero() {
@@ -89,7 +114,23 @@ func PostExpenseClaim(c Claim, s Settings) (Entry, error) {
 		add(CodeTooFewLines, "lines", "the claim has no lines", "Add a line for each receipt or trip")
 	}
 	payable, hasPayable := s.byRole(RoleExpenseClaimsPayable)
-	if !hasPayable {
+	if rule == RuleExpenseClaimLoan {
+		payable, hasPayable = s.byRole(RoleDirectorLoan)
+		switch {
+		case !hasPayable:
+			add(CodeSystemRole, "lines", "the chart has no loan from director / shareholder account",
+				"Load the standard chart's 2500 Loan from director / shareholder, or give a liability account the role")
+		case c.Loan == uuid.Nil:
+			add(CodeParty, "settle_to", "the claim is kept as a loan, but names no director or shareholder", "Claim as a director or shareholder, or have it reimbursed")
+		default:
+			if p := partyProblem(s, payable, c.Loan, "settle_to"); p != nil {
+				probs = append(probs, *p)
+			}
+		}
+		if c.Settles != nil && !c.Settles.IsZero() {
+			add(CodeClaimPaid, "settles", "a claim kept as a loan settles no cash advance", "Settle the advance with a claim that is reimbursed")
+		}
+	} else if !hasPayable {
 		add(CodeSystemRole, "lines", "the chart has no expense claims payable account",
 			"Load the standard chart's 2150 Expense claims payable, or give a liability account the role")
 	}
@@ -112,7 +153,7 @@ func PostExpenseClaim(c Claim, s Settings) (Entry, error) {
 		case acc.ShareCapital:
 			add(CodeShareCapital, f("category_id"), fmt.Sprintf("account %s is share capital, which changes only through the register of share issues", acc.Code),
 				"Give the category the account the expense is for")
-		case acc.Role == RoleExpenseClaimsPayable || acc.Role == RoleGSTControl || l.AccountID == c.Advances:
+		case acc.Role == RoleExpenseClaimsPayable || acc.Role == RoleGSTControl || l.AccountID == c.Advances || acc.DirectorAccount():
 			add(CodeRuleAccount, f("category_id"), fmt.Sprintf("account %s is one the claim posts what is owed, its GST or an advance to", acc.Code),
 				"Give the category the account the expense is for: the rule posts to it by itself")
 		}
@@ -236,7 +277,11 @@ func PostExpenseClaim(c Claim, s Settings) (Entry, error) {
 	}
 	toPayable, _ := owed.Sub(settles)
 	if !toPayable.IsZero() {
-		lines = append(lines, Line{AccountID: payable.ID, Amount: toPayable.Neg(), Rate: money.Identity(s.Base), Base: toPayable.Neg(), Description: c.Memo})
+		line := Line{AccountID: payable.ID, Amount: toPayable.Neg(), Rate: money.Identity(s.Base), Base: toPayable.Neg(), Description: c.Memo}
+		if rule == RuleExpenseClaimLoan {
+			line.Party = c.Loan // B.7: the director's account names its person
+		}
+		lines = append(lines, line)
 	}
 	if !settles.IsZero() {
 		lines = append(lines, Line{AccountID: c.Advances, Amount: settles.Neg(), Rate: money.Identity(s.Base), Base: settles.Neg(),
@@ -255,8 +300,8 @@ func PostExpenseClaim(c Claim, s Settings) (Entry, error) {
 	return Entry{
 		PostingDate:     time.Date(y, m, d, 0, 0, 0, 0, time.UTC),
 		Source:          Source{Type: SourceExpenseClaim, ID: c.ID.String(), Version: c.Version},
-		RuleVersion:     RuleExpenseClaim,
-		PostingIdentity: ExpenseClaimIdentity(c.ID, c.Version, RuleExpenseClaim),
+		RuleVersion:     rule,
+		PostingIdentity: ExpenseClaimIdentity(c.ID, c.Version, rule),
 		Memo:            c.Memo,
 		Lines:           lines,
 	}, nil
@@ -268,7 +313,8 @@ type ExpenseClaimRule func(c Claim, s Settings) (Entry, error)
 // ExpenseClaimRules are every expense claim rule version the engine has posted with, by name: like Rules, a version is
 // never removed or changed while an entry names it.
 var ExpenseClaimRules = map[string]ExpenseClaimRule{
-	RuleExpenseClaim: PostExpenseClaim,
+	RuleExpenseClaim:     PostExpenseClaim,
+	RuleExpenseClaimLoan: PostExpenseClaimLoan,
 }
 
 // ReplayExpenseClaim re-runs the rule version that posted a claim's entry over the same version (ENG-06).

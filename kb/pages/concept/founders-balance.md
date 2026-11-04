@@ -4,18 +4,19 @@ type: concept
 title: What the company owes a founder (the director's account)
 summary: Money a founder lent, costs paid personally and unpaid pay are owed to them, tracked per founder in their director's account
 sources:
-  - docs/user-guide/founders-money.md sha256:b2ff34f027f280effc67d5d0c2c074e13386e8313c5a1cb9365a4c074b7f2629
+  - docs/user-guide/founders-money.md sha256:5bb0d08e258456d44a69cfe4b4347560673bfae95b5661de6b8e3777804096c8
 aliases:
   - director loan
   - money I lent the company
   - founder paid personally
+  - money I put in
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-13
+compiled_at: 2026-11-03
 ---
 
 # What the company owes a founder (the director's account)
@@ -33,13 +34,28 @@ compiled_at: 2026-10-13
 
 ## Where the founder sees it
 
-- Equity → *Money I put in*, or the *Money I put in* card on Home. (src: docs/user-guide/founders-money.md#steps)
+- *Money I put in*, under the founder's name in the menu. (src: docs/user-guide/founders-money.md#steps)
+- It shows what the company owes them: money lent and costs paid, then pay and fees not yet paid,
+  with the latest amounts and where each came from. (src: docs/user-guide/founders-money.md#see-what-the-company-owes-you)
+- If it says no director account is linked to them, an Owner links their contact to them in
+  Accounting › Director accounts, and another person approves the link.
+  (src: docs/user-guide/founders-money.md#see-what-the-company-owes-you)
 - A cost paid personally is recorded as an expense claim with **Paid personally → Keep as a loan
-  to the company**; money lent is recorded as *Money in → Loan from me*. (src: docs/user-guide/founders-money.md#steps)
+  to the company**; money lent is a bank line categorised as *Loan from director / shareholder*,
+  with the founder as its contact. (src: docs/user-guide/founders-money.md#steps)
+- The accountant's view of every founder: [[founders.director-accounts]].
 - Live balances come from the read tools, never from this page.
 
 ## When it goes wrong
 
-- **⚠ Your director's account is overdrawn** means the founder owes the company. Fix: repay it,
+- **In debit**, or **⚠ Your director's account is overdrawn**, means the founder owes the company. Fix: repay it,
   or ask the accountant, because loans to directors are restricted unless the company is an
   exempt private company. (src: docs/user-guide/founders-money.md#common-problems)
+  (src: docs/user-guide/founders-money.md#see-what-the-company-owes-you)
+
+## Confirm your balances at the year end
+
+- After each financial year ends, **Money I put in** asks the founder to confirm their balances at
+  the year's end with their passkey, and again if an entry for that year is posted later; the
+  card in Director accounts says where it stands: [[founders.director-accounts]].
+  (src: docs/user-guide/founders-money.md#confirm-your-balances-at-the-year-end)

@@ -134,6 +134,24 @@ func Load(ctx context.Context, store storage.Store, org uuid.UUID, c seed.Compan
 	}
 	r.Accounts, r.Periods = len(ids), len(periods)
 
+	// The directors, as contacts marked director and shareholder: a line on a director's account names one (FR-EQ-01).
+	people := map[string]uuid.UUID{}
+	if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, p := range c.People {
+			if !p.Director {
+				continue
+			}
+			ct, err := u.Contacts().Create(ctx, storage.ContactDetails{LegalName: p.Name, Director: true, Shareholder: true, Country: "SG"})
+			if err != nil {
+				return fmt.Errorf("director %s: %w", p.ID, err)
+			}
+			people[p.ID] = ct.ID
+		}
+		return nil
+	}); err != nil {
+		return r, err
+	}
+
 	want := map[string]int64{} // the seed's own totals, in integer cents: never from the engine
 	svc := journal.Service{Store: store}
 	var first uuid.UUID
@@ -154,7 +172,8 @@ func Load(ctx context.Context, store storage.Store, org uuid.UUID, c seed.Compan
 			}
 			signed -= credit
 			want[l.Account] += signed
-			d.Lines = append(d.Lines, ledger.JournalLine{AccountID: ids[l.Account], Amount: money.FromMinor(signed, base)})
+			d.Lines = append(d.Lines, ledger.JournalLine{AccountID: ids[l.Account], Amount: money.FromMinor(signed, base), Party: people[l.Person],
+				Origin: l.Origin})
 		}
 		doc, err := svc.Create(ctx, org, d)
 		if err != nil {

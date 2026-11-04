@@ -30,6 +30,8 @@ type OpeningLine struct {
 	AccountID   string `json:"account_id" format:"uuid" doc:"The account: a leaf account, active. Share capital may take a line (INV-13)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"`
 	Amount      Money  `json:"amount" doc:"The balance in the base currency: a debit balance positive, a credit balance negative."`
 	Description string `json:"description,omitempty" maxLength:"500" doc:"What the balance is." example:"DBS current account at the books start"`
+	PartyID     string `json:"party_id,omitempty" format:"uuid" doc:"Only on a director's account (2500, 2120): the director or shareholder whose balance it is, a contact marked one; a balance owed to two founders is two lines. Required there and refused on any other account (FR-EQ-01, B.7; LEDGER-41)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"`
+	Origin      string `json:"origin,omitempty" enum:"lent,paid_personally,pay,fee,paid_out,other" doc:"Only on a director's account: where the balance came from (FR-EQ-01). Required there and refused elsewhere (LEDGER-41)." example:"lent"`
 }
 
 // OpeningDraft is the opening balances as entered.
@@ -113,7 +115,7 @@ func openingOf(doc storage.Document) (OpeningBalances, error) {
 		Lines: make([]OpeningLine, 0, len(saved.Lines)), PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: utc(doc.PostedAt)}
 	for _, l := range saved.Lines {
 		out.Lines = append(out.Lines, OpeningLine{AccountID: l.AccountID.String(), Amount: Money{Amount: l.Amount.String(), Currency: l.Amount.Currency().Code},
-			Description: l.Description})
+			Description: l.Description, PartyID: idOrEmpty(l.PartyID), Origin: l.Origin})
 	}
 	return out, nil
 }
@@ -245,7 +247,12 @@ func openingLines(in OpeningDraft, base money.Currency) ([]ledger.JournalLine, e
 			}
 			return nil, err
 		}
-		out = append(out, ledger.JournalLine{AccountID: id, Amount: amount, Description: strings.TrimSpace(l.Description)})
+		party, fp := partyOf(l.PartyID, field("party_id"))
+		if fp != nil {
+			fields = append(fields, *fp)
+			continue
+		}
+		out = append(out, ledger.JournalLine{AccountID: id, Amount: amount, Description: strings.TrimSpace(l.Description), Party: party, Origin: l.Origin})
 	}
 	if len(fields) > 0 {
 		return nil, invalid(fields)

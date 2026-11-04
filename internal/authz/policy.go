@@ -105,9 +105,10 @@ const (
 // a step of an organisation connector's lifecycle (p1-connector-framework, FR-INT-26); a bank rule's auto-apply
 // (p1-bank-import-reconcile, FR-BNK-14); posting an expense claim (p1-expense-claims, FR-AP-17), and voiding a
 // reimbursement of claims (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148); voiding a disposal of a fixed asset
-// (FR-FA-03, p1-fixed-assets); a change of a vendor's bank details (FR-CT-03, rev 0.153).
+// (FR-FA-03, p1-fixed-assets); a change of a vendor's bank details (FR-CT-03, rev 0.153); the member a director or
+// shareholder signs in as (FR-EQ-01, rev 0.167).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
-	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails}
+	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -590,6 +591,104 @@ var (
 	// and the account numbers show their last four characters to everyone; prepared and asked for under C (the
 	// Accountant, the AP specialist); approved through the approval engine by another person who holds A (the Owner, the
 	// Controller). Revealing a full number needs V unmasked (C or A) and step-up; a masked view (M) gets it masked.
+	// Director accounts (FR-EQ-01, FR-EQ-14; PRD-001 rev 0.167; p1-founders-money design D5): read under V without a
+	// qualifier (the Owner, the Controller, the Accountant, the Bookkeeper, the Auditor, the Tax agent), for Payroll's
+	// "deferred pay" and the Board's "share issues" reach only their own parts as those arrive; a person's own account
+	// under any right, which the handler narrows to the caller's own. The member a director or shareholder signs in as is
+	// linked by a holder of A (the Owner, the Controller) through the approval engine, approved by another, never the
+	// member (FM-1).
+	ListDirectorAccounts    = Policy{Operation: "listDirectorAccounts", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetDirectorStatement    = Policy{Operation: "getDirectorStatement", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	ExportDirectorStatement = Policy{Operation: "exportDirectorStatement", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetMyDirectorAccount    = Policy{Operation: "getMyDirectorAccount", Capability: DirectorAccounts, Need: View}
+	LinkContactMember       = Policy{Operation: "linkContactMember", Capability: DirectorAccounts, Need: Approve}
+	// The related-party schedule (FR-EQ-10; design D14): every person's figures, so the whole row, as the list.
+	GetRelatedParties    = Policy{Operation: "getRelatedParties", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	ExportRelatedParties = Policy{Operation: "exportRelatedParties", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	// Costs before the books start (FR-EQ-03; design D7): an Owner or the Controller records a founder's cost (A on the
+	// row), and the accountant, who posts on it (P), decides it; reading needs the whole row, not an Employee's own.
+	ListPreIncorporationCosts   = Policy{Operation: "listPreIncorporationCosts", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetPreIncorporationCost     = Policy{Operation: "getPreIncorporationCost", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	RecordPreIncorporationCost  = Policy{Operation: "recordPreIncorporationCost", Capability: DirectorAccounts, Need: Approve}
+	ReplacePreIncorporationCost = Policy{Operation: "replacePreIncorporationCost", Capability: DirectorAccounts, Need: Approve}
+	DecidePreIncorporationCost  = Policy{Operation: "decidePreIncorporationCost", Capability: DirectorAccounts, Need: Post,
+		Note: "The person who paid the cost never decides it."}
+	// A cost's receipt (FR-EQ-03, FR-DOC-05), on the cost's own row, as a card line's is: whoever records costs attaches
+	// and removes them, and whoever reads every director's account reads them.
+	AddPreIncorporationCostEvidence    = Policy{Operation: "addPreIncorporationCostEvidence", Capability: DirectorAccounts, Need: Approve}
+	ListPreIncorporationCostEvidence   = Policy{Operation: "listPreIncorporationCostEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetPreIncorporationCostEvidence    = Policy{Operation: "getPreIncorporationCostEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	RemovePreIncorporationCostEvidence = Policy{Operation: "removePreIncorporationCostEvidence", Capability: DirectorAccounts, Need: Approve,
+		Note: "Only while the cost needs a decision (FR-DOC-07)."}
+	// Directors' pay choices (FR-EQ-04; design D8): an Owner or the Controller drafts and records them with the signed
+	// decision (A on "Director accounts"); reading needs the whole row, not an Employee's own.
+	ListDirectorPayChoices          = Policy{Operation: "listDirectorPayChoices", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetDirectorPayChoice            = Policy{Operation: "getDirectorPayChoice", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	CreateDirectorPayChoice         = Policy{Operation: "createDirectorPayChoice", Capability: DirectorAccounts, Need: Approve}
+	ReplaceDirectorPayChoice        = Policy{Operation: "replaceDirectorPayChoice", Capability: DirectorAccounts, Need: Approve}
+	RecordDirectorPayChoice         = Policy{Operation: "recordDirectorPayChoice", Capability: DirectorAccounts, Need: Approve}
+	AddDirectorPayChoiceEvidence    = Policy{Operation: "addDirectorPayChoiceEvidence", Capability: DirectorAccounts, Need: Approve}
+	ListDirectorPayChoiceEvidence   = Policy{Operation: "listDirectorPayChoiceEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetDirectorPayChoiceEvidence    = Policy{Operation: "getDirectorPayChoiceEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	RemoveDirectorPayChoiceEvidence = Policy{Operation: "removeDirectorPayChoiceEvidence", Capability: DirectorAccounts, Need: Approve,
+		Note: "Only while the pay choice is a draft (FR-DOC-07)."}
+	// Directors' fees (FR-EQ-04, FM-9; design D8): an Owner or the Controller records one with the shareholders' resolution
+	// and asks another person to approve its post (A on "Director accounts"); never the director paid (FY252).
+	ListDirectorFees       = Policy{Operation: "listDirectorFees", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetDirectorFee         = Policy{Operation: "getDirectorFee", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	CreateDirectorFee      = Policy{Operation: "createDirectorFee", Capability: DirectorAccounts, Need: Approve}
+	ReplaceDirectorFee     = Policy{Operation: "replaceDirectorFee", Capability: DirectorAccounts, Need: Approve}
+	RequestDirectorFeePost = Policy{Operation: "requestDirectorFeePost", Capability: DirectorAccounts, Need: Approve,
+		Note: "Another person approves it, never the director the fee is paid to."}
+	AddDirectorFeeEvidence    = Policy{Operation: "addDirectorFeeEvidence", Capability: DirectorAccounts, Need: Approve}
+	ListDirectorFeeEvidence   = Policy{Operation: "listDirectorFeeEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetDirectorFeeEvidence    = Policy{Operation: "getDirectorFeeEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	RemoveDirectorFeeEvidence = Policy{Operation: "removeDirectorFeeEvidence", Capability: DirectorAccounts, Need: Approve,
+		Note: "Only while the fee is a draft (FR-DOC-07)."}
+	// The exempt-private-company status (FR-EQ-11; design D9): an Owner or the Controller records it with its evidence (A
+	// on "Director accounts"); reading needs the whole row.
+	ListExemptStatuses         = Policy{Operation: "listExemptStatuses", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetExemptStatus            = Policy{Operation: "getExemptStatus", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	CreateExemptStatus         = Policy{Operation: "createExemptStatus", Capability: DirectorAccounts, Need: Approve}
+	ReplaceExemptStatus        = Policy{Operation: "replaceExemptStatus", Capability: DirectorAccounts, Need: Approve}
+	RecordExemptStatus         = Policy{Operation: "recordExemptStatus", Capability: DirectorAccounts, Need: Approve}
+	AddExemptStatusEvidence    = Policy{Operation: "addExemptStatusEvidence", Capability: DirectorAccounts, Need: Approve}
+	ListExemptStatusEvidence   = Policy{Operation: "listExemptStatusEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetExemptStatusEvidence    = Policy{Operation: "getExemptStatusEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	RemoveExemptStatusEvidence = Policy{Operation: "removeExemptStatusEvidence", Capability: DirectorAccounts, Need: Approve,
+		Note: "Only while the status is a draft (FR-DOC-07)."}
+	// A year-end confirmation (FR-EQ-12; design D13): the member who signs in as the director or shareholder confirms
+	// their own balances, with a passkey, whatever their right on the row; nobody confirms for another.
+	ConfirmMyDirectorAccount = Policy{Operation: "confirmMyDirectorAccount", Capability: DirectorAccounts, Need: View,
+		Note: "Only the member linked to the director or shareholder, stepped up with a passkey."}
+	// Settlements of founders' balances (FR-EQ-05, FR-EQ-07, FM-9; design D10): an Owner or the Controller drafts one with
+	// its agreement and asks another person to approve it (A on "Director accounts"); never the person settled (APR-15).
+	ListDirectorSettlements           = Policy{Operation: "listDirectorSettlements", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetDirectorSettlement             = Policy{Operation: "getDirectorSettlement", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	CreateDirectorSettlement          = Policy{Operation: "createDirectorSettlement", Capability: DirectorAccounts, Need: Approve}
+	ReplaceDirectorSettlement         = Policy{Operation: "replaceDirectorSettlement", Capability: DirectorAccounts, Need: Approve}
+	RequestDirectorSettlementApproval = Policy{Operation: "requestDirectorSettlementApproval", Capability: DirectorAccounts, Need: Approve,
+		Note: "Another person approves it, never the person settled; the Accountant too when every available approver benefits."}
+	RecordConversionStep = Policy{Operation: "recordConversionStep", Capability: DirectorAccounts, Need: Approve,
+		Note: "The caller must have stepped up in the last 5 minutes."}
+	RecordConversionEffective = Policy{Operation: "recordConversionEffective", Capability: DirectorAccounts, Need: Approve,
+		Note: "The caller must have stepped up in the last 5 minutes, and is never the person converting."}
+	AddDirectorSettlementEvidence    = Policy{Operation: "addDirectorSettlementEvidence", Capability: DirectorAccounts, Need: Approve}
+	ListDirectorSettlementEvidence   = Policy{Operation: "listDirectorSettlementEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	GetDirectorSettlementEvidence    = Policy{Operation: "getDirectorSettlementEvidence", Capability: DirectorAccounts, Need: View, Unqualified: true}
+	RemoveDirectorSettlementEvidence = Policy{Operation: "removeDirectorSettlementEvidence", Capability: DirectorAccounts, Need: Approve,
+		Note: "Only while the settlement is a draft (FR-DOC-07)."}
+	// A director's repayment (FR-EQ-05, FR-BNK-12; design D10): recorded only by a payment batch's release, read as the
+	// batch's payments are, and voided when the bank rejected it on another person's approval, never the person's own.
+	// The register of share issues (FR-EQ-08; design D11): read by whoever reads the founders' accounts or the share issues
+	// (the Board viewer, qualified "share issues"); shares issued before the books start recorded by an Owner or the
+	// Controller.
+	ListShareIssues             = Policy{Operation: "listShareIssues", Capability: DirectorAccounts, Need: View}
+	RecordShareIssueBeforeBooks = Policy{Operation: "recordShareIssueBeforeBooks", Capability: DirectorAccounts, Need: Approve,
+		Note: "The caller must have stepped up in the last 5 minutes; only an issue before the books start, which posts no entry."}
+	GetDirectorRepayment         = Policy{Operation: "getDirectorRepayment", Capability: PaymentBatches, Need: View, Unqualified: true}
+	RequestDirectorRepaymentVoid = Policy{Operation: "requestDirectorRepaymentVoid", Capability: PaymentBatches, Need: Create, Unqualified: true,
+		Note: "Another person who holds A on \"Payment batches\" approves it, never the person repaid."}
 	GetPayeeBankDetails            = Policy{Operation: "getPayeeBankDetails", Capability: VendorBankDetails, Need: View}
 	GetPayeeBankChange             = Policy{Operation: "getPayeeBankChange", Capability: VendorBankDetails, Need: View}
 	CreatePayeeBankChange          = Policy{Operation: "createPayeeBankChange", Capability: VendorBankDetails, Need: Create}
@@ -1078,6 +1177,19 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListFixedAssets, GetFixedAsset, RegisterFixedAsset, ChangeFixedAsset, ListUnregisteredAssetLines,
 	DisposeFixedAsset, ListAssetDisposals, GetAssetDisposal, VoidAssetDisposal, RequestAssetDisposalVoid, VoidFixedAsset, RequestFixedAssetVoid,
 	GetPayeeBankDetails, GetPayeeBankChange, CreatePayeeBankChange, ReplacePayeeBankChange, RequestPayeeBankChangeApproval, RevealPayeeBankAccount,
+	ListDirectorAccounts, GetDirectorStatement, ExportDirectorStatement, GetMyDirectorAccount, LinkContactMember, GetRelatedParties, ExportRelatedParties,
+	ListPreIncorporationCosts, GetPreIncorporationCost, RecordPreIncorporationCost, ReplacePreIncorporationCost, DecidePreIncorporationCost,
+	AddPreIncorporationCostEvidence, ListPreIncorporationCostEvidence, GetPreIncorporationCostEvidence, RemovePreIncorporationCostEvidence,
+	ListDirectorPayChoices, GetDirectorPayChoice, CreateDirectorPayChoice, ReplaceDirectorPayChoice, RecordDirectorPayChoice,
+	AddDirectorPayChoiceEvidence, ListDirectorPayChoiceEvidence, GetDirectorPayChoiceEvidence, RemoveDirectorPayChoiceEvidence,
+	ListDirectorFees, GetDirectorFee, CreateDirectorFee, ReplaceDirectorFee, RequestDirectorFeePost,
+	AddDirectorFeeEvidence, ListDirectorFeeEvidence, GetDirectorFeeEvidence, RemoveDirectorFeeEvidence,
+	ListExemptStatuses, GetExemptStatus, CreateExemptStatus, ReplaceExemptStatus, RecordExemptStatus,
+	AddExemptStatusEvidence, ListExemptStatusEvidence, GetExemptStatusEvidence, RemoveExemptStatusEvidence,
+	ConfirmMyDirectorAccount,
+	ListDirectorSettlements, GetDirectorSettlement, CreateDirectorSettlement, ReplaceDirectorSettlement, RequestDirectorSettlementApproval, RecordConversionEffective, RecordConversionStep,
+	AddDirectorSettlementEvidence, ListDirectorSettlementEvidence, GetDirectorSettlementEvidence, RemoveDirectorSettlementEvidence,
+	GetDirectorRepayment, RequestDirectorRepaymentVoid, ListShareIssues, RecordShareIssueBeforeBooks,
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
 	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, SendRemittanceAgain, ReleasePaymentBatch, GetPaymentBatchFile,
@@ -1164,8 +1276,9 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 			q.Capability = row
 			// An Employee's own claims ("C (own)") are not the approvals: a claimant reaches their claim's request from the
 			// claim (design D10), and never the approvals or the review log; nor is the Payroll administrator's "C
-			// (salaries)" on payment batches.
-			q.Unqualified = row == ExpenseClaims || row == PaymentBatches
+			// (salaries)" on payment batches, nor a qualified view of director accounts (own, deferred pay, share issues,
+			// repayments).
+			q.Unqualified = row == ExpenseClaims || row == PaymentBatches || row == DirectorAccounts
 			if r, ok := holds(q, roles); ok {
 				return Decision{Allowed: true, Right: r}
 			}

@@ -21,16 +21,17 @@ import (
 
 // ------------------------------------------------------------------ payment batches (FR-BNK-12, FR-AP-13, SOD-1, SOD-2, FM-1)
 //
-// A batch pays approved bills and expense claims whole, from one SGD money account on one date, by FAST or GIRO, to the
-// payees' Singapore accounts in force: one payment per supplier, one reimbursement per claimant (PRD-001 rev 0.154 and rev
-// 0.156; p1-payments-out design D1, D2). It is prepared under C on Appendix D's "Payment batches", approved by another
+// A batch pays approved bills, expense claims and settlements approved to be repaid to a director whole, from one SGD
+// money account on one date, by FAST or GIRO, to the payees' Singapore accounts in force: one payment per supplier, one
+// reimbursement per claimant, one repayment per director (PRD-001 rev 0.154 and rev 0.156; p1-payments-out design D1, D2;
+// p1-founders-money design D10). It is prepared under C on Appendix D's "Payment batches", approved by another
 // person who holds A, and released once by the Payment releaser, which posts its payments and writes its payment list.
 // Every check is run again at each read, ask and release, all at once (ENG-23).
 
-// PaymentBatchItem is a bill or claim a batch pays, with what is open on it now.
+// PaymentBatchItem is a bill, claim or director's settlement a batch pays, with what is open on it now.
 type PaymentBatchItem struct {
-	Kind       string      `json:"kind" enum:"bill,claim" doc:"A posted bill, or an approved expense claim." example:"bill"`
-	DocumentID string      `json:"document_id" format:"uuid" doc:"The bill or claim." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"`
+	Kind       string      `json:"kind" enum:"bill,claim,director" doc:"A posted bill, an approved expense claim, or a settlement approved to be repaid to a director or shareholder (FR-EQ-05)." example:"bill"`
+	DocumentID string      `json:"document_id" format:"uuid" doc:"The bill, claim or settlement." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"`
 	Number     string      `json:"number,omitempty" doc:"Its number." example:"BILL-0042"`
 	Date       string      `json:"date,omitempty" format:"date" doc:"Its date." example:"2026-10-02"`
 	Open       Money       `json:"open" doc:"What the batch pays of it: what is open on it now, in SGD."`
@@ -39,23 +40,24 @@ type PaymentBatchItem struct {
 
 // PaymentBatchPayee is whom one of a batch's payments goes to.
 type PaymentBatchPayee struct {
-	Kind string `json:"kind" enum:"vendor,person" doc:"A supplier, paid its bills; or a claimant, paid back their claims." example:"vendor"`
+	Kind string `json:"kind" enum:"vendor,person" doc:"A contact (a supplier, or a director or shareholder with no member linked), or a member (a claimant, or a director or shareholder repaid into the member's own account)." example:"vendor"`
 	ID   string `json:"id" format:"uuid" doc:"The vendor's contact ID, or the person's user ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0"`
 	Name string `json:"name" doc:"The vendor's legal name, or the person's name." example:"Northwind Analytics Pte. Ltd."`
 }
 
-// PaymentBatchPayment is one payee's part of a batch: one bill payment, or one reimbursement.
+// PaymentBatchPayment is one payee's part of a batch: one bill payment, one reimbursement, or one director's repayment.
 type PaymentBatchPayment struct {
+	Kind    string             `json:"kind" enum:"supplier,claimant,director" doc:"What it pays: a supplier's bills (a bill payment), a claimant's claims (a reimbursement), or a director's or shareholder's settlements approved to be repaid (a director's repayment, FR-EQ-05). A director who is also a claimant gets two payments." example:"supplier"`
 	Payee   PaymentBatchPayee  `json:"payee" doc:"Whom it pays."`
 	Account *PayeeAccount      `json:"account,omitempty" doc:"The payee's account in force it pays into, by its last four characters; absent when they have none."`
 	Frozen  bool               `json:"payments_frozen" doc:"A change of the payee's bank account waits for approval: the payment is held (PAYEE-12)." example:"false"`
 	Amount  Money              `json:"amount" doc:"What it pays: the sum of its items, in SGD."`
-	Items   []PaymentBatchItem `json:"items" nullable:"false" doc:"The payee's bills or claims it pays, as the batch lists them."`
+	Items   []PaymentBatchItem `json:"items" nullable:"false" doc:"The payee's bills, claims or settlements it pays, as the batch lists them."`
 	// Once released (design D8):
-	PaymentID  string `json:"payment_id,omitempty" format:"uuid" doc:"Released: the bill payment or reimbursement the release posted." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10"`
+	PaymentID  string `json:"payment_id,omitempty" format:"uuid" doc:"Released: the bill payment, reimbursement or director's repayment the release posted." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d10"`
 	Paid       bool   `json:"paid" doc:"Released: bank import matched the payment to its statement line." example:"false"`
-	Rejected   bool   `json:"rejected" doc:"Released: the payment was voided, as when the bank rejected it; its bills or claims are open again." example:"false"`
-	Remittance string `json:"remittance,omitempty" enum:"waiting,queued,sent,failed,no_email" doc:"A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, failed when sending it gave up after its attempts (⚠: tell the supplier another way), or no_email when the supplier has no remittance address (⚠). Absent for a claimant." example:"sent"`
+	Rejected   bool   `json:"rejected" doc:"Released: the payment was voided, as when the bank rejected it; its bills, claims or settlements are open again." example:"false"`
+	Remittance string `json:"remittance,omitempty" enum:"waiting,queued,sent,failed,no_email" doc:"A supplier's remittance advice: waiting for the bank's statement line, queued once matched, sent, failed when sending it gave up after its attempts (⚠: tell the supplier another way), or no_email when the supplier has no remittance address (⚠). Absent for a claimant or a director." example:"sent"`
 }
 
 // PaymentBatch is a batch of payments, as its checks read it now.
@@ -68,7 +70,7 @@ type PaymentBatch struct {
 	PaymentDate    string                `json:"payment_date" format:"date" doc:"The day the bank pays it: each payment is posted on it." example:"2026-10-31"`
 	Method         string                `json:"method" enum:"fast,giro" doc:"How the bank pays it: FAST, within minutes, or GIRO, over the next working days." example:"fast"`
 	Notes          string                `json:"notes,omitempty" doc:"Its notes." example:"End of October suppliers and claims"`
-	Payments       []PaymentBatchPayment `json:"payments" nullable:"false" doc:"One payment per payee: a supplier's bills as one bill payment, a claimant's claims as one reimbursement."`
+	Payments       []PaymentBatchPayment `json:"payments" nullable:"false" doc:"One payment per payee: a supplier's bills as one bill payment, a claimant's claims as one reimbursement, a director's settlements as one repayment."`
 	Total          Money                 `json:"total" doc:"What it pays in all, in SGD."`
 	Checks         []BillCheck           `json:"checks" nullable:"false" doc:"Before release: what stops it being asked for, approved or released (✖), every problem at once. Empty in a list."`
 	ApprovalID     string                `json:"approval_id,omitempty" format:"uuid" doc:"The approval request it waits for." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20"`
@@ -84,10 +86,10 @@ type PaymentBatchPage struct {
 	NextCursor string         `json:"next_cursor,omitempty" doc:"Pass it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjIwMjYtMTAtMzF8MDE5MiJ9"`
 }
 
-// PaymentBatchItemRef names a bill or claim a batch pays.
+// PaymentBatchItemRef names a bill, claim or director's settlement a batch pays.
 type PaymentBatchItemRef struct {
-	Kind       string `json:"kind" enum:"bill,claim" doc:"A posted bill, or an approved expense claim." example:"bill"`
-	DocumentID string `json:"document_id" format:"uuid" doc:"The bill or claim." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"`
+	Kind       string `json:"kind" enum:"bill,claim,director" doc:"A posted bill, an approved expense claim, or a settlement approved to be repaid to a director or shareholder." example:"bill"`
+	DocumentID string `json:"document_id" format:"uuid" doc:"The bill, claim or settlement." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"`
 }
 
 // PaymentBatchDraft is a batch as sent.
@@ -95,14 +97,14 @@ type PaymentBatchDraft struct {
 	MoneyAccountID string                `json:"money_account_id" format:"uuid" doc:"The SGD bank account it is paid from: the chart's money account, as a payment recorded by hand names it, set up in Banking." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
 	PaymentDate    string                `json:"payment_date" format:"date" doc:"The day the bank pays it." example:"2026-10-31"`
 	Method         string                `json:"method" enum:"fast,giro" doc:"FAST or GIRO." example:"fast"`
-	Items          []PaymentBatchItemRef `json:"items" maxItems:"500" nullable:"false" doc:"The bills and claims it pays, each whole, for what is open on it; at most 500."`
+	Items          []PaymentBatchItemRef `json:"items" maxItems:"500" nullable:"false" doc:"The bills, claims and settlements to repay it pays, each whole, for what is open on it; at most 500."`
 	Notes          string                `json:"notes,omitempty" maxLength:"500" doc:"Its notes." example:"End of October suppliers and claims"`
 }
 
 // PaymentBatchSuggestion is what a new batch for a payment date starts with (FR-AP-13).
 type PaymentBatchSuggestion struct {
 	PaymentDate string                `json:"payment_date" format:"date" doc:"The payment date asked for." example:"2026-10-31"`
-	Suggested   []PaymentBatchItemRef `json:"suggested" nullable:"false" doc:"Every posted SGD bill with something open planned on or before the date, then every approved claim with something owed, none in an approved batch; at most the 500 items a batch holds, oldest first."`
+	Suggested   []PaymentBatchItemRef `json:"suggested" nullable:"false" doc:"Every posted SGD bill with something open planned on or before the date, then every approved claim with something owed, then every settlement approved to be repaid with something open, none in an approved batch; at most the 500 items a batch holds, oldest first."`
 }
 
 // PaymentBatchPath names a batch in the path.
@@ -283,6 +285,13 @@ func (a *API) batchOf(ctx context.Context, u storage.UnitOfWork, v batchView, do
 		}
 	}
 	for _, p := range b.Payments {
+		kind := "supplier"
+		switch {
+		case p.Director != uuid.Nil:
+			kind = "director"
+		case p.Payee.IsPerson():
+			kind = "claimant"
+		}
 		who := PaymentBatchPayee{Kind: "vendor", ID: p.Payee.ContactID.String()}
 		if p.Payee.IsPerson() {
 			who = PaymentBatchPayee{Kind: "person", ID: p.Payee.PersonID.String()}
@@ -297,13 +306,13 @@ func (a *API) batchOf(ctx context.Context, u storage.UnitOfWork, v batchView, do
 				return PaymentBatch{}, err
 			}
 			who.Name = c.LegalName
-			if strings.TrimSpace(c.RemittanceEmail) == "" {
+			if kind == "supplier" && strings.TrimSpace(c.RemittanceEmail) == "" {
 				warnings = append(warnings, BillCheck{Severity: "warning", Code: CodeBatchNoRemittance, Field: "payments",
 					Message: c.LegalName + " has no remittance email, so no remittance advice is sent when it is paid",
 					Fix:     "Add the supplier's remittance email to its contact"})
 			}
 		}
-		pay := PaymentBatchPayment{Payee: who, Frozen: p.Frozen, Amount: moneyOut(p.Amount), Items: []PaymentBatchItem{}}
+		pay := PaymentBatchPayment{Kind: kind, Payee: who, Frozen: p.Frozen, Amount: moneyOut(p.Amount), Items: []PaymentBatchItem{}}
 		if p.Bank != nil {
 			acc := payeeAccountOf(*p.Bank)
 			pay.Account = &acc
@@ -416,7 +425,8 @@ func registerPaymentBatches(a *API) {
 		OperationID: "getPaymentBatchSuggestion", Method: http.MethodGet, Path: "/v1/payment-batches/suggestion", Tags: []string{"Purchases"},
 		Summary: "Suggest a payment batch's items for a date",
 		Description: "What a new batch for a payment date starts with (FR-AP-13, FR-BNK-12): every posted SGD bill with something open whose " +
-			"planned payment date is on or before it, then every approved expense claim with something owed, oldest first, none in an " +
+			"planned payment date is on or before it, then every approved expense claim with something owed, then every settlement " +
+			"approved to be repaid to a director or shareholder with something open (FR-EQ-05), oldest first, none in an " +
 			"approved batch. A suggestion never adds itself: send the items you keep with createPaymentBatch. Read-only; no side effects.",
 	}, []string{CodeInvalid}, func(ctx context.Context, in *batchSuggestInput) (*batchSuggestOutput, error) {
 		on, err := time.Parse(time.DateOnly, in.PaymentDate)
@@ -443,10 +453,11 @@ func registerPaymentBatches(a *API) {
 		OperationID: "createPaymentBatch", Method: http.MethodPost, Path: "/v1/payment-batches", Tags: []string{"Purchases"},
 		DefaultStatus: http.StatusCreated, Summary: "Prepare a payment batch",
 		Description: "Saves a draft batch (FR-BNK-12; PRD-001 rev 0.154): an SGD bank account, a payment date, FAST or GIRO, and the approved " +
-			"bills and expense claims it pays, each whole, for what is open on it. Saving checks its form only; getPaymentBatch shows " +
-			"what stops it being asked for: an item not posted or not open, a bill not in SGD or waiting for withholding (FR-AP-19), an " +
-			"item in another approved batch, a payee with no approved Singapore account, or one whose change of bank account waits " +
-			"(PAYEE-12). Side effects: the batch and its audit event; nothing is paid or posted. Idempotent with Idempotency-Key; " +
+			"bills, expense claims and settlements to repay to a director (FR-EQ-05) it pays, each whole, for what is open on it. " +
+			"Saving checks its form only; getPaymentBatch shows what stops it being asked for: an item not posted or not open, a bill " +
+			"not in SGD or waiting for withholding (FR-AP-19), a repayment of more than the company owes the director on the payment " +
+			"date (PB-25), an item in another approved batch, a payee with no approved Singapore account, or one whose change of bank " +
+			"account waits (PAYEE-12). Side effects: the batch and its audit event; nothing is paid or posted. Idempotent with Idempotency-Key; " +
 			"Prefer: return=preview checks it and saves nothing.",
 	}, append([]string{CodeInvalid, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld},
 		append(locks, BatchCodes...)...),

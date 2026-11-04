@@ -68,7 +68,11 @@
         "fixed_asset",
         "payee_bank_change",
         "claimant_bank_change",
-        "payment_batch"
+        "payment_batch",
+        "contact_member_link",
+        "director_fee",
+        "director_settlement",
+        "director_repayment"
       ],
       "examples": [
         "organisation_setting"

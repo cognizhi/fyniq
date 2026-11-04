@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "class_account_id": {
+      "description": "The class: an active share-capital account (3010 ordinary or 3020 preference).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "consideration": {
+      "description": "What paid for them.",
+      "enum": [
+        "cash",
+        "debt_capitalised",
+        "services",
+        "safe_or_note"
+      ],
+      "examples": [
+        "cash"
+      ],
+      "type": "string"
+    },
+    "effective_on": {
+      "description": "The day ACRA's register of members shows the allotment: before the books start.",
+      "examples": [
+        "2025-01-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "The contact the shares were allotted to: a director or shareholder.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "lodgement_ref": {
+      "description": "ACRA's lodgement reference, if any.",
+      "examples": [
+        "AA2025010200123"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "price": {
+      "description": "The price per share in the base currency, a decimal string above zero with at most 6 decimals.",
+      "examples": [
+        "1.00"
+      ],
+      "type": "string"
+    },
+    "resolution_refs": {
+      "description": "The resolutions or subscription that allotted them, by reference.",
+      "examples": [
+        "Incorporation subscription, 2 Jan 2025"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "shares": {
+      "description": "The number of shares, a whole number above zero.",
+      "examples": [
+        "10000"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "holder_id",
+    "class_account_id",
+    "shares",
+    "price",
+    "consideration",
+    "resolution_refs",
+    "effective_on"
+  ],
+  "title": "ShareIssueRequest",
+  "type": "object"
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "interest_rate": {
+      "description": "The interest a year, as a percentage; 0, an interest-free loan, when left out.",
+      "examples": [
+        "0"
+      ],
+      "type": "string"
+    },
+    "repay_on": {
+      "description": "The day it is repaid; left out, it is repayable on demand.",
+      "examples": [
+        "2027-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "subordinated": {
+      "description": "Subordinated to the company's other creditors.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "title": "SettlementTerms",
+  "type": "object"
+}

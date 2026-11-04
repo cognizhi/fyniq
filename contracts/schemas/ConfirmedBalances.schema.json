@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "balances": {
+      "description": "The balances confirmed, one per director's account, as the ledger holds them: negative is owed to the person.",
+      "items": {
+        "$ref": "DirectorBalance.schema.json"
+      },
+      "type": "array"
+    },
+    "id": {
+      "description": "The confirmation's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4ff1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "year_end": {
+      "description": "The year's end confirmed.",
+      "examples": [
+        "2025-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "year_end",
+    "balances"
+  ],
+  "title": "ConfirmedBalances",
+  "type": "object"
+}

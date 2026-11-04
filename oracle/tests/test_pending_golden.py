@@ -196,11 +196,13 @@ def test_pending_sales():
 
 
 # req: QA-ENG-02
+# req: FR-EQ-02
 def test_pending_claims():
     r = _run("claims")
-    assert r["rejected"] == ["RE-0003", "EC-0005"]  # EC-0004 is paid; a trip in USD
+    # EC-0004 is paid; a trip in USD; a loan settling an advance; a loan to no director; a loan reimbursed.
+    assert r["rejected"] == ["RE-0003", "EC-0005", "EC-0007", "EC-0008", "RE-0004"]
     assert [e["document"] for e in r["entries"]] == ["ADV-0001", "EC-0001", "EC-0002", "EC-0003", "EC-0004", "RE-0001",
-                                                     "RE-0002", "ADV-0002", "ADV-0002R"]
+                                                     "RE-0002", "ADV-0002", "ADV-0002R", "EC-0006"]
     # 100.00 + 9.00 GST and 12.35 km -> 12.4 × 0.60 = 7.44: 116.44 taken from the 500.00 advance.
     assert _lines(r, "EC-0001") == [("1250", "SGD", "-116.44", "-116.44"), ("2200", "SGD", "9.00", "9.00"),
                                     ("6010", "SGD", "100.00", "100.00"), ("6110", "SGD", "7.44", "7.44")]
@@ -220,8 +222,52 @@ def test_pending_claims():
             "6110": "69.27",  # 7.44 + 61.83
             "7030": "-1.00",
         },
-        "2026-04": {},  # 300.00 advanced and refunded
+        # 300.00 advanced and refunded; P0001 paid 200.00 + 18.00 GST and keeps it as a loan (FR-EQ-02, B.7).
+        "2026-04": {"2200": "18.00", "2500": "-218.00", "6010": "200.00"},
     }
+    # The 2500 line names the person; what the company owes them stays there.
+    entry = next(e for e in r["entries"] if e["document"] == "EC-0006")
+    assert [(ln["account"], ln.get("party")) for ln in entry["lines"]] == [("2200", None), ("2500", "P0001"),
+                                                                          ("6010", None)]
+    assert r["people"] == {"P0001": {"2500": "-218.00"}}
+
+
+# req: QA-ENG-02
+# req: FR-EQ-03
+# req: FR-EQ-04
+# req: FR-EQ-05
+# req: FR-EQ-07
+def test_pending_founders():
+    r = _run("founders")
+    # On the books start; a person who is not a director; on a director's account; posted before the books start; GST
+    # claimed when the receipt shows none.
+    # Then a fee voted to someone who is not a director, and one posted to the director's account itself.
+    # A waiver of an account that is not a director's, and one crediting a money account, are refused too; so are a
+    # repayment from an account that is not money, and one of an account that is not a director's.
+    assert r["rejected"] == ["PIC-0004", "PIC-0005", "PIC-0006", "PIC-0007", "PIC-0008", "DF-0002", "DF-0003", "DS-0002", "DS-0003", "DR-0003",
+                             "DR-0004"]
+    # 1,315.00 with no GST shown: all to 6910, owed to P0001 on 2500.
+    assert _lines(r, "PIC-0001") == [("2500", "SGD", "-1315.00", "-1315.00"), ("6910", "SGD", "1315.00", "1315.00")]
+    # 3,815.00 with 315.00 GST claimed while registered from the books start: 3,500.00 to 1600, 315.00 to 2200.
+    assert _lines(r, "PIC-0002") == [("1600", "SGD", "3500.00", "3500.00"), ("2200", "SGD", "315.00", "315.00"),
+                                     ("2500", "SGD", "-3815.00", "-3815.00")]
+    # 763.00 with 63.00 GST not claimed, decided on 3 Feb: the GST stays in the cost.
+    assert _lines(r, "PIC-0003") == [("2500", "SGD", "-763.00", "-763.00"), ("6400", "SGD", "763.00", "763.00")]
+    # FR-EQ-04: P0002's 6,000.00 fee voted on 31 Mar: Dr 6050, Cr 2120 owed to them.
+    assert _lines(r, "DF-0001") == [("2120", "SGD", "-6000.00", "-6000.00"), ("6050", "SGD", "6000.00", "6000.00")]
+    assert r["trial_balance"] == {
+        "2026-01": {"1600": "3500.00", "2200": "315.00", "2500": "-5130.00", "6910": "1315.00"},  # 1,315.00 + 3,815.00
+        "2026-02": {"2500": "-763.00", "6400": "763.00"},
+        # The fee, the waiver, and 500.00 + 2,815.00 repaid from the bank.
+        "2026-03": {"1010": "-3315.00", "2120": "-4000.00", "2500": "2315.00", "3300": "-1000.00", "6050": "6000.00"},
+    }
+    # FR-EQ-07: P0001 waives 1,000.00 of their 2,078.00 as a shareholder: Dr 2500 naming them, Cr 3300.
+    assert _lines(r, "DS-0001") == [("2500", "SGD", "1000.00", "1000.00"), ("3300", "SGD", "-1000.00", "-1000.00")]
+    # FR-EQ-05: P0002 repaid 2,000.00 of the fee and 815.00 of the cost in one payment: Dr 2120 and 2500 naming them, Cr 1010.
+    assert _lines(r, "DR-0002") == [("1010", "SGD", "-2815.00", "-2815.00"), ("2120", "SGD", "2000.00", "2000.00"),
+                                    ("2500", "SGD", "815.00", "815.00")]
+    # 1,315.00 + 763.00 - 1,000.00 - 500.00 for P0001; P0002's cost on 2500 and fee on 2120, less what was repaid.
+    assert r["people"] == {"P0001": {"2500": "-578.00"}, "P0002": {"2120": "-4000.00", "2500": "-3000.00"}}
 
 
 # req: QA-ENG-02
@@ -350,8 +396,8 @@ def test_pending_statements():
         "closing_cash": "5430.21",
         "non_cash": [{"document": "JNL-0008", "kind": "post", "posting_date": "2026-01-28", "section": "financing"}],
     }
-    assert jan["equity_movement"] == {"opening": "0.00", "profit": "-2483.12", "share_capital": "0.00", "other": "0.00",
-                                      "closing": "-2483.12"}
+    assert jan["equity_movement"] == {"opening": "0.00", "profit": "-2483.12", "share_capital": "0.00",
+                                      "share_capital_non_cash": "0.00", "other": "0.00", "closing": "-2483.12"}
     assert jan["checks"] == {"balances": True, "ties": True, "equity": True, "unplaced": []}
 
     feb = s["2026-02"]
@@ -415,7 +461,7 @@ def test_pending_statements():
     }
     # The capital contribution 2,000.00 less the dividend 300.00.
     assert feb["equity_movement"] == {"opening": "-2483.12", "profit": "3443.32", "share_capital": "0.00",
-                                      "other": "1700.00", "closing": "2660.20"}
+                                      "share_capital_non_cash": "0.00", "other": "1700.00", "closing": "2660.20"}
     assert feb["checks"] == {"balances": True, "ties": True, "equity": True, "unplaced": []}
 
     mar = s["2026-03"]
@@ -423,8 +469,8 @@ def test_pending_statements():
     assert mar["balance_sheet"] == feb["balance_sheet"]
     assert mar["cash_flow"] == {"operating": _NO_CASH_FLOW, "investing": "0.00", "financing": "0.00",
                                 "net_change": "0.00", "opening_cash": "9710.20", "closing_cash": "9710.20", "non_cash": []}
-    assert mar["equity_movement"] == {"opening": "2660.20", "profit": "0.00", "share_capital": "0.00", "other": "0.00",
-                                      "closing": "2660.20"}
+    assert mar["equity_movement"] == {"opening": "2660.20", "profit": "0.00", "share_capital": "0.00",
+                                      "share_capital_non_cash": "0.00", "other": "0.00", "closing": "2660.20"}
     assert mar["checks"] == {"balances": True, "ties": True, "equity": True, "unplaced": []}
 
     # 50.00 paid to 1990, which has no cash-flow line: it sits in no section, so the balance sheet is 50.00 short

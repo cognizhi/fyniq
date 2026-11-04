@@ -31,7 +31,8 @@
                 "account": {"type": "string"},
                 "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
                 "amount": {"description": "At the line currency's minor units.", "$ref": "#/$defs/decimal"},
-                "base_amount": {"description": "At the base currency's minor units.", "$ref": "#/$defs/decimal"}
+                "base_amount": {"description": "At the base currency's minor units.", "$ref": "#/$defs/decimal"},
+                "party": {"description": "Only on a line on a director's account: its person (FR-EQ-01, B.7). A reversal's line keeps it.", "type": "string"}
               }
             }
           }
@@ -52,6 +53,14 @@
           "type": "object",
           "additionalProperties": {"$ref": "#/$defs/decimal"}
         }
+      }
+    },
+    "people": {
+      "description": "Present only when a posted line names a person. Person -> director's account -> base-currency total of every posted line naming that person on that account (FR-EQ-01; the sub-ledger of 2500 and 2120). A total of zero may be left out; a comparator reads a missing person or account as zero.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {"$ref": "#/$defs/decimal"}
       }
     },
     "statements": {
@@ -241,7 +250,8 @@
                   "document": {"type": "string"},
                   "kind": {"enum": ["post", "reversal", "release", "depreciation"]},
                   "posting_date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
-                  "section": {"enum": ["investing", "financing"]}
+                  "section": {"enum": ["investing", "financing"]},
+                  "label": {"description": "What the entry was, when its document says it (FR-EQ-10): a conversion of a founder's balance, or a waiver.", "enum": ["Converted to shares", "Waived"]}
                 }
               }
             }
@@ -251,11 +261,12 @@
           "description": "From the month's opening equity to its closing equity, credit positive.",
           "type": "object",
           "additionalProperties": false,
-          "required": ["opening", "profit", "share_capital", "other", "closing"],
+          "required": ["opening", "profit", "share_capital", "share_capital_non_cash", "other", "closing"],
           "properties": {
             "opening": {"$ref": "#/$defs/decimal"},
             "profit": {"$ref": "#/$defs/decimal"},
-            "share_capital": {"$ref": "#/$defs/decimal"},
+            "share_capital": {"description": "Shares issued for cash: every line on the Share capital line but a conversion's.", "$ref": "#/$defs/decimal"},
+            "share_capital_non_cash": {"description": "Shares issued for non-cash consideration: a conversion's lines on the Share capital line (FR-EQ-10).", "$ref": "#/$defs/decimal"},
             "other": {"$ref": "#/$defs/decimal"},
             "closing": {"$ref": "#/$defs/decimal"}
           }

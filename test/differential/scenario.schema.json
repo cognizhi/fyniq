@@ -36,8 +36,8 @@
           "group": {"description": "A group (parent) account cannot be posted to (INV-04).", "type": "boolean"},
           "active": {"type": "boolean"},
           "role": {
-            "description": "Optional. \"share-capital\" marks an account a manual journal may not post to (INV-13, PRD-001 rev 0.24), such as 3010 and 3020 in the default chart. The statements read three more (FR-RPT-01 rev 0.159): \"retained-earnings\" (an equity account, 3100), \"depreciation\" (an expense account, 6610) and \"income-tax-expense\" (an expense account, 8010); a chart has at most one account with each of these three.",
-            "enum": ["share-capital", "retained-earnings", "depreciation", "income-tax-expense"]
+            "description": "Optional. \"share-capital\" marks an account a manual journal may not post to (INV-13, PRD-001 rev 0.24), such as 3010 and 3020 in the default chart. The statements read three more (FR-RPT-01 rev 0.159): \"retained-earnings\" (an equity account, 3100), \"depreciation\" (an expense account, 6610) and \"income-tax-expense\" (an expense account, 8010); a chart has at most one account with each of these three. \"director-loan\" (2500) and \"deferred-remuneration\" (2120) mark the director's accounts, each of whose lines names its person and origin, while no other line names either (FR-EQ-01, B.7; PRD-001 rev 0.167).",
+            "enum": ["share-capital", "retained-earnings", "depreciation", "income-tax-expense", "director-loan", "deferred-remuneration"]
           },
           "report_group": {
             "description": "Optional (FR-COA-02): the line a statement shows the account under. An account without one is shown under its code.",
@@ -57,6 +57,12 @@
           }
         }
       }
+    },
+    "people": {
+      "description": "Optional. The directors and shareholders: the only persons a line on a director's account may name (FR-EQ-01). Left out, there are none.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/documentId"}
     },
     "statements": {
       "description": "Optional. true asks both sides for every month's statements (FR-RPT-01, README \"Statements\"); the chart then needs an account with the role retained-earnings.",
@@ -144,7 +150,9 @@
       "properties": {"type": {"enum": ["manual_journal", "bank_transaction", "bank_transfer", "bill", "vendor_credit",
                                          "bill_payment", "invoice", "credit_note", "customer_receipt", "customer_deposit",
                                          "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
-                                         "cash_advance", "fixed_asset", "asset_disposal"]}},
+                                         "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost",
+                                         "director_fee", "director_waiver", "director_repayment",
+                                         "director_conversion"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "bank_transaction"}}}, "then": {"$ref": "#/$defs/bankTransaction"}},
@@ -159,7 +167,12 @@
         {"if": {"properties": {"type": {"enum": ["invoice", "credit_note"]}}}, "then": {"$ref": "#/$defs/invoice"}},
         {"if": {"properties": {"type": {"const": "customer_deposit"}}}, "then": {"$ref": "#/$defs/customerDeposit"}},
         {"if": {"properties": {"type": {"const": "deposit_refund"}}}, "then": {"$ref": "#/$defs/depositRefund"}},
-        {"if": {"properties": {"type": {"const": "write_off"}}}, "then": {"$ref": "#/$defs/writeOff"}}
+        {"if": {"properties": {"type": {"const": "write_off"}}}, "then": {"$ref": "#/$defs/writeOff"}},
+        {"if": {"properties": {"type": {"const": "pre_incorporation_cost"}}}, "then": {"$ref": "#/$defs/preIncorporationCost"}},
+        {"if": {"properties": {"type": {"const": "director_fee"}}}, "then": {"$ref": "#/$defs/directorFee"}},
+        {"if": {"properties": {"type": {"const": "director_waiver"}}}, "then": {"$ref": "#/$defs/directorWaiver"}},
+        {"if": {"properties": {"type": {"const": "director_repayment"}}}, "then": {"$ref": "#/$defs/directorRepayment"}},
+        {"if": {"properties": {"type": {"const": "director_conversion"}}}, "then": {"$ref": "#/$defs/directorConversion"}}
       ]
     },
     "settings": {
@@ -172,7 +185,7 @@
           "description": "System accounts by key (Appendix B.5). Each must be in accounts.",
           "type": "object",
           "propertyNames": {"enum": ["receivable", "payable", "gst", "prepayments", "deferred_revenue", "fx", "bank_charges",
-                                     "withholding_tax", "customer_deposits", "claims_payable", "advances",
+                                     "withholding_tax", "customer_deposits", "claims_payable", "advances", "director_loan", "deferred_remuneration",
                                      "depreciation", "accumulated_depreciation", "disposal", "disposal_clearing"]},
           "additionalProperties": {"$ref": "#/$defs/accountCode"}
         },
@@ -400,7 +413,7 @@
       }
     },
     "expenseClaim": {
-      "description": "An expense claim (expense_claim@1): receipt lines and trips (FR-AP-07, FR-AP-16).",
+      "description": "An expense claim (expense_claim@1; @2 kept as a loan): receipt lines and trips (FR-AP-07, FR-AP-16, FR-EQ-02).",
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "id", "version", "date", "currency", "lines"],
@@ -414,6 +427,7 @@
         "fx_rate": {"$ref": "#/$defs/rate"},
         "fx_rate_source": {"$ref": "#/$defs/rateSource"},
         "advance": {"description": "The cash advance it settles first (FR-AP-17).", "type": "string"},
+        "loan": {"description": "Kept as a loan to the company (FR-EQ-02): the director or shareholder, one of people, whose account on settings.accounts.director_loan it credits instead of claims_payable; never with advance.", "$ref": "#/$defs/documentId"},
         "lines": {
           "type": "array",
           "items": {
@@ -435,6 +449,101 @@
             "oneOf": [{"required": ["distance", "vehicle"]}, {"required": ["gst_code"]}]
           }
         }
+      }
+    },
+    "directorWaiver": {
+      "description": "A waiver of what the company owes a director or shareholder (director_settlement@1, FR-EQ-07, B.7).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "person", "account", "credit", "amount"],
+      "properties": {
+        "type": {"const": "director_waiver"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day it was approved, which it posts on.", "$ref": "#/$defs/date"},
+        "person": {"description": "The director or shareholder, one of people.", "$ref": "#/$defs/documentId"},
+        "account": {"description": "The director's account waived (2500 or 2120).", "type": "string"},
+        "credit": {"description": "What it credits: 3300 Capital contribution, or an income account; not a director's account, a money account or GST control.", "type": "string"},
+        "amount": {"description": "In the base currency.", "$ref": "#/$defs/money"}
+      }
+    },
+    "directorRepayment": {
+      "description": "What a payment batch's release repaid a director or shareholder (director_repayment@1, FR-EQ-05, FR-BNK-12, B.7).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "person", "account", "settlements"],
+      "properties": {
+        "type": {"const": "director_repayment"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The batch's payment date, which it posts on.", "$ref": "#/$defs/date"},
+        "person": {"description": "The director or shareholder, one of people.", "$ref": "#/$defs/documentId"},
+        "account": {"description": "The money account it left, in the base currency.", "type": "string"},
+        "settlements": {
+          "description": "What it repaid of each settlement: the director's account it was owed on (2500 or 2120) and the amount in the base currency.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["account", "amount"],
+            "properties": {
+              "account": {"type": "string"},
+              "amount": {"$ref": "#/$defs/money"}
+            }
+          }
+        }
+      }
+    },
+    "directorConversion": {
+      "description": "A founder's balance converted to shares from the register of share issues (share_issue@1, FR-EQ-06, B.7, RND-SHARE).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "person", "account", "class", "amount", "price"],
+      "properties": {
+        "type": {"const": "director_conversion"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day ACRA's register of members shows the allotment, which it posts on.", "$ref": "#/$defs/date"},
+        "person": {"description": "The director or shareholder, one of people.", "$ref": "#/$defs/documentId"},
+        "account": {"description": "The director's account converted (2500 or 2120).", "type": "string"},
+        "class": {"description": "The share-capital account of the class allotted (3010 or 3020).", "type": "string"},
+        "amount": {"description": "The balance converted, in the base currency: RND-SHARE allots whole shares for it and the rest stays owed.", "$ref": "#/$defs/money"},
+        "price": {"description": "The price per share, at most 6 decimals.", "type": "string"},
+        "fair_value_price": {"description": "Under the fair-value basis: the shares' fair value per share.", "type": "string"},
+        "difference": {"description": "Under the fair-value basis: the income or expense account the difference goes to.", "type": "string"}
+      }
+    },
+    "directorFee": {
+      "description": "A director's fee the shareholders voted (director_fee@1, FR-EQ-04, §10.2).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "person", "account", "amount"],
+      "properties": {
+        "type": {"const": "director_fee"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day the director became entitled to it: the general meeting that voted it.", "$ref": "#/$defs/date"},
+        "person": {"description": "The director, one of people.", "$ref": "#/$defs/documentId"},
+        "account": {"description": "Its cost account, 6050 Directors' fees by default: not a director's account, a money account or GST control.", "type": "string"},
+        "amount": {"description": "In the base currency.", "$ref": "#/$defs/money"}
+      }
+    },
+    "preIncorporationCost": {
+      "description": "A cost a founder paid before the books start, as the accountant decided it (pre_incorporation_cost@1, FR-EQ-03, B.7).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "incurred", "person", "account", "gross"],
+      "properties": {
+        "type": {"const": "pre_incorporation_cost"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day it posts: on or after settings.books_start.", "$ref": "#/$defs/date"},
+        "incurred": {"description": "The day it was paid: before settings.books_start.", "$ref": "#/$defs/date"},
+        "person": {"description": "The director or shareholder who paid it, one of people.", "$ref": "#/$defs/documentId"},
+        "account": {"description": "The account the accountant chose: not a director's account, a money account or GST control.", "type": "string"},
+        "gross": {"description": "What they paid, GST included, in the base currency.", "$ref": "#/$defs/money"},
+        "gst": {"description": "The GST the receipt shows, less than gross.", "$ref": "#/$defs/money"},
+        "claim_gst": {"description": "Claim the GST as input tax: only while GST-registered on date.", "type": "boolean"}
       }
     },
     "cashAdvance": {
@@ -577,7 +686,9 @@
         "currency": {"type": "string"},
         "amount": {"description": "Signed: debit positive, credit negative.", "type": "string"},
         "fx_rate": {"description": "Base per unit of the line's currency. Only on lines not in the base currency, and always with fx_rate_source.", "type": "string"},
-        "fx_rate_source": {"description": "Where the rate came from (ENG-40), e.g. \"document\". Only with fx_rate.", "type": "string", "minLength": 1}
+        "fx_rate_source": {"description": "Where the rate came from (ENG-40), e.g. \"document\". Only with fx_rate.", "type": "string", "minLength": 1},
+        "party": {"description": "The person a line on a director's account belongs to, one of people (FR-EQ-01, B.7). Whether it is there exactly when the account is a director's, and one of people, is a posting rule (README, rule 9).", "type": "string"},
+        "origin": {"description": "Where the amount on a director's account came from (FR-EQ-01): lent, paid_personally, pay, fee, paid_out or other. A posting rule, as party is.", "type": "string"}
       }
     }
   }

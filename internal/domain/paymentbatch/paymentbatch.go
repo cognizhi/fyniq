@@ -1,7 +1,8 @@
-// Package paymentbatch is a batch of payments to suppliers and claimants, paid from one SGD money account on one date
-// (FR-BNK-12; PRD-001 rev 0.154 and rev 0.156; p1-payments-out design D1, D2): what it holds, the checks it is asked for,
-// approved and released under, and how its items group into one payment per payee. A batch pays approved bills and
-// expense claims whole, for what is open on them, to Singapore bank accounts in force (FR-CT-03, FR-AP-22).
+// Package paymentbatch is a batch of payments to suppliers, claimants and directors, paid from one SGD money account on
+// one date (FR-BNK-12; PRD-001 rev 0.154 and rev 0.156; p1-payments-out design D1, D2; p1-founders-money design D10):
+// what it holds, the checks it is asked for, approved and released under, and how its items group into one payment per
+// payee. A batch pays approved bills, expense claims and settlements approved to be repaid to a director or shareholder
+// whole, for what is open on them, to Singapore bank accounts in force (FR-CT-03, FR-AP-22).
 package paymentbatch
 
 import (
@@ -18,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
+	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/payee"
@@ -43,12 +45,15 @@ const (
 	CodeNotDraft    = "PB-14" // only a draft changes or is asked for
 	CodeTooMany     = "PB-15" // more items than a batch holds
 	CodeTooLong     = "PB-16" // the notes are too long
+	CodeOwedLess    = "PB-25" // the company owes the director less on the account than the batch repays (FR-EQ-05)
 )
 
-// The kinds of item.
+// The kinds of item: a posted bill, an approved expense claim, or a settlement approved to be repaid to a director or
+// shareholder (FR-EQ-05).
 const (
-	KindBill  = "bill"
-	KindClaim = "claim"
+	KindBill     = "bill"
+	KindClaim    = "claim"
+	KindDirector = "director"
 )
 
 // The methods of payment a batch's file names.
@@ -63,7 +68,7 @@ const (
 	MaxNotes = 500
 )
 
-// Item is a bill or an expense claim a batch pays whole, for what is open on it.
+// Item is a bill, an expense claim or a director's settlement a batch pays whole, for what is open on it.
 type Item struct {
 	Kind       string    `json:"kind"`
 	DocumentID uuid.UUID `json:"document_id"`
@@ -152,7 +157,7 @@ func Check(d Draft) Problems {
 	}
 	switch {
 	case len(d.Items) == 0:
-		add(CodeEmpty, "items", "the batch pays nothing", "Add approved bills or expense claims")
+		add(CodeEmpty, "items", "the batch pays nothing", "Add approved bills, expense claims or settlements to repay")
 	case len(d.Items) > MaxItems:
 		add(CodeTooMany, "items", fmt.Sprintf("a batch pays at most %d items", MaxItems), "Split them over two batches")
 	}
@@ -161,8 +166,8 @@ func Check(d Draft) Problems {
 		field := fmt.Sprintf("items[%d]", i)
 		id := x.DocumentID
 		switch {
-		case x.Kind != KindBill && x.Kind != KindClaim:
-			out = append(out, Problem{Code: CodeItem, Field: field + ".kind", Message: fmt.Sprintf("%q is not a kind of item", x.Kind), Fix: "Choose bill or claim", DocumentID: &id})
+		case x.Kind != KindBill && x.Kind != KindClaim && x.Kind != KindDirector:
+			out = append(out, Problem{Code: CodeItem, Field: field + ".kind", Message: fmt.Sprintf("%q is not a kind of item", x.Kind), Fix: "Choose bill, claim or director", DocumentID: &id})
 		case seen[x.DocumentID]:
 			out = append(out, Problem{Code: CodeTwice, Field: field, Message: "the item is in the batch twice", Fix: "Remove the second one", DocumentID: &id})
 		}
@@ -180,15 +185,17 @@ type Line struct {
 	Problems Problems
 }
 
-// Payment is one payee's part of a batch: a supplier's bills as one bill payment, or a claimant's claims as one
-// reimbursement (design D5), into the payee's account in force.
+// Payment is one payee's part of a batch: a supplier's bills as one bill payment, a claimant's claims as one
+// reimbursement (design D5), or a director's settlements as one repayment (FR-EQ-05), into the payee's account in force.
+// A director who is also a claimant is paid their claims and their repayment as two payments.
 type Payment struct {
-	Payee   payee.Payee
-	Account *storage.PayeeBankAccount // the account in force; nil: none
-	Bank    *payee.Stored             // the account's bank, name and kind, from its change; nil: none
-	Frozen  bool                      // a change of the payee's account waits for approval
-	Lines   []Line
-	Amount  money.Money
+	Payee    payee.Payee
+	Director uuid.UUID                 // a director's repayment: the director or shareholder repaid; uuid.Nil otherwise
+	Account  *storage.PayeeBankAccount // the account in force; nil: none
+	Bank     *payee.Stored             // the account's bank, name and kind, from its change; nil: none
+	Frozen   bool                      // a change of the payee's account waits for approval
+	Lines    []Line
+	Amount   money.Money
 }
 
 // Batch is a batch as its checks read it at a moment: its content, its money account, its payments by payee, its total,
@@ -264,8 +271,13 @@ func Evaluate(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s
 		}
 	}
 	base := settings.Base
-	byPayee := map[payee.Payee]*Payment{}
-	var order []payee.Payee
+	type key struct {
+		who      payee.Payee
+		director uuid.UUID
+	}
+	byPayee := map[key]*Payment{}
+	var order []key
+	owed := map[[2]uuid.UUID]money.Money{} // what is left owed to a director on an account as the batch repays it
 	claims := map[uuid.UUID]storage.Document{}
 	var claimDocs []storage.Document
 	for _, x := range s.Items {
@@ -280,7 +292,7 @@ func Evaluate(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s
 			}
 		}
 	}
-	owed, err := claim.Balances(ctx, u, claimDocs, base, time.Time{})
+	claimsOwed, err := claim.Balances(ctx, u, claimDocs, base, time.Time{})
 	if err != nil {
 		return Batch{}, err
 	}
@@ -292,6 +304,7 @@ func Evaluate(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s
 			line.Problems = append(line.Problems, Problem{Code: code, Field: field, Message: message, Fix: fix, DocumentID: &id})
 		}
 		var who payee.Payee
+		var person uuid.UUID // a director's settlement: the person repaid
 		switch x.Kind {
 		case KindBill:
 			o, err := billpayment.OpenBill(ctx, u, x.DocumentID, settings)
@@ -337,11 +350,47 @@ func Evaluate(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s
 				return Batch{}, err
 			}
 			who = payee.Person(draft.ClaimantID)
-			if b, ok := owed[c.ID]; ok {
+			if b, ok := claimsOwed[c.ID]; ok {
 				line.Open = b.Open
 			}
 			if line.Open.Sign() <= 0 {
 				fail(CodeNothingOpen, fmt.Sprintf("nothing is owed on %s", name(c.Number, id)), "Remove it: it is paid back")
+			}
+		case KindDirector:
+			p, err := director.PayableOf(ctx, u, base, x.DocumentID)
+			var de *director.Error
+			if errors.As(err, &de) {
+				fail(CodeItem, de.Message, de.Fix)
+				break
+			} else if err != nil {
+				return Batch{}, err
+			}
+			line.Number, line.Date = p.Doc.Number, p.Doc.Date
+			if who, _, _, err = director.RepayTo(ctx, u, p.Settlement.ContactID); err != nil {
+				return Batch{}, err
+			}
+			person = p.Settlement.ContactID
+			line.Open = p.Open
+			if line.Open.Sign() <= 0 {
+				fail(CodeNothingOpen, fmt.Sprintf("nothing is open on %s", name(p.Doc.Number, id)), "Remove it: it is repaid")
+				break
+			}
+			// The company never repays more than it owes the person on the account (s.162 Companies Act: no loan to a director).
+			k := [2]uuid.UUID{p.Settlement.ContactID, p.Settlement.AccountID}
+			left, ok := owed[k]
+			if !ok && !date.IsZero() {
+				if left, err = director.Owed(ctx, u, base, p.Settlement.ContactID, p.Settlement.AccountID, date); err != nil {
+					return Batch{}, err
+				}
+			}
+			if !date.IsZero() {
+				if c, _ := line.Open.Cmp(left); c > 0 {
+					fail(CodeOwedLess, fmt.Sprintf("the company owes the person %s on the account on the payment date, less than the %s open on %s", left, line.Open, name(p.Doc.Number, id)),
+						"Remove it, or draft the settlement again for what is owed")
+				} else if left, err = left.Sub(line.Open); err != nil {
+					return Batch{}, err
+				}
+				owed[k] = left
 			}
 		}
 		if other, ok := approved[x.DocumentID]; ok && other != doc.ID {
@@ -351,11 +400,12 @@ func Evaluate(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s
 			out.Errors = append(out.Errors, line.Problems...)
 			continue
 		}
-		p := byPayee[who]
+		k := key{who, person}
+		p := byPayee[k]
 		if p == nil {
-			p = &Payment{Payee: who, Amount: money.Zero(SGD)}
-			byPayee[who] = p
-			order = append(order, who)
+			p = &Payment{Payee: who, Director: person, Amount: money.Zero(SGD)}
+			byPayee[k] = p
+			order = append(order, k)
 		}
 		p.Lines = append(p.Lines, line)
 		out.Errors = append(out.Errors, line.Problems...)
@@ -365,8 +415,8 @@ func Evaluate(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s
 			}
 		}
 	}
-	for _, who := range order {
-		p := byPayee[who]
+	for _, k := range order {
+		p := byPayee[k]
 		if err := account(ctx, u, p, now); err != nil {
 			return Batch{}, err
 		}
@@ -473,7 +523,8 @@ func Approved(ctx context.Context, u storage.UnitOfWork) (map[uuid.UUID]uuid.UUI
 }
 
 // Suggested are the items a new batch for a payment date starts with (FR-AP-13): every posted SGD bill with something
-// open whose planned payment date is on or before it, then every approved expense claim with something owed, oldest first.
+// open whose planned payment date is on or before it, then every approved expense claim with something owed, then every
+// settlement approved to be repaid with something open (FR-EQ-05), oldest first.
 // None in an approved batch already. A suggestion never adds itself: the person preparing the batch keeps or drops each.
 func Suggested(ctx context.Context, u storage.UnitOfWork, settings ledger.Settings, on time.Time) ([]Item, error) {
 	approved, err := Approved(ctx, u)
@@ -523,6 +574,15 @@ func Suggested(ctx context.Context, u storage.UnitOfWork, settings ledger.Settin
 		}
 		if b, ok := owed[c.ID]; ok && b.Open.Sign() > 0 {
 			out = append(out, Item{Kind: KindClaim, DocumentID: c.ID})
+		}
+	}
+	repay, err := director.PayableSettlements(ctx, u, settings.Base)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range repay {
+		if _, taken := approved[p.Doc.ID]; !taken {
+			out = append(out, Item{Kind: KindDirector, DocumentID: p.Doc.ID})
 		}
 	}
 	return out, nil

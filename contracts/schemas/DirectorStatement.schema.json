@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accounts": {
+      "description": "Each director's account: opening, movements by origin, closing.",
+      "items": {
+        "$ref": "DirectorStatementAccount.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "contact_id": {
+      "description": "The person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "currency": {
+      "description": "The base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "Its first day.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "legal_name": {
+      "description": "Their name.",
+      "examples": [
+        "Mei Lin Tan"
+      ],
+      "type": "string"
+    },
+    "movements": {
+      "description": "Every line in the period, in posting order.",
+      "items": {
+        "$ref": "DirectorMovement.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "to": {
+      "description": "Its last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contact_id",
+    "legal_name",
+    "from",
+    "to",
+    "currency",
+    "accounts",
+    "movements"
+  ],
+  "title": "DirectorStatement",
+  "type": "object"
+}

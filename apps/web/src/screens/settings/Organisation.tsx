@@ -32,9 +32,17 @@ export function valueText(kind: Setting["kind"], v: string): string {
       return `S$${formatAmount(v)}`;
     case "percent":
       return `${v}%`;
+    case "choice":
+      return choiceText(v);
     default:
       return v;
   }
+}
+
+// choiceText reads a choice's value as words: "latest_priced_round" is "Latest priced round".
+export function choiceText(v: string): string {
+  const words = v.replace(/_/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 // today is the organisation's date today, YYYY-MM-DD (a change takes effect today or later).
@@ -66,6 +74,16 @@ function ValueInput({ setting: s, value, onChange, id, describedBy, invalid }: {
         ))}
       </div>
     );
+  if (s.kind === "choice")
+    return (
+      <select className="fy-select max-w-72" id={id} value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={invalid || undefined} aria-describedby={describedBy}>
+        {(s.choices ?? []).map((c) => (
+          <option key={c} value={c}>
+            {choiceText(c)}
+          </option>
+        ))}
+      </select>
+    );
   const numeric = s.kind !== "text";
   return (
     <input
@@ -87,6 +105,7 @@ function check(s: Setting, v: string): string {
   if (s.kind === "amount_sgd") return /^\d{1,14}(\.\d{1,2})?$/.test(t) ? "" : "Enter an amount in Singapore dollars, such as 1000.00, without the S$ or commas.";
   if (s.kind === "percent") return /^\d{1,3}(\.\d{1,4})?$/.test(t) ? "" : "Enter a percentage, such as 3, without the % sign.";
   if (s.kind === "text") return t ? "" : "Enter a value.";
+  if (s.kind === "choice") return (s.choices ?? []).includes(t) ? "" : "Choose one of the values offered.";
   if (s.kind === "account_code") return /^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$/.test(t) ? "" : "Enter the code of an account in your chart, such as 6460.";
   return "";
 }

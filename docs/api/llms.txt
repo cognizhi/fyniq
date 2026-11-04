@@ -140,6 +140,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/contacts/{contact_id}/bank-details` (getPayeeBankDetails): Get a vendor's bank details
 - `GET /v1/contacts/{contact_id}/document-templates` (listContactDocumentTemplates): List a contact's templates
 - `PUT /v1/contacts/{contact_id}/document-templates/{kind}/{document_type}` (setContactDocumentTemplate): Choose a contact's template
+- `PUT /v1/contacts/{contact_id}/member` (linkContactMember): Link a director or shareholder to the member who signs in as them
 - `GET /v1/contacts/{contact_id}/statement` (getCustomerStatement): Work out a customer's statement
 - `GET /v1/contacts/{contact_id}/withholding-decisions` (listWithholdingDecisions): List a supplier's withholding decisions
 - `POST /v1/contacts/{contact_id}/withholding-decisions` (recordWithholdingDecision): Record the tax agent's withholding decision
@@ -169,6 +170,42 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/customer-refunds/{refund_id}` (getCustomerRefund): Get a refund to a customer
 - `POST /v1/customer-refunds/{refund_id}/void` (voidCustomerRefund): Void a refund to a customer
 - `POST /v1/customer-refunds/{refund_id}/void-approval` (requestCustomerRefundVoid): Ask for approval to void a refund to a customer
+- `GET /v1/director-accounts` (listDirectorAccounts): List the director accounts
+- `GET /v1/director-accounts/related-parties` (getRelatedParties): Work out the related-party schedule
+- `GET /v1/director-accounts/related-parties/export` (exportRelatedParties): Export the related-party schedule
+- `GET /v1/director-accounts/{contact_id}/statement` (getDirectorStatement): Work out a director's statement
+- `GET /v1/director-accounts/{contact_id}/statement/export` (exportDirectorStatement): Export a director's statement
+- `GET /v1/director-fees` (listDirectorFees): List directors' fees
+- `POST /v1/director-fees` (createDirectorFee): Record a director's fee
+- `GET /v1/director-fees/{fee_id}` (getDirectorFee): Get a director's fee
+- `PUT /v1/director-fees/{fee_id}` (replaceDirectorFee): Change a drafted director's fee
+- `GET /v1/director-fees/{fee_id}/evidence` (listDirectorFeeEvidence): List a director's fee's files
+- `POST /v1/director-fees/{fee_id}/evidence` (addDirectorFeeEvidence): Attach the shareholders' resolution to a director's fee
+- `GET /v1/director-fees/{fee_id}/evidence/{evidence_id}` (getDirectorFeeEvidence): Get a director's fee's file
+- `DELETE /v1/director-fees/{fee_id}/evidence/{evidence_id}` (removeDirectorFeeEvidence): Remove a file from a drafted director's fee
+- `POST /v1/director-fees/{fee_id}/post-approval` (requestDirectorFeePost): Ask for approval to post a director's fee
+- `GET /v1/director-pay-choices` (listDirectorPayChoices): List directors' pay choices
+- `POST /v1/director-pay-choices` (createDirectorPayChoice): Draft a director's pay choice
+- `GET /v1/director-pay-choices/{choice_id}` (getDirectorPayChoice): Get a director's pay choice
+- `PUT /v1/director-pay-choices/{choice_id}` (replaceDirectorPayChoice): Change a drafted pay choice
+- `GET /v1/director-pay-choices/{choice_id}/evidence` (listDirectorPayChoiceEvidence): List a pay choice's files
+- `POST /v1/director-pay-choices/{choice_id}/evidence` (addDirectorPayChoiceEvidence): Attach the signed decision to a pay choice
+- `GET /v1/director-pay-choices/{choice_id}/evidence/{evidence_id}` (getDirectorPayChoiceEvidence): Get a pay choice's file
+- `DELETE /v1/director-pay-choices/{choice_id}/evidence/{evidence_id}` (removeDirectorPayChoiceEvidence): Remove a file from a drafted pay choice
+- `POST /v1/director-pay-choices/{choice_id}/record` (recordDirectorPayChoice): Record a director's pay choice
+- `GET /v1/director-repayments/{repayment_id}` (getDirectorRepayment): Get a repayment to a director
+- `POST /v1/director-repayments/{repayment_id}/void-approval` (requestDirectorRepaymentVoid): Ask for approval to void a repayment to a director
+- `GET /v1/director-settlements` (listDirectorSettlements): List settlements of founders' balances
+- `POST /v1/director-settlements` (createDirectorSettlement): Draft a settlement of a founder's balance
+- `GET /v1/director-settlements/{settlement_id}` (getDirectorSettlement): Get a settlement of a founder's balance
+- `PUT /v1/director-settlements/{settlement_id}` (replaceDirectorSettlement): Change a drafted settlement
+- `POST /v1/director-settlements/{settlement_id}/acra-steps` (recordConversionStep): Record an ACRA step of a conversion
+- `POST /v1/director-settlements/{settlement_id}/approval` (requestDirectorSettlementApproval): Ask for approval of a settlement
+- `POST /v1/director-settlements/{settlement_id}/effective` (recordConversionEffective): Record a conversion as registered by ACRA
+- `GET /v1/director-settlements/{settlement_id}/evidence` (listDirectorSettlementEvidence): List a settlement's files
+- `POST /v1/director-settlements/{settlement_id}/evidence` (addDirectorSettlementEvidence): Attach the agreement to a settlement
+- `GET /v1/director-settlements/{settlement_id}/evidence/{evidence_id}` (getDirectorSettlementEvidence): Get a settlement's file
+- `DELETE /v1/director-settlements/{settlement_id}/evidence/{evidence_id}` (removeDirectorSettlementEvidence): Remove a file from a drafted settlement
 - `POST /v1/document-links/{link_id}/revoke` (revokeDocumentLink): Revoke a quote's or invoice's online link
 - `GET /v1/document-template-bundle` (exportDocumentTemplates): Export templates as a bundle
 - `POST /v1/document-template-bundles` (importDocumentTemplates): Import templates from a bundle
@@ -185,6 +222,15 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/document-templates/{template_id}/publish` (publishDocumentTemplate): Publish a template
 - `GET /v1/document-templates/{template_id}/versions` (listDocumentTemplateVersions): List a template's versions
 - `GET /v1/document-templates/{template_id}/versions/{number}` (getDocumentTemplateVersion): Read a template version
+- `GET /v1/exempt-statuses` (listExemptStatuses): List the exempt-private-company statuses
+- `POST /v1/exempt-statuses` (createExemptStatus): Draft an exempt-private-company status
+- `GET /v1/exempt-statuses/{status_id}` (getExemptStatus): Get an exempt-private-company status
+- `PUT /v1/exempt-statuses/{status_id}` (replaceExemptStatus): Change a drafted exempt-private-company status
+- `GET /v1/exempt-statuses/{status_id}/evidence` (listExemptStatusEvidence): List an exempt status's files
+- `POST /v1/exempt-statuses/{status_id}/evidence` (addExemptStatusEvidence): Attach the evidence of an exempt-private-company status
+- `GET /v1/exempt-statuses/{status_id}/evidence/{evidence_id}` (getExemptStatusEvidence): Get an exempt status's file
+- `DELETE /v1/exempt-statuses/{status_id}/evidence/{evidence_id}` (removeExemptStatusEvidence): Remove a file from a drafted exempt status
+- `POST /v1/exempt-statuses/{status_id}/record` (recordExemptStatus): Record an exempt-private-company status
 - `GET /v1/expense-claims` (listExpenseClaims): List expense claims
 - `POST /v1/expense-claims` (createExpenseClaim): Save a draft expense claim
 - `GET /v1/expense-claims/gst-codes` (getClaimGSTCodes): Get the GST codes for a claim's receipts
@@ -277,6 +323,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/me/bank-changes/{change_id}/reveal` (revealMyBankAccount): Reveal your account's full number
 - `POST /v1/me/bank-changes/{change_id}/withdraw` (withdrawMyBankChange): Withdraw a change of your bank account from approval
 - `GET /v1/me/bank-details` (getMyBankDetails): Get your bank account for reimbursements
+- `GET /v1/me/director-account` (getMyDirectorAccount): Get your own director account
+- `POST /v1/me/director-account/confirmations` (confirmMyDirectorAccount): Confirm your balances at a year's end
 - `GET /v1/members` (listMembers): List the members
 - `POST /v1/members` (acceptMemberInvitation): Join an organisation with an invitation
 - `GET /v1/members/invitations` (listMemberInvitations): List the pending invitations
@@ -377,6 +425,15 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/periods/{period_id}/variances/{account_id}/explanation` (explainVariance): Explain a variance
 - `GET /v1/periods/{period_id}/year-end` (getYearEnd): Get the year end of a period's financial year
 - `POST /v1/periods:open-year` (openFinancialYear): Open the next financial year
+- `GET /v1/pre-incorporation-costs` (listPreIncorporationCosts): List costs paid before the books start
+- `POST /v1/pre-incorporation-costs` (recordPreIncorporationCost): Record a cost paid before the books start
+- `GET /v1/pre-incorporation-costs/{cost_id}` (getPreIncorporationCost): Get a cost paid before the books start
+- `PUT /v1/pre-incorporation-costs/{cost_id}` (replacePreIncorporationCost): Change a cost that needs a decision
+- `POST /v1/pre-incorporation-costs/{cost_id}/decide` (decidePreIncorporationCost): Decide a cost paid before the books start, and post it
+- `GET /v1/pre-incorporation-costs/{cost_id}/evidence` (listPreIncorporationCostEvidence): List a cost's receipts
+- `POST /v1/pre-incorporation-costs/{cost_id}/evidence` (addPreIncorporationCostEvidence): Attach a receipt to a cost paid before the books start
+- `GET /v1/pre-incorporation-costs/{cost_id}/evidence/{evidence_id}` (getPreIncorporationCostEvidence): Get a cost's receipt file
+- `DELETE /v1/pre-incorporation-costs/{cost_id}/evidence/{evidence_id}` (removePreIncorporationCostEvidence): Remove a receipt from a cost that needs a decision
 - `GET /v1/public/document` (getPublicDocument): Open a quote or invoice through its link
 - `POST /v1/public/document/accept` (acceptQuoteByLink): Accept a quote through its link
 - `POST /v1/public/document/decline` (declineQuoteByLink): Decline a quote through its link
@@ -451,6 +508,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/session/step-up/challenge` (startStepUp): Start confirming it's you with a passkey
 - `GET /v1/setup` (getSetupStatus): Get the setup status
 - `POST /v1/setup` (completeSetup): Complete first-run setup
+- `GET /v1/share-issues` (listShareIssues): List the register of share issues
+- `POST /v1/share-issues` (recordShareIssueBeforeBooks): Record shares issued before the books start
 - `GET /v1/sign-in-providers` (listSignInProviders): List the sign-in providers
 - `GET /v1/statement-mappings` (listStatementMappings): List the saved column mappings
 - `POST /v1/statement-mappings` (createStatementMapping): Save a column mapping

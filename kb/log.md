@@ -284,3 +284,29 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-02] compile | access-review.md, members-and-roles.md and checks.md (p1-checks slice 4, rev 0.165): new task pages settings.access-review and members.remove; checks.overview adds the Controls area and the two checks reviewed where their control lives; members pages re-hashed
 
 ## [2026-11-02] compile | integrations.md and checks.md (p1-checks slice 4b, rev 0.166): settings.integrations adds a secret's expiry date; checks.overview adds the payments' and the platform's checks
+
+## [2026-11-03] compile | docs/user-guide/director-accounts.md (new), docs/user-guide/founders-money.md (Money I put in, steps) → founders.director-accounts (new), founders.balance; founders.pay-choice and founders.settle-balance re-hashed (p1-founders-money task 1.6)
+
+## [2026-11-03] compile | docs/user-guide/claims-my-claims.md (Keep it as a loan to the company) → claims.make-a-claim (p1-founders-money task 2.1)
+
+## [2026-11-03] compile | docs/user-guide/pre-incorporation-costs.md (new) → founders.pre-incorporation-costs (new) (p1-founders-money task 2.2)
+
+## [2026-11-03] compile | docs/user-guide/director-accounts.md (Record a pay choice), founders-money.md (where the pay choice changes) → founders.pay-choice, founders.director-accounts; founders.balance and founders.settle-balance re-hashed (p1-founders-money task 3.1)
+
+## [2026-11-03] compile | docs/user-guide/director-accounts.md (Record a director's fee) → founders.director-accounts; founders.pay-choice re-hashed (p1-founders-money task 3.2)
+
+## [2026-11-03] compile | docs/user-guide/director-accounts.md (Record the exempt private company status) → founders.director-accounts; founders.pay-choice re-hashed (p1-founders-money task 3.3)
+
+## [2026-11-03] compile | docs/user-guide/director-accounts.md (Year-end confirmations), founders-money.md (Confirm your balances at the year end) → founders.director-accounts, founders.balance; founders.pay-choice and founders.settle-balance re-hashed (p1-founders-money task 3.4)
+
+## [2026-11-03] compile | docs/user-guide/organisation-settings.md (Founders' money) → settings.organisation; settings.change re-hashed (p1-founders-money task 4.1)
+
+## [2026-11-03] compile | docs/user-guide/payment-batches.md, founders-money.md → purchases.payment-batches, founders.settle-balance, founders.balance, founders.pay-choice (directors repaid through payment batches, p1-founders-money 4.3)
+
+## [2026-11-03] compile | docs/user-guide/director-accounts.md, founders-money.md → founders.director-accounts, founders.settle-balance, founders.balance, founders.pay-choice (the Settle a balance page, p1-founders-money 4.4)
+
+## [2026-11-03] compile | docs/user-guide/director-accounts.md, founders-money.md → founders.director-accounts, founders.settle-balance, founders.balance, founders.pay-choice (converting a balance to shares, p1-founders-money 5.3)
+
+## [2026-11-03] compile | docs/user-guide/director-accounts.md, organisation-settings.md → founders.director-accounts, founders.pay-choice, settings.organisation, settings.change (the register of share issues and a conversion's ACRA steps, p1-founders-money 5.4)
+
+## [2026-11-03] compile | docs/user-guide/director-accounts.md → founders.director-accounts, founders.pay-choice (the related-party schedule, FR-EQ-10)

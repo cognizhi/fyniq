@@ -2,16 +2,16 @@
 key: founders.settle-balance
 type: task
 title: Settle what the company owes a founder
-summary: The five ways to settle a founder's balance, the recommended default (keep as a loan, convert at the first priced round) and the steps
+summary: The five ways to settle a founder's balance, the recommended default (a loan, converted at the first priced round), and repaying through a batch
 sources:
-  - docs/user-guide/founders-money.md sha256:b2ff34f027f280effc67d5d0c2c074e13386e8313c5a1cb9365a4c074b7f2629
+  - docs/user-guide/founders-money.md sha256:5bb0d08e258456d44a69cfe4b4347560673bfae95b5661de6b8e3777804096c8
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-13
+compiled_at: 2026-11-03
 ---
 
 # Settle what the company owes a founder
@@ -41,13 +41,24 @@ compiled_at: 2026-10-13
 
 ## Steps
 
-1. Equity → *Money I put in* → **Settle**, then choose an option. (src: docs/user-guide/founders-money.md#steps)
-2. The other founder approves; if every founder benefits, the accountant also reviews.
+1. An Owner or the Controller selects **Settle** on the founder's card in Accounting › Director
+   accounts, then chooses an option ([[founders.director-accounts]]). (src: docs/user-guide/founders-money.md#steps)
+2. Another founder approves, never the founder settled; if every founder benefits, the accountant also reviews.
    (src: docs/user-guide/founders-money.md#steps)
 3. Attach the resolutions and the agreement. (src: docs/user-guide/founders-money.md#steps)
-4. For a conversion: after approval the company secretary files with ACRA; attach the ACRA
-   acknowledgement; Fyniq posts the conversion on the date ACRA registered it.
-   (src: docs/user-guide/founders-money.md#steps)
+4. For a conversion: after approval the company secretary files with ACRA; record ACRA's
+   lodgement reference and the date its register shows the shares; Fyniq posts the conversion on
+   that date ([[founders.director-accounts]]). (src: docs/user-guide/founders-money.md#steps)
+
+## Repaid through a payment batch
+
+- Once repaying is approved, the next payment batch pays it into the founder's own bank account (**Settings › Profile and
+  security**) if their contact is linked to them, or else the contact's bank details; repaying can't be chosen until
+  that account is approved. (src: docs/user-guide/founders-money.md#repaid-through-a-payment-batch)
+- Another person approves the batch and the Payment releaser releases it, as for any payment ([[purchases.payment-batches]]);
+  the founder never approves their own repayment. (src: docs/user-guide/founders-money.md#repaid-through-a-payment-batch)
+- The company never repays more than it owes the founder on the payment date; a payment the bank rejects is voided on
+  another person's approval, and the amount is owed again. (src: docs/user-guide/founders-money.md#repaid-through-a-payment-batch)
 
 ## Messages and fixes
 

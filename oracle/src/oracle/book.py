@@ -20,6 +20,7 @@ class PostedLine:
     currency: str
     amount: Decimal
     base_amount: Decimal
+    party: str | None = None  # a director's account's person (FR-EQ-01, B.7); a P1 source's lines name none yet
 
 
 @dataclass(frozen=True)
@@ -62,21 +63,20 @@ class Rejected(Exception):
 
 
 def canonical(lines: Iterable[PostedLine]) -> tuple[PostedLine, ...]:
-    """A P1 entry's lines netted per (account, currency), sorted, with zero lines left out.
+    """A P1 entry's lines netted per (account, currency, person), sorted, with zero lines left out.
 
     test/differential/README.md, "P1 entries": two implementations may split a leg into several
     lines (a residual line beside its control line, one 7030 line or two); the canonical form is
-    what the entry does to each account in each currency, so the comparison does not hinge on it.
+    what the entry does to each account in each currency, so the comparison does not hinge on it. A
+    director's account's lines stay apart by person (FR-EQ-01).
     """
-    totals: dict[tuple[str, str], tuple[Decimal, Decimal]] = {}
+    totals: dict[tuple[str, str, str], tuple[Decimal, Decimal]] = {}
     for ln in lines:
-        amount, base = totals.get((ln.account, ln.currency), (money.ZERO, money.ZERO))
-        totals[(ln.account, ln.currency)] = (
-            money.EXACT.add(amount, ln.amount),
-            money.EXACT.add(base, ln.base_amount),
-        )
+        key = (ln.account, ln.currency, ln.party or "")
+        amount, base = totals.get(key, (money.ZERO, money.ZERO))
+        totals[key] = (money.EXACT.add(amount, ln.amount), money.EXACT.add(base, ln.base_amount))
     return tuple(
-        PostedLine(account, currency, amount, base)
-        for (account, currency), (amount, base) in sorted(totals.items())
+        PostedLine(account, currency, amount, base, party or None)
+        for (account, currency, party), (amount, base) in sorted(totals.items())
         if not (amount.is_zero() and base.is_zero())
     )

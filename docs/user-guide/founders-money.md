@@ -3,7 +3,7 @@ key: equity.founders-money
 title: "Founders' money: what the company owes you, and the options"
 mode: basic
 roles: [owner, accountant, tax_agent]
-requirements: [FR-EQ-01, FR-EQ-02, FR-EQ-04, FR-EQ-05, FR-EQ-06, FR-EQ-07, FR-ORG-08]
+requirements: [FR-EQ-01, FR-EQ-02, FR-EQ-04, FR-EQ-05, FR-EQ-06, FR-EQ-07, FR-EQ-14, FR-ORG-08]
 status: draft            # accountant review pending (README: statutory pages are reviewed before release)
 ---
 
@@ -24,7 +24,7 @@ Settings lets you change them.
 | Question | Recommended default | Where to change it |
 |---|---|---|
 | What happens to what the company owes me? | Keep it as an **interest-free loan, repayable on demand**, recorded by a board minute. At the **first priced funding round**, convert it into ordinary shares **at the round price** | Settings → Founders' money → Default settlement route |
-| Should I take a salary? | **No salary**, agreed in writing before go-live and reviewed each financial year, until the company can pay you in cash. Then start a normal salary through payroll | Settings → Founders' money → Pay choice per director |
+| Should I take a salary? | **No salary**, agreed in writing before go-live and reviewed each financial year, until the company can pay you in cash. Then start a normal salary through payroll | Accounting › Director accounts → Change pay choice |
 | Exception | If you hold an **Employment Pass**, its conditions may require your declared salary to be paid. Ask your accountant before choosing "no salary" | — |
 
 Why: you keep your claim, nobody's ownership moves at an arbitrary price, there is no CPF or tax
@@ -55,13 +55,37 @@ on money you never received, and investors see a clean balance sheet at the roun
 1. **Paid for something yourself?** Create an expense claim, attach the receipt, and choose
    **Paid personally → Keep as a loan to the company**. Another founder approves it. To claim
    GST, the receipt or invoice must be addressed to the company.
-2. **Lent the company money?** Record the bank transfer as *Money in → Loan from me*.
-3. **See your balance:** Equity → *Money I put in*, or Home → the *Money I put in* card.
-4. **Settle it:** Equity → *Money I put in* → **Settle**, then choose an option. The other
-   founder approves it. If every founder benefits, your accountant also reviews it. Attach the
-   resolutions and the agreement.
-5. **Converting to shares:** after approval, your company secretary files with ACRA. Attach the
-   ACRA acknowledgement. Fyniq then posts the conversion on the date ACRA registered it.
+2. **Lent the company money?** In Banking › Categorise, give the bank line the category *Loan from
+   director / shareholder* and yourself as its contact.
+3. **See your balance:** *Money I put in*, under your name in the menu (below).
+4. **Settle it:** an Owner or the Controller selects **Settle** on your card in Accounting ›
+   Director accounts, then chooses an option. Another founder approves it, never you. If every
+   founder benefits, your accountant also reviews it. Attach the resolutions and the agreement.
+5. **Converting to shares:** after approval, your company secretary files with ACRA. Then record
+   ACRA's lodgement reference and the date its register shows the shares. Fyniq posts the
+   conversion on that date.
+
+## See what the company owes you
+
+**Money I put in** shows what the company owes you: money you lent and costs you paid, then pay and
+fees not yet paid, with the latest amounts and where each came from. If it says no director account
+is linked to you, ask an Owner to link your contact to you in Accounting › Director accounts;
+another person approves the link. If you owe the company instead, it says **In debit**: repay it,
+or ask your accountant.
+
+## Repaid through a payment batch
+
+When repaying you is approved, the next payment batch pays it into your own bank account: the one in **Settings ›
+Profile and security** if your contact is linked to you, or else your contact's bank details. Repaying can't be chosen
+until that account is approved. Another person approves the batch and the Payment releaser releases it, as for any
+payment, and you never approve your own repayment. The company never repays more than it owes you on the payment date.
+If the bank rejects the payment, it is voided on another person's approval, and the amount is owed to you again.
+
+## Confirm your balances at the year end
+
+After each financial year ends, **Money I put in** asks you to confirm what the company owed you,
+or you owed it, at the year's end. Select **Confirm my balances … with my passkey** and confirm it's
+you with your passkey. If an entry for that year is posted later, it asks you to confirm again.
 
 ## Common problems
 

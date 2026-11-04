@@ -327,6 +327,10 @@ Source: PRD-001 §C.2
 - **WHEN** no director's account is in debit at a month end
 - **THEN** the check passes
 
+#### Scenario: Built (rev 0.168)
+- **WHEN** the checks engine runs
+- **THEN** `founders.director-in-debit` reports each account in debit at the latest month end
+
 ### Requirement: C.2 #22 Share-issue lodgement and conversion registration
 The system SHALL flag as due, on every relevant change and nightly, a share-issue approval not lodged within 14 days of the resolution, an approved conversion not yet registered by ACRA, or its approval lapsing at the next AGM (FR-EQ-09).
 
@@ -344,6 +348,10 @@ Source: PRD-001 §C.2
 - **WHEN** an approved conversion's approval will lapse at the next AGM
 - **THEN** the check flags it as due
 
+#### Scenario: Built (rev 0.168)
+- **WHEN** the checks engine runs
+- **THEN** `founders.conversion-registered` reports each approved conversion's step due, unregistered or near its lapse
+
 ### Requirement: C.2 #23 Director's closing balance not confirmed
 The system SHALL flag for review, on every relevant change and nightly, a director's closing balance not confirmed at the year end (FR-EQ-12).
 
@@ -356,6 +364,10 @@ Source: PRD-001 §C.2
 #### Scenario: Closing balance confirmed
 - **WHEN** every director's closing balance at the year end has been confirmed
 - **THEN** the check passes
+
+#### Scenario: Built (rev 0.168)
+- **WHEN** the checks engine runs after a year end
+- **THEN** `founders.balances-confirmed`, the close's `directors-confirmed`, reports each balance not confirmed or changed since
 
 ### Requirement: C.2 #24 Director's pay deferred without choice
 The system SHALL check, on every relevant change and nightly, for a director's pay deferred without a recorded pay choice (FR-EQ-04); a finding blocks the close.
@@ -383,6 +395,10 @@ Source: PRD-001 §C.2
 #### Scenario: Share capital agrees
 - **WHEN** the share-capital balance equals the register of share issues
 - **THEN** the check passes
+
+#### Scenario: Built (rev 0.168)
+- **WHEN** the checks engine runs
+- **THEN** `founders.share-capital-registered` reports each share-capital account that differs from its class's issues
 
 ### Requirement: C.2 #26 Equity register differs from ACRA
 The system SHALL flag for review, on every relevant change and nightly, an equity register that differs from the latest uploaded ACRA register-of-members extract (FR-EQ-26).

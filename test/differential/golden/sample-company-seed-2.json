@@ -106,7 +106,8 @@
    "code": "2120",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "role": "deferred-remuneration"
   },
   {
    "code": "2150",
@@ -142,7 +143,8 @@
    "code": "2500",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "role": "director-loan"
   },
   {
    "code": "2700",
@@ -375,6 +377,10 @@
    "active": true
   }
  ],
+ "people": [
+  "P0001",
+  "P0007"
+ ],
  "documents": [
   {
    "type": "manual_journal",
@@ -386,7 +392,9 @@
     {
      "account": "2120",
      "currency": "SGD",
-     "amount": "335286.76"
+     "amount": "335286.76",
+     "party": "P0001",
+     "origin": "paid_out"
     },
     {
      "account": "7030",
@@ -1422,7 +1430,9 @@
     {
      "account": "2500",
      "currency": "SGD",
-     "amount": "-150194.35"
+     "amount": "-150194.35",
+     "party": "P0007",
+     "origin": "lent"
     }
    ]
   },
@@ -1503,7 +1513,9 @@
     {
      "account": "2500",
      "currency": "SGD",
-     "amount": "-69551.96"
+     "amount": "-69551.96",
+     "party": "P0001",
+     "origin": "lent"
     }
    ]
   },
@@ -1866,7 +1878,9 @@
     {
      "account": "2120",
      "currency": "SGD",
-     "amount": "151019.47"
+     "amount": "151019.47",
+     "party": "P0007",
+     "origin": "paid_out"
     },
     {
      "account": "6320",
@@ -2654,7 +2668,9 @@
     {
      "account": "2120",
      "currency": "SGD",
-     "amount": "45997.45"
+     "amount": "45997.45",
+     "party": "P0001",
+     "origin": "paid_out"
     },
     {
      "account": "6050",
@@ -2793,7 +2809,9 @@
     {
      "account": "2120",
      "currency": "SGD",
-     "amount": "-360056.36"
+     "amount": "-360056.36",
+     "party": "P0007",
+     "origin": "pay"
     }
    ]
   },

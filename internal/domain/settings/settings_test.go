@@ -73,7 +73,7 @@ func TestTheCatalogueShipsEverySettingAtAValidRecommendedValue(t *testing.T) {
 		if v, p := Normalise(d, d.Recommended); p != nil || v != d.Recommended {
 			t.Errorf("%s: the recommended value %q is not valid: %q %v", d.Key, d.Recommended, v, p)
 		}
-		if d.Kind != Switch && d.Kind != AccountCode {
+		if d.Kind != Switch && d.Kind != AccountCode && d.Kind != Choice {
 			if _, p := Normalise(d, d.Min); p != nil {
 				t.Errorf("%s: its minimum is out of range: %v", d.Key, p)
 			}

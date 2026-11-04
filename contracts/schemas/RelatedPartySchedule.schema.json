@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_at": {
+      "description": "The day the balances are at, inclusive.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "currency": {
+      "description": "The base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "rows": {
+      "description": "Each director and shareholder with something to disclose, in the order they were added: a schedule, whole, not a page of a list.",
+      "items": {
+        "$ref": "RelatedPartyRow.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "totals": {
+      "$ref": "RelatedPartyFigures.schema.json",
+      "description": "The rows' figures added up."
+    },
+    "year_from": {
+      "description": "The first day of the year the fees, conversions and waivers are read from: the financial year as_at falls in, or the calendar year when the financial years are not set.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "as_at",
+    "year_from",
+    "currency",
+    "rows",
+    "totals"
+  ],
+  "title": "RelatedPartySchedule",
+  "type": "object"
+}

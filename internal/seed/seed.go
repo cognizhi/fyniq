@@ -11,6 +11,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -65,13 +66,18 @@ type Org struct {
 type Account struct {
 	Code string `json:"code"`
 	Name string `json:"name"`
-	Role string `json:"role,omitempty"` // "share-capital" for 3010 and 3020 (INV-13)
+	Role string `json:"role,omitempty"` // "share-capital" for 3010 and 3020 (INV-13); a director's account's for 2120 and 2500
 }
 
 // ShareCapital are the default chart's share-capital accounts. Only the register of share issues and
 // opening balances post to them, never a manual journal (INV-13, PRD-001 rev 0.24), so the sample
 // company's journals leave them out.
 var ShareCapital = map[string]bool{"3010": true, "3020": true}
+
+// DirectorAccounts are the default chart's director's accounts, 2500 Loan from director / shareholder and 2120 Deferred
+// remuneration payable, with their roles: every line on one names its director and where its amount came from
+// (FR-EQ-01, B.7; PRD-001 rev 0.167).
+var DirectorAccounts = map[string]string{"2120": "deferred-remuneration", "2500": "director-loan"}
 
 // Contact is a customer or vendor.
 type Contact struct {
@@ -82,10 +88,11 @@ type Contact struct {
 
 // Person is someone at the sample company.
 type Person struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Role   string `json:"role"`
-	IDTail string `json:"id_tail,omitempty"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Role     string `json:"role"`
+	IDTail   string `json:"id_tail,omitempty"`
+	Director bool   `json:"director,omitempty"` // a director and shareholder, who holds a director account (FR-EQ-01)
 }
 
 // Journal is a balanced manual journal, the first posting source (p0-money-posting-engine).
@@ -100,6 +107,9 @@ type Line struct {
 	Account string `json:"account"`
 	Debit   string `json:"debit"`
 	Credit  string `json:"credit"`
+	// On a director's account only: the director it belongs to (a Person's ID) and where the amount came from (FR-EQ-01).
+	Person string `json:"person,omitempty"`
+	Origin string `json:"origin,omitempty"`
 }
 
 // OrganisationName is the sample company's name, as on every screen.
@@ -120,6 +130,7 @@ func Generate(v *Vocabulary, seed uint64, journals int) Company {
 		if ShareCapital[code] {
 			a.Role = "share-capital"
 		} else {
+			a.Role = DirectorAccounts[code]
 			codes = append(codes, code)
 		}
 		c.Accounts = append(c.Accounts, a)
@@ -136,8 +147,14 @@ func Generate(v *Vocabulary, seed uint64, journals int) Company {
 		people = append(people, n)
 	}
 	sort.Strings(people)
+	var directors []string // the people a line on a director's account names, in turn
 	for i, n := range people {
-		c.People = append(c.People, Person{ID: fmt.Sprintf("P%04d", i+1), Name: n, Role: v.People[n].Role, IDTail: v.People[n].ID})
+		p := Person{ID: fmt.Sprintf("P%04d", i+1), Name: n, Role: v.People[n].Role, IDTail: v.People[n].ID,
+			Director: strings.Contains(v.People[n].Role, "director")}
+		if p.Director {
+			directors = append(directors, p.ID)
+		}
+		c.People = append(c.People, p)
 	}
 
 	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -155,8 +172,27 @@ func Generate(v *Vocabulary, seed uint64, journals int) Company {
 		c.Journals = append(c.Journals, Journal{ID: fmt.Sprintf("JNL-%04d", i+1), Date: day.Format("2006-01-02"), Lines: lines})
 	}
 	sort.SliceStable(c.Journals, func(i, j int) bool { return c.Journals[i].Date < c.Journals[j].Date })
+	turn := 0
 	for i := range c.Journals {
 		c.Journals[i].ID = fmt.Sprintf("JNL-%04d", i+1)
+		// A line on a director's account names a director in turn, and its origin by its side and account: drawing no
+		// random number, so the rest of the company is as it was before director's accounts named their person.
+		for k, l := range c.Journals[i].Lines {
+			if DirectorAccounts[l.Account] == "" || len(directors) == 0 {
+				continue
+			}
+			l.Person = directors[turn%len(directors)]
+			turn++
+			switch {
+			case l.Debit != "0.00":
+				l.Origin = "paid_out"
+			case l.Account == "2120":
+				l.Origin = "pay"
+			default:
+				l.Origin = "lent"
+			}
+			c.Journals[i].Lines[k] = l
+		}
 	}
 	return c
 }

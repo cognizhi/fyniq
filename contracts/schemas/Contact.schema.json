@@ -67,6 +67,13 @@
       ],
       "type": "string"
     },
+    "director": {
+      "description": "A director of the company: they hold a director account on 2500 and 2120 (FR-EQ-01; PRD-001 rev 0.167).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "discount_days": {
       "description": "The days of its early-payment discount.",
       "examples": [
@@ -95,6 +102,14 @@
       "examples": [
         "Northwind Analytics Pte. Ltd."
       ],
+      "type": "string"
+    },
+    "member_user_id": {
+      "description": "For a director or shareholder, the member who signs in as them: they see their own account (Money I put in), keep a claim as a loan, are repaid to their own approved bank account and never approve their own settlement (FR-EQ-01, FM-9). It changes only by linkContactMember, another person's approval.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
       "type": "string"
     },
     "payment_terms_days": {
@@ -136,6 +151,13 @@
       ],
       "type": "string"
     },
+    "shareholder": {
+      "description": "A shareholder: they hold a director account too, for money they lend the company (FR-EQ-01).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "tax_residence": {
       "description": "Where it is resident for tax, ISO 3166 two-letter code, when that is not its country (FR-AP-19). A vendor resident outside Singapore (this, else its country) has its bills record the nature of the payment, and the tax agent decides whether tax is withheld.",
       "examples": [
@@ -171,6 +193,8 @@
     "legal_name",
     "customer",
     "vendor",
+    "director",
+    "shareholder",
     "active",
     "version",
     "possible_duplicates"

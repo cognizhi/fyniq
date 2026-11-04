@@ -27,7 +27,10 @@ placed by its cash-flow line; the account with the role ``retained-earnings`` is
 and its report group also holds the profit to date (every earlier year's and this year's: FR-GL-10
 folds the years into retained earnings, and FR-RPT-01 shows the year's profit inside them). Assets are
 debit positive; liabilities, borrowings and equity credit positive. An account whose cash-flow line is
-missing or outside the standard chart's set sits in no section and is named by the check.
+missing or outside the standard chart's set sits in no section and is named by the check. A person whose
+lines on the directors' accounts (roles ``director-loan`` and ``deferred-remuneration``) net to a debit
+owes the company: their balances on those accounts show on the advances account of the settings instead
+(FR-EQ-11, ``p1-founders-money`` design D14), with no posting; a scenario without one shows them as they are.
 
 **Cash flow, indirect** (money in positive). Each entry of the month is *investing* when it has a line
 on a capital-expenditure account, else *financing* when it has a line on a borrowings or equity
@@ -39,11 +42,13 @@ depreciation; less the profit or loss of the investing and financing entries (a 
 cost a director paid personally); less each working-capital line's change from the operating entries.
 That reconciliation equals the operating entries' cash exactly when every account they move is placed.
 An investing or financing entry with no line on a cash account moved no money: it is listed apart as
-non-cash. The check ``ties`` is opening cash + net change = closing cash.
+non-cash, a conversion of a founder's balance labelled "Converted to shares" and a waiver "Waived" (FR-EQ-10).
+The check ``ties`` is opening cash + net change = closing cash.
 
 **Movement in equity**: opening equity (the month before's closing), the month's net profit, the
-change in share capital, the change in the other equity accounts (retained earnings' own lines
-included), and closing equity, which is the balance sheet's.
+change in share capital issued for cash (every line on the Share capital line but a conversion's), the
+shares issued for non-cash consideration (a conversion's: FR-EQ-10), the change in the other equity
+accounts (retained earnings' own lines included), and closing equity, which is the balance sheet's.
 """
 
 from __future__ import annotations
@@ -56,7 +61,7 @@ from typing import Any
 
 from oracle import money
 from oracle.book import Entry
-from oracle.scenario import Account, Scenario
+from oracle.scenario import Account, Scenario, Source
 
 CASH = "Cash & cash equivalents"
 CAPITAL_EXPENDITURE = "Capital expenditure"
@@ -85,6 +90,11 @@ PL_LINES = ("revenue", "cost_of_sales", "gross_profit", "operating_expenses", "e
             "depreciation_and_amortisation", "operating_profit", "other_income", "finance_costs_and_other_expenses",
             "profit_before_tax", "income_tax", "net_profit")
 FUNCTIONS = ("R&D", "S&M", "G&A", "Other")
+# A director's or shareholder's accounts, whose per-person net debit shows under the advances (D14).
+DIRECTOR_ROLES = frozenset({"director-loan", "deferred-remuneration"})
+# The non-cash entries that say what they were, by their document's type (FR-EQ-10).
+NON_CASH_LABELS = {"director_conversion": "Converted to shares", "director_waiver": "Waived"}
+NON_CASH_SHARES = frozenset({"director_conversion"})
 
 
 def _month(day: date) -> str:
@@ -144,6 +154,9 @@ class Statements:
         depreciation = [a for a in self.accounts.values() if a.role == "depreciation"]
         self.depreciation_group = _group(depreciation[0]) if depreciation else None
         self.retained = next(a for a in self.accounts.values() if a.role == "retained-earnings")
+        self.types = {d.id: d.type for d in scenario.documents if isinstance(d, Source)}
+        settings = scenario.settings
+        self.advances = settings.accounts.get("advances") if settings is not None else None
 
     # ------------------------------------------------------------------ placing
     def _bs(self, code: str) -> str | None:
@@ -174,6 +187,7 @@ class Statements:
         for entry in self.entries:
             by_month[_month(entry.posting_date)].append(entry)
         balance: defaultdict[str, Decimal] = defaultdict(lambda: money.ZERO)
+        owed: defaultdict[str, defaultdict[str, Decimal]] = defaultdict(lambda: defaultdict(lambda: money.ZERO))
         profit_to_date = money.ZERO
         opening_equity = money.ZERO
         result = {}
@@ -183,6 +197,8 @@ class Statements:
             for entry in entries:
                 for ln in entry.lines:
                     movement[ln.account] = money.EXACT.add(movement[ln.account], ln.base_amount)
+                    if ln.party is not None and self.accounts[ln.account].role in DIRECTOR_ROLES:
+                        owed[ln.party][ln.account] = money.EXACT.add(owed[ln.party][ln.account], ln.base_amount)
             opening_cash = _sum(v for code, v in balance.items() if self._is_cash(code))
             for code, value in movement.items():
                 balance[code] = money.EXACT.add(balance[code], value)
@@ -190,9 +206,9 @@ class Statements:
 
             pl, figures = self._profit_and_loss(movement)
             profit_to_date = money.EXACT.add(profit_to_date, figures["net_profit"])
-            bs, totals = self._balance_sheet(balance, profit_to_date)
+            bs, totals = self._balance_sheet(self._advances(balance, owed), profit_to_date)
             cf, net_change = self._cash_flow(entries, figures["net_profit"], opening_cash, closing_cash)
-            equity, equity_ok = self._equity(movement, opening_equity, figures["net_profit"], totals["equity"])
+            equity, equity_ok = self._equity(entries, opening_equity, figures["net_profit"], totals["equity"])
             touched = {ln.account for entry in entries for ln in entry.lines}
             unplaced = sorted(
                 code for code, account in self.accounts.items()
@@ -213,6 +229,21 @@ class Statements:
             }
             opening_equity = totals["equity"]
         return result
+
+    def _advances(self, balance: dict[str, Decimal], owed: dict[str, dict[str, Decimal]]) -> dict[str, Decimal]:
+        """The balances the balance sheet shows: each person's net debit on the directors' accounts moved from
+        those accounts to the advances account, with no posting (D14)."""
+        if self.advances is None:
+            return balance
+        shown = dict(balance)
+        for accounts in owed.values():
+            net = _sum(accounts.values())
+            if net <= 0:
+                continue
+            for code, value in accounts.items():
+                shown[code] = money.EXACT.subtract(shown.get(code, money.ZERO), value)
+            shown[self.advances] = money.EXACT.add(shown.get(self.advances, money.ZERO), net)
+        return shown
 
     def _fmt(self, value: Decimal) -> str:
         return money.fmt(value, self.minor)
@@ -305,8 +336,12 @@ class Statements:
                     if not is_balance_sheet(self.accounts[ln.account]):
                         results = money.EXACT.add(results, ln.base_amount)  # takes its profit or loss back out
                 if not any(self._is_cash(ln.account) for ln in entry.lines):
-                    non_cash.append({"document": entry.document, "kind": entry.kind,
-                                     "posting_date": entry.posting_date.isoformat(), "section": section})
+                    item = {"document": entry.document, "kind": entry.kind,
+                            "posting_date": entry.posting_date.isoformat(), "section": section}
+                    label = NON_CASH_LABELS.get(self.types.get(entry.document, ""))
+                    if label is not None:
+                        item["label"] = label
+                    non_cash.append(item)
                 elif section == "investing":
                     investing = money.EXACT.add(investing, self.cash(entry))
                 else:
@@ -342,22 +377,27 @@ class Statements:
         }
         return cf, net_change
 
-    def _equity(self, movement: dict[str, Decimal], opening: Decimal, profit: Decimal,
+    def _equity(self, entries: list[Entry], opening: Decimal, profit: Decimal,
                 closing: Decimal) -> tuple[dict[str, str], bool]:
-        share_capital = other = money.ZERO
-        for code, value in movement.items():
-            if self._bs(code) != "equity":
-                continue
-            account = self.accounts[code]
-            if account.role != "retained-earnings" and account.cash_flow_line == SHARE_CAPITAL:
-                share_capital = money.EXACT.subtract(share_capital, value)
-            else:
-                other = money.EXACT.subtract(other, value)
-        moved = _sum((opening, profit, share_capital, other))
+        share_capital = non_cash = other = money.ZERO
+        for entry in entries:
+            converted = self.types.get(entry.document) in NON_CASH_SHARES
+            for ln in entry.lines:
+                if self._bs(ln.account) != "equity":
+                    continue
+                account = self.accounts[ln.account]
+                if account.role == "retained-earnings" or account.cash_flow_line != SHARE_CAPITAL:
+                    other = money.EXACT.subtract(other, ln.base_amount)
+                elif converted:
+                    non_cash = money.EXACT.subtract(non_cash, ln.base_amount)
+                else:
+                    share_capital = money.EXACT.subtract(share_capital, ln.base_amount)
+        moved = _sum((opening, profit, share_capital, non_cash, other))
         return {
             "opening": self._fmt(opening),
             "profit": self._fmt(profit),
             "share_capital": self._fmt(share_capital),
+            "share_capital_non_cash": self._fmt(non_cash),
             "other": self._fmt(other),
             "closing": self._fmt(closing),
         }, moved == closing

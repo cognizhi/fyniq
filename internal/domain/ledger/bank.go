@@ -53,6 +53,9 @@ type BankTransaction struct {
 	Amount  money.Money
 	Rate    *money.Rate
 	Parts   []BankPart
+	// Party is the line's contact when it is a director or shareholder: a part on a director's account is theirs
+	// (FR-EQ-01, B.7), money in lent and money out paid to them. uuid.Nil otherwise.
+	Party uuid.UUID
 }
 
 // BankTransactionIdentity is the posting identity of a bank transaction version under a rule version (§11.4).
@@ -155,6 +158,10 @@ func PostBankTransaction(t BankTransaction, s Settings) (Entry, error) {
 			add(CodeSpread, f("account"), fmt.Sprintf("account %s holds the line's spread parts", a.Code), "Choose the account the money is for, and spread that part")
 		case a.Currency != "" && a.Currency != s.Base.Code:
 			add(CodeLineCurrency, f("account"), fmt.Sprintf("account %s is held in %s", a.Code, a.Currency), fmt.Sprintf("Choose an account kept in %s", s.Base))
+		case a.DirectorAccount():
+			if pr := partyProblem(s, a, t.Party, "contact_id"); pr != nil {
+				probs = append(probs, *pr)
+			}
 		}
 		if len(p.Description) > MaxDescription {
 			add(CodeTooLong, f("description"), fmt.Sprintf("the description has %d characters; the most is %d", len(p.Description), MaxDescription), "Shorten it")
@@ -224,7 +231,11 @@ func PostBankTransaction(t BankTransaction, s Settings) (Entry, error) {
 			to = holding.ID
 		}
 		if !net.IsZero() {
-			lines = append(lines, Line{AccountID: to, Amount: net.Neg(), Rate: id, Base: net.Neg(), Description: p.Description})
+			line := Line{AccountID: to, Amount: net.Neg(), Rate: id, Base: net.Neg(), Description: p.Description}
+			if s.Accounts[to].DirectorAccount() {
+				line.Party = t.Party
+			}
+			lines = append(lines, line)
 		}
 	}
 	if !tax.IsZero() {

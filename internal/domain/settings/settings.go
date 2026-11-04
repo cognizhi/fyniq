@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cockroachdb/apd/v3"
@@ -33,6 +34,8 @@ const (
 	Text      Kind = "text"       // a fixed text, such as the data region
 	// AccountCode is a chart account's code, such as "6460": the account a posting takes, by its code.
 	AccountCode Kind = "account_code"
+	// Choice is one of the definition's Choices, such as "keep".
+	Choice Kind = "choice"
 )
 
 // Definition is one setting: what it holds, its recommended value and why, and the rules a change to it meets.
@@ -42,13 +45,14 @@ type Definition struct {
 	Label        string
 	Kind         Kind
 	Recommended  string
-	Reason       string // one line: why the recommended value
-	Guide        string // the guide page and section that explains it, such as /help/organisation-settings#features
-	Requirement  string // the PRD requirement it implements
-	DualControl  bool   // FM-1: a change needs a second approver
-	Fixed        bool   // set by the platform: shown, never changed
-	LengthenOnly bool   // a change may only lengthen it
-	Min, Max     string // the range of a number, inclusive
+	Reason       string   // one line: why the recommended value
+	Guide        string   // the guide page and section that explains it, such as /help/organisation-settings#features
+	Requirement  string   // the PRD requirement it implements
+	DualControl  bool     // FM-1: a change needs a second approver
+	Fixed        bool     // set by the platform: shown, never changed
+	LengthenOnly bool     // a change may only lengthen it
+	Min, Max     string   // the range of a number, inclusive
+	Choices      []string // a Choice's values
 }
 
 // guide is the guide page every setting links to (docs/user-guide/organisation-settings.md, served at /help/).
@@ -136,6 +140,17 @@ var Catalogue = []Definition{
 		Reason: "Off until there are customers or investors to invite", Guide: guide + "features", Requirement: "FR-ORG-06"},
 	{Key: "features.projects", Group: "Features", Label: "Projects and time", Kind: Switch, Recommended: "false",
 		Reason: "Off until you track time or costs by project", Guide: guide + "features", Requirement: "FR-ORG-06"},
+	{Key: "founders.default_route", Group: "Founders' money", Label: "Default route to settle what the company owes a founder", Kind: Choice,
+		Recommended: "keep", Choices: []string{"keep", "repay", "convert", "waive"},
+		Reason: "Keep it as an interest-free loan, repayable on demand, until the first priced round: no tax or CPF on money never received, and nobody's ownership moves at an arbitrary price",
+		Guide:  guide + "founders-money", Requirement: "FR-EQ-05", DualControl: true},
+	{Key: "founders.price_basis", Group: "Founders' money", Label: "Default price basis to convert to shares", Kind: Choice,
+		Recommended: "latest_priced_round", Choices: []string{"latest_priced_round", "valuation"},
+		Reason: "Convert at the price of the latest priced round, which outside investors paid; a valuation is the alternative when there is none",
+		Guide:  guide + "founders-money", Requirement: "FR-EQ-05", DualControl: true},
+	{Key: "founders.registration_days", Group: "Founders' money", Label: "Flag a conversion not registered by ACRA after", Kind: Days, Recommended: "14",
+		Reason: "ACRA's guidance expects a return of allotment within 14 days; the Act sets no deadline for private companies",
+		Guide:  guide + "founders-money", Requirement: "FR-EQ-09", Min: "1", Max: "90"},
 	{Key: "gst.round_per_line", Group: "Defaults", Label: "Round GST per line", Kind: Switch, Recommended: "false",
 		Reason: "GST is worked out once per GST code on a document's total for it (RND-GST-EXCL); IRAS accepts either method used consistently",
 		Guide:  guide + "gst-rounding", Requirement: "RND-GST-EXCL"},
@@ -229,6 +244,11 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 	case AccountCode:
 		if !accountCode.MatchString(raw) {
 			return bad("Send the code of an account in your chart, such as 6460")
+		}
+		return raw, nil
+	case Choice:
+		if !slices.Contains(d.Choices, raw) {
+			return bad("Send one of " + strings.Join(d.Choices, ", "))
 		}
 		return raw, nil
 	case Percent:

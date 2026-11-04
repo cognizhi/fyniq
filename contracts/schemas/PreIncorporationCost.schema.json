@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checks": {
+      "description": "Its statuses: ⚠ while it needs a decision, ✖ while it has no receipt.",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "contact_id": {
+      "description": "The director or shareholder who paid it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "date": {
+      "description": "The date on the receipt.",
+      "examples": [
+        "2025-08-28"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "decision": {
+      "$ref": "PreIncorporationCostDecision.schema.json",
+      "description": "Once decided: the accountant's decision."
+    },
+    "description": {
+      "description": "What it was for.",
+      "examples": [
+        "Incorporation: ACRA fee and constitution"
+      ],
+      "type": "string"
+    },
+    "gross": {
+      "$ref": "Money.schema.json",
+      "description": "What they paid, GST included."
+    },
+    "gst": {
+      "$ref": "Money.schema.json",
+      "description": "The GST the receipt shows."
+    },
+    "id": {
+      "description": "Its ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fb1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ledger_impact": {
+      "description": "getPreIncorporationCost only, once decided: the lines its entry wrote, debits positive.",
+      "items": {
+        "$ref": "EntryLine.schema.json"
+      },
+      "type": "array"
+    },
+    "number": {
+      "description": "Its number (FR-ORG-04).",
+      "examples": [
+        "PIC-0001"
+      ],
+      "type": "string"
+    },
+    "paid_by": {
+      "description": "Their legal name.",
+      "examples": [
+        "Mei Lin Tan"
+      ],
+      "type": "string"
+    },
+    "receipts": {
+      "description": "How many files are attached and not removed: the decision needs one.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "status": {
+      "description": "needs_decision (⚠): recorded, posting nothing until the accountant decides it; decided: posted.",
+      "enum": [
+        "needs_decision",
+        "decided"
+      ],
+      "examples": [
+        "needs_decision"
+      ],
+      "type": "string"
+    },
+    "supplier": {
+      "description": "Who it was paid to.",
+      "examples": [
+        "Corporate secretary"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The version of its content; with its status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "version",
+    "date",
+    "supplier",
+    "description",
+    "contact_id",
+    "paid_by",
+    "gross",
+    "receipts",
+    "checks",
+    "ledger_impact"
+  ],
+  "title": "PreIncorporationCost",
+  "type": "object"
+}

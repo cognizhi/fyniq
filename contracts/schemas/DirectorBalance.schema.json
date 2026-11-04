@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The director's account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "balance": {
+      "$ref": "Money.schema.json",
+      "description": "In the base currency, as the ledger holds it: negative (a credit) is what the company owes the person, positive what they owe it."
+    },
+    "code": {
+      "description": "Its code.",
+      "examples": [
+        "2500"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Loan from director / shareholder"
+      ],
+      "type": "string"
+    },
+    "role": {
+      "description": "director-loan for 2500, money lent and costs paid personally; deferred-remuneration for 2120, pay and fees not yet paid (B.7).",
+      "enum": [
+        "director-loan",
+        "deferred-remuneration"
+      ],
+      "examples": [
+        "director-loan"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "account_id",
+    "code",
+    "name",
+    "role",
+    "balance"
+  ],
+  "title": "DirectorBalance",
+  "type": "object"
+}

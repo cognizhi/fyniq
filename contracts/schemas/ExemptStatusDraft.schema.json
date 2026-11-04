@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "exempt": {
+      "description": "An exempt private company: no corporate shareholder and at most 20 members. False once, for example, a corporate investor joins.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "from": {
+      "description": "The day it applies from: the day the company became, or stopped being, exempt.",
+      "examples": [
+        "2025-03-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "note": {
+      "description": "What shows it.",
+      "examples": [
+        "ACRA business profile of 14 Mar 2025"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    }
+  },
+  "required": [
+    "from",
+    "exempt"
+  ],
+  "title": "ExemptStatusDraft",
+  "type": "object"
+}

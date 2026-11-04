@@ -3,7 +3,7 @@
   "additionalProperties": false,
   "properties": {
     "reason": {
-      "description": "Why it is cancelled: its bills and claims are free for another batch, or to pay by hand.",
+      "description": "Why it is cancelled: its bills, claims and settlements are free for another batch, or to pay bills and claims by hand.",
       "examples": [
         "The supplier asked to be paid by cheque"
       ],

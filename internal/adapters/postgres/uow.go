@@ -806,6 +806,11 @@ func (r ledger) Append(ctx context.Context, e storage.NewEntry) (storage.Entry, 
 		p.FxRateSources = append(p.FxRateSources, l.FXRateSource)
 		p.BaseAmounts = append(p.BaseAmounts, string(l.BaseAmount))
 		p.Descriptions = append(p.Descriptions, l.Description)
+		party := ""
+		if l.PartyID != nil {
+			party = l.PartyID.String()
+		}
+		p.PartyIds = append(p.PartyIds, party)
 	}
 	if e.Source.Version < 1 || e.Source.Version > math.MaxInt32 {
 		return storage.Entry{}, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("source version %d is out of range", e.Source.Version)}
@@ -834,9 +839,13 @@ func (r ledger) Append(ctx context.Context, e storage.NewEntry) (storage.Entry, 
 	}
 	lines := make([]any, len(posted.Lines))
 	for i, l := range posted.Lines {
-		lines[i] = map[string]any{"line_no": l.LineNo, "account_id": l.AccountID.String(), "currency": l.Currency,
+		line := map[string]any{"line_no": l.LineNo, "account_id": l.AccountID.String(), "currency": l.Currency,
 			"amount": string(l.Amount), "fx_rate": string(l.FXRate), "fx_rate_source": l.FXRateSource,
 			"base_currency": l.BaseCurrency, "base_amount": string(l.BaseAmount), "description": l.Description}
+		if l.PartyID != nil { // a director's account's person (B.7)
+			line["party_id"] = l.PartyID.String()
+		}
+		lines[i] = line
 	}
 	var reverses any
 	if posted.ReversesEntryID != nil {
@@ -896,7 +905,7 @@ func (r ledger) Entry(ctx context.Context, id uuid.UUID) (storage.Entry, error) 
 	for _, l := range lines {
 		line := storage.Line{ID: l.ID, LineNo: int(l.LineNo), AccountID: l.AccountID, Currency: l.Currency,
 			Amount: storage.Decimal(l.Amount), FXRate: storage.Decimal(l.FxRate), FXRateSource: l.FxRateSource,
-			BaseCurrency: l.BaseCurrency, BaseAmount: storage.Decimal(l.BaseAmount)}
+			BaseCurrency: l.BaseCurrency, BaseAmount: storage.Decimal(l.BaseAmount), PartyID: l.PartyID}
 		if l.Description != nil {
 			line.Description = *l.Description
 		}
@@ -930,7 +939,7 @@ func (r ledger) AccountLines(ctx context.Context, account uuid.UUID, from, to ti
 		out[i] = storage.AccountLine{EntryID: x.EntryID, LedgerRevision: x.LedgerRevision, PostingDate: x.PostingDate,
 			Source: storage.Source{Type: x.SourceType, ID: x.SourceID, Version: int(x.SourceVersion)}, Memo: str(x.Memo), ReversesEntryID: x.ReversesEntryID,
 			LineNo: int(x.LineNo), Currency: x.Currency, Amount: storage.Decimal(x.Amount), BaseAmount: storage.Decimal(x.BaseAmount),
-			Description: str(x.Description), Number: str(x.Number)}
+			Description: str(x.Description), Number: str(x.Number), PartyID: x.PartyID}
 	}
 	return out, nil
 }

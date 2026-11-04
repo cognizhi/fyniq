@@ -348,7 +348,9 @@ var matrixClaimantBank = map[string]func(e *env, tok string) (response, func() b
 			e.t.Fatalf("asking for the matrix change's approval = %d: %s", r.Status, r.Raw)
 		}
 		r := e.call(http.MethodPost, "/v1/me/bank-changes/"+id+"/withdraw", steppedUp(e, tok), nil, "If-Match", `"1-draft"`)
-		frozen := func() bool { return e.call(http.MethodGet, "/v1/me/bank-details", me, nil).Body["payments_frozen"] == true }
+		frozen := func() bool {
+			return e.call(http.MethodGet, "/v1/me/bank-details", me, nil).Body["payments_frozen"] == true
+		}
 		still := frozen()
 		if still { // a refused withdrawal leaves it waiting; the next row must find nothing waiting
 			e.call(http.MethodPost, "/v1/me/bank-changes/"+id+"/withdraw", me, nil, "If-Match", `"1-draft"`)

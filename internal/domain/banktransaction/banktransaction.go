@@ -170,6 +170,9 @@ func Read(doc storage.Document, base money.Currency) (Saved, error) {
 // Transaction is a saved version as the rule reads it.
 func Transaction(doc storage.Document, s Saved) ledger.BankTransaction {
 	t := ledger.BankTransaction{ID: doc.ID, Version: doc.Version, Date: s.Date, Memo: s.Memo, Account: s.AccountID, Amount: s.Amount, Rate: s.Rate}
+	if s.ContactID != nil { // the person of a part on a director's account (FR-EQ-01); the rule names no one elsewhere
+		t.Party = *s.ContactID
+	}
 	for _, p := range s.Parts {
 		t.Parts = append(t.Parts, ledger.BankPart{AccountID: p.AccountID, Amount: p.Amount, GSTRate: p.GSTRate, Months: p.Months, Description: p.Description})
 	}

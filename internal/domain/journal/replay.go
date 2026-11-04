@@ -12,6 +12,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
+	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -102,6 +103,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 			return err.Error(), nil
 		}
 		want.Memo = stored.Memo // a reversal's memo carries its reason, which nothing else keeps
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
+	if e.Source.Type == ledger.SourceShareIssue { // a founder's balance converted to shares, from the register and its settlement (FR-EQ-06)
+		want, err := replayConversion(ctx, u, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
 		return strings.Join(ledger.Differences(want, stored), "; "), nil
 	}
 	if e.Source.Type == ledger.SourceBankTransfer { // a transfer between money accounts, with the rates its entry kept (FR-BNK-09)
@@ -226,6 +234,34 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 	}
 	if asset.IsDisposal(doc) { // the sale or write-off of an asset, from what its version kept (FR-FA-03)
 		want, err := replayAssetDisposal(ctx, u, doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
+	if doc.Type == storage.DocumentDirectorRepayment { // a batch's repayment to a director, settling their settlements (FR-EQ-05)
+		want, err := replayDirectorRepayment(ctx, u, doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
+	if director.IsSettlement(doc) { // a waiver, as it was approved (FR-EQ-07)
+		want, err := replayDirectorWaiver(doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
+	if director.IsFee(doc) { // a director's fee, as it was approved (FR-EQ-04)
+		want, err := replayDirectorFee(doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
+	if director.IsPreCost(doc) { // a cost a director paid before the books start, as the accountant decided it (FR-EQ-03)
+		want, err := replayPreCost(doc, s, e)
 		if err != nil {
 			return err.Error(), nil
 		}

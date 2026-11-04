@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
+	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
@@ -34,8 +35,8 @@ import (
 // envelope holding its version, status, total and each payee's account in force (FR-APR-05, FR-APR-10, G4-055); approval
 // numbers it. It is released once by the Payment releaser, a person stepped up, under its latest approval, whose accounts
 // and total must still be the batch's (else it is approved again, PB-17): the release posts one bill payment per supplier
-// and one reimbursement per claimant as recording them by hand does, writes the payment list sealed with its SHA-256, and
-// links them (design D3, D4, D5, D7). In Standard mode the releaser neither prepared nor approved the batch (SOD-2) nor
+// and one reimbursement per claimant as recording them by hand does, and one repayment per director (FR-EQ-05), writes
+// the payment list sealed with its SHA-256, and links them (design D3, D4, D5, D7). In Standard mode the releaser neither prepared nor approved the batch (SOD-2) nor
 // the account change of a payee it pays (SOD-1); in Founder mode they may have, and each such release is logged for the
 // weekly review (FM-3).
 
@@ -54,12 +55,12 @@ var batchWriter paymentfile.Writer = paymentfile.PaymentList{}
 
 // PaymentBatchRelease is a batch's release as the API shows it: never the file's content.
 type PaymentBatchRelease struct {
-	ReleasedBy Person   `json:"released_by" doc:"Who released it."`
-	ReleasedAt string   `json:"released_at" format:"date-time" doc:"When it was released." example:"2026-10-31T09:30:00+08:00"`
-	ApprovalID string   `json:"approval_id" format:"uuid" doc:"The approval it was released under." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20"`
-	Writer     string   `json:"writer" doc:"The file's format and version: payment-list@1 is the payment list keyed into the bank (rev 0.156)." example:"payment-list@1"`
-	FileName   string   `json:"file_name" doc:"The file's name." example:"PB-0003-payment-list.csv"`
-	SHA256     string   `json:"sha256" doc:"The SHA-256 of the file as written, in hexadecimal: a downloaded copy can be checked against it." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
+	ReleasedBy Person               `json:"released_by" doc:"Who released it."`
+	ReleasedAt string               `json:"released_at" format:"date-time" doc:"When it was released." example:"2026-10-31T09:30:00+08:00"`
+	ApprovalID string               `json:"approval_id" format:"uuid" doc:"The approval it was released under." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20"`
+	Writer     string               `json:"writer" doc:"The file's format and version: payment-list@1 is the payment list keyed into the bank (rev 0.156)." example:"payment-list@1"`
+	FileName   string               `json:"file_name" doc:"The file's name." example:"PB-0003-payment-list.csv"`
+	SHA256     string               `json:"sha256" doc:"The SHA-256 of the file as written, in hexadecimal: a downloaded copy can be checked against it." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
 	Payments   []PaymentBatchPosted `json:"payments" nullable:"false" doc:"The bill payments and reimbursements it posted, one per payee, in the file's order."`
 }
 
@@ -79,7 +80,7 @@ type PaymentBatchFile struct {
 
 // PaymentBatchCancel is why an approved batch is cancelled.
 type PaymentBatchCancel struct {
-	Reason string `json:"reason" minLength:"1" maxLength:"500" doc:"Why it is cancelled: its bills and claims are free for another batch, or to pay by hand." example:"The supplier asked to be paid by cheque"`
+	Reason string `json:"reason" minLength:"1" maxLength:"500" doc:"Why it is cancelled: its bills, claims and settlements are free for another batch, or to pay bills and claims by hand." example:"The supplier asked to be paid by cheque"`
 }
 
 type batchCommandInput struct {
@@ -372,9 +373,18 @@ func (a *API) releaseBatch(ctx context.Context, u storage.UnitOfWork, p authn.Pr
 			return PaymentBatch{}, err
 		}
 		item := paymentfile.Payment{BIC: pay.Bank.BIC, AccountName: pay.Bank.AccountName, Number: number, Amount: pay.Amount, Reference: batchReference(doc.Number, pay)}
-		if pay.Payee.IsPerson() {
+		switch {
+		case pay.Director != uuid.Nil && pay.Payee.IsPerson():
+			item.Payee, item.Kind = names[pay.Payee.PersonID], "director"
+		case pay.Director != uuid.Nil:
+			c, err := u.Contacts().Get(ctx, pay.Payee.ContactID)
+			if err != nil {
+				return PaymentBatch{}, err
+			}
+			item.Payee, item.Kind = c.LegalName, "director"
+		case pay.Payee.IsPerson():
 			item.Payee, item.Kind = names[pay.Payee.PersonID], "claimant"
-		} else {
+		default:
 			c, err := u.Contacts().Get(ctx, pay.Payee.ContactID)
 			if err != nil {
 				return PaymentBatch{}, err
@@ -405,7 +415,19 @@ func (a *API) releaseBatch(ctx context.Context, u storage.UnitOfWork, p authn.Pr
 	// One payment per payee, posted as recording it by hand does (design D5), and linked to the release.
 	for _, pay := range b.Payments {
 		var paymentID uuid.UUID
-		if pay.Payee.IsPerson() {
+		switch {
+		case pay.Director != uuid.Nil: // a director's settlements, as one repayment (FR-EQ-05)
+			var parts []director.RepaymentPart
+			for _, l := range pay.Lines {
+				parts = append(parts, director.RepaymentPart{SettlementID: l.DocumentID, Amount: l.Open})
+			}
+			rec, err := a.repayments.RecordIn(ctx, u, director.Repayment{ContactID: pay.Director, Date: b.Date, AccountID: b.Stored.MoneyAccountID,
+				Reference: doc.Number, Settlements: parts, Notes: "Paid in " + doc.Number})
+			if err != nil {
+				return PaymentBatch{}, err
+			}
+			paymentID = rec.Repayment.ID
+		case pay.Payee.IsPerson():
 			var parts []claim.Part
 			for _, l := range pay.Lines {
 				parts = append(parts, claim.Part{ClaimID: l.DocumentID, Amount: l.Open})
@@ -416,7 +438,7 @@ func (a *API) releaseBatch(ctx context.Context, u storage.UnitOfWork, p authn.Pr
 				return PaymentBatch{}, err
 			}
 			paymentID = rec.Reimbursement.ID
-		} else {
+		default:
 			var parts []billpayment.Part
 			for _, l := range pay.Lines {
 				parts = append(parts, billpayment.Part{BillID: l.DocumentID, Amount: l.Open, InFull: true})
@@ -485,13 +507,13 @@ func (a *API) releaseOf(ctx context.Context, u storage.UnitOfWork, id uuid.UUID)
 
 // BatchApprovalCodes are the codes an approval of a batch may answer: FM-1, and the batch's own checks.
 func BatchApprovalCodes() []string {
-	return append([]string{CodeBatchOwn, CodeBatchNotOpen, paymentbatch.CodeCurrency, paymentbatch.CodeNothingOpen, paymentbatch.CodeInAnother,
+	return append([]string{CodeBatchOwn, CodeBatchNotOpen, paymentbatch.CodeCurrency, paymentbatch.CodeNothingOpen, paymentbatch.CodeOwedLess, paymentbatch.CodeInAnother,
 		paymentbatch.CodeNoAccount, paymentbatch.CodeWithholding, payee.CodeFrozen}, BatchCodes...)
 }
 
 func registerPaymentBatchRelease(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
-	checkCodes := []string{paymentbatch.CodeCurrency, paymentbatch.CodeNothingOpen, paymentbatch.CodeInAnother, paymentbatch.CodeNoAccount,
+	checkCodes := []string{paymentbatch.CodeCurrency, paymentbatch.CodeNothingOpen, paymentbatch.CodeOwedLess, paymentbatch.CodeInAnother, paymentbatch.CodeNoAccount,
 		paymentbatch.CodeWithholding, payee.CodeFrozen}
 
 	ask := func(op string) func(ctx context.Context, in *batchCommandInput) (*batchRequestOutput, error) {
@@ -602,7 +624,9 @@ func registerPaymentBatchRelease(a *API) {
 			"its approval again). In Standard mode the releaser neither prepared, asked for nor approved the batch (SOD-2), nor the account " +
 			"change of a payee it pays (SOD-1); in Founder mode they may have, and each such release is logged for the weekly review (FM-3). " +
 			"Side effects, in one transaction: one bill payment per supplier and one reimbursement per claimant, posted on the batch's " +
-			"payment date as recording them by hand does (Dr 2010 or 2150, Cr the money account) and referenced with the batch's number; " +
+			"payment date as recording them by hand does (Dr 2010 or 2150, Cr the money account), and one repayment per director or " +
+			"shareholder (director_repayment@1: Dr 2500 or 2120 naming the person, Cr the money account; FR-EQ-05), each referenced " +
+			"with the batch's number; " +
 			"the payment list (payment-list@1), sealed (SEC-11) with the SHA-256 of the file; the release and the links, audited with the " +
 			"file's name and hash only. Download the list with getPaymentBatchFile and key it into the bank. Needs If-Match with the " +
 			"batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and releases nothing.",

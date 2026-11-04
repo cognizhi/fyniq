@@ -61,7 +61,8 @@ func TestJournalsBalance(t *testing.T) {
 func TestOnlySyntheticVocabulary(t *testing.T) {
 	v := vocab(t)
 	allowed := map[string]bool{Schema: true, OrganisationName: true, "SGD": true, AsOf.Format("2006-01-02T15:04:05Z07:00"): true,
-		"share-capital": true} // the format's account role (INV-13), not a name
+		// The format's account roles (INV-13, FR-EQ-01) and the origins of a director's account's lines: not names.
+		"share-capital": true, "director-loan": true, "deferred-remuneration": true, "lent": true, "pay": true, "paid_out": true}
 	for code, names := range v.Accounts {
 		allowed[code] = true
 		for _, n := range names {
@@ -124,5 +125,37 @@ func TestTheSampleJournalsLeaveShareCapitalAlone(t *testing.T) {
 				t.Fatalf("%s posts to share capital %s", j.ID, l.Account)
 			}
 		}
+	}
+}
+
+// Every line on a director's account names a director of the sample company and an origin, and no other line does
+// (FR-EQ-01, B.7; PRD-001 rev 0.167).
+// req: FR-EQ-01
+func TestTheSampleDirectorLinesNameTheirDirector(t *testing.T) {
+	c := Generate(vocab(t), 7, 200)
+	directors := map[string]bool{}
+	for _, p := range c.People {
+		if p.Director {
+			directors[p.ID] = true
+		}
+	}
+	if len(directors) != 2 {
+		t.Fatalf("the sample company has %d directors, not its two founders", len(directors))
+	}
+	seen := 0
+	for _, j := range c.Journals {
+		for _, l := range j.Lines {
+			switch {
+			case DirectorAccounts[l.Account] != "" && (!directors[l.Person] || l.Origin == ""):
+				t.Errorf("%s: the line on %s names %q with origin %q", j.ID, l.Account, l.Person, l.Origin)
+			case DirectorAccounts[l.Account] == "" && (l.Person != "" || l.Origin != ""):
+				t.Errorf("%s: the line on %s names a person or origin", j.ID, l.Account)
+			case DirectorAccounts[l.Account] != "":
+				seen++
+			}
+		}
+	}
+	if seen == 0 {
+		t.Fatal("no sample journal posts to a director's account, so the test proves nothing")
 	}
 }

@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "active": {
+      "description": "The contact is active.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "balances": {
+      "description": "One per director's account of the chart, in code order.",
+      "items": {
+        "$ref": "DirectorBalance.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "contact_id": {
+      "description": "The person's contact.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "debit_warning": {
+      "description": "When in debit: what it means for the company's exempt-private-company status that day (FR-EQ-11): allowed but disclosed when exempt; the Companies Act s162 ban and its exception otherwise, or when no status is recorded.",
+      "examples": [
+        "The company is not an exempt private company: section 162 of the Companies Act bans loans to directors."
+      ],
+      "type": "string"
+    },
+    "director": {
+      "description": "A director.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "in_debit": {
+      "description": "The net is a debit: the person owes the company (FR-EQ-11).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "legal_name": {
+      "description": "Their name.",
+      "examples": [
+        "Mei Lin Tan"
+      ],
+      "type": "string"
+    },
+    "member_user_id": {
+      "description": "The member who signs in as them, when linked (linkContactMember).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "net": {
+      "$ref": "Money.schema.json",
+      "description": "Their balances together, as the ledger holds them: negative is owed to the person; positive means the person owes the company, which the balance sheet shows under 1250 Staff \u0026 director advances (FR-EQ-11)."
+    },
+    "pay_choice": {
+      "$ref": "PayChoiceInForce.schema.json",
+      "description": "Their pay choice in force in the month of the day the balances are at (FR-EQ-04): no salary by default."
+    },
+    "shareholder": {
+      "description": "A shareholder.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "year_end": {
+      "$ref": "YearEndConfirmation.schema.json",
+      "description": "Their confirmation of the latest financial year end on or before the balances' day (FR-EQ-12); absent until a year has ended."
+    }
+  },
+  "required": [
+    "contact_id",
+    "legal_name",
+    "director",
+    "shareholder",
+    "active",
+    "balances",
+    "net",
+    "in_debit",
+    "pay_choice"
+  ],
+  "title": "DirectorAccount",
+  "type": "object"
+}

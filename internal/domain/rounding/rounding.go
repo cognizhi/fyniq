@@ -1,8 +1,9 @@
 // Package rounding holds Fyniq's named rounding and allocation policies (PRD-001 §10.4). Every
 // rounding in the system goes through one of these functions, called by its name, and "half-up"
 // means half away from zero. The policies the P0 posting source needs are here; the statutory ones
-// (RND-CPF*, RND-SDL) and RND-SHARE arrive with their P1 sources, as RND-GST-EXCL did with bills (p1-purchases),
-// RND-GST-INCL with customer deposits (p1-sales) and RND-MILEAGE with expense claims (p1-expense-claims).
+// (RND-CPF*, RND-SDL) arrive with their P1 sources, as RND-GST-EXCL did with bills (p1-purchases), RND-GST-INCL
+// with customer deposits (p1-sales), RND-MILEAGE with expense claims (p1-expense-claims) and RND-SHARE with
+// conversions to share capital (p1-founders-money).
 package rounding
 
 import (
@@ -32,6 +33,7 @@ const (
 	GSTInclName      = "RND-GST-INCL"
 	DepositName      = "RND-DEPOSIT"
 	MileageName      = "RND-MILEAGE"
+	ShareName        = "RND-SHARE"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -565,4 +567,69 @@ func Mileage(distance money.Quantity, rate money.Money) (money.Quantity, money.M
 	}
 	amount, err := money.FromRounded(halfAwayFromZero(&product, rate.Currency().MinorUnits), rate.Currency())
 	return km, amount, err
+}
+
+// Shares are what RND-SHARE allots for an amount at a price per share: a whole number of shares, the amount they
+// convert (round(shares × price, minor units)), and the remainder that stays on the source balance.
+type Shares struct {
+	Count     apd.Decimal
+	Converted money.Money
+	Remainder money.Money
+}
+
+// Share is RND-SHARE (PRD-001 §10.4, rev 0.3; FR-EQ-06): the largest whole number of shares n for which round(n ×
+// price, the currency's minor units), half up, is no more than amount; converted = round(n × price), and the
+// remainder stays on the source balance. Never fractional shares. Since a positive x rounds half up to at most amount
+// exactly when x < amount + half a minor unit, n is the largest whole number below (amount + half a minor unit) ÷
+// price. An amount too small for one share allots none and converts nothing.
+func Share(amount money.Money, price money.UnitPrice) (Shares, error) {
+	cur := amount.Currency()
+	switch {
+	case price.Currency() != cur:
+		return Shares{}, &money.Error{Code: money.CodeCurrency, Field: "price", Message: fmt.Sprintf("the price is in %s, the amount in %s", price.Currency().Code, cur.Code)}
+	case amount.Sign() <= 0:
+		return Shares{}, &money.Error{Code: money.CodeRange, Field: "amount", Message: "the amount converted is not more than zero"}
+	case price.Sign() <= 0:
+		return Shares{}, &money.Error{Code: money.CodeRange, Field: "price", Message: "the price per share is not more than zero"}
+	}
+	// limit = amount + half a minor unit; n = the largest whole number with n × price < limit.
+	half := apd.New(5, -int32(cur.MinorUnits)-1)
+	var limit, quotient apd.Decimal
+	if _, err := work.Add(&limit, amount.Decimal(), half); err != nil {
+		return Shares{}, err
+	}
+	if _, err := work.Quo(&quotient, &limit, price.Decimal()); err != nil {
+		return Shares{}, err
+	}
+	var n apd.Decimal
+	floor := work.WithPrecision(60)
+	floor.Rounding = apd.RoundFloor
+	if _, err := floor.Quantize(&n, &quotient, 0); err != nil {
+		return Shares{}, err
+	}
+	var product apd.Decimal
+	if _, err := work.Mul(&product, &n, price.Decimal()); err != nil {
+		return Shares{}, err
+	}
+	if product.Cmp(&limit) >= 0 { // exactly on the limit: it rounds up past the amount
+		if _, err := work.Sub(&n, &n, apd.New(1, 0)); err != nil {
+			return Shares{}, err
+		}
+		if _, err := work.Mul(&product, &n, price.Decimal()); err != nil {
+			return Shares{}, err
+		}
+	}
+	converted, err := money.FromRounded(halfAwayFromZero(&product, cur.MinorUnits), cur)
+	if err != nil {
+		return Shares{}, err
+	}
+	remainder, err := amount.Sub(converted)
+	if err != nil {
+		return Shares{}, err
+	}
+	out := Shares{Converted: converted, Remainder: remainder}
+	if _, err := work.Quantize(&out.Count, &n, 0); err != nil { // a whole number, with no exponent
+		return Shares{}, err
+	}
+	return out, nil
 }

@@ -95,6 +95,10 @@ type API struct {
 	claims               journal.Claims              // members' expense claims (FR-AP-07)
 	reimbursements       journal.ClaimReimbursements // claims paid back, recorded by hand (FR-AP-07)
 	advances             journal.CashAdvances        // cash advances to members and their refunds (FR-AP-17)
+	preCosts             journal.PreCosts            // costs founders paid before the books start (FR-EQ-03)
+	fees                 journal.DirectorFees        // directors' fees, posted on another person's approval (FR-EQ-04)
+	settlements          journal.DirectorSettlements // settlements of founders' balances, kept or waived (FR-EQ-05, FR-EQ-07)
+	repayments           journal.DirectorRepayments  // what payment batches repay directors (FR-EQ-05, FR-BNK-12)
 	assets               journal.FixedAssets         // the fixed asset register (FR-FA-01…03)
 	disposals            journal.AssetDisposals      // disposals of fixed assets (FR-FA-03)
 }
@@ -159,6 +163,7 @@ func Config(version string) huma.Config {
 		{Name: "Purchases", Description: "Bills from suppliers: drafted, approved, posted and voided; posted history never changes (FR-AP-02, FR-GL-12)."},
 		{Name: "Sales", Description: "Invoices to customers: drafted, approved, issued and voided; posted history never changes (FR-AR-03, FR-GL-12)."},
 		{Name: "Banking", Description: "Money accounts, their statements and lines, and the rules that code them; a rule applies by itself only once a second person approves it (FR-BNK-01…18)."},
+		{Name: "Founders", Description: "What the company owes its directors and shareholders on 2500 Loan from director / shareholder and 2120 Deferred remuneration payable, each amount naming its person and where it came from; their statements; and the member who signs in as each (PRD-001 §8.22, FR-EQ-01, FR-EQ-14)."},
 		{Name: "Expense claims", Description: "Members' claims for what they spent for the company: drafted and submitted by the claimant, approved by someone else, posted to 2150 Expense claims payable (FR-AP-07, FR-AP-14, FR-AP-17)."},
 		{Name: "Fixed assets", Description: "The fixed asset register: assets registered from the bill or bank lines that bought them, or from the opening balances, their monthly depreciation, and their disposals (FR-FA-01, FR-FA-02, FR-FA-03)."},
 		{Name: "Periods", Description: "Accounting periods and financial years: a posting's period is the month of its date (FR-ORG-02, FR-GL-08)."},
@@ -200,7 +205,7 @@ func New(mux humago.Mux, d Deps) *API {
 		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
 		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store},
 		customerApplications: journal.CustomerCreditApplications{Store: d.Store}, customerRefunds: journal.CustomerRefunds{Store: d.Store},
-		deposits: journal.CustomerDeposits{Store: d.Store}, bank: journal.BankTransactions{Store: d.Store, Clock: d.Clock}, quotes: journal.Quotes{Store: d.Store}, claims: journal.Claims{Store: d.Store}, reimbursements: journal.ClaimReimbursements{Store: d.Store}, advances: journal.CashAdvances{Store: d.Store}, assets: journal.FixedAssets{Store: d.Store, Clock: d.Clock}, disposals: journal.AssetDisposals{Store: d.Store, Clock: d.Clock}, closing: closing.Service{Store: d.Store, Clock: d.Clock, More: checks.ForClose}}
+		deposits: journal.CustomerDeposits{Store: d.Store}, bank: journal.BankTransactions{Store: d.Store, Clock: d.Clock}, quotes: journal.Quotes{Store: d.Store}, claims: journal.Claims{Store: d.Store}, reimbursements: journal.ClaimReimbursements{Store: d.Store}, advances: journal.CashAdvances{Store: d.Store}, preCosts: journal.PreCosts{Store: d.Store}, assets: journal.FixedAssets{Store: d.Store, Clock: d.Clock}, disposals: journal.AssetDisposals{Store: d.Store, Clock: d.Clock}, closing: closing.Service{Store: d.Store, Clock: d.Clock, More: checks.ForClose}}
 	if d.Outbox != nil { // FR-BNK-12: a batch's supplier payment matched to its statement line sends its remittance advice
 		dispatcher := *d.Outbox
 		a.bank.AfterMatch = func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) error {
@@ -234,6 +239,10 @@ func New(mux humago.Mux, d Deps) *API {
 	a.claims.AfterPosting = a.afterPosting
 	a.reimbursements.AfterPosting = a.afterPosting
 	a.advances.AfterPosting = a.afterPosting
+	a.preCosts.AfterPosting = a.afterPosting
+	a.fees.AfterPosting = a.afterPosting
+	a.settlements.AfterPosting = a.afterPosting
+	a.repayments.AfterPosting = a.afterPosting
 	a.disposals.AfterPosting = a.afterPosting
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
@@ -306,6 +315,16 @@ func New(mux humago.Mux, d Deps) *API {
 	registerDocumentSends(a)
 	registerSalesReminders(a)
 	registerStatements(a)
+	registerDirectors(a)
+	registerRelatedParties(a)
+	registerPreCosts(a)
+	registerPayChoices(a)
+	registerFees(a)
+	registerExempt(a)
+	registerConfirmations(a)
+	registerSettlements(a)
+	registerRepayments(a)
+	registerShareIssues(a)
 	registerPublicDocuments(a)
 	registerInvoiceEvidence(a)
 	registerReceivables(a)

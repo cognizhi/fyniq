@@ -22,7 +22,8 @@ func toContact(r contactRow) storage.Contact {
 		LegalName: r.LegalName, Customer: r.IsCustomer, Vendor: r.IsVendor, UENOrTaxID: str(r.UenOrTaxID), PeppolID: str(r.PeppolID),
 		BillingEmail: str(r.BillingEmail), RemittanceEmail: str(r.RemittanceEmail), Phone: str(r.Phone), Address: str(r.Address),
 		Country: str(r.Country), TaxResidence: str(r.TaxResidence), Currency: str(r.Currency), DefaultAccountID: r.DefaultAccountID,
-		DefaultGSTCode: str(r.DefaultGstCode), CustomerGroupID: r.CustomerGroupID}}
+		DefaultGSTCode: str(r.DefaultGstCode), CustomerGroupID: r.CustomerGroupID, Director: r.IsDirector, Shareholder: r.IsShareholder},
+		MemberUserID: r.MemberUserID}
 	if r.PaymentTermsDays != nil {
 		d := int(*r.PaymentTermsDays)
 		c.PaymentTermsDays = &d
@@ -73,6 +74,9 @@ func contactChanges(a, b storage.Contact) map[string][2]any {
 	diff("legal_name", nilIfEmpty(a.LegalName), nilIfEmpty(b.LegalName))
 	diff("is_customer", a.Customer, b.Customer)
 	diff("is_vendor", a.Vendor, b.Vendor)
+	diff("is_director", a.Director, b.Director)
+	diff("is_shareholder", a.Shareholder, b.Shareholder)
+	diff("member_user_id", ptr(a.MemberUserID), ptr(b.MemberUserID))
 	diff("uen_or_tax_id", nilIfEmpty(a.UENOrTaxID), nilIfEmpty(b.UENOrTaxID))
 	diff("peppol_id", nilIfEmpty(a.PeppolID), nilIfEmpty(b.PeppolID))
 	diff("billing_email", nilIfEmpty(a.BillingEmail), nilIfEmpty(b.BillingEmail))
@@ -105,6 +109,7 @@ func (r contacts) Create(ctx context.Context, d storage.ContactDetails) (storage
 		return storage.Contact{}, err
 	}
 	row, err := r.u.q.InsertContact(ctx, sqlcdb.InsertContactParams{LegalName: d.LegalName, IsCustomer: d.Customer, IsVendor: d.Vendor,
+		IsDirector: d.Director, IsShareholder: d.Shareholder,
 		UenOrTaxID: opt(d.UENOrTaxID), PeppolID: opt(d.PeppolID), BillingEmail: opt(d.BillingEmail), RemittanceEmail: opt(d.RemittanceEmail),
 		Phone: opt(d.Phone), Address: opt(d.Address), Country: opt(d.Country), TaxResidence: opt(d.TaxResidence), Currency: opt(d.Currency), PaymentTermsDays: t,
 		DiscountPercent: opt(d.DiscountPercent), DiscountDays: dd,
@@ -152,6 +157,7 @@ func (r contacts) Update(ctx context.Context, id uuid.UUID, version int, d stora
 			Message: fmt.Sprintf("the contact changed since it was read: it is at version %d, not %d", before.Version, version)}
 	}
 	row, err := r.u.q.UpdateContact(ctx, sqlcdb.UpdateContactParams{ID: id, LegalName: d.LegalName, IsCustomer: d.Customer, IsVendor: d.Vendor,
+		IsDirector: d.Director, IsShareholder: d.Shareholder,
 		UenOrTaxID: opt(d.UENOrTaxID), PeppolID: opt(d.PeppolID), BillingEmail: opt(d.BillingEmail), RemittanceEmail: opt(d.RemittanceEmail),
 		Phone: opt(d.Phone), Address: opt(d.Address), Country: opt(d.Country), TaxResidence: opt(d.TaxResidence), Currency: opt(d.Currency), PaymentTermsDays: t,
 		DiscountPercent: opt(d.DiscountPercent), DiscountDays: dd,
@@ -184,6 +190,43 @@ func (r contacts) Page(ctx context.Context, after uuid.UUID, role string, limit 
 		out = append(out, toContact(contactRow(row)))
 	}
 	return out, nil
+}
+
+func (r contacts) LinkMember(ctx context.Context, id uuid.UUID, version int, member *uuid.UUID) (storage.Contact, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Contact{}, err
+	}
+	cur, err := r.u.q.LockContact(ctx, id)
+	if err != nil {
+		return storage.Contact{}, mapError(err)
+	}
+	before := toContact(contactRow(cur))
+	if before.Version != version {
+		return storage.Contact{}, &storage.Error{Code: storage.CodeVersion,
+			Message: fmt.Sprintf("the contact changed since it was read: it is at version %d, not %d", before.Version, version)}
+	}
+	row, err := r.u.q.LinkContactMember(ctx, sqlcdb.LinkContactMemberParams{ID: id, Version: small(version), MemberUserID: member})
+	if err != nil {
+		return storage.Contact{}, mapError(err)
+	}
+	after := toContact(contactRow(row))
+	changes := contactChanges(before, after)
+	changes["version"] = [2]any{before.Version, after.Version}
+	if err := r.u.event(ctx, "contact.member_linked", "contact", after.ID, &after.Version, changes); err != nil {
+		return storage.Contact{}, err
+	}
+	return after, nil
+}
+
+func (r contacts) OfMember(ctx context.Context, member uuid.UUID) (storage.Contact, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Contact{}, err
+	}
+	row, err := r.u.q.ContactOfMember(ctx, &member)
+	if err != nil {
+		return storage.Contact{}, mapError(err)
+	}
+	return toContact(contactRow(row)), nil
 }
 
 func (r contacts) Duplicates(ctx context.Context, self uuid.UUID, d storage.ContactDetails) ([]storage.ContactDuplicate, error) {

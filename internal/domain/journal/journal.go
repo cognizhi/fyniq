@@ -70,6 +70,9 @@ type payloadLine struct {
 	FXRate       string      `json:"fx_rate,omitempty"`
 	FXRateSource string      `json:"fx_rate_source,omitempty"`
 	Description  string      `json:"description,omitempty"`
+	// The person and origin of a line on a director's account (FR-EQ-01, B.7; rev 0.167).
+	PartyID *uuid.UUID `json:"party_id,omitempty"`
+	Origin  string     `json:"origin,omitempty"`
 }
 
 // Service runs the journal commands against a store.
@@ -104,7 +107,10 @@ func encode(d Draft) ([]byte, error) {
 func linesOf(lines []ledger.JournalLine) []payloadLine {
 	var out []payloadLine
 	for _, l := range lines {
-		pl := payloadLine{AccountID: l.AccountID, Amount: l.Amount, Description: l.Description}
+		pl := payloadLine{AccountID: l.AccountID, Amount: l.Amount, Description: l.Description, Origin: l.Origin}
+		if l.Party != uuid.Nil {
+			pl.PartyID = &l.Party
+		}
 		if l.Rate != nil {
 			pl.FXRate, pl.FXRateSource = l.Rate.String(), l.Rate.Source
 		}
@@ -394,7 +400,28 @@ func loadSettings(ctx context.Context, u storage.UnitOfWork) (ledger.Settings, e
 		s.Accounts[a.ID] = ledger.Account{ID: a.ID, Code: a.Code, Group: a.Group, Active: a.Active, ShareCapital: a.Role == storage.RoleShareCapital,
 			Revalue: a.Revalue, UnrealisedFX: a.Role == storage.RoleUnrealisedFX, Role: string(a.Role), Money: a.MoneyAccount, Currency: a.Currency, Type: string(a.Type)}
 	}
+	if s.People, err = people(ctx, u); err != nil {
+		return ledger.Settings{}, err
+	}
 	return s, nil
+}
+
+// people are the contacts marked director or shareholder: those a line on a director's account may name (FR-EQ-01).
+func people(ctx context.Context, u storage.UnitOfWork) (map[uuid.UUID]bool, error) {
+	out := map[uuid.UUID]bool{}
+	for after := uuid.Nil; ; {
+		page, err := u.Contacts().Page(ctx, after, "director", 500)
+		if err != nil {
+			return nil, err
+		}
+		for _, c := range page {
+			out[c.ID] = true
+		}
+		if len(page) < 500 {
+			return out, nil
+		}
+		after = page[len(page)-1].ID
+	}
 }
 
 // Saved is a journal version as it was saved, for reading it back: the date (empty when none was
@@ -415,6 +442,8 @@ type SavedLine struct {
 	FXRate       string
 	FXRateSource string
 	Description  string
+	PartyID      *uuid.UUID // the person of a line on a director's account (FR-EQ-01)
+	Origin       string     // and where its amount came from
 }
 
 // ReadSaved reads a journal version as it was saved.
@@ -440,10 +469,15 @@ func readSaved(doc storage.Document) (Saved, error) {
 	}
 	out := Saved{Date: p.Date, Memo: p.Memo, Lines: make([]SavedLine, 0, len(p.Lines)), ReverseOn: p.ReverseOn, RecurringJournal: p.RecurringJournal}
 	for _, l := range p.Lines {
-		out.Lines = append(out.Lines, SavedLine{AccountID: l.AccountID, Amount: l.Amount, FXRate: l.FXRate,
-			FXRateSource: l.FXRateSource, Description: l.Description})
+		out.Lines = append(out.Lines, savedLine(l))
 	}
 	return out, nil
+}
+
+// savedLine is a stored line as it was saved.
+func savedLine(l payloadLine) SavedLine {
+	return SavedLine{AccountID: l.AccountID, Amount: l.Amount, FXRate: l.FXRate, FXRateSource: l.FXRateSource,
+		Description: l.Description, PartyID: l.PartyID, Origin: l.Origin}
 }
 
 // decode reads a stored journal version.
@@ -472,7 +506,10 @@ func decode(doc storage.Document, base money.Currency) (ledger.Journal, error) {
 		}
 	}
 	for i, l := range p.Lines {
-		line := ledger.JournalLine{AccountID: l.AccountID, Amount: l.Amount, Description: l.Description}
+		line := ledger.JournalLine{AccountID: l.AccountID, Amount: l.Amount, Description: l.Description, Origin: l.Origin}
+		if l.PartyID != nil {
+			line.Party = *l.PartyID
+		}
 		if l.FXRate != "" {
 			r, err := money.ParseRate(l.FXRate, l.Amount.Currency(), base, l.FXRateSource)
 			if err != nil {
@@ -493,11 +530,15 @@ func toStorage(e ledger.Entry, reverses *uuid.UUID) storage.NewEntry {
 		ReversesEntryID: reverses,
 	}
 	for _, l := range e.Lines {
-		out.Lines = append(out.Lines, storage.NewLine{
+		line := storage.NewLine{
 			AccountID: l.AccountID, Currency: l.Amount.Currency().Code, Amount: storage.Decimal(l.Amount.String()),
 			FXRate: storage.Decimal(l.Rate.String()), FXRateSource: l.Rate.Source, BaseAmount: storage.Decimal(l.Base.String()),
 			Description: l.Description,
-		})
+		}
+		if l.Party != uuid.Nil {
+			line.PartyID = &l.Party
+		}
+		out.Lines = append(out.Lines, line)
 	}
 	return out
 }
@@ -525,7 +566,11 @@ func fromStorage(e storage.Entry, base money.Currency) (ledger.Entry, error) {
 		if err != nil {
 			return ledger.Entry{}, err
 		}
-		out.Lines = append(out.Lines, ledger.Line{AccountID: l.AccountID, Amount: amount, Rate: rate, Base: baseAmount, Description: l.Description})
+		line := ledger.Line{AccountID: l.AccountID, Amount: amount, Rate: rate, Base: baseAmount, Description: l.Description}
+		if l.PartyID != nil {
+			line.Party = *l.PartyID
+		}
+		out.Lines = append(out.Lines, line)
 	}
 	return out, nil
 }
