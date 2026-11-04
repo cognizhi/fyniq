@@ -159,21 +159,18 @@ posts one of each, its figures worked out by hand in `oracle/tests/test_golden.p
 | `version` | Read but not used (P0 posts version 1 of each journal) | ENG-03 (an entry names its document's version) | Always 1 |
 | `fx_rate_source` values | Any non-empty string; not used in the result | ENG-03, ENG-40 (a rate typed on the document has the source "document") | `"document"`; `"base"` too on a base-currency line built to be rejected |
 
-## P1 sources (`cmd/scenario-run` reads all but the founders' documents; those are pending)
+## P1 sources (`cmd/scenario-run` reads every one)
 
 From P1 a scenario may hold documents of other sources beside manual journals, each posted by its
 rule set (PRD-001 §10.2, Appendix B; the oracle's `oracle/src/oracle/sources/`). The format grows
 additively, still `fyniq-scenario@1`: a scenario of manual journals only is unchanged, and so is its
-result. **The engine's `cmd/scenario-run` reads the bank shapes** (`p1-bank-import-reconcile` 4.8;
-`internal/differential/p1.go`), **the purchases** (`p1-purchases` 10.4; `p1_purchases.go`) **and the sales**
-(`p1-sales` 9.3; `p1_sales.go`), **the claims** (`p1-expense-claims` 9.2; `p1_claims.go`) **and the assets**
-(`p1-fixed-assets` 8.2; `p1_assets.go`), so the Go gate posts their golden cases through both sides and
-`make differential` draws those scenarios (`DIFFERENTIAL_SOURCES=bank,purchases,sales,claims,assets` in the
-Makefile). It does not read the other
-sources yet: their golden cases wait in [`pending/`](pending/README.md) with their
-figures worked out by hand, and `make differential` draws them only once their source is named in
-`FYNIQ_DIFFERENTIAL_SOURCES`. Teaching `cmd/scenario-run` each source is an engine-session task in
-its OpenSpec change.
+result. **The engine's `cmd/scenario-run` reads every P1 source**, each in `internal/differential/` (`p1.go` with
+the bank, `p1_purchases.go`, `p1_sales.go`, `p1_claims.go`, `p1_assets.go` and `p1_founders.go`; the engine-session
+tasks of `p1-bank-import-reconcile`, `p1-purchases`, `p1-sales`, `p1-expense-claims` and `p1-fixed-assets`), so the
+Go gate posts their golden cases in [`golden/`](golden/README.md) through both sides, and `make differential` draws
+the sources the generator has (`DIFFERENTIAL_SOURCES=bank,purchases,sales,claims,assets` in the Makefile; the
+founders' documents are compared on their golden case only). The statements and the KPIs are not stated yet: their
+golden case waits in [`pending/`](pending/README.md) (section "Statements").
 
 ### Settings and `as_of`
 
