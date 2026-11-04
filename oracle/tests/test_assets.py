@@ -102,7 +102,9 @@ def test_a_write_off_has_no_proceeds_and_after_its_life_nothing_is_left():
 
 # req: FR-FA-03
 def test_a_disposal_in_the_purchase_month_clears_no_depreciation():
-    result, _ = p1_post(asset("FA-1", "2026-01-15", "3600.00", 36), disposal("AD-1", "2026-01-20", "FA-1", "1010", "3600.00"))
+    # Sold for its cost, zero-rated (an export, ZR): no GST, no depreciation to clear, no gain or loss.
+    result, _ = p1_post(asset("FA-1", "2026-01-15", "3600.00", 36),
+                        disposal("AD-1", "2026-01-20", "FA-1", "1010", "3600.00", "ZR"))
     assert lines_of(result, "AD-1") == [("1010", "SGD", "3600.00", "3600.00"), ("1500", "SGD", "-3600.00", "-3600.00")]
     assert _months(result) == []
 
@@ -141,6 +143,34 @@ def test_proceeds_received_take_only_a_supply_code(code):
     # Proceeds received bear output tax "based on the consideration received" (FR-FA-03, rev 0.155; SR for a
     # sale in Singapore): a code given is a supply code (Appendix B.6). Proceeds with no code bear no GST.
     _refused([FA, disposal("AD-9", "2026-04-10", "FA-1", "1010", "100.00", code)], "AD-9", "gst-code-not-supply")
+
+
+NOT_REGISTERED = {**P1_SETTINGS, "gst": {**P1_SETTINGS["gst"], "registered_from": "2027-01-01"}}
+
+
+# req: FR-FA-03
+def test_registered_proceeds_received_name_their_supply_code():
+    # Registered from 1 Jan 2025, so the sale on 10 Apr 2026 is a taxable supply: 2200 takes GST "at the proceeds'
+    # GST code's rate" (FR-FA-03), and proceeds with no code would leave its output tax undeclared. Refused whole.
+    _refused([FA, disposal("AD-9", "2026-04-10", "FA-1", "1010", "100.00")], "AD-9", "no-gst-code")
+
+
+# req: FR-FA-03
+def test_unregistered_proceeds_received_need_no_code_and_bear_no_gst():
+    # Not registered until 2027: no GST is charged, so proceeds with no code post. 100.00 received against a
+    # carrying amount of 3,300.00 (3,600.00 less January to March, 3 × 100.00): a loss of 3,200.00 to 7050.
+    result, _ = p1_post(FA, disposal("AD-1", "2026-04-10", "FA-1", "1010", "100.00"), settings=NOT_REGISTERED)
+    assert lines_of(result, "AD-1") == [("1010", "SGD", "100.00", "100.00"), ("1500", "SGD", "-3600.00", "-3600.00"),
+                                        ("1590", "SGD", "300.00", "300.00"), ("7050", "SGD", "3200.00", "3200.00")]
+
+
+# req: FR-FA-03
+@pytest.mark.parametrize("code", ["NA", "TX"])
+def test_unregistered_proceeds_received_with_a_code_take_a_supply_code(code):
+    # Not registered: a code is optional, but one given is a supply code whatever the registration (B.6, rev 0.169).
+    result, ledger = p1_post(FA, disposal("AD-9", "2026-04-10", "FA-1", "1010", "100.00", code), settings=NOT_REGISTERED)
+    assert "AD-9" in result["rejected"]
+    assert dict(ledger.reasons)["AD-9"] == "gst-code-not-supply"
 
 
 # req: FR-FA-03

@@ -176,3 +176,86 @@ func TestP1SalesCreditDepositsAndWriteOffs(t *testing.T) {
 		}
 	}
 }
+
+// The claims of golden/claims.json, worked out by hand (README, "Expense claims ..."): EC-0001 owes 100.00 + 9.00 of
+// GST + a trip of 12.35 km, 12.4 km under RND-MILEAGE × 0.60 = 7.44, all 116.44 off ADV-0001's 500.00 on 1250;
+// EC-0002 owes 450.00, the 383.56 left of the advance on 1250 and 66.44 on 2150. EC-0003 is USD 50.00 at 1.35, so 2150
+// owes a fixed S$67.50 (FR-AP-17, rev 0.169) and RE-0001 pays exactly that. EC-0004's 7.3 km × 0.25 = 1.83 and
+// 100 km × 0.60 = 60.00 owe 61.83; RE-0002 pays 66.44 + 61.83 = 128.27, and RE-0003's 0.01 more is refused. EC-0006
+// is kept as a loan, 218.00 on 2500 naming P0001; a trip in USD, a loan with an advance, a loan to someone not among
+// the people and a reimbursement of the loan are refused.
+// req: FR-AP-16
+// req: FR-AP-17
+// req: FR-EQ-02
+// req: QA-ENG-02
+func TestP1ClaimsOweAFixedSGDAmount(t *testing.T) {
+	r := run(t, load(t, "claims.json"))
+	if want := []string{"RE-0003", "EC-0005", "EC-0007", "EC-0008", "RE-0004"}; !reflect.DeepEqual(r.Rejected, want) {
+		t.Errorf("rejected %v, want %v", r.Rejected, want)
+	}
+	byKey := map[string][]EntryLine{}
+	for _, e := range r.Entries {
+		byKey[e.Kind+" "+e.Document+" "+e.PostingDate] = e.Lines
+	}
+	loan := el("2500", "SGD", "-218.00", "-218.00")
+	loan.Party = "P0001"
+	for key, lines := range map[string][]EntryLine{
+		"post EC-0001 2026-03-05": {el("1250", "SGD", "-116.44", "-116.44"), el("2200", "SGD", "9.00", "9.00"), el("6010", "SGD", "100.00", "100.00"),
+			el("6110", "SGD", "7.44", "7.44")},
+		"post EC-0002 2026-03-06": {el("1250", "SGD", "-383.56", "-383.56"), el("2150", "SGD", "-66.44", "-66.44"), el("6010", "SGD", "450.00", "450.00")},
+		"post EC-0003 2026-03-10": {el("2150", "SGD", "-67.50", "-67.50"), el("6010", "USD", "50.00", "67.50")},
+		"post RE-0001 2026-03-31": {el("1010", "SGD", "-67.50", "-67.50"), el("2150", "SGD", "67.50", "67.50")},
+		"post EC-0004 2026-03-12": {el("2150", "SGD", "-61.83", "-61.83"), el("6110", "SGD", "61.83", "61.83")},
+		"post EC-0006 2026-04-08": {el("2200", "SGD", "18.00", "18.00"), loan, el("6010", "SGD", "200.00", "200.00")},
+	} {
+		if got := byKey[key]; !reflect.DeepEqual(got, lines) {
+			t.Errorf("%s: %v, want %v", key, got, lines)
+		}
+	}
+}
+
+// The assets of golden/assets.json, worked out by hand (README, "Fixed assets ..."): FA-0001 depreciates 3,600.00 over
+// 36 months, 100.00 a month on each month's last day; AD-0001 sells it on 10 April for 3,270.00 coded SR, 270.00 of it
+// output GST, against 3,300.00 carried after January to March, a loss of 300.00. FA-0002 was bought in November 2025,
+// before the books start, so the opening balances carry November and December and it posts 100.00 a month from
+// January. FA-0003's 1,000.00 over 3 months from March is 333.33, 333.34, 333.33 under ALLOC-EVEN. FA-0004 (2,000.00 less
+// 200.00 over 18 months) is sold on the clearing account for 1,500.00 against 1,600.00, a loss of 100.00, and depreciates
+// no more from May. A second disposal of FA-0001 and an asset on an expense account are refused.
+// req: FR-FA-01
+// req: FR-FA-02
+// req: FR-FA-03
+// req: QA-ENG-02
+func TestP1AssetsDepreciateAndDispose(t *testing.T) {
+	r := run(t, load(t, "assets.json"))
+	if want := []string{"AD-0003", "FA-0005"}; !reflect.DeepEqual(r.Rejected, want) {
+		t.Errorf("rejected %v, want %v", r.Rejected, want)
+	}
+	months := map[string][]string{}
+	byKey := map[string][]EntryLine{}
+	for _, e := range r.Entries {
+		byKey[e.Kind+" "+e.Document+" "+e.PostingDate] = e.Lines
+		if e.Kind == "depreciation" {
+			months[e.Document] = append(months[e.Document], e.PostingDate+" "+e.Lines[1].Amount)
+		}
+	}
+	for doc, want := range map[string][]string{
+		"FA-0001": {"2026-01-31 100.00", "2026-02-28 100.00", "2026-03-31 100.00"},
+		"FA-0002": {"2026-01-31 100.00", "2026-02-28 100.00", "2026-03-31 100.00", "2026-04-30 100.00", "2026-05-31 100.00"},
+		"FA-0003": {"2026-03-31 333.33", "2026-04-30 333.34", "2026-05-31 333.33"},
+		"FA-0004": {"2026-01-31 100.00", "2026-02-28 100.00", "2026-03-31 100.00", "2026-04-30 100.00"},
+	} {
+		if !reflect.DeepEqual(months[doc], want) {
+			t.Errorf("%s's months %v, want %v", doc, months[doc], want)
+		}
+	}
+	for key, lines := range map[string][]EntryLine{
+		"post AD-0001 2026-04-10": {el("1010", "SGD", "3270.00", "3270.00"), el("1500", "SGD", "-3600.00", "-3600.00"), el("1590", "SGD", "300.00", "300.00"),
+			el("2200", "SGD", "-270.00", "-270.00"), el("7050", "SGD", "300.00", "300.00")},
+		"post AD-0002 2026-05-05": {el("1160", "SGD", "1500.00", "1500.00"), el("1510", "SGD", "-2000.00", "-2000.00"), el("1590", "SGD", "400.00", "400.00"),
+			el("7050", "SGD", "100.00", "100.00")},
+	} {
+		if got := byKey[key]; !reflect.DeepEqual(got, lines) {
+			t.Errorf("%s: %v, want %v", key, got, lines)
+		}
+	}
+}

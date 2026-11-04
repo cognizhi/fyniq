@@ -13,19 +13,26 @@ FR-EQ-02, Appendix B.7 and the rows of rev 0.147, 0.148, 0.151 and 0.167.
   claim's date (a policy setting, effective-dated), with no input GST (no tax invoice; reg. 27). A trip
   is in the base currency, so a claim with one is too.
 
-It posts each line's cost to its account at ``RND-FX`` and 2200 the input tax, and credits what the
-employee is owed: 1250 first, up to what is left of the cash advance it settles (in the base currency),
-then 2150 with the rest at ``RND-FX``; 7030 takes what balances.
+It posts each line's cost to its account in the claim's currency at ``RND-FX`` and 2200 the input tax,
+and credits what the employee is owed **in the base currency**: each receipt line's net plus its stated
+GST at the claim's rate under ``RND-FX``, line by line, summed, and each trip's amount. Under SFRS(I)
+1-21 the company owes the claimant a fixed SGD amount, what they were out of pocket, so nothing on 2150
+is foreign (FR-AP-17, rev 0.155's "2150 at the claim's rate", decided by the owner [accountant to
+confirm]; superseding 2150 in the claim's currency). 1250 takes it first, up to what is left of the cash
+advance it settles, then 2150 the rest; 7030 takes what balances (the ``RND-FX`` cents between a line's
+parts, and the stated GST in base against the GST at the rate).
 
 **A claim kept as a loan** (``loan``: a director or shareholder, one of the scenario's ``people``;
 FR-EQ-02, B.7 "Cost a founder paid personally, kept as a loan") credits the director's loan account
-(2500) instead of 2150, naming the person: what the claimant paid stays owed to them there. It settles
-no cash advance, and nothing reimburses it (it leaves no open item on 2150).
+(2500) instead of 2150, as 2150 would be credited (in the base currency), naming the person: what the
+claimant paid stays owed to them there. It settles no cash advance, and nothing reimburses it (it leaves
+no open item on 2150).
 
-**A reimbursement** pays claims from a money account: the settlement of :mod:`oracle.sources.settle` on
-2150, never in full and with nothing unapplied; a claim in another currency paid from a base-currency
-account is reimbursed in SGD at the given rate (the cascade's), its difference from the claim's rate to
-7030 (FR-AP-17).
+**A reimbursement** pays claims in the base currency only, from a base-currency money account: the
+settlement of :mod:`oracle.sources.settle` on 2150, at most what is owed, never in full and with nothing
+unapplied, with no rate and so no FX (what is owed is already in SGD). One in another currency, or with
+``fx_rate``, ``fx_rate_source`` or ``base_amount``, is refused whole. *Superseded:* a claim in another
+currency reimbursed in SGD at the cascade's rate, its difference from the claim's rate to 7030.
 
 **A cash advance** is paid from a base-currency money account: Dr 1250, Cr the money account; with
 ``refund_of`` it is what is left of an advance coming back: Dr the money account, Cr 1250, at most what
@@ -69,7 +76,7 @@ def expense_claim(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     if not d["lines"]:
         raise Rejected("no-lines")
     registered = r.registered(doc.date)
-    lines, owed = [], money.ZERO
+    lines, owed, owed_base = [], money.ZERO, money.ZERO  # owed: in the claim's currency; owed_base: what 2150 takes
     for raw in d["lines"]:
         r.account(raw["account"])
         if "distance" in raw:
@@ -81,6 +88,7 @@ def expense_claim(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
                 raise Rejected("zero-amount")
             lines.append(r.base_line(raw["account"], cost))
             owed = money.EXACT.add(owed, cost)
+            owed_base = money.EXACT.add(owed_base, cost)
             continue
         if "vehicle" in raw:
             raise Rejected("vehicle-without-distance")
@@ -89,6 +97,7 @@ def expense_claim(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
             lines.append(r.base_line(r.system("gst"), claim))
         lines.append(r.line(raw["account"], currency, cost, r.fx(cost, rate)))
         owed = money.EXACT.add(owed, money.EXACT.add(net, gst))
+        owed_base = money.EXACT.add(owed_base, r.fx(money.EXACT.add(net, gst), rate))  # line by line
     if not owed > 0:
         raise Rejected("total-not-positive")
 
@@ -99,8 +108,7 @@ def expense_claim(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
         if "advance" in d:
             raise Rejected("loan-with-advance")
         payable = r.system("director_loan")
-        owed_base = r.fx(owed, rate)
-        lines.append(r.line(payable, currency, money.negate(owed), money.negate(owed_base), party=loan))
+        lines.append(r.line(payable, r.base, money.negate(owed_base), money.negate(owed_base), party=loan))
         if not money.total([ln.base_amount for ln in lines]).is_zero():
             lines.append(r.balance(r.system("fx"), lines))
         return Posting(lines)
@@ -112,13 +120,12 @@ def expense_claim(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
             raise Rejected("not-a-posted-advance")
         if currency != r.base:
             raise Rejected("advance-currency")
-        from_advance = min(owed, advance.left)
+        from_advance = min(owed_base, advance.left)
         if not from_advance.is_zero():
             lines.append(r.base_line(r.system("advances"), money.negate(from_advance)))
     payable = r.system("claims_payable")
-    rest = money.EXACT.subtract(owed, from_advance)
-    rest_base = r.fx(rest, rate)
-    lines.append(r.line(payable, currency, money.negate(rest), money.negate(rest_base)))
+    rest = money.EXACT.subtract(owed_base, from_advance)
+    lines.append(r.base_line(payable, money.negate(rest)))
     if not money.total([ln.base_amount for ln in lines]).is_zero():
         lines.append(r.balance(r.system("fx"), lines))
 
@@ -126,10 +133,14 @@ def expense_claim(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
         if advance is not None:
             advance.left = money.EXACT.subtract(advance.left, from_advance)
 
-    return Posting(lines, facts=OpenItem("expense_claim", payable, currency, rate, rest, rest_base), effects=[apply])
+    return Posting(lines, facts=OpenItem("expense_claim", payable, r.base, None, rest, rest), effects=[apply])
 
 
 def claim_reimbursement(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
+    d = doc.data
+    # FR-AP-17 (decided, [accountant to confirm]): what is owed is in SGD, so it is paid in SGD with no rate.
+    if d["currency"] != r.base or any(key in d for key in ("fx_rate", "fx_rate_source", "base_amount")):
+        raise Rejected("reimbursement-not-in-base")
     return settle(r, doc, books, settles="expense_claim", sign=1, in_full_allowed=False, unapplied_allowed=False)
 
 

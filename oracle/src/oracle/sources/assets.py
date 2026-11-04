@@ -18,7 +18,8 @@ date, the purchase). Straight-line depreciation (the P1 method) is scheduled fro
 Dr 1590 with its accumulated depreciation (every month from its start to the month before the disposal,
 the opening balances' included), Dr the proceeds and the gain or loss, whatever balances, to the
 setting ``disposal`` (7050). Proceeds are money received into a base-currency money account, which
-bears GST (2200, ``RND-GST-INCL`` of the amount) when registered and the code carries it, or the amount a
+bears GST (2200, ``RND-GST-INCL`` of the amount) when registered and the code carries it (a supply code,
+named whenever the organisation is registered on the date; B.6 rev 0.169, FR-FA-03), or the amount a
 sales invoice to the buyer credited to the disposal clearing account (the setting ``disposal_clearing``,
 1160), which the disposal debits and which bears no GST here (the invoice charged its own). A disposal
 with no proceeds is a write-off. Its depreciation stops: no month from the disposal's month on posts.
@@ -109,9 +110,16 @@ def asset_disposal(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
             lines.append(r.base_line(proceeds["account"], amount))
         else:
             r.money_account(proceeds["account"], r.base)
-            code = proceeds.get("gst_code")  # none given: no GST
-            # FR-FA-03: output tax on the consideration received, so a supply code
-            percent = r.gst_percent(code, doc.date, "supply") if code is not None else money.ZERO
+            # FR-FA-03: while registered, 2200 takes the GST at "the proceeds' GST code's rate", output tax on
+            # the consideration received, so a registered seller's sale names its supply code (B.6, rev 0.169);
+            # while not registered no GST is charged and a code is optional, a supply code when given.
+            code = proceeds.get("gst_code")
+            if code is not None:
+                percent = r.gst_percent(code, doc.date, "supply")
+            elif r.registered(doc.date):
+                raise Rejected("no-gst-code")
+            else:
+                percent = money.ZERO
             gst = money.rnd_gst_incl(amount, percent, r.base_minor) if not percent.is_zero() else money.ZERO
             lines.append(r.base_line(proceeds["account"], amount))
             if not gst.is_zero():

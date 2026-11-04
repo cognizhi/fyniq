@@ -224,11 +224,15 @@ func RunEngine(s Scenario) (Result, error) {
 	for i, d := range s.Documents {
 		if d.Type != ledger.SourceManualJournal {
 			e, ok := sources.post(i, d)
-			if !ok {
+			// The database refuses an entry of fewer than two lines (db/migrations/000004, INV-01), such as one whose
+			// lines but one round to nothing in base (README, "P1 readings").
+			if !ok || len(e.Lines) == 1 {
 				res.Rejected = append(res.Rejected, d.ID)
 				continue
 			}
-			record(d.ID, "post", e, true)
+			if len(e.Lines) > 0 {
+				record(d.ID, "post", e, true)
+			}
 			continue
 		}
 		j, ok := journalOf(d, base, s.Currencies)
