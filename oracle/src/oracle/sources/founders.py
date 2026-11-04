@@ -13,6 +13,11 @@ what they paid (``gross``, in the base currency), the GST the receipt shows (``g
 
 It posts Dr the account with the gross, or with the gross less the GST when the GST is claimed; Dr ``gst`` (2200) with
 the GST when claimed; and Cr ``director_loan`` (2500) with the gross, the line naming the person who paid it.
+
+A waiver, a conversion, and a repayment's settlements on one account together, draw on what the company owes the
+person on that director's account at the end of the document's date, and never on more (test/differential/README.md,
+"P1 readings"; FR-EQ-05 rev 0.168: a settlement is drafted for at most what is owed that day, and a batch refuses a
+repayment of more, PB-25). Nothing owed refuses any amount.
 """
 
 from __future__ import annotations
@@ -28,6 +33,27 @@ from oracle.scenario import Source
 
 # The roles of the director's accounts, which a cost before the books start never posts to (B.7).
 DIRECTOR_ROLES = frozenset({"director-loan", "deferred-remuneration"})
+
+
+def owed(r: Rules, person: str, account: str, day: date) -> Decimal:
+    """What the company owes ``person`` on the director's ``account`` at the end of ``day`` (README, "P1 readings").
+
+    The credit, positive, of the lines naming the person on that account in the entries of the documents before this
+    one in the scenario dated on or before ``day``: ``r.posted`` holds exactly those documents' entries, since
+    reversals come after every document (so none counts) and so do scheduled entries. A debit, or no line, is nothing
+    owed. Read in the base currency, as each person's totals are (FR-EQ-01).
+    """
+    credit = money.negate(money.total([
+        ln.base_amount
+        for entry in r.posted if entry.posting_date <= day
+        for ln in entry.lines if ln.account == account and ln.party == person
+    ]))
+    return credit if credit > 0 else money.ZERO
+
+
+def _at_most_owed(r: Rules, person: str, account: str, day: date, amount: Decimal) -> None:
+    if amount > owed(r, person, account, day):
+        raise Rejected("more-than-owed")
 
 
 def pre_incorporation_cost(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
@@ -88,7 +114,8 @@ def director_waiver(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
 
     Dr ``account`` (2500 or 2120, a director's account) with ``amount``, the line naming ``person`` (one of the scenario's
     ``people``; B.7: waived); Cr ``credit`` (3300 Capital contribution, or an income account the accountant chose) with
-    ``amount`` (FR-EQ-07). The credit is not a director's account, a money account or GST control.
+    ``amount`` (FR-EQ-07). The credit is not a director's account, a money account or GST control. The amount is at
+    most what is owed there (:func:`owed`).
     """
     d = doc.data
     person = d["person"]
@@ -100,6 +127,7 @@ def director_waiver(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     if credit.role in DIRECTOR_ROLES or d["credit"] in r.settings.money_accounts or r.is_system(d["credit"], "gst"):
         raise Rejected("account-not-allowed")
     amount = r.amount(d["amount"], r.base, sign=1)
+    _at_most_owed(r, person, d["account"], doc.date, amount)
     return Posting([
         r.line(d["account"], r.base, amount, amount, party=person),
         r.base_line(d["credit"], money.negate(amount)),
@@ -111,7 +139,7 @@ def director_repayment(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
 
     For each of ``settlements`` Dr its ``account`` (2500 or 2120, a director's account) with its ``amount``, the line naming
     ``person`` (one of the scenario's ``people``; B.7: paid out); Cr ``account``, a money account in the base currency, with
-    the total (FR-EQ-05, FR-BNK-12).
+    the total (FR-EQ-05, FR-BNK-12). The settlements on one account total at most what is owed there (:func:`owed`).
     """
     d = doc.data
     person = d["person"]
@@ -122,12 +150,16 @@ def director_repayment(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
         raise Rejected("no-settlements")
     lines = []
     total = money.ZERO
+    by_account: dict[str, Decimal] = {}
     for s in d["settlements"]:
         if r.account(s["account"]).role not in DIRECTOR_ROLES:
             raise Rejected("not-a-directors-account")
         amount = r.amount(s["amount"], r.base, sign=1)
         lines.append(r.line(s["account"], r.base, amount, amount, party=person))
         total = money.EXACT.add(total, amount)
+        by_account[s["account"]] = money.EXACT.add(by_account.get(s["account"], money.ZERO), amount)
+    for account, settled in by_account.items():  # the settlements on one account together
+        _at_most_owed(r, person, account, doc.date, settled)
     lines.append(r.base_line(d["account"], money.negate(total)))
     return Posting(lines)
 
@@ -139,7 +171,8 @@ def director_conversion(r: Rules, doc: Source, books: dict[str, Any]) -> Posting
     ``RND-SHARE`` allots n whole shares for ``amount`` at ``price``; Dr ``account`` (2500 or 2120, a director's account)
     with the converted amount round(n x price), the line naming ``person``; Cr ``class`` (a share-capital account) with
     the converted amount, or under fair value with round(n x ``fair_value_price``), the difference to ``difference``, an
-    income or expense account (Dr a loss, Cr a gain). The remainder stays owed.
+    income or expense account (Dr a loss, Cr a gain). The remainder stays owed. ``amount`` is at most what is owed on
+    ``account`` (:func:`owed`).
     """
     d = doc.data
     person = d["person"]
@@ -158,13 +191,14 @@ def director_conversion(r: Rules, doc: Source, books: dict[str, Any]) -> Posting
     lines = [r.line(d["account"], r.base, converted, converted, party=person)]
     if "fair_value_price" not in d:
         lines.append(r.base_line(d["class"], money.negate(converted)))
-        return Posting(lines)
-    fair = r.quantity(d["fair_value_price"])
-    equity = money.rnd_line(Decimal(shares), fair, r.minor(r.base))
-    lines.append(r.base_line(d["class"], money.negate(equity)))
-    if equity != converted:
-        difference = r.account(d.get("difference", ""))
-        if difference.type not in ("revenue", "expense") or d["difference"] in r.settings.money_accounts:
-            raise Rejected("account-not-allowed")
-        lines.append(r.base_line(d["difference"], money.EXACT.subtract(equity, converted)))
+    else:
+        fair = r.quantity(d["fair_value_price"])
+        equity = money.rnd_line(Decimal(shares), fair, r.minor(r.base))
+        lines.append(r.base_line(d["class"], money.negate(equity)))
+        if equity != converted:
+            difference = r.account(d.get("difference", ""))
+            if difference.type not in ("revenue", "expense") or d["difference"] in r.settings.money_accounts:
+                raise Rejected("account-not-allowed")
+            lines.append(r.base_line(d["difference"], money.EXACT.subtract(equity, converted)))
+    _at_most_owed(r, person, d["account"], doc.date, amount)
     return Posting(lines)

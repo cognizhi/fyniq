@@ -88,7 +88,7 @@ class Ledger:
         self.post: defaultdict[tuple[str, str], Decimal] = defaultdict(lambda: money.ZERO)
         self._posted: dict[str, Entry] = {}
         self._reversed: set[str] = set()
-        self.rules = Rules(scenario) if scenario.settings is not None else None
+        self.rules = Rules(scenario, self.entries) if scenario.settings is not None else None
         self.books: dict[str, Any] = {}  # what each posted P1 document left for later ones to read
         # (the document's position, its scheduled entries): the list is read when the schedules post,
         # so a later document (an asset's disposal) can still end it.

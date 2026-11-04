@@ -17,6 +17,19 @@ disposal's date, and may name none otherwise (FR-FA-03, B.6 rev 0.169), and no b
 the generator knows what each owes without computing GST), and receipts in full only on base-currency
 invoices.
 
+For the founders' money (README, "Costs before the books start" to "Conversions of founders' balances to
+shares"): the people ``P0001`` and ``P0002``, the director's accounts 2500 and 2120 with their roles and
+settings keys, share capital (3010, 3020), 3300 and 6050 join the chart, and the books start on the first
+day of a month on or before the scenario's first date, so every other document is dated in the books and
+no asset depreciates before them (the opening balances' share of 1590 stays out). A waiver, repayment or
+conversion built to post, or refused for another rule, draws only on what the company is known to owe that person on
+that account; one built to draw on more (README, "P1 readings") asks for a cent or more above the most it can owe
+there, which is exact until a conversion leaves a remainder the generator does not work out, or for any amount where
+nothing can be owed; a repayment's may split it between two settlements on one account (each within what is owed when
+it is a cent above), and may carry a settlement within what is owed on the other account. A GST claim on a cost only while registered and only of GST the receipt shows (the
+README leaves a claim otherwise open); a fair value always names its ``difference``, an income account for a
+gain and an expense account for a loss; and no loan claims (``expense_claim@2``).
+
 The generator keeps what it built so far in a :class:`_Book` (the bills and invoices a settlement may
 settle and what each has open, the deposits and what is left of each), so a document built to post
 really can.
@@ -34,7 +47,7 @@ from oracle import money
 from oracle.scenario import SCENARIO_SCHEMA
 from oracle.strategies import POST, REJECT, Intent
 
-SOURCES = ("bank", "purchases", "sales", "claims", "assets")
+SOURCES = ("bank", "purchases", "sales", "claims", "assets", "founders")
 
 CURRENCIES = {"SGD": 2, "USD": 2, "JPY": 0, "KWD": 3}
 MONEY_ACCOUNTS = {"1010": "SGD", "1011": "SGD", "1021": "USD", "1022": "JPY", "1023": "KWD"}
@@ -88,12 +101,29 @@ ASSETS_POSTING = ["asset", "asset", "asset-residual", "asset-later-start", "disp
                   "dispose-write-off"]
 ASSETS_REJECTED = ["dispose-unknown", "dispose-twice", "asset-on-expense", "dispose-wrong-code",
                    "dispose-registered-no-code"]
+FOUNDERS_POSTING = ["cost", "cost", "cost-claim-gst", "fee", "fee", "waiver", "repay", "repay", "convert",
+                    "convert-fair-value"]
+# "not-a-person" and "not-directors-account" draw the document type they refuse.
+# The "-more-than-owed" kinds draw on more than the company owes the person there (README, "P1 readings").
+OVER_OWED = ["waiver-more-than-owed", "repay-more-than-owed", "convert-more-than-owed"]
+FOUNDERS_REJECTED = ["not-a-person", "not-directors-account", "cost-account-not-allowed", "cost-incurred-after-start",
+                     "cost-before-books-start", "fee-account-not-allowed", "waiver-credit-not-allowed", "repay-foreign",
+                     "repay-not-money", "convert-not-share-capital", "convert-no-whole-share", *OVER_OWED]
 KINDS = {"bank": BANK_POSTING * 3 + BANK_REJECTED, "purchases": PURCHASES_POSTING * 2 + PURCHASES_REJECTED,
          "sales": SALES_POSTING * 2 + SALES_REJECTED, "claims": CLAIMS_POSTING * 2 + CLAIMS_REJECTED,
-         "assets": ASSETS_POSTING * 2 + ASSETS_REJECTED}
-REJECTED_KINDS = frozenset(BANK_REJECTED + PURCHASES_REJECTED + SALES_REJECTED + CLAIMS_REJECTED + ASSETS_REJECTED)
+         "assets": ASSETS_POSTING * 2 + ASSETS_REJECTED, "founders": FOUNDERS_POSTING * 2 + FOUNDERS_REJECTED}
+REJECTED_KINDS = frozenset(BANK_REJECTED + PURCHASES_REJECTED + SALES_REJECTED + CLAIMS_REJECTED + ASSETS_REJECTED
+                           + FOUNDERS_REJECTED)
 MILEAGE = {"car": Decimal("0.60"), "motorcycle": Decimal("0.25")}
 WALLETS = {"SGD": "1010", "USD": "1021", "JPY": "1022", "KWD": "1023"}
+# The founders' money (README, "Settings and as_of" and the founders' sections): the directors and shareholders, a
+# person who is none of them, the director's accounts by settings key and role, and the accounts their documents
+# reach (share capital, 3300 Capital contribution, 6050 Directors' fees).
+PEOPLE = ["P0001", "P0002"]
+STRANGER = "P0009"
+DIRECTOR_ACCOUNTS = {"director_loan": ("2500", "director-loan"),
+                     "deferred_remuneration": ("2120", "deferred-remuneration")}
+SHARE_CLASSES = ["3010", "3020"]
 
 
 class _Book:
@@ -107,6 +137,22 @@ class _Book:
         self.claims: dict[str, Decimal] = {}  # claim -> what is owed, in SGD (FR-AP-17: owed in the base currency)
         self.advances: dict[str, Decimal] = {}  # advance -> what is left
         self.assets: dict[str, bool] = {}  # registered asset -> disposed
+        self.books_start: date | None = None
+        # (person, director's account) -> at least what the company still owes them there, in SGD
+        self.owed: dict[tuple[str, str], Decimal] = {}
+        # (person, director's account) -> at most what it owes them there: exact but for a conversion's remainder
+        self.most: dict[tuple[str, str], Decimal] = {}
+
+    def credit(self, key: tuple[str, str], amount: Decimal) -> None:
+        """A posted credit to the person on the account: owed, at least and at most."""
+        self.owed[key] = money.EXACT.add(self.owed.get(key, Decimal(0)), amount)
+        self.most[key] = money.EXACT.add(self.most.get(key, Decimal(0)), amount)
+
+    def debit(self, key: tuple[str, str], amount: Decimal, *, exact: bool = True) -> None:
+        """A posted debit (``exact`` False: at most ``amount``, a conversion's), drawn within what is owed."""
+        self.owed[key] = money.EXACT.subtract(self.owed[key], amount)
+        if exact:
+            self.most[key] = money.EXACT.subtract(self.most[key], amount)
 
     def registered(self, day: date) -> bool:
         start, end = self.gst.get("registered_from"), self.gst.get("registered_to")
@@ -121,6 +167,17 @@ def _accounts() -> list[dict[str, Any]]:
     chart += [account(code, "liability") for code in ["2010", "2050", "2150", "2200", "2330", "2400", "2410", "2999"]]
     chart += [account(code, "revenue") for code in REVENUES]
     chart += [account(code, "expense") for code in [*EXPENSES, "6610", "7050"]]
+    return chart
+
+
+def _founders_accounts() -> list[dict[str, Any]]:
+    """The accounts the founders' documents reach (README, "Settings and as_of"; FR-EQ-01)."""
+    chart = [{"code": code, "type": "liability", "group": False, "active": True, "role": role}
+             for code, role in DIRECTOR_ACCOUNTS.values()]
+    chart += [{"code": code, "type": "equity", "group": False, "active": True, "role": "share-capital"}
+              for code in SHARE_CLASSES]
+    chart.append({"code": "3300", "type": "equity", "group": False, "active": True})
+    chart.append({"code": "6050", "type": "expense", "group": False, "active": True})
     return chart
 
 
@@ -570,6 +627,8 @@ def _claims_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _
         owed = money.total([money.rnd_fx(amount, Decimal(doc["fx_rate"]), 2) for amount in receipts])
     if kind in ("claim-trip-foreign", "claim-wrong-code"):
         return doc, REJECT
+    if owed.is_zero():  # every receipt rounds to nothing in base (README, "P1 readings": a claim that owes S$0.00)
+        return doc, REJECT
     if kind == "claim-advance":
         left = [a for a, amount in sorted(book.advances.items()) if amount > 0]
         if left:
@@ -628,15 +687,183 @@ def _assets_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _
 
 
 @st.composite
+def _part_of(draw: st.DrawFn, left: Decimal) -> Decimal:
+    """All of ``left`` (positive, in SGD), or a part of it."""
+    return left if draw(st.booleans()) or left <= Decimal("0.01") else draw(_split(left, 2, 2))[0]
+
+
+@st.composite
+def _share_price(draw: st.DrawFn, amount: Decimal) -> Decimal:
+    """A price per share, at most 4 decimals and at least a cent where it can be, at which ``amount`` buys a whole
+    share: about ``amount`` / n for n up to 10,000, rounded down, so n × price never exceeds the amount."""
+    decimals = draw(st.integers(0, 4))
+    cents = int(amount.scaleb(2, context=money.EXACT))
+    units = cents * 10**decimals // (100 * draw(st.integers(1, 10**4)))
+    if units == 0 or units * 100 < 10**decimals:  # below a cent, or nothing at these decimals
+        return amount  # one share exactly
+    return Decimal(units).scaleb(-decimals, context=money.EXACT)
+
+
+@st.composite
+def _founders_document(
+    draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _Book
+) -> tuple[dict[str, Any], str, str]:
+    """A founders' document (README, "Costs before the books start" to "Conversions of founders' balances to
+    shares"), its intent, and the kind it was built as (a waiver, repayment or conversion of nothing owed yet
+    becomes a cost or a fee, a GST claim while not registered a cost that claims none)."""
+    owed = sorted(key for key, left in book.owed.items() if left > 0)
+    if kind in ("waiver", "repay", "convert", "convert-fair-value") and not owed:
+        kind = draw(st.sampled_from(["cost", "fee"]))
+    over = kind in OVER_OWED
+    if kind == "cost-claim-gst" and not book.registered(day):
+        kind = "cost"
+    meant = REJECT if kind in REJECTED_KINDS else POST
+    shape = kind.split("-")[0]
+    if kind == "not-a-person":
+        shape = draw(st.sampled_from(["cost", "fee", "waiver", "repay", "convert"]))
+    elif kind == "not-directors-account":
+        shape = draw(st.sampled_from(["waiver", "repay", "convert"]))
+    base = {"id": doc_id, "version": 1, "date": day.isoformat()}
+    person = STRANGER if kind == "not-a-person" else draw(st.sampled_from(PEOPLE))
+    loan, fees = DIRECTOR_ACCOUNTS["director_loan"][0], DIRECTOR_ACCOUNTS["deferred_remuneration"][0]
+    if over:  # anyone on either account: a cent or more above the most it can owe them, or any amount if nothing
+        person, account = draw(st.sampled_from(PEOPLE)), draw(st.sampled_from([loan, fees]))
+        most = book.most.get((person, account), Decimal(0))
+        left = money.EXACT.add(most, Decimal("0.01") if most > 0 and draw(st.booleans()) else draw(_cents(2, 4)))
+    elif shape in ("waiver", "repay", "convert") and kind != "not-a-person" and owed:
+        # Built to post, or refused for another rule: draws only on what the company owes them there.
+        person, account = draw(st.sampled_from(owed))
+        left = book.owed[(person, account)]
+    else:  # refused either way: what it names need not be owed
+        account, left = draw(st.sampled_from([loan, fees])), draw(_cents(2, 4))
+
+    if shape == "cost":
+        start = book.books_start
+        assert start is not None
+        gross = draw(_cents(2, 5))
+        doc: dict[str, Any] = {"type": "pre_incorporation_cost", **base,
+                               "incurred": (start - timedelta(days=draw(st.integers(1, 400)))).isoformat(),
+                               "person": person, "gross": _text(gross, 2),
+                               "account": draw(st.sampled_from(["6010", "6020", "6110", "6050", "1500"]))}
+        if kind == "cost-before-books-start":  # README: posted on or after the books start
+            posted = start - timedelta(days=draw(st.integers(1, 60)))
+            doc["date"] = posted.isoformat()
+            doc["incurred"] = (posted - timedelta(days=draw(st.integers(1, 300)))).isoformat()
+        if kind == "cost-incurred-after-start":  # README: paid before the books start
+            doc["incurred"] = (start + timedelta(days=draw(st.integers(0, (day - start).days)))).isoformat()
+        if kind == "cost-account-not-allowed":  # not a director's account, a money account or GST control
+            doc["account"] = draw(st.sampled_from([loan, fees, "1010", "1011", "2200"]))
+        gst = money.round_quotient(money.EXACT.multiply(gross, Decimal(9)), Decimal(109), 2)  # what the receipt shows
+        if kind == "cost-claim-gst" and gst.is_zero():
+            kind = "cost"
+        if not gst.is_zero() and (kind == "cost-claim-gst" or draw(st.integers(0, 2)) == 0):
+            doc["gst"] = _text(gst, 2)
+            if kind == "cost-claim-gst":
+                doc["claim_gst"] = True
+            elif draw(st.booleans()):
+                doc["claim_gst"] = False
+        if meant == POST:
+            book.credit((person, loan), gross)
+        return doc, meant, kind
+
+    if shape == "fee":
+        amount = draw(_cents(2, 5))
+        doc = {"type": "director_fee", **base, "person": person,
+               "account": draw(st.sampled_from(["6050", "6050", "6010"])), "amount": _text(amount, 2)}
+        if kind == "fee-account-not-allowed":  # not a director's account, a money account or GST control
+            doc["account"] = draw(st.sampled_from([fees, loan, "1010", "2200"]))
+        if meant == POST:
+            book.credit((person, fees), amount)
+        return doc, meant, kind
+
+    not_directors = ["6010", "2050", "2150"]  # accounts without a director's role
+    if shape == "waiver":
+        amount = left if over else draw(_part_of(left))
+        doc = {"type": "director_waiver", **base, "person": person, "account": account,
+               "credit": draw(st.sampled_from(["3300", "3300", *REVENUES])), "amount": _text(amount, 2)}
+        if kind == "not-directors-account":
+            doc["account"] = draw(st.sampled_from(not_directors))
+        if kind == "waiver-credit-not-allowed":  # not a director's account, a money account or GST control
+            doc["credit"] = draw(st.sampled_from(["1010", "1011", "2200", fees if account == loan else loan]))
+        if meant == POST:
+            book.debit((person, account), amount)
+        return doc, meant, kind
+
+    if shape == "repay":
+        accounts = [account]
+        if meant == POST:  # each director's account the person is owed on, one or both
+            theirs = [a for p, a in owed if p == person]
+            accounts = draw(st.lists(st.sampled_from(theirs), min_size=1, max_size=len(theirs), unique=True))
+        settlements = []
+        for a in accounts:
+            amount = left if over else draw(_part_of(book.owed[(person, a)] if meant == POST else left))
+            if over and amount > Decimal("0.01") and draw(st.booleans()):  # two settlements, together above it
+                settlements += [{"account": a, "amount": _text(part, 2)} for part in draw(_split(amount, 2, 2))]
+            else:
+                settlements.append({"account": a, "amount": _text(amount, 2)})
+            if meant == POST:
+                book.debit((person, a), amount)
+        if over and draw(st.booleans()):  # beside a settlement within what is owed on the other account: refused whole
+            other = fees if account == loan else loan
+            if book.owed.get((person, other), Decimal(0)) > 0:
+                within = {"account": other, "amount": _text(draw(_part_of(book.owed[(person, other)])), 2)}
+                settlements.insert(draw(st.integers(0, len(settlements))), within)
+        doc = {"type": "director_repayment", **base, "person": person,
+               "account": draw(st.sampled_from(["1010", "1011"])), "settlements": settlements}
+        if kind == "repay-foreign":  # README: a money account in the base currency
+            doc["account"] = draw(st.sampled_from(["1021", "1022", "1023"]))
+        if kind == "repay-not-money":
+            doc["account"] = draw(st.sampled_from(["6010", "1500", "2050"]))
+        if kind == "not-directors-account":
+            settlements[0]["account"] = draw(st.sampled_from(not_directors))
+        return doc, meant, kind
+
+    # A conversion to shares.
+    if kind == "convert-no-whole-share":  # a price above the amount: RND-SHARE allots no share
+        amount = draw(_part_of(left))
+        decimals = draw(st.integers(2, 4))
+        extra = Decimal(draw(st.integers(10 ** (decimals - 2), 10 ** (decimals + 1))))
+        extra = extra.scaleb(-decimals, context=money.EXACT)
+        price = money.EXACT.add(amount, extra)
+    else:
+        amount = left if over else draw(_part_of(left))
+        price = draw(_share_price(amount))
+    doc = {"type": "director_conversion", **base, "person": person, "account": account,
+           "class": draw(st.sampled_from(SHARE_CLASSES)), "amount": _text(amount, 2), "price": format(price, "f")}
+    if kind == "convert-fair-value":
+        # In ten-thousandths: a fair value below the price is a gain (an income account), above it a loss (an
+        # expense account); never below a cent, so the shares' fair value is never nothing.
+        p4 = int(price.scaleb(4, context=money.EXACT))
+        gain = p4 > 100 and draw(st.booleans())
+        f4 = draw(st.integers(100, p4 - 1)) if gain else draw(st.integers(p4 + 1, 2 * p4 + 10**4))
+        doc["fair_value_price"] = format(Decimal(f4).scaleb(-4, context=money.EXACT), "f")
+        doc["difference"] = draw(st.sampled_from(REVENUES if gain else ["6010", "6020", "6110"]))
+    if kind == "not-directors-account":
+        doc["account"] = draw(st.sampled_from(not_directors))
+    if kind == "convert-not-share-capital":  # README: the class is a share-capital account
+        doc["class"] = draw(st.sampled_from(["3300", "3300", "4010"]))
+    if meant == POST:  # what is left owed is at least the amount's remainder, at most what was owed
+        book.debit((person, account), amount, exact=False)
+    return doc, meant, kind
+
+
+@st.composite
 def p1_scenarios_with_intent(
     draw: st.DrawFn, sources: tuple[str, ...] = SOURCES, name: str = "generated-p1"
 ) -> tuple[dict[str, Any], Intent]:
     """A scenario of P1 documents from ``sources`` (with SGD as the base) and each one's intent."""
     kinds = [kind for source in sources for kind in KINDS[source]]
-    documents, intent = [], {}
+    documents, intent, built = [], {}, {}
     settings = draw(_settings())
     book = _Book(settings["gst"])
     days = sorted(draw(st.lists(_DATES, min_size=1, max_size=10)))
+    accounts = _accounts()
+    if "founders" in sources:  # README, "Settings and as_of": the books start on or before the first date
+        month = days[0].year * 12 + days[0].month - 1 - draw(st.integers(0, 3))  # the first's month, or up to 3 before
+        book.books_start = date(month // 12, month % 12 + 1, 1)
+        settings["books_start"] = book.books_start.isoformat()
+        settings["accounts"].update({key: code for key, (code, _) in DIRECTOR_ACCOUNTS.items()})
+        accounts += _founders_accounts()
     for i, day in enumerate(days):
         kind = draw(st.sampled_from(kinds))
         doc_id = f"P1-{i + 1:04d}"
@@ -648,10 +875,13 @@ def p1_scenarios_with_intent(
             document, meant = draw(_sales_document(doc_id, day, kind, book))
         elif kind in KINDS["claims"]:
             document, meant = draw(_claims_document(doc_id, day, kind, book))
-        else:
+        elif kind in KINDS["assets"]:
             document, meant = draw(_assets_document(doc_id, day, kind, book))
+        else:
+            document, meant, kind = draw(_founders_document(doc_id, day, kind, book))
         documents.append(document)
         intent[doc_id] = meant
+        built[doc_id] = kind
     last = max(date.fromisoformat(d["date"]) for d in documents)
     scenario = {
         "schema": SCENARIO_SCHEMA,
@@ -660,11 +890,13 @@ def p1_scenarios_with_intent(
         "currencies": dict(CURRENCIES),
         "as_of": (last + timedelta(days=draw(st.integers(0, 400)))).isoformat(),
         "settings": settings,
-        "accounts": _accounts(),
+        "accounts": accounts,
         "documents": documents,
         "reversals": [],
     }
-    return scenario, Intent(intent)
+    if "founders" in sources:
+        scenario["people"] = list(PEOPLE)
+    return scenario, Intent(intent, built)
 
 
 def p1_scenarios(sources: tuple[str, ...] = SOURCES, name: str = "generated-p1") -> st.SearchStrategy[dict[str, Any]]:

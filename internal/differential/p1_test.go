@@ -396,3 +396,51 @@ func TestP1StatementsStopAtABalanceTheDatabaseCannotHold(t *testing.T) {
 		t.Errorf("1001 at the end of December: %v", got)
 	}
 }
+
+// A waiver, a conversion and a repayment's settlements on one account settle at most what the company owes the person
+// there at the end of the document's date, from the documents before it (README, "P1 readings"): golden/founders.json
+// ends owing P0001 178.80 on 2500 and P0002 2,501.10 on 2120 and 2,000.00 on 2500. A credit dated after the settlement
+// does not count, so a waiver on 2120 the day before P0002's fee settles nothing.
+// req: FR-EQ-05
+// req: QA-ENG-02
+func TestP1FoundersSettleAtMostWhatIsOwed(t *testing.T) {
+	b, err := os.ReadFile(filepath.Join(golden, "founders.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(b, &raw); err != nil {
+		t.Fatal(err)
+	}
+	var extra []any
+	if err := json.Unmarshal([]byte(`[
+		{"type": "director_waiver", "id": "OW-1", "version": 1, "date": "2026-04-30", "person": "P0001", "account": "2500", "credit": "3300", "amount": "178.81"},
+		{"type": "director_waiver", "id": "OW-2", "version": 1, "date": "2026-04-30", "person": "P0001", "account": "2500", "credit": "3300", "amount": "178.80"},
+		{"type": "director_conversion", "id": "OW-3", "version": 1, "date": "2026-04-30", "person": "P0002", "account": "2120", "class": "3010", "amount": "2501.11", "price": "1.00"},
+		{"type": "director_repayment", "id": "OW-4", "version": 1, "date": "2026-04-30", "person": "P0002", "account": "1010",
+			"settlements": [{"account": "2500", "amount": "1000.00"}, {"account": "2500", "amount": "1000.01"}]},
+		{"type": "director_repayment", "id": "OW-5", "version": 1, "date": "2026-04-30", "person": "P0002", "account": "1010",
+			"settlements": [{"account": "2500", "amount": "1000.00"}, {"account": "2500", "amount": "1000.00"}]},
+		{"type": "director_waiver", "id": "OW-6", "version": 1, "date": "2026-03-30", "person": "P0002", "account": "2120", "credit": "3300", "amount": "0.01"}]`), &extra); err != nil {
+		t.Fatal(err)
+	}
+	raw["documents"] = append(raw["documents"].([]any), extra...)
+	b, _ = json.Marshal(raw)
+	var s Scenario
+	if err := json.Unmarshal(b, &s); err != nil {
+		t.Fatal(err)
+	}
+	r := run(t, s)
+	refused := map[string]bool{}
+	for _, id := range r.Rejected {
+		refused[id] = true
+	}
+	for id, want := range map[string]bool{"OW-1": true, "OW-2": false, "OW-3": true, "OW-4": true, "OW-5": false, "OW-6": true} {
+		if refused[id] != want {
+			t.Errorf("%s refused = %v, want %v", id, refused[id], want)
+		}
+	}
+	if got := r.People["P0001"]["2500"]; got != "" && got != "0.00" {
+		t.Errorf("P0001 on 2500 after waiving all 178.80: %q", got)
+	}
+}

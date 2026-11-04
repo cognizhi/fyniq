@@ -21,18 +21,21 @@ source shares:
 * **Spreads** (FR-GL-03, Appendix B.1 and B.2, ENG-05): the deferral account takes the whole amount when
   the document posts, and the releases follow under ``ALLOC-EVEN``, one a month, each dated the first
   day of its month or, for a month that starts before the document, the document's date.
+
+A rule set may also read back what is already posted (``posted``): the entries of the documents before
+it in the scenario, since reversals and scheduled entries post after every document.
 """
 
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import date
 from decimal import Decimal
 from typing import Any
 
 from oracle import money
-from oracle.book import PostedLine, Rejected, Scheduled
+from oracle.book import Entry, PostedLine, Rejected, Scheduled
 from oracle.scenario import Account, Scenario
 
 GST_CODES = frozenset({"SR", "ZR", "ES", "OS", "TX", "IM", "ZP", "BL", "NR", "EP", "OP", "NA"})
@@ -59,13 +62,16 @@ def month_start(day: date) -> date:
 class Rules:
     """The shared checks and conversions, for one scenario."""
 
-    def __init__(self, scenario: Scenario) -> None:
+    def __init__(self, scenario: Scenario, posted: Sequence[Entry] = ()) -> None:
         if scenario.settings is None:  # the scenario reader refuses a P1 source without settings
             raise RuntimeError("a P1 rule set needs the scenario's settings")
         self.scenario = scenario
         self.settings = scenario.settings
         self.base = scenario.base_currency
         self.base_minor = scenario.currencies[self.base]
+        # The ledger's own list of entries, read as it grows: while a document posts, the entries of the documents
+        # before it (reversals and scheduled entries come after every document).
+        self.posted = posted
 
     # ---------------------------------------------------------------- the input boundary
     def minor(self, currency: str) -> int:

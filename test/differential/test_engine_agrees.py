@@ -89,14 +89,20 @@ def difference(e: dict, o: dict) -> str | None:
         if len(x["lines"]) != len(y["lines"]):
             return f"entry {i}: engine {len(x['lines'])} lines, oracle {len(y['lines'])}"
         for k, (a, b) in enumerate(zip(x["lines"], y["lines"]), 1):
-            if (a["account"], a["currency"]) != (b["account"], b["currency"]) or not same(a["amount"], b["amount"]) \
-                    or not same(a["base_amount"], b["base_amount"]):
+            if (a["account"], a["currency"], a.get("party")) != (b["account"], b["currency"], b.get("party")) \
+                    or not same(a["amount"], b["amount"]) or not same(a["base_amount"], b["base_amount"]):
                 return f"entry {i} line {k}: engine {a}, oracle {b}"
     for month in sorted(set(e["trial_balance"]) | set(o["trial_balance"])):
         ea, oa = e["trial_balance"].get(month, {}), o["trial_balance"].get(month, {})
         for account in sorted(set(ea) | set(oa)):
             if not same(ea.get(account), oa.get(account)):
                 return f"trial balance {month} account {account}: engine {ea.get(account, '0')}, oracle {oa.get(account, '0')}"
+    ep, op = e.get("people") or {}, o.get("people") or {}  # each person's totals on the director's accounts (FR-EQ-01)
+    for person in sorted(set(ep) | set(op)):
+        ea, oa = ep.get(person, {}), op.get(person, {})
+        for account in sorted(set(ea) | set(oa)):
+            if not same(ea.get(account), oa.get(account)):
+                return f"person {person} account {account}: engine {ea.get(account, '0')}, oracle {oa.get(account, '0')}"
     found = tree_difference(e.get("statements"), o.get("statements"), "statements")
     if found is not None:
         return found

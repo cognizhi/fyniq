@@ -11,7 +11,7 @@ from decimal import ROUND_HALF_UP
 from decimal import Decimal as D
 
 import pytest
-from builders import P1_SETTINGS, journal, line, p1_post, scenario
+from builders import P1_SETTINGS, journal, line, p1_post, p1_scenario, scenario
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -278,7 +278,7 @@ def test_a_conversion_at_fair_value_puts_the_difference_in_profit_or_loss():
     # 10,288 shares at a fair value of 1.25 is 12,860.00: Cr 3010 12,860.00 and Dr 6010 514.40, the loss.
     converted = {"type": "director_conversion", "id": "SI-2", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500",
                  "class": "3010", "amount": "12345.67", "price": "1.20", "fair_value_price": "1.25", "difference": "6010"}
-    result, ledger = p1_post(converted)
+    result, ledger = p1_post(_lent("JNL-1", "2026-03-01", "12345.67"), converted)
     assert ledger.reasons == []
     entry = next(e for e in result["entries"] if e["document"] == "SI-2")
     assert [(ln["account"], ln["amount"]) for ln in entry["lines"]] == [("2500", "12345.60"), ("3010", "-12860.00"), ("6010", "514.40")]
@@ -302,3 +302,117 @@ def test_a_conversion_that_breaks_a_rule_is_rejected(change, reason):
     converted.update(change)
     _, ledger = p1_post(converted)
     assert ledger.reasons == [("SI-9", reason)]
+
+
+# What is owed, and nothing more (README, "P1 readings"; FR-EQ-05 rev 0.168, PB-25). What the company owes a person on a
+# director's account is the credit of the lines naming them there, from the documents before it in the scenario dated on
+# or before its date; reversals come after every document, so none counts.
+
+
+def _lent(doc_id: str, day: str, amount: str, who: str = "P0001", account: str = "2500") -> dict:
+    return journal(doc_id, day, line("1010", "SGD", amount), person(account, f"-{amount}", who, "lent"))
+
+
+def _waiver(amount: str, day: str = "2026-03-31", account: str = "2500") -> dict:
+    return {"type": "director_waiver", "id": "DS-1", "version": 1, "date": day, "person": "P0001", "account": account,
+            "credit": "3300", "amount": amount}
+
+
+def _repayment(*settlements: tuple[str, str]) -> dict:
+    return {"type": "director_repayment", "id": "DR-1", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "1010",
+            "settlements": [{"account": a, "amount": amount} for a, amount in settlements]}
+
+
+def _conversion(amount: str, price: str = "1.20") -> dict:
+    return {"type": "director_conversion", "id": "SI-1", "version": 1, "date": "2026-03-31", "person": "P0001", "account": "2500",
+            "class": "3010", "amount": amount, "price": price}
+
+
+# Before each test's document in the scenario: S$1,000.00 lent on 1 March, and S$500.00 more on 1 April, a credit dated
+# after the document, which is not owed yet on 31 March.
+OWED_BEFORE = (_lent("JNL-1", "2026-03-01", "1000.00"), _lent("JNL-2", "2026-04-01", "500.00"))
+
+
+def _refused(ledger: Ledger, doc_id: str) -> bool:
+    return (doc_id, "more-than-owed") in ledger.reasons
+
+
+def _post_for_two(*documents: dict, reversals: tuple = ()) -> Ledger:
+    data = p1_scenario(*documents, people=("P0001", "P0002"))
+    data["reversals"] = [{"document": d, "date": day} for d, day in reversals]
+    return Ledger(scenario_from_json(data))
+
+
+# req: FR-EQ-07
+# req: FR-EQ-05
+@pytest.mark.parametrize(("amount", "posts"), [("1000.00", True), ("1000.01", False), ("1500.00", False)])
+def test_a_waiver_draws_at_most_what_is_owed_at_the_end_of_its_date(amount, posts):
+    result, ledger = p1_post(*OWED_BEFORE, _waiver(amount))
+    assert ("DS-1" not in result["rejected"]) is posts
+    assert _refused(ledger, "DS-1") is not posts
+    if not posts:  # rejected whole: the waiver's lines are nowhere
+        assert all(e["document"] != "DS-1" for e in result["entries"])
+
+
+# req: FR-EQ-05
+# req: FR-BNK-12
+@pytest.mark.parametrize(
+    ("settlements", "posts"),
+    [
+        ((("2500", "1000.00"), ("2120", "250.00")), True),  # each account at its limit
+        ((("2500", "600.00"), ("2500", "400.00"), ("2120", "250.00")), True),  # two on 2500, together at the limit
+        ((("2500", "1000.01"), ("2120", "250.00")), False),  # a cent above on 2500
+        ((("2500", "600.00"), ("2500", "400.01")), False),  # each within, together a cent above
+        ((("2500", "10.00"), ("2120", "250.01")), False),  # a cent above on 2120: the whole batch is refused
+        ((("2500", "1500.00"),), False),  # the credit dated 1 April is not owed on 31 March
+    ],
+)
+def test_a_repayments_settlements_on_each_account_together_are_at_most_what_is_owed(settlements, posts):
+    fee = {"type": "director_fee", "id": "DF-1", "version": 1, "date": "2026-03-02", "person": "P0001", "account": "6050",
+           "amount": "250.00"}
+    result, ledger = p1_post(*OWED_BEFORE, fee, _repayment(*settlements))
+    assert ("DR-1" not in result["rejected"]) is posts
+    assert _refused(ledger, "DR-1") is not posts
+    if not posts:
+        assert result["people"] == {"P0001": {"2120": "-250.00", "2500": "-1500.00"}}
+
+
+# req: FR-EQ-06
+# req: FR-EQ-05
+@pytest.mark.parametrize(
+    ("amount", "posts"),
+    [
+        ("1000.00", True),  # 833 shares, 999.60 converted, 0.40 left owed
+        # One cent above what is owed is refused, though its 833 shares would convert only 999.60: the limit is on the
+        # amount (README, "Conversions": "`amount` is at most what is owed on `account`").
+        ("1000.01", False),
+        ("1500.00", False),
+    ],
+)
+def test_a_conversion_converts_at_most_what_is_owed(amount, posts):
+    result, ledger = p1_post(*OWED_BEFORE, _conversion(amount))
+    assert ("SI-1" not in result["rejected"]) is posts
+    assert _refused(ledger, "SI-1") is not posts
+
+
+# req: FR-EQ-05
+def test_what_is_owed_counts_only_the_documents_before_it_on_or_before_its_date():
+    # A credit after the waiver in the scenario (though dated before it) does not count; nor does another person's, nor
+    # one on the other director's account; a reversal comes after every document, so the reversed loan still counts.
+    later = _lent("JNL-3", "2026-03-15", "500.00")
+    others = (_lent("JNL-4", "2026-03-01", "500.00", who="P0002"), _lent("JNL-5", "2026-03-01", "500.00", account="2120"))
+    ledger = _post_for_two(*OWED_BEFORE, *others, _waiver("1000.01"), later)
+    assert ledger.reasons == [("DS-1", "more-than-owed")]
+    ledger = _post_for_two(*OWED_BEFORE, _waiver("1000.00"), reversals=(("JNL-1", "2026-03-02"),))
+    assert ledger.reasons == [] and ledger.rejected == []
+
+
+# req: FR-EQ-05
+@pytest.mark.parametrize("document", [_waiver("0.01"), _repayment(("2500", "0.01")), _conversion("1.20")])
+def test_nothing_owed_refuses_any_amount(document):
+    # P0001 lent 1,000.00 and was repaid 1,200.00 by journal: they owe the company 200.00, and are owed nothing.
+    repaid = journal("JNL-9", "2026-03-10", person("2500", "1200.00", "P0001", "paid_out"), line("1010", "SGD", "-1200.00"))
+    _, ledger = p1_post(OWED_BEFORE[0], repaid, document)
+    assert ledger.reasons == [(document["id"], "more-than-owed")]
+    _, ledger = p1_post(document)  # no line on the account at all
+    assert ledger.reasons == [(document["id"], "more-than-owed")]
