@@ -90,7 +90,7 @@ def _invoice_lines(r: Rules, doc: Source, books: dict[str, Any], *, credit: bool
     for raw in d["lines"]:
         account = r.account(raw["account"])
         net = line_net(r, raw, currency, minor, discount_allowed=True)
-        percent = r.gst_percent(raw["gst_code"], tax_day)
+        percent = r.gst_percent(raw["gst_code"], tax_day, "supply")  # a bill's mirror (FR-AP-02): output tax
         net_base = r.fx(net, rate)
         if not percent.is_zero():
             percents.add(percent)
@@ -209,7 +209,7 @@ def customer_deposit(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     else:
         if "gst_code" not in d:
             raise Rejected("no-gst-code")
-        percent = r.gst_percent(d["gst_code"], doc.date)
+        percent = r.gst_percent(d["gst_code"], doc.date, "supply")  # FR-AR-09: output GST when received
     base = r.fx(amount, rate)
     gst = money.rnd_gst_incl(base, percent, r.base_minor) if not percent.is_zero() else money.ZERO
     lines = [r.line(d["account"], currency, amount, base)]

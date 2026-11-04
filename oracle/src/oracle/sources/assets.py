@@ -109,7 +109,9 @@ def asset_disposal(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
             lines.append(r.base_line(proceeds["account"], amount))
         else:
             r.money_account(proceeds["account"], r.base)
-            percent = r.gst_percent(proceeds.get("gst_code", "NA"), doc.date)
+            code = proceeds.get("gst_code")  # none given: no GST
+            # FR-FA-03: output tax on the consideration received, so a supply code
+            percent = r.gst_percent(code, doc.date, "supply") if code is not None else money.ZERO
             gst = money.rnd_gst_incl(amount, percent, r.base_minor) if not percent.is_zero() else money.ZERO
             lines.append(r.base_line(proceeds["account"], amount))
             if not gst.is_zero():

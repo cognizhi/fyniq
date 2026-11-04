@@ -325,6 +325,31 @@ def test_a_sales_document_that_breaks_a_rule_is_rejected(document, reason):
     _refused([DP, INV, document], document["id"], reason)
 
 
+# req: FR-AR-03
+@pytest.mark.parametrize("code", ["NA", "TX", "IM", "ZP", "BL", "NR", "EP", "OP"])
+def test_an_invoice_line_takes_only_a_supply_code(code):
+    # Bills are the "mirror of invoices" with "GST input tax codes" (FR-AP-02), so an invoice's lines take
+    # the codes whose direction is Supply (Appendix B.6: SR, ZR, ES, OS). The purchase codes and NA, which
+    # has no direction, are refused, and the invoice posts nothing.
+    _refused([invoice("INV-9", "2026-03-05", "SGD", invoice_line("4010", "100.00", code))], "INV-9",
+             "gst-code-not-supply")
+
+
+# req: FR-AR-04
+@pytest.mark.parametrize("code", ["NA", "TX"])
+def test_a_credit_note_line_takes_only_a_supply_code(code):
+    # A credit note is entered as an invoice is and posts its legs negated (FR-AR-04): supply codes only.
+    _refused([invoice("CN-9", "2026-03-05", "SGD", invoice_line("4010", "100.00", code), kind="credit_note")], "CN-9",
+             "gst-code-not-supply")
+
+
+# req: FR-AR-09
+@pytest.mark.parametrize("code", ["NA", "TX"])
+def test_a_part_payment_deposit_takes_only_a_supply_code(code):
+    # A part payment "posts output GST when received" (FR-AR-09): its code is a supply code (Appendix B.6).
+    _refused([deposit("DP-9", "2026-03-05", "1010", "SGD", "109.00", gst_code=code)], "DP-9", "gst-code-not-supply")
+
+
 # req: FR-AR-18
 def test_an_overpayment_stays_a_customer_credit_on_1100():
     # 109.00 open; 120.00 received: 109.00 settles INV-1 and 11.00 stays unapplied on 1100.

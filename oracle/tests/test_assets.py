@@ -136,5 +136,13 @@ def test_an_asset_document_that_breaks_a_rule_is_rejected(document, reason):
 
 
 # req: FR-FA-03
+@pytest.mark.parametrize("code", ["NA", "TX"])
+def test_proceeds_received_take_only_a_supply_code(code):
+    # Proceeds received bear output tax "based on the consideration received" (FR-FA-03, rev 0.155; SR for a
+    # sale in Singapore): a code given is a supply code (Appendix B.6). Proceeds with no code bear no GST.
+    _refused([FA, disposal("AD-9", "2026-04-10", "FA-1", "1010", "100.00", code)], "AD-9", "gst-code-not-supply")
+
+
+# req: FR-FA-03
 def test_an_asset_is_disposed_of_once():
     _refused([FA, disposal("AD-1", "2026-04-10", "FA-1"), disposal("AD-2", "2026-05-10", "FA-1")], "AD-2", "already-disposed")

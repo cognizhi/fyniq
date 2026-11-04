@@ -24,7 +24,7 @@ GO_TEST_TIMEOUT := 45m
 MUTATION_PKGS := internal/domain/money internal/domain/rounding internal/domain/ledger
 # The P1 sources `make differential` draws beside manual journals: those cmd/scenario-run reads (test/differential/README.md,
 # "P1 sources"). An engine session adds a source here when it teaches cmd/scenario-run the source's shapes.
-DIFFERENTIAL_SOURCES ?= bank
+DIFFERENTIAL_SOURCES ?= bank,purchases
 FLAVOURS ?= release local
 # The platform `make images` builds: empty for the Docker engine's own (linux/arm64 on Apple silicon), or
 # linux/amd64 or linux/arm64 (NFR-IMG-08)
