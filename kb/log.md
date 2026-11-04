@@ -310,3 +310,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-03] compile | docs/user-guide/director-accounts.md, organisation-settings.md → founders.director-accounts, founders.pay-choice, settings.organisation, settings.change (the register of share issues and a conversion's ACRA steps, p1-founders-money 5.4)
 
 ## [2026-11-03] compile | docs/user-guide/director-accounts.md → founders.director-accounts, founders.pay-choice (the related-party schedule, FR-EQ-10)
+
+## [2026-11-04] compile | docs/user-guide/invoices.md → task/sales-invoices (the credit notes of one invoice credit at most its total together, p1-sales 3.3)
