@@ -165,7 +165,7 @@ func (r *p1) bill(i int, d Document, date time.Time, credit bool) (ledger.Entry,
 		b.Withholding = &ledger.Withholding{RatePercent: x.Withholding.Percent}
 	}
 	e, err := ledger.PostBill(b, r.settings)
-	if err != nil {
+	if err != nil || !r.fits(e) {
 		return ledger.Entry{}, false
 	}
 	releases, err := ledger.BillReleases(b, e, r.settings)
@@ -328,7 +328,7 @@ func (r *p1) billPayment(d Document, date time.Time) (ledger.Entry, bool) {
 		return ledger.Entry{}, false
 	}
 	e, settlements, err := ledger.PostBillPayment(p, r.settings)
-	if err != nil {
+	if err != nil || !r.fits(e) {
 		return ledger.Entry{}, false
 	}
 	r.settled(date, settlements, r.idsOf(d))

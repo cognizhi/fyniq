@@ -19,6 +19,20 @@ import (
 const Schema = "fyniq-sample-company@1"
 
 // Vocabulary is the part of sample-data.json the generator draws from.
+// Placement is the report group and cash-flow line the statements place an account by (FR-COA-02).
+type Placement struct{ ReportGroup, CashFlowLine string }
+
+// ExtraPlacements are the sample company's balance-sheet accounts the standard chart does not hold, placed as the
+// standard chart places their kind: without them its balance sheet would not balance, each in no section (design D3
+// of p1-reports). Its other extra accounts are expenses, which the profit and loss always places.
+var ExtraPlacements = map[string]Placement{
+	"1350": {"Other current assets", "Other current assets"}, // due from related companies
+	"2050": {"Payables & accruals", "Payables & accruals"},   // accrued expenses
+	"2115": {"Payroll liabilities", "Payroll liabilities"},   // EPF payable
+	"2116": {"Payroll liabilities", "Payroll liabilities"},   // SOCSO and EIS payable
+	"2350": {"Payables & accruals", "Payables & accruals"},   // due to related companies
+}
+
 type Vocabulary struct {
 	Accounts map[string][]string `json:"accounts"` // code → [name, aliases…]
 	Contacts map[string][]string `json:"contacts"` // name → [aliases…]

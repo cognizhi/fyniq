@@ -166,7 +166,7 @@ func (r *p1) invoice(i int, d Document, date time.Time, credit bool) (ledger.Ent
 	}
 	if credit {
 		e, err := ledger.PostCreditNote(inv, r.settings)
-		if err != nil {
+		if err != nil || !r.fits(e) {
 			return ledger.Entry{}, false
 		}
 		if of != nil {
@@ -175,7 +175,7 @@ func (r *p1) invoice(i int, d Document, date time.Time, credit bool) (ledger.Ent
 		return e, true
 	}
 	e, err := ledger.PostInvoice(inv, r.settings)
-	if err != nil {
+	if err != nil || !r.fits(e) {
 		return ledger.Entry{}, false
 	}
 	releases, err := ledger.InvoiceReleases(inv, e, r.settings)
@@ -231,7 +231,7 @@ func (r *p1) customerDeposit(d Document, date time.Time) (ledger.Entry, bool) {
 		}
 	}
 	e, err := ledger.PostCustomerDeposit(dep, r.settings)
-	if err != nil {
+	if err != nil || !r.fits(e) {
 		return ledger.Entry{}, false
 	}
 	// What its entry put on the money account, 2200 and 2410, as deposit.OpenDeposit reads them.
@@ -265,7 +265,7 @@ func (r *p1) customerReceipt(d Document, date time.Time) (ledger.Entry, bool) {
 		rc.Invoices = append(rc.Invoices, ledger.ReceivedInvoice{InvoiceID: b.BillID, Amount: b.Amount, StoredRate: b.StoredRate, Clears: b.Clears, Short: b.Short})
 	}
 	e, settlements, err := ledger.PostCustomerReceipt(rc, r.settings)
-	if err != nil {
+	if err != nil || !r.fits(e) {
 		return ledger.Entry{}, false
 	}
 	r.settled(date, settlements, r.idsOf(d))
@@ -315,7 +315,7 @@ func (r *p1) depositRefund(d Document, date time.Time) (ledger.Entry, bool) {
 		rf.Deposit = &part
 	}
 	e, _, err := ledger.PostDepositRefund(rf, r.settings)
-	if err != nil {
+	if err != nil || !r.fits(e) {
 		return ledger.Entry{}, false
 	}
 	o.Used, _ = o.Used.Add(amount)
@@ -356,7 +356,7 @@ func (r *p1) writeOff(d Document, date time.Time) (ledger.Entry, bool) {
 		w.Clears = &left
 	}
 	e, s, err := ledger.PostWriteOff(w, r.settings)
-	if err != nil {
+	if err != nil || !r.fits(e) {
 		return ledger.Entry{}, false
 	}
 	r.settled(date, []ledger.Settlement{s}, map[string]string{w.InvoiceID.String(): x.Invoice})

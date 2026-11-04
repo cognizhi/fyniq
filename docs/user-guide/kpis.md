@@ -25,7 +25,7 @@ until the counts are entered.
 ## Booked and contracted MRR
 
 **Booked MRR** is the subscription revenue the ledger recognised in the month: revenue accounts
-whose report group names a subscription stream. **Contracted MRR** is the monthly value of the
+whose report group names a subscription stream (not other income, and not a group heading). **Contracted MRR** is the monthly value of the
 subscriptions active at the month's end: what is signed. It needs subscription data, which arrives
 in a later phase; until then it says so.
 

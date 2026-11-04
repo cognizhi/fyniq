@@ -15,7 +15,7 @@
   `TestTheKPIsWorkedByHand`, `TestWithoutCountsTheCustomerKPIsHaveNone`, `TestTheWorkbooksUndefinedStatesCarryOver`,
   `TestEveryDefinitionStatesItself`. Then the dashboard's five, first in the order: cash, revenue, net profit for the
   year to date (its own P&L from the year's first month), owed to us and we owe, so each tile has a definition too.)
-- [ ] 1.3 (oracle session) The KPIs of the sample company in the independent oracle, from §11.5's words.
+- [x] 1.3 (oracle session) The KPIs of the sample company in the independent oracle, from §11.5's words.
   `// req: QA-ENG-02`
   (29 Oct 2026, the oracle session, whose author has not read the engine: the oracle's half is written, from the
   workbook PRD's §11.5 as written there, FR-KPI-02, FR-KPI-03 and `RND-KPI`. A scenario with statements may carry
@@ -26,6 +26,15 @@
   `RND-KPI`), the four months of `test/differential/pending/statements.json` in `test_pending_kpis`, and a
   property ties them to the statements. 15 hand mutants, all killed. **Left:** as `p1-reports` 1.5: the sample
   company's chart attributes and counts, and `cmd/scenario-run` stating the KPIs, in an engine session.)
+  (4 Nov 2026, the engine session: `cmd/scenario-run` states the KPIs through the product's own `kpi.Read` and
+  `kpi.Compute`; the sample company's golden scenarios ask for them with no counts entered. Settled on the way, each
+  [accountant to confirm] under rev 0.161, the first two with an independent advisor: DSO, DPO, the current and
+  quick ratios and CAC payback are undefined when their divisor is not above zero; the burn multiple is undefined in
+  the books' first month, which has no month before; the margins are RND-PERCENT against the size of the revenue,
+  as the statements' % of revenue (they divided by its signed value); and subscription revenue counts only postable
+  revenue accounts that are not other income. Fixed where the search found it: every KPI is RND-KPI of its exact value,
+  rounded once, so runway, DSO and DPO divide by the months' total and LTV, LTV:CAC and CAC payback multiply exact
+  fractions (runway divided by an average already cut at 40 digits, and −0.75 months showed as −0.7).)
 
 ## 2. Entered counts (rev 0.161)
 

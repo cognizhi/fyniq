@@ -10,221 +10,291 @@
    "code": "1010",
    "type": "asset",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Cash \u0026 bank",
+   "cash_flow_line": "Cash \u0026 cash equivalents"
   },
   {
    "code": "1020",
    "type": "asset",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Cash \u0026 bank",
+   "cash_flow_line": "Cash \u0026 cash equivalents"
   },
   {
    "code": "1030",
    "type": "asset",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Cash \u0026 bank",
+   "cash_flow_line": "Cash \u0026 cash equivalents"
   },
   {
    "code": "1040",
    "type": "asset",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Cash \u0026 bank",
+   "cash_flow_line": "Cash \u0026 cash equivalents"
   },
   {
    "code": "1100",
    "type": "asset",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Receivables",
+   "cash_flow_line": "Receivables"
   },
   {
    "code": "1210",
    "type": "asset",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Other current assets",
+   "cash_flow_line": "Other current assets"
   },
   {
    "code": "1250",
    "type": "asset",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Other current assets",
+   "cash_flow_line": "Other current assets"
   },
   {
    "code": "1350",
    "type": "asset",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Other current assets",
+   "cash_flow_line": "Other current assets"
   },
   {
    "code": "1510",
    "type": "asset",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Property, plant \u0026 equipment",
+   "cash_flow_line": "Capital expenditure"
   },
   {
    "code": "1590",
    "type": "asset",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Accumulated depreciation",
+   "cash_flow_line": "Depreciation \u0026 amortisation"
   },
   {
    "code": "2010",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Payables \u0026 accruals",
+   "cash_flow_line": "Payables \u0026 accruals"
   },
   {
    "code": "2050",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Payables \u0026 accruals",
+   "cash_flow_line": "Payables \u0026 accruals"
   },
   {
    "code": "2100",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Payroll liabilities",
+   "cash_flow_line": "Payroll liabilities"
   },
   {
    "code": "2110",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Payroll liabilities",
+   "cash_flow_line": "Payroll liabilities"
   },
   {
    "code": "2115",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Payroll liabilities",
+   "cash_flow_line": "Payroll liabilities"
   },
   {
    "code": "2116",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Payroll liabilities",
+   "cash_flow_line": "Payroll liabilities"
   },
   {
    "code": "2120",
    "type": "liability",
    "group": false,
    "active": true,
-   "role": "deferred-remuneration"
+   "role": "deferred-remuneration",
+   "report_group": "Payroll liabilities",
+   "cash_flow_line": "Payroll liabilities"
   },
   {
    "code": "2150",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Payables \u0026 accruals",
+   "cash_flow_line": "Payables \u0026 accruals"
   },
   {
    "code": "2200",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Tax liabilities",
+   "cash_flow_line": "Tax liabilities"
   },
   {
    "code": "2300",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Tax liabilities",
+   "cash_flow_line": "Tax liabilities"
   },
   {
    "code": "2350",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Payables \u0026 accruals",
+   "cash_flow_line": "Payables \u0026 accruals"
   },
   {
    "code": "2400",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Deferred revenue",
+   "cash_flow_line": "Deferred revenue"
   },
   {
    "code": "2500",
    "type": "liability",
    "group": false,
    "active": true,
-   "role": "director-loan"
+   "role": "director-loan",
+   "report_group": "Borrowings",
+   "cash_flow_line": "Borrowings"
   },
   {
    "code": "2700",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Borrowings",
+   "cash_flow_line": "Borrowings"
   },
   {
    "code": "2999",
    "type": "liability",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Payables \u0026 accruals",
+   "cash_flow_line": "Payables \u0026 accruals"
   },
   {
    "code": "3010",
    "type": "equity",
    "group": false,
    "active": true,
-   "role": "share-capital"
+   "role": "share-capital",
+   "report_group": "Share capital",
+   "cash_flow_line": "Share capital"
   },
   {
    "code": "3020",
    "type": "equity",
    "group": false,
    "active": true,
-   "role": "share-capital"
+   "role": "share-capital",
+   "report_group": "Share capital",
+   "cash_flow_line": "Share capital"
   },
   {
    "code": "3100",
    "type": "equity",
    "group": false,
-   "active": true
+   "active": true,
+   "role": "retained-earnings",
+   "report_group": "Retained earnings",
+   "cash_flow_line": "Dividends \u0026 other equity"
   },
   {
    "code": "3300",
    "type": "equity",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Other equity",
+   "cash_flow_line": "Dividends \u0026 other equity"
   },
   {
    "code": "4010",
    "type": "revenue",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Subscription revenue"
   },
   {
    "code": "4020",
    "type": "revenue",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Services \u0026 project revenue"
   },
   {
    "code": "4090",
    "type": "revenue",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Other revenue"
   },
   {
    "code": "5010",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Hosting \u0026 infrastructure",
+   "function": "COGS"
   },
   {
    "code": "5020",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Third-party \u0026 AI costs",
+   "function": "COGS"
   },
   {
    "code": "5030",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Direct labour \u0026 contractors",
+   "function": "COGS"
   },
   {
    "code": "5040",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Payment fees \u0026 other direct costs",
+   "function": "COGS"
   },
   {
    "code": "6010",
@@ -236,37 +306,49 @@
    "code": "6020",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Salaries \u0026 staff costs",
+   "function": "G\u0026A"
   },
   {
    "code": "6030",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Salaries \u0026 staff costs",
+   "function": "G\u0026A"
   },
   {
    "code": "6050",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Salaries \u0026 staff costs",
+   "function": "G\u0026A"
   },
   {
    "code": "6060",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Salaries \u0026 staff costs",
+   "function": "G\u0026A"
   },
   {
    "code": "6110",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Sales \u0026 marketing",
+   "function": "S\u0026M"
   },
   {
    "code": "6120",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Sales \u0026 marketing",
+   "function": "S\u0026M"
   },
   {
    "code": "6135",
@@ -290,97 +372,134 @@
    "code": "6210",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Technology \u0026 software",
+   "function": "R\u0026D"
   },
   {
    "code": "6310",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Premises \u0026 office",
+   "function": "G\u0026A"
   },
   {
    "code": "6320",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Premises \u0026 office",
+   "function": "G\u0026A"
   },
   {
    "code": "6350",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Premises \u0026 office",
+   "function": "G\u0026A"
   },
   {
    "code": "6410",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Professional fees",
+   "function": "G\u0026A"
   },
   {
    "code": "6420",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Professional fees",
+   "function": "G\u0026A"
   },
   {
    "code": "6430",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Professional fees",
+   "function": "G\u0026A"
   },
   {
    "code": "6510",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Travel \u0026 entertainment",
+   "function": "G\u0026A"
   },
   {
    "code": "6520",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Travel \u0026 entertainment",
+   "function": "S\u0026M"
   },
   {
    "code": "6530",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Travel \u0026 entertainment",
+   "function": "G\u0026A"
   },
   {
    "code": "6610",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "role": "depreciation",
+   "report_group": "Depreciation \u0026 amortisation",
+   "function": "G\u0026A"
   },
   {
    "code": "7010",
-   "type": "expense",
+   "type": "revenue",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "Grants \u0026 subsidies",
+   "function": "Other"
   },
   {
    "code": "7030",
-   "type": "expense",
+   "type": "revenue",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "FX \u0026 rounding",
+   "function": "Other"
   },
   {
    "code": "7040",
-   "type": "expense",
+   "type": "revenue",
    "group": false,
-   "active": true
+   "active": true,
+   "report_group": "FX \u0026 rounding",
+   "function": "Other"
   },
   {
    "code": "8010",
    "type": "expense",
    "group": false,
-   "active": true
+   "active": true,
+   "role": "income-tax-expense",
+   "report_group": "Income tax",
+   "function": "Other"
   }
  ],
  "people": [
   "P0001",
   "P0007"
  ],
+ "statements": true,
+ "kpis": {
+  "year_start_month": 1,
+  "counts": {}
+ },
  "documents": [
   {
    "type": "manual_journal",

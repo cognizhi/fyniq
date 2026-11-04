@@ -12,6 +12,8 @@ an engine session teaches `cmd/scenario-run` a source's shapes (or the statement
 and settles any disagreement from the PRD (README, "P1 readings"); an engine bug is a failing golden
 case, and the oracle never changes to match the engine.
 
+No case waits here now: `cmd/scenario-run` reads every P1 source and states the statements and the KPIs (4 Nov 2026).
+A new source's golden case starts here, as these did.
+
 | File | Source | What |
 |---|---|---|
-| `statements.json` | The statements (`p1-reports` 1.5) and the KPIs (`p1-dashboard-kpis` 1.3) | A small company with every section of rev 0.159's layout, over four months: a director's loan, a laptop bought with GST and sold at a gain, an invoice on credit and its part-payment, costs by function (one with none), rent a director paid personally and part of the loan turned into a capital contribution (both non-cash), depreciation and amortisation in one report group, prepaid insurance, money paid ahead, a grant, interest repaid with the loan, income tax, a dividend, a reversed cost; percentages of exactly half a tenth (-16.65, 83.35); a month with no entry; and 50.00 paid to an account with no cash-flow line, which both checks catch. Its KPIs over a calendar year, with counts entered for three months and headcount for three: a subscription stream, a month with no new customers, no counts in March, and runway not burning from February |

@@ -20,10 +20,17 @@ director's account, 2500 or 2120, and two people: a line on it names one of them
 names none or someone else (rejected), or a person on another line (rejected; FR-EQ-01, B.7). A reversal may be dated up to 20 days before its
 document (rejected, FR-GL-12, and the document stays unreversed). Every rate carries its source, as
 the format requires: ``document``, or ``base`` on a base-currency line built to be rejected.
+
+While :data:`BOUNDED` is set (``strategies_statements.with_statements`` sets it while it draws), journals stay far
+from NUMERIC(20,4)'s 10^16: a line's amount has at most seven integer digits (so at most about 10^11 in base, at a
+rate below 10^4), and the kinds that reach the limit on purpose (the boundary's 16-digit amounts, amounts and base
+amounts out of range) are drawn as balanced journals instead (README, "Balances within NUMERIC(20,4)"). Unset, the
+default, generation is unchanged.
 """
 
 from __future__ import annotations
 
+from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
@@ -54,6 +61,10 @@ CURRENCIES: dict[str, int] = {
     "CLF": 4,
 }
 _BASES = ["SGD"] * 4 + ["USD", "JPY", "KWD", "CLF"]
+# Set while a scenario that asks for the statements is drawn (module docstring); read at draw time.
+BOUNDED: ContextVar[bool] = ContextVar("fyniq_scenario_bounded", default=False)
+_BOUNDED_DIGITS = 7  # a line's integer digits while BOUNDED
+_NEAR_THE_LIMIT = ("amount-out-of-range", "base-out-of-range")  # drawn as "balanced" while BOUNDED
 _UNKNOWN_CURRENCY = "XTS"  # ISO 4217's code for testing; never in a generated scenario
 _UNKNOWN_ACCOUNT = "9999"  # generated codes are 1000 to 8999
 _UNKNOWN_DOCUMENT = "JNL-9999"
@@ -144,6 +155,11 @@ class _Ctx:
         return sorted(c for c in self.currencies if c != self.base)
 
 
+def _digits(max_digits: int) -> int:
+    """A line's largest number of integer digits: ``max_digits``, or fewer while :data:`BOUNDED`."""
+    return min(max_digits, _BOUNDED_DIGITS) if BOUNDED.get() else max_digits
+
+
 def _value(units: int, minor: int) -> Decimal:
     return Decimal(units).scaleb(-minor, context=money.EXACT)
 
@@ -216,7 +232,7 @@ def _free_line(draw: st.DrawFn, ctx: _Ctx, currency: str | None = None, max_digi
     if currency is None:
         currency = draw(st.sampled_from(sorted(ctx.currencies)))
     minor = ctx.currencies[currency]
-    value = _value(draw(_units(max_digits + minor)), minor)
+    value = _value(draw(_units(_digits(max_digits) + minor)), minor)
     text = draw(_amount_text(value, minor))
     if currency == ctx.base:
         return _line(account, currency, text), value
@@ -245,7 +261,7 @@ def _balanced(
 def _single_foreign(draw: st.DrawFn, ctx: _Ctx, currency: str) -> list[dict]:
     """Balanced in one foreign currency; whether it balances in base is left to RND-FX."""
     minor = ctx.currencies[currency]
-    values = [_value(draw(_units(10 + minor)), minor) for _ in range(draw(st.integers(1, 5)))]
+    values = [_value(draw(_units(_digits(10) + minor)), minor) for _ in range(draw(st.integers(1, 5)))]
     closing = money.negate(money.total(values))
     assume(not closing.is_zero())
     values.append(closing)
@@ -263,7 +279,8 @@ def _single_foreign(draw: st.DrawFn, ctx: _Ctx, currency: str) -> list[dict]:
 @st.composite
 def _boundary(draw: st.DrawFn, ctx: _Ctx) -> list[dict]:
     """Amounts at the precision boundary: 16 integer digits, or a single minor unit."""
-    shape = draw(st.sampled_from(["base-max", "foreign-max", "one-unit"] if ctx.foreign else ["base-max"]))
+    shapes = ["base-max", "foreign-max", "one-unit"] if ctx.foreign else ["base-max"]
+    shape = draw(st.sampled_from(["one-unit"] if BOUNDED.get() else shapes))  # _journal keeps ctx.foreign then
     digits = money.AMOUNT_INTEGER_DIGITS
     if shape == "base-max":
         minor = ctx.base_minor
@@ -398,6 +415,8 @@ def _journal(draw: st.DrawFn, ctx: _Ctx, kind: str) -> tuple[list[dict], str]:
     director_kinds = ("director-line", "director-line-without-person", "person-on-another-account")
     if ((kind in foreign_kinds and not ctx.foreign) or (kind == "share-capital-account" and ctx.share is None)
             or (kind in director_kinds and ctx.director is None)):
+        kind = "balanced"
+    if BOUNDED.get() and (kind in _NEAR_THE_LIMIT or (kind == "boundary" and not ctx.foreign)):
         kind = "balanced"
     if kind == "balanced":
         return draw(_balanced(ctx)), POST

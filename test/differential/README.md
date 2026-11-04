@@ -168,9 +168,10 @@ result. **The engine's `cmd/scenario-run` reads every P1 source**, each in `inte
 the bank, `p1_purchases.go`, `p1_sales.go`, `p1_claims.go`, `p1_assets.go` and `p1_founders.go`; the engine-session
 tasks of `p1-bank-import-reconcile`, `p1-purchases`, `p1-sales`, `p1-expense-claims` and `p1-fixed-assets`), so the
 Go gate posts their golden cases in [`golden/`](golden/README.md) through both sides, and `make differential` draws
-the sources the generator has (`DIFFERENTIAL_SOURCES=bank,purchases,sales,claims,assets` in the Makefile; the
-founders' documents are compared on their golden case only). The statements and the KPIs are not stated yet: their
-golden case waits in [`pending/`](pending/README.md) (section "Statements").
+the sources the generator has, and the statements and KPIs over them
+(`DIFFERENTIAL_SOURCES=bank,purchases,sales,claims,assets,statements,kpis` in the Makefile; the founders' documents
+are compared on their golden case only). The engine states the statements and the KPIs too (sections "Statements" and
+"KPIs").
 
 ### Settings and `as_of`
 
@@ -520,7 +521,7 @@ comparison with the engine shows any difference, and the decision settles it.
 | An invoice's or a credit note's line, a part-payment deposit or a disposal's proceeds received coded NA or a purchase code | Rejected whole, whatever the registration: a supply document takes Appendix B.6's supply codes | FR-AP-02 (bills the "mirror of invoices"), FR-AR-04, FR-AR-09 ("output GST when received"), FR-FA-03 ("output tax"), Appendix B.6 (rev 0.169) | Generated (rejected) |
 | A disposal's proceeds received with no GST code | Rejected while the organisation is registered on the disposal's date (a taxable supply names its supply code; none would leave its output tax undeclared); while not registered, posted with no GST | FR-FA-03 (rev 0.155, "the proceeds' GST code's rate"), Appendix B.6 (rev 0.169), §10.2 "Asset disposal" | Generated (rejected while registered; posted while not) |
 | Several credit notes linked to one invoice | Together they credit at most the invoice's total before the deposits it deducts | Rev 0.155, FR-AR-04 (INVOICE-15), superseding the cap per credit note [accountant to confirm] | Not generated (`golden/sales.json`) |
-| A P1 document whose lines but one round to nothing in base (USD 0.01 deposited at 0.0001) | Rejected: an entry has at least two lines | Rev 0.155, INV-05 | Not generated (rates of at least 0.01) |
+| A P1 document whose lines but one, or all, round to nothing in base in canonical form (USD 0.01 deposited at 0.0001; a claim of two USD 0.01 receipts at 0.1, which owes S$0.00) | Rejected, leaving no trace in what later documents read: an entry has at least two lines, and a single-currency entry balances in its currency | Rev 0.155, INV-01, INV-05 | Generated (claims at 0.1: `golden/shrunk-5fba8ee29c.json`) |
 | A claim's line in another currency | Costed as a bill's (its cost in the claim's currency at the claim's rate); 2150 (or 2500 for a loan) takes what is owed in the base currency, each receipt line's net plus GST under `RND-FX` at the claim's rate, summed, 7030 what balances; reimbursed in the base currency only, with no rate and no FX. *Superseded:* 2150 in the claim's currency, reimbursed at the cascade's rate with the difference to 7030 | FR-AP-17 (rev 0.7 "reimbursed in SGD", rev 0.155 "2150 at the claim's rate"), SFRS(I) 1-21 (a fixed SGD amount owed); the owner's decision [accountant to confirm] | Generated (a reimbursement in another currency: generated, rejected) |
 | A claim larger than what is left of its advance | 1250 takes what is left, 2150 the rest | Rev 0.155, FR-AP-17 | Generated |
 | GST on a disposal's proceeds received | `RND-GST-INCL` of the amount received (as for money in, B.1) | Rev 0.155, FR-FA-03 (IRAS: "based on the consideration received") [accountant to confirm] | Generated (SR while registered), and `golden/assets.json` |
@@ -533,42 +534,61 @@ comparison with the engine shows any difference, and the decision settles it.
 | An unapplied amount from a base-currency account paying foreign bills | At the rate the payment implies (`RND-RATE` of what it paid ÷ the total) | Rev 0.77 | Not generated |
 | A bill's lines in another currency | The cost lines in the bill's currency; 2200, 1210 and 7030 in the base currency | Appendix B.2 ("net in document currency"), rev 0.83 | Generated |
 
-## Statements (pending: `cmd/scenario-run` does not state them yet)
+## Statements
 
 From `p1-reports` (task 1.5), a scenario with `"statements": true` asks both sides for the financial
 statements of every month from its first posting month to its last, months without an entry included,
 in the result's `statements` (`result.schema.json` has every key). They are read from the posted
 entries only, written from FR-RPT-01 (rev 0.159, [accountant to confirm]), FR-COA-02, FR-GL-10, INV-10,
 INV-11 and `RND-PERCENT`, with the sections of `p1-reports` design D2 and D3; `oracle/src/oracle/statements.py`
-is the oracle's side. The golden case waits in [`pending/statements.json`](pending/README.md), and
-`make differential` draws statements over generated scenarios once `statements` is in
-`FYNIQ_DIFFERENTIAL_SOURCES`.
+is the oracle's side. The engine's is its own `financials.Lay`, read through an in-memory store of the posted entries
+(`internal/differential/statements.go`, `memstore.go`; only presentation is mapped there). The golden case is
+[`golden/statements.json`](golden/README.md), the sample company's (`golden/sample-company-seed-*.json`) states them on
+the standard chart, and `make differential` draws statements over generated scenarios (`statements` in
+`FYNIQ_DIFFERENTIAL_SOURCES`).
+
+**Balances within NUMERIC(20,4).** The database keeps each account's balance for a period, per currency, as
+NUMERIC(20,4), so it refuses (SQLSTATE 22003, a 422) a posting that would take one to 10^16, never truncating it
+(§11.3, ENG-44, INV-05; `TestAttackABalanceBeyondItsColumnRefusesThePosting` proves it). Neither side models that
+refusal: scenarios without statements still reach it (two manual journals near the limit on one account in one month)
+and both sides agree on a sum the product would refuse. Statements and KPIs read those balances back, so a scenario
+asking for them keeps every month's balance below 10^16: while it draws one, the generator keeps a line's amount to
+seven integer digits, draws no journal near the limit, and refuses a scenario unless everything it could post, in
+amount and in base (amount × rate), totals below 10^15 (`strategies_statements.reach`); `scenario-run` stops with
+"outside the format" (exit 1) on a hand-written scenario beyond the limit. The owner's decision with an independent advisor (4 Nov 2026): the limit belongs to
+storage, which already refuses, and modelling it on both sides would need the database's line-by-line running sums
+and the scheduler's retries.
 
 **The chart's attributes.** An account may carry `report_group` (free text: the line it is shown under;
 an account without one is shown under its code), `function` (`COGS`, `R&D`, `S&M`, `G&A` or `Other`;
 read on revenue and expense accounts) and `cash_flow_line` (read on asset, liability and equity
-accounts). The standard chart's cash-flow lines, and the balance-sheet section each places:
+accounts). The standard chart's cash-flow lines, and the balance-sheet section each places, only on its
+own side (rev 0.159, [accountant to confirm]):
 
-| Cash-flow line | Balance-sheet section | Cash flow |
-|---|---|---|
-| Cash & cash equivalents | Current assets | The cash itself |
-| Receivables, Other current assets | Current assets | Working capital |
-| Capital expenditure | Non-current assets | Makes an entry investing |
-| Depreciation & amortisation (accumulated depreciation) | Non-current assets | Added back |
-| Payables & accruals, Payroll liabilities, Tax liabilities, Deferred revenue | Current liabilities | Working capital |
-| Borrowings | Borrowings | Makes an entry financing |
-| Share capital, Dividends & other equity | Equity | Makes an entry financing |
+| Cash-flow line | Places | Balance-sheet section | Cash flow |
+|---|---|---|---|
+| Cash & cash equivalents | An asset | Current assets | The cash itself |
+| Receivables, Other current assets | An asset | Current assets | Working capital |
+| Capital expenditure | An asset | Non-current assets | Makes an entry investing |
+| Depreciation & amortisation (accumulated depreciation) | An asset | Non-current assets | Added back |
+| Payables & accruals, Payroll liabilities, Tax liabilities, Deferred revenue | A liability | Current liabilities | Working capital |
+| Borrowings | A liability | Borrowings | Makes an entry financing |
+| Share capital, Dividends & other equity | An equity account | Equity | Makes an entry financing |
 
 The account with the role `retained-earnings` is in equity whatever its line. A balance-sheet account
-with no cash-flow line, or one outside this set, sits in no section.
+with no cash-flow line, one outside this set, or one of the other side (a liability on Share capital, an
+equity account on Cash & cash equivalents) sits in no section: it is *unplaced*.
 
 **Profit and loss**, the month's: each figure is what it adds to profit (revenue positive, costs
 negative). Each revenue and expense account goes to the first that applies: the `income-tax-expense`
 account to income tax; a revenue account to other income when its function is `Other`, else to revenue;
-an expense account with function `COGS` to cost of sales; an expense account in the report group of the
-`depreciation` account to depreciation and amortisation; one with function `Other` to finance costs and
-other expenses; any other to operating expenses, shown by report group and by function (none counts as
-`Other`). Gross profit, EBITDA, operating profit, profit before tax and net profit are the running sums
+an expense account in the report group of the depreciation account to depreciation and amortisation
+(before its function: EBITDA excludes depreciation and amortisation by definition); one with function
+`COGS` to cost of sales; one with function `Other` to finance costs and other expenses; any other to
+operating expenses, shown by report group and by function (none counts as `Other`). The depreciation
+account is the account with the role `depreciation` or, when no account has that role, the account
+`settings.accounts.depreciation` names (one system role in the product); its report group, or with none
+the account alone, is depreciation and amortisation, and the account itself always is. Gross profit, EBITDA, operating profit, profit before tax and net profit are the running sums
 in that order. `percent_of_revenue` has each of the twelve lines under `RND-PERCENT` against revenue
 (round(line ÷ |revenue| × 100, 1 decimal), half away from zero), and is absent when revenue is zero.
 
@@ -580,17 +600,19 @@ whose lines on the director's accounts (`director-loan`, `deferred-remuneration`
 company: with an `advances` account in the settings, their balances on those accounts show on it instead,
 with no posting (FR-EQ-11, `p1-founders-money` design D14).
 
-**Cash flow**, indirect, money in positive. Each of the month's entries is *investing* when it has a line
-on a capital-expenditure account, else *financing* when it has a line on a borrowings or equity account,
-else *operating*. An entry's cash is the sum of its lines on cash accounts.
+**Cash flow**, indirect, money in positive, on the same placement. Each of the month's entries is
+*investing* when it has a line on a capital-expenditure asset, else *financing* when it has a line on an
+account placed in borrowings or equity, else *operating*. An entry's cash is the sum of its lines on cash
+accounts (assets on Cash & cash equivalents).
 
 - `investing` and `financing`: their entries' cash.
 - `operating`: `net_profit`; `depreciation_and_amortisation`, minus the operating entries' lines on
   accumulated depreciation; `investing_and_financing_results`, plus the revenue and expense lines of the
   investing and financing entries (taking a disposal's gain, or a cost a director paid personally, back
-  out of profit); `working_capital`, minus the operating entries' lines on each working-capital line;
-  and `total`, their sum, which equals the operating entries' cash whenever every account they move is
-  placed.
+  out of profit); `working_capital`, minus the operating entries' lines on each working-capital line (an
+  account placed in current assets other than cash, or in current liabilities, by its line);
+  `other_accounts`, minus the operating entries' lines on accounts that sit in no section (design D3);
+  and `total`, their sum, which always equals the operating entries' cash, so net burn is the true cash.
 - `non_cash`: the investing and financing entries with no line on a cash account (FR-RPT-01: "a
   transaction that moved no money ... is left out of investing and financing and listed apart"). A
   `director_conversion`'s has the `label` "Converted to shares" and a `director_waiver`'s "Waived" (FR-EQ-10).
@@ -606,8 +628,8 @@ change on that line: shares issued for non-cash consideration, FR-EQ-10), `other
 **Checks**: `balances`, total assets equal total liabilities and equity (INV-10, BS_Chk); `ties`,
 opening cash plus the net change equals closing cash (INV-11, CF_Chk); `equity`, the movement reconciles
 (BS_EqChk); `unplaced`, the balance-sheet accounts with a balance or a line in the month that sit in no
-section, by code (PL_Chk, BS_Uncl). An unplaced account breaks `balances`, and `ties` too when an
-operating entry moves it.
+section, by code (PL_Chk, BS_Uncl). An unplaced account breaks only `balances`, and `unplaced` names it:
+the cash flow keeps its movement in operating's `other_accounts`, so `ties` holds.
 
 **A comparator** compares every figure to the cent, reading a missing report group, function or
 working-capital line as zero, and the checks, `non_cash` and `percent_of_revenue` as they are.
@@ -621,14 +643,19 @@ Readings the PRD leaves open, each [accountant to confirm] with rev 0.159:
 | An entry moving both capital expenditure and borrowings or equity | Investing | Investing is tested first, as D2 lists it |
 | The profit to date in the balance sheet | All revenue and expense posted so far, inside the retained-earnings account's group | FR-GL-10 and FR-RPT-01; a scenario has no opening balances, so no earlier year is missing |
 | A month with no entry between two that have | Stated: nothing in the P&L and the cash flow, the balance sheet as the month before | FR-RPT-02 runs any period of whole months |
+| An unplaced account (D3) | `balances` stays total assets = total liabilities + equity, so it breaks; operating keeps its movement in `other_accounts`, so `ties` holds and net burn is the true cash. *Superseded:* `ties` broke too when an operating entry moved it | The owner's decision with an independent advisor (rev 0.159): the check finds the misplaced account, and the cash flow does not hide cash that moved [accountant to confirm] |
+| A cash-flow line of the other side (a liability on Share capital, an equity account on Cash & cash equivalents) | Places nothing: the account is unplaced, in no section and no cash-flow role. *Superseded:* the line placed the account whatever its type | The owner's decision with an independent advisor (rev 0.159): a line names a section of its own side of the balance sheet [accountant to confirm] |
+| The depreciation account when no account has the role `depreciation` | The account the settings' `depreciation` key names; its report group (or the account alone) is depreciation and amortisation, whatever the function of the accounts in it. *Superseded:* no depreciation account, so the group's accounts went by their function (one with function Other to finance costs) | The settings' key and the chart's role are one system role in the product (rev 0.159) [accountant to confirm] |
+| An expense account in the depreciation account's report group whose function is COGS | Depreciation and amortisation, below EBITDA. *Superseded:* cost of sales | The owner's decision with an independent advisor (rev 0.159): EBITDA excludes depreciation and amortisation by definition [accountant to confirm] |
 
-## KPIs (pending: `cmd/scenario-run` does not state them yet)
+## KPIs
 
 From `p1-dashboard-kpis` (task 1.3), a scenario with `statements` may also have `kpis`, which asks both
 sides for every stated month's KPIs in the result's `kpis` (`result.schema.json` lists them). They are
 read from the month's statements and trial balance and the entered counts, written from the workbook's
 own definitions (its PRD §11.5, which FR-KPI-02 adopts), FR-KPI-02 and FR-KPI-03 (rev 0.161) and
-`RND-KPI`; `oracle/src/oracle/kpis.py` is the oracle's side, and `pending/statements.json` carries them.
+`RND-KPI`; `oracle/src/oracle/kpis.py` is the oracle's side, the engine's own `kpi.Read` and `kpi.Compute` the
+engine's, and `golden/statements.json` carries them.
 
 ```text
 "kpis": {"year_start_month": 1,
@@ -645,9 +672,9 @@ never 0 (FR-KPI-03), and a comparator matches `null` only with `null`.
 
 | KPI | The month's | Undefined (`null`) |
 |---|---|---|
-| `booked_mrr`, `arr` | revenue (not other income) of the accounts whose report group contains "subscription", any case; × 12 | no such account in the chart |
+| `booked_mrr`, `arr` | revenue (not other income) of the postable accounts whose report group contains "subscription", any case; × 12 | no postable (not group) revenue account, not other income, in the chart whose report group contains "subscription" |
 | `contracted_mrr` | always `null`: no subscription data until FR-AR-15 (P2) | always |
-| `revenue_growth` | `RND-PERCENT` of (revenue − the month before's) against the month before's | the month before had no revenue |
+| `revenue_growth` | `RND-PERCENT` of (revenue − the month before's) against the month before's | the first stated month (none before it), or the month before had no revenue |
 | `gross_margin`, `ebitda_margin`, `net_margin` | `RND-PERCENT` of gross profit, EBITDA, net profit against revenue (the statements' `percent_of_revenue`) | revenue 0 |
 | `spend_by_function` | R&D, S&M and G&A: the expense lines of the accounts with that function, whatever their P&L section | never |
 | `net_burn` | −(operating + investing cash flow) | never |
@@ -655,16 +682,18 @@ never 0 (FR-KPI-03), and a comparator matches `null` only with `null`.
 | `arpa` | booked MRR ÷ paying customers | no counts, no MRR, or 0 paying |
 | `churn` | `RND-PERCENT` of customers lost against customers at the start (paying − new + lost) | no counts, or none at the start |
 | `cac` | S&M spend ÷ new customers | no counts, or 0 new |
-| `ltv`, `ltv_to_cac`, `cac_payback` | ARPA × gross margin ÷ churn; LTV ÷ CAC; CAC ÷ (ARPA × gross margin), from the exact values | an input undefined, or a divisor 0 |
-| `burn_multiple` | net burn ÷ net new ARR (ARR − the month before's) | the month's net burn not above zero, no MRR, or ARR not grown |
-| `current_ratio`, `quick_ratio` | current assets ÷ current liabilities; (closing cash + the Receivables line's balance) ÷ current liabilities | current liabilities 0 |
+| `ltv`, `ltv_to_cac`, `cac_payback` | ARPA × gross margin ÷ churn; LTV ÷ CAC; CAC ÷ (ARPA × gross margin), from the exact values | an input undefined, or a divisor 0; for `cac_payback`, ARPA × gross margin not above zero |
+| `burn_multiple` | net burn ÷ net new ARR (ARR − the month before's) | the first stated month (none before it), the month's net burn not above zero, no MRR, or ARR not grown |
+| `current_ratio`, `quick_ratio` | current assets ÷ current liabilities; (closing cash + the Receivables line's balance) ÷ current liabilities | current liabilities not above zero |
 | `working_capital`, `debt_to_equity` | current assets − current liabilities; total liabilities ÷ equity | equity not above zero (debt/equity) |
-| `dso`, `dpo` | the Receivables line's balance × 30 ÷ the average revenue; the Payables & accruals line's (credit positive) × 30 ÷ the average costs (cost of sales and operating expenses) | that average 0 |
+| `dso`, `dpo` | the Receivables line's balance × 30 ÷ the average revenue; the Payables & accruals line's (credit positive) × 30 ÷ the average costs (cost of sales and operating expenses) | that average not above zero |
 | `headcount`, `revenue_per_employee` | as entered; revenue × 12 ÷ headcount | not entered, or 0 (per employee) |
 
 Three-month averages take the month and up to two before it, inside its financial year and from the
-first stated month on ("the months of the selected financial year that exist"). The month before the
-first stated month had nothing posted: its revenue and ARR are 0.
+first stated month on ("the months of the selected financial year that exist"). The first stated month is
+the books' first: there is no month before it, so its `revenue_growth` and `burn_multiple` are `null`.
+A line's balance (Receivables, Payables & accruals) is that of the accounts it places, as the statements
+place them.
 
 Readings the PRD and the workbook leave open, each [accountant to confirm] with rev 0.161:
 
@@ -675,6 +704,11 @@ Readings the PRD and the workbook leave open, each [accountant to confirm] with 
 | Spend by function | Every expense account with the function, depreciation included when its account says G&A | The workbook: "totals from each account's function" |
 | The costs DPO averages | Cost of sales and operating expenses (above EBITDA) | What suppliers bill; depreciation, finance costs and tax are not bought on credit |
 | "Not burning" for the burn multiple | The month's own net burn not above zero | The multiple is the month's; runway's "Not burning" is the three-month average's (FR-KPI-03) |
+| A divisor not above zero | DSO and DPO `null` when the three-month average revenue or costs is not above zero; the current and quick ratios `null` when current liabilities are not above zero. *Superseded:* `null` only at exactly zero | The owner's decision (rev 0.161): a negative average or a debit on current liabilities gives no meaningful days or ratio [accountant to confirm] |
+| The month before the first stated month | None: it is the books' first month, so `burn_multiple` is `null` there, as `revenue_growth` already was; the three-month averages are unchanged. *Superseded:* a month before with nothing posted, revenue and ARR 0 | The owner's decision (rev 0.161): a scenario has no opening balances, so nothing before it is known [accountant to confirm] |
+| A subscription-named account whose function is Other | Not subscription revenue: with it the only one, `booked_mrr`, `arr` and `arpa` are `null` | The owner's decision (rev 0.161): booked MRR is revenue, never other income [accountant to confirm] |
+| CAC payback against a margin per account not above zero | `null` when ARPA × gross margin is not above zero, as DSO and DPO. *Superseded:* `null` only at exactly zero (a CAC of 0.00 against −100% gave 0.0) | The owner's decision (rev 0.161): a payback against a negative margin means nothing [accountant to confirm] |
+| A subscription-named group heading | Not subscription revenue: a heading carries no figures, so with it the only one, `booked_mrr`, `arr` and `arpa` are `null` | The owner's decision (rev 0.161): only postable accounts are streams [accountant to confirm] |
 
 ## Commands
 

@@ -194,13 +194,18 @@ func postPayment(p BillPayment, s Settings, role string) (Entry, []Settlement, e
 			}
 		}
 		if b.Clears != nil {
-			if b.Clears.Currency() != s.Base || b.Clears.Sign() <= 0 {
+			if b.Clears.Currency() != s.Base || b.Clears.Sign() < 0 {
 				add(CodePaymentAmount, f("bill"), fmt.Sprintf("the carrying amount left is %s %s", b.Clears, b.Clears.Currency()), fmt.Sprintf("It is a positive amount in %s", s.Base))
 				continue
 			}
 			base, err := rounding.FX(settles, b.StoredRate)
 			if err != nil {
 				add(CodeBaseRange, f("amount"), err.Error(), "Check the amount")
+				continue
+			}
+			// A bill carries nothing only when what is left of it is worth nothing at its rate: its base rounded to zero.
+			if b.Clears.IsZero() && !base.IsZero() {
+				add(CodePaymentAmount, f("bill"), fmt.Sprintf("the carrying amount left is %s %s", b.Clears, b.Clears.Currency()), fmt.Sprintf("It is a positive amount in %s", s.Base))
 				continue
 			}
 			residual, _ := b.Clears.Sub(base)

@@ -164,6 +164,15 @@ func TestTheLastPartOfABillClearsWhatIsLeft(t *testing.T) {
 		settlements(ss) != "b1110 0.02 = 0.03 fx 0.00" {
 		t.Errorf("a last part with nothing left over: %s; %s; %v", legs(s, e), settlements(ss), err)
 	}
+	// USD 0.01 at 0.1 carries S$0.00 (0.001 rounds to nothing): it is paid in full, at 1.0, with S$0.01 of realised FX
+	// to 7030; a carrying amount of zero for a part worth more stays refused (TestPostBillPaymentRefuses).
+	tiny := paid(t, billID, "0.01", usd, usdRate(t, "0.1"))
+	nothing := money.Zero(sgd)
+	tiny.Clears = &nothing
+	if e, ss, err := PostBillPayment(usdPayment(t, wallet, "1", tiny), s); err != nil || legs(s, e) != "2010 0.01 USD = 0.00; 1021 -0.01 USD = -0.01; 7030 0.01 SGD = 0.01" ||
+		settlements(ss) != "b1110 0.01 = 0.00 fx -0.01" {
+		t.Errorf("a bill worth nothing in SGD: %s; %s; %v", legs(s, e), settlements(ss), err)
+	}
 	// USD 0.02 carries S$0.03: what is left may differ from it by S$1.00, not by S$2.99.
 	for clears, ok := range map[string]bool{"1.03": true, "0.02": true, "3.02": false} {
 		part := paid(t, billID, "0.02", usd, stored)

@@ -13,7 +13,11 @@ net burn is not above zero.
 
 Three-month averages take this month and up to two before it, inside the same financial year and on or
 after the first stated month (the workbook: "the months of the selected financial year that exist").
-The month before the first stated month had nothing posted, so its revenue and ARR are 0.
+The first stated month is the books' first: there is no month before it, so its revenue growth and burn
+multiple are undefined (rev 0.161 [accountant to confirm]). A KPI whose divisor is not above zero is
+undefined: DSO and DPO when the average revenue or costs is not above zero, the current and quick ratios
+when current liabilities are not above zero, CAC payback when ARPA × gross margin is not above zero. Booked MRR needs a postable (not group) revenue account, not
+other income, whose report group contains "subscription".
 """
 
 from __future__ import annotations
@@ -24,7 +28,7 @@ from typing import Any
 
 from oracle import money
 from oracle.scenario import Scenario
-from oracle.statements import is_balance_sheet
+from oracle.statements import balance_sheet_section, is_balance_sheet
 
 NOT_BURNING = "not-burning"
 FUNCTIONS = ("R&D", "S&M", "G&A")
@@ -64,26 +68,30 @@ class Kpis:
         self.minor = scenario.currencies[scenario.base_currency]
         self.statements: dict[str, dict[str, Any]] = result["statements"]
         self.trial_balance: dict[str, dict[str, str]] = result["trial_balance"]
-        # Booked MRR: the revenue (not other income) of accounts whose report group names a subscription stream.
+        # Booked MRR: the revenue (not other income) of postable accounts whose report group names a subscription
+        # stream; a group heading carries no figures (rev 0.161).
         self.subscription = [
             a.code for a in self.accounts.values()
-            if a.type == "revenue" and a.function != "Other" and "subscription" in (a.report_group or "").lower()
+            if a.type == "revenue" and not a.group and a.function != "Other"
+            and "subscription" in (a.report_group or "").lower()
         ]
 
     def _amount(self, value: Fraction | None) -> str | None:
         return None if value is None else _round(value, self.minor)
 
     def _line(self, balance: dict[str, Fraction], line: str) -> Fraction:
-        """The balance of the accounts on a cash-flow line, debit positive."""
+        """The balance of the accounts the line places (on its own side, as the statements place them), debit
+        positive."""
         return sum((v for code, v in balance.items()
                     if is_balance_sheet(self.accounts[code]) and self.accounts[code].role != "retained-earnings"
-                    and self.accounts[code].cash_flow_line == line), Fraction(0))
+                    and self.accounts[code].cash_flow_line == line
+                    and balance_sheet_section(self.accounts[code]) is not None), Fraction(0))
 
     def compute(self) -> dict[str, dict[str, Any]]:
         months = list(self.statements)
         balance: dict[str, Fraction] = {}
         seen: dict[str, dict[str, Fraction]] = {}  # each earlier month's revenue, costs and net burn
-        previous = {"revenue": Fraction(0), "mrr": Fraction(0) if self.subscription else None}
+        previous: dict[str, Fraction | None] | None = None  # the first stated month has none before it
         result = {}
         for month in months:
             s = self.statements[month]
@@ -121,13 +129,16 @@ class Kpis:
             churn = Fraction(lost, opening_customers) if customers and opening_customers > 0 else None
             cac = _ratio(spend["S&M"], Fraction(new)) if customers else None
             ltv = None if arpa is None or margin is None else _ratio(arpa * margin, churn)
-            payback = None if arpa is None or margin is None else _ratio(cac, arpa * margin)
+            # A payback against a margin per account not above zero means nothing: undefined (rev 0.161).
+            payback = None if arpa is None or margin is None or arpa * margin <= 0 else _ratio(cac, arpa * margin)
             arr = None if mrr is None else mrr * 12
-            net_new_arr = None if arr is None or previous["mrr"] is None else arr - previous["mrr"] * 12
+            before_mrr = None if previous is None else previous["mrr"]
+            net_new_arr = None if arr is None or before_mrr is None else arr - before_mrr * 12
             multiple = _ratio(burn, net_new_arr) if burn > 0 and net_new_arr is not None and net_new_arr > 0 else None
 
             current_assets = Fraction(_d(bs["current_assets"]["total"]))
             current_liabilities = Fraction(_d(bs["current_liabilities"]["total"]))
+            owing = current_liabilities if current_liabilities > 0 else None  # a divisor not above zero: undefined
             equity = Fraction(_d(bs["equity"]["total"]))
             receivables = self._line(balance, "Receivables")
             payables = -self._line(balance, "Payables & accruals")
@@ -139,7 +150,8 @@ class Kpis:
                 "booked_mrr": self._amount(mrr),
                 "arr": self._amount(arr),
                 "contracted_mrr": None,
-                "revenue_growth": _percent(revenue - previous["revenue"], previous["revenue"]),
+                "revenue_growth": None if previous is None else _percent(revenue - previous["revenue"],
+                                                                          previous["revenue"]),
                 "gross_margin": _percent(gross, revenue),
                 "spend_by_function": {f: _round(spend[f], self.minor) for f in FUNCTIONS},
                 "net_burn": _round(burn, self.minor),
@@ -151,12 +163,12 @@ class Kpis:
                 "ltv_to_cac": self._one(_ratio(ltv, cac)),
                 "cac_payback": self._one(payback),
                 "burn_multiple": self._one(multiple),
-                "current_ratio": self._one(_ratio(current_assets, current_liabilities)),
-                "quick_ratio": self._one(_ratio(cash + receivables, current_liabilities)),
+                "current_ratio": self._one(_ratio(current_assets, owing)) if owing is not None else None,
+                "quick_ratio": self._one(_ratio(cash + receivables, owing)) if owing is not None else None,
                 "working_capital": _round(current_assets - current_liabilities, self.minor),
                 "debt_to_equity": self._one(_ratio(Fraction(_d(bs["total_liabilities"])), equity)) if equity > 0 else None,
-                "dso": self._one(_ratio(receivables * 30 * n, revenue_total)),
-                "dpo": self._one(_ratio(payables * 30 * n, costs_total)),
+                "dso": self._one(_ratio(receivables * 30 * n, revenue_total)) if revenue_total > 0 else None,
+                "dpo": self._one(_ratio(payables * 30 * n, costs_total)) if costs_total > 0 else None,
                 "ebitda_margin": _percent(Fraction(_d(pl["ebitda"])), revenue),
                 "net_margin": _percent(Fraction(_d(pl["net_profit"])), revenue),
                 "headcount": None if headcount is None else str(headcount),

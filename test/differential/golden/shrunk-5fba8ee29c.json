@@ -1,0 +1,349 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "shrunk-5fba8ee29c",
+ "base_currency": "SGD",
+ "currencies": {
+  "SGD": 2,
+  "USD": 2,
+  "JPY": 0,
+  "KWD": 3
+ },
+ "as_of": "2025-06-01",
+ "settings": {
+  "accounts": {
+   "receivable": "1100",
+   "payable": "2010",
+   "gst": "2200",
+   "prepayments": "1210",
+   "deferred_revenue": "2400",
+   "fx": "7030",
+   "bank_charges": "6460",
+   "withholding_tax": "2330",
+   "customer_deposits": "2410",
+   "claims_payable": "2150",
+   "advances": "1250",
+   "depreciation": "6610",
+   "accumulated_depreciation": "1590",
+   "disposal": "7050",
+   "disposal_clearing": "1160"
+  },
+  "money_accounts": {
+   "1010": "SGD",
+   "1011": "SGD",
+   "1021": "USD",
+   "1022": "JPY",
+   "1023": "KWD"
+  },
+  "gst": {
+   "rates": [
+    {
+     "from": "2023-01-01",
+     "percent": "8"
+    },
+    {
+     "from": "2024-01-01",
+     "percent": "9"
+    }
+   ],
+   "registered_from": "2020-01-01"
+  },
+  "mileage_rates": [
+   {
+    "vehicle": "car",
+    "from": "2020-01-01",
+    "rate": "0.60"
+   },
+   {
+    "vehicle": "motorcycle",
+    "from": "2020-01-01",
+    "rate": "0.25"
+   }
+  ]
+ },
+ "accounts": [
+  {
+   "code": "1010",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1011",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1021",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1022",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1023",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1100",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1160",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1210",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1250",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1500",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1510",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1590",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2010",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2050",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2150",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2200",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2330",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2400",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2410",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2999",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "4010",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "4020",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "4030",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6010",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6020",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6110",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6460",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "7030",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6610",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "7050",
+   "type": "expense",
+   "group": false,
+   "active": true
+  }
+ ],
+ "documents": [
+  {
+   "type": "bank_transaction",
+   "id": "P1-0001",
+   "version": 1,
+   "date": "2025-06-01",
+   "account": "1010",
+   "currency": "SGD",
+   "amount": "0.01",
+   "parts": [
+    {
+     "account": "4010",
+     "amount": "0.01",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "bank_transaction",
+   "id": "P1-0002",
+   "version": 1,
+   "date": "2025-06-01",
+   "account": "1010",
+   "currency": "SGD",
+   "amount": "0.01",
+   "parts": [
+    {
+     "account": "4010",
+     "amount": "0.01",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "bank_transaction",
+   "id": "P1-0003",
+   "version": 1,
+   "date": "2025-06-01",
+   "account": "1010",
+   "currency": "SGD",
+   "amount": "0.01",
+   "parts": [
+    {
+     "account": "4010",
+     "amount": "0.01",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "bank_transaction",
+   "id": "P1-0004",
+   "version": 1,
+   "date": "2025-06-01",
+   "account": "1010",
+   "currency": "SGD",
+   "amount": "0.01",
+   "parts": [
+    {
+     "account": "4010",
+     "amount": "0.01",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "bank_transaction",
+   "id": "P1-0005",
+   "version": 1,
+   "date": "2025-06-01",
+   "account": "1010",
+   "currency": "SGD",
+   "amount": "0.01",
+   "parts": [
+    {
+     "account": "4010",
+     "amount": "0.01",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "expense_claim",
+   "id": "P1-0006",
+   "version": 1,
+   "date": "2025-06-01",
+   "currency": "USD",
+   "lines": [
+    {
+     "account": "6010",
+     "amount": "0.01",
+     "gst_code": "TX"
+    },
+    {
+     "account": "6010",
+     "amount": "0.01",
+     "gst_code": "TX"
+    }
+   ],
+   "fx_rate": "0.1",
+   "fx_rate_source": "document"
+  }
+ ],
+ "reversals": []
+}
