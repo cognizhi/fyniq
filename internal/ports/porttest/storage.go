@@ -143,6 +143,32 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 			return err
 		})
 		wantCode(t, err, storage.CodeUnbalanced)
+		// ENG-23: the refusal says what does not balance in plain words, without the entry's internal ID.
+		var se *storage.Error
+		if !errors.As(err, &se) || !strings.HasPrefix(se.Message, "the entry does not balance") || se.Hint == "" {
+			t.Fatalf("the refusal reads %v", err)
+		}
+	})
+
+	// req: INV-05
+	// req: ENG-23
+	t.Run("a posting that takes a period's balance past NUMERIC(20,4) is refused in plain words", func(t *testing.T) {
+		b := books(t)
+		post := func(e storage.NewEntry) error {
+			return s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				_, err := u.Ledger().Append(ctx, e)
+				return err
+			})
+		}
+		if err := post(Sale("near-the-limit", Day(10, 14), b, "9999999999999999.99")); err != nil {
+			t.Fatal(err)
+		}
+		err := post(Sale("past-the-limit", Day(10, 15), b, "0.01"))
+		wantCode(t, err, storage.CodeAmount)
+		var se *storage.Error
+		if !errors.As(err, &se) || !strings.Contains(se.Message, "more than 16 digits") {
+			t.Fatalf("the refusal reads %v", err)
+		}
 	})
 
 	// req: FR-INT-14

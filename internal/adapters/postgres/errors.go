@@ -3,6 +3,8 @@ package postgres
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgconn"
 
@@ -363,6 +365,9 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"access_review_attestation_after_its_quarter": {storage.CodeAccessReview, "a quarter's access review is attested only once the quarter has ended"},
 }
 
+// entryID is how the database names an entry in INV-01's refusals ("Journal entry <id> does not balance").
+var entryID = regexp.MustCompile(`^Journal entry \S+ `)
+
 // mapError turns database errors into storage errors with stable codes (ENG-23) and "no rows" into
 // ports.ErrNotFound. Errors it does not recognise keep their text behind STORAGE-FAILURE-01.
 func mapError(err error) error {
@@ -380,8 +385,20 @@ func mapError(err error) error {
 	if !errors.As(err, &pg) {
 		return &storage.Error{Code: storage.CodeStorageFailure, Message: err.Error(), Err: err}
 	}
+	if pg.Code == "FY001" { // INV-01, said without the entry's internal ID (ENG-23)
+		return &storage.Error{Code: storage.CodeUnbalanced, Message: entryID.ReplaceAllString(pg.Message, "the entry "),
+			Hint: "Debits and credits must be equal (INV-01). An amount in another currency must be worth at least a cent in " +
+				"the base currency at its rate, or its lines may round to nothing", Err: err}
+	}
 	if code, ok := fyCodes[pg.Code]; ok {
 		return &storage.Error{Code: code, Message: pg.Message, Hint: pg.Hint, Err: err}
+	}
+	// A period's balance is NUMERIC(20,4) too (§11.3): a posting that would take one past 16 digits before the decimal
+	// point is refused whole, never truncated, by the trigger that keeps the balances (INV-08).
+	if pg.Code == "22003" && strings.Contains(pg.Where, "journal_line_balances") {
+		return &storage.Error{Code: storage.CodeAmount,
+			Message: "an account's balance for the period would have more than 16 digits before the decimal point, more than the books hold",
+			Hint:    "Check the amounts: one this large is almost always a typing error", Err: err}
 	}
 	if c, ok := constraintCodes[pg.ConstraintName]; ok {
 		return &storage.Error{Code: c.code, Message: c.message, Err: err}
