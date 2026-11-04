@@ -32,6 +32,13 @@ Source: PRD-001 §8.12 · Priority M · Phase P1
 - **THEN** the P&L runs from revenue by report group through cost of sales (function COGS), gross profit, operating expenses without depreciation and amortisation, EBITDA, depreciation and amortisation, operating profit, other income and finance costs, profit before tax and income tax to net profit
 - **AND** the balance sheet groups current and non-current items by report group with borrowings apart, and the indirect cash flow ties to the money accounts with non-cash transactions listed apart [accountant to confirm]
 
+#### Scenario: The checks and the placements (rev 0.170)
+- **WHEN** the statements are produced
+- **THEN** the balance check compares total assets with total liabilities and equity, so an account placed on neither side breaks it and is named, while the cash flow keeps that account's movement in operating, under other accounts, and still ties to the money accounts
+- **AND** a cash-flow line places an account only on its own side of the balance sheet
+- **AND** the depreciation account (the chart's role, else the settings' account) and every expense account in its report group are depreciation and amortisation, below EBITDA, whatever their function
+- **AND** the movement in equity covers the balance sheet's equity section [accountant to confirm]
+
 ### Requirement: FR-RPT-02 Periods, comparatives and columns
 Reports SHALL run for any period, with comparatives and with columns by month or by dimension.
 
