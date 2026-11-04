@@ -105,7 +105,7 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   - Tests: post to suspense, classify, the 2999 balance back to zero, history intact. `// req: FR-BNK-11`
   - As built: `BankTransactions.Suspend` posts the whole line to the account with the role suspense; the close's ⚠
     while 2999 is not at nothing is task 6.2.
-- [ ] 4.6 The independent oracle: the bank line, spread and transfer rules (with D6's cross-currency rule once the
+- [x] 4.6 The independent oracle: the bank line, spread and transfer rules (with D6's cross-currency rule once the
   accountant confirms it) from Appendix B.1, with scenario shapes and golden cases, in a session of its own (never
   from a build session).
   - Verified by `make oracle-test` and `make differential` agreeing to the cent. `// req: QA-ENG-01`,
@@ -117,9 +117,9 @@ before any code that parses bank files or touches connector secrets (SEC-20).
     `oracle/src/oracle/sources/bank.py`. The scenario shapes, `settings`, `as_of` and the canonical form of
     a P1 entry are in `test/differential/README.md` ("P1 sources", with the readings the PRD leaves open).
     Hand-worked tests are in `oracle/tests/test_bank.py`, the generator kinds in `strategies_p1.py`, and
-    `test/differential/pending/bank.json` holds the golden case. **Left:** the differential, once 4.8 lets
-    the engine read the shapes.
-- [ ] 4.8 (engine session) `cmd/scenario-run` reads the `bank_transaction` and `bank_transfer` shapes of
+    `test/differential/pending/bank.json` holds the golden case. 4 Nov 2026: the differential agrees, now
+    that 4.8 lets the engine read the shapes.
+- [x] 4.8 (engine session) `cmd/scenario-run` reads the `bank_transaction` and `bank_transfer` shapes of
   `fyniq-scenario@1` with `settings` and `as_of`, posts them through `bank_transaction@1`, its releases and
   `bank_transfer@1`, and writes P1 entries in their canonical form (`test/differential/README.md`, "P1
   sources"); then `test/differential/pending/bank.json` moves to `golden/` and `bank` joins
@@ -127,6 +127,13 @@ before any code that parses bank files or touches connector secrets (SEC-20).
   - Verified by `make test` and `make differential` agreeing to the cent; a disagreement is settled from the
     PRD ("P1 readings", decided in PRD-001 rev 0.155), an oracle bug fixed from the PRD and an engine bug handed back as a failing golden
     case. `// req: QA-ENG-02`
+  - 4 Nov 2026, the engine session: `internal/differential/p1.go` gives the chart the settings' system roles and
+    money accounts, decides each part's GST rate as the bank service does (the sg-gst codes; the scenario's own
+    rates and registration standing in for the pack), posts through `PostBankTransaction`,
+    `BankTransactionReleases` and `PostBankTransfer`, and writes canonical entries, the releases up to `as_of`
+    after every document; `ParseScenario` refuses what the README calls invalid for P1. `golden/bank.json`
+    agrees to the cent in `make test`, and `make differential` drew 1,000 scenarios with `bank` (the Makefile's
+    `DIFFERENTIAL_SOURCES`) with no disagreement.
 
 - [ ] 4.7 Dimensions on a bank transaction's parts and in a rule's action, once FR-DIM is built
   (`p1-organisation-chart` task 3.3), as on bill and invoice lines.

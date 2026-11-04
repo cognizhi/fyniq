@@ -8,6 +8,7 @@ package differential
 import (
 	"cmp"
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"time"
@@ -33,7 +34,14 @@ type Scenario struct {
 	Currencies   map[string]int `json:"currencies"`
 	Accounts     []Account      `json:"accounts"`
 	// People are the directors and shareholders a line on a director's account may name (FR-EQ-01).
-	People    []string   `json:"people,omitempty"`
+	People []string `json:"people,omitempty"`
+	// Statements and KPIs ask for the statements and the KPIs (README, "Statements" and "KPIs").
+	Statements bool            `json:"statements,omitempty"`
+	KPIs       json.RawMessage `json:"kpis,omitempty"`
+	// AsOf is the business date and Settings the organisation's settings, which a scenario with a P1 document has
+	// (README, "Settings and as_of").
+	AsOf      string     `json:"as_of,omitempty"`
+	Settings  *Settings  `json:"settings,omitempty"`
 	Documents []Document `json:"documents"`
 	Reversals []Reversal `json:"reversals"`
 }
@@ -49,7 +57,7 @@ type Account struct {
 	Role   string `json:"role,omitempty"`
 }
 
-// Document is one manual journal version.
+// Document is one document version: a manual journal, or a P1 source's document, whose own shape Raw holds.
 type Document struct {
 	Type    string `json:"type"`
 	ID      string `json:"id"`
@@ -57,6 +65,33 @@ type Document struct {
 	Date    string `json:"date"`
 	Memo    string `json:"memo"`
 	Lines   []Line `json:"lines"`
+	// Raw is a P1 document as written, which its source reads its own shape from (README, "P1 sources").
+	Raw json.RawMessage `json:"-"`
+}
+
+// UnmarshalJSON reads a manual journal into the fields above; a P1 document fills only its type, ID, version and date
+// and keeps the rest as written in Raw, since its lines have shapes of their own.
+func (d *Document) UnmarshalJSON(b []byte) error {
+	var head struct {
+		Type    string `json:"type"`
+		ID      string `json:"id"`
+		Version int    `json:"version"`
+		Date    string `json:"date"`
+	}
+	if err := json.Unmarshal(b, &head); err != nil {
+		return err
+	}
+	if head.Type == ledger.SourceManualJournal {
+		type plain Document
+		var p plain
+		if err := json.Unmarshal(b, &p); err != nil {
+			return err
+		}
+		*d = Document(p)
+		return nil
+	}
+	*d = Document{Type: head.Type, ID: head.ID, Version: head.Version, Date: head.Date, Raw: slices.Clone(b)}
+	return nil
 }
 
 // Line is one journal line: a signed amount, and a rate when not in the base currency.
@@ -110,7 +145,8 @@ func stableID(kind, name string) uuid.UUID {
 }
 
 // RunEngine posts a scenario through the Go engine (package ledger), with no database: the same
-// pure functions the journal service calls. A document the rules refuse goes to Rejected.
+// pure functions the journal service and the P1 sources' services call. A document the rules refuse
+// goes to Rejected. The scheduler's entries (a spread's releases) follow every document and reversal.
 func RunEngine(s Scenario) (Result, error) {
 	if s.Schema != ScenarioSchema {
 		return Result{}, fmt.Errorf("scenario %q has schema %q; want %q", s.Name, s.Schema, ScenarioSchema)
@@ -133,24 +169,34 @@ func RunEngine(s Scenario) (Result, error) {
 	for _, a := range s.Accounts {
 		id := stableID("account", a.Code)
 		settings.Accounts[id] = ledger.Account{ID: id, Code: a.Code, Group: a.Group, Active: a.Active, ShareCapital: a.Role == "share-capital",
-			Role: a.Role}
+			Role: a.Role, Type: a.Type}
 		codeOf[id] = a.Code
 	}
 	for _, p := range s.People {
 		id := stableID("party", p)
 		settings.People[id], personOf[id] = true, p
 	}
+	applySettings(s, settings)
+	sources, err := newP1(s, base, settings)
+	if err != nil {
+		return Result{}, fmt.Errorf("scenario %q: %w", s.Name, err)
+	}
 
 	res := Result{Schema: ResultSchema, Name: s.Name, Entries: []Entry{}, Rejected: []string{}, TrialBalance: map[string]map[string]string{}}
 	totals := map[string]map[string]money.Money{}
 	people := map[string]map[string]money.Money{}
-	record := func(doc, kind string, e ledger.Entry) {
+	// record writes an entry: a manual journal's lines as entered, any other in canonical form (README, "P1 entries").
+	record := func(doc, kind string, e ledger.Entry, p1 bool) {
 		out := Entry{Document: doc, Kind: kind, PostingDate: e.PostingDate.Format(time.DateOnly)}
 		month := e.PostingDate.Format("2006-01")
 		if totals[month] == nil {
 			totals[month] = map[string]money.Money{}
 		}
-		for _, l := range e.Lines {
+		lines := e.Lines
+		if p1 {
+			lines = canonical(lines, codeOf, base)
+		}
+		for _, l := range lines {
 			code := codeOf[l.AccountID]
 			line := EntryLine{Account: code, Currency: l.Amount.Currency().Code, Amount: l.Amount.String(), BaseAmount: l.Base.String()}
 			if l.Party != uuid.Nil {
@@ -175,9 +221,18 @@ func RunEngine(s Scenario) (Result, error) {
 	}
 
 	posted := map[string]ledger.Entry{}
-	for _, d := range s.Documents {
+	for i, d := range s.Documents {
+		if d.Type != ledger.SourceManualJournal {
+			e, ok := sources.post(i, d)
+			if !ok {
+				res.Rejected = append(res.Rejected, d.ID)
+				continue
+			}
+			record(d.ID, "post", e, true)
+			continue
+		}
 		j, ok := journalOf(d, base, s.Currencies)
-		if !ok || d.Type != "manual_journal" {
+		if !ok {
 			res.Rejected = append(res.Rejected, d.ID)
 			continue
 		}
@@ -187,7 +242,7 @@ func RunEngine(s Scenario) (Result, error) {
 			continue
 		}
 		posted[d.ID] = e
-		record(d.ID, "post", e)
+		record(d.ID, "post", e, false)
 	}
 	for _, r := range s.Reversals {
 		e, ok := posted[r.Document]
@@ -202,7 +257,10 @@ func RunEngine(s Scenario) (Result, error) {
 			continue
 		}
 		delete(posted, r.Document) // a document is reversed once
-		record(r.Document, "reversal", rev)
+		record(r.Document, "reversal", rev, false)
+	}
+	for _, x := range sources.scheduledEntries() {
+		record(x.doc, x.kind, x.entry, true)
 	}
 	for month, accounts := range totals {
 		res.TrialBalance[month] = map[string]string{}
