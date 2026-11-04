@@ -760,6 +760,11 @@ Source: PRD-001 §B.6
 - **WHEN** a line is coded NA
 - **THEN** it has no direction and is not reported
 
+#### Scenario: Each document takes the codes of its direction (rev 0.169)
+- **WHEN** a bill, vendor credit or claim receipt line takes a supply code or NA, or an invoice, credit note, part-payment deposit or disposal's proceeds a purchase code or NA
+- **THEN** the line is refused, and the document with it
+- **AND** a bank line's part takes any code, its GST following the code
+
 ### Requirement: Founders' balances by person
 All amounts on 2500 and 2120 SHALL carry the person as a sub-ledger key (FR-EQ-01).
 
