@@ -4,14 +4,14 @@ type: task
 title: Keep the fixed asset register
 summary: How an Accountant registers assets from purchases or opening balances, how depreciation posts monthly, and how to sell, write off or void
 sources:
-  - docs/user-guide/fixed-assets.md sha256:674c2c5cc59b90577b72635976083c828934d61f18878c23e365b40d28dc0066
+  - docs/user-guide/fixed-assets.md sha256:a0f469d1f6c91868c1f6269970b4d2a7525f520ece02f9f486a17885c7085dcb
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-27
+compiled_at: 2026-11-04
 aliases:
   - fixed asset
   - asset register
@@ -65,7 +65,7 @@ aliases:
 
 ## Sell or write off an asset
 
-- **Sell or write off**: the whole asset or part of its cost (its depreciation goes with it in proportion, the rest depreciates on), and the proceeds: money received with its GST code when GST-registered (usually SR), a sales invoice through the disposal clearing account (1160 Asset disposal clearing in the standard chart), or none for a write-off.
+- **Sell or write off**: the whole asset or part of its cost (its depreciation goes with it in proportion, the rest depreciates on), and the proceeds: money received with its GST code when GST-registered (usually SR; a code given is always one for supplies, SR, ZR, ES or OS), a sales invoice through the disposal clearing account (1160 Asset disposal clearing in the standard chart), or none for a write-off.
 - **Check** shows the gain or loss and the entry before anything is saved; **Record** posts it, the gain or loss to 7050 Gain / (loss) on disposal of assets.
 - Every month before the disposal's month must have posted; one recorded late reverses its own month's depreciation.
 
