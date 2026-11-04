@@ -132,10 +132,12 @@ def _divisor_decimals(a: int) -> int:
 @dataclass(frozen=True)
 class Intent:
     """What the generator meant for each document: ``post``, ``reject`` or ``open``; and, for a P1 source that
-    records it, the kind each document was built as (``kinds``)."""
+    records it, the kind each document was built as (``kinds``). ``corrections``: for the general ledger's source,
+    each item of ``reversals`` in order, as (its key in ``rejected``, what it was meant to do, the kind built)."""
 
     documents: dict[str, str]
     kinds: dict[str, str] = field(default_factory=dict)
+    corrections: tuple[tuple[str, str, str], ...] = ()
 
 
 @dataclass

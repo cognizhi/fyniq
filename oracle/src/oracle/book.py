@@ -26,7 +26,7 @@ class PostedLine:
 @dataclass(frozen=True)
 class Entry:
     document: str
-    kind: str  # "post", "reversal", "release" or "depreciation"
+    kind: str  # "post", "reversal", "replacement" (an edit's), "release", "depreciation" or "auto_reversal"
     posting_date: date
     lines: tuple[PostedLine, ...]
 

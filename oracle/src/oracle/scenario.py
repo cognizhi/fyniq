@@ -10,10 +10,13 @@ base currency missing from ``currencies``) is a :class:`ScenarioError`: the scen
 input and nothing is computed. A problem with a *document's content* (an amount, a rate, a currency
 code, an account, the balance) is not an error here: the ledger rejects that document.
 
-Manual journals are read into :class:`Document`; every other document type (the P1 sources) into
-:class:`Source`, which keeps its JSON object for its rule set to read. A scenario with a P1 source
-needs ``settings`` and an ``as_of`` date on or after every document and reversal (README, "P1
-sources").
+Manual journals and the opening balances are read into :class:`Document`; every other document type
+(the P1 sources) into :class:`Source`, which keeps its JSON object for its rule set to read. A scenario
+with a P1 source or the opening balances needs ``settings`` and an ``as_of`` date on or after every
+document, reversal and edit (README, "P1 sources"); one with the opening balances needs the books' start
+too, which is their date; one with a journal that reverses by itself needs ``as_of`` (README, "Opening
+balances, automatic reversals and edits"). ``reversals`` holds the corrections of posted journals in the
+order they are made: a :class:`Reversal` (a void) or an :class:`Edit` (the next version).
 """
 
 from __future__ import annotations
@@ -86,11 +89,15 @@ class Line:
 
 @dataclass(frozen=True)
 class Document:
+    """A manual journal, or the opening balances (``type`` ``opening_balances``, FR-GL-06): lines as entered."""
+
     id: str
     version: int
     date: date
     memo: str
     lines: tuple[Line, ...]
+    reverse_on: date | None = None  # a journal's automatic reversal date (FR-GL-02, JOURNAL-11)
+    type: str = "manual_journal"
 
 
 @dataclass(frozen=True)
@@ -108,6 +115,18 @@ class Source:
 class Reversal:
     document: str
     date: date
+
+
+@dataclass(frozen=True)
+class Edit:
+    """The next version of a posted manual journal or of the opening balances (FR-GL-12, FR-GL-06 rev 0.66)."""
+
+    document: str
+    version: int
+    date: date
+    memo: str
+    lines: tuple[Line, ...]
+    reverse_on: date | None = None
 
 
 @dataclass(frozen=True)
@@ -153,7 +172,7 @@ class Scenario:
     currencies: dict[str, int]
     accounts: dict[str, Account]
     documents: tuple[Document | Source, ...]
-    reversals: tuple[Reversal, ...]
+    reversals: tuple[Reversal | Edit, ...]  # the corrections, in the order they are made
     as_of: date | None = None
     settings: Settings | None = None
     statements: bool = False
@@ -335,56 +354,94 @@ def scenario_from_json(data: Any) -> Scenario:
         if raw["id"] in seen:
             raise ScenarioError(f"documents/{i}: the id {raw['id']!r} appears twice")
         seen.add(raw["id"])
-        if raw["type"] != "manual_journal":
+        if raw["type"] not in ("manual_journal", "opening_balances"):
             _dates_in(raw, f"documents/{i}")
             documents.append(Source(raw["type"], raw["id"], raw["version"], date.fromisoformat(raw["date"]),
                                     _frozen(raw)))
             continue
-        lines = tuple(
-            Line(
-                account=ln["account"],
-                currency=ln["currency"],
-                amount=ln["amount"],
-                fx_rate=ln.get("fx_rate"),
-                fx_rate_source=ln.get("fx_rate_source"),
-                party=ln.get("party"),
-                origin=ln.get("origin"),
-            )
-            for ln in raw["lines"]
-        )
-        documents.append(
-            Document(raw["id"], raw["version"], _date(raw["date"], f"documents/{i}/date"), raw["memo"], lines)
-        )
+        reverse_on = _date(raw["reverse_on"], f"documents/{i}/reverse_on") if "reverse_on" in raw else None
+        documents.append(Document(raw["id"], raw["version"], _date(raw["date"], f"documents/{i}/date"), raw["memo"],
+                                  _lines(raw["lines"]), reverse_on, raw["type"]))
 
-    reversals = tuple(
-        Reversal(raw["document"], _date(raw["date"], f"reversals/{i}/date"))
-        for i, raw in enumerate(data["reversals"])
-    )
+    reversals: list[Reversal | Edit] = []
+    for i, raw in enumerate(data["reversals"]):
+        if "edit" not in raw:
+            reversals.append(Reversal(raw["document"], _date(raw["date"], f"reversals/{i}/date")))
+            continue
+        content = raw["edit"]
+        reverse_on = _date(content["reverse_on"], f"reversals/{i}/edit/reverse_on") if "reverse_on" in content else None
+        reversals.append(Edit(raw["document"], content["version"], _date(content["date"], f"reversals/{i}/edit/date"),
+                              content["memo"], _lines(content["lines"]), reverse_on))
 
     as_of = _date(data["as_of"], "as_of") if "as_of" in data else None
     settings = _settings(data["settings"], accounts, currencies) if "settings" in data else None
-    sources = [d for d in documents if isinstance(d, Source)]
-    if sources:
-        # README, "P1 sources": the rule sets read the settings, and "today" (ENG-05) is as_of.
-        if settings is None:
-            raise ScenarioError(f"documents: {sources[0].id} is a {sources[0].type}, which needs settings")
-        if as_of is None:
-            raise ScenarioError(f"documents: {sources[0].id} is a {sources[0].type}, which needs as_of")
+    # README, "P1 sources": the rule sets read the settings, and "today" (ENG-05) is as_of. The opening balances
+    # read the books' start, and an automatic reversal posts once its date is on or before as_of (FR-GL-02).
+    sources = [d for d in documents if d.type != "manual_journal"]
+    openings = [d for d in documents if d.type == "opening_balances"]
+    reversing = [d for d in (*documents, *reversals) if getattr(d, "reverse_on", None) is not None]
+    if sources and settings is None:
+        raise ScenarioError(f"documents: {sources[0].id} is a {sources[0].type}, which needs settings")
+    if (sources or reversing) and as_of is None:
+        first = sources[0] if sources else reversing[0]
+        what = f"is a {first.type}" if sources else "reverses by itself"
+        raise ScenarioError(f"documents: {getattr(first, 'id', None) or first.document} {what}, which needs as_of")
+    if as_of is not None and (sources or reversing):
         for item in (*documents, *reversals):
             if item.date > as_of:
                 raise ScenarioError(f"as_of: {as_of} is before {item.date.isoformat()}, a date in the scenario")
-        types = {d.id: d.type for d in sources}
-        for i, reversal in enumerate(reversals):
-            if reversal.document in types:
-                raise ScenarioError(
-                    f"reversals/{i}: {reversal.document} is a {types[reversal.document]}; a reversal names a "
-                    "manual journal (voids of P1 documents are not in the format yet)"
-                )
+    if len(openings) > 1:
+        raise ScenarioError(f"documents: {openings[0].id} and {openings[1].id} are both opening balances; the "
+                            "organisation has one set (FR-GL-06)")
+    if openings:
+        assert settings is not None
+        if settings.books_start is None:
+            raise ScenarioError(f"documents: {openings[0].id} is the opening balances, which need settings/books_start")
+        if statements:
+            raise ScenarioError("statements: the statements of a scenario with opening balances are not in the format yet")
+    types = {d.id: d.type for d in sources}
+    for i, item in enumerate(reversals):
+        kind = types.get(item.document)
+        if kind is None:
+            continue
+        if isinstance(item, Reversal):
+            raise ScenarioError(
+                f"reversals/{i}: {item.document} is a {kind}; a reversal names a manual journal (voids of other "
+                "documents are not in the format yet)"
+            )
+        if kind != "opening_balances":
+            raise ScenarioError(f"reversals/{i}: {item.document} is a {kind}; an edit names a manual journal or the "
+                                "opening balances (edits of other documents are not in the format yet)")
+        if item.reverse_on is not None:
+            raise ScenarioError(f"reversals/{i}/edit: the opening balances do not reverse by themselves")
+    if settings is not None and openings:
+        dated = [(f"documents/{documents.index(d)}", d.date) for d in openings]
+        dated += [(f"reversals/{i}/edit", e.date) for i, e in enumerate(reversals)
+                  if isinstance(e, Edit) and types.get(e.document) == "opening_balances"]
+        for where, day in dated:
+            if day != settings.books_start:
+                raise ScenarioError(f"{where}/date: the opening balances are dated the books' start, "
+                                    f"{settings.books_start.isoformat()}, not {day.isoformat()}")
     people = frozenset(data.get("people", ()))
     for i, person in enumerate(data.get("people", ())):
         _shape(_DOCUMENT_ID, person, f"people/{i}")
-    return Scenario(data["name"], base, currencies, accounts, tuple(documents), reversals, as_of, settings, statements,
-                    kpis, people)
+    return Scenario(data["name"], base, currencies, accounts, tuple(documents), tuple(reversals), as_of, settings,
+                    statements, kpis, people)
+
+
+def _lines(raw: Any) -> tuple[Line, ...]:
+    return tuple(
+        Line(
+            account=ln["account"],
+            currency=ln["currency"],
+            amount=ln["amount"],
+            fx_rate=ln.get("fx_rate"),
+            fx_rate_source=ln.get("fx_rate_source"),
+            party=ln.get("party"),
+            origin=ln.get("origin"),
+        )
+        for ln in raw
+    )
 
 
 def load_scenario(path: str | Path) -> Scenario:

@@ -44,6 +44,21 @@ source schedules (a spread's releases, an asset's depreciation) posts after ever
 reversal, when dated on or before ``as_of`` (ENG-05: up to "today", never the future), one entry per
 document, kind and date; a later document may end a schedule (a disposal ends its asset's).
 
+From P1 the general ledger posts three more shapes (README, "Opening balances, automatic reversals and
+edits"), written from FR-GL-02, FR-GL-06, FR-GL-12, §10.2 and INV-13:
+
+- **The opening balances** (FR-GL-06 rev 0.49): one document, posted as entered at the books' start when
+  it meets the manual journal's rules with two differences: every line is in the base currency (LEDGER-17),
+  and share capital may take a line (INV-13: the register of share issues and the opening balances are the
+  two sources that reach it). Its entry is in the canonical form of a P1 entry.
+- **Automatic reversals** (FR-GL-02 rev 0.55): a journal may carry ``reverse_on``, after its own date or the
+  journal is refused (JOURNAL-11). Once it posts and is still not reversed, the scheduler reverses its
+  current entry on that day, when it is on or before ``as_of``, with the other scheduled entries.
+- **Edits** (FR-GL-12 rev 0.54 and 0.58; FR-GL-06 rev 0.66): the next version of a posted, unreversed journal
+  (or of the opening balances), which reverses the entry the journal has on that entry's own date and posts
+  the new version's entry on its date, both or neither. An edit of a journal never posted or reversed, a
+  version that does not follow, or content the rules refuse is refused and changes nothing.
+
 A scenario with ``"statements": true`` also gets every month's financial statements, read from the
 posted entries by :mod:`oracle.statements` (FR-RPT-01), and one with ``kpis`` every stated month's KPIs, read
 from those statements and the trial balance by :mod:`oracle.kpis` (FR-KPI-02).
@@ -52,6 +67,7 @@ from those statements and the trial balance by :mod:`oracle.kpis` (FR-KPI-02).
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, localcontext
 from typing import Any
@@ -59,7 +75,7 @@ from typing import Any
 from oracle import money
 from oracle.book import Entry, PostedLine, Rejected, Scheduled, canonical
 from oracle.rules import Rules
-from oracle.scenario import RESULT_SCHEMA, Document, Reversal, Scenario, Source, check_result
+from oracle.scenario import RESULT_SCHEMA, Document, Edit, Line, Reversal, Scenario, Source, check_result
 from oracle.sources import RULE_SETS
 from oracle.kpis import kpis
 from oracle.statements import statements
@@ -71,13 +87,32 @@ ORIGINS = frozenset({"lent", "paid_personally", "pay", "fee", "paid_out", "other
 __all__ = ["Entry", "Ledger", "PostedLine", "Rejected", "period", "run"]
 
 
+@dataclass
+class _Journal:
+    """A posted manual journal or the opening balances, as it stands: its current version and entry."""
+
+    index: int  # its place in the scenario, which orders its automatic reversal among the scheduled entries
+    type: str
+    version: int
+    entry: Entry
+    reverse_on: date | None
+
+
+def _negated(entry: Entry, kind: str, day: date) -> Entry:
+    """The reversal of ``entry`` on ``day``: every stored line negated, amount and base amount (ENG-14)."""
+    return Entry(entry.document, kind, day, tuple(
+        PostedLine(ln.account, ln.currency, money.negate(ln.amount), money.negate(ln.base_amount), ln.party)
+        for ln in entry.lines
+    ))
+
+
 def period(day: date) -> str:
     """The calendar-month period of a posting date, as ``YYYY-MM`` (Appendix B)."""
     return f"{day.year:04d}-{day.month:02d}"
 
 
 class Ledger:
-    """Posts a scenario: the documents in order, then the reversals in order."""
+    """Posts a scenario: the documents in order, then the reversals and edits in order, then what is scheduled."""
 
     def __init__(self, scenario: Scenario) -> None:
         self.scenario = scenario
@@ -86,7 +121,8 @@ class Ledger:
         self.rejected: list[str] = []
         self.reasons: list[tuple[str, str]] = []  # (document or "<id>/reversal", reason), in order
         self.post: defaultdict[tuple[str, str], Decimal] = defaultdict(lambda: money.ZERO)
-        self._posted: dict[str, Entry] = {}
+        self._posted: dict[str, Entry] = {}  # each posted document's current entry
+        self._journals: dict[str, _Journal] = {}  # the posted manual journals and opening balances, as they stand
         self._reversed: set[str] = set()
         self.rules = Rules(scenario, self.entries) if scenario.settings is not None else None
         self.books: dict[str, Any] = {}  # what each posted P1 document left for later ones to read
@@ -98,9 +134,12 @@ class Ledger:
                 if isinstance(document, Source):
                     self._source(index, document)
                 else:
-                    self._journal(document)
-            for reversal in scenario.reversals:
-                self._reversal(reversal)
+                    self._journal(index, document)
+            for correction in scenario.reversals:  # voids and edits, in the order they are made
+                if isinstance(correction, Edit):
+                    self._edit(correction)
+                else:
+                    self._reversal(correction)
             self._schedule()
 
     # ------------------------------------------------------------------ posting
@@ -117,23 +156,39 @@ class Ledger:
         self.rejected.append(key)
         self.reasons.append((key, reason))
 
-    def _journal(self, document: Document) -> None:
+    def _journal(self, index: int, document: Document) -> None:
         try:
-            lines = self._journal_lines(document)
+            lines = self._content(document.type, document.date, document.lines, document.reverse_on)
         except Rejected as exc:
             self._reject(document.id, exc.reason)
             return
         entry = Entry(document.id, "post", document.date, lines)
+        self._journals[document.id] = _Journal(index, document.type, document.version, entry, document.reverse_on)
         self._posted[document.id] = entry
         self._record(entry)
 
-    def _journal_lines(self, document: Document) -> tuple[PostedLine, ...]:
+    def _content(self, kind: str, day: date, lines: tuple[Line, ...], reverse_on: date | None) -> tuple[PostedLine, ...]:
+        """The entry a manual journal's or the opening balances' version posts, or Rejected."""
+        if kind == "opening_balances":
+            entry_lines = canonical(self._journal_lines(lines, opening=True))  # README, "P1 entries"
+            if any(ln.base_amount.copy_abs() >= money.AMOUNT_LIMIT for ln in entry_lines):
+                raise Rejected("base-out-of-range")  # §11.3: an account's balances together still fit NUMERIC(20,4)
+            if len(entry_lines) < 2:  # balances on one account that cancel out leave nothing to post
+                raise Rejected("fewer-than-two-lines")
+            return entry_lines
+        posted = self._journal_lines(lines)
+        if reverse_on is not None and reverse_on <= day:  # FR-GL-02 rev 0.55: after its own date (JOURNAL-11)
+            raise Rejected("reverse-on-not-after-date")
+        return posted
+
+    def _journal_lines(self, lines: tuple[Line, ...], opening: bool = False) -> tuple[PostedLine, ...]:
+        """ENG-24's rules on a journal's lines; ``opening``: the opening balances' (README, "Opening balances")."""
         s = self.scenario
         base = s.base_currency
 
         # Rule 1: the precision boundary, before anything is computed (ENG-44).
         parsed: list[tuple[Decimal, Decimal | None]] = []
-        for line in document.lines:
+        for line in lines:
             minor = s.currencies.get(line.currency)
             if minor is None:
                 raise Rejected("unknown-currency")
@@ -144,8 +199,12 @@ class Ledger:
                 raise Rejected(exc.reason) from exc
             parsed.append((amount, rate))
 
+        # The opening balances are in the base currency only (FR-GL-06 rev 0.49, LEDGER-17).
+        if opening and any(line.currency != base for line in lines):
+            raise Rejected("opening-balance-not-in-base")
+
         # Rule 2.
-        if len(document.lines) < 2:
+        if len(lines) < 2:
             raise Rejected("fewer-than-two-lines")
 
         # Rule 3.
@@ -153,7 +212,7 @@ class Ledger:
             raise Rejected("zero-line")
 
         # Rule 4 (INV-04).
-        for line in document.lines:
+        for line in lines:
             account = s.accounts.get(line.account)
             if account is None:
                 raise Rejected("unknown-account")
@@ -161,11 +220,11 @@ class Ledger:
                 raise Rejected("group-account")
             if not account.active:
                 raise Rejected("inactive-account")
-            if account.role == "share-capital":  # INV-13
+            if account.role == "share-capital" and not opening:  # INV-13: the opening balances may reach it
                 raise Rejected("share-capital-account")
 
         # Rule 9 (FR-EQ-01, B.7): the person and origin on a director's account, and only there.
-        for line in document.lines:
+        for line in lines:
             director = s.accounts[line.account].role in DIRECTOR_ACCOUNTS
             if director and (line.party not in s.people or line.origin not in ORIGINS):
                 raise Rejected("director-line-without-person")
@@ -174,7 +233,7 @@ class Ledger:
 
         # Rule 5 (ENG-13, ENG-03), then RND-FX for every line not in the base currency.
         posted: list[PostedLine] = []
-        for line, (amount, rate) in zip(document.lines, parsed, strict=True):
+        for line, (amount, rate) in zip(lines, parsed, strict=True):
             if line.currency == base:
                 if line.fx_rate is not None or line.fx_rate_source is not None:
                     raise Rejected("rate-on-base-line")
@@ -222,21 +281,35 @@ class Ledger:
         self._scheduled.append((index, posting.scheduled))
 
     def _schedule(self) -> None:
-        """Scheduled entries dated up to ``as_of``, one per (date, document, kind), in that order."""
+        """Scheduled entries dated up to ``as_of``, one per (date, document, kind), in that order.
+
+        A source's are in canonical form. A journal's automatic reversal (FR-GL-02) reverses its current entry,
+        its lines negated in their order, unless the journal is reversed already: the scheduler runs after every
+        document, reversal and edit (README, "Automatic reversals").
+        """
         as_of = self.scenario.as_of
         groups: dict[tuple[date, int, str], list[PostedLine]] = {}
         for index, items in self._scheduled:
             for scheduled in items:
                 if as_of is not None and scheduled.posting_date <= as_of:
                     groups.setdefault((scheduled.posting_date, index, scheduled.kind), []).extend(scheduled.lines)
-        for (day, index, kind), lines in sorted(groups.items()):
+        due: list[tuple[tuple[date, int, str], Entry]] = []
+        for (day, index, kind), lines in groups.items():
             entry_lines = canonical(lines)
             if entry_lines:
-                self._record(Entry(self.scenario.documents[index].id, kind, day, entry_lines))
+                due.append(((day, index, kind), Entry(self.scenario.documents[index].id, kind, day, entry_lines)))
+        for doc_id, journal in self._journals.items():
+            day = journal.reverse_on
+            if day is not None and as_of is not None and day <= as_of and doc_id not in self._reversed:
+                due.append(((day, journal.index, "auto_reversal"), _negated(journal.entry, "auto_reversal", day)))
+        for _, entry in sorted(due, key=lambda item: item[0]):
+            if entry.kind == "auto_reversal":
+                self._reversed.add(entry.document)
+            self._record(entry)
 
     def _reversal(self, reversal: Reversal) -> None:
         key = f"{reversal.document}/reversal"
-        original = self._posted.get(reversal.document)
+        original = self._posted.get(reversal.document)  # the journal's current entry (an edit's replacement)
         if original is None:
             self._reject(key, "reversal-of-unposted-document")
             return
@@ -247,11 +320,32 @@ class Ledger:
             self._reject(key, "reversal-before-entry")
             return
         self._reversed.add(reversal.document)
-        lines = tuple(
-            PostedLine(ln.account, ln.currency, money.negate(ln.amount), money.negate(ln.base_amount), ln.party)
-            for ln in original.lines
-        )
-        self._record(Entry(reversal.document, "reversal", reversal.date, lines))
+        self._record(_negated(original, "reversal", reversal.date))
+
+    def _edit(self, edit: Edit) -> None:
+        """FR-GL-12 (rev 0.54, 0.58): the next version reverses the current entry on that entry's own date and
+        posts its own entry on its date, in one transaction, so both post or neither does."""
+        key = f"{edit.document}/edit"
+        journal = self._journals.get(edit.document)
+        if journal is None:  # never posted: unknown, or refused (an edit is a command on a posted journal)
+            self._reject(key, "edit-of-unposted-document")
+            return
+        if edit.document in self._reversed:  # "the database refuses ... any change to a reversed journal"
+            self._reject(key, "edit-of-reversed-document")
+            return
+        if edit.version != journal.version + 1:  # it saves the next version
+            self._reject(key, "version-does-not-follow")
+            return
+        try:
+            lines = self._content(journal.type, edit.date, edit.lines, edit.reverse_on)
+        except Rejected as exc:
+            self._reject(key, exc.reason)
+            return
+        self._record(_negated(journal.entry, "reversal", journal.entry.posting_date))
+        replacement = Entry(edit.document, "replacement", edit.date, lines)
+        self._record(replacement)
+        journal.version, journal.entry, journal.reverse_on = edit.version, replacement, edit.reverse_on
+        self._posted[edit.document] = replacement
 
     # ------------------------------------------------------------------ reading back
     def trial_balance(self) -> dict[str, dict[str, Decimal]]:

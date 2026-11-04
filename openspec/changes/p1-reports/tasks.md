@@ -220,7 +220,8 @@
 
 ## 6. Finish
 
-- [ ] 6.1 The review register: the statement pages in an area awaiting the accountant (its own PR, which the co-founder
+- [x] 6.1 The review register: the statement pages in an area awaiting the accountant (its own PR, which the co-founder
   approves).
+  (#358 added the `statements` area, FR-RPT-01, with the KPIs' and two checks' rules.)
 - [ ] 6.2 `[live-verify]` An XLSX opened in Excel and Google Sheets, and a PDF printed, with the owner.
 - [ ] 6.3 `make check`, `make test` and `make test-e2e`; archive.

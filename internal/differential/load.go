@@ -130,8 +130,12 @@ func ParseScenario(data []byte) (Scenario, error) {
 		}
 	}
 	for _, r := range s.Reversals {
-		if _, err := time.Parse(time.DateOnly, r.Date); err != nil {
-			return Scenario{}, &InvalidError{fmt.Sprintf("the reversal of %s has the date %q, which is not a calendar date", r.Document, r.Date)}
+		what, date := "reversal", r.Date
+		if r.Edit != nil {
+			what, date = "edit", r.Edit.Date
+		}
+		if _, err := time.Parse(time.DateOnly, date); err != nil {
+			return Scenario{}, &InvalidError{fmt.Sprintf("the %s of %s has the date %q, which is not a calendar date", what, r.Document, date)}
 		}
 	}
 	if reason := realDates(v, ""); reason != "" {
@@ -145,7 +149,7 @@ func ParseScenario(data []byte) (Scenario, error) {
 
 // dateKeys are the keys whose string values are dates in fyniq-scenario@1 (scenario.schema.json's "date").
 var dateKeys = map[string]bool{"date": true, "as_of": true, "books_start": true, "from": true, "registered_from": true,
-	"registered_to": true, "spread_from": true, "depreciate_from": true, "incurred": true}
+	"registered_to": true, "spread_from": true, "depreciate_from": true, "incurred": true, "reverse_on": true}
 
 // realDates names the first date anywhere in the scenario that is not a calendar date, or returns "".
 func realDates(v any, key string) string {
@@ -178,30 +182,61 @@ func realDates(v any, key string) string {
 // p1Format checks the rules of the P1 sources, the statements and the KPIs that a JSON Schema cannot state (README,
 // "Invalid scenario or rejected document"), and names the first one broken, or returns "".
 func p1Format(s Scenario) string {
-	p1 := map[string]bool{}
+	p1, opening := map[string]bool{}, ""
 	for _, d := range s.Documents {
-		if d.Type != ledger.SourceManualJournal {
+		switch d.Type {
+		case ledger.SourceManualJournal:
+		case OpeningBalances: // README, "Opening balances"
+			switch {
+			case opening != "":
+				return fmt.Sprintf("the scenario has two opening balances, %s and %s; the organisation has one set", opening, d.ID)
+			case s.Settings == nil || s.Settings.BooksStart == "" || s.AsOf == "":
+				return "opening balances need settings with books_start, and as_of"
+			case d.Date != s.Settings.BooksStart:
+				return fmt.Sprintf("the opening balances %s are dated %s, not the books' start %s", d.ID, d.Date, s.Settings.BooksStart)
+			case s.Statements:
+				return "the statements of a scenario with opening balances are not in the format yet"
+			}
+			opening = d.ID
+		default:
 			p1[d.ID] = true
+		}
+		if d.ReverseOn != "" && s.AsOf == "" {
+			return fmt.Sprintf("journal %s reverses by itself, which needs as_of", d.ID)
 		}
 	}
 	if len(p1) > 0 && (s.Settings == nil || s.AsOf == "") {
 		return "a scenario with a P1 document needs settings and as_of"
+	}
+	for _, r := range s.Reversals {
+		date := r.Date
+		if x := r.Edit; x != nil {
+			date = x.Date
+			switch {
+			case p1[r.Document]:
+				return fmt.Sprintf("the edit names %s, a P1 document, which the format cannot edit yet", r.Document)
+			case r.Document == opening && (x.Date != s.Settings.BooksStart || x.ReverseOn != ""):
+				return fmt.Sprintf("the edit of the opening balances %s is dated %s or reverses by itself; they post at the books' start", r.Document, x.Date)
+			case x.ReverseOn != "" && s.AsOf == "":
+				return fmt.Sprintf("the edit of %s reverses by itself, which needs as_of", r.Document)
+			}
+		} else {
+			switch {
+			case p1[r.Document]:
+				return fmt.Sprintf("the reversal names %s, a P1 document, which the format cannot void yet", r.Document)
+			case r.Document == opening:
+				return fmt.Sprintf("the reversal names the opening balances %s, which change only by an edit", r.Document)
+			}
+		}
+		if s.AsOf != "" && date > s.AsOf {
+			return fmt.Sprintf("as_of %s is before the reversal or edit of %s, dated %s", s.AsOf, r.Document, date)
+		}
 	}
 	if s.AsOf != "" {
 		for _, d := range s.Documents {
 			if d.Date > s.AsOf {
 				return fmt.Sprintf("as_of %s is before document %s's date, %s", s.AsOf, d.ID, d.Date)
 			}
-		}
-		for _, r := range s.Reversals {
-			if r.Date > s.AsOf {
-				return fmt.Sprintf("as_of %s is before the reversal of %s, dated %s", s.AsOf, r.Document, r.Date)
-			}
-		}
-	}
-	for _, r := range s.Reversals {
-		if p1[r.Document] {
-			return fmt.Sprintf("the reversal names %s, a P1 document, which the format cannot void yet", r.Document)
 		}
 	}
 	codes := map[string]Account{}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -442,5 +443,77 @@ func TestP1FoundersSettleAtMostWhatIsOwed(t *testing.T) {
 	}
 	if got := r.People["P0001"]["2500"]; got != "" && got != "0.00" {
 		t.Errorf("P0001 on 2500 after waiving all 178.80: %q", got)
+	}
+}
+
+// The general ledger's shapes the format refuses as a whole (README, "Opening balances, automatic reversals and
+// edits"), each a change to golden/general-ledger.json: a second set of opening balances, opening balances without a
+// books' start or dated another day, or with the statements; a reverse_on without as_of; a void of the opening
+// balances; an edit of them dated another day or reversing by itself; an edit of a P1 document; and an edit dated
+// after as_of.
+// req: FR-GL-02
+// req: FR-GL-06
+// req: FR-GL-12
+// req: QA-ENG-01
+func TestGeneralLedgerFormatRules(t *testing.T) {
+	b, err := os.ReadFile(filepath.Join(golden, "general-ledger.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	change := func(f func(s map[string]any)) []byte {
+		var s map[string]any
+		if err := json.Unmarshal(b, &s); err != nil {
+			t.Fatal(err)
+		}
+		f(s)
+		out, err := json.Marshal(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	if _, err := ParseScenario(change(func(map[string]any) {})); err != nil {
+		t.Fatalf("golden/general-ledger.json: %v", err)
+	}
+	docs := func(s map[string]any) []any { return s["documents"].([]any) }
+	doc := func(s map[string]any, i int) map[string]any { return docs(s)[i].(map[string]any) }
+	settings := func(s map[string]any) map[string]any { return s["settings"].(map[string]any) }
+	edit := func(s map[string]any, i int) map[string]any {
+		return s["reversals"].([]any)[i].(map[string]any)["edit"].(map[string]any)
+	}
+	for _, c := range []struct {
+		name, says string
+		change     func(s map[string]any)
+	}{
+		{"two opening balances", "two opening balances", func(s map[string]any) {
+			second := maps.Clone(doc(s, 0))
+			second["id"] = "OB-0002"
+			s["documents"] = append(docs(s), second)
+		}},
+		{"opening balances without a books' start", "need settings with books_start", func(s map[string]any) { delete(settings(s), "books_start") }},
+		{"opening balances dated another day", "not the books' start", func(s map[string]any) { doc(s, 0)["date"] = "2026-01-02" }},
+		{"opening balances with the statements", "statements of a scenario with opening balances", func(s map[string]any) { s["statements"] = true }},
+		{"a reverse_on without as_of", "reverses by itself, which needs as_of", func(s map[string]any) {
+			s["documents"], s["reversals"] = docs(s)[1:], []any{} // without the opening balances, which need as_of themselves
+			delete(s, "as_of")
+		}},
+		{"a void of the opening balances", "change only by an edit", func(s map[string]any) {
+			s["reversals"] = append(s["reversals"].([]any), map[string]any{"document": "OB-0001", "date": "2026-01-01"})
+		}},
+		{"an edit of the opening balances dated another day", "post at the books' start", func(s map[string]any) { edit(s, 0)["date"] = "2026-01-02" }},
+		{"an edit of the opening balances reversing by itself", "post at the books' start", func(s map[string]any) { edit(s, 0)["reverse_on"] = "2026-02-01" }},
+		{"an edit dated after as_of", "before the reversal or edit", func(s map[string]any) { edit(s, 5)["date"] = "2026-04-16" }},
+		{"a reverse_on that is not a date", "not a calendar date", func(s map[string]any) { doc(s, 1)["reverse_on"] = "2026-02-30" }},
+		{"an edit of a P1 document", "a P1 document, which the format cannot edit", func(s map[string]any) {
+			s["documents"] = append(docs(s), map[string]any{"type": "director_fee", "id": "DF-0001", "version": 1, "date": "2026-03-31",
+				"person": "P0001", "account": "6050", "amount": "10.00"})
+			s["reversals"] = append(s["reversals"].([]any), map[string]any{"document": "DF-0001",
+				"edit": map[string]any{"version": 2, "date": "2026-03-31", "memo": "", "lines": doc(s, 5)["lines"]}})
+		}},
+	} {
+		var invalid *InvalidError
+		if _, err := ParseScenario(change(c.change)); !errors.As(err, &invalid) || !strings.Contains(err.Error(), c.says) {
+			t.Errorf("%s: want an invalid scenario saying %q, got %v", c.name, c.says, err)
+		}
 	}
 }

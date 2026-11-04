@@ -12,7 +12,7 @@ from oracle.scenario import load_scenario
 
 PENDING = Path(__file__).resolve().parents[2] / "test" / "differential" / "pending"
 GOLDEN = PENDING.parent / "golden"
-MOVED = {"bank", "purchases", "sales", "claims", "assets", "founders", "statements"}  # the cases the engine reads now, in golden/
+MOVED = {"bank", "purchases", "sales", "claims", "assets", "founders", "statements", "general-ledger"}  # the cases the engine reads now, in golden/
 
 
 def _run(name: str) -> dict:
@@ -579,3 +579,98 @@ def test_pending_kpis():
     # February to April's costs: -99.99 (the software reversed) + 0.00 + 0.00, not above zero: DPO undefined.
     assert apr["dpo"] is None
     assert (apr["headcount"], apr["revenue_per_employee"]) == (None, None)
+
+
+# req: QA-ENG-02, FR-GL-02, FR-GL-06, FR-GL-12, INV-13
+def test_pending_general_ledger():
+    # README, "Opening balances, automatic reversals and edits". as_of is 15 April 2026; the books start on 1 January.
+    r = _run("general-ledger")
+    assert r["rejected"] == [
+        "JNL-0004",  # reverse_on on its own date (JOURNAL-11)
+        "JNL-0005",  # a manual journal to share capital (INV-13)
+        "OB-0001/edit",  # the bank in USD (LEDGER-17)
+        "OB-0001/edit",  # version 3 while the balances are at 1
+        "OB-0001/edit",  # does not net to zero (500.00 over)
+        "JNL-0002/edit",  # version 3 while the journal is at 1
+        "JNL-0006/reversal",  # 5 February: before the edit's replacement (10 February), the entry it would reverse
+        "JNL-0006/edit",  # after its void
+        "JNL-0004/edit",  # it never posted
+        "JNL-0099/edit",  # no such journal
+        "JNL-0001/edit",  # its new reverse_on is its own date (JOURNAL-11)
+        "JNL-0001/edit",  # its new content reaches share capital (INV-13)
+    ]
+    assert [(e["document"], e["kind"], e["posting_date"]) for e in r["entries"]] == [
+        ("OB-0001", "post", "2026-01-01"),  # the documents in order
+        ("JNL-0001", "post", "2026-01-31"),
+        ("JNL-0002", "post", "2026-02-28"),
+        ("JNL-0003", "post", "2026-03-31"),
+        ("JNL-0006", "post", "2026-01-10"),
+        ("JNL-0007", "post", "2026-04-10"),
+        ("JNL-0008", "post", "2026-04-10"),
+        ("JNL-0009", "post", "2026-03-31"),
+        ("OB-0001", "reversal", "2026-01-01"),  # the corrections in order; an edit's two entries at the books' start
+        ("OB-0001", "replacement", "2026-01-01"),
+        ("JNL-0002", "reversal", "2026-02-28"),  # the replaced entry on its own date
+        ("JNL-0002", "replacement", "2026-02-28"),
+        ("JNL-0003", "reversal", "2026-03-31"),  # its void
+        ("JNL-0006", "reversal", "2026-01-10"),  # January made right ...
+        ("JNL-0006", "replacement", "2026-02-10"),  # ... and the new version in February
+        ("JNL-0006", "reversal", "2026-02-12"),  # the void reverses the replacement
+        ("JNL-0007", "reversal", "2026-04-10"),
+        ("JNL-0007", "replacement", "2026-04-10"),  # without reverse_on: nothing reverses by itself
+        ("JNL-0001", "auto_reversal", "2026-02-01"),  # the scheduler, by date: version 1 (both edits refused)
+        ("JNL-0002", "auto_reversal", "2026-03-01"),  # version 2's entry, on version 2's reverse_on
+        ("JNL-0009", "auto_reversal", "2026-04-01"),  # JNL-0003's was voided; JNL-0008's (1 May) is after as_of
+    ]
+    opening = [("1010", "SGD", "25000.00", "25000.00"), ("1500", "SGD", "3600.00", "3600.00"),
+               ("1590", "SGD", "-600.00", "-600.00"), ("2500", "SGD", "-8000.00", "-8000.00"),
+               ("3010", "SGD", "-10000.00", "-10000.00"), ("3100", "SGD", "-10000.00", "-10000.00")]
+    assert _lines(r, "OB-0001") == opening  # canonical form, sorted by account; share capital takes its line
+    assert _lines(r, "OB-0001", "reversal") == [(a, c, _neg(x), _neg(b)) for a, c, x, b in opening]
+    assert _lines(r, "OB-0001", "replacement") == [
+        ("1010", "SGD", "25000.00", "25000.00"), ("1500", "SGD", "3600.00", "3600.00"),
+        ("1590", "SGD", "-600.00", "-600.00"), ("2050", "SGD", "-500.00", "-500.00"),
+        ("2500", "SGD", "-8000.00", "-8000.00"), ("3010", "SGD", "-10000.00", "-10000.00"),
+        ("3100", "SGD", "-9500.00", "-9500.00")]
+    ob = next(e for e in r["entries"] if e["document"] == "OB-0001")
+    assert [ln.get("party") for ln in ob["lines"]] == [None, None, None, "P0001", None, None]
+    assert _lines(r, "JNL-0002", "reversal") == [("6020", "SGD", "-800.00", "-800.00"), ("2050", "SGD", "800.00", "800.00")]
+    assert _lines(r, "JNL-0002", "auto_reversal") == [("6020", "SGD", "-850.00", "-850.00"),
+                                                       ("2050", "SGD", "850.00", "850.00")]
+    assert _lines(r, "JNL-0006", "reversal", "2026-02-12") == [("6010", "SGD", "-330.00", "-330.00"),
+                                                                ("1010", "SGD", "330.00", "330.00")]
+    # USD 100.00 × 1.3472 = 134.72; the automatic reversal negates it as stored, never re-converted (ENG-14).
+    assert _lines(r, "JNL-0009", "auto_reversal") == [("6010", "USD", "-100.00", "-134.72"),
+                                                       ("2050", "SGD", "134.72", "134.72")]
+    assert r["trial_balance"] == {
+        "2026-01": {
+            "1010": "25000.00",  # 25,000 − 25,000 + 25,000 (the balances, reversed, again); − 300 + 300 (JNL-0006)
+            "1500": "3600.00",
+            "1590": "-600.00",
+            "2050": "-1700.00",  # −500 (the edited balances) − 1,200 (JNL-0001)
+            "2500": "-8000.00",
+            "3010": "-10000.00",
+            "3100": "-9500.00",
+            "6010": "1200.00",  # 1,200 + 300 − 300
+        },
+        "2026-02": {
+            "2050": "350.00",  # −800 + 800 − 850 (JNL-0002 and its edit) + 1,200 (JNL-0001 reversed by itself)
+            "6010": "-1200.00",  # 330 − 330 (JNL-0006's replacement and void) − 1,200
+            "6020": "850.00",  # 800 − 800 + 850
+        },
+        "2026-03": {
+            "2050": "715.28",  # −500 + 500 (JNL-0003 and its void) − 134.72 (JNL-0009) + 850 (JNL-0002 reversed)
+            "6010": "134.72",  # 500 − 500 + 134.72
+            "6020": "-850.00",
+        },
+        "2026-04": {
+            "2050": "-205.28",  # −200 + 200 − 250 (JNL-0007 edited) − 90 (JNL-0008) + 134.72 (JNL-0009 reversed)
+            "6010": "115.28",  # 200 − 200 + 250 − 134.72
+            "6020": "90.00",
+        },
+    }
+    assert r["people"] == {"P0001": {"2500": "-8000.00"}}  # −8,000 + 8,000 − 8,000
+
+
+def _neg(text: str) -> str:
+    return text[1:] if text.startswith("-") else f"-{text}"

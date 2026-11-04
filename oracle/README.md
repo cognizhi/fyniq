@@ -32,7 +32,8 @@ credit notes, customer receipts, deposits, deposit refunds, write-offs and invoi
 (`invoice@1`, `credit_note@1`, `customer_receipt@1`, `customer_deposit@1`, `deposit_refund@1`,
 `write_off@1`); expense claims, their reimbursements and cash advances (`expense_claim@1`,
 `claim_reimbursement@1`, `cash_advance@1`, `RND-MILEAGE`); the fixed asset register's depreciation and
-disposals (`asset_depreciation@1`, `asset_disposal@1`). Their
+disposals (`asset_depreciation@1`, `asset_disposal@1`); and the general ledger's opening balances, journals that reverse
+by themselves and edits of posted journals (FR-GL-02, FR-GL-06, FR-GL-12, task 8.1 of `p1-general-ledger-close`). Their
 scenario shapes, the canonical form of their entries and the readings where the PRD leaves a shape
 open are in [`test/differential/README.md`](../test/differential/README.md), "P1 sources". The
 engine's `cmd/scenario-run` does not read them yet, so their golden cases wait in
@@ -59,12 +60,13 @@ The scenario and result formats, and the rules a comparator relies on, are in
 |---|---|
 | `src/oracle/money.py` | Parsing at the precision boundary; the named rounding policies (`RND-FX`, `RND-GST-EXCL`, `RND-GST-INCL`, `ALLOC-EVEN`, `RND-LINE`, `RND-GST-SHARE`, `RND-WHT`, `RND-DISCOUNT`, `RND-DEPOSIT`, `RND-MILEAGE`, `RND-RATE` of a payment); exact sums and formatting |
 | `src/oracle/scenario.py` | Reading and checking `fyniq-scenario@1`; checking `fyniq-scenario-result@1` |
-| `src/oracle/ledger.py` | The manual journal's rules, reversals, the P1 sources' dispatch and schedules, the trial balance |
+| `src/oracle/ledger.py` | The manual journal's rules, reversals and edits, the opening balances, the P1 sources' dispatch and schedules (automatic reversals included), the trial balance |
 | `src/oracle/book.py` | Lines, entries, scheduled entries, rejections and the canonical form of a P1 entry |
 | `src/oracle/rules.py` | What every P1 rule set checks the same way: the boundary, rates, accounts, GST, spreads |
 | `src/oracle/sources/` | One rule set per P1 source (`bank.py`, `purchases.py`, `sales.py`, `claims.py`, `assets.py`) and the settlement of posted documents by money (`settle.py`) |
 | `src/oracle/strategies.py` | Hypothesis strategies that generate manual-journal scenarios (task 2.4) |
 | `src/oracle/strategies_p1.py` | Hypothesis strategies for the P1 sources, with each document's intent |
+| `src/oracle/strategies_gl.py` | The general ledger's source of `strategies_p1`: opening balances, journals that reverse by themselves, voids and edits, each built to an intent |
 | `tests/` | Hand-worked journals, rejections and P1 documents (`# req: QA-ENG-01`), the pending golden cases, the format, properties, the CLI |
 
 Python and uv are pinned in the repository's `mise.toml`; the dependencies are pinned in

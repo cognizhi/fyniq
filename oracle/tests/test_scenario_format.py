@@ -54,12 +54,13 @@ def test_the_schema_patterns_suit_re2_and_ecma_262(name):
 # req: QA-ENG-01
 def test_the_readme_example_result_is_what_the_oracle_writes():
     # The README's result was written by hand from its scenario; the oracle must match it. The blocks
-    # after them are the P1 sources' example documents.
-    assert len(_BLOCKS) == 2 + len(P1_EXAMPLES)
+    # after them are the P1 sources' example documents, and an edit of one (an item of reversals).
+    assert len(_BLOCKS) == 2 + len(P1_EXAMPLES) + len(CORRECTION_EXAMPLES)
     assert Ledger(scenario_from_json(EXAMPLE)).result() == EXAMPLE_RESULT
 
 
-P1_EXAMPLES = [json.loads(block) for block in _BLOCKS[2:]]
+P1_EXAMPLES = [json.loads(block) for block in _BLOCKS[2:] if "type" in json.loads(block)]
+CORRECTION_EXAMPLES = [json.loads(block) for block in _BLOCKS[2:] if "type" not in json.loads(block)]
 
 
 # req: QA-ENG-02
@@ -67,11 +68,18 @@ def test_the_p1_examples_in_the_readme_are_documents_that_post_in_order():
     # A later example may settle an earlier one (the payment pays the bill), so they post together. A
     # registered asset posts no entry of its own, only its depreciation.
     # The cost before the books start needs a books start before its date (FR-EQ-03); the asset starts after it.
-    result = Ledger(scenario_from_json(p1_scenario(*P1_EXAMPLES, settings={**P1_SETTINGS, "books_start": "2026-01-01"}))).result()
+    # The opening balances are dated the books' start; the edit of the accrual posts its reversal and replacement,
+    # and the scheduler reverses the replacement on its reverse_on.
+    data = p1_scenario(*P1_EXAMPLES, settings={**P1_SETTINGS, "books_start": "2026-01-01"})
+    data["reversals"] = CORRECTION_EXAMPLES
+    result = Ledger(scenario_from_json(data)).result()
     assert result["rejected"] == []
     assert [e["document"] for e in result["entries"] if e["kind"] == "post"] == [
         d["id"] for d in P1_EXAMPLES if d["type"] != "fixed_asset"]
     assert any(e["kind"] == "depreciation" for e in result["entries"])
+    assert [(e["document"], e["kind"]) for e in result["entries"] if e["kind"] in ("replacement", "auto_reversal")] == [
+        (c["document"], "replacement") for c in CORRECTION_EXAMPLES] + [(c["document"], "auto_reversal")
+                                                                          for c in CORRECTION_EXAMPLES]
 
 
 # req: QA-ENG-01

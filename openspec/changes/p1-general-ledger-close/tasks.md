@@ -258,7 +258,15 @@
 
 ## 8. The oracle (for the oracle session; never written from the engine)
 
-- [ ] 8.1 Opening balances, auto-reversals and the reversal and replacement of an edited journal as scenario shapes, generator kinds and golden cases, written from the PRD rules by an author who has not read the engine (QA-ENG-01)
+- [x] 8.1 Opening balances, auto-reversals and the reversal and replacement of an edited journal as scenario shapes, generator kinds and golden cases, written from the PRD rules by an author who has not read the engine (QA-ENG-01)
+  (4 Nov 2026: the oracle session wrote the shapes from FR-GL-02, FR-GL-06 and FR-GL-12 into
+  `test/differential/README.md` ("Opening balances, automatic reversals and edits", and seven readings in "P1
+  readings", each [accountant to confirm] where the PRD leaves it open), with the oracle, the generator source
+  `general-ledger` and `golden/general-ledger.json`, its figures worked by hand. The engine session then taught
+  `cmd/scenario-run` the shapes through `ledger.PostOpening`, `ledger.PostJournal` and `ledger.Reverse`: the engine and
+  the oracle agreed on the golden case at the first run and over generated scenarios, and `general-ledger` joined
+  `DIFFERENTIAL_SOURCES`. The statements of a scenario with opening balances stay out of the format until the
+  statements' opening position is decided.)
 
 ## 9. Finish
 
