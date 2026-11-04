@@ -13,7 +13,7 @@ and settles any disagreement from the PRD (README, "P1 readings"); an engine bug
 case, and the oracle never changes to match the engine.
 
 `cmd/scenario-run` reads every P1 source, the general ledger's shapes included, and states the statements and the KPIs
-(4 Nov 2026). No case waits here now.
+(4 Nov 2026), and the month-end revaluation (`p1-multi-currency-fx` task 6.1). No case waits here now.
 
 | File | Source | What |
 |---|---|---|

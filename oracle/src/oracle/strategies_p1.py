@@ -33,6 +33,18 @@ it is a cent above), and may carry a settlement within what is owed on the other
 README leaves a claim otherwise open); a fair value always names its ``difference``, an income account for a
 gain and an expense account for a loss; and no loan claims (``expense_claim@2``).
 
+For the month-end revaluation (README, "Month-end revaluation"; source ``fx``, which ``make differential`` draws only
+once ``cmd/scenario-run`` reads its shapes): the foreign money accounts, 1100 and 2010 marked ``revalue`` (the SGD
+money accounts in half the scenarios, and one account left unmarked in a fifth), 7040 as ``unrealised_fx``, and a
+period-end rate for each currency at each month's end from the first document's month to ``as_of``'s, a stored rate or
+a quote in one of ``RND-RATE``'s forms, one in twelve left out so its month waits. Its kinds are the foreign
+documents of the other sources (bills, invoices, receipts and payments at another rate, a receipt from SGD keeping an
+unapplied amount, transfers into and out of the wallets, a USD deposit) and its own: a manual journal moving a
+revalued account in another currency (the item no document supports), and a payment of a foreign bill from SGD keeping
+an unapplied amount at the rate it implies (``RND-RATE``), and transfers into a foreign wallet and out of it again at
+another rate, which leave a balance of nothing carrying a base amount. Its refusals are those of the other sources on foreign
+documents, and a journal on a revalued account that does not balance: a refused document leaves no item.
+
 For the general ledger (README, "Opening balances, automatic reversals and edits"; :mod:`oracle.strategies_gl`):
 opening balances at the books' start, manual journals that may reverse by themselves, and the voids and edits of
 ``reversals``, with the founders' chart, people and books' start; a director's opening balance counts in what the
@@ -55,7 +67,7 @@ from oracle import money, strategies_gl
 from oracle.scenario import SCENARIO_SCHEMA
 from oracle.strategies import POST, REJECT, Intent
 
-SOURCES = ("bank", "purchases", "sales", "claims", "assets", "founders", "general-ledger")
+SOURCES = ("bank", "purchases", "sales", "claims", "assets", "founders", "general-ledger", "fx")
 
 CURRENCIES = {"SGD": 2, "USD": 2, "JPY": 0, "KWD": 3}
 MONEY_ACCOUNTS = {"1010": "SGD", "1011": "SGD", "1021": "USD", "1022": "JPY", "1023": "KWD"}
@@ -120,12 +132,21 @@ OVER_OWED = ["waiver-more-than-owed", "repay-more-than-owed", "convert-more-than
 FOUNDERS_REJECTED = ["not-a-person", "not-directors-account", "cost-account-not-allowed", "cost-incurred-after-start",
                      "cost-before-books-start", "fee-account-not-allowed", "waiver-credit-not-allowed", "repay-foreign",
                      "repay-not-money", "convert-not-share-capital", "convert-no-whole-share", *OVER_OWED]
+# The month-end revaluation's source: the other sources' foreign documents, and its own kinds (FX_OWN).
+FX_POSTING = ["bill-foreign", "bill-foreign", "invoice-foreign", "invoice-foreign", "pay", "receipt", "receipt-from-base",
+              "transfer-cross", "transfer-cross", "pay-unapplied", "deposit", "fx-journal", "fx-journal",
+              "fx-pay-from-base-unapplied", "fx-wallet-in", "fx-wallet-out"]
+FX_REJECTED = ["pay-more-than-open", "receipt-more-than-open", "transfer-missing-rate", "fx-journal-unbalanced"]
+FX_OWN = frozenset({"fx-journal", "fx-journal-unbalanced", "fx-pay-from-base-unapplied", "fx-wallet-in", "fx-wallet-out"})
+REVALUED = ["1021", "1022", "1023", "1100", "2010"]  # README, "Month-end revaluation": the standard chart's flags
+UNREALISED_FX = "7040"
+RATE_FORMS = ["fx_rate", "fx_rate", "base-per-unit", "base-per-100", "foreign-per-base"]
 KINDS = {"bank": BANK_POSTING * 3 + BANK_REJECTED, "purchases": PURCHASES_POSTING * 2 + PURCHASES_REJECTED,
          "sales": SALES_POSTING * 2 + SALES_REJECTED, "claims": CLAIMS_POSTING * 2 + CLAIMS_REJECTED,
          "assets": ASSETS_POSTING * 2 + ASSETS_REJECTED, "founders": FOUNDERS_POSTING * 2 + FOUNDERS_REJECTED,
-         "general-ledger": strategies_gl.KINDS}
+         "general-ledger": strategies_gl.KINDS, "fx": FX_POSTING * 2 + FX_REJECTED}
 REJECTED_KINDS = frozenset(BANK_REJECTED + PURCHASES_REJECTED + SALES_REJECTED + CLAIMS_REJECTED + ASSETS_REJECTED
-                           + FOUNDERS_REJECTED)
+                           + FOUNDERS_REJECTED + FX_REJECTED)
 MILEAGE = {"car": Decimal("0.60"), "motorcycle": Decimal("0.25")}
 WALLETS = {"SGD": "1010", "USD": "1021", "JPY": "1022", "KWD": "1023"}
 # The founders' money (README, "Settings and as_of" and the founders' sections): the directors and shareholders, a
@@ -150,6 +171,7 @@ class _Book:
         self.claims: dict[str, Decimal] = {}  # claim -> what is owed, in SGD (FR-AP-17: owed in the base currency)
         self.advances: dict[str, Decimal] = {}  # advance -> what is left
         self.assets: dict[str, bool] = {}  # registered asset -> disposed
+        self.wallets: dict[str, Decimal] = {}  # foreign wallet -> what the fx source's own transfers put in it
         self.books_start: date | None = None
         # (person, director's account) -> at least what the company still owes them there, in SGD
         self.owed: dict[tuple[str, str], Decimal] = {}
@@ -947,6 +969,109 @@ def _founders_document(
     return doc, meant, kind
 
 
+def _revalue(draw: st.DrawFn, accounts: list[dict[str, Any]], settings: dict[str, Any]) -> None:
+    """Mark the revalued accounts and name the unrealised FX account (README, "Month-end revaluation")."""
+    flagged = set(REVALUED)
+    if draw(st.booleans()):
+        flagged |= {"1010", "1011"}  # base-currency money accounts: marked, but nothing of theirs is foreign
+    if draw(st.integers(0, 4)) == 0:
+        flagged.discard(draw(st.sampled_from(sorted(flagged))))
+    for account in accounts:
+        if account["code"] in flagged:
+            account["revalue"] = True
+    accounts.append({"code": UNREALISED_FX, "type": "expense", "group": False, "active": True})
+    settings["accounts"]["unrealised_fx"] = UNREALISED_FX
+
+
+@st.composite
+def _period_end_rates(draw: st.DrawFn, first: date, as_of: date) -> list[dict[str, Any]]:
+    """Each foreign currency's rate at each month's end from ``first``'s month to ``as_of``'s, as a stored rate or a
+    quote (``RND-RATE``); one in twelve is left out, so its month waits if the currency has an open item."""
+    rows = []
+    year, month = first.year, first.month
+    while (year, month) <= (as_of.year, as_of.month):
+        end = date(year + month // 12, month % 12 + 1, 1) - timedelta(days=1)
+        for currency in ("USD", "JPY", "KWD"):
+            if draw(st.integers(0, 11)) == 0:
+                continue
+            row: dict[str, Any] = {"date": end.isoformat(), "currency": currency}
+            form = draw(st.sampled_from(RATE_FORMS))
+            if form == "fx_rate":
+                row["fx_rate"] = draw(_rate())
+            else:  # every quote _rate() draws (0.01 to 100) stores a valid rate in each form
+                row["quote"], row["form"] = draw(_rate()), form
+            row["fx_rate_source"] = "period end"
+            rows.append(row)
+        year, month = (year + 1, 1) if month == 12 else (year, month + 1)
+    return rows
+
+
+@st.composite
+def _fx_document(draw: st.DrawFn, doc_id: str, day: date, kind: str, book: _Book) -> tuple[dict[str, Any], str]:
+    """The ``fx`` source's own kinds (README, "Month-end revaluation")."""
+    base = {"id": doc_id, "version": 1, "date": day.isoformat()}
+    if kind == "fx-pay-from-base-unapplied":
+        foreign = [b for b, (cur, left) in sorted(book.open.items()) if cur != "SGD" and left > 0]
+        if not foreign:
+            return {"type": "bill_payment", **base, "account": "1010", "currency": "USD", "base_amount": "1.00",
+                    "parts": [{"document": "BILL-NONE", "amount": "1.00"}]}, REJECT
+        target = draw(st.sampled_from(foreign))
+        currency, left = book.open[target]
+        minor = CURRENCIES[currency]
+        unit = Decimal(1).scaleb(-minor, context=money.EXACT)
+        amount = left if draw(st.booleans()) or left <= unit else draw(_split(left, 2, minor))[0]
+        unapplied = draw(_cents(minor, 3))
+        # What the SGD account paid: the total near a drawn rate, at least a cent (the rate it implies, RND-RATE).
+        paid = money.rnd_fx(money.EXACT.add(amount, unapplied), Decimal(draw(_rate())), 2)
+        paid = max(paid, Decimal("0.01"))
+        book.open[target] = (currency, money.EXACT.subtract(left, amount))
+        return {"type": "bill_payment", **base, "account": draw(st.sampled_from(["1010", "1011"])),
+                "currency": currency, "base_amount": _text(paid, 2),
+                "parts": [{"document": target, "amount": _text(amount, minor)}],
+                "unapplied": _text(unapplied, minor)}, POST
+    if kind == "fx-wallet-in" or kind == "fx-wallet-out" and not any(book.wallets.values()):
+        # Into a foreign wallet from SGD: what it received at a drawn rate, paid in SGD at that rate (a cent at least).
+        wallet = draw(st.sampled_from(["1021", "1022", "1023"]))
+        currency = MONEY_ACCOUNTS[wallet]
+        minor = CURRENCIES[currency]
+        received, rate = draw(_cents(minor, 6)), draw(_rate())
+        paid = max(money.rnd_fx(received, Decimal(rate), 2), Decimal("0.01"))
+        book.wallets[wallet] = money.EXACT.add(book.wallets.get(wallet, Decimal(0)), received)
+        return {"type": "bank_transfer", **base,
+                "from": {"account": draw(st.sampled_from(["1010", "1011"])), "currency": "SGD", "amount": _text(paid, 2)},
+                "to": {"account": wallet, "currency": currency, "amount": _text(received, minor), "fx_rate": rate,
+                       "fx_rate_source": "document"}}, POST
+    if kind == "fx-wallet-out":
+        # Out again, all the fx source put in, at another drawn rate: the wallet's foreign amount goes back to what the
+        # other documents left there, while its base amount keeps the difference of the two rates.
+        wallet = draw(st.sampled_from(sorted(w for w, left in book.wallets.items() if left > 0)))
+        currency = MONEY_ACCOUNTS[wallet]
+        minor = CURRENCIES[currency]
+        paid, rate = book.wallets[wallet], draw(_rate())
+        received = max(money.rnd_fx(paid, Decimal(rate), 2), Decimal("0.01"))
+        book.wallets[wallet] = Decimal(0)
+        return {"type": "bank_transfer", **base,
+                "from": {"account": wallet, "currency": currency, "amount": _text(paid, minor), "fx_rate": rate,
+                         "fx_rate_source": "document"},
+                "to": {"account": draw(st.sampled_from(["1010", "1011"])), "currency": "SGD",
+                       "amount": _text(received, 2)}}, POST
+    # A manual journal moving a revalued account in another currency: an item no document supports on 1100 or 2010.
+    account = draw(st.sampled_from(REVALUED))
+    currency = MONEY_ACCOUNTS.get(account) or draw(st.sampled_from(["USD", "JPY", "KWD"]))
+    minor = CURRENCIES[currency]
+    amount = money.EXACT.multiply(draw(_cents(minor, 6)), Decimal(draw(st.sampled_from([1, -1]))))
+    rate = draw(_rate())
+    in_base = money.rnd_fx(amount, Decimal(rate), 2)
+    other = money.negate(in_base)
+    if kind == "fx-journal-unbalanced":
+        other = money.EXACT.add(other, Decimal("0.01"))
+    meant = POST if kind == "fx-journal" and not in_base.is_zero() else REJECT  # a line of S$0.00 is refused
+    lines = [{"account": account, "currency": currency, "amount": _text(amount, minor), "fx_rate": rate,
+              "fx_rate_source": "document"},
+             {"account": draw(st.sampled_from(["2999", "4010", "6010"])), "currency": "SGD", "amount": _text(other, 2)}]
+    return {"type": "manual_journal", **base, "memo": "", "lines": lines}, meant
+
+
 @st.composite
 def p1_scenarios_with_intent(
     draw: st.DrawFn, sources: tuple[str, ...] = SOURCES, name: str = "generated-p1"
@@ -965,6 +1090,8 @@ def p1_scenarios_with_intent(
         settings["books_start"] = book.books_start.isoformat()
         settings["accounts"].update({key: code for key, (code, _) in DIRECTOR_ACCOUNTS.items()})
         accounts += _founders_accounts()
+    if "fx" in sources:
+        _revalue(draw, accounts, settings)
     tracked: list[strategies_gl.Tracked] = []  # the general ledger's journals and opening balances
     if ledger:
         accounts += strategies_gl.accounts()
@@ -990,6 +1117,8 @@ def p1_scenarios_with_intent(
             document, meant = draw(_claims_document(doc_id, day, kind, book))
         elif kind in KINDS["assets"]:
             document, meant = draw(_assets_document(doc_id, day, kind, book))
+        elif kind in FX_OWN:
+            document, meant = draw(_fx_document(doc_id, day, kind, book))
         elif kind in KINDS["general-ledger"]:
             document, meant, kind = draw(strategies_gl.journal(doc_id, day, kind))
             tracked.append(strategies_gl.Tracked(doc_id, "manual_journal", meant == POST, 1, day))
@@ -1001,12 +1130,15 @@ def p1_scenarios_with_intent(
     reversals, corrections = draw(strategies_gl.corrections(tracked, book.books_start)) if ledger else ([], [])
     last = max(date.fromisoformat(d["date"]) for d in documents)
     last = max(last, strategies_gl.corrections_last_day(reversals) or last)
+    as_of = last + timedelta(days=draw(st.integers(0, 400)))
+    if "fx" in sources:
+        settings["period_end_rates"] = draw(_period_end_rates(min(days[0], book.books_start or days[0]), as_of))
     scenario = {
         "schema": SCENARIO_SCHEMA,
         "name": name,
         "base_currency": "SGD",
         "currencies": dict(CURRENCIES),
-        "as_of": (last + timedelta(days=draw(st.integers(0, 400)))).isoformat(),
+        "as_of": as_of.isoformat(),
         "settings": settings,
         "accounts": accounts,
         "documents": documents,

@@ -172,6 +172,7 @@ func (r *p1) invoice(i int, d Document, date time.Time, credit bool) (ledger.Ent
 		if of != nil {
 			of.credited, _ = of.credited.Add(totals.Total)
 		}
+		r.hold(d.ID, date, e, ledger.RoleAccountsReceivable)
 		return e, true
 	}
 	e, err := ledger.PostInvoice(inv, r.settings)
@@ -190,6 +191,7 @@ func (r *p1) invoice(i int, d Document, date time.Time, credit bool) (ledger.Ent
 	}
 	r.issued[d.ID] = &issued{date: date, charged: totals.Total, credited: money.Zero(cur)}
 	r.keepOpen(d.ID, "invoice", e, ledger.RoleAccountsReceivable)
+	r.hold(d.ID, date, e, ledger.RoleAccountsReceivable)
 	return e, true
 }
 
@@ -269,6 +271,7 @@ func (r *p1) customerReceipt(d Document, date time.Time) (ledger.Entry, bool) {
 		return ledger.Entry{}, false
 	}
 	r.settled(date, settlements, r.idsOf(d))
+	r.holdCredit(d.ID, date, e, ledger.RoleAccountsReceivable, settlements)
 	return e, true
 }
 

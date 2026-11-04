@@ -60,6 +60,8 @@ type Account struct {
 	ReportGroup  string `json:"report_group,omitempty"`
 	Function     string `json:"function,omitempty"`
 	CashFlowLine string `json:"cash_flow_line,omitempty"`
+	// Revalue marks a monetary item, revalued at each month's end (FR-GL-04; README, "Month-end revaluation").
+	Revalue bool `json:"revalue,omitempty"`
 }
 
 // Document is one document version: a manual journal, or a P1 source's document, whose own shape Raw holds.
@@ -195,7 +197,7 @@ func RunEngine(s Scenario) (Result, error) {
 	for _, a := range s.Accounts {
 		id := stableID("account", a.Code)
 		settings.Accounts[id] = ledger.Account{ID: id, Code: a.Code, Group: a.Group, Active: a.Active, ShareCapital: a.Role == "share-capital",
-			Role: a.Role, Type: a.Type}
+			Role: a.Role, Type: a.Type, Revalue: a.Revalue}
 		codeOf[id] = a.Code
 	}
 	for _, p := range s.People {
@@ -358,7 +360,14 @@ func RunEngine(s Scenario) (Result, error) {
 			}
 		}
 	}
-	for _, x := range sources.scheduledEntries() {
+	sched := sources.scheduledEntries()
+	// The month-end revaluations read every entry dated on or before each month's end, the scheduled ones included,
+	// and come last among the scheduled entries of their day (README, "The revaluation entry and its reversal").
+	sched = append(sched, sources.revaluations(book, sched)...)
+	slices.SortStableFunc(sched, func(a, b scheduled) int {
+		return cmp.Or(a.entry.PostingDate.Compare(b.entry.PostingDate), cmp.Compare(a.index, b.index), cmp.Compare(a.kind, b.kind))
+	})
+	for _, x := range sched {
 		record(x.doc, x.kind, x.entry, !x.asStored)
 	}
 	for month, accounts := range totals {

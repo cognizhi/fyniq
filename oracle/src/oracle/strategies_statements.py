@@ -27,7 +27,8 @@ An edit's lines count twice (its replacement, and the reversal of it by a later 
 a journal that reverses by itself once more.
 
 The statements of a scenario with opening balances are not in the format yet (README, "P1 readings"), so the general
-ledger's opening balances, and the edits naming them, are dropped from a scenario drawn here.
+ledger's opening balances, and the edits naming them, are dropped from a scenario drawn here. Nor are those of a scenario with a
+revalued account: the revalue flags and the period-end rates are dropped too.
 """
 
 from __future__ import annotations
@@ -97,6 +98,10 @@ def with_statements(draw: st.DrawFn, base: st.SearchStrategy[dict[str, Any]], kp
     if openings:  # not in the format with the statements yet
         scenario = {**scenario, "documents": [d for d in scenario["documents"] if d["id"] not in openings],
                     "reversals": [r for r in scenario["reversals"] if r.get("document") not in openings]}
+    # Nor is the month-end revaluation (README, "P1 readings"): the flags and the period-end rates are dropped.
+    scenario = {**scenario, "accounts": [{k: v for k, v in a.items() if k != "revalue"} for a in scenario["accounts"]]}
+    if "period_end_rates" in (scenario.get("settings") or {}):
+        scenario["settings"] = {k: v for k, v in scenario["settings"].items() if k != "period_end_rates"}
     accounts = [draw(_attributes(account)) for account in scenario["accounts"]]
     retained = {"code": RETAINED, "type": "equity", "group": False, "active": True, "role": "retained-earnings"}
     if draw(st.booleans()):

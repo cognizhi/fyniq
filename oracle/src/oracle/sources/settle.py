@@ -28,7 +28,7 @@ month's earlier differences, at most S$200.00 a month (the defaults of open ques
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from typing import Any
@@ -57,6 +57,9 @@ class OpenItem:
     date: date | None = None  # an invoice's, for a credit note linked to it
     gross: Decimal | None = None  # an invoice's total before the deposits it deducts
     credited: Decimal = money.ZERO  # what the credit notes linked to an invoice credit (rev 0.155)
+    # Each settlement's or write-off's (date, amount settled, carrying amount it cleared), in the order they posted, so
+    # the month-end revaluation reads what is open on a day (FR-GL-04: "at what is open of it").
+    allocations: list[tuple[date, Decimal, Decimal]] = field(default_factory=list)
 
     @property
     def open(self) -> Decimal:
@@ -65,6 +68,18 @@ class OpenItem:
     @property
     def open_base(self) -> Decimal:
         return money.EXACT.subtract(self.carrying, self.settled_base)
+
+    def settle(self, day: date, amount: Decimal, carrying: Decimal) -> None:
+        """Record what a settlement or write-off dated ``day`` settled of it, and the carrying amount it cleared."""
+        self.settled = money.EXACT.add(self.settled, amount)
+        self.settled_base = money.EXACT.add(self.settled_base, carrying)
+        self.allocations.append((day, amount, carrying))
+
+    def open_on(self, day: date) -> tuple[Decimal, Decimal]:
+        """What is open of it on ``day`` and its carrying amount then: less what was settled on or before ``day``."""
+        settled = [(amount, carrying) for when, amount, carrying in self.allocations if when <= day]
+        return (money.EXACT.subtract(self.total, money.total([a for a, _ in settled])),
+                money.EXACT.subtract(self.carrying, money.total([c for _, c in settled])))
 
 
 def _tolerance(r: Rules) -> dict[str, Decimal]:
@@ -176,8 +191,7 @@ def settle(
 
     def apply() -> None:
         for item, settled, carrying, _ in parts:
-            item.settled = money.EXACT.add(item.settled, settled)
-            item.settled_base = money.EXACT.add(item.settled_base, carrying)
+            item.settle(doc.date, settled, carrying)
         if not differences.is_zero():
             by_month = books.setdefault(_MONTH_DIFFERENCES, {})
             by_month[month] = money.EXACT.add(by_month.get(month, money.ZERO), differences)

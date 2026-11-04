@@ -532,3 +532,75 @@ func TestGeneralLedgerFormatRules(t *testing.T) {
 		}
 	}
 }
+
+// The month-end revaluation's shapes the format refuses as a whole (README, "The revalued accounts and the period-end
+// rates"), each a change to golden/fx-revaluation.json: the revalue flag on an account that is not an asset or a
+// liability, or on prepayments; a flagged account without the unrealised-FX account, or with one that is not an
+// income or expense account without a role; the statements with a flagged account; and a period-end rate off a
+// month's last day, for the base currency, twice for a day, or whose quote stores no rate under RND-RATE.
+// req: FR-GL-04
+// req: RND-RATE
+// req: QA-ENG-01
+func TestRevaluationFormatRules(t *testing.T) {
+	b, err := os.ReadFile(filepath.Join(golden, "fx-revaluation.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	change := func(f func(s map[string]any)) []byte {
+		var s map[string]any
+		if err := json.Unmarshal(b, &s); err != nil {
+			t.Fatal(err)
+		}
+		f(s)
+		out, err := json.Marshal(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	if _, err := ParseScenario(change(func(map[string]any) {})); err != nil {
+		t.Fatalf("golden/fx-revaluation.json: %v", err)
+	}
+	settings := func(s map[string]any) map[string]any { return s["settings"].(map[string]any) }
+	account := func(s map[string]any, code string) map[string]any {
+		for _, a := range s["accounts"].([]any) {
+			if a := a.(map[string]any); a["code"] == code {
+				return a
+			}
+		}
+		t.Fatalf("no account %s", code)
+		return nil
+	}
+	rates := func(s map[string]any) []any { return settings(s)["period_end_rates"].([]any) }
+	rate := func(s map[string]any, i int) map[string]any { return rates(s)[i].(map[string]any) }
+	for _, c := range []struct {
+		name, says string
+		change     func(s map[string]any)
+	}{
+		{"the flag on an expense account", "only an asset or a liability", func(s map[string]any) { account(s, "7030")["revalue"] = true }},
+		{"the flag on prepayments", "prepayments or deferred revenue", func(s map[string]any) {
+			settings(s)["accounts"].(map[string]any)["prepayments"] = "1021"
+		}},
+		{"no unrealised-FX account", "needs as_of and settings.accounts.unrealised_fx", func(s map[string]any) {
+			delete(settings(s)["accounts"].(map[string]any), "unrealised_fx")
+		}},
+		{"an unrealised-FX account with a role", "not an active revenue or expense account", func(s map[string]any) {
+			settings(s)["accounts"].(map[string]any)["unrealised_fx"] = "1100"
+		}},
+		{"the statements with a flagged account", "statements of a scenario with an account marked revalue", func(s map[string]any) {
+			s["statements"] = true
+			s["accounts"] = append(s["accounts"].([]any), map[string]any{"code": "3900", "type": "equity", "group": false, "active": true, "role": "retained-earnings"})
+		}},
+		{"a rate off a month's last day", "not on a month's last day", func(s map[string]any) { rate(s, 0)["date"] = "2026-03-30" }},
+		{"a rate for the base currency", "for the base currency", func(s map[string]any) { rate(s, 0)["currency"] = "SGD" }},
+		{"two rates for a day", "two period-end rates", func(s map[string]any) {
+			settings(s)["period_end_rates"] = append(rates(s), maps.Clone(rate(s, 0)))
+		}},
+		{"a quote that stores no rate", "cannot be stored", func(s map[string]any) { rate(s, 1)["quote"] = "0.000000001" }},
+	} {
+		var invalid *InvalidError
+		if _, err := ParseScenario(change(c.change)); !errors.As(err, &invalid) || !strings.Contains(err.Error(), c.says) {
+			t.Errorf("%s: want an invalid scenario saying %q, got %v", c.name, c.says, err)
+		}
+	}
+}

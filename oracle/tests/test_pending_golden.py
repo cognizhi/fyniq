@@ -12,7 +12,7 @@ from oracle.scenario import load_scenario
 
 PENDING = Path(__file__).resolve().parents[2] / "test" / "differential" / "pending"
 GOLDEN = PENDING.parent / "golden"
-MOVED = {"bank", "purchases", "sales", "claims", "assets", "founders", "statements", "general-ledger"}  # the cases the engine reads now, in golden/
+MOVED = {"bank", "purchases", "sales", "claims", "assets", "founders", "statements", "general-ledger", "fx-revaluation"}  # the cases the engine reads now, in golden/
 
 
 def _run(name: str) -> dict:
@@ -693,6 +693,105 @@ def test_pending_general_ledger():
         },
     }
     assert r["people"] == {"P0001": {"2500": "-8000.00"}}  # −8,000 + 8,000 − 8,000
+
+
+# req: QA-ENG-02, FR-GL-04, INV-05, ENG-41, ENG-42, RND-RATE
+def test_pending_fx_revaluation():
+    # README, "Month-end revaluation". as_of is 30 June 2026; 1010 (SGD), 1021 (USD), 1022 (JPY), 1100 and 2010 are
+    # marked revalue; 7040 is unrealised FX. Every revaluation line is base-only: amount 0, base amount the change.
+    r = _run("fx-revaluation")
+    assert r["rejected"] == ["PAY-0003"]  # KWD 100.001 is above what BILL-0002 has open: it leaves no trace
+    assert [(e["document"], e["kind"], e["posting_date"]) for e in r["entries"]][-5:] == [
+        ("revaluation-2026-03", "revaluation", "2026-03-31"),
+        ("revaluation-2026-03", "revaluation_reversal", "2026-04-01"),  # day 1 of the next period
+        ("revaluation-2026-04", "revaluation", "2026-04-30"),
+        ("revaluation-2026-04", "revaluation_reversal", "2026-05-01"),
+        # May waits: KWD (BILL-0002) has no rate for 31 May, so nothing posts that month, USD and JPY included.
+        ("revaluation-2026-06", "revaluation", "2026-06-30"),  # its reversal, 1 July, is after as_of
+    ]
+    # ENG-42, G4-023: USD 1,000.00 + 90.00 at 1.34; 2200 the S$121.50 stated; 2010 1,090.00 × 1.34 = 1,460.60;
+    # 7030 1,460.60 − 1,340.00 − 121.50 = −0.90.
+    assert _lines(r, "BILL-0001") == [("2010", "USD", "-1090.00", "-1460.60"), ("2200", "SGD", "121.50", "121.50"),
+                                      ("6010", "USD", "1000.00", "1340.00"), ("7030", "SGD", "-0.90", "-0.90")]
+    # RND-RATE of what 1010 paid: 400.00 ÷ (290.00 + 10.00) = 1.3333333333; the unapplied USD 10.00 is carried at
+    # 13.33; 2010 takes 290.00 × 1.34 = 388.60 + 13.33 = 401.93; 7030 400.00 − 401.93 = −1.93.
+    assert _lines(r, "PAY-0001") == [("1010", "SGD", "-400.00", "-400.00"), ("2010", "USD", "300.00", "401.93"),
+                                     ("7030", "SGD", "-1.93", "-1.93")]
+    # ENG-41, G4-039: USD 4,000.00 at 1.32 (5,280.00) against the stored 1.35 (5,400.00): 120.00 realised, after the
+    # March revaluation was reversed on 1 April.
+    assert _lines(r, "RC-0001") == [("1021", "USD", "4000.00", "5280.00"), ("1100", "USD", "-4000.00", "-5400.00"),
+                                    ("7030", "SGD", "120.00", "120.00")]
+    # 500.00 at 1.32 (660.00) against the bill's 1.34 (670.00): a 10.00 gain.
+    assert _lines(r, "PAY-0002") == [("1021", "USD", "-500.00", "-660.00"), ("2010", "USD", "500.00", "670.00"),
+                                     ("7030", "SGD", "-10.00", "-10.00")]
+    # 31 March. USD at 1.30; JPY quoted 0.8850 per 100 yen, stored 0.00885 (RND-RATE).
+    #   1021: USD 1,000.00 carried at 1,350.00 is 1,300.00: −50.00. 1022: JPY 100,000 at 900.00 is 885.00: −15.00.
+    #   1100: INV-0001 USD 10,000.00 at 13,500.00 is 13,000.00: −500.00 (G4-039); CN-0001 −200.00 at −266.00 is
+    #   −260.00: +6.00; what no document supports, JNL-0001's USD 100.00 at 136.00, is 130.00: −6.00. Net −500.00.
+    #   2010: BILL-0001 open −800.00 at −1,072.00 (1,460.60 − 388.60) is −1,040.00: +32.00; PAY-0001's credit USD
+    #   10.00 at 13.33 is 13.00: −0.33. Net +31.67. 1010 holds SGD only: no item.
+    #   7040 takes the sum negated: 50.00 + 15.00 + 500.00 − 31.67 = 533.33, a loss.
+    march = [("1021", "USD", "0.00", "-50.00"), ("1022", "JPY", "0", "-15.00"), ("1100", "USD", "0.00", "-500.00"),
+             ("2010", "USD", "0.00", "31.67"), ("7040", "SGD", "533.33", "533.33")]
+    assert _lines(r, "revaluation-2026-03", "revaluation") == march
+    assert _lines(r, "revaluation-2026-03", "revaluation_reversal") == [(a, c, _neg(x) if x[0] != "0" else x, _neg(b))
+                                                                        for a, c, x, b in march]
+    # 30 April. USD at 1.33; JPY quoted 112.5 yen per dollar, stored 0.0088888889; KWD quoted 0.2265 dinar per
+    # dollar, stored 4.4150110375 (1 ÷ 0.2265 = 4.41501103752...).
+    #   1021: USD 4,500.00 (1,000.00 + 4,000.00 − 500.00) at 5,970.00 (1,350.00 + 5,280.00 − 660.00) is 5,985.00: +15.00.
+    #   1022: JPY 0 carried at 10.00 (900.00 in, 890.00 out at 0.0089) is 0.00: −10.00, whatever the rate.
+    #   1100: INV-0001 USD 6,000.00 at 8,100.00 is 7,980.00: −120.00 (G4-039); CN-0001 at 1.33 is −266.00: nothing;
+    #   JNL-0001's 100.00 at 136.00 is 133.00: −3.00. Net −123.00.
+    #   2010 USD: BILL-0001 open −300.00 at −402.00 is −399.00: +3.00; the credit 10.00 at 13.33 is 13.30: −0.03.
+    #   2010 KWD: BILL-0002 −100.000 at −443.21 is −441.50 (−441.50110375): +1.71.
+    #   7040: −(15.00 − 10.00 − 123.00 + 2.97 + 1.71) = 113.32.
+    assert _lines(r, "revaluation-2026-04", "revaluation") == [
+        ("1021", "USD", "0.00", "15.00"), ("1022", "JPY", "0", "-10.00"), ("1100", "USD", "0.00", "-123.00"),
+        ("2010", "KWD", "0.000", "1.71"), ("2010", "USD", "0.00", "2.97"), ("7040", "SGD", "113.32", "113.32")]
+    # 30 June. USD at 1.31; JPY quoted 0.0091 per yen (base-per-unit); KWD at 4.40. WO-0001 cleared USD 100.00 of
+    # INV-0001 at its stored 1.35 (135.00) on 10 June.
+    #   1021: USD 4,500.00 at 5,970.00 is 5,895.00: −75.00. 1022: JPY 0 at 10.00: −10.00 again (April's was reversed).
+    #   1100: INV-0001 USD 5,900.00 at 7,965.00 is 7,729.00: −236.00; CN-0001 −200.00 at −266.00 is −262.00: +4.00;
+    #   JNL-0001's 100.00 at 136.00 is 131.00: −5.00. Net −237.00.
+    #   2010 USD: −300.00 at −402.00 is −393.00: +9.00; the credit 10.00 at 13.33 is 13.10: −0.23. Net +8.77.
+    #   2010 KWD: −100.000 at −443.21 is −440.00: +3.21. 7040: 75.00 + 10.00 + 237.00 − 8.77 − 3.21 = 310.02.
+    assert _lines(r, "revaluation-2026-06", "revaluation") == [
+        ("1021", "USD", "0.00", "-75.00"), ("1022", "JPY", "0", "-10.00"), ("1100", "USD", "0.00", "-237.00"),
+        ("2010", "KWD", "0.000", "3.21"), ("2010", "USD", "0.00", "8.77"), ("7040", "SGD", "310.02", "310.02")]
+    assert r["trial_balance"] == {
+        "2026-03": {
+            "1010": "-2650.00",  # −1,350.00 − 900.00 − 400.00
+            "1021": "1300.00",  # 1,350.00 − 50.00
+            "1022": "885.00",  # 900.00 − 15.00
+            "1100": "12870.00",  # 13,500.00 + 136.00 − 266.00 − 500.00
+            "2010": "-1027.00",  # −1,460.60 + 401.93 + 31.67
+            "2200": "121.50",
+            "2999": "-136.00",
+            "4010": "-13234.00",  # −13,500.00 + 266.00
+            "6010": "1340.00",
+            "7030": "-2.83",  # −0.90 − 1.93
+            "7040": "533.33",
+        },
+        "2026-04": {
+            "1010": "890.00",
+            "1021": "4685.00",  # 50.00 + 5,280.00 − 660.00 + 15.00
+            "1022": "-885.00",  # 15.00 − 890.00 − 10.00
+            "1100": "-5023.00",  # 500.00 − 5,400.00 − 123.00
+            "2010": "199.80",  # −31.67 + 670.00 − 443.21 + 1.71 + 2.97
+            "6010": "443.21",
+            "7030": "110.00",  # 120.00 − 10.00
+            "7040": "-420.01",  # −533.33 + 113.32
+        },
+        "2026-05": {"1021": "-15.00", "1022": "10.00", "1100": "123.00", "2010": "-4.68", "7040": "-113.32"},  # April's reversal
+        "2026-06": {
+            "1021": "-75.00",
+            "1022": "-10.00",
+            "1100": "-372.00",  # −135.00 (WO-0001) − 237.00
+            "2010": "11.98",  # 8.77 + 3.21
+            "7030": "135.00",
+            "7040": "310.02",
+        },
+    }
 
 
 def _neg(text: str) -> str:
