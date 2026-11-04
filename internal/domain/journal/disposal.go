@@ -285,18 +285,20 @@ func (s AssetDisposals) prepareDisposal(ctx context.Context, u storage.UnitOfWor
 		if err != nil {
 			return CheckedDisposal{}, err
 		}
-		if _, registered := gst.StatusOn(regs, on); registered {
-			code, ok := pack.Code(version, d.GSTCode)
-			standard, _ := pack.RateOn(version, on)
-			switch {
-			case !ok || code.Direction != pack.DirSupply:
-				add(asset.CodeProceeds, "gst_code", fmt.Sprintf("%q is not a GST code for supplies", d.GSTCode),
-					"Choose the GST code of the sale, usually SR: the sale of a business asset is a taxable supply")
-			case code.StandardRated:
-				x.GSTRate = standard
-			case code.ValueBox != 0:
-				x.GSTRate = "0"
-			}
+		// A code given is a supply code whatever the registration (B.6, rev 0.169); while registered the sale needs one,
+		// and bears GST at it.
+		_, registered := gst.StatusOn(regs, on)
+		code, ok := pack.Code(version, d.GSTCode)
+		standard, _ := pack.RateOn(version, on)
+		switch {
+		case (registered || d.GSTCode != "") && (!ok || code.Direction != pack.DirSupply):
+			add(asset.CodeProceeds, "gst_code", fmt.Sprintf("%q is not a GST code for supplies", d.GSTCode),
+				"Choose the GST code of the sale, usually SR: the sale of a business asset is a taxable supply")
+		case !registered:
+		case code.StandardRated:
+			x.GSTRate = standard
+		case code.ValueBox != 0:
+			x.GSTRate = "0"
 		}
 	case asset.ProceedsInvoice:
 		if d.InvoiceID == nil {

@@ -181,6 +181,9 @@ func TestDisposingOfFixedAssets(t *testing.T) {
 		"If-Match", freshTag), "disposeFixedAsset", 422, asset.CodeDisposalDate)
 	e.problemIs(e.call(http.MethodPost, "/v1/fixed-assets/"+fresh+"/disposals", accountant, map[string]any{"date": "2027-10-15", "proceeds": "none",
 		"cost": sgd("1500.01")}, "If-Match", freshTag), "disposeFixedAsset", 422, asset.CodeDisposalShare)
+	// A GST code given is a supply code, whatever the registration (B.6, rev 0.169): NA is refused though not registered.
+	e.problemIs(e.call(http.MethodPost, "/v1/fixed-assets/"+fresh+"/disposals", accountant, map[string]any{"date": "2027-10-15", "proceeds": "money",
+		"money_account_id": bank.ID.String(), "amount": sgd("100.00"), "gst_code": "NA"}, "If-Match", freshTag), "disposeFixedAsset", 422, asset.CodeProceeds)
 
 	// The register lists them; in Founder mode a void is asked for, not done.
 	if l := e.call(http.MethodGet, "/v1/asset-disposals?asset_id="+laptops[0].id, e.as(authz.Bookkeeper), nil); len(l.Body["items"].([]any)) != 1 {

@@ -116,8 +116,10 @@ func TestCreditNotesPostThroughThePostingService(t *testing.T) {
 			Lines: []invoice.Line{spread}}, []string{invoice.CodeCredited, invoice.CodeDueDate, ledger.CodeSpread}, "is draft, not issued"},
 		{"of another customer's invoice", invoice.Draft{CustomerID: b.Customer.ID, Credits: other.ID, Date: oct21, Currency: sgd,
 			Lines: []invoice.Line{invoiceLine(t, b, "1", "5.00", "", "SR", "SGD")}}, []string{invoice.CodeCredited}, "is to another customer"},
+		// INV-0001's credit note of 200.00 leaves 800.00 of its 1,000.00 (FR-AR-04, rev 0.155: together they credit at most its total).
 		{"more than the invoice", invoice.Draft{CustomerID: b.Customer.ID, Credits: before.ID, Date: oct21, Currency: sgd,
-			Lines: []invoice.Line{invoiceLine(t, b, "1", "1000.01", "", "SR", "SGD")}}, []string{invoice.CodeCredited}, "more than the 1000.00 SGD"},
+			Lines: []invoice.Line{invoiceLine(t, b, "1", "1000.01", "", "SR", "SGD")}}, []string{invoice.CodeCredited},
+			"more than the 800.00 SGD the invoice's other credit notes leave of its 1000.00 SGD"},
 		{"dated before the invoice", invoice.Draft{CustomerID: b.Customer.ID, Credits: after.ID, Date: oct14, Currency: sgd,
 			Lines: []invoice.Line{invoiceLine(t, b, "1", "5.00", "", "SR", "SGD")}}, []string{invoice.CodeCredited}, "after the credit note's"},
 		{"of a document that is not an invoice", invoice.Draft{CustomerID: b.Customer.ID, Credits: standalone.ID, Date: oct21, Currency: sgd,

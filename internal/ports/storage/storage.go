@@ -197,6 +197,9 @@ type Documents interface {
 	// InvoicesOfQuote lists the invoices, drafts and issued, not voided, whose current version has a line made from the
 	// quote or sales order (FR-AR-02), by ID.
 	InvoicesOfQuote(ctx context.Context, quoteID uuid.UUID) ([]Document, error)
+	// CreditNotesOf lists the issued credit notes, not voided, whose current version credits the invoice (FR-AR-04;
+	// rev 0.155: together they credit at most its total), by ID.
+	CreditNotesOf(ctx context.Context, invoiceID uuid.UUID) ([]Document, error)
 	// WaitingReversals lists, earliest reversal first, the posted journals whose automatic reversal waits because no
 	// period that is not closed covers its date (FR-GL-02; rev 0.58): at most limit of them, after the cursor's reversal
 	// date and ID when afterID is set.
