@@ -116,8 +116,9 @@
   `golden/fx-revaluation.json` (March to June 2026, worked by hand); realised FX and ENG-42 were already stated and are
   summarised. The engine session taught `cmd/scenario-run` them through `ledger.Revalue` and the sub-ledgers' rules
   (`internal/differential/p1_fx.go`): the two sides agreed on the golden case at the first run and over generated
-  scenarios, and `fx` joined `DIFFERENTIAL_SOURCES`. Open: a director's account flagged with a balance in another
-  currency, revalued per person in the oracle's reading and as one item in the product; not generated.)
+  scenarios, and `fx` joined `DIFFERENTIAL_SOURCES`. A director's account flagged with a balance in another currency
+  was revalued as one balance whose line named no one, so the database refused the whole month (FY250): the product now
+  revalues it person by person, as the oracle reads it (`TestADirectorsAccountIsRevaluedPerPerson`).)
 
 ## 7. Finish
 

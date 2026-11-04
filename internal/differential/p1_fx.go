@@ -175,6 +175,7 @@ func (r *p1) revaluations(book []booked, sched []scheduled) []scheduled {
 		type key struct {
 			account uuid.UUID
 			cur     string
+			party   uuid.UUID // whose balance on a director's account, revalued per person (FR-EQ-01)
 		}
 		balances := map[key][2]money.Money{}
 		var keys []key
@@ -186,7 +187,10 @@ func (r *p1) revaluations(book []booked, sched []scheduled) []scheduled {
 				if !r.settings.Accounts[l.AccountID].Revalue || l.Amount.Currency() == r.base {
 					continue
 				}
-				k := key{l.AccountID, l.Amount.Currency().Code}
+				k := key{l.AccountID, l.Amount.Currency().Code, uuid.Nil}
+				if r.settings.Accounts[l.AccountID].DirectorAccount() {
+					k.party = l.Party
+				}
 				b, ok := balances[k]
 				if !ok {
 					b = [2]money.Money{money.Zero(l.Amount.Currency()), money.Zero(r.base)}
@@ -198,17 +202,17 @@ func (r *p1) revaluations(book []booked, sched []scheduled) []scheduled {
 			}
 		}
 		slices.SortFunc(keys, func(a, b key) int {
-			return cmp.Or(cmp.Compare(r.codeOf[a.account], r.codeOf[b.account]), cmp.Compare(a.cur, b.cur))
+			return cmp.Or(cmp.Compare(r.codeOf[a.account], r.codeOf[b.account]), cmp.Compare(a.cur, b.cur), cmp.Compare(a.party.String(), b.party.String()))
 		})
 		var items []ledger.RevaluationItem
 		waits := false
-		item := func(account uuid.UUID, open, carrying money.Money, of string) {
+		item := func(account uuid.UUID, open, carrying money.Money, of string, party uuid.UUID) {
 			rate, ok := r.periodEndRate(end, open.Currency())
 			if !ok {
 				waits = true
 				return
 			}
-			items = append(items, ledger.RevaluationItem{AccountID: account, Open: open, Carrying: carrying, Rate: rate, Of: of})
+			items = append(items, ledger.RevaluationItem{AccountID: account, Open: open, Carrying: carrying, Rate: rate, Of: of, Party: party})
 		}
 		for _, k := range keys {
 			b := balances[k]
@@ -217,7 +221,7 @@ func (r *p1) revaluations(book []booked, sched []scheduled) []scheduled {
 			}
 			role := r.settings.Accounts[k.account].Role
 			if role != ledger.RoleAccountsReceivable && role != ledger.RoleAccountsPayable {
-				item(k.account, b[0], b[1], "")
+				item(k.account, b[0], b[1], "", k.party)
 				continue
 			}
 			open, carried := money.Zero(b[0].Currency()), money.Zero(r.base)
@@ -235,7 +239,7 @@ func (r *p1) revaluations(book []booked, sched []scheduled) []scheduled {
 				if a.IsZero() && c.IsZero() {
 					continue
 				}
-				item(k.account, a, c, id)
+				item(k.account, a, c, id, uuid.Nil)
 				open, _ = open.Add(a)
 				carried, _ = carried.Add(c)
 			}
@@ -243,7 +247,7 @@ func (r *p1) revaluations(book []booked, sched []scheduled) []scheduled {
 			restOpen, _ := b[0].Sub(open)
 			restBase, _ := b[1].Sub(carried)
 			if !restOpen.IsZero() || !restBase.IsZero() {
-				item(k.account, restOpen, restBase, "")
+				item(k.account, restOpen, restBase, "", uuid.Nil)
 			}
 		}
 		if waits || len(items) == 0 {

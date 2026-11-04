@@ -55,6 +55,7 @@ type savedItem struct {
 	RateSource string `json:"rate_source"`
 	DocumentID string `json:"document_id,omitempty"` // an open document of a control account's sub-ledger (rev 0.92)
 	Of         string `json:"of,omitempty"`          // its number
+	Party      string `json:"party_id,omitempty"`    // whose balance on a director's account (FR-EQ-01)
 }
 
 // Item is one account's balance in one foreign currency at the period end, or one open document of a control account's
@@ -153,7 +154,7 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, periodID uuid.UUID, subs
 	for _, a := range accounts {
 		byID[a.ID] = a
 		settings.Accounts[a.ID] = ledger.Account{ID: a.ID, Code: a.Code, Group: a.Group, Active: a.Active, Revalue: a.Revalue,
-			UnrealisedFX: a.Role == storage.RoleUnrealisedFX}
+			UnrealisedFX: a.Role == storage.RoleUnrealisedFX, Role: string(a.Role)}
 		if a.Role == storage.RoleUnrealisedFX {
 			x := a
 			plan.Unrealised = &x
@@ -192,12 +193,27 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, periodID uuid.UUID, subs
 		plan.Items = append(plan.Items, it)
 		return nil
 	}
-	docs := map[uuid.UUID][]Document{} // each sub-ledger's open documents, read once
+	docs := map[uuid.UUID][]Document{}                            // each sub-ledger's open documents, read once
+	persons := map[uuid.UUID]map[string][]balance.ForeignPerson{} // each director's account's people, read once
 	var earlier map[uuid.UUID]money.Money
 	for _, r := range rows {
 		a := byID[r.AccountID]
 		if !a.Revalue {
 			plan.NotRevalued = append(plan.NotRevalued, NotRevalued{Account: a, Amount: r.Amount, Base: r.Base})
+			continue
+		}
+		if settings.Accounts[a.ID].DirectorAccount() {
+			// A director's account, person by person (FR-EQ-01): every line on it names whose it is (FY250).
+			if _, read := persons[a.ID]; !read {
+				if persons[a.ID], err = balance.ForeignByPerson(ctx, u, base, a.ID, p.EndsOn); err != nil {
+					return Plan{}, err
+				}
+			}
+			for _, x := range persons[a.ID][r.Amount.Currency().Code] {
+				if err := add(Item{Account: a, RevaluationItem: ledger.RevaluationItem{AccountID: a.ID, Open: x.Amount, Carrying: x.Base, Party: x.Party}}); err != nil {
+					return Plan{}, err
+				}
+			}
 			continue
 		}
 		sub, ok := subs[a.Role]
@@ -415,6 +431,9 @@ func (p Plan) Record() ([]byte, error) {
 		if it.Document != nil {
 			x.DocumentID = it.Document.String()
 		}
+		if it.Party != uuid.Nil {
+			x.Party = it.Party.String()
+		}
 		s.Items = append(s.Items, x)
 	}
 	return json.Marshal(s)
@@ -442,7 +461,7 @@ func ReadRevaluation(ctx context.Context, u storage.UnitOfWork, doc storage.Docu
 	settings := ledger.Settings{Base: base, Accounts: map[uuid.UUID]ledger.Account{}}
 	for _, a := range accounts {
 		settings.Accounts[a.ID] = ledger.Account{ID: a.ID, Code: a.Code, Group: a.Group, Active: true, Revalue: a.Revalue,
-			UnrealisedFX: a.Role == storage.RoleUnrealisedFX}
+			UnrealisedFX: a.Role == storage.RoleUnrealisedFX, Role: string(a.Role)}
 	}
 	r := ledger.Revaluation{ID: doc.ID, Version: doc.Version}
 	if r.Date, err = time.Parse(time.DateOnly, s.Date); err != nil {
@@ -483,7 +502,13 @@ func readItems(s saved, base money.Currency) ([]ledger.RevaluationItem, error) {
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, ledger.RevaluationItem{AccountID: id, Open: open, Carrying: carrying, Rate: rate, Of: x.Of})
+		it := ledger.RevaluationItem{AccountID: id, Open: open, Carrying: carrying, Rate: rate, Of: x.Of}
+		if x.Party != "" {
+			if it.Party, err = uuid.Parse(x.Party); err != nil {
+				return nil, err
+			}
+		}
+		out = append(out, it)
 	}
 	return out, nil
 }

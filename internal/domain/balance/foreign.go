@@ -3,6 +3,7 @@ package balance
 import (
 	"context"
 	"sort"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -79,5 +80,71 @@ func Foreign(ctx context.Context, u storage.UnitOfWork, base money.Currency, all
 		}
 		return out[i].Amount.Currency().Code < out[j].Amount.Currency().Code
 	})
+	return out, nil
+}
+
+// ForeignPerson is one person's balance on a director's account in a currency other than the base: the amount in the
+// currency, and its value in the books in the base currency. Party is uuid.Nil for lines that name no one, which only
+// lines posted before director's accounts named their person can be.
+type ForeignPerson struct {
+	Party  uuid.UUID
+	Amount money.Money
+	Base   money.Money
+}
+
+// ForeignByPerson is a director's account's balance in each currency other than base through a day, person by person
+// (FR-EQ-01, ENG-04), by currency: the month-end revaluation revalues a director's account per person, since every line
+// on it names whose it is (FY250). The person is not in the cached balances, so the lines are read as People reads them.
+// A person whose amount and base value are both zero is left out; each currency's people are in the order of their IDs.
+func ForeignByPerson(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, through time.Time) (map[string][]ForeignPerson, error) {
+	type key struct {
+		party    uuid.UUID
+		currency string
+	}
+	sums := map[key]*ForeignPerson{}
+	err := controlLines(ctx, u, account, through, func(l storage.AccountLine) error {
+		if l.Currency == base.Code {
+			return nil
+		}
+		cur, err := money.Lookup(l.Currency)
+		if err != nil {
+			return err
+		}
+		amount, err := money.ParseStored(string(l.Amount), cur)
+		if err != nil {
+			return err
+		}
+		value, err := money.ParseStored(string(l.BaseAmount), base)
+		if err != nil {
+			return err
+		}
+		k := key{currency: l.Currency}
+		if l.PartyID != nil {
+			k.party = *l.PartyID
+		}
+		s, ok := sums[k]
+		if !ok {
+			s = &ForeignPerson{Party: k.party, Amount: money.Zero(cur), Base: money.Zero(base)}
+			sums[k] = s
+		}
+		if s.Amount, err = s.Amount.Add(amount); err != nil {
+			return err
+		}
+		s.Base, err = s.Base.Add(value)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := map[string][]ForeignPerson{}
+	for k, s := range sums {
+		if s.Amount.IsZero() && s.Base.IsZero() {
+			continue
+		}
+		out[k.currency] = append(out[k.currency], *s)
+	}
+	for _, people := range out {
+		sort.Slice(people, func(i, j int) bool { return people[i].Party.String() < people[j].Party.String() })
+	}
 	return out, nil
 }
