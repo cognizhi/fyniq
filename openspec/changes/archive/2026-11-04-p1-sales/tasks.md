@@ -273,4 +273,6 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   the purchases' settlements on 1100 with the tolerance cap shared, write-offs at most what is open. The golden case
   agreed at once, `TestP1SalesCreditDepositsAndWriteOffs` holds its hand-worked figures, and `sales` joins the
   Makefile's `DIFFERENTIAL_SOURCES`.)
-- [ ] 9.2 Finish with `make check` and `make test`
+- [x] 9.2 Finish with `make check` and `make test`
+  (4 Nov 2026: both pass in CI on main, `make test` as the required check "Go, web and checks" on every merge, the
+  sales sources' differential included (#385); `make check` passes locally.)
