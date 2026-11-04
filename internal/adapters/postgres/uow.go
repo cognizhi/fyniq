@@ -1030,9 +1030,17 @@ func (r balances) Differences(ctx context.Context) ([]storage.BalanceDifference,
 	}
 	out := make([]storage.BalanceDifference, 0, len(rows))
 	for _, d := range rows {
-		out = append(out, storage.BalanceDifference{AccountID: d.AccountID, PeriodID: d.PeriodID, Currency: d.Currency,
+		x := storage.BalanceDifference{AccountID: d.AccountID, PeriodID: d.PeriodID, Currency: d.Currency,
 			CachedAmount: opt(d.CachedAmount), CachedBaseAmount: opt(d.CachedBaseAmount),
-			LinesAmount: opt(d.LinesAmount), LinesBaseAmount: opt(d.LinesBaseAmount)})
+			LinesAmount: opt(d.LinesAmount), LinesBaseAmount: opt(d.LinesBaseAmount)}
+		if d.DimensionSetID != "" {
+			id, err := uuid.Parse(d.DimensionSetID)
+			if err != nil {
+				return nil, err
+			}
+			x.DimensionSetID = &id
+		}
+		out = append(out, x)
 	}
 	return out, nil
 }

@@ -42,6 +42,10 @@ The sample company in `internal/seed` already carries a chart for `make seed-loa
   - `journal_line` gains a dimension set: one row per distinct combination, referenced by a key.
   - The balances cache is keyed by account × period × dimension set × currency, as §11.4 already
     plans.
+  - (4 Nov 2026, building slice 1) A line with no dimension names no set: its set is NULL, the default set,
+    and the cache's key treats NULL as one set (`NULLS NOT DISTINCT`). This replaces the backfill below, which
+    would have rewritten posted lines, against INV-02. A set is immutable once written, since posted lines
+    name it.
   - "Required per account" is checked in the domain, and the database backstops it on posting.
 - **Vendor bank details are a versioned child record.**
   - A change creates a pending version, freezes payments to the vendor, notifies the founders through
@@ -71,5 +75,6 @@ The sample company in `internal/seed` already carries a chart for `make seed-loa
 ## Migration Plan
 
 Forward-only goose migrations, linted by squawk with lock and statement timeouts. Existing sample
-data is backfilled with the default dimension set. There is no rollback beyond a new forward
+data is backfilled with the default dimension set. *Superseded (4 Nov 2026):* existing lines keep no set,
+the NULL default above, so no posted line is rewritten (INV-02). There is no rollback beyond a new forward
 migration.

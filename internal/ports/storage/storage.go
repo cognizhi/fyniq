@@ -644,10 +644,12 @@ type Balance struct {
 	LineCount  int64
 }
 
-// BalanceDifference is a cache row that disagrees with the lines; a nil side has no row.
+// BalanceDifference is a cache row that disagrees with the lines; a nil side has no row. DimensionSetID is the row's
+// set of dimension values, nil for the lines with no dimension (FR-DIM-02).
 type BalanceDifference struct {
 	AccountID        uuid.UUID
 	PeriodID         uuid.UUID
+	DimensionSetID   *uuid.UUID
 	Currency         string
 	CachedAmount     *Decimal
 	CachedBaseAmount *Decimal
@@ -728,6 +730,9 @@ const (
 	// CodeConversionStep: a conversion's ACRA steps are recorded between its approval and its effective date, and never
 	// changed (FR-EQ-09).
 	CodeConversionStep = "STORAGE-SHARE-02"
+	// CodeDimension: a dimension set names its values once each, in order, at most one of each of the organisation's
+	// dimensions, and never changes once written (FR-DIM-01, FR-DIM-02).
+	CodeDimension = "STORAGE-DIM-01"
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
 	CodeBanner         = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends

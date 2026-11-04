@@ -139,6 +139,7 @@ var fyCodes = map[string]string{
 	"FY254": storage.CodeBatch,
 	"FY255": storage.CodeShareIssue,
 	"FY256": storage.CodeConversionStep,
+	"FY257": storage.CodeDimension,
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

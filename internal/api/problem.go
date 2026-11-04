@@ -791,6 +791,7 @@ var codeFacts = map[string]struct {
 	director.CodeEffective:          {422, "The effective date does not fit"},
 	director.CodeStep:               {422, "The ACRA step does not fit"},
 	storage.CodeConversionStep:      {409, "A conversion's ACRA steps do not change that way"},
+	storage.CodeDimension:           {422, "The dimension values are not valid"},
 	equity.CodeIssue:                {422, "The share issue does not fit"},
 	CodeOwnCost:                     {403, "The person who paid it does not decide it"},
 	claim.CodeSettleTo:              {422, "The claim cannot be kept as a loan"},
@@ -830,6 +831,7 @@ var storageFixes = map[string]string{
 	storage.CodeBatch:          "A batch is approved by a second person, released once, and never changed after; a payment the bank rejects is voided on its own",
 	storage.CodeShareIssue:     "An allotment is recorded once and never changed; share capital moves only with the register or the opening balances",
 	storage.CodeConversionStep: "A conversion's ACRA steps are recorded between its approval and its effective date, and never changed",
+	storage.CodeDimension:      "Name at most one value of each of the organisation's dimensions",
 	storage.CodeBatchHeld:      "Release the approved batch that holds it, or cancel the batch first and then record the payment",
 
 	storage.CodeParty: "Name the director or shareholder on each line of 2500 and 2120 and on no other line; a person with amounts stays a director or shareholder, and their member is linked only by another person's approval",

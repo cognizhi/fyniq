@@ -211,6 +211,7 @@ type FyniqBalance struct {
 	Amount         string
 	BaseAmount     string
 	LineCount      int64
+	DimensionSetID *uuid.UUID
 }
 
 type FyniqBankFeed struct {
@@ -606,6 +607,35 @@ type FyniqCustomerGroup struct {
 	Name           string
 	ReminderDays   []int32
 	Active         bool
+	Version        int32
+	CreatedAt      time.Time
+}
+
+type FyniqDimension struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Kind           string
+	Position       *int16
+	Name           string
+	IsActive       bool
+	Version        int32
+	CreatedAt      time.Time
+}
+
+type FyniqDimensionSet struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ValueIds       []uuid.UUID
+	CreatedAt      time.Time
+}
+
+type FyniqDimensionValue struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DimensionID    uuid.UUID
+	Code           string
+	Name           string
+	IsActive       bool
 	Version        int32
 	CreatedAt      time.Time
 }
@@ -1078,6 +1108,7 @@ type FyniqJournalLine struct {
 	Description    *string
 	RecordedAt     time.Time
 	PartyID        *uuid.UUID
+	DimensionSetID *uuid.UUID
 }
 
 type FyniqKpiInput struct {

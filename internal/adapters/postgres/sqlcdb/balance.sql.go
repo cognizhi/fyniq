@@ -13,12 +13,13 @@ import (
 
 const balanceDifferences = `-- name: BalanceDifferences :many
 SELECT d.account_id::uuid AS account_id, d.period_id::uuid AS period_id, d.currency::text AS currency,
+       coalesce(d.dimension_set_id::text, '')::text AS dimension_set_id, -- '' for the lines with no dimension
        -- '' where one side has no row
        coalesce(d.cached_amount::text, '')::text AS cached_amount,
        coalesce(d.cached_base_amount::text, '')::text AS cached_base_amount,
        coalesce(d.lines_amount::text, '')::text AS lines_amount,
        coalesce(d.lines_base_amount::text, '')::text AS lines_base_amount
-FROM fyniq.balance_differences() AS d(account_id, period_id, currency, cached_amount, cached_base_amount,
+FROM fyniq.balance_differences() AS d(account_id, period_id, dimension_set_id, currency, cached_amount, cached_base_amount,
                                       lines_amount, lines_base_amount)
 `
 
@@ -26,6 +27,7 @@ type BalanceDifferencesRow struct {
 	AccountID        uuid.UUID
 	PeriodID         uuid.UUID
 	Currency         string
+	DimensionSetID   string
 	CachedAmount     string
 	CachedBaseAmount string
 	LinesAmount      string
@@ -45,6 +47,7 @@ func (q *Queries) BalanceDifferences(ctx context.Context) ([]BalanceDifferencesR
 			&i.AccountID,
 			&i.PeriodID,
 			&i.Currency,
+			&i.DimensionSetID,
 			&i.CachedAmount,
 			&i.CachedBaseAmount,
 			&i.LinesAmount,
@@ -61,8 +64,9 @@ func (q *Queries) BalanceDifferences(ctx context.Context) ([]BalanceDifferencesR
 }
 
 const balancesForPeriod = `-- name: BalancesForPeriod :many
-SELECT account_id, period_id, currency, amount, base_amount, line_count
-FROM fyniq.balance WHERE period_id = $1 ORDER BY account_id, currency
+SELECT account_id, period_id, currency, sum(amount)::numeric(20, 4) AS amount,
+       sum(base_amount)::numeric(20, 4) AS base_amount, sum(line_count)::bigint AS line_count
+FROM fyniq.balance WHERE period_id = $1 GROUP BY account_id, period_id, currency ORDER BY account_id, currency
 `
 
 type BalancesForPeriodRow struct {
@@ -74,6 +78,8 @@ type BalancesForPeriodRow struct {
 	LineCount  int64
 }
 
+// A period's balances, the dimension sets of each account and currency summed (FR-DIM-02: a reader asks for a
+// dimension to see it apart).
 func (q *Queries) BalancesForPeriod(ctx context.Context, periodID uuid.UUID) ([]BalancesForPeriodRow, error) {
 	rows, err := q.db.Query(ctx, balancesForPeriod, periodID)
 	if err != nil {

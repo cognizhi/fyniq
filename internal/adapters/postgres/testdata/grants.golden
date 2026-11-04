@@ -105,6 +105,10 @@ fyniq_api       INSERT    customer_group (name, reminder_days)
 fyniq_api       SELECT    customer_group
 fyniq_api       UPDATE    customer_group (active, name, reminder_days, version)
 fyniq_api       EXECUTE   decide_installation_change()
+fyniq_api       SELECT    dimension
+fyniq_api       INSERT    dimension_set (value_ids)
+fyniq_api       SELECT    dimension_set
+fyniq_api       SELECT    dimension_value
 fyniq_api       INSERT    document (type)
 fyniq_api       SELECT    document
 fyniq_api       UPDATE    document (current_version, posted_at, posted_by, status)
@@ -180,7 +184,7 @@ fyniq_api       SELECT    item_price
 fyniq_api       SELECT    job_slots
 fyniq_api       INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_api       SELECT    journal_entry
-fyniq_api       INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no, party_id)
+fyniq_api       INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, line_no, party_id)
 fyniq_api       SELECT    journal_line
 fyniq_api       INSERT    kpi_input (entered_at, entered_by, headcount, lost_customers, month, new_customers, paying_customers)
 fyniq_api       SELECT    kpi_input
@@ -333,6 +337,10 @@ fyniq_executor  SELECT    contact_document_template
 fyniq_executor  SELECT    currencies
 fyniq_executor  EXECUTE   current_org()
 fyniq_executor  SELECT    customer_group
+fyniq_executor  SELECT    dimension
+fyniq_executor  INSERT    dimension_set (value_ids)
+fyniq_executor  SELECT    dimension_set
+fyniq_executor  SELECT    dimension_value
 fyniq_executor  INSERT    document (type)
 fyniq_executor  SELECT    document
 fyniq_executor  UPDATE    document (current_version, posted_at, posted_by, status)
@@ -357,7 +365,7 @@ fyniq_executor  SELECT    item
 fyniq_executor  SELECT    item_price
 fyniq_executor  INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_executor  SELECT    journal_entry
-fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no, party_id)
+fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, line_no, party_id)
 fyniq_executor  SELECT    journal_line
 fyniq_executor  SELECT    ledger_revision
 fyniq_executor  SELECT    opening_balance
@@ -429,6 +437,9 @@ fyniq_readonly  SELECT    conversion_step
 fyniq_readonly  SELECT    currencies
 fyniq_readonly  EXECUTE   current_org()
 fyniq_readonly  SELECT    customer_group
+fyniq_readonly  SELECT    dimension
+fyniq_readonly  SELECT    dimension_set
+fyniq_readonly  SELECT    dimension_value
 fyniq_readonly  SELECT    document
 fyniq_readonly  SELECT    document_link
 fyniq_readonly  SELECT    document_number
@@ -563,6 +574,10 @@ fyniq_worker    SELECT    currencies
 fyniq_worker    EXECUTE   current_org()
 fyniq_worker    SELECT    customer_group
 fyniq_worker    EXECUTE   destroyed_installation_connector_secret()
+fyniq_worker    SELECT    dimension
+fyniq_worker    INSERT    dimension_set (value_ids)
+fyniq_worker    SELECT    dimension_set
+fyniq_worker    SELECT    dimension_value
 fyniq_worker    SELECT    document
 fyniq_worker    UPDATE    document (posted_at, posted_by, status)
 fyniq_worker    INSERT    document_link (created_by, document_id, document_version, expires_at, message_id, token_hash)
@@ -611,7 +626,7 @@ fyniq_worker    SELECT    item_price
 fyniq_worker    SELECT    job_slots
 fyniq_worker    INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_worker    SELECT    journal_entry
-fyniq_worker    INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no, party_id)
+fyniq_worker    INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, line_no, party_id)
 fyniq_worker    SELECT    journal_line
 fyniq_worker    SELECT    kpi_input
 fyniq_worker    SELECT    ledger_revision

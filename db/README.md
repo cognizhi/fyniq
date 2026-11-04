@@ -124,12 +124,12 @@ Add one only with its access model here and in the test's list.
 | Invariant | Enforced by | Proved by |
 |---|---|---|
 | INV-01 balanced entries | `journal_entry_balanced` and `journal_line_balanced`, deferred constraint triggers at commit; at least two lines; per currency for single-currency entries | `TestAttackUnbalancedEntriesFailAtCommit` |
-| INV-02 posted history immutable | No UPDATE, DELETE or TRUNCATE grant; `journal_immutable` triggers for every role, the owner included; lines join an entry only in the transaction that posted it | `TestAttackPostedHistoryCannotChange` |
+| INV-02 posted history immutable | No UPDATE, DELETE or TRUNCATE grant; `journal_immutable` triggers for every role, the owner included; lines join an entry only in the transaction that posted it; the dimension sets lines name never change (`dimension_set_immutable`) | `TestAttackPostedHistoryCannotChange`, `TestAttackDimensionSetsAreCanonicalAndNeverChange` |
 | INV-03 no posting into a closed period | `journal_entry_assign` reads the period `FOR SHARE` after the ledger lock | `TestAttackPostingIntoAClosedPeriodFails`, `TestRacePostingAgainstCloseOfTheSamePeriod` |
 | INV-04 active leaf accounts of the organisation | Composite foreign keys; `journal_line_check` reads the account `FOR SHARE` | `TestAttackPostingToGroupInactiveOrForeignAccountsFails` |
 | INV-05 minor-unit scale, RND-FX base amounts | Row CHECKs; (rev 0.72) a base-only line (a foreign currency, amount 0) passes the row check and `journal_line_base_only`, deferred to commit, accepts it only from `fx_revaluation`, on an account marked `revalue`, offset by base-currency lines on the unrealised-FX account (`FY008`); `account_revalue_monetary` marks only assets and liabilities that are not prepayments or deferred revenue | `TestAttackAmountsOffScaleNaNOrOutOfRangeFail`, `TestAttackBaseOnlyLinesComeOnlyFromTheRevaluation` |
 | INV-06 tenant isolation | RLS as above | `TestEveryTenantTableForcesRowLevelSecurity`, `TestAttackCrossTenantReadsAndWritesFail`, `TestAttackPooledConnectionWithoutTenantSeesNothing` |
-| INV-08 balances cache = lines | `journal_line_balances` in the posting statement; `balance_differences()`, `rebuild_balances()` | `TestRandomPostingsKeepTheCacheAndTrialBalanceExact` |
+| INV-08 balances cache = lines | `journal_line_balances` in the posting statement; `balance_differences()`, `rebuild_balances()`; keyed by account × period × dimension set × currency, NULL being the lines with no dimension (`balance_set_key`, 000218 to 000220; FR-DIM-02) | `TestRandomPostingsKeepTheCacheAndTrialBalanceExact`, `TestAttackTheBalancesCacheKeepsEachDimensionSet` |
 | INV-09 trial balance nets to zero | Follows from INV-01 | the same test |
 | ENG-46 gap-free ledger revision | `journal_entry_assign` takes the next revision under the revision row's lock; `ledger_revision_guard` | `TestRaceRevisionsAreGapFreeAndAsAtIsStable` |
 | ENG-47 lock order | The source document `FOR UPDATE`, then the revision row, then the period, then the audit chain head (events are written just before commit); `lock_ledger()` for close and reopen; `period_guard` records the revision at close | the race tests |
@@ -184,7 +184,7 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | SQLSTATE | Port code | Meaning |
 |---|---|---|
 | FY001 | STORAGE-INV-01 | The entry does not balance, or has fewer than two lines |
-| FY002 | STORAGE-INV-02 | Posted history cannot change |
+| FY002 | STORAGE-INV-02 | Posted history cannot change, nor a dimension set its lines name |
 | FY003 | STORAGE-INV-03 | The posting date is in a closed period |
 | FY004 | STORAGE-INV-04 | The account is missing, a group or inactive |
 | FY005 | STORAGE-INV-05 | The currency is unknown |
@@ -298,6 +298,7 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY254 | STORAGE-BATCH-01 | A repayment to a director is posted only by the release of a payment batch, which links it in the same transaction |
 | FY255 | STORAGE-SHARE-01 | A share issue is written once, of share capital to a director or shareholder, before the books start or with the entry that posts it; share capital moves only with the register |
 | FY256 | STORAGE-SHARE-02 | A conversion's ACRA step names an approved conversion not yet effective, and never changes |
+| FY257 | STORAGE-DIM-01 | A dimension set names the organisation's own values, once each, in ascending order, at most one of each dimension (FR-DIM-01, FR-DIM-02) |
 | FY060 | STORAGE-AUDIT-01 | The audit trail cannot be changed or deleted |
 | FY061 | STORAGE-AUDIT-01 | A change has no audit event in its transaction |
 | FY070 | STORAGE-OUTBOX-01 | An outbox row cannot change what it is, count backwards or be deleted |
