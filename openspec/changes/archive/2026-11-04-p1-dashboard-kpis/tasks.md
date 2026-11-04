@@ -84,4 +84,6 @@
 - [x] 5.1 The review register, if the subscription-revenue reading stays [accountant to confirm] (its own PR).
   (29 Oct 2026: #347 adds the `kpis` area, stacked on #330; it waits for the co-founder's approval. 4 Nov 2026: #358
   merged the `kpis` area, FR-KPI-02 and FR-KPI-03, with the statements'.)
-- [ ] 5.2 `make check`, `make test` and `make test-e2e`; archive.
+- [x] 5.2 `make check`, `make test` and `make test-e2e`; archive.
+  (4 Nov 2026: `make test-e2e` passes locally, 21 journeys with the KPI page's, and `make check`; `make test` passes in
+  CI on main as the required check on every merge, the KPIs' differential included (#391).)
