@@ -2,7 +2,7 @@
 
 They wait for cmd/scenario-run to read the P1 shapes (pending/README.md); the oracle must match the
 hand-worked figures now. Every figure comes from the comment beside it (QA-ENG-01). A case keeps its
-hand-worked figures here once cmd/scenario-run reads its source and it moves to golden/ (bank, purchases).
+hand-worked figures here once cmd/scenario-run reads its source and it moves to golden/ (bank, purchases, sales).
 """
 
 from pathlib import Path
@@ -12,7 +12,7 @@ from oracle.scenario import load_scenario
 
 PENDING = Path(__file__).resolve().parents[2] / "test" / "differential" / "pending"
 GOLDEN = PENDING.parent / "golden"
-MOVED = {"bank", "purchases"}  # the cases the engine reads now, in golden/
+MOVED = {"bank", "purchases", "sales"}  # the cases the engine reads now, in golden/
 
 
 def _run(name: str) -> dict:
