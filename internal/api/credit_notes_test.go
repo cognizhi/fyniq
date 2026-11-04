@@ -115,3 +115,48 @@ func TestCreditNotesThroughTheAPI(t *testing.T) {
 	of := e.call(http.MethodPost, "/v1/invoices", ahkow, e.creditNoteDraft(id, "1", "5.00"))
 	e.problemIs(e.call(http.MethodPost, "/v1/invoices/"+of.str("id")+"/issue", ahkow, nil, "If-Match", of.Header.Get("ETag")), "issueInvoice", 422, invoice.CodeCredited)
 }
+
+// FR-AR-04 as PRD-001 rev 0.155 reads it (p1-sales task 3.3; [accountant to confirm]): the credit notes linked to one
+// invoice credit at most its total together. Against INV-0001 of 100.00, credit notes of 60.00 and 40.00 issue; a third
+// of 0.01 is refused (INVOICE-15) with what the others leave; voiding the 40.00 frees it, and the 0.01 issues.
+// req: FR-AR-04
+func TestLinkedCreditNotesCreditTheInvoiceTotalTogether(t *testing.T) {
+	f := newFounders(t)
+	e := f.e
+	ahkow := f.as(f.ahkow, authz.Accountant, authz.Controller)
+	weiling := f.as(f.weiling, authz.Accountant, authz.Controller)
+	inv, _ := e.issuedInvoice("1", "100.00")
+	issue := func(price string) (id, etag string, r response) {
+		t.Helper()
+		c := e.call(http.MethodPost, "/v1/invoices", ahkow, e.creditNoteDraft(inv, "1", price))
+		if c.Status != http.StatusCreated {
+			t.Fatalf("a draft credit note of %s: %d %s", price, c.Status, c.Raw)
+		}
+		r = e.call(http.MethodPost, "/v1/invoices/"+c.str("id")+"/issue", ahkow, nil, "If-Match", c.Header.Get("ETag"))
+		return c.str("id"), r.Header.Get("ETag"), r
+	}
+	if _, _, r := issue("60.00"); r.Status != 200 {
+		t.Fatalf("the credit note of 60.00: %d %s", r.Status, r.Raw)
+	}
+	forty, fortyTag, r := issue("40.00")
+	if r.Status != 200 {
+		t.Fatalf("the credit note of 40.00, which takes the invoice's total to its end: %d %s", r.Status, r.Raw)
+	}
+	cent := e.call(http.MethodPost, "/v1/invoices", ahkow, e.creditNoteDraft(inv, "1", "0.01"))
+	beyond := e.call(http.MethodPost, "/v1/invoices/"+cent.str("id")+"/issue", ahkow, nil, "If-Match", cent.Header.Get("ETag"))
+	e.problemIs(beyond, "issueInvoice", 422, invoice.CodeCredited)
+	if !strings.Contains(beyond.Raw, "more than the 0.00 SGD the invoice's other credit notes leave of its 100.00 SGD") {
+		t.Errorf("the refusal does not say what the others leave: %s", beyond.Raw)
+	}
+
+	// A void frees what it credited (Founder mode: asked for, and approved by another person).
+	void := e.call(http.MethodPost, "/v1/invoices/"+forty+"/void-approval", ahkow, map[string]any{"date": "2026-10-22", "reason": "Credited twice"},
+		"If-Match", fortyTag)
+	if a := f.decide(weiling, void.str("id"), "approve", hashOf(void)); a.Status != 200 {
+		t.Fatalf("approving the void of the 40.00: %d %s %s", a.Status, a.Raw, void.Raw)
+	}
+	g := e.call(http.MethodGet, "/v1/invoices/"+cent.str("id"), ahkow, nil)
+	if r := e.call(http.MethodPost, "/v1/invoices/"+cent.str("id")+"/issue", ahkow, nil, "If-Match", g.Header.Get("ETag")); r.Status != 200 {
+		t.Errorf("the credit note of 0.01 after the void: %d %s", r.Status, r.Raw)
+	}
+}
