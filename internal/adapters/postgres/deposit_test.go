@@ -36,12 +36,15 @@ func hasDepositCode(err error, code string) bool {
 //   - DP-0004, a part payment of USD 1,000.00 from Globex into the USD wallet on 21 Oct at the cascade's 1.35: S$1,350.00,
 //     Cr 2200 S$111.47 (RND-GST-INCL), Cr 2410 S$1,238.53, in the base currency.
 //
-// A security deposit with a GST code, a part payment with a purchase code, an unknown kind and a supplier are refused,
-// and take no number; a void reverses the entry; what is left of each deposit is its amount; every entry replays.
+// A security deposit with a GST code, a part payment with a purchase code, an unknown kind, a supplier and a
+// standard-rated part payment at an average of the monthly table's rates (FX-08, ENG-42) are refused, and take no
+// number; a void reverses the entry; what is left of each deposit is its amount; every entry replays.
 // req: FR-AR-09
 // req: ledger/posting-rules Customer refunds and deposits
 // req: ENG-45
 // req: RND-GST-INCL
+// req: ENG-40
+// req: ENG-42
 func TestCustomerDepositsPostThroughThePostingService(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "ar-specialist"}})
 	s := store(t, "fyniq_api")
@@ -119,6 +122,27 @@ func TestCustomerDepositsPostThroughThePostingService(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// ENG-40 and ENG-42: on 23 October the cascade's USD rate is the average of October's two monthly-table rates, which
+	// never sets a GST amount: a standard-rated part payment is refused with FX-08 (below), a zero-rated one is not.
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, r := range []storage.Decimal{"1.35", "1.37"} {
+			if _, err := fx.Enter(ctx, u, storage.NewFXRate{Kind: storage.FXRateMonth, Currency: "USD", On: porttest.Day(10, 1), Rate: r, Quote: r,
+				QuoteForm: "base-per-unit"}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	averaged := draft(deposit.KindPartPayment, 23, wallet, usd, "100.00", "SR")
+	averaged.CustomerID = b.Globex.ID
+	zeroRated := averaged
+	zeroRated.GSTCode = "ZR"
+	if c, err := deposits.Check(ctx, b.Org, zeroRated); err != nil || len(c.Problems) > 0 {
+		t.Errorf("a zero-rated part payment at the average: %+v %v", c.Problems, err)
+	}
+
 	// The refusals, each with its code, and no number taken.
 	supplier := draft(deposit.KindSecurity, 20, dbs, sgd, "1.00", "")
 	supplier.CustomerID = b.Supplier.ID
@@ -131,6 +155,7 @@ func TestCustomerDepositsPostThroughThePostingService(t *testing.T) {
 		{"a part payment with a purchase code", draft(deposit.KindPartPayment, 20, dbs, sgd, "1.00", "TX"), deposit.CodeGSTCode},
 		{"an unknown kind", draft("advance", 20, dbs, sgd, "1.00", ""), deposit.CodeKind},
 		{"a supplier", supplier, deposit.CodeCustomer},
+		{"a standard-rated part payment at an average rate", averaged, fx.CodeAverage},
 	} {
 		if _, err := record(x.d); !hasDepositCode(err, x.code) {
 			t.Errorf("%s: %v", x.name, err)
