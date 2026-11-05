@@ -395,6 +395,25 @@
     "director-accounts",
     "director-settlement"
    ]
+  },
+  {
+   "id": "claims",
+   "title": "Claims in another currency read without an accountant",
+   "reviewer": "the accountant",
+   "status": "pending",
+   "pr": null,
+   "short": "Expense claims in another currency await review by the accountant",
+   "message": "A claim in another currency owes the claimant a fixed amount in Singapore dollars: each receipt at the claim's rate, or the Singapore dollars they say they paid, with any difference booked when the claim posts and none when it is paid back, on our best current reading. Check them before you rely on them.",
+   "sections": [
+    "PRD-001 §8.6"
+   ],
+   "requirements": [
+    "FR-AP-17"
+   ],
+   "screens": [
+    "claim-editor",
+    "claims-review"
+   ]
   }
  ]
 }
