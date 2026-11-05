@@ -75,13 +75,17 @@
 - [x] 4.1 Realised FX on settlement: the currency amount settled × (settlement rate − stored rate), under `RND-FX`, to 7030, with no tolerance; G4-039's receipt. Tests `// req: ENG-41`
   (22 Oct 2026, PRD rev 0.74: `ledger.RealisedFX` = `RND-FX`(amount × settlement rate) − `RND-FX`(amount × stored
   rate). Test: `TestRealisedFXIsTheSettledAmountAtTheTwoRates`.)
-- [ ] 4.2 GST on foreign-currency documents: sales at the GST exchange-rate source, then `RND-FX` and `RND-GST-EXCL`; purchases at the stated SGD GST with the difference to 7030, or none stated with the GST in the cost and ⚠; an average rate refused. Tests `// req: ENG-42` (G4-023)
+- [x] 4.2 GST on foreign-currency documents: sales at the GST exchange-rate source, then `RND-FX` and `RND-GST-EXCL`; purchases at the stated SGD GST with the difference to 7030, or none stated with the GST in the cost and ⚠; an average rate refused. Tests `// req: ENG-42` (G4-023)
   (22 Oct 2026, PRD rev 0.74: the purchases' half is built, `ledger.ForeignInputTax`, the difference being net + stated
   GST − gross so the entry balances; test `TestForeignInputTaxIsAsStatedInSGD` (G4-023). Left: the sales' half, which
   needs `RND-GST-EXCL` and the GST exchange-rate source setting, both with `p1-sales`. 4 Nov 2026: the sales' half came
   with `p1-sales` (rev 0.116): `RND-GST-EXCL` of an invoice's nets in SGD at its own rate, which stands for the GST
-  exchange-rate source [verify]; test `TestInvoicesPostThroughThePostingService`. **Left:** an average rate refused on a
-  document (`fx.Found.Average` reports one; no document refuses it yet).)
+  exchange-rate source [verify]; test `TestInvoicesPostThroughThePostingService`. 5 Nov 2026: an average rate refused
+  where it would set a GST amount (ENG-40, ENG-42): an invoice or credit note, a part-payment deposit or a bank line in
+  another currency whose rate the cascade averaged from the monthly table, and which charges GST, is refused with FX-08
+  (`fx.Found.ForGST`); without GST, or with a typed rate, it converts at the average as before (G4-025). Bills, vendor
+  credits and claims take the GST stated in SGD, so no rate sets their GST. Tests: `TestInvoicesPostThroughThePostingService`,
+  `TestCustomerDepositsPostThroughThePostingService`, `TestCategorisingABankLinePostsIt`.)
 - [x] 4.3 Settlements and documents call 4.1 and 4.2 (with `p1-sales`, `p1-purchases` and `p1-bank-import-reconcile`). Tests `// req: ENG-41` and `// req: ENG-42`
   (4 Nov 2026: payments of bills, receipts, write-offs, refunds and matched bank lines settle at the documents' stored
   rates with the realised FX to 7030 (ENG-41), and bills, vendor credits and claims take the stated SGD GST while

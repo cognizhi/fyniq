@@ -30,6 +30,7 @@ const (
 	CodeEntry     = "FX-02" // a rate that cannot be entered that way
 	CodeWithdrawn = "FX-03" // the rate is withdrawn already
 	CodeReason    = "FX-04" // withdrawing a rate needs a reason
+	CodeAverage   = "FX-08" // an average of the monthly table's rates would set a GST amount (ENG-42)
 )
 
 // Error is a refusal with the field it is about, what is wrong and how to fix it (ENG-23).
@@ -64,6 +65,30 @@ type Found struct {
 // Average reports whether the rate is the average of duplicate monthly-table entries, which never sets a GST amount
 // (ENG-42).
 func (f Found) Average() bool { return f.Entries > 1 }
+
+// ForGST refuses the rate as the one a document's GST is converted at when it is an average of the monthly table's
+// duplicates, which never sets a GST amount (ENG-40, ENG-42): the document then takes the rate for the day, a single
+// monthly rate, or its own when typed says it can have one. nil when the rate is no average.
+func (f Found) ForGST(cur money.Currency, typed bool) *Error {
+	if !f.Average() {
+		return nil
+	}
+	month := f.Of.Format("January 2006")
+	fix := fmt.Sprintf("Withdraw all but one of the %s rates for %s in Accounting › Currencies, or enter the rate for the day", cur, month)
+	if typed {
+		fix += ", or type the rate on the document"
+	}
+	return &Error{Code: CodeAverage, Field: "fx_rate", Fix: fix,
+		Message: fmt.Sprintf("✖ The %s rate is the average of the %d rates in the monthly table for %s, and an average never sets a GST amount",
+			cur, f.Entries, month)}
+}
+
+// Taxed reports whether a GST rate as a document keeps it ("9", "0", or "" before registration or for a code with no
+// rate) charges GST, so the rate the document is converted at sets a GST amount.
+func Taxed(rate string) bool {
+	d, _, err := apd.NewFromString(rate)
+	return err == nil && !d.IsZero()
+}
 
 // Lookup finds the rate from cur into base for the date on, from the organisation's rate for the day onwards (ENG-40):
 // the document's own rate is the document's to apply. No rate is CodeNoRate.
