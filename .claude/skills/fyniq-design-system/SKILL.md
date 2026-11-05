@@ -176,6 +176,47 @@ Rules: one intent per query (2–5 terms); verify the result's domain fits a web
 login; retry once with a narrower query; record what you adopted (and why) in the PR or in
 MASTER.md. Do not run `--design-system --persist --force` over the curated MASTER.md.
 
+## Generated imagery: Muse Image, art-directed by Muse Spark
+
+**While `META_MODEL_API_KEY` exists and works, use it** for every visual that is drawn rather than
+built from components: the logo and its mark, the app icon and favicon, the empty states' line
+illustrations, sign-in and first-run art, and outward images (social cards, slides, release notes).
+`scripts/imagery.py` (standard library only) calls Meta's Model API: **Muse Image**
+(`muse-image-1.0`) draws, and **Muse Spark** (`muse-spark-1.3`, which reads images) is the art
+director. It ranks each round against the brand brief built into the script (§1, §2, the tokens),
+names what will not survive (garbled text, detail lost at 16 px, off-brand colour, clichés) and
+writes the next round's prompt.
+
+```bash
+make imagery-check                                   # free: the key works and muse-image-1.0 is there
+python3 scripts/imagery.py iterate "<prompt>" --name logo-mark --brief "<what it is for>" --n 4 --rounds 2
+python3 scripts/imagery.py generate "<prompt>" --from concept.png   # edit or compose from an image
+python3 scripts/imagery.py review a.png b.png --brief "<what it is for>"   # also reads a built screen's screenshot
+```
+
+1. **Check first.** Run `make imagery-check` before any generation. No key, or a key refused: say
+   so, draw the asset by hand in SVG and carry on. Never hunt for another key, and never print,
+   log or commit this one (it lives in `.env`, which git ignores; the script finds the main
+   checkout's from a worktree).
+2. **Look yourself.** Read each image (the Read tool shows it) before trusting Muse Spark's ranking:
+   it scores craft, not whether an F still reads as an F.
+3. **Generated images are concepts, never the shipped asset in the app.** The API's images are
+   always opaque, so they cannot theme. Redraw the chosen concept as SVG with `currentColor` or the
+   tokens, so it works in light, dark and both high-contrast themes, and check it at 16, 32 and
+   64 px. A raster ships only as an outward image, with its `provenance.json` beside it.
+4. **Prompts carry no real data**: no organisation figures, names or personal data, and only
+   screenshots of the local stack's synthetic company. Ask for one colour and no text in the image;
+   the model renders text badly.
+5. **Only the standard models.** Never a `-contributor` variant: those let Meta train on the request.
+6. Each run writes its images, the prompt, the model and Muse Spark's review to `.data/design/`
+   (git-ignored). The commit that adds an asset drawn from one names the model and the prompt.
+7. Cost: US$0.01 an image; Muse Spark US$1.25 per million input tokens, about 1,400 per image
+   (dev.meta.ai, Nov 2026 [verify]); the check is free. Meta's terms for commercial use of the images
+   are not stated there [verify]: a logo is redrawn by hand, so the shipped mark is our own drawing.
+8. A new brand asset (the logo, the app icon) is the owner's decision: show the candidates,
+   redrawn, side by side in both themes and at small sizes, and ask. Record the adopted one in
+   MASTER.md ("Name and line").
+
 ## Definition of done (UI changes)
 
 1. Requirement IDs referenced; Basic/Expert tagging decided and registered.
