@@ -252,3 +252,70 @@ func sameMap(a, b map[string]string) bool {
 	}
 	return true
 }
+
+// A dimension keeps its kind and place and a value its dimension and code, each changes one version at a time, and
+// neither is ever deleted, as the dimension sets lines name refer to them: the API role has no grant for any of it, and
+// the guard refuses it to the owner too (FR-DIM-01; FY258). The API role renames and puts out of use, at the next
+// version, with its audit event.
+// req: FR-DIM-01
+// req: QA-ENG-05
+// asvs: V13.2.2, V2.3.2
+func TestAttackDimensionsKeepWhatTheyAre(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Attack dimensions keep Pte Ltd")
+	eng, _, _ := dimensions(t, b)
+	var dept uuid.UUID
+	if err := asOrg(ctx, conn(t, "fyniq_migrator"), b.Org, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, "SELECT dimension_id FROM fyniq.dimension_value WHERE id = $1", eng).Scan(&dept)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	exec := func(role, sql string, args ...any) error {
+		return asOrg(ctx, conn(t, role), b.Org, func(tx pgx.Tx) error {
+			if err := auditRaw(ctx, tx, "dimension.changed", "dimension", dept); err != nil {
+				return err
+			}
+			_, err := tx.Exec(ctx, sql, args...)
+			return err
+		})
+	}
+	for _, x := range []struct {
+		name, sql string
+	}{
+		{"changing a dimension's kind", "UPDATE fyniq.dimension SET kind = 'project', version = version + 1 WHERE id = $1"},
+		{"moving a dimension to a place", "UPDATE fyniq.dimension SET position = 2, version = version + 1 WHERE id = $1"},
+		{"skipping a dimension's version", "UPDATE fyniq.dimension SET name = 'Teams', version = version + 2 WHERE id = $1"},
+		{"keeping a dimension's version", "UPDATE fyniq.dimension SET name = 'Teams' WHERE id = $1"},
+		{"deleting a dimension", "DELETE FROM fyniq.dimension WHERE id = $1"},
+		{"changing a value's code", "UPDATE fyniq.dimension_value SET code = 'RND', version = version + 1 WHERE dimension_id = $1"},
+		{"deleting a value", "DELETE FROM fyniq.dimension_value WHERE dimension_id = $1"},
+	} {
+		wantState(t, "the API role "+x.name, exec("fyniq_api", x.sql, dept), "42501", "FY258")
+		wantState(t, "the owner "+x.name, exec("fyniq_migrator", x.sql, dept), "FY258")
+	}
+	err := asOrg(ctx, conn(t, "fyniq_migrator"), b.Org, func(tx pgx.Tx) error {
+		var id uuid.UUID
+		if err := tx.QueryRow(ctx, "INSERT INTO fyniq.dimension (kind, position, name, version) VALUES ('custom', 1, 'Region', 2) RETURNING id").Scan(&id); err != nil {
+			return err
+		}
+		return auditRaw(ctx, tx, "dimension.created", "dimension", id)
+	})
+	wantState(t, "a new dimension at version 2", err, "FY258")
+	err = asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, "INSERT INTO fyniq.dimension (kind, position, name, is_active) VALUES ('custom', 1, 'Region', false)")
+		return err
+	})
+	wantState(t, "the API role adding a dimension out of use", err, "42501")
+
+	if err := exec("fyniq_api", "UPDATE fyniq.dimension SET name = 'Teams', is_active = false, version = version + 1 WHERE id = $1", dept); err != nil {
+		t.Errorf("renaming and putting out of use: %v", err)
+	}
+	if err := exec("fyniq_api", "UPDATE fyniq.dimension_value SET name = 'Engineering', is_active = false, version = version + 1 WHERE id = $1", eng); err != nil {
+		t.Errorf("renaming a value and putting it out of use: %v", err)
+	}
+	err = asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, "UPDATE fyniq.dimension SET name = 'Unaudited', version = version + 1 WHERE id = $1", dept)
+		return err
+	})
+	wantState(t, "a change without its audit event", err, "FY061")
+}

@@ -105,10 +105,14 @@ fyniq_api       INSERT    customer_group (name, reminder_days)
 fyniq_api       SELECT    customer_group
 fyniq_api       UPDATE    customer_group (active, name, reminder_days, version)
 fyniq_api       EXECUTE   decide_installation_change()
+fyniq_api       INSERT    dimension (kind, name, position)
 fyniq_api       SELECT    dimension
+fyniq_api       UPDATE    dimension (is_active, name, version)
 fyniq_api       INSERT    dimension_set (value_ids)
 fyniq_api       SELECT    dimension_set
+fyniq_api       INSERT    dimension_value (code, dimension_id, name)
 fyniq_api       SELECT    dimension_value
+fyniq_api       UPDATE    dimension_value (is_active, name, version)
 fyniq_api       INSERT    document (type)
 fyniq_api       SELECT    document
 fyniq_api       UPDATE    document (current_version, posted_at, posted_by, status)

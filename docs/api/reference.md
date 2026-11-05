@@ -1858,6 +1858,155 @@ Loads the standard Singapore start-up chart into an organisation that has no acc
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CHART-01`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/dimension-values`
+
+**List the dimensions' values** (`listDimensionValues`)
+
+The values of one dimension, or of every dimension, those out of use included (FR-DIM-01): by dimension as listDimensions orders them, then by code, a page at a time. Read-only; no side effects.
+
+- **Permission:** View on Chart of accounts, dimensions
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `dimension_id` (query): Only the values of this dimension; left out, the values of every dimension.
+- **Responses:**
+  - `200` OK [`DimensionValuePage`](../../contracts/schemas/DimensionValuePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/dimension-values`
+
+**Add a value to a dimension** (`createDimensionValue`)
+
+Adds a value to a dimension in use (FR-DIM-01): its code, unique in the dimension and never changed, and its name. Every problem comes back together. Side effects: the value, and an audit event of its dimension that names it. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Chart of accounts, dimensions
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`DimensionValueDraft`](../../contracts/schemas/DimensionValueDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`DimensionValue`](../../contracts/schemas/DimensionValue.schema.json)
+  - `201` Created [`DimensionValue`](../../contracts/schemas/DimensionValue.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DIM-02` The dimension does not change that way; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DIM-01` The organisation cannot add that dimension; `DIM-02` The name does not fit; `DIM-03` The value's code does not fit; `DIM-04` Not a dimension in use.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `DIM-01`, `DIM-02`, `DIM-03`, `DIM-04`, `STORAGE-DIM-02`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PUT /v1/dimension-values/{value_id}`
+
+**Rename a dimension's value, or put it out of use** (`replaceDimensionValue`)
+
+Changes a value's name, or puts it out of use or back in use; it is never deleted, as lines name it, and its dimension and code never change. Side effects: its next version, and an audit event of its dimension that names it. Needs If-Match with its ETag. Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Chart of accounts, dimensions
+- **Parameters:**
+  - `value_id` (path, required): The value's ID.
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`DimensionValueChange`](../../contracts/schemas/DimensionValueChange.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`DimensionValue`](../../contracts/schemas/DimensionValue.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-DIM-02` The dimension does not change that way; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `DIM-01` The organisation cannot add that dimension; `DIM-02` The name does not fit; `DIM-03` The value's code does not fit; `DIM-04` Not a dimension in use.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `DIM-01`, `DIM-02`, `DIM-03`, `DIM-04`, `STORAGE-DIM-02`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/dimensions`
+
+**List the dimensions** (`listDimensions`)
+
+The organisation's dimensions (FR-DIM-01): Department, Project, then the custom ones by place, those out of use included, a page at a time. Read-only; no side effects.
+
+- **Permission:** View on Chart of accounts, dimensions
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`DimensionPage`](../../contracts/schemas/DimensionPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/dimensions`
+
+**Add a dimension** (`createDimension`)
+
+Adds Department or Project, once each, or a custom dimension in the first free of places 1 to 8 (FR-DIM-01), named uniquely. Every problem comes back together. Side effects: the dimension and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Chart of accounts, dimensions
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`DimensionDraft`](../../contracts/schemas/DimensionDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Dimension`](../../contracts/schemas/Dimension.schema.json)
+  - `201` Created [`Dimension`](../../contracts/schemas/Dimension.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DIM-02` The dimension does not change that way; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DIM-01` The organisation cannot add that dimension; `DIM-02` The name does not fit; `DIM-03` The value's code does not fit; `DIM-04` Not a dimension in use.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `DIM-01`, `DIM-02`, `DIM-03`, `DIM-04`, `STORAGE-DIM-02`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PUT /v1/dimensions/{dimension_id}`
+
+**Rename a dimension, or put it out of use** (`replaceDimension`)
+
+Changes a dimension's name, or puts it out of use or back in use; it is never deleted, as lines name its values, and its kind and place never change. Side effects: its next version and its audit event. Needs If-Match with its ETag. Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Chart of accounts, dimensions
+- **Parameters:**
+  - `dimension_id` (path, required): The dimension's ID.
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`DimensionChange`](../../contracts/schemas/DimensionChange.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Dimension`](../../contracts/schemas/Dimension.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-DIM-02` The dimension does not change that way; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `DIM-01` The organisation cannot add that dimension; `DIM-02` The name does not fit; `DIM-03` The value's code does not fit; `DIM-04` Not a dimension in use.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `DIM-01`, `DIM-02`, `DIM-03`, `DIM-04`, `STORAGE-DIM-02`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
 ## Journals
 
 Manual journals: drafted, posted and reversed; posted history never changes (FR-GL-12).

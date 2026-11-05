@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "active": {
+      "description": "false puts it out of use; left out, in use.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "name": {
+      "description": "Its name, unique in its dimension whatever the case.",
+      "examples": [
+        "Engineering"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "DimensionValueChange",
+  "type": "object"
+}

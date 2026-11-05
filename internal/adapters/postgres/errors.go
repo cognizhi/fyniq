@@ -140,6 +140,7 @@ var fyCodes = map[string]string{
 	"FY255": storage.CodeShareIssue,
 	"FY256": storage.CodeConversionStep,
 	"FY257": storage.CodeDimension,
+	"FY258": storage.CodeDimensionFixed,
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,
@@ -360,6 +361,11 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"evidence_data_class_known":                 {storage.CodeInvalid, "the data class is not general, personal, bank, payroll or identity"},
 	"evidence_key_format":                       {storage.CodeInvalid, "a store key is not where evidence is kept"},
 	"evidence_state_fields":                     {storage.CodeEvidence, "the evidence's state does not match its removal or its committed copy"},
+
+	// The dimensions and their values (FR-DIM-01): the API checks each first, so these answer only a race between two writes.
+	"dimension_slot_key":       {storage.CodeDuplicate, "the organisation has that dimension already: Department and Project once each, a custom one in each place once"},
+	"dimension_name_key":       {storage.CodeDuplicate, "another dimension has that name"},
+	"dimension_value_code_key": {storage.CodeDuplicate, "the dimension has a value with that code already"},
 
 	// The access review's attestations (FR-CTL-06).
 	"access_review_attestation_quarter_key":       {storage.CodeDuplicate, "that quarter's access review is attested already"},

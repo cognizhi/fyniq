@@ -289,6 +289,13 @@ var (
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 	UpdateAccount = Policy{Operation: "updateAccount", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
+	// The dimensions and their values (FR-DIM-01) share the chart's row of Appendix D: "Chart of accounts, dimensions".
+	ListDimensions                = Policy{Operation: "listDimensions", Capability: ChartOfAccounts, Need: View}
+	CreateDimension               = Policy{Operation: "createDimension", Capability: ChartOfAccounts, Need: Create}
+	ReplaceDimension              = Policy{Operation: "replaceDimension", Capability: ChartOfAccounts, Need: Create}
+	ListDimensionValues           = Policy{Operation: "listDimensionValues", Capability: ChartOfAccounts, Need: View}
+	CreateDimensionValue          = Policy{Operation: "createDimensionValue", Capability: ChartOfAccounts, Need: Create}
+	ReplaceDimensionValue         = Policy{Operation: "replaceDimensionValue", Capability: ChartOfAccounts, Need: Create}
 	SendTestEmail                 = Policy{Operation: "sendTestEmail", Capability: Integrations, Need: Create}
 	GetEmailMessage               = Policy{Operation: "getEmailMessage", Capability: Integrations, Need: View}
 	GetEmailSettings              = Policy{Operation: "getEmailSettings", Capability: Integrations, Need: View}
@@ -1160,7 +1167,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,
 	TestOrganisationConnector,
 	GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
-	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
+	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount,
+	ListDimensions, CreateDimension, ReplaceDimension, ListDimensionValues, CreateDimensionValue, ReplaceDimensionValue, ListContacts, GetContact,
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, RemoveMember, GetAccessReview, ExportAccessReview, AttestAccessReview, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
