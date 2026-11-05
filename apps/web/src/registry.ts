@@ -242,6 +242,8 @@ export const actions = [
   { kind: "action", id: "item.add", mode: "basic", help: "item.add", guide: "contacts.manage#items-and-prices" },
   { kind: "action", id: "chart.add", mode: "expert", help: "chart.add", guide: "accounting.chart#add-an-account" },
   { kind: "action", id: "chart.load-standard", mode: "expert", help: "chart.load-standard", guide: "accounting.chart#start-from-the-standard-chart" },
+  { kind: "action", id: "chart.dimension-add", mode: "expert", help: "chart.dimension-add", guide: "accounting.chart#dimensions" },
+  { kind: "action", id: "chart.dimension-values", mode: "expert", help: "chart.dimension-values", guide: "accounting.chart#values-of-a-dimension" },
   { kind: "action", id: "bill.save", mode: "basic", help: "bill.save", guide: "purchases.bills#enter-a-bill" },
   { kind: "action", id: "claims.owed", mode: "basic", help: "claims.owed", guide: "claims.my-claims#follow-your-claims" },
   { kind: "action", id: "expense-policy.add", mode: "expert", help: "expense-policy.add", guide: "claims.approve-team#set-the-expense-policy" },
