@@ -732,6 +732,10 @@
       "label": "The tax agent's decision",
       "tooltip": "Some claims the rules leave to the tax agent. Record what they decided, and attach their advice; until then the GST is not claimed."
     },
+    "bill.line-dimensions": {
+      "label": "Dimensions",
+      "tooltip": "The line's value of each dimension in use, such as its department; Basic mode shows one its account requires."
+    },
     "bill.spread": {
       "label": "Spread over months",
       "tooltip": "For a cost paid ahead, such as a year's subscription: it goes to Prepayments, and one part a month moves to the cost. Leave blank to cost it on the invoice date."

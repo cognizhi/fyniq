@@ -154,6 +154,13 @@
   `invoice.line-dimensions`; the guide's "Tag a line with dimensions", compiled into `sales.invoices`. Tests
   `TestAnInvoicesLinesCarryTheirDimensionValues`, `TestInvoiceLinesCarryTheirDimensionValues`,
   `TestInvoiceLinesTakeDimensionValues`, `invoices.test.tsx`. **Left:** purchases, bank lines and claims.)
+  (6 Nov 2026, slice 3d, purchases: a bill's, a vendor credit's and a recurring bill's line takes
+  `dimension_value_ids`, checked as the invoice's are; its cost, or a spread line's 1210 and both lines of each month
+  it releases, carry them, and the schedule the scheduler releases from keeps them. The bill editor's line card has a
+  choice per dimension, Expert unless set or required. Help key `bill.line-dimensions`; the guide's "Tag a line with
+  dimensions", compiled into `purchases.bills`. Tests `TestABillsLinesCarryTheirDimensionValues`,
+  `TestBillLinesCarryTheirDimensionValues`, `TestBillLinesTakeDimensionValues`, `bills.test.tsx`. A purchase order's
+  lines take none: a bill made from one is tagged on the bill. **Left:** bank lines and claims.)
 
 ## 4. Contacts and items
 

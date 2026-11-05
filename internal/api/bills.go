@@ -63,6 +63,8 @@ type BillLineDraft struct {
 	// Spreads (FR-GL-03; rev 0.83).
 	SpreadMonths int    `json:"spread_months,omitempty" minimum:"1" maximum:"120" doc:"Spread the line's cost over this many months (FR-GL-03): the bill puts the cost on 1210 Prepayments in the base currency, and one part a month (ALLOC-EVEN) is released to the line's account by the scheduler, up to the organisation's today and never ahead (ENG-05). Only an expense line's cost is spread, and never a vendor credit's (LEDGER-28)." example:"12"`
 	SpreadFrom   string `json:"spread_from,omitempty" format:"date" doc:"The spread's first month, as any day of it: when the service starts. Left out, the bill's month. Months before the bill's date release on the bill's date." example:"2026-10-01"`
+	// Dimensions (FR-DIM-01, FR-DIM-02; rev 0.171).
+	DimensionValueIDs []DimensionValueRef `json:"dimension_value_ids,omitempty" maxItems:"10" doc:"The line's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06): its cost, and each month a spread releases, carry them. A line on an account that requires a dimension names a value of it, or the bill does not post (DIM-05)."`
 	// A line made from a purchase order (FR-AP-01; rev 0.87).
 	Order *BillLineOrder `json:"order,omitempty" doc:"The purchase order line it bills, and how much of it, for a line made from an order: billPurchaseOrder sets it. A posted bill never takes more of a line than is left (PO-13)."`
 	// Input tax (FR-AP-20; rev 0.89).
@@ -404,6 +406,9 @@ func billDraftOf(in BillDraft, base money.Currency) (bill.Draft, error) {
 			fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("account_id"), Message: "is not an ID", Fix: "Send the account's ID"})
 		}
 		line := bill.Line{AccountID: id, Description: l.Description, GSTCode: l.GSTCode}
+		values, fps := valuesOf(l.DimensionValueIDs, at("dimension_value_ids"))
+		fields = append(fields, fps...)
+		line.Values = values
 		var bad *FieldProblem
 		if line.Net, bad = moneyIn(l.Net, at("net")); bad != nil {
 			fields = append(fields, *bad)
@@ -754,7 +759,8 @@ func billLinesOut(d bill.Draft) []BillLineDraft {
 	out := make([]BillLineDraft, 0, len(d.Lines))
 	for _, l := range d.Lines {
 		bl := BillLineDraft{AccountID: l.AccountID.String(), Description: l.Description, GSTCode: l.GSTCode,
-			Net: Money{Amount: l.Net.String(), Currency: l.Net.Currency().Code}, GST: Money{Amount: l.GST.String(), Currency: l.GST.Currency().Code}}
+			Net: Money{Amount: l.Net.String(), Currency: l.Net.Currency().Code}, GST: Money{Amount: l.GST.String(), Currency: l.GST.Currency().Code},
+			DimensionValueIDs: valueRefs(l.Values)}
 		if l.StatedGST != nil {
 			bl.StatedGST = &Money{Amount: l.StatedGST.String(), Currency: l.StatedGST.Currency().Code}
 		}

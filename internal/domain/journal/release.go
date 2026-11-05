@@ -86,7 +86,7 @@ func billSchedule(ctx context.Context, u storage.UnitOfWork, doc storage.Documen
 	for _, l := range d.Lines {
 		x := l.Spread(d.Date)
 		spread = spread || x != nil
-		b.Lines = append(b.Lines, ledger.BillLine{AccountID: l.AccountID, Description: l.Description, Spread: x})
+		b.Lines = append(b.Lines, ledger.BillLine{AccountID: l.AccountID, Description: l.Description, Spread: x, Values: l.Values})
 	}
 	if !spread || doc.Type != storage.DocumentBill {
 		return nil, nil

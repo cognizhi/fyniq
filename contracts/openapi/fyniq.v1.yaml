@@ -4175,6 +4175,18 @@ components:
             - Confluence, 10 seats, October
           maxLength: 500
           type: string
+        dimension_value_ids:
+          description: "The line's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06): its cost, and each month a spread releases, carry them. A line on an account that requires a dimension names a value of it, or the bill does not post (DIM-05)."
+          items:
+            description: A dimension value's ID (listDimensionValues).
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21
+            format: uuid
+            type: string
+          maxItems: 10
+          type:
+            - array
+            - "null"
         gst:
           $ref: "#/components/schemas/Money"
           description: The line's GST as the supplier states it, in the bill's currency; 0 when none is charged.

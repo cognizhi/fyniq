@@ -313,6 +313,7 @@ export const actions = [
   { kind: "action", id: "recurring-bill.pause", mode: "basic", help: "recurring-bill.pause", guide: "purchases.bills#recurring-bills" },
   { kind: "action", id: "recurring-bill.resume", mode: "basic", help: "recurring-bill.resume", guide: "purchases.bills#recurring-bills" },
   { kind: "action", id: "bill.spread", mode: "expert", help: "bill.spread", guide: "purchases.bills#spread-a-cost-over-months" },
+  { kind: "action", id: "bill.line-dimensions", mode: "expert", help: "bill.line-dimensions", guide: "purchases.bills#tag-a-line-with-dimensions" },
   // Input tax (FR-AP-20): the facts and each line's decision are safety information, so Basic shows them too (§7.8).
   { kind: "action", id: "bill.input-tax", mode: "basic", help: "bill.input-tax", guide: "purchases.bills#input-tax" },
   { kind: "action", id: "bill.business-share", mode: "basic", help: "bill.business-share", guide: "purchases.bills#input-tax" },

@@ -65,6 +65,7 @@ type BillLine struct {
 	StatedBase  *money.Money
 	Spread      *Spread // nil: the cost goes to the line's account on the bill's date
 	Shares      []string
+	Values      []uuid.UUID // the line's dimension values (FR-DIM-02), in any order; its cost, and a spread's releases, carry them
 }
 
 // claim is what a claimable line claims of stated, its GST as the input tax is reported (the line's GST, or the GST
@@ -214,6 +215,8 @@ func PostBill(b Bill, s Settings) (Entry, error) {
 		if len(l.Description) > MaxDescription {
 			add(CodeTooLong, f("description"), fmt.Sprintf("the description has %d characters; the most is %d", len(l.Description), MaxDescription), "Shorten it")
 		}
+		values := canonical(l.Values)
+		probs = append(probs, documentLine(s, acc, ok, values, f("dimension_value_ids"))...)
 		if x := l.Spread; x != nil {
 			spread = true
 			switch {
@@ -283,10 +286,10 @@ func PostBill(b Bill, s Settings) (Entry, error) {
 		}
 		baseTotal, _ = baseTotal.Add(base)
 		if l.Spread != nil {
-			lines = append(lines, Line{AccountID: prepay.ID, Amount: base, Rate: money.Identity(s.Base), Base: base, Description: l.Description})
+			lines = append(lines, Line{AccountID: prepay.ID, Amount: base, Rate: money.Identity(s.Base), Base: base, Description: l.Description, Values: values})
 			continue
 		}
-		lines = append(lines, Line{AccountID: l.AccountID, Amount: cost, Rate: rate, Base: base, Description: l.Description})
+		lines = append(lines, Line{AccountID: l.AccountID, Amount: cost, Rate: rate, Base: base, Description: l.Description, Values: values})
 	}
 	if spread && !hasPrepay {
 		add(CodeSystemRole, "lines", "the chart has no prepayments account for the spread cost", "Load the standard chart's 1210 Prepayments, or give an asset account the role")

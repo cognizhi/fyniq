@@ -77,6 +77,7 @@ function formOf(b: Bill): Form {
       spread_from: l.spread_from?.slice(0, 7) ?? "",
       order: l.order,
       business_share: l.business_share ?? "",
+      dimension_value_ids: [...(l.dimension_value_ids ?? [])],
     })),
   };
 }
@@ -119,6 +120,7 @@ export function check(f: Form, base: string): { draft?: Draft; errors: Errors } 
       spread_from: months && from ? `${from}-01` : undefined,
       order: l.order,
       business_share: share && !/^100(\.0{1,2})?$/.test(share) ? share : undefined,
+      dimension_value_ids: l.dimension_value_ids.length ? [...l.dimension_value_ids] : undefined,
     });
   }
   if (lines.length === 0) errors.lines = "Add a line for what the bill is for.";

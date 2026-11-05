@@ -4,14 +4,14 @@ type: task
 title: Bills
 summary: Entering, posting and approving a supplier's bill; claiming its GST; recurring bills; spreading a prepaid cost; payments; voiding or editing a bill
 sources:
-  - docs/user-guide/bills.md sha256:75f7778e0bebc20eabe56ad3db1b979c52c3657c593a7551e179632bd2a6d9fa
+  - docs/user-guide/bills.md sha256:869780a225552f9dd00b214c7b3293500c75bc2c0e929f9d414117cacfeedd35
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-23
+compiled_at: 2026-11-06
 aliases:
   - bill
   - supplier invoice
@@ -64,6 +64,8 @@ aliases:
   - prepayment
   - prepaid subscription
   - spread over months
+  - department on a bill
+  - project on a bill
   - recurring bill
   - monthly rent bill
   - repeating bill
@@ -141,6 +143,14 @@ aliases:
 
 (src: docs/user-guide/bills.md#spread-a-cost-over-months)
 
+## Dimensions on a line
+
+- When the organisation uses dimensions, such as Department or Project, each line can take one value of each, such as OPS Operations, so its cost shows by team or by project ([[accounting.chart]]).
+- The choices are in Expert mode; a line on an account that requires a dimension shows its choice in Basic mode too, with "needs one" under it, and the bill does not post until the line has one (DIM-05).
+- A spread line's cost keeps its values each month it is released; a credit note's lines take values in the same way, and a recurring bill's lines pass theirs to each draft it makes.
+
+(src: docs/user-guide/bills.md#tag-a-line-with-dimensions)
+
 ## Recurring bills
 
 - A bill that comes every month, quarter or year, such as the office rent, is set up once under **Purchases → Bills → Recurring** with **New recurring bill**: its name, how often it repeats (every month, 3 months, 6 months or year) and on which day, when it starts and ends, then the supplier, currency and lines as on a bill; the 29th to the 31st fall on the last day of a shorter month.
@@ -202,6 +212,7 @@ aliases:
 - BILL-05, the supplier is not an active vendor: choose a contact marked as a vendor, or reactivate it.
 - BILL-06, not a GST code for purchases: choose the invoice's code, such as TX, BL or NR.
 - BILL-07, the due date is before the bill's date: enter a later date, or leave it blank.
+- DIM-05, a line's account needs a value of a dimension: choose the line's value, such as its department. DIM-06: one value in use of each dimension, or None.
 - BILL-09, another person's approval is needed: select **Ask for approval**.
 - LEDGER-22, a system account is missing: load the standard chart, with 2010 Accounts payable and 2200 GST control.
 - BILLPAY-05, more than the bill has open: enter at most what is open, and void a payment entered twice.

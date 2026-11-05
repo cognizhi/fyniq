@@ -147,8 +147,46 @@ describe("A bill", () => {
     expect(body.lines![0]).toMatchObject({ account_id: "a6120", gst_code: "TX", net: { amount: "1000.00", currency: "SGD" }, gst: { amount: "90.00", currency: "SGD" } });
   });
 
+  // req: FR-DIM-01
+  // req: FR-DIM-02
+  it("takes a line's dimension values, showing a required one in Basic and the rest in Expert, and sends them", async () => {
+    const tagged = { ...accounts, body: { items: accounts.body.items.map((a) => (a.id === "a6120" ? { ...a, required_dimension_ids: ["d1"] } : a)) } };
+    const sent = answer({
+      ...reads,
+      "GET /v1/accounts": tagged,
+      "GET /v1/dimensions": {
+        status: 200,
+        body: { items: [{ id: "d1", kind: "department", name: "Department", active: true, version: 1 }, { id: "d2", kind: "project", name: "Project", active: true, version: 1 }] },
+      },
+      "GET /v1/dimension-values": {
+        status: 200,
+        body: { items: [{ id: "v1", dimension_id: "d1", code: "OPS", name: "Operations", active: true, version: 1 }, { id: "v2", dimension_id: "d2", code: "ATLAS", name: "Atlas", active: true, version: 1 }] },
+      },
+      "POST /v1/bills": { status: 201, body: { ...draft, id: "b9" } },
+    });
+    renderPage(BillPage, { path: "/purchases/bills/new", session: accountant, organisation: standard });
+    await screen.findByRole("option", { name: "Atlassian Pty Ltd" });
+    fireEvent.change(screen.getByLabelText("Supplier"), { target: { value: "c1" } });
+    fireEvent.change(screen.getByLabelText("Their invoice number"), { target: { value: "AU-1182" } });
+    fireEvent.change(screen.getByLabelText("Invoice date"), { target: { value: "2026-10-14" } });
+    await screen.findByRole("option", { name: /6120 Software subscriptions/ });
+    await screen.findByRole("option", { name: "OPS Operations" });
+    fireEvent.change(screen.getByLabelText("What it is for"), { target: { value: "a6120" } });
+    await screen.findByRole("option", { name: /^TX:/ });
+    expect(screen.getByText("6120 needs one")).toBeTruthy();
+    expect(screen.getByLabelText("Line 1: Department").closest(".fy-field")!.className).not.toContain("fy-expert-only");
+    expect(screen.getByLabelText("Line 1: Project").closest(".fy-field")!.className).toContain("fy-expert-only");
+    fireEvent.change(screen.getByLabelText("Line 1: Department"), { target: { value: "v1" } });
+    fireEvent.change(screen.getByLabelText("Amount before GST (SGD)"), { target: { value: "1,000.00" } });
+    fireEvent.change(screen.getByLabelText("GST as stated (SGD)"), { target: { value: "90.00" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save as a draft" }));
+    await waitFor(() => expect(sent.some((s) => s.method === "POST" && s.path === "/v1/bills")).toBe(true));
+    const body = sent.find((s) => s.method === "POST")!.body as components["schemas"]["BillDraft"];
+    expect(body.lines![0]).toMatchObject({ account_id: "a6120", dimension_value_ids: ["v1"] });
+  });
+
   it("says what to fix before saving", () => {
-    const { draft: d, errors } = check({ supplier_id: "", supplier_ref: "", date: "", due_date: "", currency: "SGD", fx_rate: "", notes: "", tax: usualTax(), nature: "", lines: [{ key: "l1", account_id: "", description: "x", gst_code: "", net: "", gst: "", stated_gst: "", spread_months: "", spread_from: "" }] }, "SGD");
+    const { draft: d, errors } = check({ supplier_id: "", supplier_ref: "", date: "", due_date: "", currency: "SGD", fx_rate: "", notes: "", tax: usualTax(), nature: "", lines: [{ key: "l1", account_id: "", description: "x", gst_code: "", net: "", gst: "", stated_gst: "", spread_months: "", spread_from: "", dimension_value_ids: [] }] }, "SGD");
     expect(d).toBeUndefined();
     expect(errors["l1.account"]).toBe("Choose what the line is for.");
     expect(errors["l1.gst_code"]).toBe("Choose the GST code on the supplier's invoice.");
@@ -167,7 +205,7 @@ describe("A bill", () => {
       notes: "",
       tax: usualTax(),
       nature: "",
-      lines: [{ key: "l1", account_id: "a6120", description: "Phone", gst_code: "TX", net: "100.00", gst: "9.00", stated_gst: "", spread_months: "", spread_from: "", business_share: share }],
+      lines: [{ key: "l1", account_id: "a6120", description: "Phone", gst_code: "TX", net: "100.00", gst: "9.00", stated_gst: "", spread_months: "", spread_from: "", business_share: share, dimension_value_ids: [] }],
     });
     const usual = check(form(""), "SGD").draft!;
     expect(usual.input_tax).toBeUndefined();
@@ -317,7 +355,7 @@ describe("A bill", () => {
       notes: "",
       tax: usualTax(),
       nature: "software_use",
-      lines: [{ key: "l1", account_id: "a6120", description: "Linear", gst_code: "NR", net: "120.00", gst: "0", stated_gst: "", spread_months: "", spread_from: "" }],
+      lines: [{ key: "l1", account_id: "a6120", description: "Linear", gst_code: "NR", net: "120.00", gst: "0", stated_gst: "", spread_months: "", spread_from: "", dimension_value_ids: [] }],
     };
     expect(check(f, "SGD").draft?.nature_of_payment).toBe("software_use");
     expect(check({ ...f, nature: "" }, "SGD").draft?.nature_of_payment).toBeUndefined();
@@ -335,7 +373,7 @@ describe("A bill", () => {
       notes: "",
       tax: usualTax(),
       nature: "",
-      lines: [{ key: "l1", account_id: "a6120", description: "Jira, a year", gst_code: "TX", net: "13080.00", gst: "1177.20", stated_gst: "", spread_months, spread_from }],
+      lines: [{ key: "l1", account_id: "a6120", description: "Jira, a year", gst_code: "TX", net: "13080.00", gst: "1177.20", stated_gst: "", spread_months, spread_from, dimension_value_ids: [] }],
     });
     expect(check(form("12", "2026-09"), "SGD").draft?.lines?.[0]).toMatchObject({ spread_months: 12, spread_from: "2026-09-01" });
     expect(check(form("12", ""), "SGD").draft?.lines?.[0]).toMatchObject({ spread_months: 12, spread_from: undefined });
