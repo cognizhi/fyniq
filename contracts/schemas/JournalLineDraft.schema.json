@@ -22,6 +22,22 @@
       "maxLength": 500,
       "type": "string"
     },
+    "dimension_value_ids": {
+      "description": "The line's dimension values, at most one of each dimension, each in use (listDimensionValues; DIM-06). An account that requires a dimension needs a value of it on every line of a journal (FR-DIM-01, PRD-001 rev 0.171; DIM-05).",
+      "examples": [
+        [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"
+        ]
+      ],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "fx_rate": {
       "description": "Only for a line not in the base currency: base currency per unit of the line's currency, the document's own rate. Left out, the line takes the rate the cascade finds for the journal's date when its checks run and when it posts, with that rate's source, as lookupFxRate shows it; with none anywhere the line has FX-01 (ENG-40; PRD-001 rev 0.71). A base-currency line takes none; posting refuses one (ENG-03).",
       "examples": [

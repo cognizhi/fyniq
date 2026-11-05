@@ -91,6 +91,18 @@ func (q *Queries) AccountLines(ctx context.Context, arg AccountLinesParams) ([]A
 	return items, nil
 }
 
+const dimensionSetOf = `-- name: DimensionSetOf :one
+SELECT id FROM fyniq.dimension_set WHERE value_ids = $1::uuid[]
+`
+
+// The set that holds a combination of values, written in its canonical form (§11.4).
+func (q *Queries) DimensionSetOf(ctx context.Context, valueIds []uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, dimensionSetOf, valueIds)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const entryIDsAfter = `-- name: EntryIDsAfter :many
 SELECT id, ledger_revision FROM fyniq.journal_entry
 WHERE ledger_revision > $1
@@ -209,24 +221,29 @@ func (q *Queries) GetEntryIDByIdentity(ctx context.Context, postingIdentity stri
 }
 
 const getEntryLines = `-- name: GetEntryLines :many
-SELECT id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_currency, base_amount, description, party_id
-FROM fyniq.journal_line WHERE entry_id = $1 ORDER BY line_no
+SELECT l.id, l.line_no, l.account_id, l.currency, l.amount, l.fx_rate, l.fx_rate_source, l.base_currency, l.base_amount,
+       l.description, l.party_id, coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids
+FROM fyniq.journal_line l
+LEFT JOIN fyniq.dimension_set d ON d.organisation_id = l.organisation_id AND d.id = l.dimension_set_id
+WHERE l.entry_id = $1 ORDER BY l.line_no
 `
 
 type GetEntryLinesRow struct {
-	ID           uuid.UUID
-	LineNo       int32
-	AccountID    uuid.UUID
-	Currency     string
-	Amount       string
-	FxRate       string
-	FxRateSource string
-	BaseCurrency string
-	BaseAmount   string
-	Description  *string
-	PartyID      *uuid.UUID
+	ID                uuid.UUID
+	LineNo            int32
+	AccountID         uuid.UUID
+	Currency          string
+	Amount            string
+	FxRate            string
+	FxRateSource      string
+	BaseCurrency      string
+	BaseAmount        string
+	Description       *string
+	PartyID           *uuid.UUID
+	DimensionValueIds []uuid.UUID
 }
 
+// A line's dimension values are its set's, in ascending order; none for a line with no set (FR-DIM-02).
 func (q *Queries) GetEntryLines(ctx context.Context, entryID uuid.UUID) ([]GetEntryLinesRow, error) {
 	rows, err := q.db.Query(ctx, getEntryLines, entryID)
 	if err != nil {
@@ -248,6 +265,7 @@ func (q *Queries) GetEntryLines(ctx context.Context, entryID uuid.UUID) ([]GetEn
 			&i.BaseAmount,
 			&i.Description,
 			&i.PartyID,
+			&i.DimensionValueIds,
 		); err != nil {
 			return nil, err
 		}
@@ -268,6 +286,20 @@ func (q *Queries) GetLedgerRevision(ctx context.Context) (int64, error) {
 	var revision int64
 	err := row.Scan(&revision)
 	return revision, err
+}
+
+const insertDimensionSet = `-- name: InsertDimensionSet :one
+INSERT INTO fyniq.dimension_set (value_ids) VALUES ($1::uuid[])
+ON CONFLICT (organisation_id, value_ids) DO NOTHING
+RETURNING id
+`
+
+// A combination's set, written once: none comes back when another transaction wrote it first.
+func (q *Queries) InsertDimensionSet(ctx context.Context, valueIds []uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertDimensionSet, valueIds)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const insertEntry = `-- name: InsertEntry :one
@@ -322,7 +354,7 @@ func (q *Queries) InsertEntry(ctx context.Context, arg InsertEntryParams) (Inser
 
 const insertLines = `-- name: InsertLines :exec
 INSERT INTO fyniq.journal_line
-  (entry_id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_amount, description, party_id)
+  (entry_id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_amount, description, party_id, dimension_set_id)
 SELECT $1::uuid,
        unnest($2::int[]),
        unnest($3::uuid[]),
@@ -332,20 +364,22 @@ SELECT $1::uuid,
        unnest($7::text[]),
        unnest($8::numeric[]),
        nullif(unnest($9::text[]), ''),
-       nullif(unnest($10::text[]), '')::uuid
+       nullif(unnest($10::text[]), '')::uuid,
+       nullif(unnest($11::text[]), '')::uuid
 `
 
 type InsertLinesParams struct {
-	EntryID       uuid.UUID
-	LineNos       []int32
-	AccountIds    []uuid.UUID
-	Currencies    []string
-	Amounts       []string
-	FxRates       []string
-	FxRateSources []string
-	BaseAmounts   []string
-	Descriptions  []string
-	PartyIds      []string
+	EntryID         uuid.UUID
+	LineNos         []int32
+	AccountIds      []uuid.UUID
+	Currencies      []string
+	Amounts         []string
+	FxRates         []string
+	FxRateSources   []string
+	BaseAmounts     []string
+	Descriptions    []string
+	PartyIds        []string
+	DimensionSetIds []string
 }
 
 // One statement for all of an entry's lines, so the balances cache updates once (INV-08).
@@ -361,6 +395,7 @@ func (q *Queries) InsertLines(ctx context.Context, arg InsertLinesParams) error 
 		arg.BaseAmounts,
 		arg.Descriptions,
 		arg.PartyIds,
+		arg.DimensionSetIds,
 	)
 	return err
 }

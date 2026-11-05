@@ -25,6 +25,21 @@
       ],
       "type": "string"
     },
+    "dimension_value_ids": {
+      "description": "The line's dimension values, in ascending order; absent for a line with none (FR-DIM-02).",
+      "examples": [
+        [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"
+        ]
+      ],
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "fx_rate": {
       "description": "Base currency per unit of the line's currency (1 for the base currency).",
       "examples": [

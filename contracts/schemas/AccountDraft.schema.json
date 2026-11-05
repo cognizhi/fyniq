@@ -98,6 +98,22 @@
       "maxLength": 60,
       "type": "string"
     },
+    "required_dimension_ids": {
+      "description": "The dimensions a line a person enters on it needs a value of, each in use (listDimensions; DIM-04): a journal line without one is refused (DIM-05), and a posting the system makes by itself is flagged on Checks instead (FR-DIM-01, PRD-001 rev 0.171).",
+      "examples": [
+        [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+        ]
+      ],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "revalue": {
       "description": "Revalue its foreign-currency balances at month end: only an asset or a liability settled in money, never prepayments or deferred revenue (FR-GL-04; COA-10).",
       "examples": [

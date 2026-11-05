@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -171,4 +172,46 @@ func (r dimensions) ChangeValue(ctx context.Context, id uuid.UUID, version int, 
 	changes["value_id"] = [2]any{after.ID.String(), after.ID.String()}
 	changes["version"] = [2]any{before.Version, after.Version}
 	return after, r.u.event(ctx, "dimension.value_changed", "dimension", after.DimensionID, nil, changes)
+}
+
+// dimensionSet is the set that holds a line's values (§11.4): the one written before for the combination, else a new one.
+// The values go in their canonical form, once each in ascending order, which the database checks (FY257).
+func (u *unitOfWork) dimensionSet(ctx context.Context, values []uuid.UUID) (uuid.UUID, error) {
+	canon := slices.Clone(values)
+	slices.SortFunc(canon, func(a, b uuid.UUID) int { return slices.Compare(a[:], b[:]) })
+	canon = slices.Compact(canon)
+	for range 2 { // a set another transaction wrote first is read on the second pass
+		id, err := u.q.DimensionSetOf(ctx, canon)
+		if err == nil {
+			return id, nil
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return uuid.Nil, mapError(err)
+		}
+		id, err = u.q.InsertDimensionSet(ctx, canon)
+		if err == nil {
+			return id, nil
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return uuid.Nil, mapError(err)
+		}
+	}
+	return uuid.Nil, &storage.Error{Code: storage.CodeRetry, Message: "the line's dimension set could not be written", Hint: "Retry the request"}
+}
+
+// uuids is a list of IDs as a NOT NULL array column takes it: empty, never null.
+func uuids(ids []uuid.UUID) []uuid.UUID {
+	if ids == nil {
+		return []uuid.UUID{}
+	}
+	return ids
+}
+
+// idTexts are IDs as the audit trail records them.
+func idTexts(ids []uuid.UUID) []string {
+	out := make([]string, len(ids))
+	for i, id := range ids {
+		out[i] = id.String()
+	}
+	return out
 }

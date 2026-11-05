@@ -198,6 +198,9 @@ func toAccount(r accountRow) storage.Account {
 			ReportGroup: str(r.ReportGroup), CashFlowLine: str(r.CashFlowLine), Function: str(r.Function), MoneyAccount: r.IsMoneyAccount,
 			DefaultGSTCode: str(r.DefaultGstCode), Currency: str(r.Currency), Control: r.IsControl, PayrollCost: r.IsPayrollCost,
 			Guidance: str(r.Guidance), Revalue: r.Revalue}}
+	if len(r.RequiredDimensionIds) > 0 {
+		a.RequiredDimensions = r.RequiredDimensionIds
+	}
 	if r.UsefulLifeMonths != nil {
 		a.UsefulLife = int(*r.UsefulLifeMonths)
 	}
@@ -218,7 +221,8 @@ func (r accounts) Create(ctx context.Context, a storage.NewAccount) (storage.Acc
 	row, err := r.u.q.InsertAccount(ctx, sqlcdb.InsertAccountParams{Code: a.Code, Name: a.Name, Type: string(a.Type),
 		ParentID: a.ParentID, IsGroup: a.Group, Role: role, ReportGroup: opt(a.ReportGroup), CashFlowLine: opt(a.CashFlowLine),
 		Function: opt(a.Function), IsMoneyAccount: a.MoneyAccount, DefaultGstCode: opt(a.DefaultGSTCode), Currency: opt(a.Currency),
-		IsControl: a.Control, IsPayrollCost: a.PayrollCost, Guidance: opt(a.Guidance), Revalue: a.Revalue, UsefulLifeMonths: months(a.UsefulLife)})
+		IsControl: a.Control, IsPayrollCost: a.PayrollCost, Guidance: opt(a.Guidance), Revalue: a.Revalue, UsefulLifeMonths: months(a.UsefulLife),
+		RequiredDimensionIds: uuids(a.RequiredDimensions)})
 	if err != nil {
 		return storage.Account{}, mapError(err)
 	}
@@ -229,7 +233,8 @@ func (r accounts) Create(ctx context.Context, a storage.NewAccount) (storage.Acc
 		"report_group": {nil, row.ReportGroup}, "cash_flow_line": {nil, row.CashFlowLine}, "function": {nil, row.Function},
 		"is_money_account": {nil, row.IsMoneyAccount}, "default_gst_code": {nil, row.DefaultGstCode}, "currency": {nil, row.Currency},
 		"is_control": {nil, row.IsControl}, "is_payroll_cost": {nil, row.IsPayrollCost}, "guidance": {nil, row.Guidance},
-		"revalue": {nil, row.Revalue}, "useful_life_months": {nil, row.UsefulLifeMonths}}); err != nil {
+		"revalue": {nil, row.Revalue}, "useful_life_months": {nil, row.UsefulLifeMonths},
+		"required_dimension_ids": {nil, idTexts(row.RequiredDimensionIds)}}); err != nil {
 		return storage.Account{}, err
 	}
 	return toAccount(accountRow(row)), nil
@@ -337,7 +342,8 @@ func (r accounts) Update(ctx context.Context, id uuid.UUID, version int, c stora
 	row, err := r.u.q.UpdateAccount(ctx, sqlcdb.UpdateAccountParams{ID: id, Name: c.Name, ParentID: c.ParentID, IsGroup: c.Group,
 		IsActive: c.Active, ReportGroup: opt(c.ReportGroup), CashFlowLine: opt(c.CashFlowLine), Function: opt(c.Function),
 		IsMoneyAccount: c.MoneyAccount, DefaultGstCode: opt(c.DefaultGSTCode), Currency: opt(c.Currency), IsControl: c.Control,
-		IsPayrollCost: c.PayrollCost, Guidance: opt(c.Guidance), Revalue: c.Revalue, UsefulLifeMonths: months(c.UsefulLife)})
+		IsPayrollCost: c.PayrollCost, Guidance: opt(c.Guidance), Revalue: c.Revalue, UsefulLifeMonths: months(c.UsefulLife),
+		RequiredDimensionIds: uuids(c.RequiredDimensions)})
 	if err != nil {
 		return storage.Account{}, mapError(err)
 	}
@@ -369,6 +375,7 @@ func (r accounts) Update(ctx context.Context, id uuid.UUID, version int, c stora
 	diff("guidance", before.Guidance, after.Guidance)
 	diff("revalue", before.Revalue, after.Revalue)
 	diff("useful_life_months", before.UsefulLife, after.UsefulLife)
+	diff("required_dimension_ids", idTexts(before.RequiredDimensions), idTexts(after.RequiredDimensions))
 	if err := r.u.event(ctx, "account.updated", "account", after.ID, &after.Version, changes); err != nil {
 		return storage.Account{}, err
 	}
@@ -828,6 +835,15 @@ func (r ledger) Append(ctx context.Context, e storage.NewEntry) (storage.Entry, 
 			party = l.PartyID.String()
 		}
 		p.PartyIds = append(p.PartyIds, party)
+		set := ""
+		if len(l.DimensionValues) > 0 {
+			id, err := r.u.dimensionSet(ctx, l.DimensionValues)
+			if err != nil {
+				return storage.Entry{}, err
+			}
+			set = id.String()
+		}
+		p.DimensionSetIds = append(p.DimensionSetIds, set)
 	}
 	if e.Source.Version < 1 || e.Source.Version > math.MaxInt32 {
 		return storage.Entry{}, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("source version %d is out of range", e.Source.Version)}
@@ -861,6 +877,9 @@ func (r ledger) Append(ctx context.Context, e storage.NewEntry) (storage.Entry, 
 			"base_currency": l.BaseCurrency, "base_amount": string(l.BaseAmount), "description": l.Description}
 		if l.PartyID != nil { // a director's account's person (B.7)
 			line["party_id"] = l.PartyID.String()
+		}
+		if len(l.DimensionValues) > 0 { // its dimension values (FR-DIM-02)
+			line["dimension_value_ids"] = idTexts(l.DimensionValues)
 		}
 		lines[i] = line
 	}
@@ -925,6 +944,9 @@ func (r ledger) Entry(ctx context.Context, id uuid.UUID) (storage.Entry, error) 
 			BaseCurrency: l.BaseCurrency, BaseAmount: storage.Decimal(l.BaseAmount), PartyID: l.PartyID}
 		if l.Description != nil {
 			line.Description = *l.Description
+		}
+		if len(l.DimensionValueIds) > 0 {
+			line.DimensionValues = l.DimensionValueIds
 		}
 		e.Lines = append(e.Lines, line)
 	}
