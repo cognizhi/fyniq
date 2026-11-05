@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/button";
 import { helpText } from "../../i18n";
 import { Icon } from "../../ui";
 import type { Account } from "../accounting/data";
+import { DimensionFields } from "../accounting/lines";
 
 type GSTCode = components["schemas"]["SalesGSTCodes"]["codes"][number];
 export type Item = components["schemas"]["Item"];
@@ -23,10 +24,11 @@ export interface Line {
   spread_months: string; // revenue spread over months on 2400 Deferred revenue (FR-GL-03); blank for none
   spread_from: string; // the spread's first month, "2026-10"; blank for the invoice's month
   quote?: QuoteRef; // the quote or sales order line it invoices (FR-AR-02), kept as the quote made it
+  dimension_value_ids: string[]; // its dimension values (FR-DIM-02): at most one of each dimension
 }
 
 let keys = 0;
-export const newLine = (): Line => ({ key: `il-${++keys}`, item_id: "", description: "", quantity: "1", unit_price: "", discount: "", account_id: "", gst_code: "", spread_months: "", spread_from: "" });
+export const newLine = (): Line => ({ key: `il-${++keys}`, item_id: "", description: "", quantity: "1", unit_price: "", discount: "", account_id: "", gst_code: "", spread_months: "", spread_from: "", dimension_value_ids: [] });
 
 // lineKey is a fresh key for a line read from a saved invoice.
 export const lineKey = (): string => `il-${++keys}`;
@@ -49,8 +51,9 @@ export function fromItem(l: Line, item: Item | undefined, currency: string): Lin
 }
 
 // InvoiceLines is the card of an invoice's lines (FR-AR-03), shared by an invoice, a credit note and a recurring
-// invoice: each line's item, description, quantity, unit price before GST, discount, revenue account and GST code; with
-// spreads, the spread of its revenue over months (FR-GL-03). id is the form's, for each error's element.
+// invoice: each line's item, description, quantity, unit price before GST, discount, revenue account, GST code and
+// dimension values (FR-DIM-02, Expert unless set or required); with spreads, the spread of its revenue over months
+// (FR-GL-03). id is the form's, for each error's element.
 export function InvoiceLines({ id, lines, onChange, editable, errors, currency, spreads, codes, choices, items, subtitle, footer }: {
   id: string;
   lines: Line[];
@@ -220,6 +223,16 @@ export function InvoiceLines({ id, lines, onChange, editable, errors, currency, 
                 </select>
                 {err(`${l.key}.gst_code`)}
               </div>
+              <DimensionFields
+                ids={l.dimension_value_ids}
+                keyPrefix={l.key}
+                n={i + 1}
+                account={choices.find((a) => a.id === l.account_id)}
+                set={(ids) => setLine(l.key, { dimension_value_ids: ids })}
+                className="fy-field"
+                disabled={!editable}
+                expertOnly
+              />
               {spreads && (
                 // A spread is an Expert field (§7.8), shown in Basic too once a line has one, so nothing is hidden.
                 <>

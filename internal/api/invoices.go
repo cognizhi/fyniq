@@ -69,6 +69,8 @@ type InvoiceLineDraft struct {
 	// Spreads (FR-GL-03; rev 0.118).
 	SpreadMonths int    `json:"spread_months,omitempty" minimum:"1" maximum:"120" doc:"Spread the line's revenue over this many months (FR-GL-03): issuing puts its net on 2400 Deferred revenue in the base currency, and one part a month (ALLOC-EVEN) is released to the line's account by the scheduler, up to the organisation's today and never ahead (ENG-05)." example:"12"`
 	SpreadFrom   string `json:"spread_from,omitempty" format:"date" doc:"The spread's first month, as any day of it: when the service starts. Left out, the invoice's month. Months before the invoice's date release on its date." example:"2026-10-01"`
+	// Dimensions (FR-DIM-01, FR-DIM-02; rev 0.171).
+	DimensionValueIDs []DimensionValueRef `json:"dimension_value_ids,omitempty" maxItems:"10" doc:"The line's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06): its revenue, and each month a spread releases, carry them. A line on an account that requires a dimension names a value of it, or the invoice does not issue (DIM-05)."`
 	// The quote it invoices (FR-AR-02; rev 0.131).
 	Quote *InvoiceLineQuote `json:"quote,omitempty" doc:"An invoice's line only: the line of a quote or sales order it invoices, for a line made from one; invoiceQuote sets it, and the line's quantity is what it invoices of it. The quote must be one the customer accepted, of the invoice's customer and currency (QUOTE-11)."`
 }
@@ -384,6 +386,9 @@ func invoiceDraftOf(in InvoiceDraft, base money.Currency) (invoice.Draft, error)
 			fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("account_id"), Message: "is not an ID", Fix: "Send the account's ID"})
 		}
 		line := invoice.Line{AccountID: id, Description: l.Description, Discount: l.Discount, GSTCode: l.GSTCode, SpreadMonths: l.SpreadMonths}
+		values, fps := valuesOf(l.DimensionValueIDs, at("dimension_value_ids"))
+		fields = append(fields, fps...)
+		line.Values = values
 		if q := l.Quote; q != nil {
 			qid, err := uuid.Parse(q.QuoteID)
 			if err != nil {
@@ -762,7 +767,8 @@ func invoiceLinesOut(d invoice.Draft) []InvoiceLine {
 	out := make([]InvoiceLine, 0, len(d.Lines))
 	for _, l := range d.Lines {
 		x := InvoiceLine{InvoiceLineDraft: InvoiceLineDraft{Description: l.Description, Quantity: l.Quantity.String(), UnitPrice: l.UnitPrice.String(),
-			Discount: l.Discount, AccountID: l.AccountID.String(), GSTCode: l.GSTCode, SpreadMonths: l.SpreadMonths, SpreadFrom: dayText(l.SpreadFrom)}}
+			Discount: l.Discount, AccountID: l.AccountID.String(), GSTCode: l.GSTCode, SpreadMonths: l.SpreadMonths, SpreadFrom: dayText(l.SpreadFrom),
+			DimensionValueIDs: valueRefs(l.Values)}}
 		if l.ItemID != nil {
 			x.ItemID = l.ItemID.String()
 		}

@@ -74,6 +74,7 @@ function formOf(r: RecurringInvoice): RecurringInvoiceForm {
       gst_code: l.gst_code,
       spread_months: l.spread_months ? String(l.spread_months) : "",
       spread_from: "",
+      dimension_value_ids: [...(l.dimension_value_ids ?? [])],
     })),
   };
 }

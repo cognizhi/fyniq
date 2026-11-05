@@ -330,6 +330,7 @@ export const actions = [
   { kind: "action", id: "invoice.ask-edit", mode: "basic", help: "invoice.ask-edit", guide: "sales.invoices#void-or-edit-an-issued-invoice" },
   { kind: "action", id: "invoice.attach-evidence", mode: "basic", help: "invoice.attach-evidence", guide: "sales.invoices#attach-evidence" },
   { kind: "action", id: "invoice.spread", mode: "expert", help: "invoice.spread", guide: "sales.invoices#spread-revenue-over-months" },
+  { kind: "action", id: "invoice.line-dimensions", mode: "expert", help: "invoice.line-dimensions", guide: "sales.invoices#tag-a-line-with-dimensions" },
   { kind: "action", id: "invoice.discount", mode: "expert", help: "invoice.discount", guide: "sales.invoices#enter-an-invoice" },
   { kind: "action", id: "public.download", mode: "basic", help: "public.download", guide: "sales.invoices#what-the-customer-sees" },
   { kind: "action", id: "credit-note.credits", mode: "basic", help: "credit-note.credits", guide: "sales.invoices#credit-notes" },

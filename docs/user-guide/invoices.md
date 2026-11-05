@@ -146,6 +146,17 @@ In Expert mode a line can be spread over 1 to 120 months, from the month the ser
 puts its revenue on Deferred revenue, and one part a month is released to the line's account. Months
 still to come are projections, not in the books.
 
+## Tag a line with dimensions
+
+When the organisation uses dimensions, such as Department or Project, each line can take one value
+of each, such as ENG Engineering, so its revenue shows by team or by project. The choices are in
+Expert mode; a line on a revenue account that requires a dimension shows its choice in Basic mode
+too, with "needs one" under it, and the invoice does not issue until the line has one (DIM-05).
+
+A spread line's revenue keeps its values each month it is released. A credit note's lines take values
+in the same way, and a quote's and a recurring invoice's lines pass theirs to the invoices made from
+them.
+
 ## Attach evidence
 
 **Evidence** keeps what the invoice rests on, such as the customer's purchase order or a delivery
@@ -161,6 +172,8 @@ again; once it is issued its files are kept, and never deleted, for as long as t
 | The due date is before the invoice's date (INVOICE-07) | Enter a due date on or after the invoice date, or leave it blank |
 | A line's quantity, price or discount cannot be one (INVOICE-09) | Enter a quantity and a price with up to 6 decimals, and a discount from 0 to 100 |
 | The invoice needs another person's approval (INVOICE-10) | Select **Ask for approval** |
+| A line's account needs a value of a dimension (DIM-05) | Choose the line's value, such as its department |
+| A dimension value that does not exist or is out of use, or two values of one dimension (DIM-06) | Choose one value in use of each dimension, or None |
 | Receipts or credits settle the invoice (INVOICE-13) | Void its receipts and credit applications first, then void or edit it |
 | More than the invoice has open (RECEIPT-05) | Record at most what is open; the rest is kept as the customer's credit |
 | What is left is above the settlement tolerance (RECEIPT-11) | Leave the invoice open, or write the rest off |

@@ -89,6 +89,19 @@ func missing(s Settings, acc Account, values []uuid.UUID) []string {
 	return out
 }
 
+// documentLine checks the values of a line a person enters on a document (an invoice, a bill, a bank line, a claim):
+// each one the organisation has and in use, one of each dimension (DIM-06), and a value of each dimension the line's
+// account requires (DIM-05; FR-DIM-01, rev 0.171). known says acc is the line's account in the chart. A document's line
+// earns or costs what it says, so the exception for a journal's lines that net to zero is not a document's.
+func documentLine(s Settings, acc Account, known bool, values []uuid.UUID, field string) []Problem {
+	probs := dimensionProblems(s, values, field)
+	if names := missing(s, acc, values); known && len(names) > 0 {
+		probs = append(probs, Problem{CodeDimensionRequired, field, fmt.Sprintf("account %s needs a value of %s on every line", acc.Code, strings.Join(names, " and ")),
+			fmt.Sprintf("Choose the line's %s", strings.Join(names, " and "))})
+	}
+	return probs
+}
+
 // required is DIM-05 for a line a person enters without a value its account requires (rev 0.171), unless the journal's
 // lines on that account net to zero: such a journal moves amounts between values, often an amount the system posted
 // without one to the value it belongs to (Appendix C.2 #60), and changes nothing the account totals.

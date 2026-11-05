@@ -15468,6 +15468,18 @@ components:
             - Analytics platform, October
           maxLength: 500
           type: string
+        dimension_value_ids:
+          description: "The line's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06): its revenue, and each month a spread releases, carry them. A line on an account that requires a dimension names a value of it, or the invoice does not issue (DIM-05)."
+          items:
+            description: A dimension value's ID (listDimensionValues).
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21
+            format: uuid
+            type: string
+          maxItems: 10
+          type:
+            - array
+            - "null"
         discount_percent:
           description: "A discount off the line, as a percentage with at most two decimals. The line's net is RND-LINE: quantity × unit price × (100 − discount) ÷ 100, rounded once to the currency's minor units, half away from zero."
           examples:
@@ -15539,6 +15551,18 @@ components:
             - Analytics platform, October
           maxLength: 500
           type: string
+        dimension_value_ids:
+          description: "The line's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06): its revenue, and each month a spread releases, carry them. A line on an account that requires a dimension names a value of it, or the invoice does not issue (DIM-05)."
+          items:
+            description: A dimension value's ID (listDimensionValues).
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21
+            format: uuid
+            type: string
+          maxItems: 10
+          type:
+            - array
+            - "null"
         discount_percent:
           description: "A discount off the line, as a percentage with at most two decimals. The line's net is RND-LINE: quantity × unit price × (100 − discount) ÷ 100, rounded once to the currency's minor units, half away from zero."
           examples:

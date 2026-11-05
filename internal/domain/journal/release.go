@@ -115,7 +115,7 @@ func invoiceSchedule(ctx context.Context, u storage.UnitOfWork, doc storage.Docu
 	for _, l := range d.Lines {
 		x := l.Spread(d.Date)
 		spread = spread || x != nil
-		i.Lines = append(i.Lines, ledger.InvoiceLine{AccountID: l.AccountID, Description: l.Description, Spread: x})
+		i.Lines = append(i.Lines, ledger.InvoiceLine{AccountID: l.AccountID, Description: l.Description, Spread: x, Values: l.Values})
 	}
 	if !spread {
 		return nil, nil

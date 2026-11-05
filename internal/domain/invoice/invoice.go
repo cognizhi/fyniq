@@ -133,7 +133,8 @@ type Line struct {
 	GSTCode      string
 	SpreadMonths int
 	SpreadFrom   time.Time
-	Quote        *QuoteRef // the quote or sales order line it invoices, nil for a line not made from one (FR-AR-02)
+	Quote        *QuoteRef   // the quote or sales order line it invoices, nil for a line not made from one (FR-AR-02)
+	Values       []uuid.UUID // its dimension values (FR-DIM-02), checked when it posts
 }
 
 // QuoteRef names the line of a quote or sales order an invoice's line invoices (FR-AR-02): the line's own quantity is
@@ -196,6 +197,8 @@ type payloadLine struct {
 	SpreadMonths int           `json:"spread_months,omitempty"`
 	SpreadFrom   string        `json:"spread_from,omitempty"`
 	Quote        *payloadQuote `json:"quote,omitempty"`
+	// The line's dimension values (FR-DIM-02).
+	DimensionValueIDs []uuid.UUID `json:"dimension_value_ids,omitempty"`
 }
 
 type payloadQuote struct {
@@ -241,7 +244,8 @@ func Encode(d Draft) ([]byte, error) {
 				"Enter every price of the invoice in its currency"}
 		}
 		pl := payloadLine{ItemID: l.ItemID, Description: l.Description, Quantity: l.Quantity.String(), UnitPrice: l.UnitPrice.String(),
-			Discount: l.Discount, AccountID: l.AccountID, GSTCode: l.GSTCode, SpreadMonths: l.SpreadMonths, SpreadFrom: day(l.SpreadFrom)}
+			Discount: l.Discount, AccountID: l.AccountID, GSTCode: l.GSTCode, SpreadMonths: l.SpreadMonths, SpreadFrom: day(l.SpreadFrom),
+			DimensionValueIDs: l.Values}
 		if q := l.Quote; q != nil {
 			pl.Quote = &payloadQuote{QuoteID: q.QuoteID, Line: q.Line}
 		}
@@ -324,7 +328,7 @@ func ReadContent(payloadJSON []byte, base money.Currency) (Draft, error) {
 			return Draft{}, bad(fmt.Sprintf("the unit price %q", l.UnitPrice))
 		}
 		line := Line{ItemID: l.ItemID, Description: l.Description, Quantity: q, UnitPrice: price, Discount: l.Discount, AccountID: l.AccountID, GSTCode: l.GSTCode,
-			SpreadMonths: l.SpreadMonths}
+			SpreadMonths: l.SpreadMonths, Values: l.DimensionValueIDs}
 		if q := l.Quote; q != nil {
 			line.Quote = &QuoteRef{QuoteID: q.QuoteID, Line: q.Line}
 		}
@@ -466,7 +470,7 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 		if !ok || code.Direction != pack.DirSupply {
 			add(CodeGSTCode, f("gst_code"), fmt.Sprintf("%q is not a GST code for supplies", l.GSTCode), "Choose a GST code for sales, such as SR, ZR, ES or OS")
 		}
-		line := ledger.InvoiceLine{AccountID: l.AccountID, Description: l.Description, Net: net, GSTCode: l.GSTCode, Spread: l.Spread(d.Date)}
+		line := ledger.InvoiceLine{AccountID: l.AccountID, Description: l.Description, Net: net, GSTCode: l.GSTCode, Spread: l.Spread(d.Date), Values: l.Values}
 		if out.Registered && ok {
 			switch {
 			case code.StandardRated:

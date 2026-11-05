@@ -19614,6 +19614,8 @@ export interface components {
              * @example Analytics platform, October
              */
             description?: string;
+            /** @description The line's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06): its revenue, and each month a spread releases, carry them. A line on an account that requires a dimension names a value of it, or the invoice does not issue (DIM-05). */
+            dimension_value_ids?: string[] | null;
             /**
              * @description A discount off the line, as a percentage with at most two decimals. The line's net is RND-LINE: quantity × unit price × (100 − discount) ÷ 100, rounded once to the currency's minor units, half away from zero.
              * @example 10
@@ -19669,6 +19671,8 @@ export interface components {
              * @example Analytics platform, October
              */
             description?: string;
+            /** @description The line's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06): its revenue, and each month a spread releases, carry them. A line on an account that requires a dimension names a value of it, or the invoice does not issue (DIM-05). */
+            dimension_value_ids?: string[] | null;
             /**
              * @description A discount off the line, as a percentage with at most two decimals. The line's net is RND-LINE: quantity × unit price × (100 − discount) ÷ 100, rounded once to the currency's minor units, half away from zero.
              * @example 10

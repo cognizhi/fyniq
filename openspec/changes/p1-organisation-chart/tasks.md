@@ -146,6 +146,14 @@
   `accounting.journals` and `accounting.chart`. Tests: `JournalPage.test.tsx`, `ChartOfAccounts.test.tsx`,
   `Dimensions.test.tsx`. **Left:** values on the other documents' lines (slice 3d), reports by dimension and the
   oracle's half (slice 4).)
+  (6 Nov 2026, slice 3d, sales: an invoice's, a credit note's, a quote's and a recurring invoice's line takes
+  `dimension_value_ids`; the invoice rule checks them as a person's lines (DIM-06, and DIM-05 with "Choose the line's
+  <dimension>", no journal's exception) and puts them on the line's revenue, or a spread line's 2400 and both lines of
+  each month it releases; the schedule the scheduler releases from keeps them. The invoice editor, shared with credit
+  notes, quotes and recurring invoices, has a choice per dimension, Expert unless set or required. Help key
+  `invoice.line-dimensions`; the guide's "Tag a line with dimensions", compiled into `sales.invoices`. Tests
+  `TestAnInvoicesLinesCarryTheirDimensionValues`, `TestInvoiceLinesCarryTheirDimensionValues`,
+  `TestInvoiceLinesTakeDimensionValues`, `invoices.test.tsx`. **Left:** purchases, bank lines and claims.)
 
 ## 4. Contacts and items
 

@@ -141,3 +141,70 @@ func TestALinesDimensionValuesAreCheckedAndKept(t *testing.T) {
 		t.Errorf("replay sees the changed value: %v", d)
 	}
 }
+
+// FR-DIM-01 and FR-DIM-02 on an invoice (rev 0.171; p1-organisation-chart task 3.3, slice 3d): each line's revenue
+// carries its values, a spread line's deferred revenue and every month it releases too, and its receivable and GST
+// none; a person enters an invoice, so a line on an account that requires a dimension names a value of it (DIM-05,
+// without a journal's exception) and every value is one in use, once a dimension (DIM-06); a credit note keeps them.
+// req: FR-DIM-01
+// req: FR-DIM-02
+// req: ENG-05
+func TestAnInvoicesLinesCarryTheirDimensionValues(t *testing.T) {
+	s := selling()
+	d := withDimensions()
+	s.Dimensions, s.Values = d.Dimensions, d.Values
+	tagged := subscribe
+	tagged.Requires = []uuid.UUID{dept}
+	s.Accounts[subscribe.ID] = tagged
+	sub := invoiceLine(t, subscribe, "1000.00", sgd, "SR", "0.09")
+	sub.Values = []uuid.UUID{eng, atlas}
+	spread := spreadInvoiceLine(invoiceLine(t, consulting, "300.00", sgd, "SR", "0.09"), october, 3)
+	spread.Values = []uuid.UUID{ops}
+	inv := sgdInvoice(sub, spread)
+	e, err := PostInvoice(inv, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	valuesOn := func(lines []Line) map[string][]uuid.UUID {
+		out := map[string][]uuid.UUID{}
+		for _, l := range lines {
+			out[s.Accounts[l.AccountID].Code] = l.Values
+		}
+		return out
+	}
+	got := valuesOn(e.Lines)
+	if !slices.Equal(got["4010"], []uuid.UUID{atlas, eng}) || !slices.Equal(got["2400"], []uuid.UUID{ops}) || got["1100"] != nil || got["2200"] != nil {
+		t.Errorf("the invoice's lines' values: %v", got)
+	}
+
+	rs, err := InvoiceReleases(inv, e, s)
+	if err != nil || len(rs) != 3 {
+		t.Fatalf("the releases: %v %v", rs, err)
+	}
+	r, err := PostInvoiceRelease(rs[0], s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := valuesOn(r.Lines); !slices.Equal(got["2400"], []uuid.UUID{ops}) || !slices.Equal(got["4020"], []uuid.UUID{ops}) {
+		t.Errorf("a release's values: %v", got)
+	}
+
+	cn, err := PostCreditNote(sgdInvoice(sub), s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := valuesOn(cn.Lines); !slices.Equal(got["4010"], []uuid.UUID{atlas, eng}) {
+		t.Errorf("the credit note's values: %v", got)
+	}
+
+	sub.Values = []uuid.UUID{atlas}
+	_, err = PostInvoice(sgdInvoice(sub), s)
+	if p, _ := err.(Problems); dimensionCodes(err) != "DIM-05 lines[1].dimension_value_ids" ||
+		p[0].Message != "account 4010 needs a value of Department on every line" || p[0].Fix != "Choose the line's Department" {
+		t.Errorf("a line with no department: %+v", err)
+	}
+	sub.Values = []uuid.UUID{retired}
+	if _, err := PostInvoice(sgdInvoice(sub), s); dimensionCodes(err) != "DIM-06 lines[1].dimension_value_ids" {
+		t.Errorf("a department out of use: %v", err)
+	}
+}

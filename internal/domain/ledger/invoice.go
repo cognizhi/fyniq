@@ -41,7 +41,8 @@ type InvoiceLine struct {
 	Net         money.Money
 	GSTCode     string
 	GSTRate     string
-	Spread      *Spread // nil: the revenue goes to the line's account on the invoice's date
+	Spread      *Spread     // nil: the revenue goes to the line's account on the invoice's date
+	Values      []uuid.UUID // the line's dimension values (FR-DIM-02), in any order; its revenue, and a spread's releases, carry them
 }
 
 // Invoice is one version of a customer's invoice as the rules read it.
@@ -242,6 +243,8 @@ func PostInvoice(i Invoice, s Settings) (Entry, error) {
 		if len(l.Description) > MaxDescription {
 			add(CodeTooLong, f("description"), fmt.Sprintf("the description has %d characters; the most is %d", len(l.Description), MaxDescription), "Shorten it")
 		}
+		values := canonical(l.Values)
+		probs = append(probs, documentLine(s, acc, ok, values, f("dimension_value_ids"))...)
 		if x := l.Spread; x != nil {
 			spread = true
 			switch {
@@ -279,10 +282,11 @@ func PostInvoice(i Invoice, s Settings) (Entry, error) {
 		}
 		baseTotal, _ = baseTotal.Add(base.Neg())
 		if l.Spread != nil {
-			lines = append(lines, Line{AccountID: deferred.ID, Amount: base.Neg(), Rate: money.Identity(s.Base), Base: base.Neg(), Description: l.Description})
+			lines = append(lines, Line{AccountID: deferred.ID, Amount: base.Neg(), Rate: money.Identity(s.Base), Base: base.Neg(), Description: l.Description,
+				Values: values})
 			continue
 		}
-		lines = append(lines, Line{AccountID: l.AccountID, Amount: l.Net.Neg(), Rate: rate, Base: base.Neg(), Description: l.Description})
+		lines = append(lines, Line{AccountID: l.AccountID, Amount: l.Net.Neg(), Rate: rate, Base: base.Neg(), Description: l.Description, Values: values})
 	}
 	if spread && !hasDeferred {
 		add(CodeSystemRole, "lines", "the chart has no deferred revenue account for the spread revenue", "Load the standard chart's 2400 Deferred revenue, or give a liability account the role")

@@ -151,9 +151,46 @@ describe("An invoice", () => {
     expect(body.lines![0]).toMatchObject({ item_id: "i1", description: "Analytics platform", quantity: "2", unit_price: "1500.00", account_id: "a4010", gst_code: "SR" });
   });
 
+  // req: FR-DIM-01
+  // req: FR-DIM-02
+  it("takes a line's dimension values, showing a required one in Basic and the rest in Expert, and sends them", async () => {
+    const tagged = { ...accounts, body: { items: accounts.body.items.map((a) => (a.id === "a4010" ? { ...a, required_dimension_ids: ["d1"] } : a)) } };
+    const sent = answer({
+      ...reads,
+      "GET /v1/accounts": tagged,
+      "GET /v1/dimensions": {
+        status: 200,
+        body: { items: [{ id: "d1", kind: "department", name: "Department", active: true, version: 1 }, { id: "d2", kind: "project", name: "Project", active: true, version: 1 }] },
+      },
+      "GET /v1/dimension-values": {
+        status: 200,
+        body: { items: [{ id: "v1", dimension_id: "d1", code: "ENG", name: "Engineering", active: true, version: 1 }, { id: "v2", dimension_id: "d2", code: "ATLAS", name: "Atlas", active: true, version: 1 }] },
+      },
+      "POST /v1/invoices": { status: 201, body: { ...draft, id: "v9" } },
+    });
+    renderPage(InvoicePage, { path: "/sales/invoices/new", session: bookkeeper, organisation: standard });
+    await screen.findByRole("option", { name: "Acme Analytics Pte Ltd" });
+    fireEvent.change(screen.getByLabelText("Customer"), { target: { value: "c1" } });
+    fireEvent.change(screen.getByLabelText("Invoice date"), { target: { value: "2026-10-14" } });
+    await screen.findByRole("option", { name: /4010 Software revenue/ });
+    await screen.findByRole("option", { name: /^SR:/ });
+    await screen.findByRole("option", { name: "ENG Engineering" });
+    fireEvent.change(screen.getByLabelText("Revenue account"), { target: { value: "a4010" } });
+    expect(screen.getByText("4010 needs one")).toBeTruthy();
+    expect(screen.getByLabelText("Line 1: Department").closest(".fy-field")!.className).not.toContain("fy-expert-only"); // required: shown in Basic
+    expect(screen.getByLabelText("Line 1: Project").closest(".fy-field")!.className).toContain("fy-expert-only");
+    fireEvent.change(screen.getByLabelText("Line 1: Department"), { target: { value: "v1" } });
+    fireEvent.change(screen.getByLabelText("GST code"), { target: { value: "SR" } });
+    fireEvent.change(screen.getByLabelText("Unit price before GST (SGD)"), { target: { value: "1500.00" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save as a draft" }));
+    await waitFor(() => expect(sent.some((s) => s.method === "POST" && s.path === "/v1/invoices")).toBe(true));
+    const body = sent.find((s) => s.method === "POST")!.body as components["schemas"]["InvoiceDraft"];
+    expect(body.lines![0]).toMatchObject({ account_id: "a4010", dimension_value_ids: ["v1"] });
+  });
+
   it("says what to fix before saving", () => {
     const form = { customer_id: "", reference: "", date: "", due_date: "", currency: "SGD", fx_rate: "", notes: "", invoice_id: "" };
-    const line = { key: "l1", item_id: "", description: "x", quantity: "two", unit_price: "", discount: "120", account_id: "", gst_code: "", spread_months: "", spread_from: "" };
+    const line = { key: "l1", item_id: "", description: "x", quantity: "two", unit_price: "", discount: "120", account_id: "", gst_code: "", spread_months: "", spread_from: "", dimension_value_ids: [] };
     const { draft: d, errors } = check({ ...form, lines: [line] }, "SGD");
     expect(d).toBeUndefined();
     expect(errors["l1.account"]).toBe("Choose the revenue account the line earns.");

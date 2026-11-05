@@ -4,14 +4,14 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:f3b5935e246f7ad3316cc688638403136aad812ca66f579cf0b2f6c8f982bf56
+  - docs/user-guide/invoices.md sha256:b6f3cbca84b14f82686e3ffce3ed991fe136bb92dc011bb2cfce4a91a1918757
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-04
+compiled_at: 2026-11-06
 aliases:
   - invoice
   - sales invoice
@@ -34,6 +34,8 @@ aliases:
   - discount on a line
   - deferred revenue
   - spread revenue
+  - department on an invoice
+  - project on an invoice
   - invoice attachment
   - customer purchase order
   - recurring invoice
@@ -142,6 +144,14 @@ aliases:
 
 (src: docs/user-guide/invoices.md#spread-revenue-over-months)
 
+## Dimensions on a line
+
+- When the organisation uses dimensions, such as Department or Project, each line can take one value of each, such as ENG Engineering, so its revenue shows by team or by project ([[accounting.chart]]).
+- The choices are in Expert mode; a line on a revenue account that requires a dimension shows its choice in Basic mode too, with "needs one" under it, and the invoice does not issue until the line has one (DIM-05).
+- A spread line's revenue keeps its values each month it is released; a credit note's lines take values in the same way, and a quote's and a recurring invoice's lines pass theirs to the invoices made from them.
+
+(src: docs/user-guide/invoices.md#tag-a-line-with-dimensions)
+
 ## Evidence
 
 - **Evidence** keeps what the invoice rests on, such as the customer's purchase order, and each PDF sent; a file comes off a draft again, but once issued its files are kept and never deleted for as long as the records are.
@@ -151,7 +161,7 @@ aliases:
 ## Common problems
 
 - INVOICE-05: choose an active customer. INVOICE-06: choose a code for supplies (SR, ZR, ES or OS). INVOICE-07: a due date on or after the invoice date, or blank.
-- INVOICE-09: a quantity and a price with up to 6 decimals, a discount from 0 to 100. INVOICE-10: **Ask for approval**. INVOICE-13: void its receipts and credit applications first. INVOICE-15: an issued invoice of the same customer and currency, for at least the credit; its other credit notes may already credit its total, so credit less or void one of them.
+- INVOICE-09: a quantity and a price with up to 6 decimals, a discount from 0 to 100. INVOICE-10: **Ask for approval**. DIM-05: choose the line's value, such as its department. DIM-06: one value in use of each dimension, or None. INVOICE-13: void its receipts and credit applications first. INVOICE-15: an issued invoice of the same customer and currency, for at least the credit; its other credit notes may already credit its total, so credit less or void one of them.
 - RECEIPT-05: record at most what is open. RECEIPT-11: leave it open or write the rest off. SALESDOC-04: add the customer's billing email or give an address. SALESDOC-05: add the missing detail in Settings › Organisation or on the customer.
 
 (src: docs/user-guide/invoices.md#common-problems)
