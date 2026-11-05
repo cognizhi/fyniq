@@ -18,6 +18,22 @@
       "format": "uuid",
       "type": "string"
     },
+    "dimension_value_ids": {
+      "description": "The dimension values the rule tags its lines with (listDimensionValues), at most one of each dimension and each in use.",
+      "items": {
+        "description": "A dimension value's ID (listDimensionValues).",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 10,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "gst_code": {
       "description": "Its GST code; left out, the account's default.",
       "examples": [

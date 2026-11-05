@@ -22,6 +22,22 @@
       "maxLength": 200,
       "type": "string"
     },
+    "dimension_value_ids": {
+      "description": "The part's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06): its line, and each month a spread releases, carry them. A part a person codes on an account that requires a dimension names a value of it (DIM-05); a rule applied by itself posts without one, and Checks flags the amount (Appendix C.2 #60).",
+      "items": {
+        "description": "A dimension value's ID (listDimensionValues).",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 10,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "gst_code": {
       "description": "Its GST code from the sg-gst pack on the line's date; left out, the account's default.",
       "examples": [

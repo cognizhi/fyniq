@@ -161,6 +161,15 @@
   dimensions", compiled into `purchases.bills`. Tests `TestABillsLinesCarryTheirDimensionValues`,
   `TestBillLinesCarryTheirDimensionValues`, `TestBillLinesTakeDimensionValues`, `bills.test.tsx`. A purchase order's
   lines take none: a bill made from one is tagged on the bill. **Left:** bank lines and claims.)
+  (6 Nov 2026, slice 3d, bank lines: a part of a bank line's categorisation takes `dimension_value_ids`, and a bank
+  rule's action the values it tags its lines with (checked when the rule is saved). A person's categorisation is held
+  to the requirement (DIM-05); one a rule applied by itself (FR-BNK-14) posts without a value its account requires,
+  as the system's postings do, and its version records it as automatic so it replays; Appendix C.2 #60 flags the
+  amount. Its line, or a spread part's holding line and its releases, carry the values. The categorise dialog and the
+  rule editor have a choice per dimension. Help key `bank.line-dimensions`; the guide's "Dimensions on a line" and the
+  rules' tagging, compiled into `banking.categorise` and `banking.rules`. Tests
+  `TestABankLinesPartsCarryTheirDimensionValues`, `TestBankLinePartsCarryTheirDimensionValues`,
+  `TestBankLinePartsTakeDimensionValues`, `categorise.test.tsx`. **Left:** claims.)
 
 ## 4. Contacts and items
 

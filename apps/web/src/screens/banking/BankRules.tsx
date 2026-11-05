@@ -14,6 +14,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { DimensionFields } from "../accounting/lines";
 import { BankTabs, makers } from "./BankAccounts";
 import { useContacts, usePostingAccounts } from "./LineDialogs";
 
@@ -476,6 +477,17 @@ function RuleDialog({
               ))}
             </select>
           </div>
+        </div>
+        <div className="fy-row fy-row--wrap gap-3">
+          <DimensionFields
+            ids={f.then.dimension_value_ids ?? []}
+            keyPrefix={`${id}-rule`}
+            n={1}
+            prefix=""
+            account={accounts.find((a) => a.id === f.then.account_id)}
+            set={(ids) => setF({ ...f, then: { ...f.then, dimension_value_ids: ids.length ? ids : undefined } })}
+            className="fy-field"
+          />
         </div>
       </fieldset>
       {test && (

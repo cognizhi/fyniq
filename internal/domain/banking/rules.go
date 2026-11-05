@@ -64,6 +64,8 @@ type Action struct {
 	ContactID *uuid.UUID `json:"contact_id,omitempty"`
 	GSTCode   string     `json:"gst_code,omitempty"`
 	Reference string     `json:"reference,omitempty"`
+	// Values are the dimension values the rule tags its lines with (FR-DIM-02), checked as a line's are when it applies.
+	Values []uuid.UUID `json:"dimension_value_ids,omitempty"`
 }
 
 // Rule is a stored rule as the domain reads it.
@@ -195,7 +197,7 @@ func (r Rule) Matches(l storage.BankLine) bool { return r.m != nil && r.m.Matche
 // Draft is the categorisation the rule suggests for a line: the whole line to its account.
 func (r Rule) Draft(l storage.BankLine) banktransaction.Draft {
 	return banktransaction.Draft{LineID: l.ID, ContactID: r.Then.ContactID, Reference: r.Then.Reference,
-		Parts: []banktransaction.Part{{AccountID: r.Then.AccountID, GSTCode: r.Then.GSTCode}}}
+		Parts: []banktransaction.Part{{AccountID: r.Then.AccountID, GSTCode: r.Then.GSTCode, Values: r.Then.Values}}}
 }
 
 // Rules are the organisation's rules that read, in their order. A rule that no longer reads is left out with its
@@ -240,7 +242,8 @@ type RuleRequest struct {
 
 // checkRule refuses a rule whose name, conditions or action do not fit, with every problem at once: an account that
 // is not an active posting account, or one a line reaches by another path (a money account, receivables, payables);
-// a GST code the sg-gst pack does not have; a contact that does not exist; a reference too long.
+// a GST code the sg-gst pack does not have; a contact that does not exist; a reference too long; a dimension value
+// the organisation does not have or that is out of use, or two of one dimension (FR-DIM-02).
 func checkRule(ctx context.Context, u storage.UnitOfWork, r RuleRequest) error {
 	var probs []string
 	if n := utf8.RuneCountInString(strings.TrimSpace(r.Name)); n == 0 || n > MaxRuleName {
@@ -282,6 +285,29 @@ func checkRule(ctx context.Context, u storage.UnitOfWork, r RuleRequest) error {
 	}
 	if len(r.Then.Reference) > MaxReference {
 		probs = append(probs, fmt.Sprintf("the reference has %d characters; the most is %d", len(r.Then.Reference), MaxReference))
+	}
+	if len(r.Then.Values) > 0 {
+		of := map[uuid.UUID]bool{}
+		for _, id := range r.Then.Values {
+			v, err := u.Dimensions().GetValue(ctx, id)
+			if errors.Is(err, ports.ErrNotFound) {
+				probs = append(probs, "the action names a dimension value the organisation does not have")
+				continue
+			} else if err != nil {
+				return err
+			}
+			d, err := u.Dimensions().Get(ctx, v.DimensionID)
+			if err != nil {
+				return err
+			}
+			switch {
+			case !v.Active || !d.Active:
+				probs = append(probs, fmt.Sprintf("%s %s is out of use", d.Name, v.Code))
+			case of[d.ID]:
+				probs = append(probs, fmt.Sprintf("the action names two values of %s", d.Name))
+			}
+			of[d.ID] = true
+		}
 	}
 	if len(probs) > 0 {
 		return refuse(CodeRule, "Change the rule as each problem says.", "%s", strings.Join(probs, "; "))

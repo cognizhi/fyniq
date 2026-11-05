@@ -153,6 +153,8 @@ type BankRuleAction struct {
 	ContactID string `json:"contact_id,omitempty" format:"uuid" doc:"The contact it names." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"`
 	GSTCode   string `json:"gst_code,omitempty" maxLength:"16" doc:"Its GST code; left out, the account's default." example:"TX"`
 	Reference string `json:"reference,omitempty" maxLength:"140" doc:"A reference kept with it." example:"AWS"`
+	// Dimensions (FR-DIM-02; rev 0.171).
+	DimensionValueIDs []DimensionValueRef `json:"dimension_value_ids,omitempty" maxItems:"10" doc:"The dimension values the rule tags its lines with (listDimensionValues), at most one of each dimension and each in use."`
 }
 
 // BankRuleDraft is a rule as created or changed.
@@ -250,7 +252,8 @@ func conditionsOf(c banking.Conditions) BankRuleConditions {
 }
 
 func actionOf(x banking.Action) BankRuleAction {
-	out := BankRuleAction{AccountID: x.AccountID.String(), ContactID: idText(x.ContactID), GSTCode: x.GSTCode, Reference: x.Reference}
+	out := BankRuleAction{AccountID: x.AccountID.String(), ContactID: idText(x.ContactID), GSTCode: x.GSTCode, Reference: x.Reference,
+		DimensionValueIDs: valueRefs(x.Values)}
 	if x.AccountID == uuid.Nil {
 		out.AccountID = ""
 	}
@@ -275,6 +278,9 @@ func conditionsIn(c BankRuleConditions, path string) (banking.Conditions, []Fiel
 func ruleRequestOf(d BankRuleDraft, at time.Time) (banking.RuleRequest, error) {
 	when, fields := conditionsIn(d.When, "body.when")
 	then := banking.Action{GSTCode: d.Then.GSTCode, Reference: d.Then.Reference}
+	values, fps := valuesOf(d.Then.DimensionValueIDs, "body.then.dimension_value_ids")
+	fields = append(fields, fps...)
+	then.Values = values
 	for _, x := range []struct {
 		text, field string
 		to          func(uuid.UUID)

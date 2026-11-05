@@ -117,6 +117,14 @@ In Expert mode:
   within the organisation's settlement tolerance.
 - **Suspense** posts the line to suspense until its purpose is known.
 
+### Dimensions on a line
+
+When the organisation uses dimensions, such as Department or Project, a line or each part of a split
+can take one value of each, such as ENG Engineering. The choices are in Expert mode; a category that
+requires a dimension shows its choice in Basic mode too, with "needs one" under it, and the line does
+not post until you choose one (DIM-05). A value out of use, or two values of one dimension, is refused
+(DIM-06).
+
 ## Bank rules
 
 **Rules** (Expert mode) teach Fyniq how to code lines that come back, such as every AWS charge to
@@ -126,6 +134,9 @@ Software. A rule suggests; it does not post by itself.
   counterparty, money in or out, its size, its currency and its money account. It codes the line to an
   account, with a GST code and, if you like, a contact.
 - Rules are in an order: the first rule a line meets is the one suggested.
+- A rule can also tag its lines with dimension values, such as Department ENG Engineering. A rule
+  applied by itself posts its line even when its account requires a dimension the rule has no value
+  of; the month's close then flags the amount, to move to its value by journal.
 - **Test it** shows how many of the lines held the rule would have matched, and a few of them, before
   you save it.
 - **Ask to apply by itself** asks another person to let the rule reconcile the lines it meets without a

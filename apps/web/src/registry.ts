@@ -179,6 +179,7 @@ export const actions = [
   { kind: "action", id: "director-accounts.related-parties", mode: "expert", help: "director-accounts.related-parties", guide: "equity.director-accounts#the-related-party-schedule" },
   { kind: "action", id: "director-accounts.link-member", mode: "expert", help: "director-accounts.link-member", guide: "equity.director-accounts#link-each-director-to-the-member-who-signs-in-as-them" },
   { kind: "action", id: "journal.line-person", mode: "expert", help: "journal.line-person", guide: "equity.director-accounts#name-the-person-on-a-journal-or-opening-balance" },
+  { kind: "action", id: "bank.line-dimensions", mode: "expert", help: "bank.line-dimensions", guide: "banking.accounts#dimensions-on-a-line" },
   { kind: "action", id: "journal.line-dimensions", mode: "expert", help: "journal.line-dimensions", guide: "accounting.journals#tag-a-line-with-dimensions" },
   { kind: "action", id: "access-review.export", mode: "expert", help: "access-review.export", guide: "settings.access-review#download-it" },
   { kind: "action", id: "team-mode.switch", mode: "expert", help: "team-mode.switch", guide: "settings.team-mode#switch-the-team-mode" },

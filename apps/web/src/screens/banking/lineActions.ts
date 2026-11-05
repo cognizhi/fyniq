@@ -120,6 +120,7 @@ export interface PartForm {
   amount: string;
   gst_code: string;
   description: string;
+  dimension_value_ids: string[]; // its dimension values (FR-DIM-02): at most one of each dimension
 }
 
 // checkCategorisation reads the change or split form: every part's account, at most one part without its amount, and
@@ -144,6 +145,7 @@ export function checkCategorisation(parts: PartForm[], contact: string, referenc
         amount: p.amount.trim() ? { amount: p.amount.trim(), currency } : undefined,
         gst_code: p.gst_code || undefined,
         description: p.description.trim() || undefined,
+        dimension_value_ids: p.dimension_value_ids.length ? [...p.dimension_value_ids] : undefined,
       })),
     },
   };

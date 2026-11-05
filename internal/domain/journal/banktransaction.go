@@ -142,6 +142,8 @@ func (s BankTransactions) categorise(ctx context.Context, u storage.UnitOfWork, 
 	if err != nil {
 		return Categorised{}, err
 	}
+	// A bank rule applied by itself posts as the system does: a part needs no value its account requires (FR-DIM-01).
+	c.Draft.Automatic = c.Basis == storage.BasisRule
 	// Checked first with a document of no ID, so a refusal writes nothing at all.
 	checked, err := checkCategorisation(ctx, u, storage.Document{Type: storage.DocumentBankTransaction, Version: 1}, c.Draft, settings)
 	if err != nil {

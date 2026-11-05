@@ -254,12 +254,14 @@ export function valueCodes(ids: readonly string[] | undefined, dimensions: reado
 // DimensionFields are a line's dimension values (FR-DIM-02): one choice for each dimension in use, and for any other
 // the line already has a value of, with that dimension's values in use. A dimension the line's account requires says
 // so; the API refuses a line that leaves it out (DIM-05; a journal's lines on the account that net to zero excepted).
-// keyPrefix is the line's key, for the elements' IDs. With expertOnly, as on an invoice, a choice is an Expert field
-// (§7.8) unless the line has a value of it or its account requires it: nothing set or needed is hidden in Basic.
-export function DimensionFields({ ids, keyPrefix, n, account, set, described, className = "fy-field col-span-2 medium:col-span-4 expanded:col-span-3", disabled, expertOnly }: {
+// keyPrefix is the line's key, for the elements' IDs; prefix what a screen reader hears before each name ("Line 1: " by
+// default, "" for none). With expertOnly, as on an invoice, a choice is an Expert field (§7.8) unless the line has a
+// value of it or its account requires it: nothing set or needed is hidden in Basic.
+export function DimensionFields({ ids, keyPrefix, n, prefix, account, set, described, className = "fy-field col-span-2 medium:col-span-4 expanded:col-span-3", disabled, expertOnly }: {
   ids: readonly string[];
   keyPrefix: string;
   n: number;
+  prefix?: string;
   account?: Account;
   set: (ids: string[]) => void;
   described?: (key: string) => string | undefined;
@@ -282,7 +284,7 @@ export function DimensionFields({ ids, keyPrefix, n, account, set, described, cl
         return (
           <div key={d.id} className={`${className}${expertOnly && !chosen && !needed ? " fy-expert-only" : ""}`}>
             <label className="fy-label" htmlFor={key}>
-              <span className="fy-sr">Line {n}: </span>
+              {prefix !== "" && <span className="fy-sr">{prefix ?? `Line ${n}: `}</span>}
               {d.name}
             </label>
             <select
