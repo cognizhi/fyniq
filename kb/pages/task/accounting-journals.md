@@ -4,14 +4,14 @@ type: task
 title: Prepare, post and reverse journals
 summary: Prepare, check and post journals, ask for approval, edit or reverse a posted one, attach evidence, recurring journals, reversals that wait
 sources:
-  - docs/user-guide/journals.md sha256:cb6460d3070d29f7b89499e8c614cf8f67a6e1297fac5338ebafa20388770c75
+  - docs/user-guide/journals.md sha256:5575f2567086f4d892ff70b84aaea94049cf70934e7292a2fc46d45957b9d30f
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-22
+compiled_at: 2026-11-06
 aliases:
   - journal
   - manual journal
@@ -41,6 +41,9 @@ aliases:
   - journal evidence
   - foreign currency journal
   - exchange rate on a journal
+  - department on a journal line
+  - project on a journal line
+  - tag a line with a dimension
 ---
 
 # Prepare, post and reverse journals
@@ -63,6 +66,15 @@ aliases:
 - Leave the rate blank and the line takes the rate for the journal's date from **Accounting → Currencies** when it is checked and posted; Fyniq says under the field which rate and where from. A typed rate is the journal's own and is used instead ([[accounting.currencies]]).
 
 (src: docs/user-guide/journals.md#prepare-a-journal)
+
+## Tag a line with dimensions
+
+- When the organisation uses dimensions, such as Department or Project, each line has a choice for each dimension in use: the line's value, such as ENG Engineering, or **None**; one value of each dimension at most ([[accounting.chart]]).
+- An account can require a dimension, and Fyniq says so under the choice: a journal with a line on it with no value of that dimension does not post (DIM-05), unless the journal's lines on that account net to zero, which moves an amount between values, such as an amount an invoice posted with no department onto its department.
+- A value or a dimension out of use is not offered; a line that already has one shows it as out of use, and the journal does not post until another is chosen (DIM-06).
+- Recurring journals take values the same way and each draft keeps them; a reversal, and an edit's reversal, keep each line's values.
+
+(src: docs/user-guide/journals.md#tag-a-line-with-dimensions)
 
 ## Check and post
 
@@ -149,6 +161,8 @@ aliases:
 - LEDGER-09 or LEDGER-10, it does not balance: make the debits equal the credits in each currency.
 - LEDGER-02 or LEDGER-03: at least two lines, each with an amount.
 - LEDGER-05 or LEDGER-06: choose an active account that is not a group.
+- DIM-05, an account needs a value of a dimension on every line: choose the line's value, or move the amount with lines on the account that net to zero.
+- DIM-06, a value that does not exist or is out of use, or two values of one dimension: choose one value in use of each dimension, or None.
 - LEDGER-07 or LEDGER-13: a rate only on a line in another currency.
 - FX-01, no exchange rate for this currency: type the rate on the line, or add the rate for the day or the month in **Accounting → Currencies**.
 - LEDGER-16: date a reversal on or after the journal's date.

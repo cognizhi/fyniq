@@ -89,6 +89,20 @@ A value's code never changes. Select the pencil next to a value to rename it, or
 put it out of use. A value is never deleted, and the lines that carry it keep it. A dimension out of
 use takes no new values until it is back in use.
 
+## Require a dimension
+
+Select the pencil next to an account, tick each dimension every line on it needs under **Required
+dimensions**, such as Department on the expense accounts, and select **Save the account**.
+
+- A journal line you enter on it without a value of each is refused. Amounts Fyniq posts by itself,
+  from an invoice or a bank line for example, still post, and the month's close flags them: move
+  each to its value with a journal whose lines on the account net to zero (see
+  [Close a month](periods-and-close.md#close-a-month)).
+- Only a dimension in use can be added. A dimension out of use requires nothing while it is out of
+  use.
+- In the **Dimensions** list, **Required on** shows the accounts that require each dimension.
+- Lines posted before keep what they have.
+
 ## System accounts
 
 Accounts marked **System**, such as accounts receivable, accounts payable and GST control, have a

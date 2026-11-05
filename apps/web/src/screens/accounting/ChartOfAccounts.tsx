@@ -11,7 +11,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
-import { listAccounts } from "./data";
+import { listAccounts, listDimensions } from "./data";
 import { Dimensions } from "./Dimensions";
 import { registerGroups } from "./registerGroups";
 
@@ -95,9 +95,10 @@ interface Draft {
   active: boolean;
   revalue: boolean;
   useful_life_months: string;
+  required: string[]; // the dimensions a line a person enters on it needs a value of (FR-DIM-01)
 }
 
-const blank: Draft = { code: "", name: "", type: "expense", parent_id: "", group: false, report_group: "", cash_flow_line: "", function: "", default_gst_code: "", money_account: false, currency: "", guidance: "", active: true, revalue: false, useful_life_months: "" };
+const blank: Draft = { code: "", name: "", type: "expense", parent_id: "", group: false, report_group: "", cash_flow_line: "", function: "", default_gst_code: "", money_account: false, currency: "", guidance: "", active: true, revalue: false, useful_life_months: "", required: [] };
 
 function draftOf(a: Account): Draft {
   return {
@@ -116,8 +117,11 @@ function draftOf(a: Account): Draft {
     active: a.active,
     revalue: a.revalue,
     useful_life_months: a.useful_life_months ? String(a.useful_life_months) : "",
+    required: [...(a.required_dimension_ids ?? [])],
   };
 }
+
+const sameSet = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x) => b.includes(x));
 
 function AccountForm({ editing, accounts, onClose, onSaved }: { editing: Account | "new" | null; accounts: Account[]; onClose: () => void; onSaved: (what: string) => void }) {
   const queries = useQueryClient();
@@ -142,6 +146,10 @@ function AccountForm({ editing, accounts, onClose, onSaved }: { editing: Account
   const d = draft ?? base;
   const set = (k: keyof Draft, v: string | boolean) => d && setDraft({ ...d, [k]: v });
   const groups = accounts.filter((a) => a.group && d && a.type === d.type && a.id !== current?.id);
+  const dims = useQuery({ queryKey: ["dimensions"], queryFn: listDimensions });
+  // Dimensions in use, and any out of use it still requires: those can only be taken off.
+  const requirable = (dims.data?.dimensions ?? []).filter((x) => x.active || base?.required.includes(x.id));
+  const requiredHelp = helpText("chart.required-dimensions");
 
   const close = () => {
     setDraft(null);
@@ -180,6 +188,7 @@ function AccountForm({ editing, accounts, onClose, onSaved }: { editing: Account
         guidance: text(d.guidance),
         revalue: d.revalue || undefined,
         useful_life_months: life ? Number(life) : undefined,
+        required_dimension_ids: !d.group && d.required.length ? d.required : undefined,
       };
       const out = await guarded(confirm, () => api.POST("/v1/accounts", { params: { header: { "Idempotency-Key": key } }, body }));
       setBusy(false);
@@ -190,11 +199,12 @@ function AccountForm({ editing, accounts, onClose, onSaved }: { editing: Account
     }
     if (!one.data || !base) return setBusy(false);
     // Only the fields changed go: a field left out keeps its value.
-    const changes: Record<string, string | boolean | number> = {};
+    const changes: Record<string, string | boolean | number | string[]> = {};
     for (const k of ["name", "parent_id", "group", "report_group", "cash_flow_line", "function", "default_gst_code", "guidance", "active", "money_account", "currency", "revalue"] as const) {
       if (d[k] !== base[k]) changes[k] = typeof d[k] === "string" ? (d[k] as string).trim() : d[k];
     }
     if (life !== base.useful_life_months) changes.useful_life_months = Number(life || "0");
+    if (!sameSet(d.required, base.required)) changes.required_dimension_ids = d.required; // the whole list, [] for none
     if (Object.keys(changes).length === 0) {
       setBusy(false);
       return close();
@@ -321,6 +331,29 @@ function AccountForm({ editing, accounts, onClose, onSaved }: { editing: Account
               </label>
             )}
           </div>
+          {!d.group && requirable.length > 0 && (
+            <fieldset className="fy-stack fy-stack--2" aria-describedby={`${id}-required-help`}>
+              <legend className="fy-label" title={requiredHelp.tooltip}>
+                {requiredHelp.label}
+              </legend>
+              <div className="fy-row fy-row--wrap gap-4">
+                {requirable.map((x) => (
+                  <label key={x.id} className="fy-row gap-2">
+                    <input
+                      type="checkbox"
+                      checked={d.required.includes(x.id)}
+                      onChange={(e) => setDraft({ ...d, required: e.target.checked ? [...d.required, x.id] : d.required.filter((y) => y !== x.id) })}
+                    />
+                    {x.name}
+                    {!x.active && " (out of use: requires nothing)"}
+                  </label>
+                ))}
+              </div>
+              <span className="fy-help" id={`${id}-required-help`}>
+                A journal line you enter on it without a value of each is refused; amounts Fyniq posts by itself are flagged at the month's close instead.
+              </span>
+            </fieldset>
+          )}
           {current && (current.control || current.payroll_cost) && <p className="fy-small fy-secondary">The control and payroll-cost flags change only with an approval, which arrives with the approval engine.</p>}
           <div className="fy-row justify-end gap-2">
             <Button variant="ghost" type="button" onClick={close} disabled={busy}>
@@ -534,7 +567,7 @@ export function ChartOfAccounts() {
               No account matches "{find}".
             </p>
           )}
-          <Dimensions may={may} onSaved={setStatus} />
+          <Dimensions may={may} accounts={all} onSaved={setStatus} />
         </>
       )}
       <AccountForm editing={editing} accounts={all} onClose={() => setEditing(null)} onSaved={setStatus} />

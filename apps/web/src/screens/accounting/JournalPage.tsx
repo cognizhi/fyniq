@@ -17,7 +17,7 @@ import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listAccounts, postable, type Account } from "./data";
 import { CheckChip, preparers, StatusChip, who, type Check } from "./Journals";
-import { accountLabel, balances, checkLines, LineEditor, newLine, toLines, type Errors, type Line } from "./lines";
+import { accountLabel, balances, checkLines, LineEditor, newLine, toLines, useDimensions, valueCodes, type Errors, type Line } from "./lines";
 import { attachers, JournalEvidence } from "./JournalEvidence";
 
 export { balances, type Balance, type Errors, type Line } from "./lines";
@@ -79,8 +79,11 @@ function today(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 }
 
-// Lines shows a journal's lines, read-only: as entered, or as posted in the base currency.
-function Lines({ lines, accounts, base, caption }: { lines: { account_id: string; description?: string; amount: string; currency: string; rate?: string }[]; accounts: Map<string, Account>; base: string; caption: string }) {
+// Lines shows a journal's lines, read-only: as entered, or as posted in the base currency, with their dimension values
+// when any has one (FR-DIM-02).
+function Lines({ lines, accounts, base, caption }: { lines: { account_id: string; description?: string; amount: string; currency: string; rate?: string; values?: string[] | null }[]; accounts: Map<string, Account>; base: string; caption: string }) {
+  const dims = useDimensions();
+  const tagged = lines.some((l) => (l.values ?? []).length > 0);
   const debit = sum(lines.filter((l) => sign(l.amount) > 0).map((l) => l.amount));
   const credit = sum(lines.filter((l) => sign(l.amount) < 0).map((l) => l.amount.slice(1)));
   const foreign = lines.some((l) => l.currency !== base);
@@ -102,6 +105,7 @@ function Lines({ lines, accounts, base, caption }: { lines: { account_id: string
                 Currency · rate
               </th>
             )}
+            {tagged && <th scope="col">Dimensions</th>}
           </tr>
         </thead>
         <tbody>
@@ -126,6 +130,11 @@ function Lines({ lines, accounts, base, caption }: { lines: { account_id: string
                   {l.currency === base ? l.currency : `${l.currency} × ${l.rate ?? ""}`}
                 </td>
               )}
+              {tagged && (
+                <td data-card="meta" className="fy-mono">
+                  {valueCodes(l.values ?? [], dims.dimensions, dims.byId)}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -138,6 +147,7 @@ function Lines({ lines, accounts, base, caption }: { lines: { account_id: string
               <td data-card="hide" className="fy-num">
                 {formatAmount(credit)}
               </td>
+              {tagged && <td data-card="hide" />}
             </tr>
           </tfoot>
         )}
@@ -803,7 +813,7 @@ export function JournalPage() {
               Ready to post
             </span>
           </div>
-          <Lines caption="What posting writes" accounts={byId} base={base} lines={(preview.entry.lines ?? []).map((l) => ({ account_id: l.account_id, description: l.description, amount: l.base_amount.amount, currency: base }))} />
+          <Lines caption="What posting writes" accounts={byId} base={base} lines={(preview.entry.lines ?? []).map((l) => ({ account_id: l.account_id, description: l.description, amount: l.base_amount.amount, currency: base, values: l.dimension_value_ids }))} />
           <p className="fy-small fy-muted px-4 pb-3">A check saves nothing. It posts on {date(preview.entry.posting_date)}.</p>
         </section>
       )}
@@ -820,9 +830,9 @@ export function JournalPage() {
             </span>
           </div>
           <p className="fy-small fy-strong px-4 pt-3 pb-2">1. The reversal of the entry it had, on {date(edited.reversal.posting_date)}</p>
-          <Lines caption="What the edit reverses" accounts={byId} base={base} lines={(edited.reversal.lines ?? []).map((l) => ({ account_id: l.account_id, description: l.description, amount: l.base_amount.amount, currency: base }))} />
+          <Lines caption="What the edit reverses" accounts={byId} base={base} lines={(edited.reversal.lines ?? []).map((l) => ({ account_id: l.account_id, description: l.description, amount: l.base_amount.amount, currency: base, values: l.dimension_value_ids }))} />
           <p className="fy-small fy-strong px-4 pt-4 pb-2">2. The new version, on {date(edited.entry.posting_date)}</p>
-          <Lines caption="What the new version posts" accounts={byId} base={base} lines={(edited.entry.lines ?? []).map((l) => ({ account_id: l.account_id, description: l.description, amount: l.base_amount.amount, currency: base }))} />
+          <Lines caption="What the new version posts" accounts={byId} base={base} lines={(edited.entry.lines ?? []).map((l) => ({ account_id: l.account_id, description: l.description, amount: l.base_amount.amount, currency: base, values: l.dimension_value_ids }))} />
           <p className="fy-small fy-muted px-4 py-3">A check saves nothing: both post together when you select Post the edit.</p>
         </section>
       )}

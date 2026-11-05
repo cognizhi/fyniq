@@ -136,6 +136,16 @@
   dimension and the amount, and passes once a journal netting to zero on the account moves it to a value; nothing
   when no account requires a dimension in use. The catalogue's `close.dimensions` reads it. Test
   `TestTheCloseFlagsAmountsWithoutARequiredDimension`; the guide's close checks and `accounting.periods`.)
+  (6 Nov 2026, slice 3b, the screens: each journal line in the journal and recurring journal editor has a choice for
+  each dimension in use (and for one out of use it already has a value of), its values in use, a value out of use it
+  has kept and marked; under one its account requires, "<code> needs one", the API deciding (DIM-05, the rev 0.172
+  exception); the dry runs show each line's values. The account form's **Required dimensions** ticks the dimensions in
+  use and keeps one out of use it already requires until it is taken off, sending the whole list. The Dimensions
+  section's **Required on** lists the accounts by code. Help keys `journal.line-dimensions`,
+  `chart.required-dimensions`; the guides' "Tag a line with dimensions" and "Require a dimension", compiled into
+  `accounting.journals` and `accounting.chart`. Tests: `JournalPage.test.tsx`, `ChartOfAccounts.test.tsx`,
+  `Dimensions.test.tsx`. **Left:** values on the other documents' lines (slice 3d), reports by dimension and the
+  oracle's half (slice 4).)
 
 ## 4. Contacts and items
 

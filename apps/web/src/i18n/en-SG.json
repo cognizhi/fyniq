@@ -240,6 +240,10 @@
       "label": "Whose account",
       "tooltip": "On a director's account (2500, 2120), the director or shareholder the amount belongs to, and where it came from."
     },
+    "journal.line-dimensions": {
+      "label": "Dimensions",
+      "tooltip": "The line's value of each dimension in use, such as its department or project; an account may require one."
+    },
     "settings.access-review": {
       "label": "Access review",
       "tooltip": "Who can do what, live: roles, sign-ins, role conflicts, external users and integrations. An Owner attests it each quarter."
@@ -371,6 +375,10 @@
     "chart.dimension-values": {
       "label": "Values",
       "tooltip": "The dimension's values, such as each department; a value's code never changes."
+    },
+    "chart.required-dimensions": {
+      "label": "Required dimensions",
+      "tooltip": "The dimensions every journal line you enter on this account needs a value of; Fyniq's own postings without one are flagged at the close."
     },
     "contacts.overview": {
       "label": "Contacts",

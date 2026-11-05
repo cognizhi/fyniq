@@ -41,6 +41,21 @@ unit buys. Leave it blank and the line takes the rate for the journal's date fro
 **Accounting → Currencies** when it is checked and posted; under the field, Fyniq says which rate and
 where from. A rate you type is the journal's own and is used instead.
 
+## Tag a line with dimensions
+
+When the organisation uses dimensions, such as Department or Project, each line has a choice for
+each dimension in use. Choose the line's value, such as ENG Engineering, or **None**. A line takes
+one value of each dimension at most.
+
+- An account can require a dimension: under the choice, Fyniq says the account needs one. A journal
+  with a line on it that has no value of that dimension does not post (DIM-05), unless the journal's
+  lines on that account net to zero. Such a journal moves an amount between values, for example an
+  amount an invoice posted with no department, onto the department it belongs to.
+- A value or a dimension out of use is not offered. A line that already has one shows it as out of
+  use, and the journal does not post until you choose another (DIM-06).
+- Recurring journals take values the same way, and each draft they make keeps them.
+- A reversal, and an edit's reversal, keep each line's values.
+
 ## Check and post a journal
 
 A draft says what stops it posting, as the workbook's Journal sheet did: the list shows the first
@@ -186,6 +201,8 @@ resolution, under **Evidence** on the journal's page.
 | The journal does not balance (LEDGER-09, LEDGER-10) | Make the debits equal the credits, in each currency |
 | Fewer than two lines, or a line of zero (LEDGER-02, LEDGER-03) | Give the journal at least two lines, each with an amount |
 | The account is a group or inactive (LEDGER-05, LEDGER-06) | Choose an active account that is not a group |
+| An account needs a value of a dimension on every line (DIM-05) | Choose the line's value, or move the amount with lines on the account that net to zero |
+| A value that does not exist or is out of use, or two values of one dimension (DIM-06) | Choose one value in use of each dimension, or None |
 | A rate is missing, or entered on a base-currency line (LEDGER-07, LEDGER-13) | Enter a rate only on a line in another currency |
 | No exchange rate for this currency (FX-01) | Type the rate on the line, or add the rate for the day or the month in **Accounting → Currencies** |
 | A reversal dated before the journal (LEDGER-16) | Date the reversal on or after the journal's date |
