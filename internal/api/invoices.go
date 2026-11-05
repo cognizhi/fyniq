@@ -47,7 +47,7 @@ const (
 
 // InvoiceCodes are the codes the posting rules and the invoice's own checks answer.
 var InvoiceCodes = []string{invoice.CodeCustomer, invoice.CodeGSTCode, invoice.CodeDueDate, invoice.CodeTooLong, invoice.CodeLine,
-	invoice.CodeCredited, invoice.CodeDeposit, ledger.CodeDeposit, ledger.CodeInvoiceTotal, ledger.CodeGSTRate, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency, ledger.CodeSpread}
+	invoice.CodeCredited, invoice.CodeDeposit, ledger.CodeDeposit, ledger.CodeInvoiceTotal, ledger.CodeGSTRate, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency, ledger.CodeSpread, fx.CodeAverage}
 
 // InvoiceApprovalCodes are the codes an approval of an invoice's issue, void or edit may answer: SOD-3, and the
 // posting's own.

@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -291,6 +292,10 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, d Draft, s ledger.Settin
 		default:
 			rate := f.Rate
 			out.Rate = &rate
+			// The GST its parts bear is converted at its rate, which an average of the monthly table never is (ENG-42).
+			if fe := f.ForGST(cur, false); fe != nil && slices.ContainsFunc(out.Parts, func(x SavedPart) bool { return fx.Taxed(x.GSTRate) }) {
+				add(fe.Code, fe.Field, fe.Message, fe.Fix)
+			}
 		}
 	}
 	return out, probs, nil

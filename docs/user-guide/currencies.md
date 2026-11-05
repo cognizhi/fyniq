@@ -38,7 +38,10 @@ Fyniq looks, in order, for:
 2. the daily feed's rate for that day, or its latest rate up to 7 days before, as the feed has
    none on weekends and public holidays;
 3. your monthly rate for that month. When the month has more than one, Fyniq takes their average
-   and shows ⚠ until you withdraw all but one. An average never sets a GST amount.
+   and shows ⚠ until you withdraw all but one. An average never sets a GST amount: an invoice, a
+   part-payment deposit or a bank line that charges GST at an average cannot post (FX-08) until you
+   withdraw the extra rates or add the rate for the day. An invoice or a deposit can also take a
+   rate you type.
 
 With none of these, the line cannot post: ✖ **No exchange rate for this currency** (FX-01).
 
@@ -122,6 +125,7 @@ after Fyniq's run: your run posts only the difference.
 | The period is not open (FX-05) | Revalue a month while it is open, or ask for it to be reopened |
 | The period has not ended (FX-06) | Revalue the month from its last day; until then, look at its preview |
 | No account takes unrealised FX (FX-07) | Load 7040 Unrealised FX gain or loss from the standard chart |
+| An average rate never sets a GST amount (FX-08) | Withdraw all but one of the month's rates for the currency, or add the rate for the day; on an invoice or a deposit you can also type the rate |
 
 ## Related
 

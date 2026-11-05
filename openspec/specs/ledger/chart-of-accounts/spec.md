@@ -135,8 +135,13 @@ Source: PRD-001 §8.2 · Priority M · Phase P1
 
 #### Scenario: Dimension required per account
 - **GIVEN** an account that requires a value for a dimension
-- **WHEN** a line on that account has no value for it
-- **THEN** the line cannot be posted
+- **WHEN** a line a person enters on that account (a journal, an invoice, a bill, a bank line, a claim) has no value for it
+- **THEN** the line shows ✖ and cannot be posted (DIM-05)
+
+#### Scenario: The system's own postings without a required value (rev 0.171)
+- **GIVEN** an account that requires a value for a dimension
+- **WHEN** a posting the system makes by itself (a scheduled release, an automatic reversal, a revaluation, depreciation, a pay run, a bank rule applied by itself) has a line on it with no value
+- **THEN** it posts, and the amount shows ⚠ on Checks (Appendix C.2 #60) until a journal moves it to a value
 
 ### Requirement: FR-DIM-02 Dimensions on every line and report
 Every ledger line SHALL carry its dimension values, and every report SHALL be filterable, groupable and pivotable by dimension.
