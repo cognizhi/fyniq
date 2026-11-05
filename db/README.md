@@ -300,6 +300,7 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY256 | STORAGE-SHARE-02 | A conversion's ACRA step names an approved conversion not yet effective, and never changes |
 | FY257 | STORAGE-DIM-01 | A dimension set names the organisation's own values, once each, in ascending order, at most one of each dimension (FR-DIM-01, FR-DIM-02) |
 | FY258 | STORAGE-DIM-02 | A dimension keeps its kind and place and a value its dimension and code, each changes one version at a time, and neither is deleted (FR-DIM-01) |
+| FY259 | STORAGE-DIM-03 | An account requires the organisation's own dimensions, once each (FR-DIM-01, rev 0.171) |
 | FY060 | STORAGE-AUDIT-01 | The audit trail cannot be changed or deleted |
 | FY061 | STORAGE-AUDIT-01 | A change has no audit event in its transaction |
 | FY070 | STORAGE-OUTBOX-01 | An outbox row cannot change what it is, count backwards or be deleted |

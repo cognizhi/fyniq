@@ -73,6 +73,8 @@ type payloadLine struct {
 	// The person and origin of a line on a director's account (FR-EQ-01, B.7; rev 0.167).
 	PartyID *uuid.UUID `json:"party_id,omitempty"`
 	Origin  string     `json:"origin,omitempty"`
+	// The line's dimension values (FR-DIM-02).
+	DimensionValueIDs []uuid.UUID `json:"dimension_value_ids,omitempty"`
 }
 
 // Service runs the journal commands against a store.
@@ -107,7 +109,7 @@ func encode(d Draft) ([]byte, error) {
 func linesOf(lines []ledger.JournalLine) []payloadLine {
 	var out []payloadLine
 	for _, l := range lines {
-		pl := payloadLine{AccountID: l.AccountID, Amount: l.Amount, Description: l.Description, Origin: l.Origin}
+		pl := payloadLine{AccountID: l.AccountID, Amount: l.Amount, Description: l.Description, Origin: l.Origin, DimensionValueIDs: l.Values}
 		if l.Party != uuid.Nil {
 			pl.PartyID = &l.Party
 		}
@@ -398,12 +400,37 @@ func loadSettings(ctx context.Context, u storage.UnitOfWork) (ledger.Settings, e
 	s := ledger.Settings{Base: base, Accounts: make(map[uuid.UUID]ledger.Account, len(accounts))}
 	for _, a := range accounts {
 		s.Accounts[a.ID] = ledger.Account{ID: a.ID, Code: a.Code, Group: a.Group, Active: a.Active, ShareCapital: a.Role == storage.RoleShareCapital,
-			Revalue: a.Revalue, UnrealisedFX: a.Role == storage.RoleUnrealisedFX, Role: string(a.Role), Money: a.MoneyAccount, Currency: a.Currency, Type: string(a.Type)}
+			Revalue: a.Revalue, UnrealisedFX: a.Role == storage.RoleUnrealisedFX, Role: string(a.Role), Money: a.MoneyAccount, Currency: a.Currency, Type: string(a.Type),
+			Requires: a.RequiredDimensions}
 	}
 	if s.People, err = people(ctx, u); err != nil {
 		return ledger.Settings{}, err
 	}
+	if s.Dimensions, s.Values, err = dimensions(ctx, u); err != nil {
+		return ledger.Settings{}, err
+	}
 	return s, nil
+}
+
+// dimensions are the organisation's dimensions and their values, which a line's values name (FR-DIM-01).
+func dimensions(ctx context.Context, u storage.UnitOfWork) (map[uuid.UUID]ledger.Dimension, map[uuid.UUID]ledger.DimensionValue, error) {
+	ds, err := u.Dimensions().List(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	vs, err := u.Dimensions().Values(ctx, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	dims := make(map[uuid.UUID]ledger.Dimension, len(ds))
+	for _, d := range ds {
+		dims[d.ID] = ledger.Dimension{Name: d.Name, Active: d.Active}
+	}
+	values := make(map[uuid.UUID]ledger.DimensionValue, len(vs))
+	for _, v := range vs {
+		values[v.ID] = ledger.DimensionValue{Dimension: v.DimensionID, Code: v.Code, Active: v.Active}
+	}
+	return dims, values, nil
 }
 
 // people are the contacts marked director or shareholder: those a line on a director's account may name (FR-EQ-01).
@@ -444,6 +471,8 @@ type SavedLine struct {
 	Description  string
 	PartyID      *uuid.UUID // the person of a line on a director's account (FR-EQ-01)
 	Origin       string     // and where its amount came from
+	// DimensionValueIDs are the line's dimension values (FR-DIM-02).
+	DimensionValueIDs []uuid.UUID
 }
 
 // ReadSaved reads a journal version as it was saved.
@@ -477,7 +506,7 @@ func readSaved(doc storage.Document) (Saved, error) {
 // savedLine is a stored line as it was saved.
 func savedLine(l payloadLine) SavedLine {
 	return SavedLine{AccountID: l.AccountID, Amount: l.Amount, FXRate: l.FXRate, FXRateSource: l.FXRateSource,
-		Description: l.Description, PartyID: l.PartyID, Origin: l.Origin}
+		Description: l.Description, PartyID: l.PartyID, Origin: l.Origin, DimensionValueIDs: l.DimensionValueIDs}
 }
 
 // decode reads a stored journal version.
@@ -506,7 +535,7 @@ func decode(doc storage.Document, base money.Currency) (ledger.Journal, error) {
 		}
 	}
 	for i, l := range p.Lines {
-		line := ledger.JournalLine{AccountID: l.AccountID, Amount: l.Amount, Description: l.Description, Origin: l.Origin}
+		line := ledger.JournalLine{AccountID: l.AccountID, Amount: l.Amount, Description: l.Description, Origin: l.Origin, Values: l.DimensionValueIDs}
 		if l.PartyID != nil {
 			line.Party = *l.PartyID
 		}
@@ -533,7 +562,7 @@ func toStorage(e ledger.Entry, reverses *uuid.UUID) storage.NewEntry {
 		line := storage.NewLine{
 			AccountID: l.AccountID, Currency: l.Amount.Currency().Code, Amount: storage.Decimal(l.Amount.String()),
 			FXRate: storage.Decimal(l.Rate.String()), FXRateSource: l.Rate.Source, BaseAmount: storage.Decimal(l.Base.String()),
-			Description: l.Description,
+			Description: l.Description, DimensionValues: l.Values,
 		}
 		if l.Party != uuid.Nil {
 			line.PartyID = &l.Party
@@ -566,7 +595,7 @@ func fromStorage(e storage.Entry, base money.Currency) (ledger.Entry, error) {
 		if err != nil {
 			return ledger.Entry{}, err
 		}
-		line := ledger.Line{AccountID: l.AccountID, Amount: amount, Rate: rate, Base: baseAmount, Description: l.Description}
+		line := ledger.Line{AccountID: l.AccountID, Amount: amount, Rate: rate, Base: baseAmount, Description: l.Description, Values: l.DimensionValues}
 		if l.PartyID != nil {
 			line.Party = *l.PartyID
 		}

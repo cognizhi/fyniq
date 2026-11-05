@@ -51,6 +51,8 @@ type Account struct {
 	// holds one other than the base; a payment is made from a money account (FR-AP-02).
 	Money    bool
 	Currency string
+	// Requires are the dimensions a line a person enters on the account needs a value of (FR-DIM-01; rev 0.171).
+	Requires []uuid.UUID
 	// Type is the account's type (FR-COA-02): "asset", "liability", "equity", "revenue" or "expense". A bill spreads
 	// only a line on an expense account (FR-GL-03, Appendix B.1: P&L categories only).
 	Type string
@@ -63,6 +65,10 @@ type Settings struct {
 	// People are the contacts marked director or shareholder, who hold director accounts (FR-EQ-01); nil when the
 	// caller did not read them, and the database alone refuses another contact on a director's account (FY250).
 	People map[uuid.UUID]bool
+	// Dimensions and Values are the organisation's dimensions and their values, which a line's values name (FR-DIM-01);
+	// nil when the caller did not read them, and then a line naming a value is refused.
+	Dimensions map[uuid.UUID]Dimension
+	Values     map[uuid.UUID]DimensionValue
 }
 
 // Source identifies the document version an entry comes from (ENG-03).
@@ -83,6 +89,9 @@ type Line struct {
 	// Party is the director or shareholder a line on a director's account belongs to (B.7, FR-EQ-01); uuid.Nil on
 	// every other line.
 	Party uuid.UUID
+	// Values are the line's dimension values, once each in ascending order, at most one of each dimension (FR-DIM-02);
+	// nil for a line with none.
+	Values []uuid.UUID
 }
 
 // Entry is one balanced journal entry, ready to persist.
@@ -102,8 +111,9 @@ type JournalLine struct {
 	Amount      money.Money
 	Rate        *money.Rate
 	Description string
-	Party       uuid.UUID // the person, on a director's account only (B.7)
-	Origin      string    // where the person's amount came from, one of EnteredOrigins, on a director's account only (FR-EQ-01)
+	Party       uuid.UUID   // the person, on a director's account only (B.7)
+	Origin      string      // where the person's amount came from, one of EnteredOrigins, on a director's account only (FR-EQ-01)
+	Values      []uuid.UUID // the line's dimension values (FR-DIM-02), in any order
 }
 
 // Journal is one version of a manual journal document.
@@ -191,6 +201,7 @@ type asEntered struct {
 	what         string // the document, as the messages name it
 	shareCapital bool   // lines may post to share-capital accounts (INV-13)
 	baseOnly     bool   // every line is in the base currency
+	required     bool   // a line names a value of each dimension its account requires (FR-DIM-01; rev 0.171: a person's lines)
 }
 
 // PostJournal turns one version of a manual journal into its entry (FR-GL-01 in P0 form) under the
@@ -199,7 +210,7 @@ type asEntered struct {
 // it post (§10.2). The balance rules (7 and 8) are checked whenever every line has a base amount, so
 // they are reported beside any other failure.
 func PostJournal(j Journal, s Settings) (Entry, error) {
-	return post(j, s, asEntered{source: SourceManualJournal, rule: RuleManualJournal, what: "journal"})
+	return post(j, s, asEntered{source: SourceManualJournal, rule: RuleManualJournal, what: "journal", required: true})
 }
 
 // PostOpening turns one version of the opening balances into its entry (FR-GL-06; posting rule "Opening balances"):
@@ -227,6 +238,13 @@ func post(j Journal, s Settings, r asEntered) (Entry, error) {
 	}
 
 	lines := make([]Line, 0, len(j.Lines))
+	// The lines without a value their account requires, refused unless the journal's lines on the account net to zero.
+	type pending struct {
+		acc   Account
+		names []string
+		field string
+	}
+	var untagged []pending
 	baseTotal := money.Zero(s.Base)
 	perCurrency := map[string]money.Money{}
 	var currencies []string
@@ -252,6 +270,10 @@ func post(j Journal, s Settings, r asEntered) (Entry, error) {
 			}
 			if p := originProblem(acc, l.Origin, f("origin")); p != nil {
 				probs = append(probs, *p)
+			}
+			probs = append(probs, dimensionProblems(s, l.Values, f("dimension_value_ids"))...)
+			if names := missing(s, acc, l.Values); r.required && len(names) > 0 {
+				untagged = append(untagged, pending{acc, names, f("dimension_value_ids")})
 			}
 		}
 		if len(l.Description) > MaxDescription {
@@ -314,7 +336,26 @@ func post(j Journal, s Settings, r asEntered) (Entry, error) {
 			currencies = append(currencies, cur.Code)
 		}
 		perCurrency[cur.Code], _ = perCurrency[cur.Code].Add(l.Amount)
-		lines = append(lines, Line{AccountID: l.AccountID, Amount: l.Amount, Rate: rate, Base: base, Description: l.Description, Party: l.Party})
+		lines = append(lines, Line{AccountID: l.AccountID, Amount: l.Amount, Rate: rate, Base: base, Description: l.Description, Party: l.Party,
+			Values: canonical(l.Values)})
+	}
+
+	// FR-DIM-01 (rev 0.171): a line without a required value posts only in a journal that moves amounts between values
+	// on its account, whose lines on it net to zero; one whose lines did not all convert is refused.
+	if len(untagged) > 0 {
+		net := map[uuid.UUID]money.Money{}
+		for _, l := range lines {
+			total, ok := net[l.AccountID]
+			if !ok {
+				total = money.Zero(s.Base)
+			}
+			net[l.AccountID], _ = total.Add(l.Base)
+		}
+		for _, p := range untagged {
+			if total, ok := net[p.acc.ID]; !converted || !ok || !total.IsZero() {
+				probs = append(probs, required(s, p.acc, p.names, p.field))
+			}
+		}
 	}
 
 	// Rule 7: the base amounts, each RND-FX of its line, sum to zero; rule 8: a journal in one currency
@@ -381,7 +422,8 @@ func Reverse(e Entry, date time.Time, reason string) (Entry, error) {
 		Lines:           make([]Line, len(e.Lines)),
 	}
 	for i, l := range e.Lines {
-		out.Lines[i] = Line{AccountID: l.AccountID, Amount: l.Amount.Neg(), Rate: l.Rate, Base: l.Base.Neg(), Description: l.Description, Party: l.Party}
+		out.Lines[i] = Line{AccountID: l.AccountID, Amount: l.Amount.Neg(), Rate: l.Rate, Base: l.Base.Neg(), Description: l.Description, Party: l.Party,
+			Values: l.Values}
 	}
 	return out, nil
 }

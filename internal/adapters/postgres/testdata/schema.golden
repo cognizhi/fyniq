@@ -32,6 +32,7 @@ account | guidance | text | null |
 account | revalue | boolean | not null | false
 account | useful_life_months | smallint | null | 
 account | changed_at | timestamp with time zone | null | 
+account | required_dimension_ids | uuid[] | not null | '{}'::uuid[]
 accounting_framework | organisation_id | uuid | not null | current_org()
 accounting_framework | id | uuid | not null | uuidv7()
 accounting_framework | version | integer | not null | 
@@ -1437,6 +1438,7 @@ account | account_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES o
 account | account_organisation_id_not_null | NOT NULL organisation_id
 account | account_parent_fkey | FOREIGN KEY (organisation_id, parent_id) REFERENCES account(organisation_id, id)
 account | account_pkey | PRIMARY KEY (organisation_id, id)
+account | account_required_dimension_ids_not_null | NOT NULL required_dimension_ids
 account | account_revalue_monetary | CHECK (((NOT revalue) OR ((type = ANY (ARRAY['asset'::text, 'liability'::text])) AND (role IS DISTINCT FROM 'prepayments'::text) AND (role IS DISTINCT FROM 'deferred-revenue'::text) AND (role IS DISTINCT FROM 'customer-deposits'::text))))
 account | account_revalue_not_null | NOT NULL revalue
 account | account_role_known | CHECK ((role = ANY (ARRAY['accounts-receivable'::text, 'accounts-payable'::text, 'gst-control'::text, 'fx-rounding'::text, 'unrealised-fx'::text, 'deferred-revenue'::text, 'prepayments'::text, 'salaries-payable'::text, 'cpf-sdl-payable'::text, 'employer-cpf'::text, 'sdl'::text, 'depreciation'::text, 'accumulated-depreciation'::text, 'suspense'::text, 'retained-earnings'::text, 'expense-claims-payable'::text, 'income-tax-payable'::text, 'income-tax-expense'::text, 'director-loan'::text, 'deferred-remuneration'::text, 'share-capital'::text, 'capital-contribution'::text, 'withholding-tax-payable'::text, 'customer-deposits'::text])))
@@ -4048,6 +4050,7 @@ CREATE TRIGGER access_review_attestation_guard BEFORE DELETE OR UPDATE ON fyniq.
 CREATE TRIGGER access_review_attestation_no_truncate BEFORE TRUNCATE ON fyniq.access_review_attestation FOR EACH STATEMENT EXECUTE FUNCTION access_review_attestation_guard()
 CREATE TRIGGER account_changed_at BEFORE UPDATE ON fyniq.account FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION account_changed_at()
 CREATE TRIGGER account_guard BEFORE INSERT OR UPDATE ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_guard()
+CREATE TRIGGER account_required_dimensions_check BEFORE INSERT OR UPDATE OF required_dimension_ids ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_required_dimensions_check()
 CREATE TRIGGER accounting_framework_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_framework FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('framework', 'confirmed')
 CREATE TRIGGER accounting_policy_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_policy FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('policy', 'approved')
 CREATE TRIGGER allocation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.allocation FOR EACH ROW EXECUTE FUNCTION allocation_guard()
@@ -4371,6 +4374,7 @@ accept_super_admin_invitation(p_hash bytea, p_display_name text, p_issuer text, 
 access_review_attestation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bc80e0cced0dce827dfb83c2589ec831
 account_changed_at() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 212c9a1cb1a190c3ac8fa234e62aa816
 account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 78889030731483263211599be66a7331
+account_required_dimensions_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c214041f09e2caefd3dcc34d90b2084a
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
 allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | faf46a2ff4eb5c3d17fcbdc8baa47c5b
 announcement_dismissal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5e05644e02afe264e8eef087f5ad7218

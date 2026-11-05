@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/dimension"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -201,4 +203,51 @@ var matrixDimensions = map[string]func(e *env, tok string) (response, func() boo
 		r := e.call(http.MethodPut, "/v1/dimension-values/"+id, tok, map[string]any{"name": name}, "If-Match", "*")
 		return r, func() bool { return dimensionNamed(e, "/v1/dimension-values", id) != name }
 	},
+}
+
+// FR-DIM-01 and FR-DIM-02 (rev 0.171; slice 3): an account requires the dimensions the chart's keepers name, each one of
+// the organisation's and in use; a journal line takes dimension values, which the posted entry shows; a journal whose
+// line on an account that requires Department has none cannot post (DIM-05).
+// req: FR-DIM-01
+// req: FR-DIM-02
+// req: ENG-22
+func TestJournalLinesTakeDimensionValues(t *testing.T) {
+	e := newEnv(t)
+	accountant := e.as(authz.Accountant)
+	dept := e.call(http.MethodPost, "/v1/dimensions", accountant, map[string]any{"kind": "department", "name": "Department"}).str("id")
+	eng := e.call(http.MethodPost, "/v1/dimension-values", accountant, map[string]any{"dimension_id": dept, "code": "ENG", "name": "Engineering"}).str("id")
+	rent := "/v1/accounts/" + e.books.Rent.ID.String()
+
+	bad := e.call(http.MethodPatch, rent, accountant, map[string]any{"required_dimension_ids": []string{uuid.NewString()}}, "If-Match", "*")
+	e.problemIs(bad, "updateAccount", 422, CodeInvalid)
+	if f := fields(bad); f["body.required_dimension_ids[0]"] != dimension.CodeDimension {
+		t.Errorf("a dimension the organisation does not have: %v", f)
+	}
+	r := e.call(http.MethodPatch, rent, accountant, map[string]any{"required_dimension_ids": []string{dept}}, "If-Match", "*")
+	if ids, _ := r.Body["required_dimension_ids"].([]any); r.Status != 200 || len(ids) != 1 || ids[0] != dept {
+		t.Fatalf("rent requires Department: %d %s", r.Status, r.Raw)
+	}
+
+	id, tag := e.createDraft("100.00")
+	refused := e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", tag)
+	e.problemIs(refused, "postJournal", 422, ledger.CodeDimensionRequired)
+	if !strings.Contains(refused.Raw, "needs a value of Department on every line") {
+		t.Errorf("DIM-05's words: %s", refused.Raw)
+	}
+
+	d := e.draft("100.00")
+	d["lines"].([]map[string]any)[0]["dimension_value_ids"] = []string{"nope"}
+	e.problemIs(e.call(http.MethodPost, "/v1/journals", accountant, d), "createJournal", 422, CodeInvalid)
+	d["lines"].([]map[string]any)[0]["dimension_value_ids"] = []string{eng}
+	j := e.call(http.MethodPost, "/v1/journals", accountant, d)
+	if got := j.Body["lines"].([]any)[0].(map[string]any)["dimension_value_ids"]; fmt.Sprint(got) != "["+eng+"]" {
+		t.Errorf("the saved line's values: %v (%s)", got, j.Raw)
+	}
+	posted := e.call(http.MethodPost, "/v1/journals/"+j.str("id")+"/post", accountant, nil, "If-Match", j.Header.Get("ETag"))
+	if posted.Status != 200 {
+		t.Fatalf("posting with Engineering: %d %s", posted.Status, posted.Raw)
+	}
+	if !strings.Contains(posted.Raw, `"dimension_value_ids":["`+eng+`"]`) {
+		t.Errorf("the posted entry's line shows its value: %s", posted.Raw)
+	}
 }

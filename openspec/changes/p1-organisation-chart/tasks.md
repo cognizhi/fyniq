@@ -117,6 +117,19 @@
   and puts out of use its values; everyone who sees the chart sees them. Help keys `chart.dimension-add` and
   `chart.dimension-values`; the guide's "Dimensions" and "Values of a dimension", compiled into `accounting.chart`.
   The design's "Required on" column comes with "required per account" in slice 3. Tests: `Dimensions.test.tsx`.)
+  (5 Nov 2026, slice 3a, values on journal lines, on the owner's decision of rev 0.171: a line a person enters on an
+  account that requires a dimension names a value of it or does not post, and the system's own postings are flagged
+  instead (Appendix C.2 #60). Migration 000222 gives an account its `required_dimension_ids` (the organisation's own
+  dimensions, once each: `FY259`); `createAccount` and `updateAccount` set them, each in use when added. A manual
+  journal's line takes `dimension_value_ids`; the engine keeps them once each in ascending order, refuses a value the
+  organisation does not have, one out of use or two of one dimension (DIM-06), and a missing required value (DIM-05; a
+  dimension out of use requires nothing; opening balances are not held to it; rev 0.172: a journal whose lines on the
+  account net to zero, moving amounts between values, may carry the line without one); a reversal keeps each line's values, so
+  every set nets to zero, and replay compares them. The unit of work writes each combination's `dimension_set` once and
+  reads a line's values back with it. Tests `TestALinesDimensionValuesAreCheckedAndKept`,
+  `TestJournalLinesCarryTheirDimensionValues`, `TestJournalLinesTakeDimensionValues`. **Left:** the screens (the
+  journal editor's values, the account's requirement, "Required on"), C.2 #60, values on the other documents' lines,
+  reports by dimension, the oracle's half.)
 
 ## 4. Contacts and items
 

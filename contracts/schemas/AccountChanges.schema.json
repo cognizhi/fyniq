@@ -97,6 +97,19 @@
       "maxLength": 60,
       "type": "string"
     },
+    "required_dimension_ids": {
+      "description": "The dimensions a line a person enters on it needs a value of (FR-DIM-01, PRD-001 rev 0.171): the whole list, [] for none; a dimension it adds is in use (DIM-04). Lines posted before keep what they have.",
+      "items": {
+        "description": "A dimension's ID (listDimensions).",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 10,
+      "type": "array"
+    },
     "revalue": {
       "description": "Revalue its foreign-currency balances at month end: only an asset or a liability settled in money (FR-GL-04; COA-10). Months already revalued keep what they posted.",
       "examples": [

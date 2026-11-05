@@ -365,6 +365,9 @@ type AccountAttributes struct {
 	Guidance       string // shown when someone picks the account
 	Revalue        bool   // its foreign-currency balances are revalued at month end: a monetary item (FR-GL-04)
 	UsefulLife     int    // (rev 0.151) the default useful life in months the asset register offers; 0 for none (FR-COA-02)
+	// RequiredDimensions are the dimensions a line a person enters on it needs a value of (FR-DIM-01; rev 0.171), the
+	// system's own postings flagged instead (Appendix C.2 #60); none for most accounts.
+	RequiredDimensions []uuid.UUID
 }
 
 // AccountRole marks an account the rules treat specially; empty for most accounts.
@@ -604,6 +607,9 @@ type NewLine struct {
 	BaseAmount   Decimal
 	Description  string
 	PartyID      *uuid.UUID // the director or shareholder of a line on 2500 or 2120, required there and refused elsewhere (B.7, FY250)
+	// DimensionValues are the line's dimension values, at most one of each dimension (FR-DIM-02): the unit of work writes
+	// the dimension set that holds them, once per combination; none for a line with no dimension.
+	DimensionValues []uuid.UUID
 }
 
 // Entry is a posted journal entry.
@@ -634,6 +640,8 @@ type Line struct {
 	BaseAmount   Decimal
 	Description  string
 	PartyID      *uuid.UUID // the person of a line on a director's account (B.7), else nil
+	// DimensionValues are the values of the line's dimension set, in ascending order; nil for a line with none (FR-DIM-02).
+	DimensionValues []uuid.UUID
 }
 
 // Balance is the cached total of one account, period and currency.
@@ -725,7 +733,7 @@ const (
 	// repayment is posted only by a release, which links it (FR-EQ-05).
 	CodeBatch = "STORAGE-BATCH-01"
 	// CodeBatchHeld: a bill or claim in an approved, unreleased batch is paid by the batch, not by hand (FR-BNK-12).
-	CodeBatchHeld      = "STORAGE-BATCH-02"
+	CodeBatchHeld = "STORAGE-BATCH-02"
 	// CodeShareIssue: the register of share issues is append-only, its classes share capital and its holders directors
 	// or shareholders, and share capital moves only with it (FR-EQ-08, INV-13).
 	CodeShareIssue = "STORAGE-SHARE-01"
@@ -738,28 +746,30 @@ const (
 	// CodeDimensionFixed: a dimension keeps its kind and place and a value its dimension and code, each changes one
 	// version at a time, and neither is deleted (FR-DIM-01).
 	CodeDimensionFixed = "STORAGE-DIM-02"
-	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
-	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
-	CodeBanner         = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends
-	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
-	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
-	CodeSetup          = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done
-	CodeMembership     = "STORAGE-MEMBER-01"     // a membership or role assignment cannot be made or changed that way
-	CodeSuperAdmin     = "STORAGE-SUPERADMIN-01" // at most two Super admins in P0, never none; removed, never changed
-	CodeGrant          = "STORAGE-GRANT-01"      // an invitation or recovery code is not valid, used or expired
-	CodeDuplicate      = "STORAGE-DUPLICATE-01"  // posting identity, account code or reversal already used
-	CodeRetry          = "STORAGE-RETRY-01"      // deadlock or serialisation failure: retry with the same key
-	CodeLockTimeout    = "STORAGE-LOCK-01"       // waited longer than the lock timeout (ENG-47)
-	CodeRevision       = "STORAGE-REV-01"
-	CodeInvalid        = "STORAGE-INPUT-01" // the request itself is malformed
-	CodeStorageFailure = "STORAGE-FAILURE-01"
-	CodePreviewed      = "STORAGE-PREVIEW-01"  // not a failure: a preview passed every check and was rolled back
-	CodeVersion        = "STORAGE-VERSION-01"  // the record changed since it was read (FR-INT-09)
-	CodeOverlap        = "STORAGE-DATES-01"    // a version's validity overlaps another's, or ends before it starts
-	CodeSequence       = "STORAGE-SEQUENCE-01" // a number sequence cannot be set that way, or a number is used already
-	CodeApproval       = "STORAGE-APPROVAL-01" // an approval or its request cannot be made or changed that way (FR-APR-03, FM-1)
-	CodePack           = "STORAGE-PACK-01"     // a loaded statutory pack version cannot change; an activation needs a second person
-	CodePasskey        = "STORAGE-PASSKEY-01"  // a passkey or its challenge cannot be made or used that way (FR-ADM-02, SEC-01)
+	// CodeDimensionRequirement: an account requires the organisation's own dimensions, once each (FR-DIM-01).
+	CodeDimensionRequirement = "STORAGE-DIM-03"
+	CodeTemplate             = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
+	CodeCaptureName          = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
+	CodeBanner               = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends
+	CodeAudit                = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
+	CodeOutbox               = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
+	CodeSetup                = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done
+	CodeMembership           = "STORAGE-MEMBER-01"     // a membership or role assignment cannot be made or changed that way
+	CodeSuperAdmin           = "STORAGE-SUPERADMIN-01" // at most two Super admins in P0, never none; removed, never changed
+	CodeGrant                = "STORAGE-GRANT-01"      // an invitation or recovery code is not valid, used or expired
+	CodeDuplicate            = "STORAGE-DUPLICATE-01"  // posting identity, account code or reversal already used
+	CodeRetry                = "STORAGE-RETRY-01"      // deadlock or serialisation failure: retry with the same key
+	CodeLockTimeout          = "STORAGE-LOCK-01"       // waited longer than the lock timeout (ENG-47)
+	CodeRevision             = "STORAGE-REV-01"
+	CodeInvalid              = "STORAGE-INPUT-01" // the request itself is malformed
+	CodeStorageFailure       = "STORAGE-FAILURE-01"
+	CodePreviewed            = "STORAGE-PREVIEW-01"  // not a failure: a preview passed every check and was rolled back
+	CodeVersion              = "STORAGE-VERSION-01"  // the record changed since it was read (FR-INT-09)
+	CodeOverlap              = "STORAGE-DATES-01"    // a version's validity overlaps another's, or ends before it starts
+	CodeSequence             = "STORAGE-SEQUENCE-01" // a number sequence cannot be set that way, or a number is used already
+	CodeApproval             = "STORAGE-APPROVAL-01" // an approval or its request cannot be made or changed that way (FR-APR-03, FM-1)
+	CodePack                 = "STORAGE-PACK-01"     // a loaded statutory pack version cannot change; an activation needs a second person
+	CodePasskey              = "STORAGE-PASSKEY-01"  // a passkey or its challenge cannot be made or used that way (FR-ADM-02, SEC-01)
 	// CodeEvidence: evidence keeps what it is, is removed only from a draft, is append-only once its record is
 	// not a draft, keeps a retain-until that only moves later, and is never deleted (FR-DOC-02, FR-DOC-07).
 	CodeEvidence = "STORAGE-EVIDENCE-01"
