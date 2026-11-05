@@ -111,6 +111,12 @@
   `TestAttackDimensionsKeepWhatTheyAre`, `TestDimensionsAndTheirValues` and the matrix's six rows. **Left:** the
   Dimensions tab of the chart's screen, values on lines and "required per account", reports by dimension, the oracle's
   half.)
+  (5 Nov 2026, slice 2b, the screen: the chart's **Dimensions** section (`Dimensions.tsx`, under the accounts as the
+  ChartOfAccounts design draws it) lists each dimension with its values in use and "n of 10 used"; an Accountant or a
+  Tax agent adds a dimension of a kind still free, renames it or puts it out of use, and in **Values** adds, renames
+  and puts out of use its values; everyone who sees the chart sees them. Help keys `chart.dimension-add` and
+  `chart.dimension-values`; the guide's "Dimensions" and "Values of a dimension", compiled into `accounting.chart`.
+  The design's "Required on" column comes with "required per account" in slice 3. Tests: `Dimensions.test.tsx`.)
   (5 Nov 2026, slice 3a, values on journal lines, on the owner's decision of rev 0.171: a line a person enters on an
   account that requires a dimension names a value of it or does not post, and the system's own postings are flagged
   instead (Appendix C.2 #60). Migration 000222 gives an account its `required_dimension_ids` (the organisation's own

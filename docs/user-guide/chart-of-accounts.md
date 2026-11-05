@@ -3,7 +3,7 @@ key: accounting.chart
 title: Set up and keep the chart of accounts
 mode: expert
 roles: [accountant, tax_agent, controller, owner, auditor]
-requirements: [FR-COA-01, FR-COA-02, FR-COA-03, FR-COA-04, FR-COA-05, FR-GL-04]
+requirements: [FR-COA-01, FR-COA-02, FR-COA-03, FR-COA-04, FR-COA-05, FR-GL-04, FR-DIM-01]
 status: draft            # written with the chart of accounts screen (P1); reviewed with the accountant's CoA review
 ---
 
@@ -61,6 +61,34 @@ Select the pencil next to an account, change what you need, and select **Save th
   assets; the company's accountant confirms them. Changing it never changes an asset already
   registered. Leave it empty for none.
 
+## Dimensions
+
+Dimensions tag amounts beyond the account, so you can see costs and revenue by team, by project or
+by anything else you track. The **Dimensions** section under the accounts lists them, each with
+its values in use.
+
+- **Department** and **Project** are built in: add each once, if you use it.
+- Add up to 8 dimensions of your own, such as Region or Funding source, with **Add a dimension**.
+  With Department and Project that makes 10 at most.
+- Select the pencil next to a dimension to rename it, or clear **In use** to put it out of use. A
+  dimension is never deleted, and its kind never changes. Out of use, it keeps its values, and a
+  custom one keeps its place among the 8.
+
+An Accountant or a Tax agent adds and changes dimensions; everyone who can see the chart can see
+them.
+
+## Values of a dimension
+
+Select **Values** next to a dimension to see its values, such as each department.
+
+1. Under **Add a value**, enter a short **Code**, unique in the dimension, such as ENG, and a
+   **Name**, such as Engineering.
+2. Select **Add the value**.
+
+A value's code never changes. Select the pencil next to a value to rename it, or clear **In use** to
+put it out of use. A value is never deleted, and the lines that carry it keep it. A dimension out of
+use takes no new values until it is back in use.
+
 ## System accounts
 
 Accounts marked **System**, such as accounts receivable, accounts payable and GST control, have a
@@ -75,6 +103,10 @@ role the books rely on. Their code, type and role never change, and they stay ac
 | The control or payroll-cost flag changes only with approval (COA-08) | Leave the flag as it is for now |
 | A system account stays active (COA-09) | Keep it active; use another account for new postings |
 | The account is not revalued at month end (COA-10) | Tick it only on an asset or a liability settled in money |
+| The organisation cannot add that dimension (DIM-01) | Department and Project come once each, and 8 of your own at most: rename one out of use and put it back in use instead |
+| The name does not fit (DIM-02) | Give a name no other dimension, or no other value of the dimension, has, whatever the case |
+| The value's code does not fit (DIM-03) | Use a letter or digit, then up to 29 letters, digits, dots, slashes, underscores or hyphens, not used by another value of the dimension |
+| Not a dimension in use (DIM-04) | Put the dimension back in use before adding values to it |
 
 ## Related
 

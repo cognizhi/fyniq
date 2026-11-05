@@ -316,3 +316,4 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-04] compile | docs/user-guide/financial-statements.md, kpis.md → task/reports-statements, task/reports-kpis (a balance sheet with an unplaced account does not balance, its movements under Other accounts; subscription accounts exclude other income and headings)
 
 ## [2026-11-05] compile | docs/user-guide/currencies.md → accounting.currencies (FX-08: an averaged rate refused where it would set a GST amount, ENG-42)
+## [2026-11-05] compile | docs/user-guide/chart-of-accounts.md → accounting.chart (the Dimensions section and the values of a dimension, FR-DIM-01)
