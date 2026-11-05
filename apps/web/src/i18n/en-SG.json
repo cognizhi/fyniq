@@ -364,6 +364,14 @@
       "label": "Load the standard chart",
       "tooltip": "The Singapore start-up chart of 87 accounts, for a chart with no accounts yet."
     },
+    "chart.dimension-add": {
+      "label": "Add a dimension",
+      "tooltip": "Department, Project, or one of up to 8 of your own, such as Region; never deleted, only put out of use."
+    },
+    "chart.dimension-values": {
+      "label": "Values",
+      "tooltip": "The dimension's values, such as each department; a value's code never changes."
+    },
     "contacts.overview": {
       "label": "Contacts",
       "tooltip": "The customers and vendors the company deals with."

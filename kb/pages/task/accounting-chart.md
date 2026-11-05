@@ -2,16 +2,16 @@
 key: accounting.chart
 type: task
 title: Set up and keep the chart of accounts
-summary: Load the standard Singapore start-up chart, add an account, rename, regroup or deactivate one, and what system accounts are
+summary: Load the standard chart, add, rename, regroup or deactivate an account, system accounts, and the dimensions (Department, Project, your own) and their values
 sources:
-  - docs/user-guide/chart-of-accounts.md sha256:bd81b010b73ce4cfc2059913835c58a1ca3ce5c12466c2e7d1ab502f60bfd866
+  - docs/user-guide/chart-of-accounts.md sha256:0d36a09c70d068f23e295bb012e709d5c70033f4084d6ad2800f7e3d11f5dd26
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-22
+compiled_at: 2026-11-05
 aliases:
   - revalued at month end
   - monetary account
@@ -23,6 +23,13 @@ aliases:
   - deactivate account
   - standard chart
   - system account
+  - dimension
+  - dimensions
+  - tracking category
+  - department
+  - project
+  - cost centre
+  - dimension value
 ---
 
 # Set up and keep the chart of accounts
@@ -55,6 +62,17 @@ aliases:
 
 (src: docs/user-guide/chart-of-accounts.md#add-an-account) (src: docs/user-guide/chart-of-accounts.md#change-an-account) (src: docs/user-guide/chart-of-accounts.md#system-accounts) (src: docs/user-guide/chart-of-accounts.md#related)
 
+## Dimensions and their values
+
+- Dimensions tag amounts beyond the account, to see costs and revenue by team, by project or by anything else tracked; the **Dimensions** section under the accounts lists each with its values in use.
+- **Department** and **Project** are built in, once each; **Add a dimension** adds up to 8 of your own, such as Region or Funding source: 10 at most with Department and Project.
+- The pencil renames a dimension, or clearing **In use** puts it out of use; a dimension is never deleted and its kind never changes; out of use it keeps its values, and a custom one keeps its place among the 8.
+- **Values** next to a dimension lists its values: under **Add a value**, a short **Code** unique in the dimension (such as ENG) and a **Name** (such as Engineering), then **Add the value**.
+- A value's code never changes; the pencil renames it or puts it out of use; a value is never deleted and the lines that carry it keep it; a dimension out of use takes no new values until it is back in use.
+- An Accountant or a Tax agent adds and changes dimensions; everyone who can see the chart can see them.
+
+(src: docs/user-guide/chart-of-accounts.md#dimensions) (src: docs/user-guide/chart-of-accounts.md#values-of-a-dimension)
+
 ## Common problems
 
 - COA-01, not an account code: use 1 to 20 letters, digits, dots or hyphens, starting with a letter or digit.
@@ -62,5 +80,9 @@ aliases:
 - COA-08, the control or payroll-cost flag changes only with approval: leave it for now.
 - COA-09, a system account stays active: keep it, and post new entries to another account.
 - COA-10, the account is not revalued at month end: tick it only on an asset or a liability settled in money.
+- DIM-01, the organisation cannot add that dimension: Department and Project come once each, and 8 of your own at most; rename one out of use and put it back in use instead.
+- DIM-02, the name does not fit: give a name no other dimension, or no other value of the dimension, has, whatever the case.
+- DIM-03, the value's code does not fit: a letter or digit, then up to 29 letters, digits, dots, slashes, underscores or hyphens, not used by another value of the dimension.
+- DIM-04, not a dimension in use: put the dimension back in use before adding values to it.
 
 (src: docs/user-guide/chart-of-accounts.md#common-problems)

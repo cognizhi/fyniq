@@ -19,6 +19,30 @@ export async function listAccounts(): Promise<Account[]> {
   return out;
 }
 
+export type Dimension = components["schemas"]["Dimension"];
+export type DimensionValue = components["schemas"]["DimensionValue"];
+
+// listDimensions answers every dimension, Department and Project first, then the custom ones by place, and every value,
+// by dimension then code (FR-DIM-01).
+export async function listDimensions(): Promise<{ dimensions: Dimension[]; values: DimensionValue[] }> {
+  const dimensions: Dimension[] = [];
+  const values: DimensionValue[] = [];
+  let cursor: string | undefined;
+  do {
+    const { data, error } = await api.GET("/v1/dimensions", { params: { query: { page_size: 500, cursor } } });
+    if (error) throw error;
+    dimensions.push(...(data.items ?? []));
+    cursor = data.next_cursor;
+  } while (cursor);
+  do {
+    const { data, error } = await api.GET("/v1/dimension-values", { params: { query: { page_size: 500, cursor } } });
+    if (error) throw error;
+    values.push(...(data.items ?? []));
+    cursor = data.next_cursor;
+  } while (cursor);
+  return { dimensions, values };
+}
+
 // listPeriods answers every period, earliest first, and the financial year that opens next.
 export async function listPeriods(): Promise<{ items: Period[]; next_year?: PeriodPage["next_year"] }> {
   const items: Period[] = [];

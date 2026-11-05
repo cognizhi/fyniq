@@ -12,6 +12,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listAccounts } from "./data";
+import { Dimensions } from "./Dimensions";
 import { registerGroups } from "./registerGroups";
 
 type Account = components["schemas"]["Account"];
@@ -374,10 +375,11 @@ function LoadStandard({ open, onClose, onLoaded }: { open: boolean; onClose: () 
   );
 }
 
-// ChartOfAccounts is Accounting › Chart of accounts (docs/design/screens ChartOfAccounts; FR-COA-01…05):
-// every account by type, groups with their accounts under them, each with its report group, function,
-// default GST code and flags; system accounts locked. An Accountant or Tax agent adds and changes
-// accounts; an empty chart offers the standard Singapore start-up chart.
+// ChartOfAccounts is Accounting › Chart of accounts (docs/design/screens ChartOfAccounts; FR-COA-01…05,
+// FR-DIM-01): every account by type, groups with their accounts under them, each with its report group,
+// function, default GST code and flags; system accounts locked; then the dimensions and their values. An
+// Accountant or Tax agent adds and changes accounts and dimensions; an empty chart offers the standard
+// Singapore start-up chart.
 export function ChartOfAccounts() {
   const { session } = useSignedIn();
   const q = useQuery({ queryKey: ["accounts"], queryFn: listAccounts });
@@ -532,6 +534,7 @@ export function ChartOfAccounts() {
               No account matches "{find}".
             </p>
           )}
+          <Dimensions may={may} onSaved={setStatus} />
         </>
       )}
       <AccountForm editing={editing} accounts={all} onClose={() => setEditing(null)} onSaved={setStatus} />
