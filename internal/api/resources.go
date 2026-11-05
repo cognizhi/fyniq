@@ -151,7 +151,7 @@ func accountOf(a storage.Account) Account {
 	out := Account{ID: a.ID.String(), Code: a.Code, Name: a.Name, Type: string(a.Type), Group: a.Group, Active: a.Active, Version: a.Version,
 		ReportGroup: a.ReportGroup, CashFlowLine: a.CashFlowLine, Function: a.Function, MoneyAccount: a.MoneyAccount,
 		DefaultGSTCode: a.DefaultGSTCode, Currency: a.Currency, Control: a.Control, PayrollCost: a.PayrollCost, Guidance: a.Guidance,
-		Role: string(a.Role), Revalue: a.Revalue, UsefulLife: a.UsefulLife, RequiredDimensionIDs: refsOf[DimensionRef](a.RequiredDimensions)}
+		Role: string(a.Role), Revalue: a.Revalue, UsefulLife: a.UsefulLife, RequiredDimensionIDs: dimensionRefs(a.RequiredDimensions)}
 	if a.ParentID != nil {
 		s := a.ParentID.String()
 		out.ParentID = &s
@@ -487,7 +487,7 @@ func linesOut(lines []journal.SavedLine) []JournalLineDraft {
 		out = append(out, JournalLineDraft{AccountID: l.AccountID.String(),
 			Amount: Money{Amount: l.Amount.String(), Currency: l.Amount.Currency().Code},
 			FXRate: l.FXRate, FXRateSource: l.FXRateSource, Description: l.Description, PartyID: idOrEmpty(l.PartyID), Origin: l.Origin,
-			DimensionValueIDs: refsOf[DimensionValueRef](l.DimensionValueIDs)})
+			DimensionValueIDs: valueRefs(l.DimensionValueIDs)})
 	}
 	return out
 }
@@ -544,14 +544,25 @@ func valuesOf(ids []DimensionValueRef, field string) ([]uuid.UUID, []FieldProble
 	return out, bad
 }
 
-// refsOf are IDs as the API sends them; nil for none, which leaves the field out.
-func refsOf[T ~string](ids []uuid.UUID) []T {
+// dimensionRefs and valueRefs are IDs as the API sends them; nil for none, which leaves the field out.
+func dimensionRefs(ids []uuid.UUID) []DimensionRef {
 	if len(ids) == 0 {
 		return nil
 	}
-	out := make([]T, len(ids))
+	out := make([]DimensionRef, len(ids))
 	for i, id := range ids {
-		out[i] = T(id.String())
+		out[i] = DimensionRef(id.String())
+	}
+	return out
+}
+
+func valueRefs(ids []uuid.UUID) []DimensionValueRef {
+	if len(ids) == 0 {
+		return nil
+	}
+	out := make([]DimensionValueRef, len(ids))
+	for i, id := range ids {
+		out[i] = DimensionValueRef(id.String())
 	}
 	return out
 }
@@ -568,7 +579,7 @@ func entryOf(e storage.Entry) Entry {
 	for _, l := range e.Lines {
 		out.Lines = append(out.Lines, EntryLine{LineNo: l.LineNo, AccountID: l.AccountID.String(), Amount: moneyOf(l.Amount, l.Currency),
 			FXRate: trimDecimal(string(l.FXRate)), FXRateSource: l.FXRateSource, BaseAmount: moneyOf(l.BaseAmount, l.BaseCurrency), Description: l.Description,
-			PartyID: idOrEmpty(l.PartyID), DimensionValueIDs: refsOf[DimensionValueRef](l.DimensionValues)})
+			PartyID: idOrEmpty(l.PartyID), DimensionValueIDs: valueRefs(l.DimensionValues)})
 	}
 	return out
 }
