@@ -144,4 +144,41 @@ describe("the chart of accounts", () => {
     await waitFor(() => expect(calls()).toContain("PATCH /v1/accounts/a6"));
     expect(seen.find((s) => s.method === "PATCH")?.body).toEqual({ useful_life_months: 48 });
   });
+
+  // req: FR-DIM-01
+  it("requires dimensions on an account: only those in use are offered, the whole list goes, and one out of use only comes off", async () => {
+    const dept = { id: "d1", kind: "department", name: "Department", active: true, version: 1 };
+    const project = { id: "d2", kind: "project", name: "Project", active: true, version: 1 };
+    const grant = { id: "d3", kind: "custom", place: 1, name: "Grant", active: false, version: 1 };
+    const tagged = { ...rent, required_dimension_ids: ["d1", "d3"] } as Account;
+    const seen = answer({
+      "GET /v1/accounts": { status: 200, body: { items: [office, tagged] } },
+      "GET /v1/accounts/a1": { status: 200, body: tagged, headers: { ETag: '"1"' } },
+      "GET /v1/dimensions": { status: 200, body: { items: [dept, project, grant] } },
+      "GET /v1/dimension-values": { status: 200, body: { items: [] } },
+      "POST /v1/accounts": { status: 201, body: desk },
+      "PATCH /v1/accounts/a1": { status: 200, body: { ...tagged, required_dimension_ids: ["d3", "d2"], version: 2 } },
+    });
+    renderPage(ChartOfAccounts, { path: "/accounting/chart-of-accounts", session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "New account" }));
+    let dialog = await screen.findByRole("dialog");
+    const required = await within(dialog).findByRole("group", { name: "Required dimensions" });
+    expect(within(required).queryByLabelText(/Grant/)).toBeNull(); // out of use: not offered
+    fireEvent.change(within(dialog).getByLabelText("Code"), { target: { value: "6115" } });
+    fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "Co-working" } });
+    fireEvent.click(within(required).getByLabelText("Department"));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add the account" }));
+    expect(await screen.findByText("6115 Co-working added.")).toBeTruthy();
+    expect(seen.find((s) => s.method === "POST")?.body).toEqual({ code: "6115", name: "Co-working", type: "expense", group: false, money_account: false, required_dimension_ids: ["d1"] });
+
+    fireEvent.click(screen.getByRole("button", { name: "Change 6110 Rent" }));
+    dialog = await screen.findByRole("dialog");
+    const again = await within(dialog).findByRole("group", { name: "Required dimensions" });
+    expect((within(again).getByLabelText(/Grant \(out of use/) as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(within(again).getByLabelText("Department"));
+    fireEvent.click(within(again).getByLabelText("Project"));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save the account" }));
+    await waitFor(() => expect(calls()).toContain("PATCH /v1/accounts/a1"));
+    expect(seen.find((s) => s.method === "PATCH")?.body).toEqual({ required_dimension_ids: ["d3", "d2"] });
+  });
 });

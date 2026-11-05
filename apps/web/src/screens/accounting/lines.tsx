@@ -8,7 +8,7 @@ import { date as dateOf } from "../../format/date";
 import { isZero, minus, sign, sum, typed } from "../../format/decimal";
 import { Icon, problemOf } from "../../ui";
 import { enteredOrigins, isDirectorAccount, originWords, useDirectors } from "../founders/data";
-import type { Account } from "./data";
+import { listDimensions, type Account, type Dimension, type DimensionValue } from "./data";
 
 type Draft = components["schemas"]["JournalDraft"];
 
@@ -24,15 +24,17 @@ export interface Line {
   // from (FR-EQ-01, B.7).
   party_id: string;
   origin: string;
+  // The line's dimension values (FR-DIM-02): at most one of each dimension.
+  dimension_value_ids: string[];
 }
 
 let keys = 0;
 export const lineKey = () => `line-${++keys}`;
-export const newLine = (currency: string): Line => ({ key: lineKey(), account_id: "", description: "", debit: "", credit: "", currency, fx_rate: "", party_id: "", origin: "" });
+export const newLine = (currency: string): Line => ({ key: lineKey(), account_id: "", description: "", debit: "", credit: "", currency, fx_rate: "", party_id: "", origin: "", dimension_value_ids: [] });
 
 // toLines are saved lines as the editor shows them: a positive amount is a debit, a negative one a credit.
 export function toLines(
-  saved: readonly { account_id: string; description?: string; amount: { amount: string; currency: string }; fx_rate?: string; party_id?: string; origin?: string }[],
+  saved: readonly { account_id: string; description?: string; amount: { amount: string; currency: string }; fx_rate?: string; party_id?: string; origin?: string; dimension_value_ids?: string[] | null }[],
 ): Line[] {
   return saved.map((l) => {
     const credit = l.amount.amount.startsWith("-");
@@ -46,6 +48,7 @@ export function toLines(
       fx_rate: l.fx_rate ?? "",
       party_id: l.party_id ?? "",
       origin: l.origin ?? "",
+      dimension_value_ids: [...(l.dimension_value_ids ?? [])],
     };
   });
 }
@@ -56,7 +59,9 @@ export type Errors = Record<string, string>; // by "date", "lines", or "<line ke
 
 // checkLines turns the typed lines into the lines to send, or says what to fix under each field in errors. Blank
 // lines are left out. A line on a director's account needs its person and origin, and no other line sends them (byId
-// says which accounts those are). The API checks the rest when the journal posts (ENG-24, LEDGER-41).
+// says which accounts those are). Its dimension values go as chosen: whether its account needs one is the API's to
+// say (DIM-05), since a journal moving an amount between values may leave a line without. The API checks the rest
+// when the journal posts (ENG-24, LEDGER-41).
 export function checkLines(typedLines: Line[], base: string, errors: Errors, byId?: Map<string, Account>): NonNullable<Draft["lines"]> {
   const lines: NonNullable<Draft["lines"]> = [];
   for (const l of typedLines) {
@@ -91,6 +96,7 @@ export function checkLines(typedLines: Line[], base: string, errors: Errors, byI
       fx_rate: currency !== base && rate ? rate : undefined,
       party_id: director && l.party_id ? l.party_id : undefined,
       origin: director && l.origin ? (l.origin as NonNullable<Draft["lines"]>[number]["origin"]) : undefined,
+      dimension_value_ids: l.dimension_value_ids.length ? [...l.dimension_value_ids] : undefined,
     });
   }
   return lines;
@@ -225,7 +231,77 @@ export function PersonFields({ line: l, n, set, fieldError, described }: { line:
   );
 }
 
-// LineEditor edits a journal's lines: the account, description, debit or credit, currency and rate of each, with
+// useDimensions are the organisation's dimensions and values, as the chart lists them (FR-DIM-01), with each value by
+// its ID.
+export function useDimensions() {
+  const q = useQuery({ queryKey: ["dimensions"], queryFn: listDimensions });
+  const dimensions = q.data?.dimensions ?? [];
+  const values = q.data?.values ?? [];
+  return { dimensions, values, byId: new Map(values.map((v) => [v.id, v])) };
+}
+
+// valueCodes are a line's values as their codes, in the order of the dimensions: "ENG · ATLAS".
+export function valueCodes(ids: readonly string[] | undefined, dimensions: readonly Dimension[], byId: Map<string, DimensionValue>): string {
+  const order = new Map(dimensions.map((d, i) => [d.id, i]));
+  return (ids ?? [])
+    .map((id) => byId.get(id))
+    .filter((v): v is DimensionValue => !!v)
+    .sort((a, b) => (order.get(a.dimension_id) ?? 0) - (order.get(b.dimension_id) ?? 0))
+    .map((v) => v.code)
+    .join(" · ");
+}
+
+// DimensionFields are a line's dimension values (FR-DIM-02): one choice for each dimension in use, and for any other
+// the line already has a value of, with that dimension's values in use. A dimension the line's account requires says
+// so; the API refuses a journal that leaves it out (DIM-05), unless its lines on the account net to zero.
+export function DimensionFields({ line: l, n, account, set, described }: { line: Line; n: number; account?: Account; set: (ids: string[]) => void; described: (key: string) => string | undefined }) {
+  const { dimensions, values, byId } = useDimensions();
+  const mine = (d: Dimension) => l.dimension_value_ids.find((id) => byId.get(id)?.dimension_id === d.id) ?? "";
+  const shown = dimensions.filter((d) => d.active || mine(d));
+  if (shown.length === 0) return null;
+  const choose = (d: Dimension, id: string) => set([...l.dimension_value_ids.filter((x) => byId.get(x)?.dimension_id !== d.id), ...(id ? [id] : [])]);
+  return (
+    <>
+      {shown.map((d) => {
+        const key = `${l.key}-dim-${d.id}`;
+        const chosen = mine(d);
+        const current = chosen ? byId.get(chosen) : undefined;
+        const needed = d.active && account?.required_dimension_ids?.includes(d.id) ? account : undefined;
+        return (
+          <div key={d.id} className="fy-field col-span-2 medium:col-span-4 expanded:col-span-3">
+            <label className="fy-label" htmlFor={key}>
+              <span className="fy-sr">Line {n}: </span>
+              {d.name}
+            </label>
+            <select className="fy-select" id={key} value={chosen} onChange={(e) => choose(d, e.target.value)} aria-describedby={[described(`${l.key}.dimensions`), needed ? `${key}-hint` : undefined].filter(Boolean).join(" ") || undefined}>
+              <option value="">None</option>
+              {values
+                .filter((v) => v.dimension_id === d.id && v.active)
+                .map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.code} {v.name}
+                  </option>
+                ))}
+              {current && !current.active && (
+                <option value={current.id}>
+                  {current.code} {current.name} (out of use)
+                </option>
+              )}
+            </select>
+            {needed && (
+              <span className="fy-small fy-muted" id={`${key}-hint`}>
+                {needed.code} needs one
+              </span>
+            )}
+            {!d.active && <span className="fy-small fy-muted">{d.name} is out of use: choose None</span>}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+// LineEditor edits a journal's lines: the account, description, debit or credit, currency, rate and dimension values of each, with
 // whether they balance as typed (FR-GL-01). The journal editor and the recurring journal editor share it; on is the
 // journal's date, which a line left without a rate takes its rate for.
 export function LineEditor({ id, lines, onChange, base, choices, byId, errors, title = "Lines", on }: { id: string; lines: Line[]; onChange: (lines: Line[]) => void; base: string; choices: Account[]; byId: Map<string, Account>; errors: Errors; title?: string; on?: string }) {
@@ -304,6 +380,7 @@ export function LineEditor({ id, lines, onChange, base, choices, byId, errors, t
                 </Button>
               </div>
               {isDirectorAccount(byId.get(l.account_id)) && <PersonFields line={l} n={n} set={(field, value) => setLine(l.key, field, value)} fieldError={fieldError} described={described} />}
+              <DimensionFields line={l} n={n} account={byId.get(l.account_id)} set={(ids) => onChange(lines.map((x) => (x.key === l.key ? { ...x, dimension_value_ids: ids } : x)))} described={described} />
               {(l.currency.trim() || base).toUpperCase() !== base && (
                 <div className="fy-field col-span-2 medium:col-span-4 expanded:col-span-3">
                   <label className="fy-label" htmlFor={`${l.key}-rate`}>

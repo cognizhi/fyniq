@@ -2,16 +2,16 @@
 key: accounting.chart
 type: task
 title: Set up and keep the chart of accounts
-summary: Load the standard chart, add, rename, regroup or deactivate an account, system accounts, and the dimensions (Department, Project, your own) and their values
+summary: Load the standard chart; add, change or deactivate accounts; system accounts; dimensions, their values and the ones an account requires
 sources:
-  - docs/user-guide/chart-of-accounts.md sha256:0d36a09c70d068f23e295bb012e709d5c70033f4084d6ad2800f7e3d11f5dd26
+  - docs/user-guide/chart-of-accounts.md sha256:a0419305ab911e2b909a02331aed5a5b1ac1b1bba653074abada648c322fff5c
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-05
+compiled_at: 2026-11-06
 aliases:
   - revalued at month end
   - monetary account
@@ -30,6 +30,8 @@ aliases:
   - project
   - cost centre
   - dimension value
+  - required dimension
+  - department required
 ---
 
 # Set up and keep the chart of accounts
@@ -72,6 +74,15 @@ aliases:
 - An Accountant or a Tax agent adds and changes dimensions; everyone who can see the chart can see them.
 
 (src: docs/user-guide/chart-of-accounts.md#dimensions) (src: docs/user-guide/chart-of-accounts.md#values-of-a-dimension)
+
+## Require a dimension
+
+- The pencil next to an account, then each dimension every line on it needs under **Required dimensions**, such as Department on the expense accounts, then **Save the account**.
+- A journal line entered on it without a value of each is refused ([[accounting.journals]]); amounts Fyniq posts by itself, from an invoice or a bank line for example, still post and the month's close flags them: move each to its value with a journal whose lines on the account net to zero ([[accounting.periods]]).
+- Only a dimension in use can be added; a dimension out of use requires nothing while it is out of use.
+- In the **Dimensions** list, **Required on** shows the accounts that require each dimension; lines posted before keep what they have.
+
+(src: docs/user-guide/chart-of-accounts.md#require-a-dimension)
 
 ## Common problems
 

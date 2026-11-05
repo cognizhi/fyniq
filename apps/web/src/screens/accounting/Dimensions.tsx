@@ -8,7 +8,7 @@ import { Dialog } from "../../components/ui/dialog";
 import { helpText } from "../../i18n";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
-import { listDimensions, type Dimension, type DimensionValue } from "./data";
+import { listDimensions, type Account, type Dimension, type DimensionValue } from "./data";
 
 type Kind = Dimension["kind"];
 
@@ -333,7 +333,14 @@ function ValuesDialog({ dimension, values, may, onClose, onSaved }: { dimension:
 // Dimensions is the chart's Dimensions section (docs/design/screens ChartOfAccounts; FR-DIM-01): Department, Project
 // and the organisation's own dimensions, each with its values. Those who keep the chart add, rename and put them out of
 // use; a dimension and a value are never deleted.
-export function Dimensions({ may, onSaved }: { may: boolean; onSaved: (what: string) => void }) {
+// requiredOn says which accounts require a dimension (FR-DIM-01), by code: "4010 Sales, 6110 Rent".
+export function requiredOn(d: Dimension, accounts: readonly Account[]): string {
+  const on = accounts.filter((a) => a.required_dimension_ids?.includes(d.id)).sort((x, y) => x.code.localeCompare(y.code, "en", { numeric: true }));
+  if (on.length === 0) return "Optional everywhere";
+  return on.map((a) => `${a.code} ${a.name}`).join(", ");
+}
+
+export function Dimensions({ may, accounts, onSaved }: { may: boolean; accounts: readonly Account[]; onSaved: (what: string) => void }) {
   const q = useQuery({ queryKey: ["dimensions"], queryFn: listDimensions });
   const [editing, setEditing] = useState<Dimension | "new" | null>(null);
   const [showing, setShowing] = useState<string | null>(null);
@@ -373,6 +380,7 @@ export function Dimensions({ may, onSaved }: { may: boolean; onSaved: (what: str
               <tr>
                 <th scope="col">Dimension</th>
                 <th scope="col">Values</th>
+                <th scope="col">Required on</th>
                 <th scope="col">
                   <span className="fy-sr">Status and actions</span>
                 </th>
@@ -390,6 +398,7 @@ export function Dimensions({ may, onSaved }: { may: boolean; onSaved: (what: str
                       </span>
                     </td>
                     <td className="fy-secondary">{mine.length ? mine.map((v) => v.name).join(" · ") : "None yet"}</td>
+                    <td className="fy-secondary">{d.active ? requiredOn(d, accounts) : "Nowhere while out of use"}</td>
                     <td>
                       <span className="fy-row fy-row--wrap justify-end gap-2">
                         {!d.active && <span className="fy-chip fy-chip--neutral">Out of use</span>}

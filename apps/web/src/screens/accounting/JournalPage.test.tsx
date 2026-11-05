@@ -58,7 +58,7 @@ function page(session: Session, org: Organisation = organisation) {
   };
 }
 
-const line = (key: string, extra: Partial<Form["lines"][number]> = {}) => ({ key, account_id: "a", description: "", debit: "", credit: "", currency: "SGD", fx_rate: "", party_id: "", origin: "", ...extra });
+const line = (key: string, extra: Partial<Form["lines"][number]> = {}) => ({ key, account_id: "a", description: "", debit: "", credit: "", currency: "SGD", fx_rate: "", party_id: "", origin: "", dimension_value_ids: [], ...extra });
 
 // req: FR-GL-01
 // req: FR-UX-20
@@ -139,6 +139,89 @@ describe("the journal page", () => {
         { account_id: "a-bank", amount: { amount: "-1200", currency: "SGD" } },
       ],
     });
+  });
+
+  // req: FR-DIM-01
+  // req: FR-DIM-02
+  it("tags a line with a value of each dimension in use, says which its account needs, and sends them; axe finds nothing", async () => {
+    const dimensions = {
+      status: 200,
+      body: {
+        items: [
+          { id: "d1", kind: "department", name: "Department", active: true, version: 1 },
+          { id: "d2", kind: "project", name: "Project", active: true, version: 1 },
+          { id: "d3", kind: "custom", place: 1, name: "Grant", active: false, version: 1 },
+        ],
+      },
+    };
+    const values = {
+      status: 200,
+      body: {
+        items: [
+          { id: "v1", dimension_id: "d1", code: "ENG", name: "Engineering", active: true, version: 1 },
+          { id: "v2", dimension_id: "d1", code: "OPS", name: "Operations", active: false, version: 1 },
+          { id: "v3", dimension_id: "d2", code: "ATLAS", name: "Atlas", active: true, version: 1 },
+          { id: "v4", dimension_id: "d3", code: "EDG", name: "EDG 2026", active: true, version: 1 },
+        ],
+      },
+    };
+    const tagged = { status: 200, body: { items: [{ ...rent, required_dimension_ids: ["d1"] }, bank, group] } };
+    answer({ "GET /v1/accounts": tagged, "GET /v1/dimensions": dimensions, "GET /v1/dimension-values": values, "POST /v1/journals": { status: 201, body: { ...draft, id: "j-new", version: 1 } } });
+    renderPage(page(accountant), { path: "/accounting/journals/new" });
+    await waitFor(() => expect(within(screen.getByLabelText("Line 1: Account")).getByText("6110 Rent")).toBeTruthy());
+    fireEvent.change(screen.getByLabelText("Line 1: Account"), { target: { value: "a-rent" } });
+    const department = await screen.findByLabelText("Line 1: Department");
+    expect(within(department).getAllByRole("option").map((o) => o.textContent)).toEqual(["None", "ENG Engineering"]); // OPS is out of use
+    expect(screen.queryByLabelText("Line 1: Grant")).toBeNull(); // out of use
+    expect(screen.getByText("6110 needs one")).toBeTruthy();
+    expect(department.getAttribute("aria-describedby")).toContain("hint");
+    fireEvent.change(department, { target: { value: "v1" } });
+    fireEvent.change(screen.getByLabelText("Line 1: Project"), { target: { value: "v3" } });
+    fireEvent.change(screen.getByLabelText("Line 1: Project"), { target: { value: "" } }); // back to None
+    fireEvent.change(screen.getByLabelText("Line 1: Debit"), { target: { value: "1,200.00" } });
+    fireEvent.change(screen.getByLabelText("Line 2: Account"), { target: { value: "a-bank" } });
+    fireEvent.change(screen.getByLabelText("Line 2: Credit"), { target: { value: "1,200.00" } });
+    expect(screen.queryByText("1010 needs one")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2026-10-31" } });
+    await noViolations(document.body);
+    fireEvent.click(screen.getAllByRole("button", { name: "Save as a draft" })[0]!);
+    await waitFor(() => expect(seen.find((s) => s.method === "POST")).toBeTruthy());
+    expect((seen.find((s) => s.method === "POST")!.body as { lines: unknown[] }).lines).toEqual([
+      { account_id: "a-rent", amount: { amount: "1200.00", currency: "SGD" }, dimension_value_ids: ["v1"] },
+      { account_id: "a-bank", amount: { amount: "-1200.00", currency: "SGD" } },
+    ]);
+  });
+
+  // req: FR-DIM-02
+  it("keeps a saved line's value out of use, and shows the values as posting writes them", async () => {
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/dimensions": { status: 200, body: { items: [{ id: "d1", kind: "department", name: "Department", active: true, version: 1 }] } },
+      "GET /v1/dimension-values": {
+        status: 200,
+        body: {
+          items: [
+            { id: "v1", dimension_id: "d1", code: "ENG", name: "Engineering", active: true, version: 1 },
+            { id: "v2", dimension_id: "d1", code: "OPS", name: "Operations", active: false, version: 1 },
+          ],
+        },
+      },
+      "GET /v1/journals/j1/evidence": noEvidence,
+      "GET /v1/journals/j1": { status: 200, body: { ...draft, lines: [{ ...draft.lines![0]!, dimension_value_ids: ["v2"] }, draft.lines![1]!] }, headers: { ETag: `"2-draft"` } },
+      "POST /v1/journals/j1/post": {
+        status: 200,
+        body: { journal: posted, entry: { ...entry, lines: [{ ...entry.lines[0]!, dimension_value_ids: ["v1"] }, entry.lines[1]!] } },
+        headers: { "Preference-Applied": "return=preview" },
+      },
+    });
+    renderPage(page(accountant), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
+    const department = (await screen.findByLabelText("Line 1: Department")) as HTMLSelectElement;
+    await waitFor(() => expect(department.value).toBe("v2"));
+    expect(within(department).getByRole("option", { name: "OPS Operations (out of use)" })).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("button", { name: "Check" })[0]!);
+    const writes = await screen.findByRole("table", { name: "What posting writes" });
+    expect(within(writes).getByRole("columnheader", { name: "Dimensions" })).toBeTruthy();
+    expect(within(writes).getByText("ENG")).toBeTruthy();
   });
 
   // req: RND-DISPLAY

@@ -6,10 +6,11 @@ import { answer, calls, ownerSession, problem } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { ChartOfAccounts } from "./ChartOfAccounts";
-import { kindsLeft } from "./Dimensions";
+import { kindsLeft, requiredOn } from "./Dimensions";
 
 type Dimension = components["schemas"]["Dimension"];
 type DimensionValue = components["schemas"]["DimensionValue"];
+type Account = components["schemas"]["Account"];
 
 const accountant = { ...ownerSession, roles: ["accountant"] } as Session;
 const bookkeeper = { ...ownerSession, roles: ["bookkeeper"] } as Session;
@@ -37,6 +38,26 @@ describe("the chart's dimensions", () => {
     expect(kindsLeft([dept, grant])).toEqual(["project", "custom"]);
     const eight = Array.from({ length: 8 }, (_, i) => dim(`c${i}`, "custom", `C${i}`, { place: i + 1 }));
     expect(kindsLeft([dept, dim("p", "project", "Project"), ...eight])).toEqual([]);
+  });
+
+  it("says which accounts require each dimension, by code", async () => {
+    const travel = { ...rent, id: "a2", code: "6200", name: "Travel", required_dimension_ids: ["d1"] } as Account;
+    const office = { ...rent, id: "a3", code: "6110", name: "Rent", required_dimension_ids: ["d1", "d2"] } as Account;
+    const project = dim("d3", "project", "Project");
+    expect(requiredOn(dept, [travel, office])).toBe("6110 Rent, 6200 Travel");
+    expect(requiredOn(project, [travel, office])).toBe("Optional everywhere");
+    answer({
+      "GET /v1/accounts": { status: 200, body: { items: [office, travel] } },
+      "GET /v1/dimensions": { status: 200, body: { items: [dept, project, grant] } },
+      "GET /v1/dimension-values": { status: 200, body: { items: [eng] } },
+    });
+    renderPage(ChartOfAccounts, { path: "/accounting/chart-of-accounts", session: accountant });
+    const table = await screen.findByRole("table", { name: "Dimensions" });
+    expect(within(table).getByRole("columnheader", { name: "Required on" })).toBeTruthy();
+    const [, department, proj, custom] = within(table).getAllByRole("row") as [HTMLElement, HTMLElement, HTMLElement, HTMLElement];
+    expect(within(department).getByText("6110 Rent, 6200 Travel")).toBeTruthy();
+    expect(within(proj).getByText("Optional everywhere")).toBeTruthy();
+    expect(within(custom).getByText("Nowhere while out of use")).toBeTruthy(); // Grant requires nothing while out of use
   });
 
   it("lists each dimension with its values in use, marks one out of use, and axe finds nothing", async () => {
