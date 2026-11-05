@@ -321,3 +321,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | docs/user-guide/periods-and-close.md → accounting.periods (the close's check of amounts without a required dimension, C.2 #60)
 
 ## [2026-11-06] compile | docs/user-guide/journals.md, docs/user-guide/chart-of-accounts.md → accounting.journals, accounting.chart (dimension values on journal lines; an account's required dimensions)
+
+## [2026-11-06] compile | docs/user-guide/invoices.md → sales.invoices (dimension values on an invoice's lines)

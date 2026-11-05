@@ -65,6 +65,7 @@ function formOf(q: Quote): Form {
       gst_code: l.gst_code,
       spread_months: l.spread_months ? String(l.spread_months) : "",
       spread_from: l.spread_from?.slice(0, 7) ?? "",
+      dimension_value_ids: [...(l.dimension_value_ids ?? [])],
     })),
   };
 }
@@ -101,6 +102,7 @@ export function check(f: Form, base: string, order = false): { draft?: Draft; er
       discount_percent: discount || undefined,
       account_id: l.account_id,
       gst_code: l.gst_code,
+      dimension_value_ids: l.dimension_value_ids.length ? [...l.dimension_value_ids] : undefined,
     });
   }
   if (lines.length === 0) errors.lines = "Add a line for what is offered.";

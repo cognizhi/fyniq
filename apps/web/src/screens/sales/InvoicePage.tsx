@@ -67,6 +67,7 @@ function formOf(i: Invoice): Form {
       gst_code: l.gst_code,
       spread_months: l.spread_months ? String(l.spread_months) : "",
       spread_from: l.spread_from?.slice(0, 7) ?? "",
+      dimension_value_ids: [...(l.dimension_value_ids ?? [])],
       quote: l.quote,
     })),
   };
@@ -109,6 +110,7 @@ export function check(f: Form, base: string, credit = false): { draft?: Draft; e
       spread_months: months ? Number(months) : undefined,
       spread_from: months && from ? `${from}-01` : undefined,
       quote: l.quote,
+      dimension_value_ids: l.dimension_value_ids.length ? [...l.dimension_value_ids] : undefined,
     });
   }
   if (lines.length === 0) errors.lines = credit ? "Add a line for what the credit note gives back." : "Add a line for what the invoice is for.";

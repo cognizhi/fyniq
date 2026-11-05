@@ -20,9 +20,9 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// Appendix C.2 #60 (rev 0.171; p1-organisation-chart task 3.3, slice 3): an invoice, a posting the system makes by
-// itself, posts to Sales with no department although Sales requires one, and the close warns, naming the account, the
-// dimension and the amount; a Department out of use requires nothing; a journal whose lines on Sales net to zero moves
+// Appendix C.2 #60 (rev 0.171; p1-organisation-chart task 3.3, slice 3): an amount on Sales with no department, here an
+// invoice posted before Sales required one, as a posting the system makes by itself leaves it, and the close warns,
+// naming the account, the dimension and the amount; a Department out of use requires nothing; a journal whose lines on Sales net to zero moves
 // the amount to Engineering (rev 0.172) and the close finds nothing. No account requiring a dimension, the close says
 // nothing of them. The balance service gives each account's totals by dimension set, a set's currencies summed in base.
 // req: C.2 #60
@@ -42,16 +42,7 @@ func TestTheCloseFlagsAmountsWithoutARequiredDimension(t *testing.T) {
 		if dept, err = u.Dimensions().Create(ctx, storage.NewDimension{Kind: storage.DimensionDepartment, Name: "Department"}); err != nil {
 			return err
 		}
-		if eng, err = u.Dimensions().CreateValue(ctx, storage.NewDimensionValue{DimensionID: dept.ID, Code: "ENG", Name: "Engineering"}); err != nil {
-			return err
-		}
-		a, err := u.Accounts().Get(ctx, b.Sales.ID)
-		if err != nil {
-			return err
-		}
-		c := storage.AccountChange{Name: a.Name, ParentID: a.ParentID, Group: a.Group, Active: a.Active, AccountAttributes: a.AccountAttributes}
-		c.RequiredDimensions = []uuid.UUID{dept.ID}
-		_, err = u.Accounts().Update(ctx, a.ID, a.Version, c)
+		eng, err = u.Dimensions().CreateValue(ctx, storage.NewDimensionValue{DimensionID: dept.ID, Code: "ENG", Name: "Engineering"})
 		return err
 	}); err != nil {
 		t.Fatal(err)
@@ -65,6 +56,18 @@ func TestTheCloseFlagsAmountsWithoutARequiredDimension(t *testing.T) {
 	}
 	if _, err := invoices.Post(ctx, b.Org, doc.ID); err != nil {
 		t.Fatalf("the invoice posts to Sales with no department: %v", err)
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		a, err := u.Accounts().Get(ctx, b.Sales.ID)
+		if err != nil {
+			return err
+		}
+		c := storage.AccountChange{Name: a.Name, ParentID: a.ParentID, Group: a.Group, Active: a.Active, AccountAttributes: a.AccountAttributes}
+		c.RequiredDimensions = []uuid.UUID{dept.ID}
+		_, err = u.Accounts().Update(ctx, a.ID, a.Version, c)
+		return err
+	}); err != nil {
+		t.Fatal(err)
 	}
 	svc := journal.Service{Store: s}
 	post := func(lines ...ledger.JournalLine) {

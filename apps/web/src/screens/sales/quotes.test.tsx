@@ -78,7 +78,7 @@ describe("Sales › Quotes and orders", () => {
 describe("A quote", () => {
   it("needs its validity date; an order may name none", () => {
     const form = { customer_id: "c1", reference: "", date: "2026-10-14", valid_until: "", currency: "SGD", fx_rate: "", notes: "" };
-    const line = { key: "l1", item_id: "", description: "x", quantity: "1", unit_price: "100", discount: "", account_id: "a4010", gst_code: "SR", spread_months: "", spread_from: "" };
+    const line = { key: "l1", item_id: "", description: "x", quantity: "1", unit_price: "100", discount: "", account_id: "a4010", gst_code: "SR", spread_months: "", spread_from: "", dimension_value_ids: [] };
     expect(check({ ...form, lines: [line] }, "SGD").errors.valid_until).toBe("Enter the last day the quote is valid.");
     expect(check({ ...form, valid_until: "2026-10-01", lines: [line] }, "SGD").errors.valid_until).toBe("Enter a day on or after the quote's date.");
     expect(check({ ...form, lines: [line] }, "SGD", true).draft).toMatchObject({ customer_id: "c1", lines: [{ quantity: "1", unit_price: "100" }] });

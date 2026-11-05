@@ -36,6 +36,7 @@ type Release struct {
 	Description string
 	Memo        string
 	Amount      money.Money
+	Values      []uuid.UUID // the document line's dimension values (FR-DIM-02): both of the release's lines carry them
 }
 
 // ReleaseIdentity is the posting identity of a document version's release of one line in one month under a rule version
@@ -70,6 +71,7 @@ type scheduledLine struct {
 	AccountID   uuid.UUID
 	Description string
 	Spread      *Spread
+	Values      []uuid.UUID
 }
 
 // releases is the schedule of a document version's spread lines: for each, in line order, its amount in the base
@@ -102,7 +104,7 @@ func releases(source string, id uuid.UUID, version int, date time.Time, memo str
 				on = on0
 			}
 			out = append(out, Release{Source: source, DocumentID: id, Version: version, Line: i + 1, Month: month, Part: j + 1, Of: len(parts), Date: on,
-				AccountID: l.AccountID, Description: l.Description, Memo: memo, Amount: part})
+				AccountID: l.AccountID, Description: l.Description, Memo: memo, Amount: part, Values: canonical(l.Values)})
 		}
 	}
 	if k != len(amounts) {
@@ -142,7 +144,7 @@ func InvoiceReleases(i Invoice, e Entry, s Settings) ([]Release, error) {
 	}
 	lines := make([]scheduledLine, 0, len(i.Lines))
 	for _, l := range i.Lines {
-		lines = append(lines, scheduledLine{AccountID: l.AccountID, Description: l.Description, Spread: l.Spread})
+		lines = append(lines, scheduledLine{AccountID: l.AccountID, Description: l.Description, Spread: l.Spread, Values: l.Values})
 	}
 	return releases(SourceInvoiceRelease, i.ID, i.Version, i.Date, i.Memo, lines, amounts, "deferred revenue")
 }
@@ -214,8 +216,8 @@ func postRelease(r Release, s Settings, k releaseKind) (Entry, error) {
 		PostingIdentity: r.Identity(k.rule),
 		Memo:            memo,
 		Lines: []Line{
-			{AccountID: debit, Amount: r.Amount, Rate: id, Base: r.Amount, Description: r.Description},
-			{AccountID: credit, Amount: r.Amount.Neg(), Rate: id, Base: r.Amount.Neg(), Description: r.Description},
+			{AccountID: debit, Amount: r.Amount, Rate: id, Base: r.Amount, Description: r.Description, Values: canonical(r.Values)},
+			{AccountID: credit, Amount: r.Amount.Neg(), Rate: id, Base: r.Amount.Neg(), Description: r.Description, Values: canonical(r.Values)},
 		},
 	}, nil
 }

@@ -62,7 +62,7 @@ describe("Sales › Recurring", () => {
 // req: FR-AUT-01
 describe("A recurring invoice", () => {
   it("reads its schedule: a day of the month for a monthly one, none for a weekly one", () => {
-    const line = { key: "l1", item_id: "", description: "x", quantity: "1", unit_price: "800", discount: "", account_id: "a4010", gst_code: "SR", spread_months: "", spread_from: "" };
+    const line = { key: "l1", item_id: "", description: "x", quantity: "1", unit_price: "800", discount: "", account_id: "a4010", gst_code: "SR", spread_months: "", spread_from: "", dimension_value_ids: [] };
     const form = { name: "Retainer", every: "m1" as const, day_of_month: "31", starts_on: "2026-11-01", ends_on: "", customer_id: "c1", reference: "", currency: "SGD", notes: "", mode: "draft" as const, lines: [line] };
     expect(checkRecurringInvoice(form, "SGD").input?.schedule).toEqual({ every_months: 1, day_of_month: 31, starts_on: "2026-11-01", ends_on: undefined });
     expect(checkRecurringInvoice({ ...form, every: "w2", day_of_month: "" }, "SGD").input?.schedule).toEqual({ every_weeks: 2, starts_on: "2026-11-01", ends_on: undefined });

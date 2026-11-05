@@ -253,27 +253,46 @@ export function valueCodes(ids: readonly string[] | undefined, dimensions: reado
 
 // DimensionFields are a line's dimension values (FR-DIM-02): one choice for each dimension in use, and for any other
 // the line already has a value of, with that dimension's values in use. A dimension the line's account requires says
-// so; the API refuses a journal that leaves it out (DIM-05), unless its lines on the account net to zero.
-export function DimensionFields({ line: l, n, account, set, described }: { line: Line; n: number; account?: Account; set: (ids: string[]) => void; described: (key: string) => string | undefined }) {
+// so; the API refuses a line that leaves it out (DIM-05; a journal's lines on the account that net to zero excepted).
+// keyPrefix is the line's key, for the elements' IDs. With expertOnly, as on an invoice, a choice is an Expert field
+// (§7.8) unless the line has a value of it or its account requires it: nothing set or needed is hidden in Basic.
+export function DimensionFields({ ids, keyPrefix, n, account, set, described, className = "fy-field col-span-2 medium:col-span-4 expanded:col-span-3", disabled, expertOnly }: {
+  ids: readonly string[];
+  keyPrefix: string;
+  n: number;
+  account?: Account;
+  set: (ids: string[]) => void;
+  described?: (key: string) => string | undefined;
+  className?: string;
+  disabled?: boolean;
+  expertOnly?: boolean;
+}) {
   const { dimensions, values, byId } = useDimensions();
-  const mine = (d: Dimension) => l.dimension_value_ids.find((id) => byId.get(id)?.dimension_id === d.id) ?? "";
+  const mine = (d: Dimension) => ids.find((id) => byId.get(id)?.dimension_id === d.id) ?? "";
   const shown = dimensions.filter((d) => d.active || mine(d));
   if (shown.length === 0) return null;
-  const choose = (d: Dimension, id: string) => set([...l.dimension_value_ids.filter((x) => byId.get(x)?.dimension_id !== d.id), ...(id ? [id] : [])]);
+  const choose = (d: Dimension, id: string) => set([...ids.filter((x) => byId.get(x)?.dimension_id !== d.id), ...(id ? [id] : [])]);
   return (
     <>
       {shown.map((d) => {
-        const key = `${l.key}-dim-${d.id}`;
+        const key = `${keyPrefix}-dim-${d.id}`;
         const chosen = mine(d);
         const current = chosen ? byId.get(chosen) : undefined;
         const needed = d.active && account?.required_dimension_ids?.includes(d.id) ? account : undefined;
         return (
-          <div key={d.id} className="fy-field col-span-2 medium:col-span-4 expanded:col-span-3">
+          <div key={d.id} className={`${className}${expertOnly && !chosen && !needed ? " fy-expert-only" : ""}`}>
             <label className="fy-label" htmlFor={key}>
               <span className="fy-sr">Line {n}: </span>
               {d.name}
             </label>
-            <select className="fy-select" id={key} value={chosen} onChange={(e) => choose(d, e.target.value)} aria-describedby={[described(`${l.key}.dimensions`), needed ? `${key}-hint` : undefined].filter(Boolean).join(" ") || undefined}>
+            <select
+              className="fy-select"
+              id={key}
+              value={chosen}
+              disabled={disabled}
+              onChange={(e) => choose(d, e.target.value)}
+              aria-describedby={[described?.(`${keyPrefix}.dimensions`), needed ? `${key}-hint` : undefined].filter(Boolean).join(" ") || undefined}
+            >
               <option value="">None</option>
               {values
                 .filter((v) => v.dimension_id === d.id && v.active)
@@ -380,7 +399,7 @@ export function LineEditor({ id, lines, onChange, base, choices, byId, errors, t
                 </Button>
               </div>
               {isDirectorAccount(byId.get(l.account_id)) && <PersonFields line={l} n={n} set={(field, value) => setLine(l.key, field, value)} fieldError={fieldError} described={described} />}
-              <DimensionFields line={l} n={n} account={byId.get(l.account_id)} set={(ids) => onChange(lines.map((x) => (x.key === l.key ? { ...x, dimension_value_ids: ids } : x)))} described={described} />
+              <DimensionFields ids={l.dimension_value_ids} keyPrefix={l.key} n={n} account={byId.get(l.account_id)} set={(ids) => onChange(lines.map((x) => (x.key === l.key ? { ...x, dimension_value_ids: ids } : x)))} described={described} />
               {(l.currency.trim() || base).toUpperCase() !== base && (
                 <div className="fy-field col-span-2 medium:col-span-4 expanded:col-span-3">
                   <label className="fy-label" htmlFor={`${l.key}-rate`}>

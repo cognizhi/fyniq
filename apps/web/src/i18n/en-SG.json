@@ -1264,6 +1264,10 @@
       "label": "Attach a file",
       "tooltip": "Keep what the invoice rests on with it, such as the customer's purchase order."
     },
+    "invoice.line-dimensions": {
+      "label": "Dimensions",
+      "tooltip": "The line's value of each dimension in use, such as its department; Basic mode shows one its account requires."
+    },
     "invoice.spread": {
       "label": "Spread over months",
       "tooltip": "Earn the line's revenue month by month: issuing puts it on Deferred revenue, and one part a month is released."
