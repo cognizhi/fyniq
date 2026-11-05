@@ -161,6 +161,7 @@ balance | minor_units | smallint | not null |
 balance | amount | numeric(20,4) | not null | 
 balance | base_amount | numeric(20,4) | not null | 
 balance | line_count | bigint | not null | 
+balance | dimension_set_id | uuid | null | 
 bank_feed | organisation_id | uuid | not null | current_org()
 bank_feed | id | uuid | not null | uuidv7()
 bank_feed | money_account_id | uuid | not null | 
@@ -474,6 +475,26 @@ customer_group | reminder_days | integer[] | not null |
 customer_group | active | boolean | not null | true
 customer_group | version | integer | not null | 1
 customer_group | created_at | timestamp with time zone | not null | now()
+dimension | organisation_id | uuid | not null | current_org()
+dimension | id | uuid | not null | uuidv7()
+dimension | kind | text | not null | 
+dimension | position | smallint | null | 
+dimension | name | text | not null | 
+dimension | is_active | boolean | not null | true
+dimension | version | integer | not null | 1
+dimension | created_at | timestamp with time zone | not null | now()
+dimension_set | organisation_id | uuid | not null | current_org()
+dimension_set | id | uuid | not null | uuidv7()
+dimension_set | value_ids | uuid[] | not null | 
+dimension_set | created_at | timestamp with time zone | not null | now()
+dimension_value | organisation_id | uuid | not null | current_org()
+dimension_value | id | uuid | not null | uuidv7()
+dimension_value | dimension_id | uuid | not null | 
+dimension_value | code | text | not null | 
+dimension_value | name | text | not null | 
+dimension_value | is_active | boolean | not null | true
+dimension_value | version | integer | not null | 1
+dimension_value | created_at | timestamp with time zone | not null | now()
 document | organisation_id | uuid | not null | current_org()
 document | id | uuid | not null | uuidv7()
 document | type | text | not null | 
@@ -836,6 +857,7 @@ journal_line | base_amount | numeric(20,4) | not null |
 journal_line | description | text | null | 
 journal_line | recorded_at | timestamp with time zone | not null | now()
 journal_line | party_id | uuid | null | 
+journal_line | dimension_set_id | uuid | null | 
 kpi_input | organisation_id | uuid | not null | current_org()
 kpi_input | id | uuid | not null | uuidv7()
 kpi_input | month | date | not null | 
@@ -1638,8 +1660,8 @@ balance | balance_base_amount_not_null | NOT NULL base_amount
 balance | balance_base_amount_scale | CHECK ((base_amount <> 'NaN'::numeric))
 balance | balance_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
 balance | balance_currency_not_null | NOT NULL currency
+balance | balance_dimension_set_fkey | FOREIGN KEY (organisation_id, dimension_set_id) REFERENCES dimension_set(organisation_id, id)
 balance | balance_id_not_null | NOT NULL id
-balance | balance_key | UNIQUE (organisation_id, account_id, period_id, currency)
 balance | balance_line_count_not_null | NOT NULL line_count
 balance | balance_line_count_positive | CHECK ((line_count > 0))
 balance | balance_minor_units_not_null | NOT NULL minor_units
@@ -2143,6 +2165,45 @@ customer_group | customer_group_reminder_days_not_null | NOT NULL reminder_days
 customer_group | customer_group_version_not_null | NOT NULL version
 customer_group | customer_group_version_positive | CHECK ((version > 0))
 customer_group | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+dimension | dimension_created_at_not_null | NOT NULL created_at
+dimension | dimension_id_not_null | NOT NULL id
+dimension | dimension_is_active_not_null | NOT NULL is_active
+dimension | dimension_kind_known | CHECK ((kind = ANY (ARRAY['department'::text, 'project'::text, 'custom'::text])))
+dimension | dimension_kind_not_null | NOT NULL kind
+dimension | dimension_name_key | UNIQUE (organisation_id, name)
+dimension | dimension_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 100)))
+dimension | dimension_name_not_null | NOT NULL name
+dimension | dimension_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+dimension | dimension_organisation_id_not_null | NOT NULL organisation_id
+dimension | dimension_pkey | PRIMARY KEY (organisation_id, id)
+dimension | dimension_position_custom | CHECK ((((kind = 'custom'::text) = ("position" IS NOT NULL)) AND (("position" IS NULL) OR (("position" >= 1) AND ("position" <= 8)))))
+dimension | dimension_slot_key | UNIQUE NULLS NOT DISTINCT (organisation_id, kind, "position")
+dimension | dimension_version_not_null | NOT NULL version
+dimension | dimension_version_positive | CHECK ((version > 0))
+dimension | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+dimension_set | dimension_set_created_at_not_null | NOT NULL created_at
+dimension_set | dimension_set_id_not_null | NOT NULL id
+dimension_set | dimension_set_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+dimension_set | dimension_set_organisation_id_not_null | NOT NULL organisation_id
+dimension_set | dimension_set_pkey | PRIMARY KEY (organisation_id, id)
+dimension_set | dimension_set_size | CHECK ((((cardinality(value_ids) >= 1) AND (cardinality(value_ids) <= 10)) AND (array_position(value_ids, NULL::uuid) IS NULL)))
+dimension_set | dimension_set_value_ids_not_null | NOT NULL value_ids
+dimension_set | dimension_set_values_key | UNIQUE (organisation_id, value_ids)
+dimension_value | dimension_value_code_format | CHECK ((code ~ '^[0-9A-Za-z][0-9A-Za-z._/-]{0,29}$'::text))
+dimension_value | dimension_value_code_key | UNIQUE (organisation_id, dimension_id, code)
+dimension_value | dimension_value_code_not_null | NOT NULL code
+dimension_value | dimension_value_created_at_not_null | NOT NULL created_at
+dimension_value | dimension_value_dimension_fkey | FOREIGN KEY (organisation_id, dimension_id) REFERENCES dimension(organisation_id, id)
+dimension_value | dimension_value_dimension_id_not_null | NOT NULL dimension_id
+dimension_value | dimension_value_id_not_null | NOT NULL id
+dimension_value | dimension_value_is_active_not_null | NOT NULL is_active
+dimension_value | dimension_value_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 200)))
+dimension_value | dimension_value_name_not_null | NOT NULL name
+dimension_value | dimension_value_organisation_id_not_null | NOT NULL organisation_id
+dimension_value | dimension_value_pkey | PRIMARY KEY (organisation_id, id)
+dimension_value | dimension_value_version_not_null | NOT NULL version
+dimension_value | dimension_value_version_positive | CHECK ((version > 0))
+dimension_value | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | claimant_bank_change_approved | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | director_fee_approved | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | director_repayment_released | TRIGGER DEFERRABLE INITIALLY DEFERRED
@@ -2693,6 +2754,7 @@ journal_line | journal_line_base_only | TRIGGER DEFERRABLE INITIALLY DEFERRED
 journal_line | journal_line_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
 journal_line | journal_line_currency_not_null | NOT NULL currency
 journal_line | journal_line_description_length | CHECK ((length(description) <= 500))
+journal_line | journal_line_dimension_set_fkey | FOREIGN KEY (organisation_id, dimension_set_id) REFERENCES dimension_set(organisation_id, id)
 journal_line | journal_line_entry_fkey | FOREIGN KEY (organisation_id, entry_id) REFERENCES journal_entry(organisation_id, id)
 journal_line | journal_line_entry_id_not_null | NOT NULL entry_id
 journal_line | journal_line_entry_line_key | UNIQUE (organisation_id, entry_id, line_no)
@@ -3595,6 +3657,7 @@ CREATE INDEX close_checklist_entry_period ON fyniq.close_checklist_entry USING b
 CREATE INDEX contact_document_template_latest ON fyniq.contact_document_template USING btree (organisation_id, contact_id, kind, document_type, set_at)
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
 CREATE INDEX conversion_step_settlement ON fyniq.conversion_step USING btree (organisation_id, settlement_id)
+CREATE INDEX dimension_value_dimension_idx ON fyniq.dimension_value USING btree (organisation_id, dimension_id)
 CREATE INDEX document_link_document ON fyniq.document_link USING btree (organisation_id, document_id, created_at)
 CREATE INDEX document_send_document ON fyniq.document_send USING btree (organisation_id, document_id, sent_at)
 CREATE INDEX document_template_default_latest ON fyniq.document_template_default USING btree (organisation_id, kind, document_type, set_at)
@@ -3668,8 +3731,8 @@ CREATE UNIQUE INDEX approval_signature_pkey ON fyniq.approval_signature USING bt
 CREATE UNIQUE INDEX audit_chain_pkey ON fyniq.audit_chain USING btree (organisation_id)
 CREATE UNIQUE INDEX audit_event_pkey ON fyniq.audit_event USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_event_seq_key ON fyniq.audit_event USING btree (organisation_id, seq)
-CREATE UNIQUE INDEX balance_key ON fyniq.balance USING btree (organisation_id, account_id, period_id, currency)
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
+CREATE UNIQUE INDEX balance_set_key ON fyniq.balance USING btree (organisation_id, account_id, period_id, dimension_set_id, currency) NULLS NOT DISTINCT
 CREATE UNIQUE INDEX bank_feed_id_key ON fyniq.bank_feed USING btree (organisation_id, id)
 CREATE UNIQUE INDEX bank_feed_pkey ON fyniq.bank_feed USING btree (organisation_id, money_account_id)
 CREATE UNIQUE INDEX bank_gap_pkey ON fyniq.bank_gap USING btree (organisation_id, id)
@@ -3715,6 +3778,13 @@ CREATE UNIQUE INDEX currency_code_minor_units_key ON fyniq.currency USING btree 
 CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
 CREATE UNIQUE INDEX customer_group_name_key ON fyniq.customer_group USING btree (organisation_id, lower(btrim(name)))
 CREATE UNIQUE INDEX customer_group_pkey ON fyniq.customer_group USING btree (organisation_id, id)
+CREATE UNIQUE INDEX dimension_name_key ON fyniq.dimension USING btree (organisation_id, name)
+CREATE UNIQUE INDEX dimension_pkey ON fyniq.dimension USING btree (organisation_id, id)
+CREATE UNIQUE INDEX dimension_set_pkey ON fyniq.dimension_set USING btree (organisation_id, id)
+CREATE UNIQUE INDEX dimension_set_values_key ON fyniq.dimension_set USING btree (organisation_id, value_ids)
+CREATE UNIQUE INDEX dimension_slot_key ON fyniq.dimension USING btree (organisation_id, kind, "position") NULLS NOT DISTINCT
+CREATE UNIQUE INDEX dimension_value_code_key ON fyniq.dimension_value USING btree (organisation_id, dimension_id, code)
+CREATE UNIQUE INDEX dimension_value_pkey ON fyniq.dimension_value USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_link_message_once ON fyniq.document_link USING btree (organisation_id, message_id)
 CREATE UNIQUE INDEX document_link_pkey ON fyniq.document_link USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_link_token_pkey ON fyniq.document_link_token USING btree (token_hash)
@@ -3942,6 +4012,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.claim_ca
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.claim_place DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('claim_place', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.customer_group DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('customer_group', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.dimension DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('dimension', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.dimension_value DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('dimension', 'dimension_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_link', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template', 'id')
@@ -4031,6 +4103,9 @@ CREATE TRIGGER contact_document_template_no_truncate BEFORE TRUNCATE ON fyniq.co
 CREATE TRIGGER contact_party_guard BEFORE INSERT OR UPDATE ON fyniq.contact FOR EACH ROW EXECUTE FUNCTION contact_party_guard()
 CREATE TRIGGER conversion_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.conversion_step FOR EACH ROW EXECUTE FUNCTION conversion_step_guard()
 CREATE TRIGGER conversion_step_no_truncate BEFORE TRUNCATE ON fyniq.conversion_step FOR EACH STATEMENT EXECUTE FUNCTION conversion_step_guard()
+CREATE TRIGGER dimension_set_check BEFORE INSERT ON fyniq.dimension_set FOR EACH ROW EXECUTE FUNCTION dimension_set_check()
+CREATE TRIGGER dimension_set_immutable BEFORE DELETE OR UPDATE ON fyniq.dimension_set FOR EACH ROW EXECUTE FUNCTION dimension_set_immutable()
+CREATE TRIGGER dimension_set_no_truncate BEFORE TRUNCATE ON fyniq.dimension_set FOR EACH STATEMENT EXECUTE FUNCTION dimension_set_immutable()
 CREATE TRIGGER document_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION document_guard()
 CREATE TRIGGER document_link_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.document_link FOR EACH ROW EXECUTE FUNCTION document_link_guard()
 CREATE TRIGGER document_link_no_truncate BEFORE TRUNCATE ON fyniq.document_link FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -4217,6 +4292,9 @@ contact | tenant_isolation | * | (organisation_id = current_org()) | (organisati
 contact_document_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 conversion_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 customer_group | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+dimension | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+dimension_set | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+dimension_value | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_link | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_number | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -4310,7 +4388,7 @@ approval_void_pending_type(p_type text, p_reason text) → void | security defin
 audit_chain_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 91e817a2872fcf6bd69bb233274ae47b
 audit_event_append() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b28a8a36f47d380d03f4120d6fab3ae
 audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d06777cbb7f0bd4dfb455fd25fe4970
-balance_differences() → TABLE(account_id uuid, period_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 3fb15f23f1568ac9a4288b7dced1e16e
+balance_differences() → TABLE(account_id uuid, period_id uuid, dimension_set_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | db220537924bcf527c3806307453ed67
 balances_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c1c7750d26a82cb498c82056eec78082
 bank_agreement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 045b2a2e3ab50c531641fa49d5157cc4
 bank_feed_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 44b4e05c97a31d2e77d3cb543863849c
@@ -4355,6 +4433,8 @@ create_scheduled_revaluation(p_period uuid, p_payload jsonb, p_at timestamp with
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
 decide_installation_change(p_by uuid, p_id uuid, p_hash bytea, p_approve boolean, p_mfa_at timestamp with time zone, p_reason text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 338fe991475e9f427093a25bef17d1d0
 destroyed_installation_connector_secret(p_ref text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 87e77fee8faaf36987cfc16b94dc2d7c
+dimension_set_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 646ba8ce3dffe9bcedfa0157c5b0a85f
+dimension_set_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 033125e51da59b101d46a8cdf2603294
 director_fee_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9daec9315e14c374e3cf180c55d2bc30
 director_repayment_released() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 94e8022147006b17a7b6345fba8d6c28
 director_settlement_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4e36a69f4eacb9c20ca242008162b4cc
@@ -4409,7 +4489,7 @@ journal_entry_not_bank_agreement() → trigger | security invoker | v | search_p
 journal_entry_not_purchase_order() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6d56ef74a45b5b6e0b8b17fbd51ccca8
 journal_entry_not_statement() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2f9768ffb0fa7da50d93cfce2c84c492
 journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff
-journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | eb39f3ecaced5777f9fffc54cd5e3a4c
+journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0f5bd691e4430aa3432cee16293c5fe1
 journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 96a325d578df24994138905973efca70
 journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 54706974cde3888da6cf5247ea638fae
 kpi_input_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9f9ba3f0de039e4e5e95975fec3d4493
@@ -4451,7 +4531,7 @@ period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalo
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37
 quote_outcome_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b0e30fb295e3f4b5d5634a5a0be9f9fa
-rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
+rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 954a578019c93ea55f9a346d84e9c317
 record_feed_rate(p_base text, p_currency text, p_on date, p_rate numeric, p_quote numeric, p_quote_form text, p_feed text) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c0b4a6a1f6f33b96ce2869ab4921553f
 record_identity_email(p_issuer text, p_subject text, p_email text, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2f631281b01b5872840eb07594f8bbe1
 recover_super_admin(p_recovery_hash bytea, p_confirmation_hash bytea, p_issuer text, p_subject text, p_now timestamp with time zone, OUT recovered uuid, OUT via text, OUT removed_subjects text[]) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f87f534722c75764197f2d82a45a906a

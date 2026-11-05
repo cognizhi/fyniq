@@ -91,6 +91,15 @@
   question 55 decided, except share capital (INV-13). **Left:** the approved journal-preserving merge (FR-COA-04), which
   needs the approval engine; the ⚠ on a manual journal to a control account (question 55), with the checks.)
 - [ ] 3.3 Dimensions and dimension sets on journal lines. The balances cache is keyed by dimension set, and the INV-08 rebuild and the oracle's half are extended. Tests `// req: FR-DIM-01` and `// req: FR-DIM-02`; the differential gate is green
+  (4 Nov 2026, slice 1, the database: migrations 000218 to 000220 add `dimension` (Department, Project and custom
+  places 1 to 8), `dimension_value` and `dimension_set` (one row per combination, its values in ascending order, at
+  most one of each dimension, `FY257`, immutable `FY002`), `journal_line.dimension_set_id` (none for a line with no
+  dimension, design "Dimensions on lines") and the cache keyed by account × period × dimension set × currency; the
+  posting trigger, `rebuild_balances()` and `balance_differences()` group by the set, and the balance service's
+  period balances sum an account's sets, so every reader is unchanged. Tests
+  `TestAttackDimensionSetsAreCanonicalAndNeverChange`, `TestAttackTheBalancesCacheKeepsEachDimensionSet`. **Left:**
+  the dimensions' API and settings screen, the values on lines through the engine and every source with "required per
+  account", reports by dimension (FR-DIM-02), and the oracle's half.)
 
 ## 4. Contacts and items
 
