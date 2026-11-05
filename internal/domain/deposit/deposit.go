@@ -195,6 +195,7 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s 
 	r := ledger.CustomerDeposit{ID: doc.ID, Version: doc.Version, Date: d.Date, Memo: memo(out.Customer, doc), Account: d.AccountID, Currency: d.Currency,
 		Rate: d.Rate, Received: d.Received, Amount: d.Amount}
 	acc, known := s.Accounts[d.AccountID]
+	var found fx.Found
 	if d.Currency != s.Base && d.Rate == nil && known && acc.Currency == d.Currency.Code && !d.Date.IsZero() {
 		f, err := fx.Lookup(ctx, u, s.Base, d.Currency, d.Date)
 		var fe *fx.Error
@@ -205,7 +206,7 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s 
 			return Prepared{}, nil, err
 		default:
 			rate := f.Rate
-			r.Rate = &rate
+			r.Rate, found = &rate, f
 		}
 	}
 
@@ -242,6 +243,10 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s 
 				r.GSTRate = "0"
 			}
 		}
+	}
+	// The GST a part payment bears is converted at its rate, which an average of the monthly table never is (ENG-42).
+	if fe := found.ForGST(d.Currency, true); fe != nil && fx.Taxed(r.GSTRate) {
+		add(fe.Code, fe.Field, fe.Message, fe.Fix)
 	}
 	out.Deposit = r
 	return out, probs, nil

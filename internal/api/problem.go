@@ -230,6 +230,7 @@ var codeFacts = map[string]struct {
 	fx.CodeEntry:                  {422, "The exchange rate is not valid"},
 	fx.CodeWithdrawn:              {409, "The rate is withdrawn already"},
 	fx.CodeReason:                 {422, "Withdrawing a rate needs a reason"},
+	fx.CodeAverage:                {422, "An average rate never sets a GST amount"},
 	fx.CodeNotOpen:                {409, "The period is not open"},
 	fx.CodeNotEnded:               {409, "The period has not ended"},
 	fx.CodeUnrealised:             {409, "No account takes unrealised FX"},

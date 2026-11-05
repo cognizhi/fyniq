@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/deposit"
+	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -34,7 +35,7 @@ const CodeDepositVoidApproval = "DEPOSIT-10"
 
 // DepositCodes are the codes the posting rule and the deposit's own checks answer.
 var DepositCodes = []string{deposit.CodeCustomer, deposit.CodeKind, deposit.CodeGSTCode, deposit.CodeTooLong, ledger.CodeNotMoneyAccount,
-	ledger.CodePaymentAmount, ledger.CodePaidAmount, ledger.CodeSystemRole, ledger.CodeLineCurrency, ledger.CodeGSTRate}
+	ledger.CodePaymentAmount, ledger.CodePaidAmount, ledger.CodeSystemRole, ledger.CodeLineCurrency, ledger.CodeGSTRate, fx.CodeAverage}
 
 // DepositApprovalCodes are the codes an approval of a deposit's void may answer.
 func DepositApprovalCodes() []string {

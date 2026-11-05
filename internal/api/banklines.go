@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/banktransaction"
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
+	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -338,7 +339,7 @@ func registerBankLines(a *API) {
 			"an optional spread over months (bank_transaction@1). A line in suspense is classified: its suspense posting is reversed and the " +
 			"new one posted together. Side effects: a bank transaction and its entry, the line's match and status, each audited. Needs " +
 			"If-Match with the line's ETag. Idempotent with Idempotency-Key; Prefer: return=preview returns the entry and saves nothing.",
-	}, append([]string{banktransaction.CodeGSTCode, banktransaction.CodeContact, banktransaction.CodeTooLong, banktransaction.CodeRest}, posting...),
+	}, append([]string{banktransaction.CodeGSTCode, banktransaction.CodeContact, banktransaction.CodeTooLong, banktransaction.CodeRest, fx.CodeAverage}, posting...),
 		func(ctx context.Context, in *categoriseInput) (*lineDoneOutput, error) {
 			return a.actOnLine(ctx, "Posting", in.LineID, in.IfMatch, in.IdempotencyKey, in.Prefer, in, func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, l storage.BankLine) (BankLineDone, error) {
 				d := banktransaction.Draft{LineID: l.ID, Reference: strings.TrimSpace(in.Body.Reference)}

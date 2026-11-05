@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -420,6 +421,7 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 
 	// The rate: as typed, else the cascade's for the invoice's date (ENG-40).
 	inv := ledger.Invoice{ID: doc.ID, Version: doc.Version, Date: d.Date, Currency: d.Currency, Rate: d.Rate, Memo: memo(out.Customer, doc)}
+	var found fx.Found
 	if d.Currency != base && d.Rate == nil && !d.Date.IsZero() {
 		f, err := fx.Lookup(ctx, u, base, d.Currency, d.Date)
 		var fe *fx.Error
@@ -430,7 +432,7 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 			return Prepared{}, nil, err
 		default:
 			r := f.Rate
-			inv.Rate = &r
+			inv.Rate, found = &r, f
 		}
 	}
 
@@ -474,6 +476,10 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 			}
 		}
 		inv.Lines = append(inv.Lines, line)
+	}
+	// The GST it charges is converted at its rate, which an average of the monthly table never is (ENG-42).
+	if fe := found.ForGST(d.Currency, true); fe != nil && slices.ContainsFunc(inv.Lines, func(l ledger.InvoiceLine) bool { return fx.Taxed(l.GSTRate) }) {
+		add(fe.Code, fe.Field, fe.Message, fe.Fix)
 	}
 	// The deposits it deducts (FR-AR-09): each a posted deposit of its customer in its currency, at most what is left of
 	// it, its uses by this invoice left out; each takes its part of the deposit's base amount and GST (RND-DEPOSIT).

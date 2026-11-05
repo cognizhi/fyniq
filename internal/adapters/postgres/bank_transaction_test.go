@@ -96,7 +96,8 @@ func lineOf(t *testing.T, org, id uuid.UUID) storage.BankLine {
 // with the line's signed gross, 2200 with the GST extracted under RND-GST-INCL when registered and the code carries
 // GST, the rest to the category. A part on 2999 keeps the line in the queue as suspense until it is classified, which
 // reverses its suspense posting; an undo reverses the categorisation and puts the line back. A line in another currency
-// takes the cascade's rate for its date, and none refuses it with FX-01. A refusal writes nothing, and the replay
+// takes the cascade's rate for its date, and none refuses it with FX-01; an average of the monthly table's rates
+// converts it but refuses a part that bears GST with FX-08 (ENG-42). A refusal writes nothing, and the replay
 // reproduces every entry.
 // req: ledger/posting-rules Posting a bank transaction, money in
 // req: ledger/posting-rules Posting a bank transaction, money out
@@ -106,6 +107,8 @@ func lineOf(t *testing.T, org, id uuid.UUID) storage.BankLine {
 // req: ENG-02
 // req: FR-GL-12
 // req: ENG-06
+// req: ENG-40
+// req: ENG-42
 func TestCategorisingABankLinePostsIt(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "bookkeeper"}})
 	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
@@ -211,6 +214,30 @@ func TestCategorisingABankLinePostsIt(t *testing.T) {
 	var probs ledger.Problems
 	if !errors.As(err, &probs) || !probs.Has(fx.CodeNoRate) || probs.Has(ledger.CodeMissingRate) {
 		t.Fatalf("a USD line without a rate: %v", err)
+	}
+	// ENG-40 and ENG-42: with two rates for USD in October's monthly table, the 22 October line takes their average,
+	// which converts it but never sets its GST: coded TX it is refused with FX-08, coded NA it is not.
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, r := range []storage.Decimal{"1.35", "1.37"} {
+			if _, err := fx.Enter(ctx, u, storage.NewFXRate{Kind: storage.FXRateMonth, Currency: "USD", On: porttest.Day(10, 1), Rate: r, Quote: r,
+				QuoteForm: "base-per-unit"}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	taxedAvg, err := txns.Check(ctx, b.Org, banktransaction.Draft{LineID: usd[1].ID, Parts: []banktransaction.Part{{AccountID: b.Rent.ID, GSTCode: "TX"}}})
+	if err != nil || !taxedAvg.Problems.Has(fx.CodeAverage) {
+		t.Fatalf("a TX line at an average: %+v %v", taxedAvg.Problems, err)
+	}
+	if _, err := txns.Categorise(ctx, b.Org, whole(usd[1], b.Rent, "TX")); !errors.As(err, &probs) || !probs.Has(fx.CodeAverage) {
+		t.Fatalf("categorising a TX line at an average: %v", err)
+	}
+	plainAvg, err := txns.Check(ctx, b.Org, banktransaction.Draft{LineID: usd[1].ID, Parts: []banktransaction.Part{{AccountID: b.Rent.ID, GSTCode: "NA"}}})
+	if err != nil || len(plainAvg.Problems) > 0 || plainAvg.Saved.Rate == nil || plainAvg.Saved.Rate.Source != "monthly table 2026-10, average of 2 entries" {
+		t.Fatalf("an NA line at the average: %+v %v", plainAvg.Problems, err)
 	}
 	check, err := txns.Check(ctx, b.Org, banktransaction.Draft{LineID: usd[0].ID, Parts: []banktransaction.Part{{AccountID: b.Rent.ID, GSTCode: "NA"}}})
 	if err != nil || len(check.Problems) > 0 || len(check.Entry.Lines) != 2 || check.Saved.Rate == nil {
