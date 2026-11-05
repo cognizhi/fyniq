@@ -143,6 +143,11 @@ Source: PRD-001 §8.2 · Priority M · Phase P1
 - **WHEN** a posting the system makes by itself (a scheduled release, an automatic reversal, a revaluation, depreciation, a pay run, a bank rule applied by itself) has a line on it with no value
 - **THEN** it posts, and the amount shows ⚠ on Checks (Appendix C.2 #60) until a journal moves it to a value
 
+#### Scenario: Moving an amount to a value (rev 0.172)
+- **GIVEN** an account that requires a value for a dimension, and an amount on it with no value
+- **WHEN** a person enters a journal whose lines on that account net to zero, one without a value and one with the value the amount belongs to
+- **THEN** it posts, and the amount without a value is gone from Checks
+
 ### Requirement: FR-DIM-02 Dimensions on every line and report
 Every ledger line SHALL carry its dimension values, and every report SHALL be filterable, groupable and pivotable by dimension.
 

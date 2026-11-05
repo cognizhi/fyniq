@@ -117,7 +117,8 @@
   dimensions, once each: `FY259`); `createAccount` and `updateAccount` set them, each in use when added. A manual
   journal's line takes `dimension_value_ids`; the engine keeps them once each in ascending order, refuses a value the
   organisation does not have, one out of use or two of one dimension (DIM-06), and a missing required value (DIM-05; a
-  dimension out of use requires nothing; opening balances are not held to it); a reversal keeps each line's values, so
+  dimension out of use requires nothing; opening balances are not held to it; rev 0.172: a journal whose lines on the
+  account net to zero, moving amounts between values, may carry the line without one); a reversal keeps each line's values, so
   every set nets to zero, and replay compares them. The unit of work writes each combination's `dimension_set` once and
   reads a line's values back with it. Tests `TestALinesDimensionValuesAreCheckedAndKept`,
   `TestJournalLinesCarryTheirDimensionValues`, `TestJournalLinesTakeDimensionValues`. **Left:** the screens (the

@@ -93,8 +93,27 @@ func TestALinesDimensionValuesAreCheckedAndKept(t *testing.T) {
 		}
 	}
 	_, err = PostJournal(sale(t, "100.00"), s)
-	if p := err.(Problems); len(p) != 1 || p[0].Message != "account 4010 needs a value of Department on every line" || p[0].Fix != "Choose the line's Department" {
+	if p := err.(Problems); len(p) != 1 || p[0].Message != "account 4010 needs a value of Department on every line" || p[0].Fix != "Choose the line's Department, or move an amount between values with lines on 4010 that net to zero" {
 		t.Errorf("DIM-05's words: %+v", p)
+	}
+
+	// A journal that moves an amount between values on the account, its lines on it netting to zero, carries the line with
+	// no value it moves from (Appendix C.2 #60); one that leaves the account changed is held to the requirement.
+	move := Journal{ID: docID, Version: 1, Date: day, Memo: "Department for the September sales", Lines: []JournalLine{
+		{AccountID: sales.ID, Amount: amt(t, "250.00", sgd)},
+		{AccountID: sales.ID, Amount: amt(t, "-250.00", sgd), Values: []uuid.UUID{ops}},
+	}}
+	if _, err := PostJournal(move, s); err != nil {
+		t.Errorf("moving an amount to Operations: %v", err)
+	}
+	partly := move
+	partly.Lines = []JournalLine{
+		{AccountID: sales.ID, Amount: amt(t, "250.00", sgd)},
+		{AccountID: sales.ID, Amount: amt(t, "-200.00", sgd), Values: []uuid.UUID{ops}},
+		{AccountID: bank.ID, Amount: amt(t, "-50.00", sgd)},
+	}
+	if _, err := PostJournal(partly, s); dimensionCodes(err) != "DIM-05 lines[1].dimension_value_ids" {
+		t.Errorf("a journal that changes the account's total: %v", err)
 	}
 
 	// Opening balances are entered without the requirement; their values are still checked.

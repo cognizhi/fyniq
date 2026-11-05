@@ -39,9 +39,8 @@ func canonical(values []uuid.UUID) []uuid.UUID {
 }
 
 // dimensionProblems says what is wrong with a line's values on acc: a value the organisation does not have or that is out
-// of use, two values of one dimension (DIM-06), and, when required, a dimension the account requires with no value
-// (DIM-05: the lines a person enters; rev 0.171).
-func dimensionProblems(s Settings, acc Account, values []uuid.UUID, required bool, field string) []Problem {
+// of use, or two values of one dimension (DIM-06). A dimension the account requires with no value is missing's to say.
+func dimensionProblems(s Settings, values []uuid.UUID, field string) []Problem {
 	var probs []Problem
 	seen := map[uuid.UUID]bool{}
 	of := map[uuid.UUID]string{} // dimension → the code of the line's value of it
@@ -72,21 +71,28 @@ func dimensionProblems(s Settings, acc Account, values []uuid.UUID, required boo
 		}
 		of[x.Dimension] = x.Code
 	}
-	if !required {
-		return probs
-	}
-	var missing []string
+	return probs
+}
+
+// missing are the names of the dimensions acc requires that a line's values name no value of (FR-DIM-01; rev 0.171). A
+// dimension out of use takes no values, so no line needs one.
+func missing(s Settings, acc Account, values []uuid.UUID) []string {
+	var out []string
 	for _, d := range acc.Requires {
 		if !s.Dimensions[d].Active {
-			continue // a dimension out of use takes no values, so no line needs one
+			continue
 		}
-		if _, ok := of[d]; !ok {
-			missing = append(missing, s.Dimensions[d].Name)
+		if !slices.ContainsFunc(values, func(v uuid.UUID) bool { x, ok := s.Values[v]; return ok && x.Dimension == d }) {
+			out = append(out, s.Dimensions[d].Name)
 		}
 	}
-	if len(missing) > 0 {
-		probs = append(probs, Problem{CodeDimensionRequired, field, fmt.Sprintf("account %s needs a value of %s on every line", acc.Code, strings.Join(missing, " and ")),
-			fmt.Sprintf("Choose the line's %s", strings.Join(missing, " and "))})
-	}
-	return probs
+	return out
+}
+
+// required is DIM-05 for a line a person enters without a value its account requires (rev 0.171), unless the journal's
+// lines on that account net to zero: such a journal moves amounts between values, often an amount the system posted
+// without one to the value it belongs to (Appendix C.2 #60), and changes nothing the account totals.
+func required(s Settings, acc Account, names []string, field string) Problem {
+	return Problem{CodeDimensionRequired, field, fmt.Sprintf("account %s needs a value of %s on every line", acc.Code, strings.Join(names, " and ")),
+		fmt.Sprintf("Choose the line's %s, or move an amount between values with lines on %s that net to zero", strings.Join(names, " and "), acc.Code)}
 }

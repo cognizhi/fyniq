@@ -238,6 +238,13 @@ func post(j Journal, s Settings, r asEntered) (Entry, error) {
 	}
 
 	lines := make([]Line, 0, len(j.Lines))
+	// The lines without a value their account requires, refused unless the journal's lines on the account net to zero.
+	type pending struct {
+		acc   Account
+		names []string
+		field string
+	}
+	var untagged []pending
 	baseTotal := money.Zero(s.Base)
 	perCurrency := map[string]money.Money{}
 	var currencies []string
@@ -264,7 +271,10 @@ func post(j Journal, s Settings, r asEntered) (Entry, error) {
 			if p := originProblem(acc, l.Origin, f("origin")); p != nil {
 				probs = append(probs, *p)
 			}
-			probs = append(probs, dimensionProblems(s, acc, l.Values, r.required, f("dimension_value_ids"))...)
+			probs = append(probs, dimensionProblems(s, l.Values, f("dimension_value_ids"))...)
+			if names := missing(s, acc, l.Values); r.required && len(names) > 0 {
+				untagged = append(untagged, pending{acc, names, f("dimension_value_ids")})
+			}
 		}
 		if len(l.Description) > MaxDescription {
 			add(CodeTooLong, f("description"), fmt.Sprintf("the description has %d characters; the most is %d", len(l.Description), MaxDescription), "Shorten it")
@@ -328,6 +338,24 @@ func post(j Journal, s Settings, r asEntered) (Entry, error) {
 		perCurrency[cur.Code], _ = perCurrency[cur.Code].Add(l.Amount)
 		lines = append(lines, Line{AccountID: l.AccountID, Amount: l.Amount, Rate: rate, Base: base, Description: l.Description, Party: l.Party,
 			Values: canonical(l.Values)})
+	}
+
+	// FR-DIM-01 (rev 0.171): a line without a required value posts only in a journal that moves amounts between values
+	// on its account, whose lines on it net to zero; one whose lines did not all convert is refused.
+	if len(untagged) > 0 {
+		net := map[uuid.UUID]money.Money{}
+		for _, l := range lines {
+			total, ok := net[l.AccountID]
+			if !ok {
+				total = money.Zero(s.Base)
+			}
+			net[l.AccountID], _ = total.Add(l.Base)
+		}
+		for _, p := range untagged {
+			if total, ok := net[p.acc.ID]; !converted || !ok || !total.IsZero() {
+				probs = append(probs, required(s, p.acc, p.names, p.field))
+			}
+		}
 	}
 
 	// Rule 7: the base amounts, each RND-FX of its line, sum to zero; rule 8: a journal in one currency
