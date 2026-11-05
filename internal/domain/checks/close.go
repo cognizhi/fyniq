@@ -173,6 +173,11 @@ var closeChecks = []Definition{
 		Explain: "An account marked revalue with a foreign-currency balance at the month's end needs the month's revaluation " +
 			"after its last posting; the check names a currency with no rate for the last day (FR-GL-04).",
 		Rules: "FR-GL-04", Owner: "controller", View: viewClose, Triggers: onClose, CloseKeys: []string{"revaluation"}, Run: atMonthEnd("revaluation")},
+	{Key: "close.dimensions", Ref: "C.2 #60", Area: "Closing", Worst: Warning, Title: "Every amount carries the dimensions its account requires",
+		Explain: "An account that requires a dimension has, for the month, an amount on lines with no value of it. A person's " +
+			"journal line cannot leave one, so a posting Fyniq made by itself did: move it to its value with a journal whose " +
+			"lines on the account net to zero.",
+		Rules: "FR-DIM-01", Owner: "accountant", View: viewJournals, Triggers: onClose, CloseKeys: []string{"dimensions"}, Run: closeBacked("dimensions")},
 	{Key: "close.closed-unchanged", Ref: "C.1 #33", Area: "Closing", Worst: Error, Title: "No closed month has changed since its close",
 		Explain: "A closed month's trial balance equals the one recorded when it closed. The database refuses a posting into a " +
 			"closed month, so a difference means its lock was bypassed: report it.",

@@ -317,3 +317,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-05] compile | docs/user-guide/currencies.md → accounting.currencies (FX-08: an averaged rate refused where it would set a GST amount, ENG-42)
 ## [2026-11-05] compile | docs/user-guide/chart-of-accounts.md → accounting.chart (the Dimensions section and the values of a dimension, FR-DIM-01)
+
+## [2026-11-06] compile | docs/user-guide/periods-and-close.md → accounting.periods (the close's check of amounts without a required dimension, C.2 #60)

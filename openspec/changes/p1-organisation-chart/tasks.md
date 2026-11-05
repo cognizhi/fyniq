@@ -130,6 +130,12 @@
   `TestJournalLinesCarryTheirDimensionValues`, `TestJournalLinesTakeDimensionValues`. **Left:** the screens (the
   journal editor's values, the account's requirement, "Required on"), C.2 #60, values on the other documents' lines,
   reports by dimension, the oracle's half.)
+  (6 Nov 2026, slice 3c, Appendix C.2 #60: the balance service reads a period's totals by account and dimension set
+  (`balance.BySet`, from the new `Balances.ForPeriodBySet`); the close's finding `dimensions` (⚠) names each account
+  whose movement for the month on lines with no value of a dimension it requires, in use, is not zero, with the
+  dimension and the amount, and passes once a journal netting to zero on the account moves it to a value; nothing
+  when no account requires a dimension in use. The catalogue's `close.dimensions` reads it. Test
+  `TestTheCloseFlagsAmountsWithoutARequiredDimension`; the guide's close checks and `accounting.periods`.)
 
 ## 4. Contacts and items
 

@@ -79,6 +79,10 @@ closes the month.
      either does not, which a sound ledger never shows: report it);
    - settlement differences cleared to FX and rounding in the month above the monthly cap in
      **Settings → Organisation** (⚠: the cap was lowered after they cleared; review them);
+   - amounts on an account that requires a dimension, posted in the month with no value of it (⚠).
+     A journal line you enter cannot leave one, so Fyniq posted it by itself, from an invoice or a
+     bank line for example: move each amount to its value with a journal whose lines on the account
+     net to zero (see [Dimensions](chart-of-accounts.md#dimensions));
    - income and expense accounts that moved against the previous month by more than both
      thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no
      explanation of their totals as they are now (✖; see [Explain the variances](#explain-the-variances));

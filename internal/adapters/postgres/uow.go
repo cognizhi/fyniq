@@ -1035,6 +1035,26 @@ func (r balances) ForPeriodAt(ctx context.Context, periodID uuid.UUID, revision 
 	return out, nil
 }
 
+func (r balances) ForPeriodBySet(ctx context.Context, periodID uuid.UUID) ([]storage.SetBalance, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.BalancesForPeriodBySet(ctx, periodID)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.SetBalance, 0, len(rows))
+	for _, b := range rows {
+		x := storage.SetBalance{Balance: storage.Balance{AccountID: b.AccountID, PeriodID: b.PeriodID, Currency: b.Currency,
+			Amount: storage.Decimal(b.Amount), BaseAmount: storage.Decimal(b.BaseAmount), LineCount: b.LineCount}}
+		if len(b.ValueIds) > 0 {
+			x.Values = b.ValueIds
+		}
+		out = append(out, x)
+	}
+	return out, nil
+}
+
 func (r balances) Differences(ctx context.Context) ([]storage.BalanceDifference, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err
