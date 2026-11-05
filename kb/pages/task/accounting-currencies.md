@@ -4,14 +4,14 @@ type: task
 title: Exchange rates
 summary: Where a posting in another currency takes its rate from, your own rates, and revaluing a month's foreign-currency balances
 sources:
-  - docs/user-guide/currencies.md sha256:2333988d65a60f594514adb77c735c69d97acc1d8fb9706a901a9b97d93dc907
+  - docs/user-guide/currencies.md sha256:c3ceedaa2f1e71f09125062eeddb30f4e35e8903eae684b7454fe4ce6b998775
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-22
+compiled_at: 2026-11-05
 aliases:
   - exchange rate
   - FX rate
@@ -50,6 +50,7 @@ aliases:
 
 - A journal line in another currency with no rate of its own takes the rate for the journal's date ([[accounting.journals]]), looking in order for: your rate for that day; the daily feed's for that day, or its latest up to 7 days before (none on weekends and public holidays); your monthly rate for that month.
 - When a month has more than one monthly rate, Fyniq takes their average and shows ⚠ until all but one are withdrawn; an average never sets a GST amount.
+- An invoice, a part-payment deposit or a bank line that charges GST at an average cannot post (FX-08) until the extra rates are withdrawn or the rate for the day is added; an invoice or a deposit can also take a typed rate.
 - With none of these the line cannot post: ✖ **No exchange rate for this currency** (FX-01).
 - The line records the rate it took and where it came from, such as "MAS daily feed of 2026-10-16", and keeps it: a rate added or withdrawn later never changes a posted line.
 - **Find the rate a posting takes** shows the rate for a currency and a date.
@@ -104,6 +105,7 @@ aliases:
 - FX-05, the period is not open: revalue a month while it is open, or ask for it to be reopened.
 - FX-06, the period has not ended: revalue the month from its last day; until then, look at its preview.
 - FX-07, no account takes unrealised FX: load 7040 Unrealised FX gain or loss from the standard chart.
+- FX-08, an average rate never sets a GST amount: withdraw all but one of the month's rates for the currency, or add the rate for the day; on an invoice or a deposit you can also type the rate.
 - Related: closing the month ([[accounting.periods]]); a bill in another currency ([[purchases.bills]]).
 
 (src: docs/user-guide/currencies.md#common-problems) (src: docs/user-guide/currencies.md#related)

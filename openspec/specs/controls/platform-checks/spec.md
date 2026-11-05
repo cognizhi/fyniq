@@ -843,6 +843,20 @@ Source: PRD-001 §C.2
 - **WHEN** no automatic reversal is due by the period's end and none from the period waits
 - **THEN** the check passes
 
+### Requirement: C.2 #60 Amounts without a required dimension
+The system SHALL warn (⚠) when an account that requires a dimension has, for the period, a movement on lines with no value for it, which only the postings the system makes by itself can leave; a journal that moves the amount to a value clears it (FR-DIM-01; the owner's decision of 5 Nov 2026).
+
+Source: PRD-001 §C.2
+
+#### Scenario: An automatic posting left an amount untagged
+- **GIVEN** an account that requires Department, and a posting the system made by itself put an amount on it with no department
+- **WHEN** the checks run for the period
+- **THEN** the check warns (⚠), naming the account, the dimension and the amount
+
+#### Scenario: Moved to a value
+- **WHEN** a journal moves the amount from the line with no value to a line with one, so the period's movement with no value is zero
+- **THEN** the check passes
+
 ### Requirement: C.2 #59 Foreign-currency balances not revalued
 The system SHALL refuse the close (✖) while an account marked revalue has a balance in a foreign currency at the period's end and no revaluation of the period has run since the last posting dated in or before it, naming a currency with no rate on the period's last day (FR-GL-04).
 

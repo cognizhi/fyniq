@@ -231,6 +231,7 @@ var codeFacts = map[string]struct {
 	fx.CodeEntry:                  {422, "The exchange rate is not valid"},
 	fx.CodeWithdrawn:              {409, "The rate is withdrawn already"},
 	fx.CodeReason:                 {422, "Withdrawing a rate needs a reason"},
+	fx.CodeAverage:                {422, "An average rate never sets a GST amount"},
 	dimension.CodeKind:            {422, "The organisation cannot add that dimension"},
 	dimension.CodeName:            {422, "The name does not fit"},
 	dimension.CodeCode:            {422, "The value's code does not fit"},

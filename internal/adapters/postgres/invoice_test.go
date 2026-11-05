@@ -5,6 +5,7 @@ package postgres_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/cognizhi/fyniq/internal/domain/fx"
@@ -82,12 +83,13 @@ func invoiceLine(t *testing.T, b salesBooks, q, price, discount, code, cur strin
 // invoice is drafted, checked, issued with its number, voided and edited through the posting service, each in one
 // transaction with its entry. Its lines are quantities at a price less a discount (RND-LINE); it bears GST only once
 // the organisation is GST-registered on its date; a USD invoice takes the cascade's rate and its GST on the SGD net
-// (ENG-42); every entry replays (ENG-06).
+// (ENG-42), which an average of the monthly table's rates never sets (FX-08, ENG-40); every entry replays (ENG-06).
 // req: FR-AR-03
 // req: ledger/posting-rules Posting an invoice
 // req: ledger/posting-rules Amounts of a posted invoice
 // req: RND-LINE
 // req: ENG-42
+// req: ENG-40
 // req: FR-GL-12
 func TestInvoicesPostThroughThePostingService(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "ar-specialist"}})
@@ -158,6 +160,52 @@ func TestInvoicesPostThroughThePostingService(t *testing.T) {
 	if e, err = invoices.Post(ctx, b.Org, usdInvoice.ID); err != nil ||
 		legsOf(t, s, b.Org, e) != "1100 1090 USD = 1460.6; 4000 -1000 USD = -1340; 2200 -120.6 SGD = -120.6" {
 		t.Errorf("ENG-42: %s %v", legsOf(t, s, b.Org, e), err)
+	}
+
+	// ENG-40 and ENG-42: on 20 October the cascade's USD rate is the average of October's two monthly-table rates, 1.35
+	// and 1.37, which never sets a GST amount: a standard-rated invoice is refused with FX-08 and takes no number, while
+	// a zero-rated one, or one with its own rate, is converted as usual.
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, r := range []storage.Decimal{"1.35", "1.37"} {
+			if _, err := fx.Enter(ctx, u, storage.NewFXRate{Kind: storage.FXRateMonth, Currency: "USD", On: porttest.Day(10, 1), Rate: r, Quote: r,
+				QuoteForm: "base-per-unit"}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	averaged := invoice.Draft{CustomerID: b.Globex.ID, Date: porttest.Day(10, 20), Currency: usd, Lines: []invoice.Line{invoiceLine(t, b, "1", "1000.00", "", "SR", "USD")}}
+	avgDoc, err := invoices.Create(ctx, b.Org, averaged)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err = invoices.Check(ctx, b.Org, avgDoc.ID, nil)
+	if err != nil || !c.Problems.Has(fx.CodeAverage) || len(c.Problems) != 1 {
+		t.Fatalf("a standard-rated invoice at an average: %+v %v", c.Problems, err)
+	}
+	if p := c.Problems[0]; p.Field != "fx_rate" || !strings.Contains(p.Message, "average of the 2 rates in the monthly table for October 2026") {
+		t.Errorf("FX-08's words: %+v", p)
+	}
+	var avgProbs ledger.Problems
+	if _, err := invoices.Post(ctx, b.Org, avgDoc.ID); !asProblems(err, &avgProbs) || !avgProbs.Has(fx.CodeAverage) {
+		t.Fatalf("issuing a standard-rated invoice at an average: %v", err)
+	}
+	zero := averaged
+	zero.Lines = []invoice.Line{invoiceLine(t, b, "1", "1000.00", "", "ZR", "USD")}
+	if c, err := invoices.Check(ctx, b.Org, avgDoc.ID, &zero); err != nil || len(c.Problems) > 0 ||
+		c.Prepared.Invoice.Rate == nil || c.Prepared.Invoice.Rate.Source != "monthly table 2026-10, average of 2 entries" {
+		t.Errorf("a zero-rated invoice at the average: %+v %v", c.Problems, err)
+	}
+	own := averaged
+	typed, err := money.ParseRate("1.36", usd, sgd, "the invoice's own rate")
+	if err != nil {
+		t.Fatal(err)
+	}
+	own.Rate = &typed
+	if c, err := invoices.Check(ctx, b.Org, avgDoc.ID, &own); err != nil || len(c.Problems) > 0 {
+		t.Errorf("a standard-rated invoice at its own rate: %+v %v", c.Problems, err)
 	}
 
 	// The refusals, all together: a supplier, a code for purchases, a due date before the invoice, no EUR rate.
