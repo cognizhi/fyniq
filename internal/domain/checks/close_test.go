@@ -30,6 +30,7 @@ import (
 // req: C.2 #57
 // req: C.2 #58
 // req: C.2 #59
+// req: C.2 #60
 func TestEachCloseBackedCheckReadsItsOwnFindings(t *testing.T) {
 	sgd, _ := money.Lookup("SGD")
 	oct := storage.Period{ID: uuid.New(), StartsOn: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC), EndsOn: time.Date(2026, 10, 31, 0, 0, 0, 0, time.UTC),

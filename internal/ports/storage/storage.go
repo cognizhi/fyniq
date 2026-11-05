@@ -284,6 +284,9 @@ type Balances interface {
 	// revision up to it, summed as the cache sums them. It reads the lines, so a report re-run at a revision is
 	// unchanged by every later posting, back-dated or not (G4-051).
 	ForPeriodAt(ctx context.Context, periodID uuid.UUID, revision int64) ([]Balance, error)
+	// ForPeriodBySet is a period's balances with each dimension set on its own row (FR-DIM-02), for a reader that asks
+	// for the dimensions to see them apart.
+	ForPeriodBySet(ctx context.Context, periodID uuid.UUID) ([]SetBalance, error)
 	// Differences compares the cache with a recomputation from the lines; empty means they agree.
 	Differences(ctx context.Context) ([]BalanceDifference, error)
 	// Rebuild recomputes the cache from the lines under the ledger lock and returns the rows written.
@@ -652,6 +655,13 @@ type Balance struct {
 	Amount     Decimal
 	BaseAmount Decimal
 	LineCount  int64
+}
+
+// SetBalance is the cached total of one account, period, currency and dimension set (FR-DIM-02): Values are the set's
+// values in ascending order, nil for the lines with no dimension.
+type SetBalance struct {
+	Balance
+	Values []uuid.UUID
 }
 
 // BalanceDifference is a cache row that disagrees with the lines; a nil side has no row. DimensionSetID is the row's

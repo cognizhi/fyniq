@@ -261,6 +261,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		return nil, err
 	}
 	out = append(out, tolerances...)
+	dimensions, err := dimensionChecks(ctx, u, cur, p)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, dimensions...)
 	recurring, err := recurringChecks(ctx, u, p, today)
 	if err != nil {
 		return nil, err
