@@ -100,6 +100,17 @@
   `TestAttackDimensionSetsAreCanonicalAndNeverChange`, `TestAttackTheBalancesCacheKeepsEachDimensionSet`. **Left:**
   the dimensions' API and settings screen, the values on lines through the engine and every source with "required per
   account", reports by dimension (FR-DIM-02), and the oracle's half.)
+  (5 Nov 2026, slice 2, the API: migration 000221 lets the API role add a dimension and its values, rename them and put
+  them out of use, and the guard `dimension_guard` keeps, for every role, a dimension's kind and place and a value's
+  dimension and code, one version at a time, never deleted (`FY258`). `internal/domain/dimension` checks them: Department
+  and Project once each, custom ones in the first free of places 1 to 8, names unique whatever the case, codes unique in
+  their dimension (DIM-01 to DIM-04). Six operations under Appendix D's "Chart of accounts, dimensions": `listDimensions`,
+  `createDimension`, `replaceDimension` (If-Match), `listDimensionValues`, `createDimensionValue`,
+  `replaceDimensionValue` (If-Match); a value's audit event is its dimension's (the database's `require_audit`). Tests
+  `TestDimensionsAreDepartmentProjectAndUpToEightCustom`, `TestAValueHasACodeUniqueInItsDimension`, `TestDimensionsAreKeptWithTheirAuditTrail`,
+  `TestAttackDimensionsKeepWhatTheyAre`, `TestDimensionsAndTheirValues` and the matrix's six rows. **Left:** the
+  Dimensions tab of the chart's screen, values on lines and "required per account", reports by dimension, the oracle's
+  half.)
 
 ## 4. Contacts and items
 

@@ -107,6 +107,8 @@ type UnitOfWork interface {
 	BankMatching() BankMatching
 	// ClaimCategories are the expense policy's categories (FR-AP-15).
 	ClaimCategories() ClaimCategories
+	// Dimensions are the organisation's dimensions and their values (FR-DIM-01).
+	Dimensions() Dimensions
 	// ClaimPlaces are the members' saved places for mileage claims (FR-AP-16).
 	ClaimPlaces() ClaimPlaces
 	// AssetSources are the bill lines and bank lines registered assets came from (FR-FA-01).
@@ -733,6 +735,9 @@ const (
 	// CodeDimension: a dimension set names its values once each, in order, at most one of each of the organisation's
 	// dimensions, and never changes once written (FR-DIM-01, FR-DIM-02).
 	CodeDimension = "STORAGE-DIM-01"
+	// CodeDimensionFixed: a dimension keeps its kind and place and a value its dimension and code, each changes one
+	// version at a time, and neither is deleted (FR-DIM-01).
+	CodeDimensionFixed = "STORAGE-DIM-02"
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
 	CodeBanner         = "STORAGE-BANNER-01"     // a banner that cannot be dismissed stays until it ends

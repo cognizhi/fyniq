@@ -170,6 +170,12 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/customer-refunds/{refund_id}` (getCustomerRefund): Get a refund to a customer
 - `POST /v1/customer-refunds/{refund_id}/void` (voidCustomerRefund): Void a refund to a customer
 - `POST /v1/customer-refunds/{refund_id}/void-approval` (requestCustomerRefundVoid): Ask for approval to void a refund to a customer
+- `GET /v1/dimension-values` (listDimensionValues): List the dimensions' values
+- `POST /v1/dimension-values` (createDimensionValue): Add a value to a dimension
+- `PUT /v1/dimension-values/{value_id}` (replaceDimensionValue): Rename a dimension's value, or put it out of use
+- `GET /v1/dimensions` (listDimensions): List the dimensions
+- `POST /v1/dimensions` (createDimension): Add a dimension
+- `PUT /v1/dimensions/{dimension_id}` (replaceDimension): Rename a dimension, or put it out of use
 - `GET /v1/director-accounts` (listDirectorAccounts): List the director accounts
 - `GET /v1/director-accounts/related-parties` (getRelatedParties): Work out the related-party schedule
 - `GET /v1/director-accounts/related-parties/export` (exportRelatedParties): Export the related-party schedule

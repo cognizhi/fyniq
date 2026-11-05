@@ -4103,9 +4103,11 @@ CREATE TRIGGER contact_document_template_no_truncate BEFORE TRUNCATE ON fyniq.co
 CREATE TRIGGER contact_party_guard BEFORE INSERT OR UPDATE ON fyniq.contact FOR EACH ROW EXECUTE FUNCTION contact_party_guard()
 CREATE TRIGGER conversion_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.conversion_step FOR EACH ROW EXECUTE FUNCTION conversion_step_guard()
 CREATE TRIGGER conversion_step_no_truncate BEFORE TRUNCATE ON fyniq.conversion_step FOR EACH STATEMENT EXECUTE FUNCTION conversion_step_guard()
+CREATE TRIGGER dimension_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.dimension FOR EACH ROW EXECUTE FUNCTION dimension_guard()
 CREATE TRIGGER dimension_set_check BEFORE INSERT ON fyniq.dimension_set FOR EACH ROW EXECUTE FUNCTION dimension_set_check()
 CREATE TRIGGER dimension_set_immutable BEFORE DELETE OR UPDATE ON fyniq.dimension_set FOR EACH ROW EXECUTE FUNCTION dimension_set_immutable()
 CREATE TRIGGER dimension_set_no_truncate BEFORE TRUNCATE ON fyniq.dimension_set FOR EACH STATEMENT EXECUTE FUNCTION dimension_set_immutable()
+CREATE TRIGGER dimension_value_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.dimension_value FOR EACH ROW EXECUTE FUNCTION dimension_guard()
 CREATE TRIGGER document_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION document_guard()
 CREATE TRIGGER document_link_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.document_link FOR EACH ROW EXECUTE FUNCTION document_link_guard()
 CREATE TRIGGER document_link_no_truncate BEFORE TRUNCATE ON fyniq.document_link FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -4433,6 +4435,7 @@ create_scheduled_revaluation(p_period uuid, p_payload jsonb, p_at timestamp with
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
 decide_installation_change(p_by uuid, p_id uuid, p_hash bytea, p_approve boolean, p_mfa_at timestamp with time zone, p_reason text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 338fe991475e9f427093a25bef17d1d0
 destroyed_installation_connector_secret(p_ref text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 87e77fee8faaf36987cfc16b94dc2d7c
+dimension_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6222e01e146f6948cd2702cac2428d63
 dimension_set_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 646ba8ce3dffe9bcedfa0157c5b0a85f
 dimension_set_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 033125e51da59b101d46a8cdf2603294
 director_fee_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9daec9315e14c374e3cf180c55d2bc30

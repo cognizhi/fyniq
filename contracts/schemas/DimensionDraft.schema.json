@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "description": "department or project, once each; custom for up to 8 more, each taking the first free place.",
+      "enum": [
+        "department",
+        "project",
+        "custom"
+      ],
+      "examples": [
+        "custom"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name, unique among the organisation's dimensions whatever the case.",
+      "examples": [
+        "Region"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "name"
+  ],
+  "title": "DimensionDraft",
+  "type": "object"
+}

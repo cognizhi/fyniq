@@ -31,6 +31,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/credits"
 	"github.com/cognizhi/fyniq/internal/domain/customercredit"
 	"github.com/cognizhi/fyniq/internal/domain/deposit"
+	"github.com/cognizhi/fyniq/internal/domain/dimension"
 	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
@@ -231,6 +232,10 @@ var codeFacts = map[string]struct {
 	fx.CodeWithdrawn:              {409, "The rate is withdrawn already"},
 	fx.CodeReason:                 {422, "Withdrawing a rate needs a reason"},
 	fx.CodeAverage:                {422, "An average rate never sets a GST amount"},
+	dimension.CodeKind:            {422, "The organisation cannot add that dimension"},
+	dimension.CodeName:            {422, "The name does not fit"},
+	dimension.CodeCode:            {422, "The value's code does not fit"},
+	dimension.CodeDimension:       {422, "Not a dimension in use"},
 	fx.CodeNotOpen:                {409, "The period is not open"},
 	fx.CodeNotEnded:               {409, "The period has not ended"},
 	fx.CodeUnrealised:             {409, "No account takes unrealised FX"},
@@ -793,6 +798,7 @@ var codeFacts = map[string]struct {
 	director.CodeStep:               {422, "The ACRA step does not fit"},
 	storage.CodeConversionStep:      {409, "A conversion's ACRA steps do not change that way"},
 	storage.CodeDimension:           {422, "The dimension values are not valid"},
+	storage.CodeDimensionFixed:      {409, "The dimension does not change that way"},
 	equity.CodeIssue:                {422, "The share issue does not fit"},
 	CodeOwnCost:                     {403, "The person who paid it does not decide it"},
 	claim.CodeSettleTo:              {422, "The claim cannot be kept as a loan"},
@@ -833,6 +839,7 @@ var storageFixes = map[string]string{
 	storage.CodeShareIssue:     "An allotment is recorded once and never changed; share capital moves only with the register or the opening balances",
 	storage.CodeConversionStep: "A conversion's ACRA steps are recorded between its approval and its effective date, and never changed",
 	storage.CodeDimension:      "Name at most one value of each of the organisation's dimensions",
+	storage.CodeDimensionFixed: "Rename it or put it out of use: a dimension keeps its kind and place and a value its code, and neither is deleted",
 	storage.CodeBatchHeld:      "Release the approved batch that holds it, or cancel the batch first and then record the payment",
 
 	storage.CodeParty: "Name the director or shareholder on each line of 2500 and 2120 and on no other line; a person with amounts stays a director or shareholder, and their member is linked only by another person's approval",

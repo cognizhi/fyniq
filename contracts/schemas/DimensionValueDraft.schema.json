@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "Its code: a letter or digit, then up to 29 letters, digits, dots, slashes, underscores or hyphens, unique in its dimension whatever the case.",
+      "examples": [
+        "ENG"
+      ],
+      "maxLength": 30,
+      "type": "string"
+    },
+    "dimension_id": {
+      "description": "The dimension it is a value of: one of the organisation's, in use.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name, unique in its dimension whatever the case.",
+      "examples": [
+        "Engineering"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    }
+  },
+  "required": [
+    "dimension_id",
+    "code",
+    "name"
+  ],
+  "title": "DimensionValueDraft",
+  "type": "object"
+}
