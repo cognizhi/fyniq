@@ -9180,12 +9180,7 @@ export interface components {
              * @example Premises & office
              */
             report_group?: string;
-            /**
-             * @description The dimensions a line a person enters on it needs a value of (FR-DIM-01, PRD-001 rev 0.171); left out when it requires none.
-             * @example [
-             *       "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
-             *     ]
-             */
+            /** @description The dimensions a line a person enters on it needs a value of (FR-DIM-01, PRD-001 rev 0.171); left out when it requires none. */
             required_dimension_ids?: string[] | null;
             /**
              * @description Its foreign-currency balances are revalued at month end: a monetary item, such as a bank account, AR or AP (FR-GL-04; PRD-001 rev 0.72).
@@ -9282,12 +9277,7 @@ export interface components {
              * @example Premises & office
              */
             report_group?: string;
-            /**
-             * @description The dimensions a line a person enters on it needs a value of (FR-DIM-01, PRD-001 rev 0.171): the whole list, [] for none; a dimension it adds is in use (DIM-04). Lines posted before keep what they have.
-             * @example [
-             *       "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
-             *     ]
-             */
+            /** @description The dimensions a line a person enters on it needs a value of (FR-DIM-01, PRD-001 rev 0.171): the whole list, [] for none; a dimension it adds is in use (DIM-04). Lines posted before keep what they have. */
             required_dimension_ids?: string[];
             /**
              * @description Revalue its foreign-currency balances at month end: only an asset or a liability settled in money (FR-GL-04; COA-10). Months already revalued keep what they posted.
@@ -9367,12 +9357,7 @@ export interface components {
              * @example Premises & office
              */
             report_group?: string;
-            /**
-             * @description The dimensions a line a person enters on it needs a value of, each in use (listDimensions; DIM-04): a journal line without one is refused (DIM-05), and a posting the system makes by itself is flagged on Checks instead (FR-DIM-01, PRD-001 rev 0.171).
-             * @example [
-             *       "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
-             *     ]
-             */
+            /** @description The dimensions a line a person enters on it needs a value of, each in use (listDimensions; DIM-04): a journal line without one is refused (DIM-05), and a posting the system makes by itself is flagged on Checks instead (FR-DIM-01, PRD-001 rev 0.171). */
             required_dimension_ids?: string[] | null;
             /**
              * @description Revalue its foreign-currency balances at month end: only an asset or a liability settled in money, never prepayments or deferred revenue (FR-GL-04; COA-10).
@@ -17167,12 +17152,7 @@ export interface components {
              * @example October office rent
              */
             description?: string;
-            /**
-             * @description The line's dimension values, in ascending order; absent for a line with none (FR-DIM-02).
-             * @example [
-             *       "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"
-             *     ]
-             */
+            /** @description The line's dimension values, in ascending order; absent for a line with none (FR-DIM-02). */
             dimension_value_ids?: string[] | null;
             /**
              * @description Base currency per unit of the line's currency (1 for the base currency).
@@ -20266,12 +20246,7 @@ export interface components {
              * @example October office rent
              */
             description?: string;
-            /**
-             * @description The line's dimension values, at most one of each dimension, each in use (listDimensionValues; DIM-06). An account that requires a dimension needs a value of it on every line of a journal (FR-DIM-01, PRD-001 rev 0.171; DIM-05).
-             * @example [
-             *       "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"
-             *     ]
-             */
+            /** @description The line's dimension values, at most one of each dimension, each in use (listDimensionValues; DIM-06). An account that requires a dimension needs a value of it on every line of a journal (FR-DIM-01, PRD-001 rev 0.171; DIM-05). */
             dimension_value_ids?: string[] | null;
             /**
              * @description Only for a line not in the base currency: base currency per unit of the line's currency, the document's own rate. Left out, the line takes the rate the cascade finds for the journal's date when its checks run and when it posts, with that rate's source, as lookupFxRate shows it; with none anywhere the line has FX-01 (ENG-40; PRD-001 rev 0.71). A base-currency line takes none; posting refuses one (ENG-03).

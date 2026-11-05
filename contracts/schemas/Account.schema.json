@@ -121,12 +121,12 @@
     },
     "required_dimension_ids": {
       "description": "The dimensions a line a person enters on it needs a value of (FR-DIM-01, PRD-001 rev 0.171); left out when it requires none.",
-      "examples": [
-        [
-          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
-        ]
-      ],
       "items": {
+        "description": "A dimension's ID (listDimensions).",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+        ],
+        "format": "uuid",
         "type": "string"
       },
       "type": [

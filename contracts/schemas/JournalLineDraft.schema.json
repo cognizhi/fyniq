@@ -24,12 +24,12 @@
     },
     "dimension_value_ids": {
       "description": "The line's dimension values, at most one of each dimension, each in use (listDimensionValues; DIM-06). An account that requires a dimension needs a value of it on every line of a journal (FR-DIM-01, PRD-001 rev 0.171; DIM-05).",
-      "examples": [
-        [
-          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"
-        ]
-      ],
       "items": {
+        "description": "A dimension value's ID (listDimensionValues).",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"
+        ],
+        "format": "uuid",
         "type": "string"
       },
       "maxItems": 10,

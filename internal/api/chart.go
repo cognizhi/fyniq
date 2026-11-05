@@ -111,7 +111,7 @@ type AccountDraft struct {
 	Revalue        bool   `json:"revalue,omitempty" doc:"Revalue its foreign-currency balances at month end: only an asset or a liability settled in money, never prepayments or deferred revenue (FR-GL-04; COA-10)." example:"false"`
 	UsefulLife     int    `json:"useful_life_months,omitempty" minimum:"0" maximum:"600" doc:"The default useful life in whole months that the fixed asset register offers for an asset on it; only on an asset account of the register (report group Property, plant & equipment or Intangible assets; FR-COA-02, rev 0.151; COA-11). 0 or left out: none." example:"36"`
 	// The dimensions it requires (FR-DIM-01).
-	RequiredDimensionIDs []string `json:"required_dimension_ids,omitempty" maxItems:"10" doc:"The dimensions a line a person enters on it needs a value of, each in use (listDimensions; DIM-04): a journal line without one is refused (DIM-05), and a posting the system makes by itself is flagged on Checks instead (FR-DIM-01, PRD-001 rev 0.171)." example:"[\"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10\"]"`
+	RequiredDimensionIDs []DimensionRef `json:"required_dimension_ids,omitempty" maxItems:"10" doc:"The dimensions a line a person enters on it needs a value of, each in use (listDimensions; DIM-04): a journal line without one is refused (DIM-05), and a posting the system makes by itself is flagged on Checks instead (FR-DIM-01, PRD-001 rev 0.171)."`
 }
 
 // AccountChanges change an account: a field left out keeps its value. Its code, type and role never change.
@@ -132,7 +132,7 @@ type AccountChanges struct {
 	Revalue        *bool   `json:"revalue,omitempty" doc:"Revalue its foreign-currency balances at month end: only an asset or a liability settled in money (FR-GL-04; COA-10). Months already revalued keep what they posted." example:"true"`
 	UsefulLife     *int    `json:"useful_life_months,omitempty" minimum:"0" maximum:"600" doc:"The default useful life in whole months the fixed asset register offers, on an asset account of the register only (FR-COA-02; COA-11); 0 clears it. Registered assets keep their own lives." example:"60"`
 	// The dimensions it requires (FR-DIM-01).
-	RequiredDimensionIDs *[]string `json:"required_dimension_ids,omitempty" maxItems:"10" doc:"The dimensions a line a person enters on it needs a value of (FR-DIM-01, PRD-001 rev 0.171): the whole list, [] for none; a dimension it adds is in use (DIM-04). Lines posted before keep what they have." example:"[\"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10\"]"`
+	RequiredDimensionIDs *[]DimensionRef `json:"required_dimension_ids,omitempty" maxItems:"10" doc:"The dimensions a line a person enters on it needs a value of (FR-DIM-01, PRD-001 rev 0.171): the whole list, [] for none; a dimension it adds is in use (DIM-04). Lines posted before keep what they have."`
 }
 
 type createAccountInput struct {
@@ -179,7 +179,7 @@ func chartProblems(p []chart.Problem, bad []FieldProblem) error {
 
 // requiredDimensions reads the dimensions an account is to require (FR-DIM-01): each one of the organisation's, once,
 // and in use unless the account required it already (one put out of use since stays, and requires nothing meanwhile).
-func requiredDimensions(ctx context.Context, u storage.UnitOfWork, ids []string, had []uuid.UUID) ([]uuid.UUID, []FieldProblem, error) {
+func requiredDimensions(ctx context.Context, u storage.UnitOfWork, ids []DimensionRef, had []uuid.UUID) ([]uuid.UUID, []FieldProblem, error) {
 	if len(ids) == 0 {
 		return nil, nil, nil
 	}
@@ -195,7 +195,7 @@ func requiredDimensions(ctx context.Context, u storage.UnitOfWork, ids []string,
 	var bad []FieldProblem
 	for k, s := range ids {
 		field := "body.required_dimension_ids[" + strconv.Itoa(k) + "]"
-		id, err := uuid.Parse(s)
+		id, err := uuid.Parse(string(s))
 		d, ok := known[id]
 		switch {
 		case err != nil || !ok:

@@ -144,14 +144,14 @@ type Account struct {
 	Revalue        bool   `json:"revalue" doc:"Its foreign-currency balances are revalued at month end: a monetary item, such as a bank account, AR or AP (FR-GL-04; PRD-001 rev 0.72)." example:"false"`
 	UsefulLife     int    `json:"useful_life_months,omitempty" doc:"The default useful life in whole months the fixed asset register offers for an asset on it (FR-COA-02; PRD-001 rev 0.151); left out when it has none." example:"36"`
 	// The dimensions it requires (FR-DIM-01).
-	RequiredDimensionIDs []string `json:"required_dimension_ids,omitempty" doc:"The dimensions a line a person enters on it needs a value of (FR-DIM-01, PRD-001 rev 0.171); left out when it requires none." example:"[\"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10\"]"`
+	RequiredDimensionIDs []DimensionRef `json:"required_dimension_ids,omitempty" doc:"The dimensions a line a person enters on it needs a value of (FR-DIM-01, PRD-001 rev 0.171); left out when it requires none."`
 }
 
 func accountOf(a storage.Account) Account {
 	out := Account{ID: a.ID.String(), Code: a.Code, Name: a.Name, Type: string(a.Type), Group: a.Group, Active: a.Active, Version: a.Version,
 		ReportGroup: a.ReportGroup, CashFlowLine: a.CashFlowLine, Function: a.Function, MoneyAccount: a.MoneyAccount,
 		DefaultGSTCode: a.DefaultGSTCode, Currency: a.Currency, Control: a.Control, PayrollCost: a.PayrollCost, Guidance: a.Guidance,
-		Role: string(a.Role), Revalue: a.Revalue, UsefulLife: a.UsefulLife, RequiredDimensionIDs: idStrings(a.RequiredDimensions)}
+		Role: string(a.Role), Revalue: a.Revalue, UsefulLife: a.UsefulLife, RequiredDimensionIDs: refsOf[DimensionRef](a.RequiredDimensions)}
 	if a.ParentID != nil {
 		s := a.ParentID.String()
 		out.ParentID = &s
@@ -242,7 +242,7 @@ type JournalLineDraft struct {
 	PartyID      string `json:"party_id,omitempty" format:"uuid" doc:"Only on a director's account (2500, 2120): the director or shareholder the amount belongs to, a contact marked one. Required there and refused on any other account (FR-EQ-01, B.7; LEDGER-41)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"`
 	Origin       string `json:"origin,omitempty" enum:"lent,paid_personally,pay,fee,paid_out,other" doc:"Only on a director's account: where the amount came from, which decides its tax and accounting result (FR-EQ-01). Required there and refused elsewhere (LEDGER-41)." example:"lent"`
 	// The line's dimension values (FR-DIM-02).
-	DimensionValueIDs []string `json:"dimension_value_ids,omitempty" maxItems:"10" doc:"The line's dimension values, at most one of each dimension, each in use (listDimensionValues; DIM-06). An account that requires a dimension needs a value of it on every line of a journal (FR-DIM-01, PRD-001 rev 0.171; DIM-05)." example:"[\"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21\"]"`
+	DimensionValueIDs []DimensionValueRef `json:"dimension_value_ids,omitempty" maxItems:"10" doc:"The line's dimension values, at most one of each dimension, each in use (listDimensionValues; DIM-06). An account that requires a dimension needs a value of it on every line of a journal (FR-DIM-01, PRD-001 rev 0.171; DIM-05)."`
 }
 
 // RateSourceDocument is the source of a rate typed on the document (ENG-40).
@@ -446,7 +446,7 @@ type EntryLine struct {
 	Description  string `json:"description,omitempty" doc:"What the line is for." example:"October office rent"`
 	PartyID      string `json:"party_id,omitempty" format:"uuid" doc:"On a director's account only: the director or shareholder the amount belongs to (FR-EQ-01, B.7)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"`
 	// The line's dimension values (FR-DIM-02).
-	DimensionValueIDs []string `json:"dimension_value_ids,omitempty" doc:"The line's dimension values, in ascending order; absent for a line with none (FR-DIM-02)." example:"[\"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21\"]"`
+	DimensionValueIDs []DimensionValueRef `json:"dimension_value_ids,omitempty" doc:"The line's dimension values, in ascending order; absent for a line with none (FR-DIM-02)."`
 }
 
 // Entry is a posted journal entry: append-only, corrected only by reversal.
@@ -487,7 +487,7 @@ func linesOut(lines []journal.SavedLine) []JournalLineDraft {
 		out = append(out, JournalLineDraft{AccountID: l.AccountID.String(),
 			Amount: Money{Amount: l.Amount.String(), Currency: l.Amount.Currency().Code},
 			FXRate: l.FXRate, FXRateSource: l.FXRateSource, Description: l.Description, PartyID: idOrEmpty(l.PartyID), Origin: l.Origin,
-			DimensionValueIDs: idStrings(l.DimensionValueIDs)})
+			DimensionValueIDs: refsOf[DimensionValueRef](l.DimensionValueIDs)})
 	}
 	return out
 }
@@ -512,12 +512,28 @@ func partyOf(s, field string) (uuid.UUID, *FieldProblem) {
 	return id, nil
 }
 
+// DimensionValueRef is a dimension value named by its ID.
+type DimensionValueRef string
+
+// Schema implements huma.SchemaProvider: a UUID string, with an example.
+func (DimensionValueRef) Schema(huma.Registry) *huma.Schema {
+	return &huma.Schema{Type: "string", Format: "uuid", Description: "A dimension value's ID (listDimensionValues).", Examples: []any{"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"}}
+}
+
+// DimensionRef is a dimension named by its ID.
+type DimensionRef string
+
+// Schema implements huma.SchemaProvider: a UUID string, with an example.
+func (DimensionRef) Schema(huma.Registry) *huma.Schema {
+	return &huma.Schema{Type: "string", Format: "uuid", Description: "A dimension's ID (listDimensions).", Examples: []any{"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"}}
+}
+
 // valuesOf reads a line's dimension values: every one an ID, said for each that is not.
-func valuesOf(ids []string, field string) ([]uuid.UUID, []FieldProblem) {
+func valuesOf(ids []DimensionValueRef, field string) ([]uuid.UUID, []FieldProblem) {
 	var out []uuid.UUID
 	var bad []FieldProblem
 	for k, s := range ids {
-		id, err := uuid.Parse(s)
+		id, err := uuid.Parse(string(s))
 		if err != nil {
 			bad = append(bad, FieldProblem{Code: CodeInvalid, Field: field + "[" + strconv.Itoa(k) + "]", Message: "is not a dimension value's ID",
 				Fix: "Send the ID listDimensionValues gives"})
@@ -528,14 +544,14 @@ func valuesOf(ids []string, field string) ([]uuid.UUID, []FieldProblem) {
 	return out, bad
 }
 
-// idStrings are IDs as the API sends them; nil for none, which leaves the field out.
-func idStrings(ids []uuid.UUID) []string {
+// refsOf are IDs as the API sends them; nil for none, which leaves the field out.
+func refsOf[T ~string](ids []uuid.UUID) []T {
 	if len(ids) == 0 {
 		return nil
 	}
-	out := make([]string, len(ids))
+	out := make([]T, len(ids))
 	for i, id := range ids {
-		out[i] = id.String()
+		out[i] = T(id.String())
 	}
 	return out
 }
@@ -552,7 +568,7 @@ func entryOf(e storage.Entry) Entry {
 	for _, l := range e.Lines {
 		out.Lines = append(out.Lines, EntryLine{LineNo: l.LineNo, AccountID: l.AccountID.String(), Amount: moneyOf(l.Amount, l.Currency),
 			FXRate: trimDecimal(string(l.FXRate)), FXRateSource: l.FXRateSource, BaseAmount: moneyOf(l.BaseAmount, l.BaseCurrency), Description: l.Description,
-			PartyID: idOrEmpty(l.PartyID), DimensionValueIDs: idStrings(l.DimensionValues)})
+			PartyID: idOrEmpty(l.PartyID), DimensionValueIDs: refsOf[DimensionValueRef](l.DimensionValues)})
 	}
 	return out
 }
