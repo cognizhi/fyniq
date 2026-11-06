@@ -93,6 +93,41 @@ describe("reconciling an account for a month", () => {
     expect(screen.queryByRole("button", { name: "Sign it off" })).toBeNull();
   });
 
+  // req: SOD-5
+  // req: access/roles-and-segregation SOD-5 when signing off a reconciliation
+  it("asks for an override, with a reason, when its signer decided lines it covers; axe finds nothing", async () => {
+    const sent = answer({
+      ...reads(rec()),
+      "POST /v1/money-accounts/m1/reconciliations/p9/sign": {
+        status: 403,
+        body: { status: 403, code: "BANK-15", title: "You recorded the bank transactions this sign-off covers (SOD-5)", detail: "You decided 1 of the lines this reconciliation covers.", fix: "Ask another person who holds the sign-off right to sign it off, or ask for an override with your reason: another person approves it" },
+      },
+      "POST /v1/money-accounts/m1/reconciliations/p9/sign-override": { status: 202, body: { id: "a-77", status: "pending", summary: "Sign off DBS current's reconciliation for September 2026, overriding SOD-5" } },
+    });
+    const { container } = renderPage(BankReconciliation, { ...at, session: controller, organisation: standardOrg });
+    fireEvent.click(await screen.findByRole("button", { name: "Sign it off" }));
+    expect(await screen.findByRole("heading", { name: "Ask for an override" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Ask for an override" }));
+    expect(await screen.findByText(/The override needs your reason/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Why you sign it off yourself"), { target: { value: "Omar is on leave until December" } });
+    await noViolations(container);
+    fireEvent.click(screen.getByRole("button", { name: "Ask for an override" }));
+    expect(await screen.findByText(/Waiting for an Owner to approve the override/)).toBeTruthy();
+    const asked = sent.find((x) => x.path === "/v1/money-accounts/m1/reconciliations/p9/sign-override");
+    expect(asked?.headers.get("If-Match")).toBe('"1"');
+    expect(asked?.body).toEqual({ reason: "Omar is on leave until December" });
+    expect(screen.getByRole("link", { name: "The request" }).getAttribute("href")).toBe("/approvals/a-77");
+  });
+
+  // req: C.2 #62
+  it("shows the override a reconciliation was signed off under", async () => {
+    answer(reads(rec({ signed_by: "user:x", signed_at: "2026-10-04T01:00:00Z", sod_override: { conflict: "SOD-5", approval_id: "a-77", reason: "Omar is on leave until December" } })));
+    renderPage(BankReconciliation, { ...at, session: bookkeeper, organisation: standardOrg });
+    expect(await screen.findByText("Under an override")).toBeTruthy();
+    expect(screen.getByText(/Omar is on leave until December/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "The approval" }).getAttribute("href")).toBe("/approvals/a-77");
+  });
+
   it("shows a signed-off reconciliation as locked with the month", async () => {
     answer(reads(rec({ signed_by: "user:x", signed_at: "2026-10-04T01:00:00Z" })));
     renderPage(BankReconciliation, { ...at, session: bookkeeper, organisation: standardOrg });

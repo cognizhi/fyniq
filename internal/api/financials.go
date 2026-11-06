@@ -68,8 +68,8 @@ type FinancialBlock struct {
 type FinancialColumn struct {
 	Key   string `json:"key" doc:"current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month or by dimension; value:<id> and none, a P&L by dimension's columns." example:"current"`
 	Label string `json:"label,omitempty" doc:"A P&L by dimension's column: the value's code and name, No <dimension> for the lines with no value of it, or Total." example:"ENG Engineering"`
-	From string `json:"from" format:"date" doc:"The run's first day." example:"2026-10-01"`
-	To   string `json:"to" format:"date" doc:"The run's last day: a balance sheet's or a trial balance's figures are at its end." example:"2026-10-31"`
+	From  string `json:"from" format:"date" doc:"The run's first day." example:"2026-10-01"`
+	To    string `json:"to" format:"date" doc:"The run's last day: a balance sheet's or a trial balance's figures are at its end." example:"2026-10-31"`
 }
 
 // FinancialCheck is one of a statement's checks (INV-10).
@@ -109,15 +109,15 @@ type FinancialStatement struct {
 }
 
 type financialStatementInput struct {
-	Kind     string `path:"kind" enum:"pl,bs,cf,tb" doc:"pl: the profit and loss; bs: the balance sheet; cf: the cash flow; tb: the trial balance." example:"pl"`
-	From     string `query:"from" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's first month, YYYY-MM; left out, the last month's. A balance sheet is at the last month's end, with the movement in equity over the run; a trial balance is at the last month's end." example:"2026-10"`
-	To       string `query:"to" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's last month, YYYY-MM; left out, the month of the organisation's today." example:"2026-10"`
-	Compare  string `query:"compare" enum:"prior_period,prior_year" doc:"A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning." example:"prior_period"`
-	Columns  string `query:"columns" enum:"total,month,dimension" default:"total" doc:"total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02), without a comparative." example:"total"`
+	Kind    string `path:"kind" enum:"pl,bs,cf,tb" doc:"pl: the profit and loss; bs: the balance sheet; cf: the cash flow; tb: the trial balance." example:"pl"`
+	From    string `query:"from" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's first month, YYYY-MM; left out, the last month's. A balance sheet is at the last month's end, with the movement in equity over the run; a trial balance is at the last month's end." example:"2026-10"`
+	To      string `query:"to" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's last month, YYYY-MM; left out, the month of the organisation's today." example:"2026-10"`
+	Compare string `query:"compare" enum:"prior_period,prior_year" doc:"A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning." example:"prior_period"`
+	Columns string `query:"columns" enum:"total,month,dimension" default:"total" doc:"total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02), without a comparative." example:"total"`
 	// A P&L by dimension (FR-DIM-02; rev 0.171).
 	DimensionID string   `query:"dimension_id" format:"uuid" doc:"With columns=dimension: the dimension whose values make the columns (listDimensions)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"`
 	ValueIDs    []string `query:"dimension_value_id,explode" maxItems:"10" doc:"A P&L of the lines that carry each of these values only (listDimensionValues), such as a department's P&L; each as its own dimension_value_id parameter. A dimension's lines are one side of their entries, so a balance sheet, a cash flow or a trial balance takes none." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d91"`
-	Revision int64  `query:"as_at_revision" minimum:"1" doc:"Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands." example:"42"`
+	Revision    int64    `query:"as_at_revision" minimum:"1" doc:"Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands." example:"42"`
 }
 
 type financialStatementOutput struct{ Body FinancialStatement }

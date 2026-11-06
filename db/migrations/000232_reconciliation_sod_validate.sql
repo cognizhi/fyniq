@@ -1,0 +1,11 @@
+-- Validates the checks 000231 widened and added for SOD-5 at the reconciliation's sign-off (PRD-001 §6.3, FR-BNK-10).
+
+-- +goose Up
+-- Fail fast instead of queueing behind live traffic (squawk: require-lock-timeout).
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '60s';
+
+ALTER TABLE fyniq.approval_request VALIDATE CONSTRAINT approval_request_object_known;
+ALTER TABLE fyniq.approval_policy VALIDATE CONSTRAINT approval_policy_object_known;
+ALTER TABLE fyniq.bank_reconciliation VALIDATE CONSTRAINT bank_reconciliation_override_approval_fkey;
+ALTER TABLE fyniq.bank_reconciliation VALIDATE CONSTRAINT bank_reconciliation_override_whole;

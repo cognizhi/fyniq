@@ -18,12 +18,13 @@ import (
 )
 
 // A closed period reopens only on another person's approval, with a reason; the reopening keeps the snapshots before
-// and after; only the latest closed period reopens, and a request it no longer fits is void. The others who close and
-// post hear of each close and reopening.
+// and after; only the latest closed period reopens, and a request it no longer fits is void. Whoever closed a period
+// never reopens it alone (SOD-7). The others who close and post hear of each close and reopening.
 // req: FR-GL-08
 // req: FR-NTF-01
 // req: FM-1
 // req: AUD-04
+// req: SOD-7
 func TestReopeningAClosedPeriod(t *testing.T) {
 	f := newFounders(t)
 	e := f.e
@@ -109,6 +110,15 @@ func TestReopeningAClosedPeriod(t *testing.T) {
 	if s := e.call(http.MethodGet, path(nov, "close"), ahkow, nil); s.str("period", "status") != "closed" {
 		t.Fatalf("November after a void request: %s", s.Raw)
 	}
+
+	// SOD-7: whoever closed a period never reopens it alone. Wei Ling attested December's close; she may ask to reopen
+	// it, and another person approves it, never she.
+	mine := ask(weiling, dec.ID.String())
+	if mine.Status != 202 {
+		t.Fatalf("December's closer asking to reopen it: %d %s", mine.Status, mine.Raw)
+	}
+	mineView := e.call(http.MethodGet, "/v1/approvals/"+mine.str("id"), weiling, nil)
+	e.problemIs(f.decide(weiling, mine.str("id"), "approve", hashOf(mineView)), "approveApproval", 403, approval.CodeOwnRequest)
 
 	// The matrix: an Owner alone does not ask; a Bookkeeper sees nothing.
 	e.problemIs(ask(f.as(f.weiling, authz.Owner), oct), "requestPeriodReopen", 403, CodeForbidden)

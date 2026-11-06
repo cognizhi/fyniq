@@ -40,7 +40,11 @@ var (
 	onAttest    = []string{"access_review_attestation", "user_membership"}
 	onGlass     = []string{"break_glass", "review_log_review"}
 	onReview    = []string{"accountant_review", "team_mode"}
+	onOverride  = []string{"bank_reconciliation", "team_mode"}
 )
+
+// The Appendix D row whose view opens the overrides' items: whoever views reconciliations sees how they were signed.
+const viewReconciliations = "Bank reconciliation sign-off"
 
 // The checks of the controls: p1-checks slice 4 (task 4.2).
 var controlChecks = []Definition{
@@ -75,6 +79,11 @@ var controlChecks = []Definition{
 			"queries answered and signed off. A quarter is overdue 60 days after it ends. The review is recorded on Accountant " +
 			"reviews: it cannot be marked reviewed here.",
 		Rules: "FM-7", Owner: "owner", View: viewReviews, Triggers: onReview, ReviewedIn: InAccountantReview, Run: accountantReviewOverdue},
+	{Key: "controls.sod-overrides", Ref: "C.2 #62", Area: "Controls", Worst: Warning, Title: "Every override of a conflict of duties is reported",
+		Explain: "In Standard and Enterprise modes a person who decided bank lines of an account in a month does not sign off its " +
+			"reconciliation (SOD-5), unless they asked for an override with a reason and another person approved it (§6.4). Each " +
+			"reconciliation of an open month signed off under an override is listed here, with its reason, for review.",
+		Rules: "SOD-5, §6.4", Owner: "owner", View: viewReconciliations, Triggers: onOverride, Run: sodOverrides},
 }
 
 // modeOf is the team mode in force and its version: Founder mode, version 0, until the first switch.
@@ -84,6 +93,33 @@ func modeOf(ctx context.Context, u storage.UnitOfWork) (string, int, error) {
 		return team.Default, 0, err
 	}
 	return all[len(all)-1].Mode, all[len(all)-1].Version, nil
+}
+
+// C.2 #62: the reconciliations of the open months signed off under an override of SOD-5 (rev 0.179).
+func sodOverrides(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
+	var items []Item
+	for _, p := range e.Started() {
+		recs, err := u.BankMatching().Reconciliations(ctx, p.ID)
+		if err != nil {
+			return Result{}, err
+		}
+		for _, r := range recs {
+			if r.SoDOverrideApproval == nil {
+				continue
+			}
+			acc, err := u.Banking().MoneyAccount(ctx, r.MoneyAccountID)
+			if err != nil {
+				return Result{}, err
+			}
+			items = append(items, Item{Kind: "bank_reconciliation", ID: r.ID.String(), Label: acc.Name + ", " + p.StartsOn.Format("January 2006"),
+				Detail: "Signed off under an override of SOD-5: " + r.SoDOverrideReason, Version: fmt.Sprint(r.Version)})
+		}
+	}
+	if len(items) == 0 {
+		return Fine("No reconciliation of an open month was signed off under an override"), nil
+	}
+	return Found(Warning, items, fmt.Sprintf("%d reconciliation(s) signed off under an override of SOD-5", len(items)),
+		"Read each reason; mark it reviewed once you are satisfied"), nil
 }
 
 // C.2 #4: in Founder mode, review log entries unreviewed 14 days after they executed (FM-3).

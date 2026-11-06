@@ -391,6 +391,7 @@ export const actions = [
   { kind: "action", id: "banking.reconcile-now", mode: "basic", help: "banking.reconcile-now", guide: "banking.accounts#categorise-the-waiting-lines" },
   { kind: "action", id: "bank-rule.auto-apply", mode: "expert", help: "bank-rule.auto-apply", guide: "banking.accounts#bank-rules" },
   { kind: "action", id: "bank-reconciliation.sign", mode: "expert", help: "bank-reconciliation.sign", guide: "banking.accounts#reconcile-an-account-for-a-month" },
+  { kind: "action", id: "bank-reconciliation.override", mode: "expert", help: "bank-reconciliation.override", guide: "banking.accounts#reconcile-an-account-for-a-month" },
   { kind: "action", id: "bill.calendar", mode: "basic", help: "bill.calendar", guide: "purchases.bills#plan-and-track-payments" },
   { kind: "action", id: "bill.plan-payment", mode: "basic", help: "bill.plan-payment", guide: "purchases.bills#plan-and-track-payments" },
   { kind: "action", id: "inbox.bills-to-pay", mode: "basic", help: "inbox.bills-to-pay", guide: "purchases.bills#plan-and-track-payments" },

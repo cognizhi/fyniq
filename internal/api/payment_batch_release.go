@@ -664,7 +664,7 @@ func registerPaymentBatchRelease(a *API) {
 			"batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and releases nothing.",
 	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeSessionRequired,
 		CodeStepUpRequired, CodeBatchNotOpen, CodeBatchReleased, CodeBatchReapprove, CodeBatchSeparation, payee.CodeNoKeys, storage.CodeBatch,
-		storage.CodeBatchHeld}, append(append(append(locks, checkCodes...), BatchCodes...), postingCodes()...)...),
+		storage.CodeBatchHeld, team.CodeAction}, append(append(append(locks, checkCodes...), BatchCodes...), postingCodes()...)...),
 		func(ctx context.Context, in *batchCommandInput) (*batchReleaseOutput, error) {
 			id, err := parseID("batch_id", in.BatchID)
 			if err != nil {
@@ -678,6 +678,9 @@ func registerPaymentBatchRelease(a *API) {
 				return nil, err
 			}
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (PaymentBatch, error) {
+				if err := checkConflicts(ctx, u, p, "Releasing a payment batch"); err != nil { // SOD-6, rev 0.179
+					return PaymentBatch{}, err
+				}
 				return a.releaseBatch(ctx, u, p, id, in.IfMatch)
 			})
 			if err != nil {

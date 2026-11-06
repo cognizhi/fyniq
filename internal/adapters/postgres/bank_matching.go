@@ -48,7 +48,8 @@ func toReconciliation(r sqlcdb.FyniqBankReconciliation) storage.BankReconciliati
 		StatementBalance: storage.Decimal(r.StatementBalance), BookBalance: storage.Decimal(r.BookBalance),
 		UnreconciledTotal: storage.Decimal(r.UnreconciledTotal), UnreconciledCount: int(r.UnreconciledCount),
 		Difference: storage.Decimal(r.Difference), LedgerRevision: r.LedgerRevision, PreparedBy: r.PreparedBy, PreparedAt: r.PreparedAt,
-		SignedBy: str(r.SignedBy), SignedAt: r.SignedAt, Version: int(r.Version)}
+		SignedBy: str(r.SignedBy), SignedAt: r.SignedAt, SoDOverrideApproval: r.SodOverrideApproval, SoDOverrideReason: str(r.SodOverrideReason),
+		Version: int(r.Version)}
 }
 
 func idText(id *uuid.UUID) any {
@@ -418,6 +419,32 @@ func (r bankMatching) SignReconciliation(ctx context.Context, id uuid.UUID, vers
 	}
 	out := toReconciliation(row)
 	return out, r.u.event(ctx, "bank_reconciliation.signed", "bank_reconciliation", id, &out.Version, map[string][2]any{"signed_by": {nil, by}})
+}
+
+func (r bankMatching) SignReconciliationOverridden(ctx context.Context, id uuid.UUID, version int, by string, mfaAt, at time.Time,
+	approval uuid.UUID, reason string) (storage.BankReconciliation, error) {
+	if err := r.u.check(); err != nil {
+		return storage.BankReconciliation{}, err
+	}
+	row, err := r.u.q.SignBankReconciliationOverridden(ctx, sqlcdb.SignBankReconciliationOverriddenParams{By: &by, At: &at, MfaAt: &mfaAt,
+		Approval: &approval, Reason: &reason, ID: id, Version: small(version)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.BankReconciliation{}, &storage.Error{Code: storage.CodeVersion, Message: "the reconciliation changed since it was read"}
+	}
+	if err != nil {
+		return storage.BankReconciliation{}, mapError(err)
+	}
+	out := toReconciliation(row)
+	return out, r.u.event(ctx, "bank_reconciliation.signed", "bank_reconciliation", id, &out.Version, map[string][2]any{"signed_by": {nil, by},
+		"sod_override_approval": {nil, approval.String()}, "sod_override_reason": {nil, reason}})
+}
+
+func (r bankMatching) DecidedBy(ctx context.Context, moneyAccountID uuid.UUID, from, to time.Time, by string) (int, error) {
+	if err := r.u.check(); err != nil {
+		return 0, err
+	}
+	n, err := r.u.q.BankLinesDecidedBy(ctx, sqlcdb.BankLinesDecidedByParams{MoneyAccountID: moneyAccountID, FromDate: from, ToDate: to, By: by})
+	return int(n), mapError(err)
 }
 
 func (r bankMatching) Reconciliations(ctx context.Context, periodID uuid.UUID) ([]storage.BankReconciliation, error) {

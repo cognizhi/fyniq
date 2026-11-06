@@ -843,6 +843,19 @@ Source: PRD-001 §C.2
 - **WHEN** no automatic reversal is due by the period's end and none from the period waits
 - **THEN** the check passes
 
+### Requirement: C.2 #62 Reconciliations signed off under an override
+The system SHALL warn (⚠) for each reconciliation of an open month signed off under an override of SOD-5, listing it with its reason for review (§6.4; rev 0.179, the owner's decisions of 6 Nov 2026).
+
+Source: PRD-001 §C.2
+
+#### Scenario: A reconciliation signed off under an override
+- **WHEN** a reconciliation of an open month was signed off under an approved override of SOD-5
+- **THEN** the check warns (⚠), naming the account and the month with the override's reason
+
+#### Scenario: No override
+- **WHEN** no reconciliation of an open month was signed off under an override
+- **THEN** the check passes
+
 ### Requirement: C.2 #61 Accountant review overdue
 The system SHALL warn (⚠) in Founder mode when a calendar quarter ended more than 60 days ago and no signed-off accountant review covers its last month (FM-7; the owner's decision of 6 Nov 2026).
 

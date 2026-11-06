@@ -16,6 +16,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
+	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -288,7 +289,7 @@ func registerClose(a *API) {
 			"Idempotency-Key; Prefer: return=preview checks it and closes nothing.",
 	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeIdempotencyReused,
 		CodeIdempotencyBusy, CodeIdempotencyOld, CodeSessionRequired, CodeStepUpRequired, storage.CodePeriodState, storage.CodeClose, storage.CodeRetry,
-		storage.CodeLockTimeout}, CloseCodes...),
+		storage.CodeLockTimeout, team.CodeAction}, CloseCodes...),
 		func(ctx context.Context, in *closePeriodInput) (*closeWriteOutput, error) {
 			id, err := parseID("period_id", in.PeriodID)
 			if err != nil {
@@ -319,6 +320,9 @@ func registerClose(a *API) {
 					return PeriodCloseState{}, err
 				}
 				if err := checkIfMatch(in.IfMatch, periodETag(periodOf(before, cal))); err != nil {
+					return PeriodCloseState{}, err
+				}
+				if err := checkConflicts(ctx, u, p, "Attesting a close"); err != nil { // SOD-6, rev 0.179
 					return PeriodCloseState{}, err
 				}
 				if _, _, err := a.closing.Close(ctx, p.Organisation, id, checks, statement); err != nil {

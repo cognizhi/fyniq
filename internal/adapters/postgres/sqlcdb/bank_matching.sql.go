@@ -12,6 +12,31 @@ import (
 	"github.com/google/uuid"
 )
 
+const bankLinesDecidedBy = `-- name: BankLinesDecidedBy :one
+SELECT count(*) FROM fyniq.bank_line
+ WHERE money_account_id = $1 AND booking_date BETWEEN $2::date AND $3::date
+   AND status IN ('categorised', 'matched', 'transferred', 'suspense', 'excluded') AND status_by = $4
+`
+
+type BankLinesDecidedByParams struct {
+	MoneyAccountID uuid.UUID
+	FromDate       time.Time
+	ToDate         time.Time
+	By             string
+}
+
+func (q *Queries) BankLinesDecidedBy(ctx context.Context, arg BankLinesDecidedByParams) (int64, error) {
+	row := q.db.QueryRow(ctx, bankLinesDecidedBy,
+		arg.MoneyAccountID,
+		arg.FromDate,
+		arg.ToDate,
+		arg.By,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const bankMatches = `-- name: BankMatches :many
 SELECT organisation_id, id, line_id, kind, document_id, entry_id, transfer_id, basis, rule_id, made_by, made_at, undone_by, undone_at, undo_reason FROM fyniq.bank_match
  WHERE ($1::uuid IS NULL OR line_id = $1::uuid)
@@ -72,7 +97,7 @@ func (q *Queries) BankMatches(ctx context.Context, arg BankMatchesParams) ([]Fyn
 }
 
 const bankReconciliation = `-- name: BankReconciliation :one
-SELECT organisation_id, id, money_account_id, period_id, currency, minor_units, statement_balance, book_balance, unreconciled_total, unreconciled_count, difference, ledger_revision, prepared_by, prepared_at, signed_by, signed_at, signer_mfa_at, version FROM fyniq.bank_reconciliation WHERE money_account_id = $1 AND period_id = $2
+SELECT organisation_id, id, money_account_id, period_id, currency, minor_units, statement_balance, book_balance, unreconciled_total, unreconciled_count, difference, ledger_revision, prepared_by, prepared_at, signed_by, signed_at, signer_mfa_at, version, sod_override_approval, sod_override_reason FROM fyniq.bank_reconciliation WHERE money_account_id = $1 AND period_id = $2
 `
 
 type BankReconciliationParams struct {
@@ -102,12 +127,14 @@ func (q *Queries) BankReconciliation(ctx context.Context, arg BankReconciliation
 		&i.SignedAt,
 		&i.SignerMfaAt,
 		&i.Version,
+		&i.SodOverrideApproval,
+		&i.SodOverrideReason,
 	)
 	return i, err
 }
 
 const bankReconciliations = `-- name: BankReconciliations :many
-SELECT organisation_id, id, money_account_id, period_id, currency, minor_units, statement_balance, book_balance, unreconciled_total, unreconciled_count, difference, ledger_revision, prepared_by, prepared_at, signed_by, signed_at, signer_mfa_at, version FROM fyniq.bank_reconciliation WHERE period_id = $1 ORDER BY money_account_id
+SELECT organisation_id, id, money_account_id, period_id, currency, minor_units, statement_balance, book_balance, unreconciled_total, unreconciled_count, difference, ledger_revision, prepared_by, prepared_at, signed_by, signed_at, signer_mfa_at, version, sod_override_approval, sod_override_reason FROM fyniq.bank_reconciliation WHERE period_id = $1 ORDER BY money_account_id
 `
 
 func (q *Queries) BankReconciliations(ctx context.Context, periodID uuid.UUID) ([]FyniqBankReconciliation, error) {
@@ -138,6 +165,8 @@ func (q *Queries) BankReconciliations(ctx context.Context, periodID uuid.UUID) (
 			&i.SignedAt,
 			&i.SignerMfaAt,
 			&i.Version,
+			&i.SodOverrideApproval,
+			&i.SodOverrideReason,
 		); err != nil {
 			return nil, err
 		}
@@ -510,7 +539,7 @@ SELECT $1, $2, c.code, c.minor_units, $3::numeric,
   $4::numeric, $5::numeric, $6, $7::numeric,
   $8, $9, $10
   FROM fyniq.currencies c WHERE c.code = $11
-RETURNING organisation_id, id, money_account_id, period_id, currency, minor_units, statement_balance, book_balance, unreconciled_total, unreconciled_count, difference, ledger_revision, prepared_by, prepared_at, signed_by, signed_at, signer_mfa_at, version
+RETURNING organisation_id, id, money_account_id, period_id, currency, minor_units, statement_balance, book_balance, unreconciled_total, unreconciled_count, difference, ledger_revision, prepared_by, prepared_at, signed_by, signed_at, signer_mfa_at, version, sod_override_approval, sod_override_reason
 `
 
 type InsertBankReconciliationParams struct {
@@ -561,6 +590,8 @@ func (q *Queries) InsertBankReconciliation(ctx context.Context, arg InsertBankRe
 		&i.SignedAt,
 		&i.SignerMfaAt,
 		&i.Version,
+		&i.SodOverrideApproval,
+		&i.SodOverrideReason,
 	)
 	return i, err
 }
@@ -782,7 +813,7 @@ UPDATE fyniq.bank_reconciliation
        difference = $5::numeric, ledger_revision = $6, prepared_by = $7,
        prepared_at = $8, version = version + 1
  WHERE id = $9
-RETURNING organisation_id, id, money_account_id, period_id, currency, minor_units, statement_balance, book_balance, unreconciled_total, unreconciled_count, difference, ledger_revision, prepared_by, prepared_at, signed_by, signed_at, signer_mfa_at, version
+RETURNING organisation_id, id, money_account_id, period_id, currency, minor_units, statement_balance, book_balance, unreconciled_total, unreconciled_count, difference, ledger_revision, prepared_by, prepared_at, signed_by, signed_at, signer_mfa_at, version, sod_override_approval, sod_override_reason
 `
 
 type ReprepareBankReconciliationParams struct {
@@ -829,6 +860,8 @@ func (q *Queries) ReprepareBankReconciliation(ctx context.Context, arg Reprepare
 		&i.SignedAt,
 		&i.SignerMfaAt,
 		&i.Version,
+		&i.SodOverrideApproval,
+		&i.SodOverrideReason,
 	)
 	return i, err
 }
@@ -882,7 +915,7 @@ const signBankReconciliation = `-- name: SignBankReconciliation :one
 UPDATE fyniq.bank_reconciliation
    SET signed_by = $1, signed_at = $2, signer_mfa_at = $3, version = version + 1
  WHERE id = $4 AND version = $5
-RETURNING organisation_id, id, money_account_id, period_id, currency, minor_units, statement_balance, book_balance, unreconciled_total, unreconciled_count, difference, ledger_revision, prepared_by, prepared_at, signed_by, signed_at, signer_mfa_at, version
+RETURNING organisation_id, id, money_account_id, period_id, currency, minor_units, statement_balance, book_balance, unreconciled_total, unreconciled_count, difference, ledger_revision, prepared_by, prepared_at, signed_by, signed_at, signer_mfa_at, version, sod_override_approval, sod_override_reason
 `
 
 type SignBankReconciliationParams struct {
@@ -921,6 +954,62 @@ func (q *Queries) SignBankReconciliation(ctx context.Context, arg SignBankReconc
 		&i.SignedAt,
 		&i.SignerMfaAt,
 		&i.Version,
+		&i.SodOverrideApproval,
+		&i.SodOverrideReason,
+	)
+	return i, err
+}
+
+const signBankReconciliationOverridden = `-- name: SignBankReconciliationOverridden :one
+UPDATE fyniq.bank_reconciliation
+   SET signed_by = $1, signed_at = $2, signer_mfa_at = $3,
+       sod_override_approval = $4, sod_override_reason = $5, version = version + 1
+ WHERE id = $6 AND version = $7
+RETURNING organisation_id, id, money_account_id, period_id, currency, minor_units, statement_balance, book_balance, unreconciled_total, unreconciled_count, difference, ledger_revision, prepared_by, prepared_at, signed_by, signed_at, signer_mfa_at, version, sod_override_approval, sod_override_reason
+`
+
+type SignBankReconciliationOverriddenParams struct {
+	By       *string
+	At       *time.Time
+	MfaAt    *time.Time
+	Approval *uuid.UUID
+	Reason   *string
+	ID       uuid.UUID
+	Version  int32
+}
+
+func (q *Queries) SignBankReconciliationOverridden(ctx context.Context, arg SignBankReconciliationOverriddenParams) (FyniqBankReconciliation, error) {
+	row := q.db.QueryRow(ctx, signBankReconciliationOverridden,
+		arg.By,
+		arg.At,
+		arg.MfaAt,
+		arg.Approval,
+		arg.Reason,
+		arg.ID,
+		arg.Version,
+	)
+	var i FyniqBankReconciliation
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.MoneyAccountID,
+		&i.PeriodID,
+		&i.Currency,
+		&i.MinorUnits,
+		&i.StatementBalance,
+		&i.BookBalance,
+		&i.UnreconciledTotal,
+		&i.UnreconciledCount,
+		&i.Difference,
+		&i.LedgerRevision,
+		&i.PreparedBy,
+		&i.PreparedAt,
+		&i.SignedBy,
+		&i.SignedAt,
+		&i.SignerMfaAt,
+		&i.Version,
+		&i.SodOverrideApproval,
+		&i.SodOverrideReason,
 	)
 	return i, err
 }

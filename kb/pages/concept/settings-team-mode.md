@@ -4,7 +4,7 @@ type: concept
 title: Team mode: how strictly duties are separated
 summary: Founder and Standard mode, which roles conflict, how a switch is asked for and approved, what Standard mode blocks, and break-glass for a founder alone
 sources:
-  - docs/user-guide/team-mode.md sha256:0012b43eb39466f72e64e144cab37ec092500b82b9432519def21322c2d023ee
+  - docs/user-guide/team-mode.md sha256:4416685817b32d0b6134dd2b849c24c09d465325d12f6f239713a8116d7b2276
 data_class: general
 taint: trusted
 status: published
@@ -40,6 +40,7 @@ aliases:
 - The Administrator role together with any role that posts, approves or releases money: Owner, Controller, Accountant, Bookkeeper, AR specialist, Payment releaser or Approver ([[members.roles]]).
 - The Owner role on its own is not a conflict: every change an Owner makes to people, roles or approval policies needs another person's approval.
 - **Settings → Team mode** lists each member whose roles conflict, in every mode.
+- In Standard mode a person whose roles conflict, with no override, also cannot approve or reject a request about money (a journal, a bill, a payment batch), release a payment batch, sign off a bank reconciliation or close a month.
 
 (src: docs/user-guide/team-mode.md#which-roles-conflict)
 

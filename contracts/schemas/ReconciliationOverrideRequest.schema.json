@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "description": "Why you sign it off although you decided lines it covers: the approver reads it, and the reconciliation and Checks keep it.",
+      "examples": [
+        "The other Controller is on leave until December"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "ReconciliationOverrideRequest",
+  "type": "object"
+}

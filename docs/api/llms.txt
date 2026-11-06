@@ -360,6 +360,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/money-accounts/{money_account_id}/gaps/{gap_id}/resolve` (resolveBankGap): Resolve a gap in a money account's statements
 - `GET /v1/money-accounts/{money_account_id}/reconciliations/{period_id}` (getBankReconciliation): Get a money account's reconciliation for a period
 - `POST /v1/money-accounts/{money_account_id}/reconciliations/{period_id}/sign` (signBankReconciliation): Sign off a money account's reconciliation
+- `POST /v1/money-accounts/{money_account_id}/reconciliations/{period_id}/sign-override` (requestReconciliationOverride): Ask to sign off a reconciliation under an override of SOD-5
 - `POST /v1/money-accounts/{money_account_id}/sources` (addMoneyAccountSource): Change where a money account's data comes from
 - `GET /v1/money-accounts/{money_account_id}/statements` (listBankStatements): List a money account's statements
 - `GET /v1/notification-preferences` (getNotificationPreferences): Get your notification preferences

@@ -507,7 +507,10 @@ type BankReconciliation struct {
 	PreparedAt        time.Time
 	SignedBy          string // "" while unsigned
 	SignedAt          *time.Time
-	Version           int
+	// The override of SOD-5 it was signed under (rev 0.179): the approved request and its reason; nil and "" for none.
+	SoDOverrideApproval *uuid.UUID
+	SoDOverrideReason   string
+	Version             int
 }
 
 // NewBankReconciliation is a reconciliation as prepared; preparing again while unsigned replaces it.
@@ -568,6 +571,13 @@ type BankMatching interface {
 	PrepareReconciliation(ctx context.Context, n NewBankReconciliation) (BankReconciliation, error)
 	// SignReconciliation signs a prepared reconciliation at version, by another person who passed step-up at mfaAt.
 	SignReconciliation(ctx context.Context, id uuid.UUID, version int, mfaAt, at time.Time) (BankReconciliation, error)
+	// SignReconciliationOverridden signs it at version under an approved override of SOD-5 (rev 0.179): by the person
+	// who asked for it (an actor string such as "user:<id>"), who passed step-up at mfaAt, with the request and its reason.
+	SignReconciliationOverridden(ctx context.Context, id uuid.UUID, version int, by string, mfaAt, at time.Time, approval uuid.UUID,
+		reason string) (BankReconciliation, error)
+	// DecidedBy counts the lines of a money account booked from from to to, both included, that by decided as they stand:
+	// categorised, matched, transferred, parked in suspense or excluded (SOD-5).
+	DecidedBy(ctx context.Context, moneyAccountID uuid.UUID, from, to time.Time, by string) (int, error)
 	// Reconciliations are a period's reconciliations; Reconciliation is one account's, ports.ErrNotFound for none.
 	Reconciliations(ctx context.Context, periodID uuid.UUID) ([]BankReconciliation, error)
 	Reconciliation(ctx context.Context, moneyAccountID, periodID uuid.UUID) (BankReconciliation, error)
