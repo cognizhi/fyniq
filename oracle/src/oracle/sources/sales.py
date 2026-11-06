@@ -88,7 +88,7 @@ def _invoice_lines(r: Rules, doc: Source, books: dict[str, Any], *, credit: bool
     percents = set()
     nets = []
     for raw in d["lines"]:
-        account = r.account(raw["account"])
+        account = r.entered(raw["account"])  # a spread line too, by its own account (DIM-05)
         net = line_net(r, raw, currency, minor, discount_allowed=True)
         percent = r.gst_percent(raw["gst_code"], tax_day, "supply")  # a bill's mirror (FR-AP-02): output tax
         net_base = r.fx(net, rate)

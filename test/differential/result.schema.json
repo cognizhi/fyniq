@@ -33,7 +33,8 @@
                 "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
                 "amount": {"description": "At the line currency's minor units.", "$ref": "#/$defs/decimal"},
                 "base_amount": {"description": "At the base currency's minor units.", "$ref": "#/$defs/decimal"},
-                "party": {"description": "Only on a line on a director's account: its person (FR-EQ-01, B.7). A reversal's line keeps it.", "type": "string"}
+                "party": {"description": "Only on a line on a director's account: its person (FR-EQ-01, B.7). A reversal's line keeps it.", "type": "string"},
+                "dimensions": {"description": "Only on a line with dimension values (FR-DIM-02): a dimension's name to its value's code. A reversal's line keeps its line's.", "type": "object", "additionalProperties": {"type": "string"}}
               }
             }
           }
@@ -54,6 +55,14 @@
           "type": "object",
           "additionalProperties": {"$ref": "#/$defs/decimal"}
         }
+      }
+    },
+    "dimension_balances": {
+      "description": "Present only when the scenario declares dimensions (FR-DIM-02). Posting month (YYYY-MM) -> account -> dimension set -> the base-currency total of that month's posted lines on the account with exactly those values. A set is its values as \"Name=CODE\" joined by \"|\" in name order, \"\" for the lines with none. A total of zero may be left out; a comparator reads a missing month, account or set as zero.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {"type": "object", "additionalProperties": {"$ref": "#/$defs/decimal"}}
       }
     },
     "people": {

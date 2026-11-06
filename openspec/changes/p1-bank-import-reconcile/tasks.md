@@ -135,10 +135,14 @@ before any code that parses bank files or touches connector secrets (SEC-20).
     agrees to the cent in `make test`, and `make differential` drew 1,000 scenarios with `bank` (the Makefile's
     `DIFFERENTIAL_SOURCES`) with no disagreement.
 
-- [ ] 4.7 Dimensions on a bank transaction's parts and in a rule's action, once FR-DIM is built
+- [x] 4.7 Dimensions on a bank transaction's parts and in a rule's action, once FR-DIM is built
   (`p1-organisation-chart` task 3.3), as on bill and invoice lines.
   - Tests: a rule's dimensions carried to the posting; a value required by its account refused when missing.
     `// req: FR-BNK-05`, `// req: FR-DIM-02`
+  (6 Nov 2026, with `p1-organisation-chart` task 3.3, slice 3d: a part of a categorisation and a rule's action take
+  `dimension_value_ids`; a person's part is held to its account's requirement (DIM-05), a rule applied by itself posts
+  as the system does and C.2 #60 flags it. Tests `TestBankLinePartsCarryTheirDimensionValues`,
+  `TestBankLinePartsTakeDimensionValues`, `TestABankLinesPartsCarryTheirDimensionValues`, `categorise.test.tsx`.)
 
 ## 5. Auto-reconcile
 

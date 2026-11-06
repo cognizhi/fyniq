@@ -46,7 +46,7 @@ def transaction(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     parts = []
     for part in d["parts"]:
         value = r.amount(part["amount"], currency, sign=sign)  # each part has the line's direction
-        account = r.account(part["account"])
+        account = r.entered(part["account"])  # a part is a line a person enters (DIM-05)
         if part["account"] in r.settings.money_accounts:
             raise Rejected("part-on-money-account")  # a transfer (FR-BNK-09)
         if r.is_system(part["account"], "receivable", "payable"):

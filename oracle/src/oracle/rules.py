@@ -10,6 +10,10 @@ source shares:
   rate cascade's result is given in the scenario with its source); a base-currency amount has none.
 * **Accounts** (INV-04, INV-13): every account a line posts to exists, is active and is a leaf, and
   only the register of share issues reaches share capital, so no P1 source does (rev 0.49).
+* **Dimensions** (FR-DIM-01, DIM-05; README, "Dimensions"): a P1 document carries no dimension values in the format
+  yet, so a line a person enters on an invoice, a credit note, a bill, a vendor credit, a bank line or an expense claim
+  on an account that requires a dimension in use (a spread line by its own account) rejects its document. The other
+  P1 documents, and every scheduled entry, post as the system's own postings do, without the check.
 * **System accounts** (Appendix B.5, FR-COA-03): read from the settings by key; a document that needs
   one the organisation has not set is rejected.
 * **GST** (Appendix B conventions): the rate is the one in force at the tax point when the organisation
@@ -144,6 +148,16 @@ class Rules:
             raise Rejected("inactive-account")
         if account.role == "share-capital":
             raise Rejected("share-capital-account")
+        return account
+
+    def entered(self, code: str) -> Account:
+        """The account of a line a person enters on an invoice, a credit note, a bill, a vendor credit, a bank line or
+        an expense claim: one a line may post to (:meth:`account`) that requires no dimension in use (DIM-05), since
+        such a line names no value of it."""
+        account = self.account(code)
+        dimensions = self.scenario.dimensions
+        if any(dimensions[name].active for name in account.requires):
+            raise Rejected("dimension-required")
         return account
 
     def system(self, key: str) -> str:

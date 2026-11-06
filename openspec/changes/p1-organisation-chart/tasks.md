@@ -90,7 +90,7 @@
   control and payroll-cost flags are refused until the approval engine. Manual journals to system accounts post, as
   question 55 decided, except share capital (INV-13). **Left:** the approved journal-preserving merge (FR-COA-04), which
   needs the approval engine; the ⚠ on a manual journal to a control account (question 55), with the checks.)
-- [ ] 3.3 Dimensions and dimension sets on journal lines. The balances cache is keyed by dimension set, and the INV-08 rebuild and the oracle's half are extended. Tests `// req: FR-DIM-01` and `// req: FR-DIM-02`; the differential gate is green
+- [x] 3.3 Dimensions and dimension sets on journal lines. The balances cache is keyed by dimension set, and the INV-08 rebuild and the oracle's half are extended. Tests `// req: FR-DIM-01` and `// req: FR-DIM-02`; the differential gate is green
   (4 Nov 2026, slice 1, the database: migrations 000218 to 000220 add `dimension` (Department, Project and custom
   places 1 to 8), `dimension_value` and `dimension_set` (one row per combination, its values in ascending order, at
   most one of each dimension, `FY257`, immutable `FY002`), `journal_line.dimension_set_id` (none for a line with no
@@ -192,6 +192,14 @@
   keys `statement.by-dimension`, `ledger.by-dimension`; the guides' "By department or project", compiled into
   `reports.statements` and `reports.general-ledger`. Tests `TestThePLAndTheGeneralLedgerByDimension`,
   `TestReportsByDimension`, `statements.test.tsx`, `GeneralLedger.test.tsx`. **Left:** the oracle's half.)
+  (6 Nov 2026, slice 5, the oracle's half: `fyniq-scenario@1` declares `dimensions` with their values, an account's
+  `requires` and a journal's or the opening balances' line's `dimensions`; the result gives each line's values and
+  `dimension_balances`, each month's base total of each account by dimension set, and the canonical form keeps a set
+  apart (test/differential/README.md, "Dimensions"). The oracle checks DIM-06 and DIM-05 with rev 0.172's exception
+  from the README alone, holds the P1 sources a person enters (invoice, credit note, bill, vendor credit, bank line,
+  claim) to `requires`, and generates dimensions in its Hypothesis scenarios; the Go runner maps them onto the engine's
+  settings. Golden scenario `dimensions.json`. Tests `TestDimensionsOnJournals`, `TestDimensionFormatRules`, the
+  oracle's own, and `TestTheEngineAgreesWithTheOracle`.)
 
 ## 4. Contacts and items
 

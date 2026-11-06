@@ -108,7 +108,7 @@ def _bill_lines(r: Rules, doc: Source, *, credit: bool) -> Posting:
     lines, scheduled = [], []
     nets, gsts = [], []
     for raw in d["lines"]:
-        account = r.account(raw["account"])
+        account = r.entered(raw["account"])  # a spread line too, by its own account (DIM-05)
         net, cost, claim, gst = cost_line(r, raw, currency, minor, registered)
         cost_base = r.fx(cost, rate)
         if not claim.is_zero():

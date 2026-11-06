@@ -21,6 +21,16 @@ names none or someone else (rejected), or a person on another line (rejected; FR
 document (rejected, FR-GL-12, and the document stays unreversed). Every rate carries its source, as
 the format requires: ``document``, or ``base`` on a base-currency line built to be rejected.
 
+(PRD-001 rev 0.171, 0.172) A quarter of the scenarios declare dimensions (README, "Dimensions"; FR-DIM-01): one to
+three of :data:`DIMENSION_NAMES`, the first in use and others out of use a third of the time, each with values (the
+first in use, others out of use a third of the time); one or two postable accounts require some of them, the first
+requiring the first dimension. Every journal of the other kinds names values on its lines: each value of a dimension in
+use that its account requires, and, on a third of the lines, values of other dimensions in use, so it posts or is
+refused as built. A fifth of their journals are of four kinds of their own: an amount moved between values on a
+requiring account (posts: the account's lines net to zero, so a line may leave the value out, rev 0.172), a line on a
+requiring account without its value (refused, DIM-05), and a line naming a value out of use or a value of a dimension
+out of use (refused, DIM-06). A scenario that declares none draws as before.
+
 While :data:`BOUNDED` is set (``strategies_statements.with_statements`` sets it while it draws), journals stay far
 from NUMERIC(20,4)'s 10^16: a line's amount has at most seven integer digits (so at most about 10^11 in base, at a
 rate below 10^4), and the kinds that reach the limit on purpose (the boundary's 16-digit amounts, amounts and base
@@ -31,7 +41,7 @@ default, generation is unchanged.
 from __future__ import annotations
 
 from contextvars import ContextVar
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
@@ -104,6 +114,20 @@ _ORIGINS = ["lent", "paid_personally", "pay", "fee", "paid_out", "other"]
 _STRANGER = "P0099"
 KINDS = _POSTING_KINDS + _OPEN_KINDS + _REJECTED_KINDS
 
+# Dimensions (FR-DIM-01; README, "Dimensions"): the names and codes a scenario declares, as the schema's patterns allow
+# them (a space in a name; ".", "_" and "-" in a code), and the kinds of journal drawn only when it declares some.
+DIMENSION_NAMES = ["Department", "Project", "Region", "Cost centre", "Funding source"]
+DIMENSION_CODES = {
+    "Department": ["ENG", "OPS", "SALES", "G-A"],
+    "Project": ["P-001", "P-002", "apollo", "x.9"],
+    "Region": ["SG", "MY", "ID_2"],
+    "Cost centre": ["CC10", "CC_20", "cc.30"],
+    "Funding source": ["GRANT", "SEED", "A-1"],
+}
+DIMENSION_POSTING = ["dim-move", "dim-move"]
+DIMENSION_REJECTED = ["dim-required-missing", "dim-value-out-of-use", "dim-dimension-out-of-use"]
+DIMENSION_KINDS = DIMENSION_POSTING + DIMENSION_REJECTED
+
 _NOT_PLAIN_AMOUNTS = [
     "1e3", "1E+2", "+5.00", " 5.00", "5.00 ", "1,000.00", "1_000", "NaN", "Infinity", "-Infinity",
     "0x1A", "", ".5", "5.", "--5",
@@ -141,6 +165,89 @@ class Intent:
 
 
 @dataclass
+class Dimensions:
+    """The dimensions a generated scenario declares (``declared``, as the format writes them) and what each account
+    requires (``requires``: account -> dimension names), with what the generator asks of them."""
+
+    declared: list[dict[str, Any]]
+    requires: dict[str, list[str]]
+
+    def _by_name(self) -> dict[str, dict[str, Any]]:
+        return {d["name"]: d for d in self.declared}
+
+    def active(self) -> list[str]:
+        """The dimensions in use, by name."""
+        return sorted(d["name"] for d in self.declared if d["active"])
+
+    def values(self, name: str) -> list[str]:
+        """The codes in use of the dimension ``name``."""
+        return [v["code"] for v in self._by_name()[name]["values"] if v["active"]]
+
+    def required(self, account: str) -> list[str]:
+        """The dimensions in use that ``account`` requires (DIM-05): a dimension out of use requires nothing."""
+        active = set(self.active())
+        return sorted(n for n in self.requires.get(account, ()) if n in active)
+
+    def requiring(self) -> list[str]:
+        """The accounts that require a dimension in use."""
+        return sorted(a for a in self.requires if self.required(a))
+
+    def retired_values(self) -> list[tuple[str, str]]:
+        """(dimension, code) for each value out of use of a dimension in use (DIM-06)."""
+        return [(d["name"], v["code"]) for d in self.declared if d["active"] for v in d["values"] if not v["active"]]
+
+    def retired_dimensions(self) -> list[tuple[str, str]]:
+        """(dimension, code) for each value of a dimension out of use (DIM-06), in use or not."""
+        return [(d["name"], v["code"]) for d in self.declared if not d["active"] for v in d["values"]]
+
+    def possible(self, kinds: list[str]) -> list[str]:
+        """The dimension kinds of ``kinds`` this declaration can build as meant (the others fall back to posting)."""
+        can = {"dim-move": bool(self.requiring()), "dim-required-missing": bool(self.requiring()),
+               "dim-value-out-of-use": bool(self.retired_values()),
+               "dim-dimension-out-of-use": bool(self.retired_dimensions())}
+        return [k for k in kinds if can.get(k, True)]
+
+
+@st.composite
+def dimension_plan(draw: st.DrawFn, candidates: list[str]) -> Dimensions:
+    """Dimensions to declare and the accounts among ``candidates`` that require some (module docstring)."""
+    names = draw(st.lists(st.sampled_from(DIMENSION_NAMES), min_size=1, max_size=3, unique=True))
+    declared = []
+    for k, name in enumerate(names):
+        codes = draw(st.lists(st.sampled_from(DIMENSION_CODES[name]), min_size=1,
+                              max_size=len(DIMENSION_CODES[name]), unique=True))
+        values = [{"code": code, "active": j == 0 or draw(st.integers(0, 2)) > 0} for j, code in enumerate(codes)]
+        declared.append({"name": name, "active": k == 0 or draw(st.integers(0, 2)) > 0, "values": values})
+    requiring = draw(st.lists(st.sampled_from(sorted(candidates)), min_size=1, max_size=min(2, len(candidates)),
+                              unique=True))
+    requires = {}
+    for k, account in enumerate(requiring):
+        chosen = draw(st.lists(st.sampled_from(names), min_size=1, max_size=len(names), unique=True))
+        if k == 0 and names[0] not in chosen:  # one account requires a dimension in use
+            chosen.insert(0, names[0])
+        requires[account] = chosen
+    return Dimensions(list(draw(st.permutations(declared))), requires)
+
+
+def tag(draw: st.DrawFn, dims: Dimensions, lines: list[dict], *, required: bool = True) -> None:
+    """Name values in use on ``lines``: each one its account requires (unless ``required`` is False: the opening
+    balances are not held to it), and on a third of the lines values of other dimensions in use."""
+    active = dims.active()
+    for line in lines:
+        names = set(dims.required(line["account"])) if required else set()
+        if active and draw(st.integers(0, 2)) == 0:
+            names |= set(draw(st.lists(st.sampled_from(active), min_size=1, max_size=len(active), unique=True)))
+        if names:
+            line["dimensions"] = {name: draw(st.sampled_from(dims.values(name))) for name in sorted(names)}
+
+
+def line_base(line: dict, base_minor: int) -> Decimal:
+    """A generated line's base amount by RND-FX (a base-currency line's is its amount)."""
+    amount = Decimal(line["amount"])
+    return money.rnd_fx(amount, Decimal(line["fx_rate"]), base_minor) if "fx_rate" in line else amount
+
+
+@dataclass
 class _Ctx:
     base: str
     currencies: dict[str, int]
@@ -149,6 +256,7 @@ class _Ctx:
     group: str
     share: str | None  # an account with the role share-capital, in half of the charts (INV-13)
     director: str | None = None  # a director's account (2500 or 2120), in half of the charts (FR-EQ-01)
+    dims: Dimensions | None = None  # the dimensions declared, in a quarter of the scenarios (FR-DIM-01)
 
     @property
     def base_minor(self) -> int:
@@ -413,7 +521,76 @@ def _foreign_journal(draw: st.DrawFn, ctx: _Ctx) -> tuple[list[dict], int]:
 
 @st.composite
 def _journal(draw: st.DrawFn, ctx: _Ctx, kind: str) -> tuple[list[dict], str]:
-    """The lines of one manual journal of ``kind``, and its intent."""
+    """The lines of one manual journal of ``kind``, and its intent; where the scenario declares dimensions, its lines
+    name values as each account requires (module docstring), so the intent holds."""
+    if kind in DIMENSION_KINDS:
+        if ctx.dims is not None:
+            return draw(_dimension_journal(ctx, kind))
+        kind = "balanced"
+    lines, meant = draw(_plain_journal(ctx, kind))
+    if ctx.dims is not None:
+        tag(draw, ctx.dims, lines)
+    return lines, meant
+
+
+@st.composite
+def _dimension_journal(draw: st.DrawFn, ctx: _Ctx, kind: str) -> tuple[list[dict], str]:
+    """A journal of a dimension kind (README, "Dimensions"), and its intent: a kind the declaration cannot build
+    (:meth:`Dimensions.possible`) is drawn as a balanced journal naming its values, which posts."""
+    dims = ctx.dims
+    assert dims is not None
+    requiring = [a for a in dims.requiring() if a in ctx.postable]
+    if kind == "dim-move" and requiring:
+        # rev 0.172: the lines on one requiring account net to zero in base, so a line may leave its value out: an
+        # amount moved from no value (a posting of the system) or from another value.
+        account = draw(st.sampled_from(requiring))
+        if ctx.foreign and draw(st.integers(0, 3)) == 0:  # in another currency, both lines at one rate
+            currency = draw(st.sampled_from(ctx.foreign))
+            minor = ctx.currencies[currency]
+            value = _value(draw(_units(_digits(10) + minor)), minor)
+            rate = _visible([value], draw(_rate()), ctx.base_minor)
+            moved = [_line(account, currency, _text(v, minor), rate) for v in (value, money.negate(value))]
+        else:
+            minor = ctx.base_minor
+            values = [_value(draw(_units(_digits(10) + minor)), minor) for _ in range(draw(st.integers(1, 2)))]
+            closing = money.negate(money.total(values))
+            assume(not closing.is_zero())
+            moved = [_line(account, ctx.base, _text(v, minor)) for v in (*values, closing)]
+        tag(draw, dims, moved)
+        for line in moved[: draw(st.integers(0, len(moved) - 1))]:  # left without a value it requires
+            del line["dimensions"][draw(st.sampled_from(dims.required(account)))]
+            if not line["dimensions"]:
+                del line["dimensions"]
+        lines = moved
+        if draw(st.booleans()):  # beside a balanced journal on other accounts
+            rest = draw(_balanced(replace(ctx, postable=[a for a in ctx.postable if a != account])))
+            tag(draw, dims, rest)
+            lines = [*moved, *rest]
+        return list(draw(st.permutations(lines))), POST
+    lines = draw(_balanced(ctx))
+    tag(draw, dims, lines)
+    i = draw(st.integers(0, len(lines) - 1))
+    if kind == "dim-required-missing" and requiring:  # DIM-05, and the account's lines do not net to zero
+        account = draw(st.sampled_from(requiring))
+        lines[i]["account"] = account
+        named = {name: draw(st.sampled_from(dims.values(name))) for name in dims.required(account)}
+        del named[draw(st.sampled_from(sorted(named)))]
+        lines[i].pop("dimensions", None)
+        if named:
+            lines[i]["dimensions"] = named
+        assume(not money.total([line_base(ln, ctx.base_minor) for ln in lines if ln["account"] == account]).is_zero())
+        return lines, REJECT
+    retired = {"dim-value-out-of-use": dims.retired_values(), "dim-dimension-out-of-use": dims.retired_dimensions()}
+    if retired.get(kind):  # DIM-06: a value out of use, or a value of a dimension out of use
+        name, code = draw(st.sampled_from(retired[kind]))
+        lines[i].setdefault("dimensions", {})[name] = code
+        return lines, REJECT
+    return lines, POST
+
+
+@st.composite
+def _plain_journal(draw: st.DrawFn, ctx: _Ctx, kind: str) -> tuple[list[dict], str]:
+    """The lines of one manual journal of ``kind``, naming no dimension value, and its intent."""
     foreign_kinds = ("missing-rate", "bad-rate", "half-unit", "single-foreign", "unbalanced-currency",
                      "base-rounds-to-zero", "base-out-of-range")
     director_kinds = ("director-line", "director-line-without-person", "person-on-another-account")
@@ -529,13 +706,17 @@ def _context(draw: st.DrawFn) -> tuple[_Ctx, list[dict]]:
         {"code": c, "type": draw(st.sampled_from(kinds)), "group": c == group, "active": c != inactive}
         for c in codes
     ]
+    dims = draw(dimension_plan(postable)) if draw(st.integers(0, 3)) == 0 else None  # FR-DIM-01
+    for account in accounts if dims is not None else ():
+        if account["code"] in dims.requires:
+            account["requires"] = list(dims.requires[account["code"]])
     if share is not None:
         accounts.append({"code": share, "type": "equity", "group": False, "active": True, "role": "share-capital"})
     if director is not None:
         role = draw(st.sampled_from(["director-loan", "deferred-remuneration"]))
         accounts.append({"code": director, "type": "liability", "group": False, "active": True, "role": role})
     accounts = draw(st.permutations(accounts))
-    return _Ctx(base, currencies, postable, inactive, group, share, director), accounts
+    return _Ctx(base, currencies, postable, inactive, group, share, director, dims), accounts
 
 
 @st.composite
@@ -545,7 +726,11 @@ def scenarios_with_intent(draw: st.DrawFn, name: str = "generated") -> tuple[dic
     documents, intent = [], {}
     for i in range(draw(st.integers(0, 8))):
         doc_id = f"JNL-{i + 1:04d}"
-        lines, intent[doc_id] = draw(_journal(ctx, draw(st.sampled_from(KINDS))))
+        if ctx.dims is not None and draw(st.integers(0, 4)) == 0:  # a fifth of the journals: a dimension kind
+            kind = draw(st.sampled_from(ctx.dims.possible(DIMENSION_KINDS)))
+        else:
+            kind = draw(st.sampled_from(KINDS))
+        lines, intent[doc_id] = draw(_journal(ctx, kind))
         day = draw(_DATES).isoformat()
         documents.append(
             {"type": "manual_journal", "id": doc_id, "version": 1, "date": day, "memo": "", "lines": lines}
@@ -572,6 +757,8 @@ def scenarios_with_intent(draw: st.DrawFn, name: str = "generated") -> tuple[dic
     }
     if ctx.director is not None:
         scenario["people"] = list(PEOPLE)
+    if ctx.dims is not None:
+        scenario["dimensions"] = ctx.dims.declared
     return scenario, Intent(intent)
 
 

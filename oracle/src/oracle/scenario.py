@@ -17,6 +17,13 @@ document, reversal and edit (README, "P1 sources"); one with the opening balance
 too, which is their date; one with a journal that reverses by itself needs ``as_of`` (README, "Opening
 balances, automatic reversals and edits"). ``reversals`` holds the corrections of posted journals in the
 order they are made: a :class:`Reversal` (a void) or an :class:`Edit` (the next version).
+
+A scenario may declare ``dimensions`` (FR-DIM-01; README, "Dimensions"): each a name, whether it is in use, and its
+values, each a code and whether it is in use. An account may list in ``requires`` the dimensions a line a person
+enters on it names a value of, and a journal's or the opening balances' line may carry ``dimensions``, a name to a
+code. Two dimensions with one name, two values of a dimension with one code, a ``requires`` naming a dimension not
+declared, or a line naming a dimension or a code not declared make the scenario invalid; whether each is in use, and
+what an account requires, are posting rules (:mod:`oracle.ledger`, rule 11).
 """
 
 from __future__ import annotations
@@ -54,6 +61,8 @@ _ACCOUNT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,31}")
 _DOCUMENT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
 _PERCENT = re.compile(r"(0|[1-9][0-9]{0,2})(\.[0-9]{1,4})?")
 _PLAIN_DECIMAL = re.compile(r"[0-9]{1,12}(\.[0-9]{1,4})?")
+_DIMENSION_NAME = re.compile(r"[A-Za-z][A-Za-z0-9 ]{0,49}")
+_DIMENSION_CODE = re.compile(r"[0-9A-Za-z][0-9A-Za-z._-]{0,29}")
 
 # The keys whose string values are dates, wherever they appear in a P1 document or the settings.
 _DATE_KEYS = frozenset({"date", "from", "to", "service_start", "depreciate_from", "registered_from",
@@ -75,6 +84,16 @@ class Account:
     function: str | None = None
     cash_flow_line: str | None = None
     revalue: bool = False  # a monetary item, revalued at each month end (FR-COA-02, FR-GL-04 rev 0.72)
+    requires: tuple[str, ...] = ()  # the dimensions a line a person enters on it names a value of (FR-DIM-01)
+
+
+@dataclass(frozen=True)
+class Dimension:
+    """A dimension such as Department (FR-DIM-01): whether it is in use, and its values' codes, each in use or not."""
+
+    name: str
+    active: bool
+    values: MappingProxyType[str, bool]  # code -> in use
 
 
 @dataclass(frozen=True)
@@ -88,6 +107,7 @@ class Line:
     fx_rate_source: str | None
     party: str | None = None  # the person of a line on a director's account (FR-EQ-01, B.7)
     origin: str | None = None  # where that amount came from
+    dimensions: tuple[tuple[str, str], ...] = ()  # (dimension, value code), in name order (FR-DIM-02)
 
 
 @dataclass(frozen=True)
@@ -192,6 +212,8 @@ class Scenario:
     statements: bool = False
     kpis: KpiSettings | None = None
     people: frozenset[str] = frozenset()  # the directors and shareholders a director's account may name (FR-EQ-01)
+    # The organisation's dimensions by name (FR-DIM-01; README, "Dimensions"); none when the scenario declares none.
+    dimensions: MappingProxyType[str, Dimension] = MappingProxyType({})
 
 
 # A role the statements read belongs to at most one account, of this type (README, "Statements").
@@ -376,7 +398,8 @@ def scenario_from_json(data: Any) -> Scenario:
             raise ScenarioError(f"accounts/{i}: the code {raw['code']!r} appears twice")
         accounts[raw["code"]] = Account(raw["code"], raw["type"], raw["group"], raw["active"], raw.get("role"),
                                         raw.get("report_group"), raw.get("function"), raw.get("cash_flow_line"),
-                                        raw.get("revalue", False))
+                                        raw.get("revalue", False), tuple(raw.get("requires", ())))
+    dimensions = _dimensions(data.get("dimensions", []), accounts)
     for role, kind in _SINGLE_ROLES.items():
         holders = [a for a in accounts.values() if a.role == role]
         if len(holders) > 1:
@@ -406,7 +429,7 @@ def scenario_from_json(data: Any) -> Scenario:
             continue
         reverse_on = _date(raw["reverse_on"], f"documents/{i}/reverse_on") if "reverse_on" in raw else None
         documents.append(Document(raw["id"], raw["version"], _date(raw["date"], f"documents/{i}/date"), raw["memo"],
-                                  _lines(raw["lines"]), reverse_on, raw["type"]))
+                                  _lines(raw["lines"], dimensions, f"documents/{i}"), reverse_on, raw["type"]))
 
     reversals: list[Reversal | Edit] = []
     for i, raw in enumerate(data["reversals"]):
@@ -416,7 +439,7 @@ def scenario_from_json(data: Any) -> Scenario:
         content = raw["edit"]
         reverse_on = _date(content["reverse_on"], f"reversals/{i}/edit/reverse_on") if "reverse_on" in content else None
         reversals.append(Edit(raw["document"], content["version"], _date(content["date"], f"reversals/{i}/edit/date"),
-                              content["memo"], _lines(content["lines"]), reverse_on))
+                              content["memo"], _lines(content["lines"], dimensions, f"reversals/{i}/edit"), reverse_on))
 
     as_of = _date(data["as_of"], "as_of") if "as_of" in data else None
     settings = _settings(data["settings"], accounts, currencies, base) if "settings" in data else None
@@ -472,7 +495,29 @@ def scenario_from_json(data: Any) -> Scenario:
     for i, person in enumerate(data.get("people", ())):
         _shape(_DOCUMENT_ID, person, f"people/{i}")
     return Scenario(data["name"], base, currencies, accounts, tuple(documents), tuple(reversals), as_of, settings,
-                    statements, kpis, people)
+                    statements, kpis, people, dimensions)
+
+
+def _dimensions(raw: list[Any], accounts: dict[str, Account]) -> MappingProxyType[str, Dimension]:
+    """README, "Dimensions": names unique, a value's code unique within its dimension, ``requires`` declared."""
+    dimensions: dict[str, Dimension] = {}
+    for i, row in enumerate(raw):
+        where = f"dimensions/{i}"
+        _shape(_DIMENSION_NAME, row["name"], f"{where}/name")
+        if row["name"] in dimensions:
+            raise ScenarioError(f"{where}: two dimensions are named {row['name']!r}")
+        values: dict[str, bool] = {}
+        for j, value in enumerate(row["values"]):
+            _shape(_DIMENSION_CODE, value["code"], f"{where}/values/{j}/code")
+            if value["code"] in values:
+                raise ScenarioError(f"{where}/values/{j}: {row['name']} has two values with the code {value['code']!r}")
+            values[value["code"]] = value["active"]
+        dimensions[row["name"]] = Dimension(row["name"], row["active"], MappingProxyType(values))
+    for account in accounts.values():
+        for name in account.requires:
+            if name not in dimensions:
+                raise ScenarioError(f"accounts: {account.code} requires {name!r}, which is not in dimensions")
+    return MappingProxyType(dimensions)
 
 
 def _revalued(accounts: dict[str, Account], settings: Settings | None, as_of: date | None, statements: bool) -> bool:
@@ -501,7 +546,7 @@ def _revalued(accounts: dict[str, Account], settings: Settings | None, as_of: da
     return True
 
 
-def _lines(raw: Any) -> tuple[Line, ...]:
+def _lines(raw: Any, dimensions: MappingProxyType[str, Dimension], where: str) -> tuple[Line, ...]:
     return tuple(
         Line(
             account=ln["account"],
@@ -511,9 +556,22 @@ def _lines(raw: Any) -> tuple[Line, ...]:
             fx_rate_source=ln.get("fx_rate_source"),
             party=ln.get("party"),
             origin=ln.get("origin"),
+            dimensions=_values(ln.get("dimensions", {}), dimensions, f"{where}/lines/{i}/dimensions"),
         )
-        for ln in raw
+        for i, ln in enumerate(raw)
     )
+
+
+def _values(
+    raw: dict[str, str], dimensions: MappingProxyType[str, Dimension], where: str
+) -> tuple[tuple[str, str], ...]:
+    """A line's dimension values, each a declared dimension's declared code (README, "Dimensions"), in name order."""
+    for name, code in raw.items():
+        if name not in dimensions:
+            raise ScenarioError(f"{where}: {name!r} is not in dimensions")
+        if code not in dimensions[name].values:
+            raise ScenarioError(f"{where}/{name}: {code!r} is not a value of {name}")
+    return tuple(sorted(raw.items()))
 
 
 def load_scenario(path: str | Path) -> Scenario:

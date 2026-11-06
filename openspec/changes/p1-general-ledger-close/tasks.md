@@ -191,7 +191,7 @@
 
 ## 7. Screens
 
-- [ ] 7.1 Build journals, the journal editor and the journal record page as designed. Add help keys, tooltips and `docs/user-guide/` pages compiled into `kb/`
+- [x] 7.1 Build journals, the journal editor and the journal record page as designed. Add help keys, tooltips and `docs/user-guide/` pages compiled into `kb/`
   (21 Oct 2026, part: Accounting › Journals lists journals newest first with status filters and search, debit totals,
   preparer and poster; the journal page prepares a new journal or changes a draft (lines with debit or credit, currency
   and rate, the balance per currency added up exactly as typed), checks it with a dry run that shows the entry in the
@@ -209,6 +209,9 @@
   draft. Guide `journals.md` "Attach evidence". The Recurring tab and auto-reversal were built with 2.4 (#112, #120).
   **Left:** dimensions (`p1-organisation-chart` 3.3); the locked-period banner, which the design shows for soft locks
   (FR-GL-09, P2): a journal dated in a closed month already shows the status JOURNAL-LOCKED.)
+  (6 Nov 2026: the dimensions came with `p1-organisation-chart` task 3.3, slice 3b: each line's value per dimension in
+  use, the account's requirement shown under it and the dry run's values (`JournalPage.test.tsx`). The soft-lock
+  banner arrives with FR-GL-09 in P2, so the P1 part is done.)
 - [x] 7.2 Build opening-balances and period-close as designed, with the periods of the year on the close page
   (21 Oct 2026, part: Accounting › Periods and close lists the periods by financial year, open or closed, and opens the
   next year; Home's set-up checklist gains "Open the first financial year". Guide `periods-and-close.md` → kb
