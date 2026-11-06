@@ -42,4 +42,12 @@
 
 - [x] 4.1 Add `POST /v1/{collection}/{id}/evidence` (multipart, `Idempotency-Key`) to the contract; AI and MCP clients can only propose. Test `// req: FR-DOC-11` (20 Oct 2026: journals first: `addJournalEvidence`, `listJournalEvidence`, `getJournalEvidence`, `removeJournalEvidence`; the Evidence capability of Appendix D with the right to view the journal; AI and MCP clients refused. **Left:** the other collections as they arrive, and a download with a safe name)
 - [ ] 4.2 Build the Evidence panel (several typed files with notes and dates) and evidence-search as designed. Tests `// req: FR-DOC-05` and `// req: FR-DOC-01` (attach and preview); help keys and `docs/user-guide/` pages compiled into `kb/` **Left**
+  (6 Nov 2026, PRD-001 rev 0.188: opening a file. `GET /v1/evidence/{evidence_id}/file` sends a file in base64 with its
+  name as data, read from staging or, once final, from the locked store (the API's `Evidence` store, read only;
+  `[live-verify]` its grant in the cloud), checked against its SHA-256 and audited (`evidence.opened`); the record's
+  own row decides past the policy, as the search does, or the person's own claim or bank change (`authz.Policy.ByRecord`,
+  which the matrix reads as not found). The panel's **Show** puts a picture inline; **Save** saves any other file under
+  `safeName`. Guide `evidence-search.md` (Open a file), `journals.md`. Tests `TestAnEvidenceFileOpensForWhoeverSeesItsRecord`,
+  `JournalEvidence.test.tsx`. **Left:** PDF previews rendered to images (FR-DOC-08), the evidence-search screen's link
+  to each file.)
 - [ ] 4.3 Finish with `make check` and `make test`

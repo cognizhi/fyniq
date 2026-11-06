@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Lock, Paperclip, Trash2, TriangleAlert } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { Download, Eye, FileText, Lock, Paperclip, Trash2, TriangleAlert } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
@@ -127,6 +127,19 @@ const classes: [DataClass, string][] = [
 ];
 
 // sizeOf shows a file's size in KB or MB.
+// pictures are the types shown inline; any other file is saved, a PDF too until previews render (FR-DOC-08).
+const pictures = ["image/png", "image/jpeg", "image/webp"];
+
+// safeName is a name a file may be saved under: its own name's letters, digits, spaces, dots, dashes and underscores,
+// never a path, and evidence-<id> when nothing is left (FR-DOC-08: the uploader's name is data).
+export function safeName(name: string, id: string): string {
+  const clean = (name.split(/[\\/]/).pop() ?? "")
+    .replace(/[^A-Za-z0-9 ._-]/g, "_")
+    .replace(/^[.\s]+/, "")
+    .slice(0, 120);
+  return clean === "" || /^_+$/.test(clean) ? `evidence-${id}` : clean;
+}
+
 function sizeOf(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -173,6 +186,28 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
   const attach = helpText(`${record.kind}.attach-evidence`);
   const q = useQuery({ queryKey: [`${record.kind}-evidence`, record.id], queryFn: () => files(record) });
   const items = q.data ?? [];
+  const [shown, setShown] = useState<{ id: string; url: string; name: string } | null>(null);
+  useEffect(() => () => void (shown && URL.revokeObjectURL(shown.url)), [shown]);
+
+  // open fetches a file through the API (rev 0.188): a picture is shown below the list, any other file saved.
+  const open = async (e: Evidence) => {
+    setBusy(true);
+    setProblem(null);
+    const out = await api.GET("/v1/evidence/{evidence_id}/file", { params: { path: { evidence_id: e.id } } });
+    setBusy(false);
+    if (!out.data) {
+      setFailed("The file could not be opened");
+      return setProblem(problemOf(out.error));
+    }
+    const bytes = Uint8Array.from(atob(out.data.content_base64), (c) => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: out.data.media_type }));
+    if (pictures.includes(out.data.media_type)) return setShown({ id: e.id, url, name: e.file_name });
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = safeName(out.data.file_name, e.id);
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
   const refresh = () => queries.invalidateQueries({ queryKey: [`${record.kind}-evidence`, record.id] });
 
   // choose takes a file dropped or pasted; a receipt's kind is said for it when none is.
@@ -371,6 +406,16 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                   Shows an NRIC
                 </span>
               )}
+              {e.state !== "removed" &&
+                (pictures.includes(e.media_type) ? (
+                  <Button variant="ghost" size="sm" onClick={() => void open(e)} disabled={busy} aria-label={`Show ${e.file_name}`} title="Show the picture below">
+                    <Icon of={Eye} />
+                  </Button>
+                ) : (
+                  <Button variant="ghost" size="sm" onClick={() => void open(e)} disabled={busy} aria-label={`Save ${e.file_name}`} title="Save a copy of the file">
+                    <Icon of={Download} />
+                  </Button>
+                ))}
               {draft && mayAttach && e.state === "attached" && (
                 <Button variant="ghost" size="sm" onClick={() => void remove(e)} disabled={busy} aria-label={`Remove ${e.file_name}`} title="Take the file off the draft">
                   <Icon of={Trash2} />
@@ -379,6 +424,17 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
             </li>
           ))}
         </ul>
+      )}
+      {shown && (
+        <figure className="fy-stack fy-stack--2">
+          <img src={shown.url} alt={`${shown.name}, as attached`} className="max-w-full rounded-md border border-border" />
+          <figcaption className="fy-row gap-2 fy-small fy-muted">
+            {shown.name}
+            <Button variant="ghost" size="sm" onClick={() => setShown(null)}>
+              Hide
+            </Button>
+          </figcaption>
+        </figure>
       )}
       {mayAttach && (
         <div className="fy-stack fy-stack--3">

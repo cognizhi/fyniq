@@ -2,9 +2,9 @@
 key: compliance.evidence
 type: task
 title: Find evidence across the records, and see what is missing
-summary: Search the files attached to records by kind of record, evidence type and date, and list the posted records still missing their evidence
+summary: Search the files attached to records, open or save one, and list the posted records still missing their evidence
 sources:
-  - docs/user-guide/evidence-search.md sha256:c29a2390519b24ccd21fcd6258a379a07d21ed13a9b98ac6e447d66381d80970
+  - docs/user-guide/evidence-search.md sha256:007b85129827555d3c411690b1bc111de6860cd43eb2c5d7ee6a0b413b3bd479
 data_class: general
 taint: trusted
 status: published
@@ -19,6 +19,9 @@ aliases:
   - missing evidence
   - missing receipts
   - audit evidence
+  - open a file
+  - download a receipt
+  - see an attachment
 ---
 
 # Find evidence across the records, and see what is missing
@@ -37,6 +40,14 @@ aliases:
 - A file whose text shows an NRIC or FIN in full is marked **Shows an NRIC**.
 
 (src: docs/user-guide/evidence-search.md#find-evidence)
+
+## Open a file
+
+- In a record's **Evidence** panel, **Show** (the eye) shows a picture, such as a photo of a receipt or a screenshot, below the list, and **Hide** closes it.
+- **Save** (the arrow) saves any other file, such as a PDF or a spreadsheet; the saved copy keeps only the letters, digits, spaces, dots, dashes and underscores of its name.
+- Only a file on a record your role lets you see opens; an Employee opens the receipts of their own claims. The file is checked against the fingerprint recorded when it was attached, each opening is in the audit trail, and a file taken off a draft does not open.
+
+(src: docs/user-guide/evidence-search.md#open-a-file)
 
 ## Missing evidence
 

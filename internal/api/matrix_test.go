@@ -2551,7 +2551,8 @@ func TestAuthorisationMatrix(t *testing.T) {
 			beyondPolicy := r.Status == http.StatusForbidden && (r.problemCode() == CodeNotSuperAdmin || r.problemCode() == CodeStepUpRequired ||
 				r.problemCode() == CodeSessionRequired)
 			// The installation's operations and the approvals decide past their policy: by a code, or by the request's own policy.
-			lenient := policies[op].NoOrganisation || policies[op].Capability == authz.Approvals
+			// An operation over records of several kinds is decided past its policy by the record's own row: not found.
+			lenient := policies[op].NoOrganisation || policies[op].Capability == authz.Approvals || policies[op].ByRecord
 			switch {
 			case want && lenient && (r.Status == http.StatusUnauthorized || (r.Status == http.StatusForbidden && !beyondPolicy)):
 				t.Errorf("%s × %s: allowed, the API answered %d %s", role, op, r.Status, r.problemCode())

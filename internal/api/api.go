@@ -52,6 +52,9 @@ type Deps struct {
 	// FR-DOC-01); without either, no file can be attached.
 	Staging ports.BlobStore
 	Scanner ports.Scanner
+	// Evidence is the retention-locked store committed files are read from (FR-DOC-01, FR-DOC-13; rev 0.188): the API
+	// only reads it. Nil: a committed file cannot be opened.
+	Evidence ports.BlobStore
 	// Fields seals the most sensitive fields (SEC-11): vendors' bank account numbers. Nil: no bank details can be kept.
 	Fields ports.Cipher
 	// Renderer is the private render service (§12.3, rev 0.96): previews, and a publication's test documents (FR-TPL-03).
@@ -316,6 +319,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerBreakGlass(a)
 	registerOwnerSuccession(a)
 	registerEvidenceSearch(a)
+	registerEvidenceFile(a)
 	registerContactSummary(a)
 	registerAccountantReviews(a)
 	registerRemittanceAgain(a)

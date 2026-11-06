@@ -196,6 +196,8 @@ resolution, under **Evidence** on the journal's page.
   kept, and never deleted, for as long as the records are; a file added later is kept the same way.
 - The Owner, the Controller, the Accountant and the Tax agent attach files; everyone who can see the
   journal sees them.
+- Select **Show** to see a picture below the list, or **Save** to save any other file: see
+  [Open a file](evidence-search.md#open-a-file).
 
 ## Common problems
 

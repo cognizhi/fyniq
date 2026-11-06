@@ -4,7 +4,7 @@ type: task
 title: Prepare, post and reverse journals
 summary: Prepare, check and post journals, ask for approval, edit or reverse a posted one, attach evidence, recurring journals, reversals that wait
 sources:
-  - docs/user-guide/journals.md sha256:f2afce76b25be6c463d3505b38e30c2838955bd4db0a3eec4d838ddda600d282
+  - docs/user-guide/journals.md sha256:f026f9c31557a50bb4683fc51297dca4ffc83e3371e3e7ecfedea88713450f20
 data_class: general
 taint: trusted
 status: draft
@@ -153,6 +153,7 @@ aliases:
 - A journal whose debits are above S$1,000 posts only with a supporting calculation or document attached, unless the organisation's **Evidence for manual journals** settings say otherwise ([[settings.organisation]]).
 - A file whose text shows an NRIC or FIN in full is marked **Shows an NRIC**: mask the number before sharing it.
 - The Owner, the Controller, the Accountant and the Tax agent attach files; everyone who can see the journal sees them.
+- **Show** shows a picture below the list, and **Save** saves any other file ([[compliance.evidence]]).
 
 (src: docs/user-guide/journals.md#attach-evidence)
 

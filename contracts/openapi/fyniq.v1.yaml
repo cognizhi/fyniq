@@ -12733,6 +12733,49 @@ components:
         - state
         - version
       type: object
+    EvidenceFileContent:
+      additionalProperties: false
+      properties:
+        content_base64:
+          description: The file, in base64.
+          examples:
+            - JVBERi0xLjcgQVUtMTAw
+          type: string
+        file_name:
+          description: "As the uploader named it: data, never a path (FR-DOC-08). Save it under a name of your own choosing."
+          examples:
+            - AU-100.pdf
+          type: string
+        id:
+          description: The file's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+          format: uuid
+          type: string
+        media_type:
+          description: Its type, decided from its content when it was attached.
+          examples:
+            - application/pdf
+          type: string
+        sha256:
+          description: "The SHA-256 of the file as stored, in hexadecimal: the content was checked against it before it was sent."
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        size_bytes:
+          description: Its size in bytes.
+          examples:
+            - 18432
+          format: int64
+          type: integer
+      required:
+        - id
+        - file_name
+        - media_type
+        - size_bytes
+        - sha256
+        - content_base64
+      type: object
     EvidenceFound:
       additionalProperties: false
       properties:
@@ -70106,6 +70149,120 @@ paths:
       x-fyniq-permission:
         capability: "Evidence: add, supersede (rev 0.3)"
         note: Lists only files on the records whose Appendix D rows the person views.
+        right: V
+  /v1/evidence/{evidence_id}/file:
+    get:
+      description: "The file itself, in base64 with its name, type and SHA-256 (FR-DOC-01; PRD-001 rev 0.188): from the staging store while its record is a draft, from the retention-locked store once it is final, and checked against the SHA-256 recorded when it was stored before it is sent. Only for whoever views its record's row without a qualifier, as an evidence search lists it, or for the person whose own expense claim or bank account change it is on; any other file, and a removed one, is not found. Show a picture inline only from this answer, never by its name; a PDF is for saving until previews render (FR-DOC-08). Side effects: an audit event of the opening, with the file's hash. Never cached."
+      operationId: getEvidenceFile
+      parameters:
+        - description: The file.
+          in: path
+          name: evidence_id
+          required: true
+          schema:
+            description: The file.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidenceFileContent"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here."
+      summary: Open an evidence file
+      tags:
+        - Evidence
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+      x-fyniq-permission:
+        capability: "Evidence: add, supersede (rev 0.3)"
+        note: Needs a view of the file's record's row without a qualifier as well, or its own Employee's expense claim or bank account change.
         right: V
   /v1/exempt-statuses:
     get:
