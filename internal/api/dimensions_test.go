@@ -315,3 +315,35 @@ func TestBillLinesTakeDimensionValues(t *testing.T) {
 		t.Errorf("posting with Engineering: %d %s", posted.Status, posted.Raw)
 	}
 }
+
+// FR-DIM-01 and FR-DIM-02 on bank lines through the API (rev 0.171; slice 3d): a part takes dimension_value_ids; with
+// Rent requiring Department, a person's categorisation without one is refused (DIM-05) and one with Engineering posts,
+// its line showing the value; a rule keeps the values it tags lines with.
+// req: FR-DIM-01
+// req: FR-DIM-02
+func TestBankLinePartsTakeDimensionValues(t *testing.T) {
+	e := newEnv(t)
+	accountant := e.as(authz.Accountant)
+	dept := e.call(http.MethodPost, "/v1/dimensions", accountant, map[string]any{"kind": "department", "name": "Department"}).str("id")
+	eng := e.call(http.MethodPost, "/v1/dimension-values", accountant, map[string]any{"dimension_id": dept, "code": "ENG", "name": "Engineering"}).str("id")
+	if r := e.call(http.MethodPatch, "/v1/accounts/"+e.books.Rent.ID.String(), accountant, map[string]any{"required_dimension_ids": []string{dept}}, "If-Match", "*"); r.Status != 200 {
+		t.Fatalf("rent requires Department: %d %s", r.Status, r.Raw)
+	}
+	_, l := e.bankLine("-10.90")
+	path := "/v1/bank-lines/" + l.ID.String() + "/categorise"
+	part := map[string]any{"account_id": e.books.Rent.ID.String(), "gst_code": "TX"}
+	e.problemIs(e.call(http.MethodPost, path, accountant, map[string]any{"parts": []map[string]any{part}}, "If-Match", etag(l.Version)),
+		"categoriseBankLine", 422, ledger.CodeDimensionRequired)
+	part["dimension_value_ids"] = []string{eng}
+	if r := e.call(http.MethodPost, path, accountant, map[string]any{"parts": []map[string]any{part}}, "If-Match", etag(l.Version)); r.Status != 200 ||
+		!strings.Contains(r.Raw, `"dimension_value_ids":["`+eng+`"]`) {
+		t.Errorf("categorising with Engineering: %d %s", r.Status, r.Raw)
+	}
+
+	d := e.ruleDraft("AWS to Engineering")
+	d["then"].(map[string]any)["dimension_value_ids"] = []string{eng}
+	r := e.call(http.MethodPost, "/v1/bank-rules", accountant, d)
+	if got := r.Body["then"].(map[string]any)["dimension_value_ids"]; r.Status != 201 || fmt.Sprint(got) != "["+eng+"]" {
+		t.Errorf("the rule's values: %d %v (%s)", r.Status, got, r.Raw)
+	}
+}

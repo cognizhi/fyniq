@@ -38,6 +38,7 @@ type BankPart struct {
 	GSTRate     string
 	Months      int
 	Description string
+	Values      []uuid.UUID // the part's dimension values (FR-DIM-02), in any order; its line, and a spread's releases, carry them
 }
 
 // BankTransaction is one version of a categorised bank line, as the rule reads it: its date (the line's booking date,
@@ -56,6 +57,10 @@ type BankTransaction struct {
 	// Party is the line's contact when it is a director or shareholder: a part on a director's account is theirs
 	// (FR-EQ-01, B.7), money in lent and money out paid to them. uuid.Nil otherwise.
 	Party uuid.UUID
+	// Automatic is a categorisation a bank rule applied by itself (FR-BNK-14): a posting the system makes, so a part on
+	// an account that requires a dimension posts without a value of it, and Appendix C.2 #60 flags the amount
+	// (FR-DIM-01; rev 0.171). A person's categorisation is held to the requirement (DIM-05).
+	Automatic bool
 }
 
 // BankTransactionIdentity is the posting identity of a bank transaction version under a rule version (§11.4).
@@ -166,6 +171,11 @@ func PostBankTransaction(t BankTransaction, s Settings) (Entry, error) {
 		if len(p.Description) > MaxDescription {
 			add(CodeTooLong, f("description"), fmt.Sprintf("the description has %d characters; the most is %d", len(p.Description), MaxDescription), "Shorten it")
 		}
+		if values := canonical(p.Values); t.Automatic {
+			probs = append(probs, dimensionProblems(s, values, f("dimension_value_ids"))...)
+		} else {
+			probs = append(probs, documentLine(s, a, known, values, f("dimension_value_ids"))...)
+		}
 		if p.Amount.Currency() != t.Amount.Currency() {
 			add(CodeLineCurrency, f("amount"), fmt.Sprintf("the part is in %s; the line is in %s", p.Amount.Currency(), t.Amount.Currency()),
 				"Enter each part in the line's currency")
@@ -231,7 +241,7 @@ func PostBankTransaction(t BankTransaction, s Settings) (Entry, error) {
 			to = holding.ID
 		}
 		if !net.IsZero() {
-			line := Line{AccountID: to, Amount: net.Neg(), Rate: id, Base: net.Neg(), Description: p.Description}
+			line := Line{AccountID: to, Amount: net.Neg(), Rate: id, Base: net.Neg(), Description: p.Description, Values: canonical(p.Values)}
 			if s.Accounts[to].DirectorAccount() {
 				line.Party = t.Party
 			}
@@ -319,7 +329,7 @@ func BankTransactionReleases(t BankTransaction, e Entry, s Settings) ([]Release,
 		if p.Months != 0 {
 			x = &Spread{From: t.Date, Months: p.Months}
 		}
-		lines = append(lines, scheduledLine{AccountID: p.AccountID, Description: p.Description, Spread: x})
+		lines = append(lines, scheduledLine{AccountID: p.AccountID, Description: p.Description, Spread: x, Values: p.Values})
 	}
 	return releases(source, t.ID, t.Version, t.Date, t.Memo, lines, amounts, what)
 }

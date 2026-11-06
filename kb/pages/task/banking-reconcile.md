@@ -4,14 +4,14 @@ type: task
 title: Reconcile a money account for a month, and sign it off
 summary: Prepare a month's bank reconciliation from the statement, explain any difference, and have another person sign it off
 sources:
-  - docs/user-guide/banking.md sha256:930af81aef70c44afbf4c03e78e113d8e6cfcf0e531ecd9c7c2f14a358ed5332
+  - docs/user-guide/banking.md sha256:09023df1241255bcf5a46d44d41cd5c9e5aecc685ccacc21b6ec0b25c3dcfa28
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-29
+compiled_at: 2026-11-06
 aliases:
   - bank reconciliation
   - reconcile the bank

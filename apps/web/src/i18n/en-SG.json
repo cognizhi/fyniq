@@ -732,6 +732,10 @@
       "label": "The tax agent's decision",
       "tooltip": "Some claims the rules leave to the tax agent. Record what they decided, and attach their advice; until then the GST is not claimed."
     },
+    "bank.line-dimensions": {
+      "label": "Dimensions",
+      "tooltip": "A line's or a part's value of each dimension in use, such as its department; Basic mode shows one its category requires."
+    },
     "bill.line-dimensions": {
       "label": "Dimensions",
       "tooltip": "The line's value of each dimension in use, such as its department; Basic mode shows one its account requires."

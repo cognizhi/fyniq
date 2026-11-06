@@ -4,14 +4,14 @@ type: task
 title: Categorise and match the waiting bank lines
 summary: Accept, change or skip each waiting line's suggestion, run Reconcile now, and in Expert split, transfer, match or suspend lines
 sources:
-  - docs/user-guide/banking.md sha256:930af81aef70c44afbf4c03e78e113d8e6cfcf0e531ecd9c7c2f14a358ed5332
+  - docs/user-guide/banking.md sha256:09023df1241255bcf5a46d44d41cd5c9e5aecc685ccacc21b6ec0b25c3dcfa28
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-29
+compiled_at: 2026-11-06
 aliases:
   - categorise
   - bank queue
@@ -22,6 +22,7 @@ aliases:
   - split a bank line
   - transfer between accounts
   - suspense
+  - department on a bank line
 ---
 
 # Categorise and match the waiting bank lines
@@ -47,3 +48,10 @@ aliases:
 - Rules that suggest a category: [[banking.rules]]. What Fyniq reconciled by itself: [[banking.auto-reconciled]].
 
 (src: docs/user-guide/banking.md#categorise-the-waiting-lines)
+
+## Dimensions on a line
+
+- When the organisation uses dimensions, such as Department or Project, a line or each part of a split can take one value of each, such as ENG Engineering ([[accounting.chart]]).
+- The choices are in Expert mode; a category that requires a dimension shows its choice in Basic mode too, with "needs one" under it, and the line does not post until one is chosen (DIM-05); a value out of use, or two values of one dimension, is refused (DIM-06).
+
+(src: docs/user-guide/banking.md#dimensions-on-a-line)

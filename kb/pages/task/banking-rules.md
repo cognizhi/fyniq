@@ -4,14 +4,14 @@ type: task
 title: Make, test and approve bank rules
 summary: Make a bank rule that suggests how to code recurring lines, test it against the lines held, and ask for it to apply by itself
 sources:
-  - docs/user-guide/banking.md sha256:930af81aef70c44afbf4c03e78e113d8e6cfcf0e531ecd9c7c2f14a358ed5332
+  - docs/user-guide/banking.md sha256:09023df1241255bcf5a46d44d41cd5c9e5aecc685ccacc21b6ec0b25c3dcfa28
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-29
+compiled_at: 2026-11-06
 aliases:
   - bank rule
   - rule
@@ -28,6 +28,7 @@ aliases:
 - **Rules** (Expert mode) teach Fyniq how to code lines that come back, such as every AWS charge to Software; a rule suggests and does not post by itself.
 - A rule meets a line by what its description contains or a regular expression it matches, its counterparty, money in or out, its size, its currency and its money account; it codes the line to an account, with a GST code and optionally a contact.
 - Rules are in an order: the first rule a line meets is the one suggested ([[banking.categorise]]).
+- A rule can also tag its lines with dimension values, such as Department ENG Engineering; a rule applied by itself posts its line even when its account requires a dimension the rule has no value of, and the month's close then flags the amount, to move to its value by journal ([[accounting.periods]]).
 - **Test it** shows how many of the lines held the rule would have matched, and a few of them, before saving.
 - **Ask to apply by itself** asks another person to let the rule reconcile the lines it meets without a click, within the organisation's auto-reconcile limits ([[settings.organisation]]); you confirm it's you first, changing the rule meanwhile stops the request, and a change afterwards needs a new approval.
 - **Rules to consider** lists lines coded the same way several times; **Make it a rule** starts a rule from them, and none applies until saved.

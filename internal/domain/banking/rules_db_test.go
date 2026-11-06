@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -208,7 +209,7 @@ func TestRepeatedCodingIsOfferedAsARule(t *testing.T) {
 	}
 	got := offers(nil, 0)
 	if len(got) != 1 || got[0].When != (banking.Conditions{DescriptionContains: "grab*trip", Direction: banking.DirectionOut}) ||
-		got[0].Then != (banking.Action{AccountID: rent.ID, GSTCode: "OP"}) || len(got[0].Lines) != 5 {
+		!reflect.DeepEqual(got[0].Then, banking.Action{AccountID: rent.ID, GSTCode: "OP"}) || len(got[0].Lines) != 5 {
 		t.Fatalf("the default of five: %+v", got)
 	}
 	if got := offers(nil, 4); len(got) != 2 || got[1].When.CounterpartyContains != "zoom video" || len(got[1].Lines) != 4 {

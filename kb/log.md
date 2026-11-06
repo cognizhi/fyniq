@@ -325,3 +325,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | docs/user-guide/invoices.md → sales.invoices (dimension values on an invoice's lines)
 
 ## [2026-11-06] compile | docs/user-guide/bills.md → purchases.bills (dimension values on a bill's lines)
+
+## [2026-11-06] compile | docs/user-guide/banking.md → banking.categorise, banking.rules (dimension values on a bank line and a rule), the other banking pages re-hashed unchanged

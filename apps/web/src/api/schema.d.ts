@@ -10663,6 +10663,8 @@ export interface components {
              * @example AWS October
              */
             description?: string;
+            /** @description The part's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06): its line, and each month a spread releases, carry them. A part a person codes on an account that requires a dimension names a value of it (DIM-05); a rule applied by itself posts without one, and Checks flags the amount (Appendix C.2 #60). */
+            dimension_value_ids?: string[] | null;
             /**
              * @description Its GST code from the sg-gst pack on the line's date; left out, the account's default.
              * @example TX
@@ -10824,6 +10826,8 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
              */
             contact_id?: string;
+            /** @description The dimension values the rule tags its lines with (listDimensionValues), at most one of each dimension and each in use. */
+            dimension_value_ids?: string[] | null;
             /**
              * @description Its GST code; left out, the account's default.
              * @example TX

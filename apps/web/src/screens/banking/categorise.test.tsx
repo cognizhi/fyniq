@@ -45,9 +45,9 @@ describe("the requests a line's actions send", () => {
   it("says what is wrong with a split, every part at once", () => {
     const { errors } = checkCategorisation(
       [
-        { key: "p1", account_id: "", amount: "", gst_code: "", description: "" },
-        { key: "p2", account_id: "a1", amount: "", gst_code: "", description: "" },
-        { key: "p3", account_id: "a1", amount: "1.2.3", gst_code: "", description: "" },
+        { key: "p1", account_id: "", amount: "", gst_code: "", description: "", dimension_value_ids: [] },
+        { key: "p2", account_id: "a1", amount: "", gst_code: "", description: "", dimension_value_ids: [] },
+        { key: "p3", account_id: "a1", amount: "1.2.3", gst_code: "", description: "", dimension_value_ids: [] },
       ],
       "",
       "",
@@ -153,6 +153,41 @@ describe("the categorise queue", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Post it" }));
     expect(await within(dialog).findByText(/October 2026 is locked/)).toBeTruthy();
     expect(sent.find((s) => s.path === "/v1/bank-lines/l1/categorise")?.body).toEqual({ parts: [{ account_id: "a6100", gst_code: "TX" }] });
+  });
+
+  // req: FR-DIM-01
+  // req: FR-DIM-02
+  it("asks for a dimension its category requires, even in Basic, and sends the value with the part", async () => {
+    const sent = answer({
+      ...queue([line({ amount: sgd("-25.00") })], { l1: line({ amount: sgd("-25.00") }) }),
+      "GET /v1/accounts": {
+        status: 200,
+        body: {
+          items: [
+            { id: "a6100", code: "6100", name: "Software", type: "expense", group: false, active: true, money_account: false, control: false, payroll_cost: false, revalue: false, parent_id: null, version: 1, required_dimension_ids: ["d1"] },
+          ],
+        },
+      },
+      "GET /v1/dimensions": { status: 200, body: { items: [{ id: "d1", kind: "department", name: "Department", active: true, version: 1 }] } },
+      "GET /v1/dimension-values": { status: 200, body: { items: [{ id: "v1", dimension_id: "d1", code: "ENG", name: "Engineering", active: true, version: 1 }] } },
+      "GET /v1/contacts": { status: 200, body: { items: [] } },
+      "GET /v1/purchases/gst-codes": { status: 200, body: { version: "sg-gst@2026.1", codes: [{ code: "TX", description: "Standard-rated purchase", claimable: true }] } },
+      "POST /v1/bank-lines/l1/categorise": { status: 200, body: { line: line({ status: "categorised" }) } },
+    });
+    renderPage(Categorise, { path: "/banking/categorise", session: bookkeeper, mode: "basic" });
+    expect(await screen.findByText(/No suggestion/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    const dialog = await screen.findByRole("dialog");
+    const category = within(dialog).getByLabelText("Category");
+    await waitFor(() => expect(within(category).getAllByRole("option")).toHaveLength(2));
+    await within(dialog).findByRole("option", { name: "ENG Engineering" });
+    fireEvent.change(category, { target: { value: "a6100" } });
+    expect(within(dialog).getByText("6100 needs one")).toBeTruthy();
+    expect(within(dialog).getByLabelText("Department").closest(".fy-field")!.className).not.toContain("fy-expert-only");
+    fireEvent.change(within(dialog).getByLabelText("Department"), { target: { value: "v1" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Post it" }));
+    await waitFor(() => expect(sent.some((s) => s.path === "/v1/bank-lines/l1/categorise")).toBe(true));
+    expect(sent.find((s) => s.path === "/v1/bank-lines/l1/categorise")?.body).toEqual({ parts: [{ account_id: "a6100", dimension_value_ids: ["v1"] }] });
   });
 
   it("offers split, transfer, match and suspense in Expert, and puts a line in suspense", async () => {

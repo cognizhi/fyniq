@@ -269,3 +269,65 @@ func TestABillsLinesCarryTheirDimensionValues(t *testing.T) {
 		t.Errorf("a department out of use: %v", err)
 	}
 }
+
+// FR-DIM-01 and FR-DIM-02 on a bank line (rev 0.171; slice 3d): each part's line carries its values, a spread part's
+// holding line and every month it releases too, and the money account and GST none; a person's categorisation of a part
+// on an account that requires a dimension names a value of it (DIM-05), while a bank rule applied by itself posts it
+// without one, flagged by Appendix C.2 #60; a value is always one in use (DIM-06).
+// req: FR-DIM-01
+// req: FR-DIM-02
+// req: ENG-05
+func TestABankLinesPartsCarryTheirDimensionValues(t *testing.T) {
+	s := banking()
+	d := withDimensions()
+	s.Dimensions, s.Values = d.Dimensions, d.Values
+	tagged := software
+	tagged.Requires = []uuid.UUID{dept}
+	s.Accounts[software.ID] = tagged
+	cost := part(t, software, "-109.00", sgd, "0.09", 0)
+	cost.Values = []uuid.UUID{ops}
+	spread := part(t, hosting, "-1200.00", sgd, "", 12)
+	spread.Values = []uuid.UUID{atlas}
+	txn := bankTxn(t, current, "-1309.00", sgd, nil, cost, spread)
+	e, err := PostBankTransaction(txn, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	valuesOn := func(lines []Line) map[string][]uuid.UUID {
+		out := map[string][]uuid.UUID{}
+		for _, l := range lines {
+			out[s.Accounts[l.AccountID].Code] = l.Values
+		}
+		return out
+	}
+	if got := valuesOn(e.Lines); !slices.Equal(got["6120"], []uuid.UUID{ops}) || !slices.Equal(got["1210"], []uuid.UUID{atlas}) ||
+		got[current.Code] != nil || got["2200"] != nil {
+		t.Errorf("the line's values: %v", got)
+	}
+	rs, err := BankTransactionReleases(txn, e, s)
+	if err != nil || len(rs) != 12 {
+		t.Fatalf("the releases: %d %v", len(rs), err)
+	}
+	r, err := PostBankOutRelease(rs[0], s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := valuesOn(r.Lines); !slices.Equal(got["5010"], []uuid.UUID{atlas}) || !slices.Equal(got["1210"], []uuid.UUID{atlas}) {
+		t.Errorf("a release's values: %v", got)
+	}
+
+	cost.Values = nil
+	person := bankTxn(t, current, "-109.00", sgd, nil, cost)
+	if _, err := PostBankTransaction(person, s); dimensionCodes(err) != "DIM-05 parts[1].dimension_value_ids" {
+		t.Errorf("a person's part with no department: %v", err)
+	}
+	auto := person
+	auto.Automatic = true
+	if _, err := PostBankTransaction(auto, s); err != nil {
+		t.Errorf("a rule's part with no department: %v", err)
+	}
+	auto.Parts[0].Values = []uuid.UUID{retired}
+	if _, err := PostBankTransaction(auto, s); dimensionCodes(err) != "DIM-06 parts[1].dimension_value_ids" {
+		t.Errorf("a rule's part with a department out of use: %v", err)
+	}
+}

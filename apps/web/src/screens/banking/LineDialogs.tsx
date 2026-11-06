@@ -11,6 +11,7 @@ import { date } from "../../format/date";
 import { negate, sign } from "../../format/decimal";
 import { helpText } from "../../i18n";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { DimensionFields } from "../accounting/lines";
 import { checkCategorisation, send, settles, type Line, type PartForm, type Request } from "./lineActions";
 
 type Contact = components["schemas"]["Contact"];
@@ -57,7 +58,7 @@ export function useGSTCodes(line: Line) {
   });
 }
 
-const blank = (key: string): PartForm => ({ key, account_id: "", amount: "", gst_code: "", description: "" });
+const blank = (key: string): PartForm => ({ key, account_id: "", amount: "", gst_code: "", description: "", dimension_value_ids: [] });
 
 // CategoriseDialog codes a line to accounts and posts it (FR-BNK-05, FR-BNK-06): Change is one part, the whole line, with
 // its account, contact and GST code; Split (Expert) is several parts, each with its amount, at most one taking the rest.
@@ -152,6 +153,16 @@ export function CategoriseDialog({ line, etag, split, onClose, onDone }: { line:
                 ))}
               </select>
             </div>
+            <DimensionFields
+              ids={p.dimension_value_ids}
+              keyPrefix={`${id}-${p.key}`}
+              n={n + 1}
+              prefix={split ? `Part ${n + 1}: ` : ""}
+              account={(accounts.data ?? []).find((a) => a.id === p.account_id)}
+              set={(ids) => set(p.key, { dimension_value_ids: ids })}
+              className="fy-field"
+              expertOnly
+            />
             {split && parts.length > 1 && (
               <button type="button" className="fy-iconbtn" aria-label={`Remove part ${n + 1}`} onClick={() => setParts(parts.filter((x) => x.key !== p.key))}>
                 <Icon of={Trash2} />

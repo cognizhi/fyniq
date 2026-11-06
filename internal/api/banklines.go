@@ -37,6 +37,8 @@ type BankPartDraft struct {
 	GSTCode      string `json:"gst_code,omitempty" maxLength:"16" doc:"Its GST code from the sg-gst pack on the line's date; left out, the account's default." example:"TX"`
 	SpreadMonths int    `json:"spread_months,omitempty" minimum:"0" maximum:"60" doc:"Months it spreads over from the line's month, as a prepayment or deferred income released monthly (FR-GL-03); 0 for none." example:"12"`
 	Description  string `json:"description,omitempty" maxLength:"200" doc:"What it was." example:"AWS October"`
+	// Dimensions (FR-DIM-01, FR-DIM-02; rev 0.171).
+	DimensionValueIDs []DimensionValueRef `json:"dimension_value_ids,omitempty" maxItems:"10" doc:"The part's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06): its line, and each month a spread releases, carry them. A part a person codes on an account that requires a dimension names a value of it (DIM-05); a rule applied by itself posts without one, and Checks flags the amount (Appendix C.2 #60)."`
 }
 
 // BankCategorisation is how a person codes a line: the contact and reference it names, and its parts.
@@ -358,6 +360,9 @@ func registerBankLines(a *API) {
 						fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("account_id"), Message: "is not an ID", Fix: "Send the account's ID"})
 					}
 					part := banktransaction.Part{AccountID: acc, GSTCode: x.GSTCode, Months: x.SpreadMonths, Description: strings.TrimSpace(x.Description)}
+					values, fps := valuesOf(x.DimensionValueIDs, at("dimension_value_ids"))
+					fields = append(fields, fps...)
+					part.Values = values
 					if x.Amount != nil {
 						m, bad := moneyIn(*x.Amount, at("amount"))
 						if bad != nil {
