@@ -20,6 +20,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-20] compile | docs/user-guide/members-and-roles.md → members.roles, members.invite (new: members, roles and invitations with the founder bootstrap, PRD-001 rev 0.35, p1-users-roles task 2.1)
 
 ## [2026-10-20] compile | docs/user-guide/approvals.md (new), members-and-roles.md, organisation-settings.md → approvals.decide (new), members.roles, members.invite, settings.change, settings.organisation (rev 0.36: changes under FM-1 now wait for a second approver instead of being refused)
+
 ## [2026-10-20] compile | docs/user-guide/home.md, docs/user-guide/appearance.md → home.overview, preferences.appearance (new guide pages for the app shell's first slice: Home, search and commands, appearance)
 
 ## [2026-10-20] compile | docs/user-guide/approval-policies.md, docs/user-guide/approvals.md → approvals.policies, approvals.decide (approval policies as data, steps, withdrawing a request; PRD rev 0.40)
@@ -265,6 +266,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-29] compile | docs/user-guide/financial-statements.md → reports.statements (accountant exports in the background, p1-reports tasks 3.3, 3.4)
 
 ## [2026-10-29] compile | docs/user-guide/financial-statements.md → reports.statements (the export dialog: a statement's PDF beside Excel and CSV; Ask again for an expired export)
+
 ## [2026-10-29] compile | docs/user-guide/banking.md → banking.auto-reconciled (a batch's payment reconciles by itself when the line names the batch, rev 0.160); the other banking pages re-hashed, unchanged
 
 ## [2026-10-29] compile | docs/user-guide/payment-batches.md → purchases.payment-batches (Send again for a failed remittance advice; a batch's payment matched by itself, rev 0.160)
@@ -312,10 +314,13 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-03] compile | docs/user-guide/director-accounts.md → founders.director-accounts, founders.pay-choice (the related-party schedule, FR-EQ-10)
 
 ## [2026-11-04] compile | docs/user-guide/invoices.md → task/sales-invoices (the credit notes of one invoice credit at most its total together, p1-sales 3.3)
+
 ## [2026-11-04] compile | docs/user-guide/fixed-assets.md → task/accounting-fixed-assets (a disposal's GST code is always a supply code, B.6 rev 0.169)
+
 ## [2026-11-04] compile | docs/user-guide/financial-statements.md, kpis.md → task/reports-statements, task/reports-kpis (a balance sheet with an unplaced account does not balance, its movements under Other accounts; subscription accounts exclude other income and headings)
 
 ## [2026-11-05] compile | docs/user-guide/currencies.md → accounting.currencies (FX-08: an averaged rate refused where it would set a GST amount, ENG-42)
+
 ## [2026-11-05] compile | docs/user-guide/chart-of-accounts.md → accounting.chart (the Dimensions section and the values of a dimension, FR-DIM-01)
 
 ## [2026-11-06] compile | docs/user-guide/periods-and-close.md → accounting.periods (the close's check of amounts without a required dimension, C.2 #60)
@@ -340,10 +345,17 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-06] compile | accountant-review.md (new), periods-and-close.md → accounting.reviews (new), accounting.periods (the accountant's review, FM-7, PRD-001 rev 0.176)
 
+## [2026-11-06] compile | approvals.md → approvals.decide (what approving would post, FR-APR-02, PRD-001 rev 0.177)
+
+## [2026-11-06] compile | docs/user-guide/approval-policies.md → approvals.policies (FR-APR-01 rules: the first matching rule decides the steps, rev 0.178)
+
+## [2026-11-06] compile | docs/user-guide/approval-policies.md → approvals.policies (rules decide who, the self-approval threshold whether, FM-2 rev 0.178)
+
 ## [2026-11-06] compile | docs/user-guide/banking.md, team-mode.md → banking.reconcile, settings.team-mode (SOD-5's override, SOD-6 when approving, PRD-001 rev 0.179); other banking pages rehashed
 
 ## [2026-11-06] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (sign out after inactivity, SEC-05, PRD-001 rev 0.180)
 
 ## [2026-11-06] compile | docs/user-guide/members-and-roles.md → members.remove (Owner succession, FR-ADM-09, PRD-001 rev 0.181); members.roles, members.invite rehashed
+
 
 ## [2026-11-06] compile | organisation-settings.md, bills.md, journals.md → settings.organisation, purchases.bills, accounting.journals, settings.change (evidence rules, FR-DOC-06, PRD-001 rev 0.182)
