@@ -359,3 +359,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 
 ## [2026-11-06] compile | organisation-settings.md, bills.md, journals.md → settings.organisation, purchases.bills, accounting.journals, settings.change (evidence rules, FR-DOC-06, PRD-001 rev 0.182)
+
+## [2026-11-06] compile | bills.md, journals.md → purchases.bills, accounting.journals (the NRIC flag, FR-DOC-09, PRD-001 rev 0.183)

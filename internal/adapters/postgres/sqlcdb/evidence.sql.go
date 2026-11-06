@@ -15,7 +15,7 @@ import (
 
 const evidenceByHash = `-- name: EvidenceByHash :many
 SELECT id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
-  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version
+  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version, nric_flagged
 FROM fyniq.evidence
 WHERE (original_sha256 = $1 OR sha256 = $1) AND state <> 'removed'
 ORDER BY uploaded_at, id LIMIT 100
@@ -43,6 +43,7 @@ type EvidenceByHashRow struct {
 	RetainUntil    *time.Time
 	FinalisedAt    *time.Time
 	Version        int32
+	NricFlagged    bool
 }
 
 func (q *Queries) EvidenceByHash(ctx context.Context, hash string) ([]EvidenceByHashRow, error) {
@@ -76,6 +77,7 @@ func (q *Queries) EvidenceByHash(ctx context.Context, hash string) ([]EvidenceBy
 			&i.RetainUntil,
 			&i.FinalisedAt,
 			&i.Version,
+			&i.NricFlagged,
 		); err != nil {
 			return nil, err
 		}
@@ -123,7 +125,7 @@ UPDATE fyniq.evidence SET state = 'final', locked_key = $1, retain_until = $2,
   finalised_at = $3, version = version + 1
 WHERE id = $4
 RETURNING id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
-  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version
+  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version, nric_flagged
 `
 
 type FinaliseEvidenceParams struct {
@@ -155,6 +157,7 @@ type FinaliseEvidenceRow struct {
 	RetainUntil    *time.Time
 	FinalisedAt    *time.Time
 	Version        int32
+	NricFlagged    bool
 }
 
 func (q *Queries) FinaliseEvidence(ctx context.Context, arg FinaliseEvidenceParams) (FinaliseEvidenceRow, error) {
@@ -187,13 +190,14 @@ func (q *Queries) FinaliseEvidence(ctx context.Context, arg FinaliseEvidencePara
 		&i.RetainUntil,
 		&i.FinalisedAt,
 		&i.Version,
+		&i.NricFlagged,
 	)
 	return i, err
 }
 
 const getEvidence = `-- name: GetEvidence :one
 SELECT id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
-  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version
+  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version, nric_flagged
 FROM fyniq.evidence WHERE id = $1
 `
 
@@ -219,6 +223,7 @@ type GetEvidenceRow struct {
 	RetainUntil    *time.Time
 	FinalisedAt    *time.Time
 	Version        int32
+	NricFlagged    bool
 }
 
 func (q *Queries) GetEvidence(ctx context.Context, id uuid.UUID) (GetEvidenceRow, error) {
@@ -246,18 +251,19 @@ func (q *Queries) GetEvidence(ctx context.Context, id uuid.UUID) (GetEvidenceRow
 		&i.RetainUntil,
 		&i.FinalisedAt,
 		&i.Version,
+		&i.NricFlagged,
 	)
 	return i, err
 }
 
 const insertEvidence = `-- name: InsertEvidence :one
 INSERT INTO fyniq.evidence (document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256,
-  source, data_class, staging_key, uploaded_by)
+  source, data_class, staging_key, uploaded_by, nric_flagged)
 VALUES ($1, $2, $3, $4, $5, $6,
   $7, $8, $9, $10, $11, $12,
-  $13)
+  $13, $14)
 RETURNING id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
-  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version
+  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version, nric_flagged
 `
 
 type InsertEvidenceParams struct {
@@ -274,6 +280,7 @@ type InsertEvidenceParams struct {
 	DataClass      string
 	StagingKey     string
 	UploadedBy     string
+	NricFlagged    bool
 }
 
 type InsertEvidenceRow struct {
@@ -298,6 +305,7 @@ type InsertEvidenceRow struct {
 	RetainUntil    *time.Time
 	FinalisedAt    *time.Time
 	Version        int32
+	NricFlagged    bool
 }
 
 func (q *Queries) InsertEvidence(ctx context.Context, arg InsertEvidenceParams) (InsertEvidenceRow, error) {
@@ -315,6 +323,7 @@ func (q *Queries) InsertEvidence(ctx context.Context, arg InsertEvidenceParams) 
 		arg.DataClass,
 		arg.StagingKey,
 		arg.UploadedBy,
+		arg.NricFlagged,
 	)
 	var i InsertEvidenceRow
 	err := row.Scan(
@@ -339,6 +348,7 @@ func (q *Queries) InsertEvidence(ctx context.Context, arg InsertEvidenceParams) 
 		&i.RetainUntil,
 		&i.FinalisedAt,
 		&i.Version,
+		&i.NricFlagged,
 	)
 	return i, err
 }
@@ -393,7 +403,7 @@ func (q *Queries) LiveStagingKeys(ctx context.Context, keys []string) ([]string,
 
 const lockEvidence = `-- name: LockEvidence :one
 SELECT id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
-  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version
+  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version, nric_flagged
 FROM fyniq.evidence WHERE id = $1 FOR UPDATE
 `
 
@@ -419,6 +429,7 @@ type LockEvidenceRow struct {
 	RetainUntil    *time.Time
 	FinalisedAt    *time.Time
 	Version        int32
+	NricFlagged    bool
 }
 
 func (q *Queries) LockEvidence(ctx context.Context, id uuid.UUID) (LockEvidenceRow, error) {
@@ -446,13 +457,14 @@ func (q *Queries) LockEvidence(ctx context.Context, id uuid.UUID) (LockEvidenceR
 		&i.RetainUntil,
 		&i.FinalisedAt,
 		&i.Version,
+		&i.NricFlagged,
 	)
 	return i, err
 }
 
 const pageDocumentEvidence = `-- name: PageDocumentEvidence :many
 SELECT id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
-  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version
+  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version, nric_flagged
 FROM fyniq.evidence WHERE document_id = $1 AND id > $2::uuid ORDER BY id LIMIT $3
 `
 
@@ -484,6 +496,7 @@ type PageDocumentEvidenceRow struct {
 	RetainUntil    *time.Time
 	FinalisedAt    *time.Time
 	Version        int32
+	NricFlagged    bool
 }
 
 func (q *Queries) PageDocumentEvidence(ctx context.Context, arg PageDocumentEvidenceParams) ([]PageDocumentEvidenceRow, error) {
@@ -517,6 +530,7 @@ func (q *Queries) PageDocumentEvidence(ctx context.Context, arg PageDocumentEvid
 			&i.RetainUntil,
 			&i.FinalisedAt,
 			&i.Version,
+			&i.NricFlagged,
 		); err != nil {
 			return nil, err
 		}
@@ -530,7 +544,7 @@ func (q *Queries) PageDocumentEvidence(ctx context.Context, arg PageDocumentEvid
 
 const pageFinalEvidence = `-- name: PageFinalEvidence :many
 SELECT id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
-  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version
+  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version, nric_flagged
 FROM fyniq.evidence WHERE state = 'final' AND id > $1::uuid ORDER BY id LIMIT $2
 `
 
@@ -561,6 +575,7 @@ type PageFinalEvidenceRow struct {
 	RetainUntil    *time.Time
 	FinalisedAt    *time.Time
 	Version        int32
+	NricFlagged    bool
 }
 
 func (q *Queries) PageFinalEvidence(ctx context.Context, arg PageFinalEvidenceParams) ([]PageFinalEvidenceRow, error) {
@@ -594,6 +609,7 @@ func (q *Queries) PageFinalEvidence(ctx context.Context, arg PageFinalEvidencePa
 			&i.RetainUntil,
 			&i.FinalisedAt,
 			&i.Version,
+			&i.NricFlagged,
 		); err != nil {
 			return nil, err
 		}
@@ -609,7 +625,7 @@ const removeEvidence = `-- name: RemoveEvidence :one
 UPDATE fyniq.evidence SET state = 'removed', removed_at = $1, version = version + 1
 WHERE id = $2
 RETURNING id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
-  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version
+  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version, nric_flagged
 `
 
 type RemoveEvidenceParams struct {
@@ -639,6 +655,7 @@ type RemoveEvidenceRow struct {
 	RetainUntil    *time.Time
 	FinalisedAt    *time.Time
 	Version        int32
+	NricFlagged    bool
 }
 
 func (q *Queries) RemoveEvidence(ctx context.Context, arg RemoveEvidenceParams) (RemoveEvidenceRow, error) {
@@ -666,6 +683,7 @@ func (q *Queries) RemoveEvidence(ctx context.Context, arg RemoveEvidenceParams) 
 		&i.RetainUntil,
 		&i.FinalisedAt,
 		&i.Version,
+		&i.NricFlagged,
 	)
 	return i, err
 }
@@ -673,7 +691,7 @@ func (q *Queries) RemoveEvidence(ctx context.Context, arg RemoveEvidenceParams) 
 const unfinalisedEvidence = `-- name: UnfinalisedEvidence :many
 SELECT e.id, e.document_id, e.evidence_type, e.note, e.relates_on, e.file_name, e.media_type, e.size_bytes, e.sha256, e.original_sha256,
   e.source, e.data_class, e.staging_key, e.uploaded_by, e.uploaded_at, e.state, e.removed_at, e.locked_key, e.retain_until,
-  e.finalised_at, e.version
+  e.finalised_at, e.version, e.nric_flagged
 FROM fyniq.evidence e JOIN fyniq.document d ON d.organisation_id = e.organisation_id AND d.id = e.document_id
 WHERE e.state = 'attached' AND d.status <> 'draft' ORDER BY e.id LIMIT $1
 `
@@ -700,6 +718,7 @@ type UnfinalisedEvidenceRow struct {
 	RetainUntil    *time.Time
 	FinalisedAt    *time.Time
 	Version        int32
+	NricFlagged    bool
 }
 
 func (q *Queries) UnfinalisedEvidence(ctx context.Context, pageSize int32) ([]UnfinalisedEvidenceRow, error) {
@@ -733,6 +752,7 @@ func (q *Queries) UnfinalisedEvidence(ctx context.Context, pageSize int32) ([]Un
 			&i.RetainUntil,
 			&i.FinalisedAt,
 			&i.Version,
+			&i.NricFlagged,
 		); err != nil {
 			return nil, err
 		}

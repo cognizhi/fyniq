@@ -58,6 +58,19 @@ const at = { path: "/accounting/journals/j1", route: "/accounting/journals/$jour
 // req: FR-DOC-05
 // req: FR-DOC-07
 describe("a journal's evidence", () => {
+  // req: FR-DOC-09
+  it("marks a file whose text shows an NRIC in full", async () => {
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } },
+      "GET /v1/journals/j1/evidence": { status: 200, body: { items: [file({ unmasked_nric: true, file_name: "staff.csv" }), file({ id: "ev2", file_name: "masked.csv" })] } },
+    });
+    renderPage(page(auditor), at);
+    expect(await screen.findByText("staff.csv")).toBeTruthy();
+    expect(screen.getAllByText("Shows an NRIC")).toHaveLength(1);
+    await noViolations(document.body);
+  });
+
   it("attaches a file with what it is to a draft at the version read, and takes it off again; axe finds nothing", async () => {
     let files: Evidence[] = [];
     answer({

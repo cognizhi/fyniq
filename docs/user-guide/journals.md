@@ -187,6 +187,8 @@ resolution, under **Evidence** on the journal's page.
 
 - Fyniq decides the file's type from its content, scans it for malware, and strips image metadata
   such as location before keeping it.
+- A file whose text shows an NRIC or FIN in full is marked **Shows an NRIC**: mask the number
+  before you share the file.
 - A journal whose debits are above S$1,000 posts only with a supporting calculation or document
   attached, unless your organisation's **Evidence for manual journals** settings say otherwise
   ([Organisation settings](organisation-settings.md#evidence-rules)).

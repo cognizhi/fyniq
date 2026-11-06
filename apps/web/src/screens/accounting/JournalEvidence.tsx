@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Lock, Paperclip, Trash2 } from "lucide-react";
+import { FileText, Lock, Paperclip, Trash2, TriangleAlert } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -365,6 +365,12 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                 </span>
               </span>
               <State e={e} />
+              {e.unmasked_nric && (
+                <span className="fy-chip fy-chip--warning" title="Its text shows a Singapore NRIC or FIN in full: mask it before you share the file (FR-DOC-09).">
+                  <Icon of={TriangleAlert} />
+                  Shows an NRIC
+                </span>
+              )}
               {draft && mayAttach && e.state === "attached" && (
                 <Button variant="ghost" size="sm" onClick={() => void remove(e)} disabled={busy} aria-label={`Remove ${e.file_name}`} title="Take the file off the draft">
                   <Icon of={Trash2} />

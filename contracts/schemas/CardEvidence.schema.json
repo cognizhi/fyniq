@@ -132,6 +132,13 @@
       ],
       "type": "string"
     },
+    "unmasked_nric": {
+      "description": "true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "uploaded_at": {
       "description": "When it was attached.",
       "examples": [

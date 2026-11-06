@@ -531,7 +531,7 @@ func registerOwnerSuccession(a *API) {
 						"Object to it instead, if it is wrong")
 				}
 				e, err := u.Evidence().Attach(ctx, storage.NewEvidence{DocumentID: s.DocumentID, EvidenceType: d.EvidenceType, Note: d.Note, RelatesOn: d.RelatesOn,
-					FileName: file.Name, MediaType: file.MediaType, Size: int64(len(file.Data)), SHA256: file.SHA256, OriginalSHA256: file.OriginalSHA256,
+					FileName: file.Name, MediaType: file.MediaType, Size: int64(len(file.Data)), SHA256: file.SHA256, OriginalSHA256: file.OriginalSHA256, NRICFlagged: file.NRIC,
 					Source: d.Source, DataClass: d.DataClass, StagingKey: key, UploadedBy: uploader(ctx)})
 				if err != nil {
 					return Evidence{}, err

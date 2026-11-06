@@ -383,6 +383,10 @@ Source: PRD-001 §8.16 · Priority M · Phase P1 (class) / P2 (redaction)
 - **WHEN** an evidence file is scanned for the NRIC pattern
 - **THEN** unmasked identifiers are flagged
 
+#### Scenario: Unmasked NRICs are flagged (rev 0.183)
+- **WHEN** a file whose text (plain text, CSV, email, an XLSX's or DOCX's text, a PDF's uncompressed text) shows an NRIC or FIN in full is attached (provisional until sign-off)
+- **THEN** it is flagged, wherever its record's files are listed; a masked one is not, nor an S, T, F or G number whose check letter is wrong
+
 #### Scenario: Redacted copy
 - **WHEN** a user redacts an evidence file with the redaction tool (P2)
 - **THEN** a redacted copy is created

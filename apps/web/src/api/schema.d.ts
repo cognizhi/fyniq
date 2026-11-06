@@ -12215,6 +12215,11 @@ export interface components {
              */
             state: "attached" | "removed" | "final";
             /**
+             * @description true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file.
+             * @example false
+             */
+            unmasked_nric?: boolean;
+            /**
              * Format: date-time
              * @description When it was attached.
              * @example 2026-10-14T09:15:00Z
@@ -13150,6 +13155,11 @@ export interface components {
              * @enum {string}
              */
             state: "attached" | "removed" | "final";
+            /**
+             * @description true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file.
+             * @example false
+             */
+            unmasked_nric?: boolean;
             /**
              * Format: date-time
              * @description When it was attached.
@@ -14207,6 +14217,11 @@ export interface components {
              * @enum {string}
              */
             state: "attached" | "removed" | "final";
+            /**
+             * @description true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file.
+             * @example false
+             */
+            unmasked_nric?: boolean;
             /**
              * Format: date-time
              * @description When it was attached.
@@ -16581,6 +16596,11 @@ export interface components {
              */
             state: "attached" | "removed" | "final";
             /**
+             * @description true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file.
+             * @example false
+             */
+            unmasked_nric?: boolean;
+            /**
              * Format: date-time
              * @description When it was attached.
              * @example 2026-11-03T09:15:00Z
@@ -16841,6 +16861,11 @@ export interface components {
              * @enum {string}
              */
             state: "attached" | "removed" | "final";
+            /**
+             * @description true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file.
+             * @example false
+             */
+            unmasked_nric?: boolean;
             /**
              * Format: date-time
              * @description When it was attached.
@@ -17196,6 +17221,11 @@ export interface components {
              * @enum {string}
              */
             state: "attached" | "removed" | "final";
+            /**
+             * @description true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file.
+             * @example false
+             */
+            unmasked_nric?: boolean;
             /**
              * Format: date-time
              * @description When it was attached.
@@ -17997,6 +18027,11 @@ export interface components {
              */
             state: "attached" | "removed" | "final";
             /**
+             * @description true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file.
+             * @example false
+             */
+            unmasked_nric?: boolean;
+            /**
              * Format: date-time
              * @description When it was attached.
              * @example 2026-10-20T09:15:00Z
@@ -18120,6 +18155,11 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fe1
              */
             status_id: string;
+            /**
+             * @description true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file.
+             * @example false
+             */
+            unmasked_nric?: boolean;
             /**
              * Format: date-time
              * @description When it was attached.
@@ -20354,6 +20394,11 @@ export interface components {
              * @enum {string}
              */
             state: "attached" | "removed" | "final";
+            /**
+             * @description true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file.
+             * @example false
+             */
+            unmasked_nric?: boolean;
             /**
              * Format: date-time
              * @description When it was attached.
@@ -23180,6 +23225,11 @@ export interface components {
              */
             state: "attached" | "removed" | "final";
             /**
+             * @description true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file.
+             * @example false
+             */
+            unmasked_nric?: boolean;
+            /**
              * Format: date-time
              * @description When it was attached.
              * @example 2026-10-14T09:15:00Z
@@ -24076,6 +24126,11 @@ export interface components {
              * @enum {string}
              */
             state: "attached" | "removed" | "final";
+            /**
+             * @description true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file.
+             * @example false
+             */
+            unmasked_nric?: boolean;
             /**
              * Format: date-time
              * @description When it was attached.

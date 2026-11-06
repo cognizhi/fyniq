@@ -35,6 +35,7 @@ type Evidence struct {
 	Size           int64  `json:"size_bytes" doc:"Its size as stored, in bytes." example:"48213"`
 	SHA256         string `json:"sha256" doc:"The SHA-256 of the file as stored, in hexadecimal: image metadata such as location is stripped first." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
 	OriginalSHA256 string `json:"original_sha256" doc:"The SHA-256 of the file as received, in hexadecimal." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
+	UnmaskedNRIC   bool   `json:"unmasked_nric,omitempty" doc:"true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file." example:"false"`
 	Source         string `json:"source" enum:"upload,paste,email,api,generated" doc:"How it arrived: generated for a file Fyniq made, such as the PDF of a quote or invoice it emailed (FR-AR-06)." example:"upload"`
 	DataClass      string `json:"data_class" enum:"general,personal,bank,payroll,identity" doc:"The personal data it holds (FR-DOC-09)." example:"general"`
 	UploadedBy     string `json:"uploaded_by" doc:"Who uploaded it: an actor of the audit trail." example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
@@ -113,7 +114,7 @@ const maxUpload = evidence.MaxBytes + 1<<20
 
 func evidenceOf(e storage.Evidence) Evidence {
 	out := Evidence{ID: e.ID.String(), JournalID: e.DocumentID.String(), EvidenceType: e.EvidenceType, Note: e.Note, FileName: e.FileName,
-		MediaType: e.MediaType, Size: e.Size, SHA256: e.SHA256, OriginalSHA256: e.OriginalSHA256, Source: string(e.Source),
+		MediaType: e.MediaType, Size: e.Size, SHA256: e.SHA256, OriginalSHA256: e.OriginalSHA256, UnmaskedNRIC: e.NRICFlagged, Source: string(e.Source),
 		DataClass: string(e.DataClass), UploadedBy: e.UploadedBy, UploadedAt: e.UploadedAt.UTC().Format(time.RFC3339),
 		State: string(e.State), Version: e.Version}
 	if e.RelatesOn != nil {
@@ -304,7 +305,7 @@ func registerEvidence(a *API) {
 					return Evidence{}, err
 				}
 				e, err := u.Evidence().Attach(ctx, storage.NewEvidence{DocumentID: id, EvidenceType: d.EvidenceType, Note: d.Note, RelatesOn: d.RelatesOn,
-					FileName: file.Name, MediaType: file.MediaType, Size: int64(len(file.Data)), SHA256: file.SHA256, OriginalSHA256: file.OriginalSHA256,
+					FileName: file.Name, MediaType: file.MediaType, Size: int64(len(file.Data)), SHA256: file.SHA256, OriginalSHA256: file.OriginalSHA256, NRICFlagged: file.NRIC,
 					Source: d.Source, DataClass: d.DataClass, StagingKey: key, UploadedBy: uploader(ctx)})
 				if err != nil {
 					return Evidence{}, err

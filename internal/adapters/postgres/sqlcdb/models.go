@@ -898,6 +898,7 @@ type FyniqEvidence struct {
 	RetainUntil    *time.Time
 	FinalisedAt    *time.Time
 	Version        int32
+	NricFlagged    bool
 }
 
 type FyniqFixedAssetSource struct {

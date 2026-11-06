@@ -34,6 +34,7 @@ type PayeeBankChangeEvidence struct {
 	Size           int64  `json:"size_bytes" doc:"Its size as stored, in bytes." example:"48213"`
 	SHA256         string `json:"sha256" doc:"The SHA-256 of the file as stored, in hexadecimal: image metadata such as location is stripped first." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
 	OriginalSHA256 string `json:"original_sha256" doc:"The SHA-256 of the file as received, in hexadecimal." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
+	UnmaskedNRIC   bool   `json:"unmasked_nric,omitempty" doc:"true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file." example:"false"`
 	Source         string `json:"source" enum:"upload,paste,email,api,generated" doc:"How it arrived: generated for a file Fyniq made, such as the PDF of a quote or invoice it emailed (FR-AR-06)." example:"upload"`
 	DataClass      string `json:"data_class" enum:"general,personal,bank,payroll,identity" doc:"The personal data it holds (FR-DOC-09)." example:"general"`
 	UploadedBy     string `json:"uploaded_by" doc:"Who uploaded it: an actor of the audit trail." example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
@@ -93,7 +94,7 @@ type payeeEvidenceWriteOutput struct {
 func payeeEvidenceOf(e storage.Evidence) PayeeBankChangeEvidence {
 	j := evidenceOf(e)
 	return PayeeBankChangeEvidence{ID: j.ID, ChangeID: j.JournalID, EvidenceType: j.EvidenceType, Note: j.Note, RelatesOn: j.RelatesOn, FileName: j.FileName,
-		MediaType: j.MediaType, Size: j.Size, SHA256: j.SHA256, OriginalSHA256: j.OriginalSHA256, Source: j.Source, DataClass: j.DataClass,
+		MediaType: j.MediaType, Size: j.Size, SHA256: j.SHA256, OriginalSHA256: j.OriginalSHA256, UnmaskedNRIC: j.UnmaskedNRIC, Source: j.Source, DataClass: j.DataClass,
 		UploadedBy: j.UploadedBy, UploadedAt: j.UploadedAt, State: j.State, RetainUntil: j.RetainUntil, Version: j.Version}
 }
 
@@ -149,7 +150,7 @@ func (a *API) addChangeEvidence(ctx context.Context, in *addPayeeBankChangeEvide
 			return PayeeBankChangeEvidence{}, err
 		}
 		e, err := u.Evidence().Attach(ctx, storage.NewEvidence{DocumentID: id, EvidenceType: d.EvidenceType, Note: d.Note, RelatesOn: d.RelatesOn,
-			FileName: file.Name, MediaType: file.MediaType, Size: int64(len(file.Data)), SHA256: file.SHA256, OriginalSHA256: file.OriginalSHA256,
+			FileName: file.Name, MediaType: file.MediaType, Size: int64(len(file.Data)), SHA256: file.SHA256, OriginalSHA256: file.OriginalSHA256, NRICFlagged: file.NRIC,
 			Source: d.Source, DataClass: storage.ClassBank, StagingKey: key, UploadedBy: uploader(ctx)})
 		if err != nil {
 			return PayeeBankChangeEvidence{}, err
