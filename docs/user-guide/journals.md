@@ -71,6 +71,12 @@ shows **Locked (closed month)**.
 Fyniq records who posted it and when. Once posted, a journal never changes in place: it is edited or
 reversed, and the ledger keeps every entry.
 
+A line on a control account, such as 1100 Accounts receivable, 2010 Accounts payable or the GST
+control, shows **Posts to a control account**. The journal still posts, but the records behind that
+account (the open invoices, the open bills, the GST returns) do not see the line, so the account and
+its records differ by it. Enter it through its own document, such as an invoice, a bill or a claim,
+unless it is an approved adjustment; then explain the difference where the account is reconciled.
+
 ## Journals that reverse by themselves
 
 An accrual is often reversed on the first day of the next month. Instead of reversing it by hand:

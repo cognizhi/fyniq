@@ -4,7 +4,7 @@ type: task
 title: Prepare, post and reverse journals
 summary: Prepare, check and post journals, ask for approval, edit or reverse a posted one, attach evidence, recurring journals, reversals that wait
 sources:
-  - docs/user-guide/journals.md sha256:f026f9c31557a50bb4683fc51297dca4ffc83e3371e3e7ecfedea88713450f20
+  - docs/user-guide/journals.md sha256:77ed7eb6bf72ceef982657c271c38e76b21e6682e22b11a01974f8fcb3baa65a
 data_class: general
 taint: trusted
 status: draft
@@ -82,6 +82,8 @@ aliases:
 - Open the draft: **Check** runs every posting rule and shows what posting writes in the base currency, saving nothing.
 - **Post**: the journal takes its number and posts on its date; Fyniq records who posted it and when.
 - Once posted, a journal never changes in place: it is edited or reversed, and the ledger keeps every entry.
+
+- A line on a control account, such as 1100 Accounts receivable, 2010 Accounts payable or the GST control, shows **Posts to a control account**: the journal still posts, but the records behind the account (open invoices, open bills, GST returns) do not see the line, so the two differ by it. Enter it through its own document unless it is an approved adjustment, then explain the difference where the account is reconciled.
 
 (src: docs/user-guide/journals.md#check-and-post-a-journal)
 

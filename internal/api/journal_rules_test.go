@@ -318,6 +318,8 @@ func TestAWaitingAutomaticReversalShows(t *testing.T) {
 // req: ENG-20
 // req: ENG-21
 // req: ENG-23
+// req: INV-07
+// req: ledger/invariants Manual journal to a control account
 func TestJournalsCarryTheWorkbooksStatuses(t *testing.T) {
 	e := newEnv(t)
 	accountant := e.as(authz.Accountant)
@@ -366,6 +368,38 @@ func TestJournalsCarryTheWorkbooksStatuses(t *testing.T) {
 	posted, _ := e.postedJournal("50.00")
 	if c := first(posted); c["code"] != "JOURNAL-POSTED" {
 		t.Errorf("a posted journal: %v", c)
+	}
+
+	// Question 55 (rev 0.189): a line on a control account posts, with ⚠ naming the sub-ledger that does not see it.
+	e.customer() // the chart's receivables account, 1100
+	var ar string
+	if err := e.store.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		accounts, err := u.Accounts().List(ctx)
+		for _, a := range accounts {
+			if a.Role == ledger.RoleAccountsReceivable {
+				ar = a.ID.String()
+			}
+		}
+		return err
+	}); err != nil || ar == "" {
+		t.Fatalf("the receivables account: %v", err)
+	}
+	control := e.draft("100.00")
+	control["lines"].([]map[string]any)[1]["account_id"] = ar
+	toAR := save(control)
+	flagged := checks(toAR)
+	warning, _ := flagged[0].(map[string]any)
+	if len(flagged) != 2 || warning["severity"] != "warning" || warning["code"] != journal.StatusControl || warning["title"] != "Posts to a control account" ||
+		warning["field"] != "lines[1].account_id" || !strings.Contains(warning["detail"].(string), "1100 Accounts receivable") ||
+		!strings.Contains(warning["detail"].(string), "the open invoices and customer credits") || flagged[1].(map[string]any)["code"] != "JOURNAL-OK" {
+		t.Fatalf("a draft to a control account: %v", flagged)
+	}
+	arTag := e.call(http.MethodGet, "/v1/journals/"+toAR, accountant, nil).Header.Get("ETag")
+	if p := e.call(http.MethodPost, "/v1/journals/"+toAR+"/post", accountant, nil, "If-Match", arTag); p.Status != http.StatusOK {
+		t.Fatalf("posting it: %d %s", p.Status, p.Raw)
+	}
+	if after := checks(toAR); len(after) != 2 || after[0].(map[string]any)["code"] != journal.StatusControl || after[1].(map[string]any)["code"] != "JOURNAL-POSTED" {
+		t.Errorf("posted to a control account: %v", after)
 	}
 	// The list carries them too.
 	l := e.call(http.MethodGet, "/v1/journals?page_size=100", accountant, nil)
