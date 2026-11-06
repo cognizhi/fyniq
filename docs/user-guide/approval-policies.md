@@ -41,6 +41,9 @@ take. The steps you set first are the **default steps**: they apply when no rule
 - A condition on something a change does not have never matches. A setting has no amount, so
   a rule with an amount never covers it.
 - Journals, bills, invoices, purchase orders and payment batches can match rules.
+- Rules decide who approves, not whether. A journal, bill or invoice at or below the
+  **Self-approval threshold** posts without asking, whatever the rules say. To make smaller
+  documents wait for a second person, lower the threshold.
 - A policy has at most 10 rules.
 
 The approval page says which rule chose a request's steps. A request keeps the steps it was

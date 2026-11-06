@@ -4,7 +4,7 @@ type: concept
 title: Approval policies: who approves each kind of change
 summary: Who approves each kind of change: a policy's steps, its rules (the first matching rule decides the steps), changing a policy, and waiting requests
 sources:
-  - docs/user-guide/approval-policies.md sha256:b529e4d672ce43c2725036887309fded90153dc7dfbe3dbfaa36a081af9aba79
+  - docs/user-guide/approval-policies.md sha256:4d64ca37ce6894dd1c11dfb31737d83bb6e9a1f15d50f1514a5ff16451095240
 data_class: general
 taint: trusted
 status: published
@@ -21,6 +21,7 @@ aliases:
   - approval rule
   - approval conditions
   - approve by amount
+  - self-approval threshold and rules
 ---
 
 # Approval policies: who approves each kind of change
@@ -49,6 +50,7 @@ aliases:
 - Rules are checked top to bottom; **the first rule that matches decides the steps**, so put the strictest first.
 - A condition on something a change does not have never matches: a setting has no amount, so an amount rule never covers it.
 - Journals, bills, invoices, purchase orders and payment batches can match rules; a policy has at most 10 rules.
+- Rules decide who approves, not whether: a journal, bill or invoice at or below the **Self-approval threshold** posts without asking, whatever the rules say; lower the threshold to make smaller documents wait.
 - The approval page says which rule chose a request's steps; a request keeps its steps, and waiting requests are cancelled when the policy changes ([[approvals.decide]]).
 
 (src: docs/user-guide/approval-policies.md#rules-different-steps-for-different-changes)

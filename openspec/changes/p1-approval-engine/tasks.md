@@ -93,7 +93,7 @@
   `TestTeamModeSwitchesAreDualControlled`, `TestASwitchBlocksWhenTheConflictsChange`, `TestAttackTeamModesAreApprovedSwitches`,
   `TestModes`, `TestASwitchWaitsForEveryConflict`. **Left:** Enterprise mode (TEAM-03 until its per-entity approval
   matrices, SSO, SCIM and quarterly access reviews exist); the team-mode screen (5.1).)
-- [ ] 3.2 FM-1 (two-person rule with step-up for both), FM-2 (self-approval at or below the threshold, flagged) and FM-3 (the weekly review task, escalating after 14 days). Tests `// req: FM-1`, `// req: FM-2` and `// req: FM-3`
+- [x] 3.2 FM-1 (two-person rule with step-up for both), FM-2 (self-approval at or below the threshold, flagged) and FM-3 (the weekly review task, escalating after 14 days). Tests `// req: FM-1`, `// req: FM-2` and `// req: FM-3`
   (20 Oct 2026: FM-1 for the objects built: `POST /v1/approvals/{id}/approve` and `/reject` sign the envelope whose
   hash the approver sends; the requester never signs (APR-01, and FY101 in the database); the signer holds A on the
   object's row (the Owner), passes step-up and is a person, never the AI. The final approval executes the change in
@@ -105,6 +105,11 @@
   `GET /v1/review-log` (with the unreviewed and overdue counts: 14 days in Founder mode) and `POST /v1/review-log/reviews`
   (APR-13, APR-14). Tests: `TestTheReviewLog`, `TestAttackTheReviewLogNeverChanges`. **Left:** FM-2, with the first
   documents that carry an amount; the weekly Inbox task, with the Inbox; the Checks warning, with Checks.)
+  (6 Nov 2026: each left item is built. FM-2 on manual journals, bills, invoices, credit notes and purchase orders
+  (`journal_approvals_test.go`, `bills_test.go`, `invoices_test.go`, `credit_notes_test.go`, `purchase_orders_test.go`),
+  and, rev 0.178, reconciled with the policies' rules: the threshold decides whether a document waits, the rules only
+  its steps (`TestAPolicysRulesChooseARequestsSteps`). The weekly review is the Inbox's card with the overdue count
+  (`approvals.test.tsx`), and C.2 #4 (`controls.review-log-overdue`) warns on Checks after 14 days (`access_review_test.go`).)
 - [x] 3.3 FM-8 break-glass and FM-9 beneficiary exclusion. Tests `// req: FM-8` (G4-062, G4-063) and `// req: FM-9`
   (FM-9 built with `p1-founders-money`: the person settled, repaid or issued shares never approves it (APR-15, FY253),
   and the Accountant's step is added when every member who could sign benefits; tests `TestEveryApproverBenefits`,

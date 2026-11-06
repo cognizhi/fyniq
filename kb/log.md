@@ -343,3 +343,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | approvals.md → approvals.decide (what approving would post, FR-APR-02, PRD-001 rev 0.177)
 
 ## [2026-11-06] compile | docs/user-guide/approval-policies.md → approvals.policies (FR-APR-01 rules: the first matching rule decides the steps, rev 0.178)
+
+## [2026-11-06] compile | docs/user-guide/approval-policies.md → approvals.policies (rules decide who, the self-approval threshold whether, FM-2 rev 0.178)

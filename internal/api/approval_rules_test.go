@@ -17,9 +17,11 @@ import (
 // for the journal policy: Cat approves a journal of S$5,000.00 or more; Ben one on Rent; anyone else the rest. A rule
 // with no condition, or naming an account the chart does not have, is refused. Ben approves the change. Then a
 // S$6,000.00 rent journal waits for Cat, the first rule that holds; a S$3,000.00 rent journal for Ben; a S$3,000.00 sale
-// for anyone, under the default steps; and each request says which rule chose its steps.
+// for anyone, under the default steps; and each request says which rule chose its steps. A S$1,000.00 rent journal, at or
+// below the self-approval threshold, posts alone: the threshold decides whether, the rules only who (FM-2).
 // req: FR-APR-01
 // req: access/approvals Conditions decide the steps
+// req: access/team-modes The threshold decides whether, the policy's rules decide who
 func TestAPolicysRulesChooseARequestsSteps(t *testing.T) {
 	f := newTrio(t)
 	e := f.e
@@ -91,5 +93,9 @@ func TestAPolicysRulesChooseARequestsSteps(t *testing.T) {
 		if a.Body["policy_rule"] != c.rule || got != c.user {
 			t.Errorf("%s: rule %v, steps %v; want rule %v, %q", name, a.Body["policy_rule"], steps, c.rule, c.user)
 		}
+	}
+	d := e.call(http.MethodPost, "/v1/journals", accountant, e.draft("1000.00"))
+	if p := e.call(http.MethodPost, "/v1/journals/"+d.str("id")+"/post", accountant, nil, "If-Match", d.Header.Get("ETag")); p.Status != http.StatusOK {
+		t.Errorf("a S$1,000.00 rent journal, at or below the threshold, posting alone: %d %s", p.Status, p.Raw)
 	}
 }
