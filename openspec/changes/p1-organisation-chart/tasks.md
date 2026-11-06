@@ -252,7 +252,7 @@
   details, See the full number), compiled into `contacts.manage`. Tests `bankDetails.test.tsx`, `approvals.test.tsx`.
   Not built: the contacts list's chip for a vendor whose change waits (the record page arrives with FR-CT-02); payment
   batches refusing a vendor whose change waits come with `p1-payments-out`.)
-- [ ] 4.3 Duplicate detection on name, UEN, email and bank account (`// req: FR-CT-04`), and items with prices per currency (`// req: FR-ITM-01`)
+- [x] 4.3 Duplicate detection on name, UEN, email and bank account (`// req: FR-CT-04`), and items with prices per currency (`// req: FR-ITM-01`)
   (20 Oct 2026: duplicates on the name (case and spacing aside), the UEN or tax ID and the emails are flagged on every
   contact read and write, never refused; the bank account joins them with task 4.2 (27 Oct 2026: built, rev 0.153: the
   same account in force at another vendor is a warning on the change, PAYEE-17). Items, 20 Oct 2026: migration 000027
@@ -262,6 +262,10 @@
   `GET`/`PATCH /v1/items/{item_id}` under the "Contacts and items" row; prices cross the API as decimal strings with
   at least the currency's decimals (`money.UnitPrice`). **Left:** the item's quantity and sales for the financial year,
   which come with the sales documents (`p1-sales`).)
+  (6 Nov 2026, the rest, PRD-001 rev 0.187: the items list shows each item's quantity and sales for the financial year
+  to date from the sales-by-item report run with `from=year`, the first month of the year holding the last month, which
+  every management report now takes (`yearStart`). Guide `contacts-and-items.md` (Items and prices), compiled into
+  `contacts.manage`. Tests `TestAReportRunsFromTheYearsStart`, `contacts.test.tsx`.)
 
 ## 5. API and screens
 

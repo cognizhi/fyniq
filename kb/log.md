@@ -359,3 +359,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | docs/user-guide/contacts-and-items.md → contacts.manage (what a contact stands at: balances, the year's totals, ageing and activity; FR-CT-02)
 
 ## [2026-11-06] compile | docs/user-guide/notifications.md → settings.notifications (a notification by row follows the role; SEC-34)
+
+## [2026-11-06] compile | docs/user-guide/contacts-and-items.md → contacts.manage (each item's sales this financial year, FR-ITM-01, rev 0.187)

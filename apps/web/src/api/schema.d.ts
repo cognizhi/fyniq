@@ -93611,7 +93611,7 @@ export interface operations {
     getSalesByCustomer: {
         parameters: {
             query?: {
-                /** @description The run's first month, YYYY-MM; left out, the last month's. */
+                /** @description The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's. */
                 from?: string;
                 /** @description The run's last month, YYYY-MM; left out, the month of the organisation's today. */
                 to?: string;
@@ -93693,7 +93693,7 @@ export interface operations {
     getSalesByItem: {
         parameters: {
             query?: {
-                /** @description The run's first month, YYYY-MM; left out, the last month's. */
+                /** @description The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's. */
                 from?: string;
                 /** @description The run's last month, YYYY-MM; left out, the month of the organisation's today. */
                 to?: string;
@@ -93855,7 +93855,7 @@ export interface operations {
     getSpendBySupplier: {
         parameters: {
             query?: {
-                /** @description The run's first month, YYYY-MM; left out, the last month's. */
+                /** @description The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's. */
                 from?: string;
                 /** @description The run's last month, YYYY-MM; left out, the month of the organisation's today. */
                 to?: string;
@@ -94134,7 +94134,7 @@ export interface operations {
     getTopExpenses: {
         parameters: {
             query?: {
-                /** @description The run's first month, YYYY-MM; left out, the last month's. */
+                /** @description The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's. */
                 from?: string;
                 /** @description The run's last month, YYYY-MM; left out, the month of the organisation's today. */
                 to?: string;

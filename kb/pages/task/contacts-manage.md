@@ -4,7 +4,7 @@ type: task
 title: Keep your contacts, items and prices
 summary: Add or change a contact, its balances and activity, duplicates, a vendor's bank details and their approved changes, its templates, and items with prices
 sources:
-  - docs/user-guide/contacts-and-items.md sha256:7e7e36c67712ded8a18d13273f63b3c22f06ba0137c6162e9c22673035be8371
+  - docs/user-guide/contacts-and-items.md sha256:c2075f20b373f935264d3b0dc45359e215c9034b137ef5f04b843b3f719d2823
 data_class: general
 taint: trusted
 status: draft
@@ -39,6 +39,8 @@ aliases:
   - contact balance
   - what a customer owes
   - what we owe a supplier
+  - item sales this year
+  - quantity sold
   - contact activity
 ---
 
@@ -103,6 +105,7 @@ aliases:
 - **Contacts → Items and prices**, **New item**: code and name, **Service** or **Product**, unit, revenue account ([[accounting.chart]]), GST code and printed description.
 - Under **Unit prices**, a plain decimal per currency, such as 180.00; then **Add the item**.
 - The code never changes; changing the prices replaces them all, recorded with the prices before and after.
+- For those who see the sales reports, **This year** shows what each item sold in the financial year so far, in the base currency, with the quantity in its unit: invoices less credit notes, before GST, from the posted ledger, as the sales-by-item report does ([[reports.management]]); **None sold** when nothing was.
 
 (src: docs/user-guide/contacts-and-items.md#items-and-prices)
 

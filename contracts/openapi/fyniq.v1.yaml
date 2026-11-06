@@ -116979,15 +116979,15 @@ paths:
       description: "The invoices and credit notes of the run by customer, largest first, each with its share and how many documents (FR-RPT-03). What the documents posted in the run earned or spent net of GST: their entries' lines on any account but the receivables, payables, GST, deposits, tax withheld and FX controls, revenue or cost spread over months counted in full when invoiced or billed. A void or an edit posts a reversal, which counts in the month it posts, as in the P&L. Money received or paid at the bank without an invoice or bill, and expense claims, are in the P&L and the top expenses, not here. Over a run of whole months (FR-RPT-02), every amount in the base currency, read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects."
       operationId: getSalesByCustomer
       parameters:
-        - description: The run's first month, YYYY-MM; left out, the last month's.
+        - description: The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's.
           explode: false
           in: query
           name: from
           schema:
-            description: The run's first month, YYYY-MM; left out, the last month's.
+            description: The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's.
             examples:
               - 2026-10
-            pattern: ^[0-9]{4}-[0-9]{2}$
+            pattern: ^([0-9]{4}-[0-9]{2}|year)$
             type: string
         - description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
           explode: false
@@ -117102,15 +117102,15 @@ paths:
       description: "The invoices' and credit notes' lines of the run by item, largest first, each with its share, the quantity sold net of credits and how many documents (FR-RPT-03); the lines without an item are one row. What the documents posted in the run earned or spent net of GST: their entries' lines on any account but the receivables, payables, GST, deposits, tax withheld and FX controls, revenue or cost spread over months counted in full when invoiced or billed. A void or an edit posts a reversal, which counts in the month it posts, as in the P&L. Money received or paid at the bank without an invoice or bill, and expense claims, are in the P&L and the top expenses, not here. Over a run of whole months (FR-RPT-02), every amount in the base currency, read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects."
       operationId: getSalesByItem
       parameters:
-        - description: The run's first month, YYYY-MM; left out, the last month's.
+        - description: The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's.
           explode: false
           in: query
           name: from
           schema:
-            description: The run's first month, YYYY-MM; left out, the last month's.
+            description: The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's.
             examples:
               - 2026-10
-            pattern: ^[0-9]{4}-[0-9]{2}$
+            pattern: ^([0-9]{4}-[0-9]{2}|year)$
             type: string
         - description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
           explode: false
@@ -117338,15 +117338,15 @@ paths:
       description: "The bills and suppliers' credit notes of the run by supplier, largest first, each with its share and how many documents (FR-RPT-03). What the documents posted in the run earned or spent net of GST: their entries' lines on any account but the receivables, payables, GST, deposits, tax withheld and FX controls, revenue or cost spread over months counted in full when invoiced or billed. A void or an edit posts a reversal, which counts in the month it posts, as in the P&L. Money received or paid at the bank without an invoice or bill, and expense claims, are in the P&L and the top expenses, not here. Over a run of whole months (FR-RPT-02), every amount in the base currency, read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects."
       operationId: getSpendBySupplier
       parameters:
-        - description: The run's first month, YYYY-MM; left out, the last month's.
+        - description: The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's.
           explode: false
           in: query
           name: from
           schema:
-            description: The run's first month, YYYY-MM; left out, the last month's.
+            description: The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's.
             examples:
               - 2026-10
-            pattern: ^[0-9]{4}-[0-9]{2}$
+            pattern: ^([0-9]{4}-[0-9]{2}|year)$
             type: string
         - description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
           explode: false
@@ -117856,15 +117856,15 @@ paths:
       description: "The P&L's expense accounts over the run, largest first: the top ten, and the rest as one row, each with its share of the expenses (FR-RPT-03). They are the P&L's figures, so they include what was paid at the bank and claimed. Over a run of whole months (FR-RPT-02), every amount in the base currency, read as at one ledger revision (FR-RPT-08), which it returns: asking again with as_at_revision gives the same figures. A month the books have no period for is refused (REPORT-03), as is a revision later than the ledger's (REPORT-04). Read-only; no side effects."
       operationId: getTopExpenses
       parameters:
-        - description: The run's first month, YYYY-MM; left out, the last month's.
+        - description: The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's.
           explode: false
           in: query
           name: from
           schema:
-            description: The run's first month, YYYY-MM; left out, the last month's.
+            description: The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's.
             examples:
               - 2026-10
-            pattern: ^[0-9]{4}-[0-9]{2}$
+            pattern: ^([0-9]{4}-[0-9]{2}|year)$
             type: string
         - description: The run's last month, YYYY-MM; left out, the month of the organisation's today.
           explode: false
