@@ -1255,6 +1255,27 @@ Source: PRD-001 §D
 - **WHEN** a role acts on period close and reopen
 - **THEN** the Administrator, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over it (—)
 
+### Requirement: Permission matrix: Accountant review
+In Standard mode, each role SHALL hold only the rights over the accountant's review that the permission matrix gives it (rev 0.176).
+
+Source: PRD-001 §D
+
+#### Scenario: Approve
+- **WHEN** a role acts on the accountant's review
+- **THEN** the Accountant can approve (A): open a review of a closed month, raise its queries, link its adjusting journals and sign it off
+
+#### Scenario: Create or prepare
+- **WHEN** a role acts on the accountant's review
+- **THEN** the Owner and the Finance controller can create or prepare (C): answer the review's queries
+
+#### Scenario: View
+- **WHEN** a role acts on the accountant's review
+- **THEN** the Auditor and the Tax agent can view (V)
+
+#### Scenario: No access
+- **WHEN** a role acts on the accountant's review
+- **THEN** the Administrator, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over it (—)
+
 ### Requirement: Permission matrix: GST return, filing
 In Standard mode, each role SHALL hold only the rights over the GST return and its filing that the permission matrix gives it.
 

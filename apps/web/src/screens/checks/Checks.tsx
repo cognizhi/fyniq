@@ -296,6 +296,10 @@ function Row({ c, canName, onName, canReview, onReview }: { c: Check; canName: b
                 <>
                   Reviewed only on <Link to="/break-glass">Break-glass</Link>, which is the control itself.
                 </>
+              ) : c.reviewed_in === "accountant_review" ? (
+                <>
+                  Signed off only on <Link to="/accounting/reviews">Accountant reviews</Link>, which is the control itself.
+                </>
               ) : (
                 <>
                   Attested only on <Link to="/settings/access-review">Settings › Access review</Link>, which is the control itself.

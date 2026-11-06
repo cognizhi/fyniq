@@ -5491,7 +5491,8 @@
     "Review for Jul–Sep 2026 by Grace Ho (Ho & Partners LLP); close snapshot it covers",
     "Queries thread: two queries with management's answers",
     "Adjusting journal JNL-0214 (through approval; closed period follows FR-GL-08)",
-    "Sign-off with step-up; reopening marks the review superseded and keeps both versions"
+    "Sign-off with step-up; reopening marks the review superseded and keeps both versions",
+    "(rev 0.176) Built under Accounting: the list at /accounting/reviews (each calendar quarter with the review of its last month, due 60 days after it ends; the closed months not yet reviewed, to open one; every review) and each review at /accounting/reviews/:id, one closed month per review"
    ],
    "states": [
     "in review",

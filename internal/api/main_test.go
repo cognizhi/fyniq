@@ -85,6 +85,10 @@ type env struct {
 	links    map[string]string
 	// orgConnector is the matrix's organisation connector, once matrixOrgConnector made it.
 	orgConnector string
+	// spareMonths are the months the matrix's accountant's reviews close, from January 2020, so October and November stay
+	// open for the other rows; review and signable are its reviews in review, once made.
+	spareMonths      int
+	review, signable uuid.UUID
 }
 
 var orgs int

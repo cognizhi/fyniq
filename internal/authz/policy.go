@@ -56,6 +56,7 @@ const (
 	PayRuns             Capability = "Pay runs, employee data"
 	FixedAssets         Capability = "Fixed assets"
 	PeriodClose         Capability = "Period close / reopen"
+	AccountantReview    Capability = "Accountant review (rev 0.176)"
 	GSTReturns          Capability = "GST return, filing"
 	Reports             Capability = "Reports, dashboards"
 	Budgets             Capability = "Budgets, forecasts"
@@ -70,7 +71,7 @@ const (
 )
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, ChecksHealth, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, ChecksHealth, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
 
 // The capabilities outside Appendix D.
 const (
@@ -213,6 +214,9 @@ var Grants = map[Capability]map[string]Cell{
 	},
 	PeriodClose: {
 		"Owner": {"A", ""}, "Admin": {}, "Controller": {"CA", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {}, "AI": {},
+	},
+	AccountantReview: {
+		"Owner": {"C", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"A", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {}, "AI": {},
 	},
 	GSTReturns: {
 		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"", "Ask only"},
@@ -763,6 +767,16 @@ var (
 	// whoever views payment batches sees it; reviewing it is the review log's, so whoever sees approvals asks and the handler
 	// decides (another Owner once it has ended, the Accountant from its review's due date); the Owner who started it
 	// releases a waiting batch under it with the Payment releaser's right.
+	// The accountant's review (FM-7; PRD-001 rev 0.176): the Accountant opens a review of a closed month, raises its
+	// queries, links its adjusting journals and signs it off (A); the Owner and the Controller answer the queries (C).
+	ListAccountantReviews       = Policy{Operation: "listAccountantReviews", Capability: AccountantReview, Need: View}
+	GetAccountantReview         = Policy{Operation: "getAccountantReview", Capability: AccountantReview, Need: View}
+	OpenAccountantReview        = Policy{Operation: "openAccountantReview", Capability: AccountantReview, Need: Approve, Note: "A person signed in to Fyniq."}
+	AskAccountantReviewQuery    = Policy{Operation: "askAccountantReviewQuery", Capability: AccountantReview, Need: Approve, Note: "A person signed in to Fyniq."}
+	AnswerAccountantReviewQuery = Policy{Operation: "answerAccountantReviewQuery", Capability: AccountantReview, Need: Create, Note: "A person signed in to Fyniq."}
+	LinkAccountantReviewJournal = Policy{Operation: "linkAccountantReviewJournal", Capability: AccountantReview, Need: Approve, Note: "A person signed in to Fyniq."}
+	SignOffAccountantReview     = Policy{Operation: "signOffAccountantReview", Capability: AccountantReview, Need: Approve,
+		Note: "A person signed in who passed step-up in the last 5 minutes, once every query has its answer (FM-7)."}
 	ListBreakGlass  = Policy{Operation: "listBreakGlass", Capability: PaymentBatches, Need: View, Unqualified: true}
 	GetBreakGlass   = Policy{Operation: "getBreakGlass", Capability: PaymentBatches, Need: View, Unqualified: true}
 	StartBreakGlass = Policy{Operation: "startBreakGlass", Capability: UsersAndRoles, Need: Approve,
@@ -1222,6 +1236,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
 	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, SendRemittanceAgain, ReleasePaymentBatch, GetPaymentBatchFile,
 	ListBreakGlass, GetBreakGlass, StartBreakGlass, EndBreakGlass, ReviewBreakGlass, ReleasePaymentBatchUnderBreakGlass,
+	ListAccountantReviews, GetAccountantReview, OpenAccountantReview, AskAccountantReviewQuery, AnswerAccountantReviewQuery, LinkAccountantReviewJournal, SignOffAccountantReview,
 	GetMyBankDetails, CreateMyBankChange, GetMyBankChange, ReplaceMyBankChange, RequestMyBankChangeApproval, WithdrawMyBankChange, RevealMyBankAccount,
 	GetClaimantBankChange, RevealClaimantBankAccount, AddMyBankChangeEvidence, ListMyBankChangeEvidence, GetMyBankChangeEvidence,
 	RemoveMyBankChangeEvidence, ListClaimantBankChangeEvidence, GetClaimantBankChangeEvidence,

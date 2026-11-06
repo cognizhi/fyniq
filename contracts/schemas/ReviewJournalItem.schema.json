@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "journal_id": {
+      "description": "The journal.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "linked_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-21T04:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "linked_by": {
+      "$ref": "Person.schema.json",
+      "description": "The Accountant who linked it."
+    },
+    "memo": {
+      "description": "Its memo.",
+      "examples": [
+        "Move the October rent paid early to prepayments"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number, once posted.",
+      "examples": [
+        "JNL-0214"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "Its status: draft until it posts, through approval when above the threshold.",
+      "examples": [
+        "posted"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "journal_id",
+    "status",
+    "linked_by",
+    "linked_at"
+  ],
+  "title": "ReviewJournalItem",
+  "type": "object"
+}

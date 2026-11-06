@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "due_by": {
+      "description": "60 days after it ends: in Founder mode Checks warns after it while no signed-off review covers its last month.",
+      "examples": [
+        "2026-11-29"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "ends_on": {
+      "description": "Its last day.",
+      "examples": [
+        "2026-09-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "key": {
+      "description": "The quarter.",
+      "examples": [
+        "2026-Q3"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "As people say it.",
+      "examples": [
+        "Jul–Sep 2026"
+      ],
+      "type": "string"
+    },
+    "period_id": {
+      "description": "Its last month's period; absent when the books have none.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "review_id": {
+      "description": "The review that covers it, or the one open.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "status": {
+      "description": "reviewed: a signed-off review covers its last month; in_review: one is open; due: none yet, within 60 days of its end; overdue: none after.",
+      "enum": [
+        "reviewed",
+        "in_review",
+        "due",
+        "overdue"
+      ],
+      "examples": [
+        "due"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "label",
+    "ends_on",
+    "due_by",
+    "status"
+  ],
+  "title": "ReviewQuarter",
+  "type": "object"
+}
