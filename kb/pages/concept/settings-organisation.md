@@ -2,17 +2,24 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings and recommended values: features, terms, GST, tolerances, banking, claims, mileage, thresholds, asset disposals, email-in, retention
+summary: Company-wide settings: GST registration, numbering, features, terms, GST, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:6d986c163ffe7822ca8fcee94766d9a48a5b0d374e0769b73c40c39388c98deb
+  - docs/user-guide/organisation-settings.md sha256:bc6d8d7be21849735a6578d3cc7281eedb05f6b665089ded905c312f7ccb695e
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-06
+compiled_at: 2026-11-07
 aliases:
+  - GST registration
+  - GST registration number
+  - deregistered
+  - document numbering
+  - invoice number prefix
+  - next number
+  - gap-free numbering
   - feature switches
   - default settings
   - tolerance
@@ -59,6 +66,22 @@ aliases:
 - The Owner, the Administrator and the Controller change them; others in the company can see them. How: [[settings.change]].
 
 (src: docs/user-guide/organisation-settings.md#what-it-is)
+
+## GST registration
+
+- **GST registration** says whether the company is GST-registered today and the return period today falls in, and lists each registration with its dates.
+- An invoice dated on or after a registration's first day is a tax invoice with GST; before it, or after deregistration, it carries no GST.
+- **Record a registration** takes the GST registration number and start date from IRAS's notice of registration, and how often returns are filed (quarterly unless IRAS set monthly; quarters from January, April, July and October unless the notice says otherwise); **Change** corrects one or records the day it ends. Two registrations never cover the same day.
+
+(src: docs/user-guide/organisation-settings.md#gst-registration)
+
+## Document numbering
+
+- **Document numbering** lists each kind of numbered document with the number the next one takes, such as INV-0042.
+- **Change** sets the prefix (up to 12 capital letters, digits, slashes or hyphens), the next number, the digits it is padded to, and whether a document takes its number when it posts (no gaps) or when it is saved (an abandoned draft leaves a gap).
+- Numbers already given never change, and the next number only moves forward, so no number is given twice.
+
+(src: docs/user-guide/organisation-settings.md#document-numbering)
 
 ## Features
 
