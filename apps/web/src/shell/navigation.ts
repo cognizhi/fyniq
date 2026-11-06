@@ -4,10 +4,11 @@ import type { Mode, NavFeature } from "../registry";
 // navFor cuts the navigation to the person (FR-UX-40, §7.1): an item shows when one of the person's
 // roles in the organisation may see it, the organisation has switched its feature on (FR-ORG-06),
 // and the experience mode shows it (Basic hides Expert-only items, experience/modes "Basic and
-// Expert navigation"). This is presentation only: the API refuses whatever a role may not do, so a
-// hidden page called directly still answers 403.
-export function navFor<T extends NavFeature>(items: readonly T[], session: Pick<Session, "roles" | "features">, mode: Mode): T[] {
-  const roles = new Set(session.roles ?? []);
+// Expert navigation"). A Super admin also has the role "super_admin" here, for the installation's pages. This is
+// presentation only: the API refuses whatever a role may not do, so a hidden page called directly still answers 403.
+export function navFor<T extends NavFeature>(items: readonly T[], session: Pick<Session, "roles" | "features"> & { super_admin?: boolean }, mode: Mode): T[] {
+  const roles = new Set<string>(session.roles ?? []);
+  if (session.super_admin) roles.add("super_admin");
   return items.filter(
     (n) =>
       (n.roles === "all" || n.roles.some((r) => roles.has(r))) &&

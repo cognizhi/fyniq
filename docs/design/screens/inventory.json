@@ -4580,7 +4580,7 @@
    "title": "Sign-in providers",
    "canvas": "access-ai",
    "module": "Super admin",
-   "route": "/admin/sign-in-providers",
+   "route": "/settings/sign-in-providers",
    "kind": "page",
    "phase": "P0",
    "roles": [

@@ -438,6 +438,14 @@ var matrixCalls = map[string]matrixCall{
 	"testInstallationConnector": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/installation/connectors/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f70/test", tok, nil, "If-Match", "*"), nil
 	},
+	// The sign-in providers' switches: the matrix's API configures no provider, so a Super admin's change finds none (404).
+	"listSignInMethods": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/installation/sign-in-methods", tok, nil), nil
+	},
+	"changeSignInMethod": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPatch, "/v1/installation/sign-in-methods/matrix", tok, map[string]any{"enabled": false, "allowed_domains": []string{}},
+			"If-Match", `"0"`), nil
+	},
 	"listInstallationChanges": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/installation/changes", tok, nil), nil
 	},

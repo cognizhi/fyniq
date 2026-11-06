@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, ChartColumn, ClipboardCheck, Contact, HandCoins, House, Inbox, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, ChartColumn, ClipboardCheck, Contact, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -43,7 +43,7 @@ export interface NavFeature extends Feature {
   icon: LucideIcon;
   // personal and main are the sidebar's sections, footer its foot (Settings); you and organisation
   // are the sections of the Settings page's own navigation.
-  group: "personal" | "main" | "footer" | "you" | "organisation";
+  group: "personal" | "main" | "footer" | "you" | "organisation" | "installation";
   roles: "all" | readonly string[]; // role names as GET /v1/session returns them
   feature?: FeatureSwitch;
   bottom?: boolean; // one of the compact bottom bar's items (at most four, then More)
@@ -155,6 +155,7 @@ export const routes = [
   { kind: "route", id: "settings-notifications", path: "/settings/notifications", mode: "basic", signedIn: true, help: "settings.notifications", guide: "settings.notifications" },
   { kind: "route", id: "settings-announcements", path: "/settings/announcements", mode: "expert", signedIn: true, help: "settings.announcements", guide: "settings.announcements" },
   { kind: "route", id: "settings-integrations", path: "/settings/integrations", mode: "expert", signedIn: true, help: "settings.integrations", guide: "settings.integrations" },
+  { kind: "route", id: "settings-sign-in-providers", path: "/settings/sign-in-providers", mode: "expert", signedIn: true, help: "settings.sign-in-providers", guide: "settings.sign-in-providers" },
   { kind: "route", id: "settings-integration", path: "/settings/integrations/$connector", mode: "expert", signedIn: true, help: "settings.integration", guide: "settings.integrations#a-connectors-page" },
   { kind: "route", id: "settings-template", path: "/settings/templates/$templateId", mode: "basic", signedIn: true, help: "settings.template", guide: "settings.templates#edit-a-template" },
 ] as const satisfies readonly RouteFeature[];
@@ -458,6 +459,8 @@ export const actions = [
   { kind: "action", id: "device.sign-out-others", mode: "basic", help: "device.sign-out-others", guide: "preferences.security#your-devices" },
   { kind: "action", id: "identity.link", mode: "basic", help: "identity.link", guide: "preferences.security#link-another-sign-in" },
   { kind: "action", id: "identity.unlink", mode: "basic", help: "identity.unlink", guide: "preferences.security#remove-a-sign-in" },
+  { kind: "action", id: "sign-in-provider.change", mode: "expert", help: "sign-in-provider.change", guide: "settings.sign-in-providers#turn-a-provider-on-or-off" },
+  { kind: "action", id: "sign-in-provider.domains", mode: "expert", help: "sign-in-provider.domains", guide: "settings.sign-in-providers#accept-only-some-email-domains" },
 ] as const satisfies readonly ActionFeature[];
 
 // The sidebar's items in the designed order (the NAV list in docs/design/screens/build.py). Each
@@ -497,6 +500,8 @@ export const settingsNav = [
   { kind: "nav", id: "settings.templates", route: "/settings/templates", icon: LayoutTemplate, group: "organisation", roles: ["owner", "controller", "accountant", "ar_specialist", "ap_specialist", "auditor"], mode: "basic", help: "settings.templates", guide: "settings.templates" },
   { kind: "nav", id: "settings.integrations", route: "/settings/integrations", icon: Plug, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.integrations", guide: "settings.integrations" },
   { kind: "nav", id: "settings.announcements", route: "/settings/announcements", icon: Megaphone, group: "organisation", roles: ["owner", "administrator", "auditor"], mode: "expert", help: "settings.announcements", guide: "settings.announcements" },
+  // The installation's pages show to Super admins only (super_admin, from GET /v1/session).
+  { kind: "nav", id: "settings.sign-in-providers", route: "/settings/sign-in-providers", icon: KeyRound, group: "installation", roles: ["super_admin"], mode: "expert", help: "settings.sign-in-providers", guide: "settings.sign-in-providers" },
 ] as const satisfies readonly NavFeature[];
 
 export type RouteId = (typeof routes)[number]["id"];

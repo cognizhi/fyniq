@@ -20,7 +20,13 @@ import (
 // where the browser ended.
 func (b *browser) link(subject, site string) string {
 	b.s.t.Helper()
-	req, _ := http.NewRequest(http.MethodGet, b.s.srv.URL+"/auth/signin?provider=local&link=1", nil)
+	return b.linkWith("local", subject, site, "mei.ling@example.com")
+}
+
+// linkWith is link with provider, the account's verified email being email.
+func (b *browser) linkWith(provider, subject, site, email string) string {
+	b.s.t.Helper()
+	req, _ := http.NewRequest(http.MethodGet, b.s.srv.URL+"/auth/signin?provider="+provider+"&link=1", nil)
 	if site != "" {
 		req.Header.Set("Sec-Fetch-Site", site)
 	}
@@ -36,7 +42,7 @@ func (b *browser) link(subject, site string) string {
 	form.Set("subject", subject)
 	form.Set("name", "Mei Ling Tan")
 	form.Set("decision", "sign-in")
-	form.Set("email", "mei.ling@example.com") // the same email as the account's: it links nothing by itself
+	form.Set("email", email) // the same email as the account's: it links nothing by itself
 	resp, err = b.c.PostForm(b.s.srv.URL+"/auth/dev/authorize", form)
 	if err != nil {
 		b.s.t.Fatal(err)

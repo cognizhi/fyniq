@@ -70,6 +70,8 @@ type UnitOfWork interface {
 	ApprovalPolicies() ApprovalPolicies
 	TeamModes() TeamModes
 	Passkeys() Passkeys
+	// SignInMethods changes the sign-in providers' switches: in a unit of work of the installation organisation only.
+	SignInMethods() SignInMethodWriter
 	ReviewLog() ReviewLog
 	Packs() Packs
 	EmailMessages() EmailMessages
@@ -769,6 +771,9 @@ const (
 	CodeIdentityStepUp = "STORAGE-IDENTITY-01"
 	// CodeIdentity is a sign-in linked already, or the one in use or the last one removed (FR-ADM-08, rev 0.196).
 	CodeIdentity = "STORAGE-IDENTITY-02"
+	// CodeSignInMethod is a provider's switch that leaves a Super admin no way to sign in, or a domain that is not one
+	// (FR-ADM-08, rev 0.197).
+	CodeSignInMethod = "STORAGE-SIGNIN-01"
 	// CodeConnectorChange: a step on an installation connector needs the other Super admin's approved change, decided
 	// once, by another person, before it expires (FR-ADM-07).
 	CodeConnectorChange = "STORAGE-CONNECTOR-02"

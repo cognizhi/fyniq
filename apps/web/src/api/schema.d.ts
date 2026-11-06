@@ -4696,6 +4696,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/installation/sign-in-methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the sign-in providers and their switches
+         * @description Every sign-in provider the deployment configures (FR-ADM-08), in its order: whether it is on, the email domains it accepts, its sessions in the last 30 days, whether a Super admin signs in with it alone (then turning it off is refused), its version for If-Match and a change waiting for the other Super admin. Providers are added in the deployment's configuration; adding them here comes in P2 or P3. Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). Read-only; no side effects.
+         */
+        get: operations["listSignInMethods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/installation/sign-in-methods/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Turn a sign-in provider on or off, or set its domains
+         * @description Sets a provider's switches (FR-ADM-08): on or off (off refuses new sign-ins through it, and with end_sessions signs out every session it started), and the email domains it accepts (an account's verified email on one of them; empty: any). Refused when it leaves a Super admin no way to sign in. Needs an active Super admin who passed step-up in the last 5 minutes. With two Super admins the answer is 202 with the change the other one approves with approveInstallationChange (FR-ADM-07); with one it applies at once. Side effects: the switches, or the change request, their event in the installation's trail and a security notice to every Super admin. Idempotent with Idempotency-Key; Prefer: return=preview checks it and changes nothing.
+         */
+        patch: operations["changeSignInMethod"];
+        trace?: never;
+    };
     "/v1/invoices": {
         parameters: {
             query?: never;
@@ -8937,7 +8977,7 @@ export interface paths {
         };
         /**
          * List the sign-in providers
-         * @description The providers people may sign in to the web app with (FR-ADM-08): Google and Zoho through Identity Platform, or the local sign-in page in local mode, a page at a time (cursor pagination). Public: the sign-in page needs it before anyone is signed in. Read-only; no side effects.
+         * @description The providers people may sign in to the web app with (FR-ADM-08): Google and Zoho through Identity Platform, or the local sign-in page in local mode, but those a Super admin turned off, a page at a time (cursor pagination). Public: the sign-in page needs it before anyone is signed in. Read-only; no side effects.
          */
         get: operations["listSignInProviders"];
         put?: never;
@@ -20178,10 +20218,11 @@ export interface components {
              */
             status: "pending" | "approved" | "rejected" | "expired";
             /**
+             * @description The step; sign_in is a sign-in provider's switches, whose connector is sign-in:<provider> (FR-ADM-08).
              * @example resume
              * @enum {string}
              */
-            step: "install" | "configure" | "secret" | "enable" | "resume" | "disable" | "uninstall" | "order" | "consent";
+            step: "install" | "configure" | "secret" | "enable" | "resume" | "disable" | "uninstall" | "order" | "consent" | "sign_in";
             /** @example Resume Zoho ZeptoMail */
             summary: string;
         };
@@ -27663,6 +27704,72 @@ export interface components {
              * @example eyJhZnRlciI6IjliMmU0ZjZhIn0
              */
             next_cursor?: string;
+        };
+        SignInMethod: {
+            /** @description The email domains it accepts, an account's verified email on one of them; empty: any. */
+            allowed_domains: string[] | null;
+            /**
+             * Format: date-time
+             * @description When its switches last changed; absent until they first do.
+             * @example 2026-11-06T09:00:00Z
+             */
+            changed_at?: string;
+            /**
+             * @description Whether it signs people in; turned off, new sign-ins through it are refused.
+             * @example true
+             */
+            enabled: boolean;
+            /**
+             * @description true when a Super admin signs in with it alone: turning it off, or narrowing its domains past their email, is refused.
+             * @example false
+             */
+            last_for_super_admin: boolean;
+            /**
+             * @description Its name on the sign-in page.
+             * @example Zoho
+             */
+            name: string;
+            /** @description A change of its switches waiting for the other Super admin, if any. */
+            pending?: components["schemas"]["InstallationChange"];
+            /**
+             * @description The provider's ID in the deployment's configuration.
+             * @example zoho
+             */
+            provider: string;
+            /**
+             * Format: int64
+             * @description Sessions it started in the last 30 days.
+             * @example 96
+             */
+            sign_ins: number;
+            /**
+             * Format: int64
+             * @description Its switches' version, for If-Match: 0 until a Super admin first changes them.
+             * @example 2
+             */
+            version: number;
+        };
+        SignInMethodPage: {
+            items: components["schemas"]["SignInMethod"][] | null;
+            /**
+             * @description The cursor of the next page; absent on the last.
+             * @example eyJhZnRlciI6Imdvb2dsZSJ9
+             */
+            next_cursor?: string;
+        };
+        SignInMethodRequest: {
+            /** @description The email domains it accepts, such as example.com; empty: any. */
+            allowed_domains: string[] | null;
+            /**
+             * @description Whether it signs people in.
+             * @example false
+             */
+            enabled: boolean;
+            /**
+             * @description With enabled false: also sign out every session it started, at once.
+             * @example true
+             */
+            end_sessions?: boolean;
         };
         SignInProvider: {
             /**
@@ -66097,6 +66204,284 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listSignInMethods: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignInMethodPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    changeSignInMethod: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+                /** @description The provider's version as listed, quoted: "0" until it first changes. */
+                "If-Match"?: string;
+            };
+            path: {
+                /** @description The provider's ID. */
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignInMethodRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignInMethod"];
+                };
+            };
+            /** @description Accepted: with two Super admins, the step waits for the other one's approval (FR-ADM-07); nothing changed yet. The body is the change. */
+            202: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstallationChange"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SIGNIN-01` That would leave a Super admin no way to sign in. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

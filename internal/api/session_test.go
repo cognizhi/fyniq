@@ -42,6 +42,12 @@ type sessionStack struct {
 
 func startSessions(t *testing.T) *sessionStack {
 	t.Helper()
+	return startSessionsWith(t)
+}
+
+// startSessionsWith is startSessions with more providers on the local sign-in page beside "local".
+func startSessionsWith(t *testing.T, more ...signin.Provider) *sessionStack {
+	t.Helper()
 	e, fresh := freshInstallation(t)
 	mux := http.NewServeMux()
 	srv := httptest.NewServer(mux)
@@ -50,7 +56,7 @@ func startSessions(t *testing.T) *sessionStack {
 	flow := signin.Flow{Sessions: e.store, Clock: e.clock, Origin: srv.URL, Base: "", Log: slog.New(slog.NewJSONHandler(e.log, nil)),
 		Alert:  signin.Alerts(signin.EmailAlert(e.store, e.store, out), signin.NotifyAlert(e.store, e.store, out)),
 		Linked: signin.NotifyLink(e.store, e.store, out)}
-	dev, err := local.NewDevSignIn([]signin.Provider{local.DevSignInProvider}, "", flow.Callback(), e.clock)
+	dev, err := local.NewDevSignIn(append([]signin.Provider{local.DevSignInProvider}, more...), "", flow.Callback(), e.clock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,13 +88,19 @@ func (s *sessionStack) browser() *browser {
 // signIn goes through the sign-in page as subject and returns where the browser ended.
 func (b *browser) signIn(subject string, secondFactor bool) string {
 	b.s.t.Helper()
-	resp, err := b.c.Get(b.s.srv.URL + "/auth/signin?provider=local&return_to=" + url.QueryEscape("/after?x=1"))
+	return b.signInWith("local", subject, secondFactor)
+}
+
+// signInWith is signIn with provider.
+func (b *browser) signInWith(provider, subject string, secondFactor bool) string {
+	b.s.t.Helper()
+	resp, err := b.c.Get(b.s.srv.URL + "/auth/signin?provider=" + provider + "&return_to=" + url.QueryEscape("/after?x=1"))
 	if err != nil {
 		b.s.t.Fatal(err)
 	}
 	_ = resp.Body.Close()
-	if resp.StatusCode != http.StatusOK || resp.Request.URL.Path != "/auth/dev/authorize" {
-		b.s.t.Fatalf("the sign-in page: %d %s", resp.StatusCode, resp.Request.URL)
+	if resp.Request.URL.Path != "/auth/dev/authorize" {
+		return resp.Request.URL.RequestURI() // refused before the provider
 	}
 	form := resp.Request.URL.Query()
 	form.Set("subject", subject)

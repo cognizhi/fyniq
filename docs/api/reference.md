@@ -727,6 +727,58 @@ Runs the connector's test action through the egress guard (SEC-36) and records t
 
 Signing in to the web app: the providers, and your own session (SEC-05, FR-ADM-08).
 
+### `GET /v1/installation/sign-in-methods`
+
+**List the sign-in providers and their switches** (`listSignInMethods`)
+
+Every sign-in provider the deployment configures (FR-ADM-08), in its order: whether it is on, the email domains it accepts, its sessions in the last 30 days, whether a Super admin signs in with it alone (then turning it off is refused), its version for If-Match and a change waiting for the other Super admin. Providers are added in the deployment's configuration; adding them here comes in P2 or P3. Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). Read-only; no side effects.
+
+- **Permission:** View on (Super admins). Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1).
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`SignInMethodPage`](../../contracts/schemas/SignInMethodPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-06`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PATCH /v1/installation/sign-in-methods/{provider}`
+
+**Turn a sign-in provider on or off, or set its domains** (`changeSignInMethod`)
+
+Sets a provider's switches (FR-ADM-08): on or off (off refuses new sign-ins through it, and with end_sessions signs out every session it started), and the email domains it accepts (an account's verified email on one of them; empty: any). Refused when it leaves a Super admin no way to sign in. Needs an active Super admin who passed step-up in the last 5 minutes. With two Super admins the answer is 202 with the change the other one approves with approveInstallationChange (FR-ADM-07); with one it applies at once. Side effects: the switches, or the change request, their event in the installation's trail and a security notice to every Super admin. Idempotent with Idempotency-Key; Prefer: return=preview checks it and changes nothing.
+
+- **Permission:** Create on (Super admins). Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). With two Super admins a change waits for the other's approval.
+- **Parameters:**
+  - `provider` (path, required): The provider's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+  - `If-Match` (header): The provider's version as listed, quoted: "0" until it first changes.
+- **Request body:** [`SignInMethodRequest`](../../contracts/schemas/SignInMethodRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`SignInMethod`](../../contracts/schemas/SignInMethod.schema.json)
+  - `202` Accepted: with two Super admins, the step waits for the other one's approval (FR-ADM-07); nothing changed yet. The body is the change. [`InstallationChange`](../../contracts/schemas/InstallationChange.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SIGNIN-01` That would leave a Super admin no way to sign in.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-06`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SIGNIN-01`, `STORAGE-VERSION-01`
+
 ### `GET /v1/session`
 
 **Get your session** (`getSession`)
@@ -963,7 +1015,7 @@ A step-up challenge for your session, with the options to pass to navigator.cred
 
 **List the sign-in providers** (`listSignInProviders`)
 
-The providers people may sign in to the web app with (FR-ADM-08): Google and Zoho through Identity Platform, or the local sign-in page in local mode, a page at a time (cursor pagination). Public: the sign-in page needs it before anyone is signed in. Read-only; no side effects.
+The providers people may sign in to the web app with (FR-ADM-08): Google and Zoho through Identity Platform, or the local sign-in page in local mode, but those a Super admin turned off, a page at a time (cursor pagination). Public: the sign-in page needs it before anyone is signed in. Read-only; no side effects.
 
 - **Permission:** View on (your session)
 - **Parameters:**

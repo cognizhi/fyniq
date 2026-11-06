@@ -114,6 +114,8 @@ held. Once approved, the new account replaces the old one for every payment from
   you mean to add, then select **Link** again.
 - **"Linking needs you to have confirmed it's you in the last 5 minutes."** Select **Link** again:
   Fyniq asks you to confirm first. Sign in at the provider within a few minutes.
+- **"That provider accepts only accounts on some email domains."** Link the account whose email is on your
+  organisation's domain, such as your work account.
 - **"The sign-in you are using, or your last one, cannot be removed."** Sign in with another of
   your sign-ins to remove this one, or link another first.
 

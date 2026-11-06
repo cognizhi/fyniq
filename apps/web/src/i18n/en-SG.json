@@ -72,6 +72,18 @@
       "label": "Sign out everywhere else",
       "tooltip": "End every session but this one."
     },
+    "settings.sign-in-providers": {
+      "label": "Sign-in providers",
+      "tooltip": "A Super admin turns each way to sign in on or off, and sets the email domains it accepts."
+    },
+    "sign-in-provider.change": {
+      "label": "Save",
+      "tooltip": "Apply the change; with two Super admins it waits for the other's approval."
+    },
+    "sign-in-provider.domains": {
+      "label": "Domains",
+      "tooltip": "Accept only accounts whose verified email ends with one of these domains."
+    },
     "identity.link": {
       "label": "Link",
       "tooltip": "Sign in with another account at this provider and add it to yours, so either signs you in. Needs a second factor in the last 5 minutes."

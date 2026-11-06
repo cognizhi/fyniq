@@ -11,6 +11,7 @@ export const signInErrors: Record<string, string> = {
   "AUTH-SIGNIN-02": "The sign-in took longer than 10 minutes, or began in another browser. Sign in again.",
   "AUTH-SIGNIN-03": "The provider's answer did not pass Fyniq's checks, so you are not signed in. Sign in again.",
   "AUTH-SIGNIN-04": "The sign-in service did not answer. Try again in a moment.",
+  "AUTH-SIGNIN-08": "That provider accepts only accounts on some email domains, and your account's email is on none of them. Sign in with your work account, or another provider.",
 };
 
 type State =

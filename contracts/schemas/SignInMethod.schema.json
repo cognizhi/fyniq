@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "allowed_domains": {
+      "description": "The email domains it accepts, an account's verified email on one of them; empty: any.",
+      "items": {
+        "description": "An email domain, lower case: the part of an address after the @.",
+        "examples": [
+          "cognizhi.com"
+        ],
+        "maxLength": 253,
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "changed_at": {
+      "description": "When its switches last changed; absent until they first do.",
+      "examples": [
+        "2026-11-06T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "enabled": {
+      "description": "Whether it signs people in; turned off, new sign-ins through it are refused.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "last_for_super_admin": {
+      "description": "true when a Super admin signs in with it alone: turning it off, or narrowing its domains past their email, is refused.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "name": {
+      "description": "Its name on the sign-in page.",
+      "examples": [
+        "Zoho"
+      ],
+      "type": "string"
+    },
+    "pending": {
+      "$ref": "InstallationChange.schema.json",
+      "description": "A change of its switches waiting for the other Super admin, if any."
+    },
+    "provider": {
+      "description": "The provider's ID in the deployment's configuration.",
+      "examples": [
+        "zoho"
+      ],
+      "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+      "type": "string"
+    },
+    "sign_ins": {
+      "description": "Sessions it started in the last 30 days.",
+      "examples": [
+        96
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "version": {
+      "description": "Its switches' version, for If-Match: 0 until a Super admin first changes them.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "provider",
+    "name",
+    "enabled",
+    "allowed_domains",
+    "sign_ins",
+    "last_for_super_admin",
+    "version"
+  ],
+  "title": "SignInMethod",
+  "type": "object"
+}

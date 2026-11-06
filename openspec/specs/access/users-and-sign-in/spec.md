@@ -252,6 +252,11 @@ Source: PRD-001 §8.24 · Priority M · Phase P0 (Zoho issuer check, §17.3) / P
 - **WHEN** the Super admin tries to disable the last sign-in method a Super admin can sign in with
 - **THEN** the platform refuses
 
+#### Scenario: Allowed domains are enforced (rev 0.197)
+- **WHEN** a provider accepts only some email domains
+- **THEN** only an account whose verified email ends with one of them signs in, or is linked, through it
+- **AND** narrowing a provider's domains so that a Super admin has no way left to sign in is refused, as turning it off is
+
 #### Scenario: Allowed domains and joining by domain
 - **WHEN** a provider is configured
 - **THEN** its allowed email domains can be set

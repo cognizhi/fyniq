@@ -40,6 +40,10 @@ func SecondFactor(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork
 	return err
 }
 
+// SignInProviderType tells every Super admin that a sign-in provider was turned on or off, or its domains changed
+// (FR-ADM-08, rev 0.197).
+const SignInProviderType = "security.sign_in_provider"
+
 // SignInMethodType tells a person a sign-in with a provider was linked to their account, or removed (FR-ADM-08, rev 0.196).
 const SignInMethodType = "security.sign_in_methods"
 

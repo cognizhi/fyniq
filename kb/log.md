@@ -377,3 +377,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | docs/user-guide/home.md → home.overview (copy and paste amounts, FR-UX-20, rev 0.193)
 
 ## [2026-11-06] compile | docs/user-guide/profile-and-security.md → preferences.security (link or remove a sign-in, FR-ADM-08, PRD-001 rev 0.196)
+
+## [2026-11-07] compile | sign-in-providers.md (new), sign-in.md, profile-and-security.md → settings.sign-in-providers (new), auth.sign-in, preferences.security (provider switches and allowed domains, FR-ADM-08, PRD-001 rev 0.197)

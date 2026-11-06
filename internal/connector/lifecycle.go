@@ -380,26 +380,7 @@ func stepVerb(step string) string {
 
 // request records ch as a change for the other Super admin, with the RFC 8785 envelope they sign.
 func (s Installations) request(ctx context.Context, u storage.UnitOfWork, by uuid.UUID, mfaAt time.Time, ch change, summary string) (Result, error) {
-	now := s.Clock.Now()
-	body, err := json.Marshal(ch)
-	if err != nil {
-		return Result{}, err
-	}
-	var doc any
-	dec := json.NewDecoder(bytes.NewReader(body))
-	dec.UseNumber() // the canonical form takes integers, never a float
-	if err := dec.Decode(&doc); err != nil {
-		return Result{}, err
-	}
-	envelope, err := approval.Canonical(map[string]any{"schema": ChangeSchema, "change": doc, "requested_by": by.String(),
-		"requested_at": now.UTC().Format(time.RFC3339Nano)})
-	if err != nil {
-		return Result{}, err
-	}
-	sum := sha256.Sum256(envelope)
-	p, err := u.Connectors().RequestInstallationChange(ctx, storage.NewInstallationChange{ConnectorID: ch.Installed, Connector: ch.Connector,
-		Step: ch.Step, Summary: summary, Change: body, Envelope: string(envelope), EnvelopeHash: sum[:], RequestedBy: by, RequesterMFAAt: mfaAt,
-		At: now, ExpiresAt: now.Add(ChangeTTL)})
+	p, err := RequestChange(ctx, u, s.Clock, by, mfaAt, ch.Installed, ch.Connector, ch.Step, summary, ch)
 	if err != nil {
 		return Result{}, err
 	}
@@ -408,6 +389,33 @@ func (s Installations) request(ctx context.Context, u storage.UnitOfWork, by uui
 		out.Connector, _, err = installed(ctx, u, *ch.Installed)
 	}
 	return out, err
+}
+
+// RequestChange asks the other Super admin to approve ch, a change with step step of connector name (installed as
+// installed, if it is) or of another installation-wide setting named so, such as "sign-in:zoho" (FR-ADM-07): its
+// canonical envelope, which the approver signs, and its expiry.
+func RequestChange(ctx context.Context, u storage.UnitOfWork, clock ports.Clock, by uuid.UUID, mfaAt time.Time, installed *uuid.UUID, name,
+	step, summary string, ch any) (storage.InstallationChange, error) {
+	now := clock.Now()
+	body, err := json.Marshal(ch)
+	if err != nil {
+		return storage.InstallationChange{}, err
+	}
+	var doc any
+	dec := json.NewDecoder(bytes.NewReader(body))
+	dec.UseNumber() // the canonical form takes integers, never a float
+	if err := dec.Decode(&doc); err != nil {
+		return storage.InstallationChange{}, err
+	}
+	envelope, err := approval.Canonical(map[string]any{"schema": ChangeSchema, "change": doc, "requested_by": by.String(),
+		"requested_at": now.UTC().Format(time.RFC3339Nano)})
+	if err != nil {
+		return storage.InstallationChange{}, err
+	}
+	sum := sha256.Sum256(envelope)
+	return u.Connectors().RequestInstallationChange(ctx, storage.NewInstallationChange{ConnectorID: installed, Connector: name,
+		Step: step, Summary: summary, Change: body, Envelope: string(envelope), EnvelopeHash: sum[:], RequestedBy: by, RequesterMFAAt: mfaAt,
+		At: now, ExpiresAt: now.Add(ChangeTTL)})
 }
 
 // apply applies ch, as approved by changeID (uuid.Nil: none needed).

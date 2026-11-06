@@ -93,6 +93,14 @@
   `TestLinkingASignInAddsItToTheSessionsUser`, `Profile.test.tsx`. **Left:** Super admins switching providers, their
   allowed domains and ending their sessions, with the last-method guard and dual control; joining by domain as a
   pending Employee membership an Owner approves; adding providers in the app (P2 or P3).)
+  (7 Nov 2026, PRD-001 rev 0.197: the provider switches. Settings › Sign-in providers: a Super admin turns each
+  configured provider on or off, optionally ending its sessions, and sets the email domains it accepts
+  (`GET /v1/installation/sign-in-methods`, `PATCH /v1/installation/sign-in-methods/{provider}`); with two Super admins
+  a change waits as an installation change of step `sign_in`. The flow refuses a provider turned off and an account
+  on no accepted domain (AUTH-SIGNIN-08). The database refuses a change that leaves a Super admin no way in
+  (migrations 000240 and 000241, FY272, FY273). Tests `TestSignInProviders`, `TestTheFlowFollowsTheProvidersSwitches`,
+  `SignInProviders.test.tsx`. **Left:** joining by domain as a pending Employee membership an Owner approves; adding
+  providers in the app (P2 or P3).)
 - [ ] 2.5 Account recovery as an audited state machine with two independent proofs, cooling-off, notices and revocation. Test `// req: SEC-35` with G4-060
 
 ## 3. Clients, outputs and administration

@@ -1704,6 +1704,16 @@ type FyniqShareIssue struct {
 	RecordedAt     time.Time
 }
 
+type FyniqSignInMethod struct {
+	Provider       string
+	Enabled        bool
+	AllowedDomains []string
+	Version        int32
+	ChangedBy      uuid.UUID
+	ChangedAt      time.Time
+	ChangeID       *uuid.UUID
+}
+
 type FyniqSodOverride struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID
