@@ -1,0 +1,155 @@
+# Tasks
+
+Each slice below is one pull request that passes `make test` on its own. Each slice carries its migration, port and
+adapter, its attack tests, its API with matrix rows, its screen or screens with help keys and guide sections compiled
+into the knowledge base, and the oracle's half where it computes a figure. Load `fyniq-accounting-domain`,
+`fyniq-feature-change` and `fyniq-design-system` before each slice.
+
+## 1. The decisions and the specs
+
+- [x] 1.1 PRD-001 rev 0.203 records the owner's decisions of 7 Nov 2026 (FR-EQ-15 identifiers, FR-EQ-19 register
+  now, FR-EQ-26 typed extract) and B.5's 2040 Share application monies `[accountant to confirm]`. The main spec
+  `equity/cap-table-and-investors` is updated and stamped (`python3 scripts/prdspec.py stale` is clean, `make check`
+  passes). `// req: FR-EQ-15`, `// req: FR-EQ-19`, `// req: FR-EQ-26` (spec text)
+
+## 2. Holders and classes (slice 1)
+
+- [ ] 2.1 Migration and storage (D1, D2):
+  - `contact.investor`, with CT-02 widened;
+  - `holder_record` and `share_class`, insert-only versions numbered at the version read;
+  - an individual's identifier refused beyond 4 characters (FY-guarded);
+  - `share_issue.class_id`, with the default Ordinary class backfilled and FY255 widened so the class's account
+    matches.
+
+  Attack tests: no update or delete; no 5-character identifier; an issue whose class and account disagree.
+  `// req: FR-EQ-15`, `// req: FR-EQ-16`, `// req: CMP-PD-07`
+- [ ] 2.2 API (D1, D2, D12):
+  - holders (contacts marked shareholder or investor, with their holdings, instruments, grants and rights so far);
+  - the holder record's versions, as the approval object `holder_record`;
+  - the identity document as evidence with the personal-data class;
+  - classes and their versions with rights and evidence;
+  - Appendix D's scopes (Board and Employee row-scoped).
+
+  Matrix rows for each operation; contract and Spectral. `// req: FR-EQ-15`, `// req: FR-EQ-16`
+- [ ] 2.3 Screens Holders, HolderRecord and ShareClasses as designed (Expert), with help keys, guide sections in
+  `docs/user-guide/equity-register.md` (the founders' guide's register section moves there) and their knowledge-base
+  page. Vitest and axe. `// req: FR-EQ-15`, `// req: FR-EQ-16`, `// req: FR-EQ-27`
+
+## 3. Equity transactions, the holdings backstop and share application monies (slice 2)
+
+- [ ] 3.1 Migration (D3, D4, D5):
+  - `holding_movement`, with FY257's rules: a movement names a recorded transaction; an issue's movement equals its
+    `share_issue`; a transfer nets to zero with no negative holding; a reversal reverses all of one transaction, once;
+    nothing changes;
+  - `equity_step`;
+  - the `equity_transaction` document type and approval object;
+  - 2040 Share application monies in the standard chart (role `share-application-monies`), with the sub-ledger key
+    rule widened to it;
+  - existing issues given their movements in the migration.
+
+  Attack tests for each FY257 rule and for a key-less 2040 line. `// req: FR-EQ-17`, `// req: INV-13`
+- [ ] 3.2 Engine and API:
+  - the kinds issue_cash, transfer, class_conversion and reversal (issue_noncash keeps founders' money's route):
+    draft, approval (FM-1, FM-9), and effective with ACRA's date and reference, never backdated and never in a closed
+    period, writing the issue, its movements and its entry in one unit of work;
+  - the ACRA steps with their ⏰/⚠;
+  - a bank line matched to a pending subscription posts Dr Bank · Cr 2040 (subscriber);
+  - effective refused until paid;
+  - a refund through a payment batch.
+
+  Tests: G4-043 end to end, with the February balance sheet and the cap table on 12 Mar only; a transfer makes no
+  entry; a reversal citing the ACRA extract; and the oracle's G4-043 golden case.
+  `// req: FR-EQ-17`, `// req: FR-EQ-09`, `// req: INV-13`, `// req: QA-ENG-02`
+- [ ] 3.3 Screens EquityRegister and EquityTransaction as designed, replacing the founders' register page. Steps,
+  evidence, the subscription's payment and the reversal; help keys and guide sections. Vitest and axe.
+  `// req: FR-EQ-17`
+
+## 4. The cap table (slice 3)
+
+- [ ] 4.1 `equity.CapTable(at)` (D7):
+  - issued, voting and fully diluted, by holder and class, with exact percentages shown to 2 decimals half-up;
+  - two dates compared;
+  - drill-down to movements, transactions and evidence.
+
+  The oracle's `cap_table` agrees on G.3 and generated scenarios (`make differential`). `// req: FR-EQ-20`,
+  `// req: QA-ENG-02`, `// req: RND-DISPLAY`
+- [ ] 4.2 API: `GET` the cap table with `at` and `compare`; the `cap_table` export kind (XLSX, 202 with its operation)
+  and the PDF through the render service; no write path to holdings but D4. Matrix rows; the Board and Employee scopes.
+  `// req: FR-EQ-20`
+- [ ] 4.3 Screen CapTable: Basic "Who owns the company" (an ownership chart with its table view, my holding, the latest
+  round) and Expert's fully diluted columns, compare and drill-down (dataviz checks, `fyniq-design-system`). Help keys
+  and guide sections. Vitest and axe. `// req: FR-EQ-20`, `// req: FR-EQ-27`
+
+## 5. SAFEs and convertible notes (slice 4)
+
+- [ ] 5.1 Migration and storage (D6):
+  - `instrument` and `instrument_template`, seeded with `yc-sg-post-money-cap@1`, disabled until its
+    `lawyer_confirmed` evidence;
+  - 2700's role `convertible-instruments`, with the instrument as its sub-ledger key.
+
+  Attack tests. `// req: FR-EQ-18`
+- [ ] 5.2 Engine and API:
+  - recording an instrument (approved), its cash matched Dr Bank · Cr 2700;
+  - conversion at a priced round, under both conventions with `RND-SHARE`;
+  - drafts for approval, or a draft for the accountant with ⚠ when the template is not enabled or a term is not
+    covered;
+  - C.2 #29 (maturity passed, or a round without its conversions).
+
+  Tests: G.3 pre-money (52,083 at S$2.40, S$0.80 left) and G4-044 post-money (52,631 at S$2.375, S$1.37 left; 79.83%,
+  15.97%, 4.20%); a two-SAFE case worked by hand; the oracle's `safe_conversion`. `// req: FR-EQ-18`,
+  `// req: RND-SHARE`, `// req: QA-ENG-02`
+- [ ] 5.3 Screen Instruments as designed, with help keys and guide sections. Vitest and axe. `// req: FR-EQ-18`
+
+## 6. The option pool and grants (slice 5)
+
+- [ ] 6.1 Migration, engine and API (D9):
+  - `option_pool` by resolution;
+  - `option_grant` and `grant_event`, with FY258 (no grant beyond the unallocated pool);
+  - vesting computed;
+  - exercise as an issue;
+  - an employee reads only their own grants.
+
+  Attack tests and API tests; the fully diluted cap table includes the pool. `// req: FR-EQ-19`
+- [ ] 6.2 Screen OptionPool as designed, and the employee's own grants view. Help keys and guide sections. Vitest and
+  axe. `// req: FR-EQ-19`, `// req: FR-EQ-27`
+
+## 7. Round modelling (slice 6)
+
+- [ ] 7.1 `round_scenario` (D8): inputs versioned and outputs computed on read; side by side; nothing posts; approving
+  creates the draft transactions. The oracle's `round_dilution` agrees on G.3. `// req: FR-EQ-21`,
+  `// req: QA-ENG-02`
+- [ ] 7.2 Screen RoundSimulator: Basic with a few inputs, Expert with the pool top-up, conversions and pro-rata. Help
+  keys and guide sections. Vitest and axe. `// req: FR-EQ-21`, `// req: FR-EQ-27`
+
+## 8. Investor rights, controllers and exempt status (slice 7)
+
+- [ ] 8.1 `investor_right` and `controller_entry` (D10):
+  - the exempt-status re-test after each recorded transaction, raising C.2 #28;
+  - the controller test (more than 25% of shares or votes), raising C.2 #27, and "Not assessed" when rights could
+    confer control without confirmation;
+  - the annual notices recorded.
+
+  Tests: G4-101; a corporate holder ends exempt status; a 21st member; a crossing at 25.01%. `// req: FR-EQ-22`,
+  `// req: FR-EQ-25`
+- [ ] 8.2 The investor rights and controllers on HolderRecord, with help keys and guide sections. Vitest and axe.
+  `// req: FR-EQ-22`, `// req: FR-EQ-25`
+
+## 9. The ACRA reconciliation and integrity (slice 8)
+
+- [ ] 9.1 `acra_extract` and `acra_extract_holding` (D11): typed holdings with the PDF as evidence; the comparison at
+  the extract's date; C.2 #26 listing each difference; a reversal citing the extract fixes one. Tests: a matching
+  extract, a missing holder, a wrong class and a wrong count. `// req: FR-EQ-26`
+- [ ] 9.2 The reconciliation page (Expert), with help keys and guide sections. Vitest and axe. `// req: FR-EQ-26`,
+  `// req: FR-EQ-27`
+
+## 10. Finish
+
+- [ ] 10.1 The canvases match what was built (`make design-check`); the help registry and QA-UI-05 hold; the knowledge
+  base lints clean; the threat model `docs/security/threat-models/equity-register.md` covers the holder identifiers,
+  the scopes and the backstops.
+- [ ] 10.2 `make check`, `make test` and `make test-e2e` pass; the full authorisation matrix passes.
+
+## Workflow follow-up
+
+- Archive with `/opsx:archive p1-equity-register` once every slice is merged, running `prdspec.py coverage` and
+  stamping what the archive changes.
