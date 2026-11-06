@@ -372,6 +372,11 @@ Source: PRD-001 §7.2 · Priority M · Phase P1
 - **THEN** the approval confirmation opens, with step-up where FR-APR-04 requires it
 - **AND** nothing is approved until the user confirms
 
+#### Scenario: Keys only where they belong (rev 0.192)
+- **WHEN** focus is not on a request in the Inbox, such as in a text field
+- **THEN** the triage keys do nothing
+- **AND** on a request the user may not decide, A and R decide nothing and say so
+
 #### Scenario: Grouping
 - **WHEN** the Inbox is shown
 - **THEN** items can be grouped by type and by due date

@@ -4,7 +4,7 @@ type: task
 title: Ask for, approve or reject a change that needs a second approver
 summary: Which changes wait for a second person, approving in steps from the Inbox, a person's bank account, withdrawing a request, and why one becomes void
 sources:
-  - docs/user-guide/approvals.md sha256:bbb2c1aca32e7bdee52c0e30674787ab71d1d32b7e937e2e0dc342eb7337a6bc
+  - docs/user-guide/approvals.md sha256:e0e08554f80dff5542296a7b76d20ce9d3eef948b54177e8e5117d2ee2c98bd2
 data_class: general
 taint: trusted
 status: published
@@ -13,6 +13,8 @@ compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
 compiled_at: 2026-11-06
 aliases:
+  - keyboard shortcuts
+  - inbox keys
   - review log
   - weekly review
   - self-approved
@@ -60,7 +62,9 @@ aliases:
 - Some changes need more than one approval, in steps set by the approval policy ([[approvals.policies]]); the request shows each step and its approvals, and the change is made with the last approval.
 - You approve a request once, and only at a step that names you or one of your roles.
 
-(src: docs/user-guide/approvals.md#approve-or-reject)
+- From the keyboard, while a request in the Inbox has the focus: J or ↓ and K or ↑ move, E or Enter opens, A and R open it with the approval's or rejection's confirmation showing, which you still confirm, and ? shows the keys; they never fire while typing, and do nothing but say so on a request not yours to decide.
+
+(src: docs/user-guide/approvals.md#approve-or-reject) (src: docs/user-guide/approvals.md#from-the-keyboard)
 
 ## Approve a person's bank account
 
