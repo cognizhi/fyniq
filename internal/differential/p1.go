@@ -128,6 +128,7 @@ type p1 struct {
 	codes    pack.Version // the sg-gst codes (Appendix B.6); the scenario's own settings give the rates
 	codeOf   map[uuid.UUID]string
 	personOf map[uuid.UUID]string
+	valueOf  valueNames
 	named    map[[2]uuid.UUID][]named // the posted lines naming a person, by person and account
 	held     map[string]*held         // the receivable's and payable's documents in other currencies, for the revaluation
 	pending  []scheduled
@@ -160,6 +161,7 @@ func newP1(s Scenario, base money.Currency, settings ledger.Settings) (*p1, erro
 	for _, p := range s.People {
 		r.personOf[stableID("party", p)] = p
 	}
+	r.valueOf = dimensionNames(settings)
 	if s.AsOf != "" {
 		r.asOf, _ = time.Parse(time.DateOnly, s.AsOf)
 	}
@@ -436,11 +438,11 @@ func (r *p1) fits(e ledger.Entry) bool {
 	cur, sum := e.Lines[0].Amount.Currency(), money.Zero(e.Lines[0].Amount.Currency())
 	for _, l := range e.Lines {
 		if l.Amount.Currency() != cur {
-			return len(canonical(e.Lines, r.codeOf, r.personOf, r.base)) >= 2
+			return len(canonical(e.Lines, r.codeOf, r.personOf, r.valueOf, r.base)) >= 2
 		}
 		sum, _ = sum.Add(l.Amount)
 	}
-	return sum.IsZero() && len(canonical(e.Lines, r.codeOf, r.personOf, r.base)) >= 2
+	return sum.IsZero() && len(canonical(e.Lines, r.codeOf, r.personOf, r.valueOf, r.base)) >= 2
 }
 
 // fitsColumns reports whether every line's amount and base amount fit NUMERIC(20,4) (§11.3, ENG-44).
@@ -455,18 +457,18 @@ func fitsColumns(lines []ledger.Line) bool {
 	return true
 }
 
-// canonical is a P1 entry's lines in canonical form (README, "P1 entries"): one line per account, currency and person
-// with the sums of its amounts and base amounts, the lines whose sums are both zero left out, sorted by account, then
-// currency, then person (a line naming none first).
-func canonical(lines []ledger.Line, codeOf, personOf map[uuid.UUID]string, base money.Currency) []ledger.Line {
-	type key struct{ code, cur, person string }
+// canonical is a P1 entry's lines in canonical form (README, "P1 entries"): one line per account, currency, person and
+// dimension set with the sums of its amounts and base amounts, the lines whose sums are both zero left out, sorted by
+// account, then currency, then person (a line naming none first), then set (the lines with none first).
+func canonical(lines []ledger.Line, codeOf, personOf map[uuid.UUID]string, valueOf valueNames, base money.Currency) []ledger.Line {
+	type key struct{ code, cur, person, set string }
 	sums := map[key]*ledger.Line{}
 	var keys []key
 	for _, l := range lines {
-		k := key{codeOf[l.AccountID], l.Amount.Currency().Code, personOf[l.Party]}
+		k := key{codeOf[l.AccountID], l.Amount.Currency().Code, personOf[l.Party], valueOf.set(l.Values)}
 		s, ok := sums[k]
 		if !ok {
-			s = &ledger.Line{AccountID: l.AccountID, Amount: money.Zero(l.Amount.Currency()), Base: money.Zero(base), Party: l.Party}
+			s = &ledger.Line{AccountID: l.AccountID, Amount: money.Zero(l.Amount.Currency()), Base: money.Zero(base), Party: l.Party, Values: l.Values}
 			sums[k] = s
 			keys = append(keys, k)
 		}
@@ -474,7 +476,7 @@ func canonical(lines []ledger.Line, codeOf, personOf map[uuid.UUID]string, base 
 		s.Base, _ = s.Base.Add(l.Base)
 	}
 	slices.SortFunc(keys, func(a, b key) int {
-		return cmp.Or(cmp.Compare(a.code, b.code), cmp.Compare(a.cur, b.cur), cmp.Compare(a.person, b.person))
+		return cmp.Or(cmp.Compare(a.code, b.code), cmp.Compare(a.cur, b.cur), cmp.Compare(a.person, b.person), cmp.Compare(a.set, b.set))
 	})
 	out := make([]ledger.Line, 0, len(keys))
 	for _, k := range keys {

@@ -48,7 +48,8 @@ documents, and a journal on a revalued account that does not balance: a refused 
 For the general ledger (README, "Opening balances, automatic reversals and edits"; :mod:`oracle.strategies_gl`):
 opening balances at the books' start, manual journals that may reverse by themselves, and the voids and edits of
 ``reversals``, with the founders' chart, people and books' start; a director's opening balance counts in what the
-founders' documents after it may draw on.
+founders' documents after it may draw on. A third of those scenarios declare dimensions (README, "Dimensions"), with
+6200 and 4200 joining the chart to require them, and draw the general ledger's dimension kinds besides its others.
 
 The generator keeps what it built so far in a :class:`_Book` (the bills and invoices a settlement may
 settle and what each has open, the deposits and what is left of each), so a document built to post
@@ -1093,12 +1094,18 @@ def p1_scenarios_with_intent(
     if "fx" in sources:
         _revalue(draw, accounts, settings)
     tracked: list[strategies_gl.Tracked] = []  # the general ledger's journals and opening balances
+    dims = None  # the dimensions declared (FR-DIM-01), in a third of the general ledger's scenarios
     if ledger:
         accounts += strategies_gl.accounts()
         assert book.books_start is not None
-        if draw(st.integers(0, 3)) > 0:  # the opening balances, first, at the books' start (FR-GL-06)
-            kind = draw(st.sampled_from(strategies_gl.OPENING_KINDS))
-            document, meant, credits = draw(strategies_gl.opening_balances("OB-0001", book.books_start, kind))
+        opening = draw(st.integers(0, 3)) > 0
+        if draw(st.integers(0, 2)) == 0:
+            dims = draw(strategies_gl.dimensions())
+            accounts += strategies_gl.dimension_accounts(dims)
+            kinds = kinds + strategies_gl.dimension_kinds(dims)
+        if opening:  # the opening balances, first, at the books' start (FR-GL-06)
+            kind = draw(st.sampled_from(strategies_gl.opening_kinds(dims)))
+            document, meant, credits = draw(strategies_gl.opening_balances("OB-0001", book.books_start, kind, dims))
             documents.append(document)
             intent["OB-0001"], built["OB-0001"] = meant, kind
             tracked.append(strategies_gl.Tracked("OB-0001", "opening_balances", meant == POST, 1, book.books_start))
@@ -1119,15 +1126,18 @@ def p1_scenarios_with_intent(
             document, meant = draw(_assets_document(doc_id, day, kind, book))
         elif kind in FX_OWN:
             document, meant = draw(_fx_document(doc_id, day, kind, book))
-        elif kind in KINDS["general-ledger"]:
-            document, meant, kind = draw(strategies_gl.journal(doc_id, day, kind))
+        elif kind in strategies_gl.DOCUMENT_DIMENSION:
+            assert dims is not None
+            document, meant = draw(strategies_gl.dimension_document(doc_id, day, dims))
+        elif kind in KINDS["general-ledger"] or kind in strategies_gl.DIMENSION_KINDS:
+            document, meant, kind = draw(strategies_gl.journal(doc_id, day, kind, dims))
             tracked.append(strategies_gl.Tracked(doc_id, "manual_journal", meant == POST, 1, day))
         else:
             document, meant, kind = draw(_founders_document(doc_id, day, kind, book))
         documents.append(document)
         intent[doc_id] = meant
         built[doc_id] = kind
-    reversals, corrections = draw(strategies_gl.corrections(tracked, book.books_start)) if ledger else ([], [])
+    reversals, corrections = draw(strategies_gl.corrections(tracked, book.books_start, dims)) if ledger else ([], [])
     last = max(date.fromisoformat(d["date"]) for d in documents)
     last = max(last, strategies_gl.corrections_last_day(reversals) or last)
     as_of = last + timedelta(days=draw(st.integers(0, 400)))
@@ -1146,6 +1156,8 @@ def p1_scenarios_with_intent(
     }
     if "founders" in sources or ledger:
         scenario["people"] = list(PEOPLE)
+    if dims is not None:
+        scenario["dimensions"] = dims.declared
     return scenario, Intent(intent, built, tuple(corrections))
 
 

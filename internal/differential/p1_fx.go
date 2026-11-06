@@ -258,7 +258,7 @@ func (r *p1) revaluations(book []booked, sched []scheduled) []scheduled {
 		if err != nil {
 			continue
 		}
-		e.Lines = canonical(e.Lines, r.codeOf, r.personOf, r.base)
+		e.Lines = canonical(e.Lines, r.codeOf, r.personOf, r.valueOf, r.base)
 		if len(e.Lines) == 0 {
 			continue // every item is at the rate
 		}

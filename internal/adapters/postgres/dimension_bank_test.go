@@ -29,6 +29,7 @@ import (
 // req: FR-DIM-01
 // req: FR-DIM-02
 // req: FR-BNK-14
+// req: FR-BNK-05
 func TestBankLinePartsCarryTheirDimensionValues(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "bookkeeper"}})
 	now := time.Date(2026, 10, 22, 3, 0, 0, 0, time.UTC)

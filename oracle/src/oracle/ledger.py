@@ -28,11 +28,16 @@ rule of ENG-24 (PRD-001 rev 0.24) below; otherwise it is rejected whole and post
    ``deferred-remuneration``, 2120) names its person, one of the scenario's ``people``, and where its
    amount came from (lent, paid personally, pay, fee, paid out or other); no other line names either
    (FR-EQ-01, Appendix B.7: "all amounts carry the person as a sub-ledger key on 2500 and 2120").
+11. (PRD-001 rev 0.171, 0.172) Every dimension value a line names is in use, and of a dimension in use (DIM-06); and
+    a line on an account that requires a dimension in use names a value of it (DIM-05), unless the journal's lines on
+    that account sum to zero in the base currency: such a journal moves an amount between values (FR-DIM-01). The
+    opening balances, and so their edits, are held to DIM-06 only (README, "Dimensions"); a journal's edit to both.
 
 A reversal posts the negation of every line of the document's posted entry, on the reversal's date
-(FR-GL-12). The base amounts are negated as stored, never re-converted (ENG-14). A reversal of an
-unknown or rejected document, of a document already reversed, or dated before the entry it reverses
-is rejected (FR-GL-12, rev 0.24: "dated on or after the entry's posting date").
+(FR-GL-12), each line keeping its person and its dimension values. The base amounts are negated as stored,
+never re-converted (ENG-14). A reversal of an unknown or rejected document, of a document already
+reversed, or dated before the entry it reverses is rejected (FR-GL-12, rev 0.24: "dated on or after the
+entry's posting date").
 
 The trial balance is the base-currency total per account per calendar month of the posting date
 (Appendix B: "period = the month of the posting date").
@@ -65,6 +70,9 @@ From P1 the scheduler also revalues the accounts marked ``revalue`` at each mont
 :mod:`oracle.revaluation`: base-only lines at the period-end rate against the unrealised FX account, reversed on the
 next month's first day (README, "Month-end revaluation").
 
+A scenario that declares dimensions also gets ``dimension_balances`` (FR-DIM-02; README, "Dimensions"): each posting
+month's base-currency total of the posted lines on each account by their exact set of dimension values.
+
 A scenario with ``"statements": true`` also gets every month's financial statements, read from the
 posted entries by :mod:`oracle.statements` (FR-RPT-01), and one with ``kpis`` every stated month's KPIs, read
 from those statements and the trial balance by :mod:`oracle.kpis` (FR-KPI-02).
@@ -79,7 +87,7 @@ from decimal import Decimal, localcontext
 from typing import Any
 
 from oracle import money
-from oracle.book import Entry, PostedLine, Rejected, Scheduled, canonical
+from oracle.book import Entry, PostedLine, Rejected, Scheduled, canonical, dimension_set
 from oracle.revaluation import revaluations
 from oracle.rules import Rules
 from oracle.scenario import RESULT_SCHEMA, Document, Edit, Line, Reversal, Scenario, Source, check_result
@@ -106,9 +114,11 @@ class _Journal:
 
 
 def _negated(entry: Entry, kind: str, day: date) -> Entry:
-    """The reversal of ``entry`` on ``day``: every stored line negated, amount and base amount (ENG-14)."""
+    """The reversal of ``entry`` on ``day``: every stored line negated, amount and base amount (ENG-14), keeping its
+    person and its dimension values (README, "Dimensions")."""
     return Entry(entry.document, kind, day, tuple(
-        PostedLine(ln.account, ln.currency, money.negate(ln.amount), money.negate(ln.base_amount), ln.party)
+        PostedLine(ln.account, ln.currency, money.negate(ln.amount), money.negate(ln.base_amount), ln.party,
+                   ln.dimensions)
         for ln in entry.lines
     ))
 
@@ -252,7 +262,7 @@ class Ledger:
             # Rule 6 (§11.3): a stored base amount is NUMERIC(20,4) too.
             if base_amount.copy_abs() >= money.AMOUNT_LIMIT:
                 raise Rejected("base-out-of-range")
-            posted.append(PostedLine(line.account, line.currency, amount, base_amount, line.party))
+            posted.append(PostedLine(line.account, line.currency, amount, base_amount, line.party, line.dimensions))
 
         # Rule 7 (INV-01, INV-05): the stored base amounts balance. Never round a sum.
         if not money.total([ln.base_amount for ln in posted]).is_zero():
@@ -262,7 +272,29 @@ class Ledger:
         if len({ln.currency for ln in posted}) == 1 and not money.total([ln.amount for ln in posted]).is_zero():
             raise Rejected("unbalanced-currency")
 
+        self._dimension_rules(posted, opening)
         return tuple(posted)
+
+    def _dimension_rules(self, posted: list[PostedLine], opening: bool) -> None:
+        """Rule 11 (README, "Dimensions"; FR-DIM-01 rev 0.171, 0.172)."""
+        dimensions = self.scenario.dimensions
+        # DIM-06: a value in use, of a dimension in use (the scenario reader made sure each is declared).
+        for line in posted:
+            for name, code in line.dimensions:
+                if not dimensions[name].active:
+                    raise Rejected("dimension-out-of-use")
+                if not dimensions[name].values[code]:
+                    raise Rejected("dimension-value-out-of-use")
+        if opening:  # the opening balances are not held to what an account requires
+            return
+        # DIM-05: a line on an account that requires a dimension in use names a value of it, unless the journal's lines
+        # on that account sum to zero in base, moving an amount between values (rev 0.172).
+        for line in posted:
+            named = {name for name, _ in line.dimensions}
+            missing = [n for n in self.scenario.accounts[line.account].requires
+                       if dimensions[n].active and n not in named]
+            if missing and not money.total([ln.base_amount for ln in posted if ln.account == line.account]).is_zero():
+                raise Rejected("dimension-required")
 
     def _source(self, index: int, document: Source) -> None:
         assert self.rules is not None  # the scenario reader refuses a source without settings
@@ -394,11 +426,35 @@ class Ledger:
                 out[person] = accounts
         return out
 
+    def dimension_balances(self) -> dict[str, dict[str, dict[str, Decimal]]]:
+        """Each posting month's base-currency total of the posted lines on each account by their exact set of
+        dimension values (FR-DIM-02; README, "Dimensions"), the set as :func:`oracle.book.dimension_set` writes it.
+
+        Every posting month appears, as in the trial balance; totals of zero are left out, and so is an account with
+        none. Each month's sets of an account add up to its trial balance total.
+        """
+        totals: dict[str, dict[str, dict[str, Decimal]]] = {period(e.posting_date): {} for e in self.entries}
+        for entry in self.entries:
+            month = totals[period(entry.posting_date)]
+            for ln in entry.lines:
+                sets = month.setdefault(ln.account, {})
+                key = dimension_set(ln.dimensions)
+                sets[key] = money.EXACT.add(sets.get(key, money.ZERO), ln.base_amount)
+        out: dict[str, dict[str, dict[str, Decimal]]] = {}
+        for month in sorted(totals):
+            accounts = {}
+            for account in sorted(totals[month]):
+                sets = {key: v for key, v in sorted(totals[month][account].items()) if not v.is_zero()}
+                if sets:
+                    accounts[account] = sets
+            out[month] = accounts
+        return out
+
     def result(self) -> dict[str, Any]:
         """The ``fyniq-scenario-result@1`` document, every amount a plain decimal string."""
         s = self.scenario
 
-        def line(ln: PostedLine) -> dict[str, str]:
+        def line(ln: PostedLine) -> dict[str, Any]:
             out = {
                 "account": ln.account,
                 "currency": ln.currency,
@@ -407,6 +463,8 @@ class Ledger:
             }
             if ln.party is not None:
                 out["party"] = ln.party
+            if ln.dimensions:
+                out["dimensions"] = dict(ln.dimensions)
             return out
 
         result = {
@@ -427,6 +485,12 @@ class Ledger:
                 for month, accounts in self.trial_balance().items()
             },
         }
+        if s.dimensions:  # present exactly when the scenario declares dimensions (FR-DIM-02)
+            result["dimension_balances"] = {
+                month: {account: {key: money.fmt(total, self.base_minor) for key, total in sets.items()}
+                        for account, sets in accounts.items()}
+                for month, accounts in self.dimension_balances().items()
+            }
         people = self.people()
         if people:
             result["people"] = {

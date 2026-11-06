@@ -380,7 +380,8 @@ def test_a_journal_is_posted_edited_and_reversed_at_most_once_each_reversal_nega
                 current = entry
                 continue
             assert entry.lines == tuple(PostedLine(ln.account, ln.currency, money.negate(ln.amount),
-                                                   money.negate(ln.base_amount), ln.party) for ln in current.lines)
+                                                   money.negate(ln.base_amount), ln.party, ln.dimensions)
+                                        for ln in current.lines)  # each line keeps its values (FR-DIM-02)
             assert entry.posting_date >= current.posting_date
             if entry.kind == "auto_reversal":
                 assert entry.posting_date <= parsed.as_of

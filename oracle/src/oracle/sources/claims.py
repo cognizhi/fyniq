@@ -87,7 +87,7 @@ def expense_claim(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     registered = r.registered(doc.date)
     lines, owed, owed_base = [], money.ZERO, money.ZERO  # owed: in the claim's currency; owed_base: what 2150 takes
     for raw in d["lines"]:
-        r.account(raw["account"])
+        r.entered(raw["account"])  # a receipt or a trip: a line the claimant enters (DIM-05)
         if "distance" in raw:
             if currency != r.base:
                 raise Rejected("mileage-in-another-currency")

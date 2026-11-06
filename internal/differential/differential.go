@@ -10,8 +10,10 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/cockroachdb/apd/v3"
@@ -36,6 +38,9 @@ type Scenario struct {
 	Accounts     []Account      `json:"accounts"`
 	// People are the directors and shareholders a line on a director's account may name (FR-EQ-01).
 	People []string `json:"people,omitempty"`
+	// Dimensions are the organisation's dimensions and their values, which a line may name (FR-DIM-01; README,
+	// "Dimensions").
+	Dimensions []Dimension `json:"dimensions,omitempty"`
 	// Statements and KPIs ask for the statements and the KPIs (README, "Statements" and "KPIs").
 	Statements bool            `json:"statements,omitempty"`
 	KPIs       json.RawMessage `json:"kpis,omitempty"`
@@ -62,6 +67,21 @@ type Account struct {
 	CashFlowLine string `json:"cash_flow_line,omitempty"`
 	// Revalue marks a monetary item, revalued at each month's end (FR-GL-04; README, "Month-end revaluation").
 	Revalue bool `json:"revalue,omitempty"`
+	// Requires are the dimensions, by name, a line a person enters on the account names a value of (FR-DIM-01).
+	Requires []string `json:"requires,omitempty"`
+}
+
+// Dimension is one of the organisation's dimensions, such as Department, with its values (FR-DIM-01).
+type Dimension struct {
+	Name   string           `json:"name"`
+	Active bool             `json:"active"`
+	Values []DimensionValue `json:"values"`
+}
+
+// DimensionValue is one value of a dimension, by its code.
+type DimensionValue struct {
+	Code   string `json:"code"`
+	Active bool   `json:"active"`
 }
 
 // Document is one document version: a manual journal, or a P1 source's document, whose own shape Raw holds.
@@ -116,6 +136,8 @@ type Line struct {
 	FXRateSource string `json:"fx_rate_source,omitempty"`
 	Party        string `json:"party,omitempty"`  // a director's account's person, one of the scenario's people
 	Origin       string `json:"origin,omitempty"` // where that amount came from
+	// Dimensions are the line's dimension values: a dimension's name to one of its values' codes (FR-DIM-02).
+	Dimensions map[string]string `json:"dimensions,omitempty"`
 }
 
 // Reversal reverses the posted entry of a document on a date (a void), or, with Edit, posts the document's next
@@ -144,6 +166,9 @@ type Result struct {
 	TrialBalance map[string]map[string]string `json:"trial_balance"` // month → account → base total
 	// People is each person's base total on each director's account (FR-EQ-01); absent when no line names one.
 	People map[string]map[string]string `json:"people,omitempty"`
+	// DimensionBalances is each month's base total of each account by dimension set (FR-DIM-02), when the scenario
+	// declares dimensions: month → account → set → total (README, "Dimensions").
+	DimensionBalances map[string]map[string]map[string]string `json:"dimension_balances,omitempty"`
 	// Statements and KPIs are each month's, when the scenario asks for them (README, "Statements" and "KPIs"): present,
 	// and empty when nothing posted, whenever it does.
 	Statements *map[string]any `json:"statements,omitempty"`
@@ -160,16 +185,56 @@ type Entry struct {
 
 // EntryLine is one posted line.
 type EntryLine struct {
-	Account    string `json:"account"`
-	Currency   string `json:"currency"`
-	Amount     string `json:"amount"`
-	BaseAmount string `json:"base_amount"`
-	Party      string `json:"party,omitempty"`
+	Account    string            `json:"account"`
+	Currency   string            `json:"currency"`
+	Amount     string            `json:"amount"`
+	BaseAmount string            `json:"base_amount"`
+	Party      string            `json:"party,omitempty"`
+	Dimensions map[string]string `json:"dimensions,omitempty"`
 }
 
 // stableID turns a scenario's name for something into a fixed UUID.
 func stableID(kind, name string) uuid.UUID {
 	return uuid.NewHash(sha1.New(), uuid.NameSpaceURL, []byte("fyniq-scenario:"+kind+":"+name), 5)
+}
+
+// valueID is a dimension value's ID, by its dimension's name and its code.
+func valueID(dimension, code string) uuid.UUID {
+	return stableID("dimension-value", dimension+"="+code)
+}
+
+// valueNames are each dimension value's dimension name and code, which a result writes a line's values with.
+type valueNames map[uuid.UUID][2]string
+
+func dimensionNames(s ledger.Settings) valueNames {
+	out := valueNames{}
+	for id, v := range s.Values {
+		out[id] = [2]string{s.Dimensions[v.Dimension].Name, v.Code}
+	}
+	return out
+}
+
+// of is a line's values as a result writes them, a dimension's name to its value's code; nil for none.
+func (n valueNames) of(values []uuid.UUID) map[string]string {
+	if len(values) == 0 {
+		return nil
+	}
+	out := map[string]string{}
+	for _, v := range values {
+		out[n[v][0]] = n[v][1]
+	}
+	return out
+}
+
+// set is a line's dimension set as the result keys it (README, "Dimensions"): "Name=CODE" joined by "|" in name order,
+// "" for none.
+func (n valueNames) set(values []uuid.UUID) string {
+	named := n.of(values)
+	parts := make([]string, 0, len(named))
+	for _, name := range slices.Sorted(maps.Keys(named)) {
+		parts = append(parts, name+"="+named[name])
+	}
+	return strings.Join(parts, "|")
 }
 
 // RunEngine posts a scenario through the Go engine (package ledger), with no database: the same
@@ -194,10 +259,23 @@ func RunEngine(s Scenario) (Result, error) {
 	}
 	settings := ledger.Settings{Base: base, Accounts: map[uuid.UUID]ledger.Account{}, People: map[uuid.UUID]bool{}}
 	codeOf, personOf := map[uuid.UUID]string{}, map[uuid.UUID]string{}
+	settings.Dimensions, settings.Values = map[uuid.UUID]ledger.Dimension{}, map[uuid.UUID]ledger.DimensionValue{}
+	for _, d := range s.Dimensions {
+		id := stableID("dimension", d.Name)
+		settings.Dimensions[id] = ledger.Dimension{Name: d.Name, Active: d.Active}
+		for _, v := range d.Values {
+			settings.Values[valueID(d.Name, v.Code)] = ledger.DimensionValue{Dimension: id, Code: v.Code, Active: v.Active}
+		}
+	}
+	valueOf := dimensionNames(settings)
 	for _, a := range s.Accounts {
 		id := stableID("account", a.Code)
-		settings.Accounts[id] = ledger.Account{ID: id, Code: a.Code, Group: a.Group, Active: a.Active, ShareCapital: a.Role == "share-capital",
+		acc := ledger.Account{ID: id, Code: a.Code, Group: a.Group, Active: a.Active, ShareCapital: a.Role == "share-capital",
 			Role: a.Role, Type: a.Type, Revalue: a.Revalue}
+		for _, name := range a.Requires {
+			acc.Requires = append(acc.Requires, stableID("dimension", name))
+		}
+		settings.Accounts[id] = acc
 		codeOf[id] = a.Code
 	}
 	for _, p := range s.People {
@@ -213,6 +291,7 @@ func RunEngine(s Scenario) (Result, error) {
 	res := Result{Schema: ResultSchema, Name: s.Name, Entries: []Entry{}, Rejected: []string{}, TrialBalance: map[string]map[string]string{}}
 	totals := map[string]map[string]money.Money{}
 	people := map[string]map[string]money.Money{}
+	bySet := map[string]map[string]map[string]money.Money{} // month → account → dimension set → base total
 	// record writes an entry: a manual journal's lines as entered, any other in canonical form (README, "P1 entries").
 	var book []booked // the entries posted, for the statements
 	record := func(doc, kind string, e ledger.Entry, p1 bool) {
@@ -223,13 +302,28 @@ func RunEngine(s Scenario) (Result, error) {
 		}
 		lines := e.Lines
 		if p1 {
-			lines = canonical(lines, codeOf, personOf, base)
+			lines = canonical(lines, codeOf, personOf, valueOf, base)
 		}
 		book = append(book, booked{doc: doc, kind: kind, entry: e, lines: lines})
 		sources.note(e) // what a later settlement may settle
 		for _, l := range lines {
 			code := codeOf[l.AccountID]
-			line := EntryLine{Account: code, Currency: l.Amount.Currency().Code, Amount: l.Amount.String(), BaseAmount: l.Base.String()}
+			line := EntryLine{Account: code, Currency: l.Amount.Currency().Code, Amount: l.Amount.String(), BaseAmount: l.Base.String(),
+				Dimensions: valueOf.of(l.Values)}
+			if len(s.Dimensions) > 0 {
+				if bySet[month] == nil {
+					bySet[month] = map[string]map[string]money.Money{}
+				}
+				if bySet[month][code] == nil {
+					bySet[month][code] = map[string]money.Money{}
+				}
+				set := valueOf.set(l.Values)
+				sum, ok := bySet[month][code][set]
+				if !ok {
+					sum = money.Zero(base)
+				}
+				bySet[month][code][set], _ = sum.Add(l.Base)
+			}
 			if l.Party != uuid.Nil {
 				line.Party = personOf[l.Party]
 				if people[line.Party] == nil {
@@ -274,7 +368,7 @@ func RunEngine(s Scenario) (Result, error) {
 			if err != nil {
 				return ledger.Entry{}, false
 			}
-			e.Lines = canonical(e.Lines, codeOf, personOf, base) // one balance per account, currency and person
+			e.Lines = canonical(e.Lines, codeOf, personOf, valueOf, base) // one balance per account, currency, person and set
 			return e, len(e.Lines) >= 2 && fitsColumns(e.Lines)
 		}
 		if d.ReverseOn != "" { // rule 10: the automatic reversal is after the journal (FR-GL-02, JOURNAL-11)
@@ -392,6 +486,25 @@ func RunEngine(s Scenario) (Result, error) {
 			res.People[person][code] = total.String()
 		}
 	}
+	for month, accounts := range bySet {
+		for code, sets := range accounts {
+			for set, total := range sets {
+				if total.IsZero() {
+					continue
+				}
+				if res.DimensionBalances == nil {
+					res.DimensionBalances = map[string]map[string]map[string]string{}
+				}
+				if res.DimensionBalances[month] == nil {
+					res.DimensionBalances[month] = map[string]map[string]string{}
+				}
+				if res.DimensionBalances[month][code] == nil {
+					res.DimensionBalances[month][code] = map[string]string{}
+				}
+				res.DimensionBalances[month][code][set] = total.String()
+			}
+		}
+	}
 	if s.Statements {
 		st, kpis, err := state(s, settings, base, book)
 		if err != nil {
@@ -436,6 +549,9 @@ func journalOf(d Document, base money.Currency, declared map[string]int) (ledger
 		if l.Party != "" {
 			line.Party = stableID("party", l.Party)
 		}
+		for name, code := range l.Dimensions {
+			line.Values = append(line.Values, valueID(name, code))
+		}
 		if l.FXRate != "" {
 			r, err := money.ParseRate(l.FXRate, cur, base, l.FXRateSource)
 			if err != nil {
@@ -469,8 +585,8 @@ func Compare(engine, oracle Result) error {
 		}
 		for k, l := range e.Lines {
 			if ol := o.Lines[k]; !sameLine(l, ol) {
-				return fmt.Errorf("%s line %d: engine %s %s %s base %s person %q, oracle %s %s %s base %s person %q",
-					at, k+1, l.Account, l.Currency, l.Amount, l.BaseAmount, l.Party, ol.Account, ol.Currency, ol.Amount, ol.BaseAmount, ol.Party)
+				return fmt.Errorf("%s line %d: engine %s %s %s base %s person %q dimensions %v, oracle %s %s %s base %s person %q dimensions %v",
+					at, k+1, l.Account, l.Currency, l.Amount, l.BaseAmount, l.Party, l.Dimensions, ol.Account, ol.Currency, ol.Amount, ol.BaseAmount, ol.Party, ol.Dimensions)
 			}
 		}
 	}
@@ -515,6 +631,37 @@ func Compare(engine, oracle Result) error {
 		for _, a := range sortedKeys(accounts) {
 			if ev, ov := engine.People[p][a], oracle.People[p][a]; !sameAmount(ev, ov) {
 				return fmt.Errorf("person %s account %s: engine %s, oracle %s", p, a, cmp.Or(ev, "0"), cmp.Or(ov, "0"))
+			}
+		}
+	}
+	// Each month's totals by dimension set (FR-DIM-02): a missing month, account or set reads as zero.
+	months = map[string]bool{}
+	for m := range engine.DimensionBalances {
+		months[m] = true
+	}
+	for m := range oracle.DimensionBalances {
+		months[m] = true
+	}
+	for _, m := range sortedKeys(months) {
+		accounts := map[string]bool{}
+		for a := range engine.DimensionBalances[m] {
+			accounts[a] = true
+		}
+		for a := range oracle.DimensionBalances[m] {
+			accounts[a] = true
+		}
+		for _, a := range sortedKeys(accounts) {
+			sets := map[string]bool{}
+			for x := range engine.DimensionBalances[m][a] {
+				sets[x] = true
+			}
+			for x := range oracle.DimensionBalances[m][a] {
+				sets[x] = true
+			}
+			for _, x := range sortedKeys(sets) {
+				if ev, ov := engine.DimensionBalances[m][a][x], oracle.DimensionBalances[m][a][x]; !sameAmount(ev, ov) {
+					return fmt.Errorf("dimension balance %s account %s set %q: engine %s, oracle %s", m, a, x, cmp.Or(ev, "0"), cmp.Or(ov, "0"))
+				}
 			}
 		}
 	}
@@ -585,7 +732,7 @@ func sameTree(a, b any, path string, kpis bool) error {
 
 func sameLine(a, b EntryLine) bool {
 	return a.Account == b.Account && a.Currency == b.Currency && sameAmount(a.Amount, b.Amount) && sameAmount(a.BaseAmount, b.BaseAmount) &&
-		a.Party == b.Party
+		a.Party == b.Party && maps.Equal(a.Dimensions, b.Dimensions)
 }
 
 // sameAmount compares two decimal strings exactly, so "1.50" equals "1.5" and "" equals "0".
