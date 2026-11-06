@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03]
+requirements: [FM-8, FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03]
 status: draft
 ---
 
@@ -225,6 +225,14 @@ whatever the invoice's month.
   policy under **Settings → Accounting framework and policies**. While this setting is on, Fyniq first
   asks them to confirm it's them with their passkey or authenticator app, as for other approvals.
 - It is on by default. Turning it off needs a second approver, like the other thresholds.
+
+## Break-glass payment cap
+
+- In Founder mode, while the other founder is unreachable, an Owner may start break-glass and
+  release payment batches waiting for approval alone, up to this total: S$20,000 by default.
+- The cap a break-glass starts with stays with it; a later change applies to the next one.
+- Changing the cap needs a second approver.
+- How break-glass works: [Team mode](team-mode.md#break-glass).
 
 ## Self-approval threshold
 

@@ -10,6 +10,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/accessreview"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/breakglass"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -21,13 +22,18 @@ const viewUsers = "Users, roles, team mode"
 const (
 	InReviewLog    = "the review log"
 	InAccessReview = "the access review"
+	InBreakGlass   = "the break-glass review" // on Team mode (FM-8)
 )
+
+// The Appendix D row whose view opens the break-glass's items: whoever views payment batches sees break-glass (FM-8).
+const viewBatches = "Payment batches"
 
 // The audit object types whose change reruns the controls' checks (design D5).
 var (
 	onReviewLog = []string{"review_log_entry", "review_log_review", "team_mode"}
 	onRoles     = []string{"role_assignment", "user_membership", "team_mode", "sod_override"}
 	onAttest    = []string{"access_review_attestation", "user_membership"}
+	onGlass     = []string{"break_glass", "review_log_review"}
 )
 
 // The checks of the controls: p1-checks slice 4 (task 4.2).
@@ -51,6 +57,12 @@ var controlChecks = []Definition{
 			"(FR-CTL-06). A quarter is overdue 14 days after it ends without its attestation or a later one. Attest it there: it " +
 			"cannot be marked reviewed here.",
 		Rules: "FR-CTL-06, SEC-06", Owner: "owner", View: viewUsers, Triggers: onAttest, ReviewedIn: InAccessReview, Run: accessReviewOverdue},
+	{Key: "controls.break-glass-unreviewed", Ref: "C.2 #53", Area: "Controls", Worst: Error, Title: "Every break-glass is reviewed within 7 days of its end",
+		Explain: "While the other founder is unreachable, an Owner may use break-glass to release payment batches alone (FM-8). Another " +
+			"Owner reviews it, with what it released, once it ends; from 7 days after it ends the Accountant may review it instead. " +
+			"Unreviewed by then, it refuses the month's close (FM-4). Review it on Team mode, under Break-glass: it cannot be marked " +
+			"reviewed here.",
+		Rules: "FM-8, FM-4", Owner: "owner", View: viewBatches, Triggers: onGlass, ReviewedIn: InBreakGlass, Run: breakGlassUnreviewed},
 }
 
 // modeOf is the team mode in force and its version: Founder mode, version 0, until the first switch.
@@ -77,8 +89,8 @@ func reviewLogOverdue(ctx context.Context, u storage.UnitOfWork, e *Env) (Result
 	}
 	var items []Item
 	for _, x := range entries {
-		if x.ReviewedBy != nil || e.Now.Sub(x.LoggedAt) <= approval.ReviewOverdue {
-			continue
+		if x.Kind == storage.ReviewBreakGlass || x.ReviewedBy != nil || e.Now.Sub(x.LoggedAt) <= approval.ReviewOverdue {
+			continue // a break-glass has its own check, C.2 #53
 		}
 		items = append(items, Item{Kind: "review_log", ID: x.ID.String(), Label: x.Summary,
 			Detail: fmt.Sprintf("Logged %s, due for review by %s", day(x.LoggedAt), day(x.LoggedAt.Add(approval.ReviewOverdue)))})
@@ -199,4 +211,38 @@ func listed(words []string) string {
 		return strings.Join(words, "")
 	}
 	return strings.Join(words[:len(words)-1], ", ") + " and " + words[len(words)-1]
+}
+
+// C.2 #53: break-glasses unreviewed after their review's due date, 7 days after they ended, in any mode (FM-8, FM-4).
+func breakGlassUnreviewed(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
+	glass, err := u.BreakGlasses().List(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	if len(glass) == 0 {
+		return Fine("No break-glass was used"), nil
+	}
+	entries, err := u.ReviewLog().List(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	reviewed := map[string]bool{}
+	for _, x := range entries {
+		if x.Kind == storage.ReviewBreakGlass && x.ReviewedBy != nil {
+			reviewed[x.ObjectKey] = true
+		}
+	}
+	var items []Item
+	for _, g := range glass {
+		if reviewed[g.ID.String()] || e.Now.Before(breakglass.Due(g)) {
+			continue
+		}
+		items = append(items, Item{Kind: "break_glass", ID: g.ID.String(), Label: fmt.Sprintf("Break-glass of %s: %s", day(g.StartedAt), g.Reason),
+			Detail: fmt.Sprintf("Ended %s, due for review by %s", day(g.Ends()), day(breakglass.Due(g)))})
+	}
+	if len(items) == 0 {
+		return Fine("Every break-glass is reviewed, or not due for review yet"), nil
+	}
+	return Found(Error, items, fmt.Sprintf("%d break-glass(es) unreviewed 7 days after they ended", len(items)),
+		"Another Owner, or the Accountant, reviews each on Team mode"), nil
 }

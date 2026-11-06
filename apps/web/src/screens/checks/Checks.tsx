@@ -292,6 +292,10 @@ function Row({ c, canName, onName, canReview, onReview }: { c: Check; canName: b
                 <>
                   Reviewed only in <Link to="/review-log">the review log</Link>, which is the control itself.
                 </>
+              ) : c.reviewed_in === "break_glass" ? (
+                <>
+                  Reviewed only on <Link to="/break-glass">Break-glass</Link>, which is the control itself.
+                </>
               ) : (
                 <>
                   Attested only on <Link to="/settings/access-review">Settings › Access review</Link>, which is the control itself.

@@ -108,10 +108,11 @@
       "type": "string"
     },
     "reviewed_in": {
-      "description": "Where its items are reviewed when that is the control itself: they are never marked reviewed here (rev 0.165). Absent for the others.",
+      "description": "Where its items are reviewed when that is the control itself: they are never marked reviewed here (rev 0.165); break_glass is the break-glass review on Team mode (FM-8). Absent for the others.",
       "enum": [
         "review_log",
-        "access_review"
+        "access_review",
+        "break_glass"
       ],
       "examples": [
         "review_log"

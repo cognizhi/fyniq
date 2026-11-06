@@ -4,14 +4,14 @@ type: task
 title: Ask for, approve or reject a change that needs a second approver
 summary: Which changes wait for a second person, approving in steps from the Inbox, a person's bank account, withdrawing a request, and why one becomes void
 sources:
-  - docs/user-guide/approvals.md sha256:261ee0dbf2fffaaaa8ae693e384a2ae5260b2c0f2fc49cc13d0a273ce81814a8
+  - docs/user-guide/approvals.md sha256:bbb2c1aca32e7bdee52c0e30674787ab71d1d32b7e937e2e0dc342eb7337a6bc
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-28
+compiled_at: 2026-11-06
 aliases:
   - review log
   - weekly review
@@ -85,6 +85,7 @@ aliases:
 - Every high-risk change is logged when it is made: each change another person approved, each role or invitation the Owner set up alone before a second person joined, and, in Founder mode, each journal a founder posted alone at or below the self-approval threshold; another founder reviews the log weekly.
 - **Inbox → Weekly review** opens the **Review log** of unreviewed actions and who did each; tick the ones checked, select **Mark as reviewed**, add a note if wanted, and confirm.
 - Nobody reviews their own action; each is reviewed once; one still unreviewed 14 days after it was made shows as overdue in the Inbox and the review log.
+- A break-glass is listed too, but reviewed on **Break-glass** with each batch it released ([[settings.team-mode]]).
 
 (src: docs/user-guide/approvals.md#review-high-risk-actions)
 

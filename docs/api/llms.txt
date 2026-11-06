@@ -99,6 +99,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bills/{bill_id}/post-approval` (requestBillPost): Ask for approval to post a bill
 - `POST /v1/bills/{bill_id}/void` (voidBill): Void a posted bill
 - `POST /v1/bills/{bill_id}/void-approval` (requestBillVoid): Ask for approval to void a bill
+- `GET /v1/break-glass` (listBreakGlass): List the break-glasses
+- `POST /v1/break-glass` (startBreakGlass): Start break-glass
+- `GET /v1/break-glass/{break_glass_id}` (getBreakGlass): Get a break-glass
+- `POST /v1/break-glass/{break_glass_id}/end` (endBreakGlass): End break-glass now
+- `POST /v1/break-glass/{break_glass_id}/review` (reviewBreakGlass): Review a break-glass
 - `GET /v1/card-lines` (listCardLines): List the lines of your company cards
 - `POST /v1/card-lines/{line_id}/complete` (completeCardLine): Complete a line of your company card
 - `GET /v1/card-lines/{line_id}/evidence` (listCardLineEvidence): List the receipts of a line of your company card
@@ -413,6 +418,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/payment-batches/{batch_id}` (getPaymentBatch): Get a payment batch
 - `PUT /v1/payment-batches/{batch_id}` (replacePaymentBatch): Change a draft payment batch
 - `POST /v1/payment-batches/{batch_id}/approval` (requestPaymentBatchApproval): Ask for approval of a payment batch
+- `POST /v1/payment-batches/{batch_id}/break-glass-release` (releasePaymentBatchUnderBreakGlass): Release a payment batch under break-glass
 - `POST /v1/payment-batches/{batch_id}/cancel` (cancelPaymentBatch): Cancel an approved payment batch
 - `GET /v1/payment-batches/{batch_id}/file` (getPaymentBatchFile): Download a released batch's payment list
 - `POST /v1/payment-batches/{batch_id}/payments/{payment_id}/remittance-again` (sendRemittanceAgain): Send a failed remittance advice again

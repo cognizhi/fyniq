@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { Ban, CircleCheck, CircleX, Download, Hourglass, Mail, MailX, RotateCcw, Send, Trash2, TriangleAlert, Undo2, UserCheck } from "lucide-react";
+import { Ban, CircleCheck, CircleX, Download, Hourglass, Mail, MailX, RotateCcw, Send, Siren, Trash2, TriangleAlert, Undo2, UserCheck } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -14,6 +14,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { listBreakGlass } from "../approvals/BreakGlass";
 import { BatchStatus, batchName, batchPreparers, batchReleasers, type Batch } from "./PaymentBatches";
 
 type Payment = Batch["payments"][number];
@@ -275,6 +276,7 @@ export function PaymentBatchPage() {
   const release = helpText("batch.release");
   const download = helpText("batch.download");
   const cancel = helpText("batch.cancel");
+  const underGlass = helpText("batch.release-break-glass");
   const q = useQuery({
     queryKey: ["payment-batch", batchId],
     queryFn: async () => {
@@ -283,9 +285,12 @@ export function PaymentBatchPage() {
       return { batch: r.data, etag: etagOf(r.response) };
     },
   });
-  const refresh = () => queries.invalidateQueries({ queryKey: ["payment-batch", batchId] });
+  const refresh = () => Promise.all([queries.invalidateQueries({ queryKey: ["payment-batch", batchId] }), queries.invalidateQueries({ queryKey: ["break-glass"] })]);
   const b = q.data?.batch;
   const etag = q.data?.etag ?? "";
+  // A Payment releaser's own break-glass, while it is active, releases a batch waiting for approval alone (FM-8).
+  const glass = useQuery({ queryKey: ["break-glass"], queryFn: listBreakGlass, enabled: releases && (b?.status === "draft" || b?.status === "waiting") });
+  const mine = glass.data?.active?.started_by.id === session.user_id ? glass.data?.active : undefined;
   const released = b?.status === "released" || b?.status === "paid";
   const errors = (b?.checks ?? []).filter((c) => c.severity === "error");
 
@@ -357,6 +362,23 @@ export function PaymentBatchPage() {
               Open the approval
             </Link>
           )}
+          {(b.status === "draft" || b.status === "waiting") && mine && (
+            <Button
+              variant="destructive"
+              onClick={() =>
+                void run(
+                  "The batch was not released under break-glass",
+                  () => api.POST("/v1/payment-batches/{batch_id}/break-glass-release", { params: { path: { batch_id: b.id }, header: header() } }),
+                  "Released under break-glass: its payments are posted. Download the payment list and pay it in the bank; another Owner reviews the break-glass.",
+                )
+              }
+              disabled={busy || errors.length > 0}
+              title={underGlass.tooltip}
+            >
+              <Icon of={Siren} />
+              {underGlass.label}
+            </Button>
+          )}
           {b.status === "approved" && b.reapproval_needed && prepares && (
             <Button
               variant="primary"
@@ -394,6 +416,18 @@ export function PaymentBatchPage() {
         </div>
       </div>
       <ReviewBanner screen="payment-batch" />
+      {mine && (b.status === "draft" || b.status === "waiting") && (
+        <div className="fy-banner fy-banner--critical" role="note">
+          <Icon of={Siren} size={20} />
+          <div className="fy-banner__text">
+            <span className="fy-strong">Your break-glass is on until {dateTime(mine.expires_at)}</span>
+            <span className="fy-small">
+              You may release this batch without a second person: {mine.left.currency} {mine.left.amount} left. Never a director's repayment, yourself, or an account changed in
+              the last 30 days. <Link to="/break-glass">Break-glass</Link>
+            </span>
+          </div>
+        </div>
+      )}
       <p className="fy-small fy-secondary" role="status">
         {status}
       </p>

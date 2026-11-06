@@ -799,7 +799,7 @@ The system SHALL report as blocking, on every relevant change and nightly, a bre
 Source: PRD-001 §C.2
 
 #### Scenario: Break-glass not reviewed in time
-- **WHEN** a break-glass use has not been reviewed within FM-8's time limit
+- **WHEN** a break-glass use has not been reviewed 7 days after the break-glass ended (rev 0.175)
 - **THEN** the check reports ✖
 - **AND** the monthly close attestation is blocked (FM-4)
 

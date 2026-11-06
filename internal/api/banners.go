@@ -1,8 +1,10 @@
 package api
 
 import (
+	"cmp"
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/breakglass"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -216,6 +219,23 @@ func banners(ctx context.Context, u storage.UnitOfWork, p authn.Principal, now t
 			out = append(out, a)
 		}
 	}
+	// While a break-glass is active, every member sees it, and it cannot be dismissed (FM-8).
+	glass, err := u.BreakGlasses().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, g := range glass {
+		if !breakglass.Active(g, now) {
+			continue
+		}
+		names, err := memberNames(ctx, u, now)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, storage.Announcement{ID: g.ID, Severity: "critical", Link: "/break-glass", StartsAt: g.StartedAt, EndsAt: g.Ends(),
+			Message: fmt.Sprintf("Break-glass is on until %s Singapore time: %s may release payment batches waiting for approval without a second person (FM-8).",
+				singapore(g.Ends()), cmp.Or(names[g.StartedBy], "an Owner"))})
+	}
 	slices.SortStableFunc(out, func(x, y storage.Announcement) int {
 		if d := severityRank[x.Severity] - severityRank[y.Severity]; d != 0 {
 			return d
@@ -258,7 +278,8 @@ func registerBanners(a *API) {
 		Summary: "List the banners you see now",
 		Description: "The banners that show under the header for the caller now (FR-NTF-03): the organisation's, from its Owner or " +
 			"Administrator, and the installation's, from a Super admin, while they are live and meant for everyone or for one of the " +
-			"caller's roles, but those the caller dismissed. Critical first. Read-only; no side effects.",
+			"caller's roles, but those the caller dismissed; and, while an Owner's break-glass is active, a critical banner saying so to " +
+			"everyone, which cannot be dismissed (FM-8). Critical first. Read-only; no side effects.",
 	}, append([]string{CodeCursor}, locks...), func(ctx context.Context, in *bannerListInput) (*bannerListOutput, error) {
 		p, _ := authn.From(ctx)
 		out := BannerList{Items: []Banner{}}

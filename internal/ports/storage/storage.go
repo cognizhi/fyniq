@@ -116,6 +116,8 @@ type UnitOfWork interface {
 	// PayeeBankAccounts are the account numbers of the changes of vendors' bank details (FR-CT-03).
 	PayeeBankAccounts() PayeeBankAccounts
 	PaymentBatches() PaymentBatches
+	// BreakGlasses are the Owners' break-glasses and the batches each released (FM-8).
+	BreakGlasses() BreakGlasses
 	ShareIssues() ShareIssues
 	ConversionSteps() ConversionSteps
 	// ReportExports are the exports that run in the background (FR-RPT-09).
@@ -756,6 +758,10 @@ const (
 	CodeBatch = "STORAGE-BATCH-01"
 	// CodeBatchHeld: a bill or claim in an approved, unreleased batch is paid by the batch, not by hand (FR-BNK-12).
 	CodeBatchHeld = "STORAGE-BATCH-02"
+	// CodeBreakGlass: a break-glass starts in Founder mode, by an Owner, for 24 hours, never while an earlier one waits for
+	// its review, and only ends, once, inside its window; a use is its Owner's, inside its window and within its cap, of a
+	// batch waiting for approval, and never changes (FM-8).
+	CodeBreakGlass = "STORAGE-BREAKGLASS-01"
 	// CodeShareIssue: the register of share issues is append-only, its classes share capital and its holders directors
 	// or shareholders, and share capital moves only with it (FR-EQ-08, INV-13).
 	CodeShareIssue = "STORAGE-SHARE-01"

@@ -14,7 +14,8 @@ type PaymentBatchRelease struct {
 	ID           uuid.UUID
 	BatchID      uuid.UUID
 	BatchVersion int
-	ApprovalID   uuid.UUID
+	ApprovalID   uuid.UUID // the approval it was released under; uuid.Nil under break-glass
+	BreakGlassID uuid.UUID // the break-glass it was released under (FM-8); uuid.Nil under an approval
 	ReleasedBy   uuid.UUID
 	ReleasedAt   time.Time
 	Writer       string // the file's writer and its version, such as payment-list@1

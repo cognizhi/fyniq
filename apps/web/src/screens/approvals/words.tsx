@@ -68,6 +68,7 @@ const objects: Record<string, string> = {
   approval_policy: "Approval policy",
   statutory_pack: "Statutory pack",
   team_mode: "Team mode",
+  break_glass: "Break-glass",
   period: "Accounting period",
   journal: "Journal",
   opening_balance: "Opening balances",

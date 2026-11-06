@@ -314,6 +314,28 @@ bill_payment_plan | bill_id | uuid | not null |
 bill_payment_plan | planned_on | date | null | 
 bill_payment_plan | recorded_by | text | not null | 
 bill_payment_plan | recorded_at | timestamp with time zone | not null | now()
+break_glass | organisation_id | uuid | not null | current_org()
+break_glass | id | uuid | not null | uuidv7()
+break_glass | started_by | uuid | not null | 
+break_glass | reason | text | not null | 
+break_glass | started_at | timestamp with time zone | not null | 
+break_glass | expires_at | timestamp with time zone | not null | 
+break_glass | ended_at | timestamp with time zone | null | 
+break_glass | ended_by | uuid | null | 
+break_glass | currency | text | not null | 
+break_glass | minor_units | smallint | not null | 
+break_glass | cap | numeric(20,4) | not null | 
+break_glass | version | integer | not null | 1
+break_glass_use | organisation_id | uuid | not null | current_org()
+break_glass_use | id | uuid | not null | uuidv7()
+break_glass_use | break_glass_id | uuid | not null | 
+break_glass_use | batch_id | uuid | not null | 
+break_glass_use | batch_version | integer | not null | 
+break_glass_use | used_by | uuid | not null | 
+break_glass_use | used_at | timestamp with time zone | not null | 
+break_glass_use | currency | text | not null | 
+break_glass_use | minor_units | smallint | not null | 
+break_glass_use | total | numeric(20,4) | not null | 
 capture_address | organisation_id | uuid | not null | current_org()
 capture_address | id | uuid | not null | uuidv7()
 capture_address | local_part | text | not null | 
@@ -1045,7 +1067,7 @@ payment_batch_release | organisation_id | uuid | not null | current_org()
 payment_batch_release | id | uuid | not null | uuidv7()
 payment_batch_release | batch_id | uuid | not null | 
 payment_batch_release | batch_version | integer | not null | 
-payment_batch_release | approval_id | uuid | not null | 
+payment_batch_release | approval_id | uuid | null | 
 payment_batch_release | released_by | uuid | not null | 
 payment_batch_release | released_at | timestamp with time zone | not null | 
 payment_batch_release | writer | text | not null | 
@@ -1057,6 +1079,7 @@ payment_batch_release | payments | integer | not null |
 payment_batch_release | currency | text | not null | 
 payment_batch_release | minor_units | smallint | not null | 
 payment_batch_release | total | numeric(20,4) | not null | 
+payment_batch_release | break_glass_id | uuid | null | 
 period | organisation_id | uuid | not null | current_org()
 period | id | uuid | not null | uuidv7()
 period | starts_on | date | not null | 
@@ -1913,6 +1936,48 @@ bill_payment_plan | bill_payment_plan_recorded_at_not_null | NOT NULL recorded_a
 bill_payment_plan | bill_payment_plan_recorded_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 bill_payment_plan | bill_payment_plan_recorded_by_not_null | NOT NULL recorded_by
 bill_payment_plan | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+break_glass | break_glass_cap_not_null | NOT NULL cap
+break_glass | break_glass_cap_scale | CHECK (((cap <> 'NaN'::numeric) AND (cap = trunc(cap, (minor_units)::integer)) AND (cap >= (0)::numeric)))
+break_glass | break_glass_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+break_glass | break_glass_currency_not_null | NOT NULL currency
+break_glass | break_glass_ended | CHECK ((((ended_at IS NULL) = (ended_by IS NULL)) AND ((ended_at IS NULL) OR ((ended_at >= started_at) AND (ended_at <= expires_at)))))
+break_glass | break_glass_ended_by_fkey | FOREIGN KEY (ended_by) REFERENCES app_user(user_id)
+break_glass | break_glass_expires_at_not_null | NOT NULL expires_at
+break_glass | break_glass_id_not_null | NOT NULL id
+break_glass | break_glass_logged | TRIGGER DEFERRABLE INITIALLY DEFERRED
+break_glass | break_glass_minor_units | CHECK (((minor_units >= 0) AND (minor_units <= 4)))
+break_glass | break_glass_minor_units_not_null | NOT NULL minor_units
+break_glass | break_glass_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+break_glass | break_glass_organisation_id_not_null | NOT NULL organisation_id
+break_glass | break_glass_pkey | PRIMARY KEY (organisation_id, id)
+break_glass | break_glass_reason_length | CHECK (((length(btrim(reason)) >= 1) AND (length(btrim(reason)) <= 500)))
+break_glass | break_glass_reason_not_null | NOT NULL reason
+break_glass | break_glass_started_at_not_null | NOT NULL started_at
+break_glass | break_glass_started_by_fkey | FOREIGN KEY (started_by) REFERENCES app_user(user_id)
+break_glass | break_glass_started_by_not_null | NOT NULL started_by
+break_glass | break_glass_version_not_null | NOT NULL version
+break_glass | break_glass_version_positive | CHECK ((version > 0))
+break_glass | break_glass_window | CHECK ((expires_at = (started_at + '24:00:00'::interval)))
+break_glass | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+break_glass_use | break_glass_use_batch_id_not_null | NOT NULL batch_id
+break_glass_use | break_glass_use_batch_once | UNIQUE (organisation_id, batch_id)
+break_glass_use | break_glass_use_batch_version_not_null | NOT NULL batch_version
+break_glass_use | break_glass_use_break_glass_fkey | FOREIGN KEY (organisation_id, break_glass_id) REFERENCES break_glass(organisation_id, id)
+break_glass_use | break_glass_use_break_glass_id_not_null | NOT NULL break_glass_id
+break_glass_use | break_glass_use_by_fkey | FOREIGN KEY (used_by) REFERENCES app_user(user_id)
+break_glass_use | break_glass_use_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+break_glass_use | break_glass_use_currency_not_null | NOT NULL currency
+break_glass_use | break_glass_use_id_not_null | NOT NULL id
+break_glass_use | break_glass_use_minor_units | CHECK (((minor_units >= 0) AND (minor_units <= 4)))
+break_glass_use | break_glass_use_minor_units_not_null | NOT NULL minor_units
+break_glass_use | break_glass_use_organisation_id_not_null | NOT NULL organisation_id
+break_glass_use | break_glass_use_pkey | PRIMARY KEY (organisation_id, id)
+break_glass_use | break_glass_use_total_not_null | NOT NULL total
+break_glass_use | break_glass_use_total_scale | CHECK (((total <> 'NaN'::numeric) AND (total = trunc(total, (minor_units)::integer)) AND (total > (0)::numeric)))
+break_glass_use | break_glass_use_used_at_not_null | NOT NULL used_at
+break_glass_use | break_glass_use_used_by_not_null | NOT NULL used_by
+break_glass_use | break_glass_use_version_fkey | FOREIGN KEY (organisation_id, batch_id, batch_version) REFERENCES document_version(organisation_id, document_id, version)
+break_glass_use | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 capture_address | capture_address_bank_organisation | CHECK (((kind <> 'bank'::text) OR (user_id IS NULL)))
 capture_address | capture_address_by_format | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (retired_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
 capture_address | capture_address_created_at_not_null | NOT NULL created_at
@@ -3052,9 +3117,10 @@ payment_batch_payment | payment_batch_payment_release_fkey | FOREIGN KEY (organi
 payment_batch_payment | payment_batch_payment_release_id_not_null | NOT NULL release_id
 payment_batch_payment | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 payment_batch_release | payment_batch_release_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES approval_request(organisation_id, id)
-payment_batch_release | payment_batch_release_approval_id_not_null | NOT NULL approval_id
+payment_batch_release | payment_batch_release_approved_once | CHECK ((num_nonnulls(approval_id, break_glass_id) = 1))
 payment_batch_release | payment_batch_release_batch_id_not_null | NOT NULL batch_id
 payment_batch_release | payment_batch_release_batch_version_not_null | NOT NULL batch_version
+payment_batch_release | payment_batch_release_break_glass_fkey | FOREIGN KEY (organisation_id, break_glass_id) REFERENCES break_glass(organisation_id, id)
 payment_batch_release | payment_batch_release_by_fkey | FOREIGN KEY (released_by) REFERENCES app_user(user_id)
 payment_batch_release | payment_batch_release_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
 payment_batch_release | payment_batch_release_currency_not_null | NOT NULL currency
@@ -3334,7 +3400,7 @@ review_log_entry | review_log_entry_approval_fkey | FOREIGN KEY (organisation_id
 review_log_entry | review_log_entry_approval_kind | CHECK (((kind = 'approved_change'::text) = (approval_id IS NOT NULL)))
 review_log_entry | review_log_entry_approval_once | UNIQUE (organisation_id, approval_id)
 review_log_entry | review_log_entry_id_not_null | NOT NULL id
-review_log_entry | review_log_entry_kind_known | CHECK ((kind = ANY (ARRAY['approved_change'::text, 'founder_bootstrap'::text, 'self_approved'::text, 'scheduled_issue'::text, 'auto_reconciled'::text, 'release_conflict'::text])))
+review_log_entry | review_log_entry_kind_known | CHECK ((kind = ANY (ARRAY['approved_change'::text, 'founder_bootstrap'::text, 'self_approved'::text, 'scheduled_issue'::text, 'auto_reconciled'::text, 'release_conflict'::text, 'break_glass'::text])))
 review_log_entry | review_log_entry_kind_not_null | NOT NULL kind
 review_log_entry | review_log_entry_logged_at_not_null | NOT NULL logged_at
 review_log_entry | review_log_entry_object_key_not_null | NOT NULL object_key
@@ -3654,6 +3720,8 @@ CREATE INDEX bank_signal_pending ON fyniq.bank_signal USING btree (organisation_
 CREATE INDEX bank_statement_account_period ON fyniq.bank_statement USING btree (organisation_id, money_account_id, period_to)
 CREATE INDEX bank_transfer_in_transit ON fyniq.bank_transfer USING btree (organisation_id, to_account_id) WHERE ((from_line_id IS NULL) OR (to_line_id IS NULL))
 CREATE INDEX bill_payment_plan_bill ON fyniq.bill_payment_plan USING btree (organisation_id, bill_id, recorded_at)
+CREATE INDEX break_glass_started ON fyniq.break_glass USING btree (organisation_id, started_at)
+CREATE INDEX break_glass_use_break_glass ON fyniq.break_glass_use USING btree (organisation_id, break_glass_id)
 CREATE INDEX capture_sender_latest ON fyniq.capture_sender USING btree (organisation_id, address, decided_at)
 CREATE INDEX check_owner_person ON fyniq.check_owner USING btree (organisation_id, person_user_id)
 CREATE INDEX check_run_latest ON fyniq.check_run USING btree (organisation_id, run_trigger, finished_at DESC)
@@ -3754,6 +3822,9 @@ CREATE UNIQUE INDEX bank_transfer_from_line ON fyniq.bank_transfer USING btree (
 CREATE UNIQUE INDEX bank_transfer_pkey ON fyniq.bank_transfer USING btree (organisation_id, id)
 CREATE UNIQUE INDEX bank_transfer_to_line ON fyniq.bank_transfer USING btree (organisation_id, to_line_id) WHERE ((to_line_id IS NOT NULL) AND (undone_at IS NULL))
 CREATE UNIQUE INDEX bill_payment_plan_pkey ON fyniq.bill_payment_plan USING btree (organisation_id, id)
+CREATE UNIQUE INDEX break_glass_pkey ON fyniq.break_glass USING btree (organisation_id, id)
+CREATE UNIQUE INDEX break_glass_use_batch_once ON fyniq.break_glass_use USING btree (organisation_id, batch_id)
+CREATE UNIQUE INDEX break_glass_use_pkey ON fyniq.break_glass_use USING btree (organisation_id, id)
 CREATE UNIQUE INDEX capture_address_live_owner ON fyniq.capture_address USING btree (organisation_id, kind, COALESCE(user_id, '00000000-0000-0000-0000-000000000000'::uuid)) WHERE (retired_at IS NULL)
 CREATE UNIQUE INDEX capture_address_pkey ON fyniq.capture_address USING btree (organisation_id, id)
 CREATE UNIQUE INDEX capture_name_pkey ON fyniq.capture_name USING btree (local_part)
@@ -3934,6 +4005,7 @@ CREATE UNIQUE INDEX webauthn_credential_pkey ON fyniq.webauthn_credential USING 
 CREATE UNIQUE INDEX withholding_decision_pkey ON fyniq.withholding_decision USING btree (organisation_id, id)
 
 ## triggers
+CREATE CONSTRAINT TRIGGER break_glass_logged AFTER INSERT ON fyniq.break_glass DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION break_glass_logged()
 CREATE CONSTRAINT TRIGGER claimant_bank_change_approved AFTER INSERT OR UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.type = 'claimant_bank_change'::text) AND (new.status = 'posted'::text))) EXECUTE FUNCTION payee_bank_change_approved()
 CREATE CONSTRAINT TRIGGER contact_member_approved AFTER UPDATE OF member_user_id ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((new.member_user_id IS DISTINCT FROM old.member_user_id)) EXECUTE FUNCTION contact_member_approved()
 CREATE CONSTRAINT TRIGGER director_fee_approved AFTER INSERT OR UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.type = 'director_fee'::text) AND (new.status = 'posted'::text))) EXECUTE FUNCTION director_fee_approved()
@@ -3956,6 +4028,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bank_statement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_statement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bill_payment_plan DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'bill_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.break_glass_use DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('break_glass', 'break_glass_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.capture_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_sender', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.check_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('check_review', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.check_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('check_state', 'id')
@@ -4010,6 +4083,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_rec
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_rule DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_rule', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_signal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_signal', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_transfer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_transfer', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.break_glass DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('break_glass', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.capture_address DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_address', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.check_owner DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('check_owner', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.claim_category DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('claim_category', 'id')
@@ -4086,6 +4160,10 @@ CREATE TRIGGER bank_signal_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank
 CREATE TRIGGER bank_statement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_statement FOR EACH ROW EXECUTE FUNCTION bank_statement_guard()
 CREATE TRIGGER bank_transfer_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_transfer FOR EACH ROW EXECUTE FUNCTION bank_transfer_guard()
 CREATE TRIGGER bill_payment_plan_immutable BEFORE DELETE OR UPDATE ON fyniq.bill_payment_plan FOR EACH ROW EXECUTE FUNCTION bill_payment_plan_immutable()
+CREATE TRIGGER break_glass_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.break_glass FOR EACH ROW EXECUTE FUNCTION break_glass_guard()
+CREATE TRIGGER break_glass_no_truncate BEFORE TRUNCATE ON fyniq.break_glass FOR EACH STATEMENT EXECUTE FUNCTION break_glass_guard()
+CREATE TRIGGER break_glass_use_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.break_glass_use FOR EACH ROW EXECUTE FUNCTION break_glass_use_guard()
+CREATE TRIGGER break_glass_use_no_truncate BEFORE TRUNCATE ON fyniq.break_glass_use FOR EACH STATEMENT EXECUTE FUNCTION break_glass_use_guard()
 CREATE TRIGGER capture_address_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.capture_address FOR EACH ROW EXECUTE FUNCTION capture_address_guard()
 CREATE TRIGGER capture_address_no_truncate BEFORE TRUNCATE ON fyniq.capture_address FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER capture_sender_guard BEFORE DELETE OR UPDATE ON fyniq.capture_sender FOR EACH ROW EXECUTE FUNCTION capture_sender_guard()
@@ -4286,6 +4364,8 @@ bank_signal | tenant_isolation | * | (organisation_id = current_org()) | (organi
 bank_statement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_transfer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bill_payment_plan | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+break_glass | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+break_glass_use | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_address | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 capture_sender | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 check_owner | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -4415,6 +4495,9 @@ bank_transfer_guard() → trigger | security invoker | v | search_path=pg_catalo
 beat(p_name text, p_at timestamp with time zone, p_detail text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 464af91fa7b0d569c10c9b291c9d6460
 bill_payment_plan_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d53bcb2c3cc4abaeb7eb39ce991bc40
 bootstrap_installation_connectors(p_rows jsonb, p_at timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | aaf122d42b55f7004f7bf7ec42326134
+break_glass_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 962a60f5cbf377604e7f27ec16e6b71d
+break_glass_logged() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f70eaef3b0d084ec8e9d0c8a089609f8
+break_glass_use_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e1ad9c7c29fcd99d1d82045f444fa13b
 capture_address_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 542a3470e64d74a54703cab8f90e82c9
 capture_route(p_local text) → TABLE(organisation_id uuid, address_id uuid, user_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 172d93473f532f3e8728708678490889
 capture_sender_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d3ca1a62ec41cff9d93981758a2f74c
@@ -4533,10 +4616,10 @@ outbox_guard() → trigger | security invoker | v | search_path=pg_catalog, fyni
 outbox_no_delete() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1366cfa8290e64e2804d4cb992c01d1f
 payee_bank_account_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 39c08a58c18c27edaaad10a4db9b16fe
 payee_bank_change_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ac1d1f09753dc87e452c1a8973aa5123
-payment_batch_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 50eb5cd820c5342dedae9a0668929e84
+payment_batch_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2a9eadd428be7baa7704a33032e19fe4
 payment_batch_holds() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e828989f43ccadc695506c2496db8c0a
 payment_batch_payment_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 763964fa08a7cf056831339660d84231
-payment_batch_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ae4685e2e7cb02d1878b021352e70f08
+payment_batch_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0c2e26331f52a0ca299b3ab3aaa9b534
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bd7af6699cf1474f70577dbea9a60dc6
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
@@ -4561,7 +4644,7 @@ require_installation_audit() → trigger | security definer | v | search_path=pg
 require_org() → uuid | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | e4d10f54e6dd65070850532ca0c115f5
 require_passkey_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 98f44603b09487ab03360525adf3b07c
 require_super_admin(p_user uuid) → void | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c817be869461445bf3e2ff0f94e5b146
-review_log_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ba89ef09634a7863076fa4da1d77bebb
+review_log_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d14270820b2454b3e0adc48a2572e959
 role_assignment_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 802ca214ce4476cbc77f0a6d8d36eb9e
 sales_reminder_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cbd827bdca43d21c794de23c30d61fd7
 scheduled_invoice_email_sent() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7b1f59fc29d82c1dc9f6f4ae5afc9272

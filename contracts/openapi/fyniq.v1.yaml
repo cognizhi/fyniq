@@ -4946,6 +4946,243 @@ components:
       required:
         - residence
       type: object
+    BreakGlass:
+      additionalProperties: false
+      properties:
+        cap:
+          $ref: "#/components/schemas/Money"
+          description: "What it may release in all: the break-glass payment cap when it started."
+        ended_at:
+          description: When an Owner ended it sooner; absent unless one did.
+          examples:
+            - "2026-11-06T09:00:00Z"
+          format: date-time
+          type: string
+        ended_by:
+          $ref: "#/components/schemas/Person"
+          description: The Owner who ended it sooner.
+        expires_at:
+          description: "When it expires: 24 hours after it started (FM-8)."
+          examples:
+            - "2026-11-07T01:00:00Z"
+          format: date-time
+          type: string
+        id:
+          description: The break-glass's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+          format: uuid
+          type: string
+        left:
+          $ref: "#/components/schemas/Money"
+          description: What it may still release.
+        overdue:
+          description: "true while it is unreviewed after its review's due date: Checks shows it as cannot post until fixed (C.2 #53), which refuses the close (FM-4)."
+          examples:
+            - false
+          type: boolean
+        reason:
+          description: Why they started it.
+          examples:
+            - Wei Jie is on a flight until Friday; salaries are due tomorrow
+          type: string
+        released:
+          $ref: "#/components/schemas/Money"
+          description: What it released.
+        releases:
+          description: The batches it released, oldest first.
+          items:
+            $ref: "#/components/schemas/BreakGlassRelease"
+          type: array
+        review:
+          $ref: "#/components/schemas/BreakGlassReviewed"
+          description: Its review, once given.
+        review_due_at:
+          description: "When its review is due: 7 days after it ends. Until then only another Owner reviews it; from then the Accountant may too."
+          examples:
+            - "2026-11-14T01:00:00Z"
+          format: date-time
+          type: string
+        started_at:
+          description: When it started.
+          examples:
+            - "2026-11-06T01:00:00Z"
+          format: date-time
+          type: string
+        started_by:
+          $ref: "#/components/schemas/Person"
+          description: "The Owner who started it: the only one who releases under it."
+        status:
+          description: active for 24 hours from its start unless an Owner ends it sooner; ended after.
+          enum:
+            - active
+            - ended
+          examples:
+            - active
+          type: string
+        version:
+          description: "Its version: send it as If-Match to end it."
+          examples:
+            - 1
+          format: int64
+          type: integer
+        you_may_end:
+          description: true when you, an Owner, may end it now.
+          examples:
+            - false
+          type: boolean
+        you_may_review:
+          description: true when you may review it now.
+          examples:
+            - false
+          type: boolean
+      required:
+        - id
+        - status
+        - started_by
+        - reason
+        - started_at
+        - expires_at
+        - cap
+        - released
+        - left
+        - releases
+        - review_due_at
+        - overdue
+        - you_may_end
+        - you_may_review
+        - version
+      type: object
+    BreakGlassBlock:
+      additionalProperties: false
+      properties:
+        code:
+          description: The rule.
+          examples:
+            - BREAKGLASS-02
+          type: string
+        fix:
+          description: What to do.
+          examples:
+            - Ask another Owner to review it
+          type: string
+        message:
+          description: What stops it, in plain words.
+          examples:
+            - An earlier break-glass waits for its review.
+          type: string
+      required:
+        - code
+        - message
+        - fix
+      type: object
+    BreakGlassPage:
+      additionalProperties: false
+      properties:
+        active:
+          $ref: "#/components/schemas/BreakGlass"
+          description: The break-glass active now; absent when none is.
+        blocked:
+          $ref: "#/components/schemas/BreakGlassBlock"
+          description: Why none may start now, whoever asks; absent when one may.
+        cap:
+          $ref: "#/components/schemas/Money"
+          description: "The break-glass payment cap now: what the next break-glass may release (setting approvals.break_glass_cap)."
+        items:
+          description: Every break-glass, newest first.
+          items:
+            $ref: "#/components/schemas/BreakGlass"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTI4ZjZlIn0
+          type: string
+        you_may_start:
+          description: true when you, an Owner, may start one now.
+          examples:
+            - false
+          type: boolean
+      required:
+        - items
+        - cap
+        - you_may_start
+      type: object
+    BreakGlassRelease:
+      additionalProperties: false
+      properties:
+        batch_id:
+          description: The batch.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10
+          format: uuid
+          type: string
+        number:
+          description: Its number.
+          examples:
+            - PB-0004
+          type: string
+        released_at:
+          description: When it was released.
+          examples:
+            - "2026-11-06T02:00:00Z"
+          format: date-time
+          type: string
+        total:
+          $ref: "#/components/schemas/Money"
+          description: What it paid.
+      required:
+        - batch_id
+        - number
+        - total
+        - released_at
+      type: object
+    BreakGlassReview:
+      additionalProperties: false
+      properties:
+        note:
+          description: What you noted.
+          examples:
+            - Checked both payments against the bills; fine
+          maxLength: 500
+          type: string
+      type: object
+    BreakGlassReviewed:
+      additionalProperties: false
+      properties:
+        note:
+          description: What they noted.
+          examples:
+            - Checked both payments against the bills; fine
+          type: string
+        reviewed_at:
+          description: When.
+          examples:
+            - "2026-11-09T02:00:00Z"
+          format: date-time
+          type: string
+        reviewed_by:
+          $ref: "#/components/schemas/Person"
+          description: "Who reviewed it: another Owner, or the Accountant."
+      required:
+        - reviewed_by
+        - reviewed_at
+      type: object
+    BreakGlassStart:
+      additionalProperties: false
+      properties:
+        reason:
+          description: "Why: who is unreachable, and what must be paid. Every Owner and the Accountant read it."
+          examples:
+            - Wei Jie is on a flight until Friday; salaries are due tomorrow
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - reason
+      type: object
     BulkResult:
       additionalProperties: false
       properties:
@@ -6075,10 +6312,11 @@ components:
             - "C.1 #2"
           type: string
         reviewed_in:
-          description: "Where its items are reviewed when that is the control itself: they are never marked reviewed here (rev 0.165). Absent for the others."
+          description: "Where its items are reviewed when that is the control itself: they are never marked reviewed here (rev 0.165); break_glass is the break-glass review on Team mode (FM-8). Absent for the others."
           enum:
             - review_log
             - access_review
+            - break_glass
           examples:
             - review_log
           type: string
@@ -19987,9 +20225,15 @@ components:
       additionalProperties: false
       properties:
         approval_id:
-          description: The approval it was released under.
+          description: The approval it was released under; absent when it was released under break-glass.
           examples:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20
+          format: uuid
+          type: string
+        break_glass_id:
+          description: The break-glass it was released under, which approved it instead of a second person (FM-8); absent when an approval did.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c30
           format: uuid
           type: string
         file_name:
@@ -20024,7 +20268,6 @@ components:
       required:
         - released_by
         - released_at
-        - approval_id
         - writer
         - file_name
         - sha256
@@ -23450,6 +23693,12 @@ components:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
           format: uuid
           type: string
+        due_at:
+          description: "A break-glass's review's due date: 7 days after it ended (FM-8). Absent for other entries."
+          examples:
+            - "2026-11-14T01:00:00Z"
+          format: date-time
+          type: string
         id:
           description: The entry's ID.
           examples:
@@ -23457,13 +23706,15 @@ components:
           format: uuid
           type: string
         kind:
-          description: "approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14)."
+          description: "approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14); release_conflict: in Founder mode, a payment batch released by who prepared or approved it or a payee's account change (SOD-1, SOD-2); break_glass: an Owner's break-glass, reviewed with what it released through reviewBreakGlass once it has ended (FM-8)."
           enum:
             - approved_change
             - founder_bootstrap
             - self_approved
             - scheduled_issue
             - auto_reconciled
+            - release_conflict
+            - break_glass
           examples:
             - approved_change
           type: string
@@ -23489,7 +23740,7 @@ components:
             - organisation_setting
           type: string
         overdue:
-          description: "true when it is still unreviewed 14 days after it executed, in Founder mode: Checks shows it as a warning (FM-3)."
+          description: "true when it is still unreviewed 14 days after it executed, in Founder mode: Checks shows it as a warning (FM-3). A break-glass is overdue from its due date, in any mode, and Checks shows it as cannot post until fixed (C.2 #53)."
           examples:
             - false
           type: boolean
@@ -23516,7 +23767,7 @@ components:
             - Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20
           type: string
         you_may_review:
-          description: "true when you may review it now: it is unreviewed, you did not act on it and you hold the approval right on what it changed."
+          description: "true when you may review it now: it is unreviewed, you did not act on it and you hold the approval right on what it changed. Always false for a break-glass, reviewed through reviewBreakGlass."
           examples:
             - true
           type: boolean
@@ -38927,7 +39178,7 @@ paths:
         right: P
   /v1/banners:
     get:
-      description: "The banners that show under the header for the caller now (FR-NTF-03): the organisation's, from its Owner or Administrator, and the installation's, from a Super admin, while they are live and meant for everyone or for one of the caller's roles, but those the caller dismissed. Critical first. Read-only; no side effects."
+      description: "The banners that show under the header for the caller now (FR-NTF-03): the organisation's, from its Owner or Administrator, and the installation's, from a Super admin, while they are live and meant for everyone or for one of the caller's roles, but those the caller dismissed; and, while an Owner's break-glass is active, a critical banner saying so to everyone, which cannot be dismissed (FM-8). Critical first. Read-only; no side effects."
       operationId: listBanners
       parameters:
         - description: How many items per page, up to 500.
@@ -43585,6 +43836,872 @@ paths:
       x-fyniq-permission:
         capability: Bills, vendor credits
         right: P
+  /v1/break-glass:
+    get:
+      description: "Every break-glass of the organisation, newest first (FM-8; PRD-001 rev 0.175): who started it and why, its 24 hours, its cap and what it released, its end, and its review, due 7 days after it ends. Also the one active now, the cap the next one would start with, and whether one may start: in Founder mode only, and never while an earlier one waits for its review. For whoever views payment batches; never the AI. Read-only; no side effects."
+      operationId: listBreakGlass
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BreakGlassPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the break-glasses
+      tags:
+        - Members
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Payment batches
+        right: V
+    post:
+      description: "Starts a break-glass for 24 hours (FM-8; PRD-001 rev 0.175): an Owner, stepped up in the last 5 minutes, with a reason, in Founder mode only, when the other founder is unreachable. While it is active they release a payment batch still waiting for approval without a second person (releasePaymentBatchUnderBreakGlass), within the break-glass payment cap as it stands now. Nothing else changes: every action FM-1 holds still waits for a second person. Refused while an earlier break-glass waits for its review, so it is never extended or renewed (BREAKGLASS-02), and outside Founder mode (BREAKGLASS-01); the database refuses both too. Side effects: the break-glass, its review log entry (FM-3), its banner on every page while it is active, and an email at once to every Owner and the Accountant. Idempotent with Idempotency-Key; Prefer: return=preview checks it and starts nothing."
+      operationId: startBreakGlass
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BreakGlassStart"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BreakGlass"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BreakGlass"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The break-glass's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BREAKGLASS-01` Break-glass is for Founder mode only; `BREAKGLASS-02` An earlier break-glass waits for its review; `STORAGE-BREAKGLASS-01` Break-glass does not allow that; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Start break-glass
+      tags:
+        - Members
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - BREAKGLASS-01
+        - BREAKGLASS-02
+        - STORAGE-BREAKGLASS-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Users, roles, team mode
+        note: An Owner signed in to Fyniq who passed step-up in the last 5 minutes; Founder mode only, and never while an earlier break-glass waits for its review (FM-8).
+        right: A
+  /v1/break-glass/{break_glass_id}:
+    get:
+      description: A break-glass with what it released and its review (FM-8), and its ETag. For whoever views payment batches; never the AI. Read-only; no side effects.
+      operationId: getBreakGlass
+      parameters:
+        - description: The break-glass's ID.
+          in: path
+          name: break_glass_id
+          required: true
+          schema:
+            description: The break-glass's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BreakGlass"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The break-glass's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              schema:
+                description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get a break-glass
+      tags:
+        - Members
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Payment batches
+        right: V
+  /v1/break-glass/{break_glass_id}/end:
+    post:
+      description: "Ends an active break-glass before its 24 hours (FM-8): an Owner signed in to Fyniq, such as the founder who used it or the other one, back. It releases nothing more, and its review may be given from now; it is due 7 days later. BREAKGLASS-09 when it has ended already. Side effects: the end, audited, and an email at once to every Owner and the Accountant. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and ends nothing."
+      operationId: endBreakGlass
+      parameters:
+        - description: The break-glass's ID.
+          in: path
+          name: break_glass_id
+          required: true
+          schema:
+            description: The break-glass's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BreakGlass"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The break-glass's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BREAKGLASS-09` The break-glass has ended already; `STORAGE-BREAKGLASS-01` Break-glass does not allow that; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: End break-glass now
+      tags:
+        - Members
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - BREAKGLASS-09
+        - STORAGE-BREAKGLASS-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Users, roles, team mode
+        note: An Owner signed in to Fyniq (FM-8).
+        right: A
+  /v1/break-glass/{break_glass_id}/review:
+    post:
+      description: "Records your review of a break-glass and what it released (FM-8, FM-3; PRD-001 rev 0.175), with an optional note, once: after it has ended, by another Owner at any time, or by the Accountant from its review's due date, 7 days after it ended, the other founder being still away; never by the Owner who used it (BREAKGLASS-10, BREAKGLASS-11; the database refuses a review before it ends or by its Owner). Its review clears its line on Checks (C.2 #53) and lets another break-glass start. Needs a person signed in to Fyniq; never the AI. Side effects: the review on its review log entry, audited. Needs If-Match with its ETag: the review is of the break-glass as read. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: reviewBreakGlass
+      parameters:
+        - description: The break-glass's ID.
+          in: path
+          name: break_glass_id
+          required: true
+          schema:
+            description: The break-glass's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BreakGlassReview"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BreakGlass"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The break-glass's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `BREAKGLASS-11` You may not review this break-glass."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-14` Reviewed already; `BREAKGLASS-10` The break-glass is reviewed once it has ended; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Review a break-glass
+      tags:
+        - Members
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - APR-14
+        - BREAKGLASS-10
+        - BREAKGLASS-11
+        - STORAGE-APPROVAL-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: (approvals)
+        note: "Each approval's own policy decides: the Appendix D row of the object it changes. Never the AI (§9.6). Once it has ended: another Owner, or the Accountant from its review's due date, 7 days after it ended; never the Owner who used it, and never the AI (FM-8)."
+        right: V
   /v1/card-lines:
     get:
       description: "The lines of the company cards the caller holds (FR-AP-18), newest first, a page at a time, or only those still waiting to be completed: each with what completing it made. Nobody sees another holder's card lines here; finance sees them in Banking. Read-only; no side effects."
@@ -98467,6 +99584,250 @@ paths:
       x-fyniq-permission:
         capability: Payment batches
         right: C
+  /v1/payment-batches/{batch_id}/break-glass-release:
+    post:
+      description: "Releases a batch still waiting for approval without a second person, under your active break-glass (FM-8; PRD-001 rev 0.175): the Owner who started it, holding the Payment releaser's right, stepped up in the last 5 minutes. The break-glass approves the batch instead of a second person; it is numbered and released as releasePaymentBatch releases one, and a request waiting for its approval is voided. Every check of the batch runs again. Refused when it repays a director or shareholder (BREAKGLASS-05), pays you, as a claimant or a vendor you sign in as (BREAKGLASS-06, FM-9), pays a bank account that came into force in the last 30 days (BREAKGLASS-07), or would take the break-glass's releases above its cap (BREAKGLASS-08), each problem listed at once; and when you have no active break-glass (BREAKGLASS-03) or the batch is not waiting for approval (BREAKGLASS-04). The database refuses a use outside the window, by anyone else or above the cap. Side effects, in one transaction: the use, the batch's number and approval, the release with its payments and payment list as releasePaymentBatch writes them, and an email at once to every Owner and the Accountant. Needs If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and releases nothing."
+      operationId: releasePaymentBatchUnderBreakGlass
+      parameters:
+        - description: The batch's ID.
+          in: path
+          name: batch_id
+          required: true
+          schema:
+            description: The batch's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentBatch"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The batch's version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `TEAM-04` Your roles conflict for this action."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal; `PB-01` Not a payment batch."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BREAKGLASS-03` You have no active break-glass; `BREAKGLASS-04` The batch is not waiting for approval; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `STORAGE-BATCH-01` A payment batch does not change that way; `STORAGE-BATCH-02` The item is paid by an approved payment batch; `STORAGE-BREAKGLASS-01` Break-glass does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BREAKGLASS-05` Break-glass never repays a director; `BREAKGLASS-06` Break-glass never pays the founder using it; `BREAKGLASS-07` A payee's bank account is too new for break-glass; `BREAKGLASS-08` The batch is above what the break-glass may still release; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill, an approved claim or a settlement to repay; `PB-09` The bill is not in SGD; `PB-10` Nothing is open on the item; `PB-12` The payee has no approved account; `PB-15` Too many items for one batch; `PB-16` The notes are too long; `PB-25` The company owes the director less than the batch repays; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Release a payment batch under break-glass
+      tags:
+        - Purchases
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - BREAKGLASS-03
+        - BREAKGLASS-04
+        - BREAKGLASS-05
+        - BREAKGLASS-06
+        - BREAKGLASS-07
+        - BREAKGLASS-08
+        - DIM-05
+        - DIM-06
+        - FX-01
+        - JOURNAL-01
+        - JOURNAL-04
+        - JOURNAL-11
+        - LEDGER-01
+        - LEDGER-02
+        - LEDGER-03
+        - LEDGER-04
+        - LEDGER-05
+        - LEDGER-06
+        - LEDGER-07
+        - LEDGER-08
+        - LEDGER-09
+        - LEDGER-10
+        - LEDGER-11
+        - LEDGER-12
+        - LEDGER-13
+        - LEDGER-14
+        - LEDGER-15
+        - LEDGER-16
+        - LEDGER-17
+        - PAYEE-12
+        - PAYEE-15
+        - PB-01
+        - PB-02
+        - PB-03
+        - PB-04
+        - PB-05
+        - PB-06
+        - PB-07
+        - PB-08
+        - PB-09
+        - PB-10
+        - PB-11
+        - PB-12
+        - PB-13
+        - PB-14
+        - PB-15
+        - PB-16
+        - PB-25
+        - STORAGE-BATCH-01
+        - STORAGE-BATCH-02
+        - STORAGE-BREAKGLASS-01
+        - STORAGE-DOC-02
+        - STORAGE-DUPLICATE-01
+        - STORAGE-INV-01
+        - STORAGE-INV-02
+        - STORAGE-INV-03
+        - STORAGE-INV-04
+        - STORAGE-INV-05
+        - STORAGE-INV-13
+        - STORAGE-LOCK-01
+        - STORAGE-PERIOD-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+        - TEAM-04
+      x-fyniq-permission:
+        capability: Payment batches
+        note: The Owner whose break-glass is active, holding the Payment releaser's right, stepped up in the last 5 minutes (FM-8).
+        right: R
   /v1/payment-batches/{batch_id}/cancel:
     post:
       description: "Cancels an approved batch that is not released, with a reason (FR-BNK-12): it pays nothing, and its bills and claims are free for another batch or to pay by hand. A draft is not cancelled: change it, or leave it. A released batch is never cancelled: void a payment the bank rejected on its own. Side effects: the batch cancelled (posting nothing) and its audit event with the reason. Needs If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
@@ -112425,7 +113786,7 @@ paths:
         right: V
   /v1/review-log:
     get:
-      description: "The high-risk actions that executed, oldest first: each approved change (FM-1) and each role change or invitation the Owner made alone before a second member joined (FR-ADM-01), with its review once another founder reviewed it (FM-3). In Founder mode an entry still unreviewed 14 days after it executed is overdue. Shown to whoever holds a right on what each changed, and to the one who acted; never to the AI. Read-only; no side effects."
+      description: "The high-risk actions that executed, oldest first: each approved change (FM-1) and each role change or invitation the Owner made alone before a second member joined (FR-ADM-01), with its review once another founder reviewed it (FM-3). In Founder mode an entry still unreviewed 14 days after it executed is overdue; a break-glass from its review's due date, 7 days after it ended, in any mode (FM-8). Shown to whoever holds a right on what each changed, and to the one who acted; never to the AI. Read-only; no side effects."
       operationId: listReviewLog
       parameters:
         - description: How many items per page, up to 500.
@@ -112628,7 +113989,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `APR-05` You hold no approval right on it; `APR-13` Another person reviews what you did."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `APR-05` You hold no approval right on it; `APR-13` Another person reviews what you did; `BREAKGLASS-11` You may not review this break-glass."
         "404":
           content:
             application/problem+json:
@@ -112720,6 +114081,7 @@ paths:
         - APR-05
         - APR-13
         - APR-14
+        - BREAKGLASS-11
         - STORAGE-APPROVAL-01
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01

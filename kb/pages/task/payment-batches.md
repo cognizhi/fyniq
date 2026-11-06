@@ -4,14 +4,14 @@ type: task
 title: Pay suppliers and claims in a payment batch
 summary: Prepare a batch of approved bills, claims and repayments to directors, have another person approve it, release it, pay it from the payment list, and see it paid
 sources:
-  - docs/user-guide/payment-batches.md sha256:414e3d8b26d4f62971a46c9bc1b29556f6b41ef059150c1e3bd368ce01ad64e5
+  - docs/user-guide/payment-batches.md sha256:6a26e184cabb7b1a8eef0b8c0f1a10de1247c804db40d247b7b5fb45db9e2455
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-03
+compiled_at: 2026-11-06
 aliases:
   - payment batch
   - pay suppliers
@@ -77,6 +77,7 @@ aliases:
 - The Payment releaser selects **Release** and confirms it's you: each payment is recorded as recording it by hand does, dated the payment date, and the payment list is written.
 - Standard mode: the releaser is a third person who neither prepared, asked for nor approved the batch, nor a payee's bank account change.
 - Founder mode: the founder who prepared or approved it may release it; never one person alone, since another approved it, and the release is listed for the weekly review.
+- When the other founder can't be reached, an Owner who holds the Payment releaser role can release a batch waiting for approval under break-glass, within its limits ([[settings.team-mode]]).
 
 (src: docs/user-guide/payment-batches.md#release-a-batch)
 

@@ -27,19 +27,20 @@ func (q *Queries) InsertPaymentBatchPayment(ctx context.Context, arg InsertPayme
 }
 
 const insertPaymentBatchRelease = `-- name: InsertPaymentBatchRelease :one
-INSERT INTO fyniq.payment_batch_release (batch_id, batch_version, approval_id, released_by, released_at, writer, file_name, media_type,
-                                         file_sealed, file_sha256, payments, currency, minor_units, total)
-SELECT $1::uuid, $2::integer, $3::uuid, $4::uuid,
-       $5::timestamptz, $6::text, $7::text, $8::text,
-       $9::bytea, $10::bytea, $11::integer, c.code, c.minor_units, $12::numeric
-FROM fyniq.currencies c WHERE c.code = $13::text
-RETURNING organisation_id, id, batch_id, batch_version, approval_id, released_by, released_at, writer, file_name, media_type, file_sealed, file_sha256, payments, currency, minor_units, total
+INSERT INTO fyniq.payment_batch_release (batch_id, batch_version, approval_id, break_glass_id, released_by, released_at, writer, file_name,
+                                         media_type, file_sealed, file_sha256, payments, currency, minor_units, total)
+SELECT $1::uuid, $2::integer, $3::uuid, $4::uuid, $5::uuid,
+       $6::timestamptz, $7::text, $8::text, $9::text,
+       $10::bytea, $11::bytea, $12::integer, c.code, c.minor_units, $13::numeric
+FROM fyniq.currencies c WHERE c.code = $14::text
+RETURNING organisation_id, id, batch_id, batch_version, approval_id, released_by, released_at, writer, file_name, media_type, file_sealed, file_sha256, payments, currency, minor_units, total, break_glass_id
 `
 
 type InsertPaymentBatchReleaseParams struct {
 	BatchID      uuid.UUID
 	BatchVersion int32
-	ApprovalID   uuid.UUID
+	ApprovalID   *uuid.UUID
+	BreakGlassID *uuid.UUID
 	ReleasedBy   uuid.UUID
 	ReleasedAt   time.Time
 	Writer       string
@@ -58,6 +59,7 @@ func (q *Queries) InsertPaymentBatchRelease(ctx context.Context, arg InsertPayme
 		arg.BatchID,
 		arg.BatchVersion,
 		arg.ApprovalID,
+		arg.BreakGlassID,
 		arg.ReleasedBy,
 		arg.ReleasedAt,
 		arg.Writer,
@@ -87,6 +89,7 @@ func (q *Queries) InsertPaymentBatchRelease(ctx context.Context, arg InsertPayme
 		&i.Currency,
 		&i.MinorUnits,
 		&i.Total,
+		&i.BreakGlassID,
 	)
 	return i, err
 }
@@ -116,7 +119,7 @@ func (q *Queries) PaymentBatchPayments(ctx context.Context, releaseID uuid.UUID)
 }
 
 const paymentBatchReleaseOf = `-- name: PaymentBatchReleaseOf :many
-SELECT organisation_id, id, batch_id, batch_version, approval_id, released_by, released_at, writer, file_name, media_type, file_sealed, file_sha256, payments, currency, minor_units, total FROM fyniq.payment_batch_release WHERE batch_id = $1
+SELECT organisation_id, id, batch_id, batch_version, approval_id, released_by, released_at, writer, file_name, media_type, file_sealed, file_sha256, payments, currency, minor_units, total, break_glass_id FROM fyniq.payment_batch_release WHERE batch_id = $1
 `
 
 func (q *Queries) PaymentBatchReleaseOf(ctx context.Context, batchID uuid.UUID) ([]FyniqPaymentBatchRelease, error) {
@@ -145,6 +148,7 @@ func (q *Queries) PaymentBatchReleaseOf(ctx context.Context, batchID uuid.UUID) 
 			&i.Currency,
 			&i.MinorUnits,
 			&i.Total,
+			&i.BreakGlassID,
 		); err != nil {
 			return nil, err
 		}
@@ -157,7 +161,7 @@ func (q *Queries) PaymentBatchReleaseOf(ctx context.Context, batchID uuid.UUID) 
 }
 
 const paymentBatchReleaseOfPayment = `-- name: PaymentBatchReleaseOfPayment :many
-SELECT r.organisation_id, r.id, r.batch_id, r.batch_version, r.approval_id, r.released_by, r.released_at, r.writer, r.file_name, r.media_type, r.file_sealed, r.file_sha256, r.payments, r.currency, r.minor_units, r.total FROM fyniq.payment_batch_release r
+SELECT r.organisation_id, r.id, r.batch_id, r.batch_version, r.approval_id, r.released_by, r.released_at, r.writer, r.file_name, r.media_type, r.file_sealed, r.file_sha256, r.payments, r.currency, r.minor_units, r.total, r.break_glass_id FROM fyniq.payment_batch_release r
 JOIN fyniq.payment_batch_payment p ON p.organisation_id = r.organisation_id AND p.release_id = r.id
 WHERE p.payment_id = $1
 `
@@ -188,6 +192,7 @@ func (q *Queries) PaymentBatchReleaseOfPayment(ctx context.Context, paymentID uu
 			&i.Currency,
 			&i.MinorUnits,
 			&i.Total,
+			&i.BreakGlassID,
 		); err != nil {
 			return nil, err
 		}

@@ -2,8 +2,8 @@
 key: settings.team-mode
 title: Choose how strictly duties are separated
 mode: basic
-roles: [owner, admin, controller, auditor, dpo]
-requirements: [FR-ADM-04, SOD-6, FM-1]
+roles: [owner, admin, controller, accountant, payment_releaser, auditor, dpo]
+requirements: [FR-ADM-04, SOD-6, FM-1, FM-8]
 ---
 
 # Choose how strictly duties are separated
@@ -55,6 +55,49 @@ An Administrator asks for the switch. An Owner who did not ask for it approves i
   other with a reason once they join.
 - Someone whose roles conflict, with no reason accepted for them, cannot post journals.
 
+## Break-glass
+
+Only in Founder mode, when the other founder can't be reached (on a flight, or ill) and a payment can't
+wait for them.
+
+- An Owner starts break-glass with a reason. For 24 hours they may release payment batches that wait
+  for approval without a second person.
+- It releases up to the break-glass payment cap in all: S$20,000 by default
+  ([Organisation settings](organisation-settings.md#break-glass-payment-cap)).
+- It never repays a director, never pays the Owner using it, and never pays a bank account that
+  changed in the last 30 days.
+- Nothing else changes: every other high-risk change still waits for another person.
+- Every Owner and the Accountant get an email at once, and every page shows a red banner while it is
+  on.
+
+### Start break-glass
+
+1. Open **Break-glass**, from the banner or from **Settings → Team mode**.
+2. Say who is unreachable and what must be paid.
+3. Select **Start break-glass**, and confirm it's you with your passkey or authenticator app.
+
+You can't start another break-glass until the last one is reviewed, so it can't be extended or
+renewed.
+
+### Release a batch under break-glass
+
+1. Prepare the batch as usual ([Pay suppliers and claims in a batch](payment-batches.md)).
+2. On the batch, select **Release under break-glass**. You need the Payment releaser role as well.
+3. Pay it in the bank as you would any batch.
+
+A request waiting for the batch's approval is cancelled: the break-glass approved the batch instead.
+
+### End and review a break-glass
+
+- An Owner may select **End now** before the 24 hours are up, for example when the other founder is
+  back.
+- Once it has ended, another Owner reviews it on **Break-glass**: why it was used and each batch it
+  released. The Owner who used it never reviews it.
+- Its review is due 7 days after it ends. From then, the Accountant may review it instead, if the
+  other founder is still away.
+- Still unreviewed after that, Checks shows it as cannot post until fixed, and the month can't be
+  closed until it is reviewed.
+
 ## Common problems
 
 - **Conflicts block the switch**: the message lists each member. End one of their roles, or give a
@@ -62,3 +105,7 @@ An Administrator asks for the switch. An Owner who did not ask for it approves i
 - **The roles would conflict**: give a reason, or choose a role that does not conflict.
 - **That team mode is not available**: Enterprise mode needs features Fyniq does not have yet. Use
   Standard mode.
+- **An earlier break-glass waits for its review**: ask another Owner to review it, or the Accountant
+  once its review is due.
+- **Its bank account came into force in the last 30 days**: take that payment out of the batch;
+  another founder approves it later.

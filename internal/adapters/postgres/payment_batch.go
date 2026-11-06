@@ -17,9 +17,24 @@ func (u *unitOfWork) PaymentBatches() storage.PaymentBatches { return paymentBat
 type paymentBatches struct{ u *unitOfWork }
 
 func toPaymentBatchRelease(r sqlcdb.FyniqPaymentBatchRelease) storage.PaymentBatchRelease {
-	return storage.PaymentBatchRelease{ID: r.ID, BatchID: r.BatchID, BatchVersion: int(r.BatchVersion), ApprovalID: r.ApprovalID, ReleasedBy: r.ReleasedBy,
+	out := storage.PaymentBatchRelease{ID: r.ID, BatchID: r.BatchID, BatchVersion: int(r.BatchVersion), ReleasedBy: r.ReleasedBy,
 		ReleasedAt: r.ReleasedAt, Writer: r.Writer, FileName: r.FileName, MediaType: r.MediaType, Sealed: r.FileSealed, SHA256: r.FileSha256,
 		Payments: int(r.Payments), Currency: r.Currency, Total: storage.Decimal(r.Total)}
+	if r.ApprovalID != nil {
+		out.ApprovalID = *r.ApprovalID
+	}
+	if r.BreakGlassID != nil {
+		out.BreakGlassID = *r.BreakGlassID
+	}
+	return out
+}
+
+// someID is id, or nil for uuid.Nil.
+func someID(id uuid.UUID) *uuid.UUID {
+	if id == uuid.Nil {
+		return nil
+	}
+	return &id
 }
 
 func (r paymentBatches) Release(ctx context.Context, x storage.PaymentBatchRelease) (storage.PaymentBatchRelease, error) {
@@ -27,7 +42,7 @@ func (r paymentBatches) Release(ctx context.Context, x storage.PaymentBatchRelea
 		return storage.PaymentBatchRelease{}, err
 	}
 	row, err := r.u.q.InsertPaymentBatchRelease(ctx, sqlcdb.InsertPaymentBatchReleaseParams{BatchID: x.BatchID, BatchVersion: small(x.BatchVersion),
-		ApprovalID: x.ApprovalID, ReleasedBy: x.ReleasedBy, ReleasedAt: x.ReleasedAt, Writer: x.Writer, FileName: x.FileName, MediaType: x.MediaType,
+		ApprovalID: someID(x.ApprovalID), BreakGlassID: someID(x.BreakGlassID), ReleasedBy: x.ReleasedBy, ReleasedAt: x.ReleasedAt, Writer: x.Writer, FileName: x.FileName, MediaType: x.MediaType,
 		FileSealed: x.Sealed, FileSha256: x.SHA256, Payments: small(x.Payments), Total: string(x.Total), Currency: x.Currency})
 	if err != nil {
 		return storage.PaymentBatchRelease{}, mapError(err)
@@ -36,8 +51,7 @@ func (r paymentBatches) Release(ctx context.Context, x storage.PaymentBatchRelea
 	v := out.BatchVersion
 	// The file's name and hash only: never its content, which holds full account numbers (AUD-02).
 	if err := r.u.event(ctx, "payment_batch.released", "document", out.BatchID, &v, map[string][2]any{
-		"release": {nil, map[string]any{"id": out.ID.String(), "approval_id": out.ApprovalID.String(), "writer": out.Writer, "file_name": out.FileName,
-			"sha256": hex.EncodeToString(out.SHA256), "payments": out.Payments, "total": map[string]any{"amount": string(out.Total), "currency": out.Currency}}},
+		"release": {nil, releaseChange(out)},
 	}); err != nil {
 		return storage.PaymentBatchRelease{}, err
 	}
@@ -87,4 +101,16 @@ func (r paymentBatches) ReleaseOfPayment(ctx context.Context, paymentID uuid.UUI
 	}
 	out := toPaymentBatchRelease(rows[0])
 	return &out, nil
+}
+
+// releaseChange is what a release's audit event holds: under an approval or a break-glass, and the file's name and hash.
+func releaseChange(r storage.PaymentBatchRelease) map[string]any {
+	out := map[string]any{"id": r.ID.String(), "writer": r.Writer, "file_name": r.FileName, "sha256": hex.EncodeToString(r.SHA256),
+		"payments": r.Payments, "total": map[string]any{"amount": string(r.Total), "currency": r.Currency}}
+	if r.BreakGlassID != uuid.Nil {
+		out["break_glass_id"] = r.BreakGlassID.String()
+	} else {
+		out["approval_id"] = r.ApprovalID.String()
+	}
+	return out
 }

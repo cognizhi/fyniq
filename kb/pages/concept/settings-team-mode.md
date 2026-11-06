@@ -2,16 +2,16 @@
 key: settings.team-mode
 type: concept
 title: Team mode: how strictly duties are separated
-summary: Founder and Standard mode, which roles conflict, how a switch is asked for and approved, and what Standard mode blocks
+summary: Founder and Standard mode, which roles conflict, how a switch is asked for and approved, what Standard mode blocks, and break-glass for a founder alone
 sources:
-  - docs/user-guide/team-mode.md sha256:43c4bf55f871b4fdc06e47dc4e0f834fb6e2f1ca39970362133291e304ecb45d
+  - docs/user-guide/team-mode.md sha256:0012b43eb39466f72e64e144cab37ec092500b82b9432519def21322c2d023ee
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-20
+compiled_at: 2026-11-06
 aliases:
   - founder mode
   - standard mode
@@ -19,6 +19,9 @@ aliases:
   - segregation of duties
   - conflicting roles
   - SoD
+  - break-glass
+  - emergency payment
+  - other founder unreachable
 ---
 
 # Team mode: how strictly duties are separated
@@ -64,10 +67,33 @@ aliases:
 
 (src: docs/user-guide/team-mode.md#in-standard-mode)
 
+## Break-glass
+
+- Founder mode only, when the other founder can't be reached and a payment can't wait: an Owner starts break-glass with a reason and, for 24 hours, releases payment batches waiting for approval without a second person ([[purchases.payment-batches]]).
+- It releases up to the break-glass payment cap in all, S$20,000 by default ([[settings.organisation]]).
+- Never: repaying a director, paying the Owner using it, or paying a bank account that changed in the last 30 days.
+- Nothing else changes: every other high-risk change still waits for another person.
+- Every Owner and the Accountant are emailed at once; every page shows a red banner while it is on.
+
+(src: docs/user-guide/team-mode.md#break-glass)
+
+## Start, release, end and review
+
+- Start: open **Break-glass** from the banner or **Settings → Team mode**, say who is unreachable and what must be paid, select **Start break-glass** and confirm it's you. Another can't start until the last one is reviewed, so it can't be extended or renewed.
+- Release: prepare the batch as usual, then **Release under break-glass** on it (the Payment releaser role is needed as well); a request waiting for its approval is cancelled.
+- End: an Owner may select **End now** before the 24 hours are up.
+- Review: once it has ended, another Owner reviews why it was used and each batch it released; never the Owner who used it. Its review is due 7 days after it ends; from then the Accountant may review it instead. Still unreviewed, Checks shows it as cannot post until fixed and the month can't be closed ([[approvals.decide]]).
+
+(src: docs/user-guide/team-mode.md#start-break-glass)
+(src: docs/user-guide/team-mode.md#release-a-batch-under-break-glass)
+(src: docs/user-guide/team-mode.md#end-and-review-a-break-glass)
+
 ## Common problems
 
 - **Conflicts block the switch**: the message lists each member; end one of their roles, or give a reason for each.
 - **The roles would conflict**: give a reason, or choose a role that does not conflict.
 - **That team mode is not available**: Enterprise mode needs features Fyniq does not have yet; use Standard mode.
+- **An earlier break-glass waits for its review**: ask another Owner to review it, or the Accountant once its review is due.
+- **Its bank account came into force in the last 30 days**: take that payment out of the batch; another founder approves it later.
 
 (src: docs/user-guide/team-mode.md#common-problems)

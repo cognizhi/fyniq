@@ -25,6 +25,8 @@ const kinds: Record<ReviewEntry["kind"], string> = {
   self_approved: "Posted alone, at or below the self-approval threshold",
   scheduled_issue: "Issued and sent by the scheduler from an approved recurring invoice",
   auto_reconciled: "Bank line reconciled by Fyniq itself, in the week's sample",
+  release_conflict: "Released by someone who prepared or approved it, as Founder mode allows",
+  break_glass: "Break-glass: payments released by one founder alone",
 };
 
 function MarkReviewed({ ids, open, onClose, onDone }: { ids: string[]; open: boolean; onClose: () => void; onDone: (n: number) => void }) {
@@ -180,7 +182,15 @@ export function ReviewLog() {
                       {e.note ? `: "${e.note}"` : ""}
                     </span>
                   )}
-                  {!e.reviewed_at && !e.you_may_review && <span className="fy-list__meta whitespace-normal">You took this action, or cannot review it: another founder reviews it.</span>}
+                  {!e.reviewed_at && e.kind === "break_glass" && (
+                    <span className="fy-list__meta whitespace-normal">
+                      Reviewed with what it released on <Link to="/break-glass">Break-glass</Link>
+                      {e.due_at ? `, due by ${dateTime(e.due_at)}` : ""}.
+                    </span>
+                  )}
+                  {!e.reviewed_at && !e.you_may_review && e.kind !== "break_glass" && (
+                    <span className="fy-list__meta whitespace-normal">You took this action, or cannot review it: another founder reviews it.</span>
+                  )}
                   {e.approval_id && (
                     <Link className="fy-small" to="/approvals/$approvalId" params={{ approvalId: e.approval_id }}>
                       Open the approved request

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "note": {
+      "description": "What they noted.",
+      "examples": [
+        "Checked both payments against the bills; fine"
+      ],
+      "type": "string"
+    },
+    "reviewed_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-09T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "reviewed_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who reviewed it: another Owner, or the Accountant."
+    }
+  },
+  "required": [
+    "reviewed_by",
+    "reviewed_at"
+  ],
+  "title": "BreakGlassReviewed",
+  "type": "object"
+}

@@ -396,6 +396,34 @@ type FyniqBillPaymentPlan struct {
 	RecordedAt     time.Time
 }
 
+type FyniqBreakGlass struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	StartedBy      uuid.UUID
+	Reason         string
+	StartedAt      time.Time
+	ExpiresAt      time.Time
+	EndedAt        *time.Time
+	EndedBy        *uuid.UUID
+	Currency       string
+	MinorUnits     int16
+	Cap            string
+	Version        int32
+}
+
+type FyniqBreakGlassUse struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	BreakGlassID   uuid.UUID
+	BatchID        uuid.UUID
+	BatchVersion   int32
+	UsedBy         uuid.UUID
+	UsedAt         time.Time
+	Currency       string
+	MinorUnits     int16
+	Total          string
+}
+
 type FyniqCaptureAddress struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -1350,7 +1378,7 @@ type FyniqPaymentBatchRelease struct {
 	ID             uuid.UUID
 	BatchID        uuid.UUID
 	BatchVersion   int32
-	ApprovalID     uuid.UUID
+	ApprovalID     *uuid.UUID
 	ReleasedBy     uuid.UUID
 	ReleasedAt     time.Time
 	Writer         string
@@ -1362,6 +1390,7 @@ type FyniqPaymentBatchRelease struct {
 	Currency       string
 	MinorUnits     int16
 	Total          string
+	BreakGlassID   *uuid.UUID
 }
 
 type FyniqPeriod struct {

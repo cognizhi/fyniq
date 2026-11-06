@@ -55,13 +55,14 @@ var batchWriter paymentfile.Writer = paymentfile.PaymentList{}
 
 // PaymentBatchRelease is a batch's release as the API shows it: never the file's content.
 type PaymentBatchRelease struct {
-	ReleasedBy Person               `json:"released_by" doc:"Who released it."`
-	ReleasedAt string               `json:"released_at" format:"date-time" doc:"When it was released." example:"2026-10-31T09:30:00+08:00"`
-	ApprovalID string               `json:"approval_id" format:"uuid" doc:"The approval it was released under." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20"`
-	Writer     string               `json:"writer" doc:"The file's format and version: payment-list@1 is the payment list keyed into the bank (rev 0.156)." example:"payment-list@1"`
-	FileName   string               `json:"file_name" doc:"The file's name." example:"PB-0003-payment-list.csv"`
-	SHA256     string               `json:"sha256" doc:"The SHA-256 of the file as written, in hexadecimal: a downloaded copy can be checked against it." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
-	Payments   []PaymentBatchPosted `json:"payments" nullable:"false" doc:"The bill payments and reimbursements it posted, one per payee, in the file's order."`
+	ReleasedBy   Person               `json:"released_by" doc:"Who released it."`
+	ReleasedAt   string               `json:"released_at" format:"date-time" doc:"When it was released." example:"2026-10-31T09:30:00+08:00"`
+	ApprovalID   string               `json:"approval_id,omitempty" format:"uuid" doc:"The approval it was released under; absent when it was released under break-glass." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20"`
+	BreakGlassID string               `json:"break_glass_id,omitempty" format:"uuid" doc:"The break-glass it was released under, which approved it instead of a second person (FM-8); absent when an approval did." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c30"`
+	Writer       string               `json:"writer" doc:"The file's format and version: payment-list@1 is the payment list keyed into the bank (rev 0.156)." example:"payment-list@1"`
+	FileName     string               `json:"file_name" doc:"The file's name." example:"PB-0003-payment-list.csv"`
+	SHA256       string               `json:"sha256" doc:"The SHA-256 of the file as written, in hexadecimal: a downloaded copy can be checked against it." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
+	Payments     []PaymentBatchPosted `json:"payments" nullable:"false" doc:"The bill payments and reimbursements it posted, one per payee, in the file's order."`
 }
 
 // PaymentBatchPosted is a payment a release posted.
@@ -361,98 +362,9 @@ func (a *API) releaseBatch(ctx context.Context, u storage.UnitOfWork, p authn.Pr
 			"Ask another Payment releaser, who neither prepared nor approved it, to release it (SOD-1, SOD-2)")
 	}
 
-	// The payment list: each payee's number opened here, and the file sealed before the transaction ends.
-	f := paymentfile.File{Batch: doc.Number, PaymentDate: b.Date, Method: b.Stored.Method, Debit: paymentfile.Debit{Name: b.Account.Name, Identifier: b.Account.Identifier}}
-	names, err := memberNames(ctx, u, v.now)
+	names, err := a.writeRelease(ctx, u, p, doc, b, v, r.ID, uuid.Nil)
 	if err != nil {
 		return PaymentBatch{}, err
-	}
-	for _, pay := range b.Payments {
-		number, err := payee.Open(ctx, a.deps.Fields, p.Organisation, *pay.Account)
-		if err != nil {
-			return PaymentBatch{}, err
-		}
-		item := paymentfile.Payment{BIC: pay.Bank.BIC, AccountName: pay.Bank.AccountName, Number: number, Amount: pay.Amount, Reference: batchReference(doc.Number, pay)}
-		switch {
-		case pay.Director != uuid.Nil && pay.Payee.IsPerson():
-			item.Payee, item.Kind = names[pay.Payee.PersonID], "director"
-		case pay.Director != uuid.Nil:
-			c, err := u.Contacts().Get(ctx, pay.Payee.ContactID)
-			if err != nil {
-				return PaymentBatch{}, err
-			}
-			item.Payee, item.Kind = c.LegalName, "director"
-		case pay.Payee.IsPerson():
-			item.Payee, item.Kind = names[pay.Payee.PersonID], "claimant"
-		default:
-			c, err := u.Contacts().Get(ctx, pay.Payee.ContactID)
-			if err != nil {
-				return PaymentBatch{}, err
-			}
-			item.Payee, item.Kind = c.LegalName, "supplier"
-		}
-		f.Payments = append(f.Payments, item)
-	}
-	out, err := batchWriter.Write(f)
-	if err != nil {
-		return PaymentBatch{}, err
-	}
-	sum := sha256.Sum256(out.Data)
-	if a.deps.Fields == nil {
-		return PaymentBatch{}, payee.NoKeys()
-	}
-	sealed, err := a.deps.Fields.Seal(ctx, out.Data, batchAAD(p.Organisation, id))
-	if err != nil {
-		return PaymentBatch{}, err
-	}
-	release, err := u.PaymentBatches().Release(ctx, storage.PaymentBatchRelease{BatchID: id, BatchVersion: doc.Version, ApprovalID: r.ID, ReleasedBy: p.UserID,
-		ReleasedAt: v.now, Writer: batchWriter.Name(), FileName: out.Name, MediaType: out.MediaType, Sealed: sealed, SHA256: sum[:],
-		Payments: len(b.Payments), Currency: paymentbatch.SGD.Code, Total: storage.Decimal(b.Total.String())})
-	if err != nil {
-		return PaymentBatch{}, err
-	}
-
-	// One payment per payee, posted as recording it by hand does (design D5), and linked to the release.
-	for _, pay := range b.Payments {
-		var paymentID uuid.UUID
-		switch {
-		case pay.Director != uuid.Nil: // a director's settlements, as one repayment (FR-EQ-05)
-			var parts []director.RepaymentPart
-			for _, l := range pay.Lines {
-				parts = append(parts, director.RepaymentPart{SettlementID: l.DocumentID, Amount: l.Open})
-			}
-			rec, err := a.repayments.RecordIn(ctx, u, director.Repayment{ContactID: pay.Director, Date: b.Date, AccountID: b.Stored.MoneyAccountID,
-				Reference: doc.Number, Settlements: parts, Notes: "Paid in " + doc.Number})
-			if err != nil {
-				return PaymentBatch{}, err
-			}
-			paymentID = rec.Repayment.ID
-		case pay.Payee.IsPerson():
-			var parts []claim.Part
-			for _, l := range pay.Lines {
-				parts = append(parts, claim.Part{ClaimID: l.DocumentID, Amount: l.Open})
-			}
-			rec, err := a.reimbursements.RecordIn(ctx, u, claim.Reimbursement{ClaimantID: pay.Payee.PersonID, Date: b.Date, AccountID: b.Stored.MoneyAccountID,
-				Reference: doc.Number, Claims: parts, Notes: "Paid in " + doc.Number})
-			if err != nil {
-				return PaymentBatch{}, err
-			}
-			paymentID = rec.Reimbursement.ID
-		default:
-			var parts []billpayment.Part
-			for _, l := range pay.Lines {
-				parts = append(parts, billpayment.Part{BillID: l.DocumentID, Amount: l.Open, InFull: true})
-			}
-			rec, err := a.payments.RecordIn(ctx, u, billpayment.Draft{SupplierID: pay.Payee.ContactID, Date: b.Date, AccountID: b.Stored.MoneyAccountID,
-				Currency: paymentbatch.SGD, Reference: doc.Number, Bills: parts, Unapplied: money.Zero(paymentbatch.SGD), Notes: "Paid in " + doc.Number})
-			if err != nil {
-				return PaymentBatch{}, err
-			}
-			paymentID = rec.Payment.ID
-		}
-		if err := u.PaymentBatches().Link(ctx, release.ID, paymentID); err != nil {
-			return PaymentBatch{}, err
-		}
 	}
 
 	// In Founder mode a conflict is allowed, with the approval as its control, and logged for the weekly review (FM-3).
@@ -468,6 +380,110 @@ func (a *API) releaseBatch(ctx context.Context, u storage.UnitOfWork, p authn.Pr
 		return PaymentBatch{}, err
 	}
 	return a.batchOf(ctx, u, v, doc, false)
+}
+
+// writeRelease releases batch doc, as b evaluated it, by p under an approval or a break-glass (design D4, D5, D7): the
+// payment list sealed, the release, and one payment per payee posted as by hand, each linked. It returns the members'
+// names.
+func (a *API) writeRelease(ctx context.Context, u storage.UnitOfWork, p authn.Principal, doc storage.Document, b paymentbatch.Batch, v batchView,
+	approvalID, breakGlassID uuid.UUID) (map[uuid.UUID]string, error) {
+	id := doc.ID
+	// The payment list: each payee's number opened here, and the file sealed before the transaction ends.
+	f := paymentfile.File{Batch: doc.Number, PaymentDate: b.Date, Method: b.Stored.Method, Debit: paymentfile.Debit{Name: b.Account.Name, Identifier: b.Account.Identifier}}
+	names, err := memberNames(ctx, u, v.now)
+	if err != nil {
+		return nil, err
+	}
+	for _, pay := range b.Payments {
+		number, err := payee.Open(ctx, a.deps.Fields, p.Organisation, *pay.Account)
+		if err != nil {
+			return nil, err
+		}
+		item := paymentfile.Payment{BIC: pay.Bank.BIC, AccountName: pay.Bank.AccountName, Number: number, Amount: pay.Amount, Reference: batchReference(doc.Number, pay)}
+		switch {
+		case pay.Director != uuid.Nil && pay.Payee.IsPerson():
+			item.Payee, item.Kind = names[pay.Payee.PersonID], "director"
+		case pay.Director != uuid.Nil:
+			c, err := u.Contacts().Get(ctx, pay.Payee.ContactID)
+			if err != nil {
+				return nil, err
+			}
+			item.Payee, item.Kind = c.LegalName, "director"
+		case pay.Payee.IsPerson():
+			item.Payee, item.Kind = names[pay.Payee.PersonID], "claimant"
+		default:
+			c, err := u.Contacts().Get(ctx, pay.Payee.ContactID)
+			if err != nil {
+				return nil, err
+			}
+			item.Payee, item.Kind = c.LegalName, "supplier"
+		}
+		f.Payments = append(f.Payments, item)
+	}
+	out, err := batchWriter.Write(f)
+	if err != nil {
+		return nil, err
+	}
+	sum := sha256.Sum256(out.Data)
+	if a.deps.Fields == nil {
+		return nil, payee.NoKeys()
+	}
+	sealed, err := a.deps.Fields.Seal(ctx, out.Data, batchAAD(p.Organisation, id))
+	if err != nil {
+		return nil, err
+	}
+	release, err := u.PaymentBatches().Release(ctx, storage.PaymentBatchRelease{BatchID: id, BatchVersion: doc.Version, ApprovalID: approvalID,
+		BreakGlassID: breakGlassID, ReleasedBy: p.UserID,
+		ReleasedAt: v.now, Writer: batchWriter.Name(), FileName: out.Name, MediaType: out.MediaType, Sealed: sealed, SHA256: sum[:],
+		Payments: len(b.Payments), Currency: paymentbatch.SGD.Code, Total: storage.Decimal(b.Total.String())})
+	if err != nil {
+		return nil, err
+	}
+
+	// One payment per payee, posted as recording it by hand does (design D5), and linked to the release.
+	for _, pay := range b.Payments {
+		var paymentID uuid.UUID
+		switch {
+		case pay.Director != uuid.Nil: // a director's settlements, as one repayment (FR-EQ-05)
+			var parts []director.RepaymentPart
+			for _, l := range pay.Lines {
+				parts = append(parts, director.RepaymentPart{SettlementID: l.DocumentID, Amount: l.Open})
+			}
+			rec, err := a.repayments.RecordIn(ctx, u, director.Repayment{ContactID: pay.Director, Date: b.Date, AccountID: b.Stored.MoneyAccountID,
+				Reference: doc.Number, Settlements: parts, Notes: "Paid in " + doc.Number})
+			if err != nil {
+				return nil, err
+			}
+			paymentID = rec.Repayment.ID
+		case pay.Payee.IsPerson():
+			var parts []claim.Part
+			for _, l := range pay.Lines {
+				parts = append(parts, claim.Part{ClaimID: l.DocumentID, Amount: l.Open})
+			}
+			rec, err := a.reimbursements.RecordIn(ctx, u, claim.Reimbursement{ClaimantID: pay.Payee.PersonID, Date: b.Date, AccountID: b.Stored.MoneyAccountID,
+				Reference: doc.Number, Claims: parts, Notes: "Paid in " + doc.Number})
+			if err != nil {
+				return nil, err
+			}
+			paymentID = rec.Reimbursement.ID
+		default:
+			var parts []billpayment.Part
+			for _, l := range pay.Lines {
+				parts = append(parts, billpayment.Part{BillID: l.DocumentID, Amount: l.Open, InFull: true})
+			}
+			rec, err := a.payments.RecordIn(ctx, u, billpayment.Draft{SupplierID: pay.Payee.ContactID, Date: b.Date, AccountID: b.Stored.MoneyAccountID,
+				Currency: paymentbatch.SGD, Reference: doc.Number, Bills: parts, Unapplied: money.Zero(paymentbatch.SGD), Notes: "Paid in " + doc.Number})
+			if err != nil {
+				return nil, err
+			}
+			paymentID = rec.Payment.ID
+		}
+		if err := u.PaymentBatches().Link(ctx, release.ID, paymentID); err != nil {
+			return nil, err
+		}
+	}
+
+	return names, nil
 }
 
 // batchReference is what a payee's statement shows: the batch's number and the documents it pays, at most 140 characters.
@@ -497,8 +513,13 @@ func (a *API) releaseOf(ctx context.Context, u storage.UnitOfWork, id uuid.UUID)
 	if err := a.name(ctx, u, &who); err != nil {
 		return nil, err
 	}
-	out := &PaymentBatchRelease{ReleasedBy: who, ReleasedAt: rel.ReleasedAt.UTC().Format(time.RFC3339), ApprovalID: rel.ApprovalID.String(), Writer: rel.Writer,
+	out := &PaymentBatchRelease{ReleasedBy: who, ReleasedAt: rel.ReleasedAt.UTC().Format(time.RFC3339), Writer: rel.Writer,
 		FileName: rel.FileName, SHA256: hex.EncodeToString(rel.SHA256), Payments: []PaymentBatchPosted{}}
+	if rel.BreakGlassID != uuid.Nil {
+		out.BreakGlassID = rel.BreakGlassID.String()
+	} else {
+		out.ApprovalID = rel.ApprovalID.String()
+	}
 	for _, x := range ids {
 		out.Payments = append(out.Payments, PaymentBatchPosted{PaymentID: x.String()})
 	}
@@ -511,10 +532,15 @@ func BatchApprovalCodes() []string {
 		paymentbatch.CodeNoAccount, paymentbatch.CodeWithholding, payee.CodeFrozen}, BatchCodes...)
 }
 
+// batchCheckCodes are the codes of a batch's own checks, which a release runs again.
+func batchCheckCodes() []string {
+	return []string{paymentbatch.CodeCurrency, paymentbatch.CodeNothingOpen, paymentbatch.CodeOwedLess, paymentbatch.CodeInAnother, paymentbatch.CodeNoAccount,
+		paymentbatch.CodeWithholding, payee.CodeFrozen}
+}
+
 func registerPaymentBatchRelease(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
-	checkCodes := []string{paymentbatch.CodeCurrency, paymentbatch.CodeNothingOpen, paymentbatch.CodeOwedLess, paymentbatch.CodeInAnother, paymentbatch.CodeNoAccount,
-		paymentbatch.CodeWithholding, payee.CodeFrozen}
+	checkCodes := batchCheckCodes()
 
 	ask := func(op string) func(ctx context.Context, in *batchCommandInput) (*batchRequestOutput, error) {
 		return func(ctx context.Context, in *batchCommandInput) (*batchRequestOutput, error) {

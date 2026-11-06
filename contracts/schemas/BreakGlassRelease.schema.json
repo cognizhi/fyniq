@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "batch_id": {
+      "description": "The batch.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number.",
+      "examples": [
+        "PB-0004"
+      ],
+      "type": "string"
+    },
+    "released_at": {
+      "description": "When it was released.",
+      "examples": [
+        "2026-11-06T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "What it paid."
+    }
+  },
+  "required": [
+    "batch_id",
+    "number",
+    "total",
+    "released_at"
+  ],
+  "title": "BreakGlassRelease",
+  "type": "object"
+}
