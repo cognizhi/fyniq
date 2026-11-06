@@ -4,18 +4,20 @@ type: task
 title: Read the financial statements
 summary: The profit and loss, balance sheet, cash flow and trial balance for any run of months, comparisons, tracing a figure to its lines, and re-running at a revision
 sources:
-  - docs/user-guide/financial-statements.md sha256:df9e4d15fbce7b8d91f0cbf82ba7b3131d3c8f865d446a60d7cf24c647757139
+  - docs/user-guide/financial-statements.md sha256:c3320015268f8c02c467bd591b50d623406d0422d1b618df5160d0448d0c87a9
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-04
+compiled_at: 2026-11-06
 aliases:
   - financial statements
   - profit and loss
   - P&L
+  - department P&L
+  - project P&L
   - income statement
   - balance sheet
   - cash flow
@@ -54,9 +56,18 @@ aliases:
 
 (src: docs/user-guide/financial-statements.md#what-each-statement-shows)
 
+## By department or project
+
+- When the organisation uses dimensions, such as Department or Project, the profit and loss shows them in Expert mode ([[accounting.chart]]).
+- **Columns by dimension** gives a column for each of its values, such as ENG Engineering, one for the lines with no value of it, and their total, which the others add up to; it shows one run of months, without a comparison.
+- **Only for** shows the profit and loss of one value alone, such as the Engineering department.
+- The balance sheet, the cash flow and the trial balance show the whole company: a department's lines are one side of their entries, so its own figures would not balance.
+
+(src: docs/user-guide/financial-statements.md#by-department-or-project)
+
 ## See the lines behind a figure
 
-- An account's figure, or a group's total, opens the general ledger at its lines for the same months; a computed figure such as gross profit does not open.
+- An account's figure, or a group's total, opens the general ledger at its lines for the same months, and of the column's value or the value chosen; a computed figure such as gross profit does not open, nor does a figure of the lines with no value of a dimension.
 
 (src: docs/user-guide/financial-statements.md#see-the-lines-behind-a-figure)
 

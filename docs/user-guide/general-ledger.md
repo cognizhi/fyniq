@@ -34,6 +34,10 @@ ledger**.
 
 At most 5,000 lines of one account show at once. If an account has more, choose a shorter range.
 
+When the organisation uses dimensions, **Only the lines of** shows the lines of a value alone, such as
+the Engineering department: the opening balance, the lines and the running balance are theirs. Each
+line shows its values in a **Dimensions** column.
+
 ## A new financial year
 
 Once the company's financial years are set in **Settings → Organisation**, each year starts afresh

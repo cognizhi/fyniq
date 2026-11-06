@@ -95,3 +95,29 @@ describe("the general ledger opened from a statement's figure", () => {
   });
 });
 
+
+// req: FR-DIM-02
+describe("the general ledger by dimension", () => {
+  it("reads a value from the link, asks for its lines only, and shows each line's values", async () => {
+    const tagged: Report = {
+      ...report,
+      accounts: [{ ...report.accounts[0]!, lines: [{ ...report.accounts[0]!.lines[0]!, dimension_value_ids: ["v1"] }] }],
+    };
+    answer({
+      "GET /v1/accounts": { status: 200, body: { items: [bank] } },
+      "GET /v1/dimensions": { status: 200, body: { items: [{ id: "d1", kind: "department", name: "Department", active: true, version: 1 }] } },
+      "GET /v1/dimension-values": { status: 200, body: { items: [{ id: "v1", dimension_id: "d1", code: "ENG", name: "Engineering", active: true, version: 1 }] } },
+      "GET /v1/reports/general-ledger": { status: 200, body: tagged },
+    });
+    renderPage(GeneralLedger, {
+      path: `/reports/general-ledger?account_id=${encodeURIComponent('["a-bank"]')}&from=2026-10-01&to=2026-10-31&dimension_value_id=${encodeURIComponent('["v1"]')}`,
+      route: "/reports/general-ledger",
+      session: accountant,
+    });
+    const table = await screen.findByRole("table", { name: /Ledger lines for account 1010/ });
+    expect(seen.find((s) => s.path === "/v1/reports/general-ledger")!.query).toContain("dimension_value_id=v1");
+    expect(within(table).getByRole("columnheader", { name: "Dimensions" })).toBeTruthy();
+    expect(await within(table).findByText("ENG")).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Remove ENG" })).toBeTruthy();
+  });
+});

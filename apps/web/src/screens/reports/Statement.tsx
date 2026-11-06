@@ -14,6 +14,7 @@ import { useSignedIn } from "../../session";
 import { Icon, problemOf } from "../../ui";
 import { Chart } from "../../components/chart/Chart";
 import { listPeriods, type Period } from "../accounting/data";
+import { useDimensions, valueCodes } from "../accounting/lines";
 import { ExportDialog } from "./ExportDialog";
 
 type Statement = components["schemas"]["FinancialStatement"];
@@ -65,18 +66,26 @@ export function runOf(preset: Preset, periods: readonly Period[], custom: { from
 
 // columnLabel is a column's heading: its month, its run, or the total.
 function columnLabel(c: Column): string {
+  if (c.label) return c.label; // a P&L by dimension's column (FR-DIM-02)
   if (c.key === "total") return "Total";
   const from = c.from.slice(0, 7);
   const to = c.to.slice(0, 7);
   return from === to ? month(from) : `${month(from)}–${month(to)}`;
 }
 
-// Figure is a figure that opens the general ledger of its accounts over its column's run (FR-UX-04); one of more than
-// 20 accounts, which the general ledger does not take at once, or a computed one, does not.
-function Figure({ amount, accounts, column }: { amount: string; accounts: readonly string[]; column: Column }) {
-  if (accounts.length === 0 || accounts.length > 20) return <>{formatAmount(amount)}</>;
+// Figure is a figure that opens the general ledger of its accounts over its column's run (FR-UX-04), of the column's
+// dimension value and the statement's own when it has them (FR-DIM-02); one of more than 20 accounts, which the general
+// ledger does not take at once, a computed one, or one of the lines with no value of a dimension, which the general
+// ledger cannot pick out, does not.
+function Figure({ amount, accounts, column, only }: { amount: string; accounts: readonly string[]; column: Column; only?: string }) {
+  if (accounts.length === 0 || accounts.length > 20 || column.key === "none") return <>{formatAmount(amount)}</>;
+  const values = [only, column.key.startsWith("value:") ? column.key.slice(6) : ""].filter((v): v is string => !!v);
   return (
-    <Link to="/reports/general-ledger" search={{ account_id: [...accounts], from: column.from, to: column.to }} className="text-inherit no-underline hover:underline">
+    <Link
+      to="/reports/general-ledger"
+      search={{ account_id: [...accounts], from: column.from, to: column.to, ...(values.length ? { dimension_value_id: values } : {}) }}
+      className="text-inherit no-underline hover:underline"
+    >
       {formatAmount(amount)}
     </Link>
   );
@@ -98,7 +107,7 @@ function Explanation({ k, span }: { k: string; span: number }) {
   );
 }
 
-function BlockRows({ b, s, percent }: { b: Block; s: Statement; percent: boolean }) {
+function BlockRows({ b, s, percent, only }: { b: Block; s: Statement; percent: boolean; only?: string }) {
   const [open, setOpen] = useState(true);
   const id = useId();
   const span = s.columns.length + 1 + (percent ? 1 : 0);
@@ -106,7 +115,7 @@ function BlockRows({ b, s, percent }: { b: Block; s: Statement; percent: boolean
     <>
       {amounts.map((m, i) => (
         <td key={i} className={i === 0 ? "fy-num" : "fy-num fy-expert-only"}>
-          {s.columns[i] ? <Figure amount={m.amount} accounts={accounts} column={s.columns[i]} /> : formatAmount(m.amount)}
+          {s.columns[i] ? <Figure amount={m.amount} accounts={accounts} column={s.columns[i]} only={only} /> : formatAmount(m.amount)}
         </td>
       ))}
       {percent && <td className="fy-num fy-expert-only fy-muted">{percents[0] ? `${percents[0]}%` : ""}</td>}
@@ -213,8 +222,9 @@ function Trend({ s }: { s: Statement }) {
 // FR-RPT-08): the P&L, the balance sheet, the cash flow or the trial balance for a run of months, with a comparative
 // or a column per month, read at one ledger revision. Every account's figure opens its general ledger lines (FR-UX-04).
 // Basic shows the current column with plain words under each section; Expert adds the codes, comparatives and % of
-// revenue. The layout is provisional (PRD-001 rev 0.159) [accountant to confirm]; budget comparatives come with
-// planning, dimension columns with dimensions, and the function view with its task. Export opens the export dialog.
+// revenue, and for a P&L a column per value of a dimension or the P&L of one value (FR-DIM-02). The layout is provisional
+// (PRD-001 rev 0.159) [accountant to confirm]; budget comparatives come with planning, and the function view with its
+// task. Export opens the export dialog.
 export function FinancialStatement() {
   const id = useId();
   const { kind } = useParams({ strict: false }) as { kind: Kind };
@@ -223,14 +233,21 @@ export function FinancialStatement() {
   const [custom, setCustom] = useState({ from: "", to: "" });
   const [compare, setCompare] = useState<"" | "prior_period" | "prior_year">("");
   const [byMonth, setByMonth] = useState(false);
+  // A P&L by dimension (FR-DIM-02): a column per value of pivot, and the lines of only.
+  const [pivot, setPivot] = useState("");
+  const [only, setOnly] = useState("");
+  const dims = useDimensions();
+  const pl = kind === "pl";
+  const columns = pl && pivot ? "dimension" : byMonth ? "month" : "total";
+  const dimensionQuery = pl ? { dimension_id: pivot || undefined, dimension_value_id: only ? [only] : undefined } : {};
   const periods = useQuery({ queryKey: ["periods"], queryFn: listPeriods });
   const run = useMemo(() => runOf(preset, periods.data?.items ?? [], custom), [preset, periods.data, custom]);
   const statement = useQuery({
-    queryKey: ["statement", kind, run, compare, byMonth],
+    queryKey: ["statement", kind, run, compare, byMonth, pl ? pivot : "", pl ? only : ""],
     enabled: run !== null,
     queryFn: async () => {
       const r = await api.GET("/v1/reports/statements/{kind}", {
-        params: { path: { kind }, query: { from: run!.from, to: run!.to, compare: compare || undefined, columns: byMonth ? "month" : "total" } },
+        params: { path: { kind }, query: { from: run!.from, to: run!.to, compare: columns === "dimension" ? undefined : compare || undefined, columns, ...dimensionQuery } },
       });
       if (r.error) throw r.error;
       return r.data;
@@ -244,7 +261,17 @@ export function FinancialStatement() {
   const name = statementNames[kind] ?? "Financial statement";
   // shown is what the statement shows, as the export dialog names it.
   const shown = s
-    ? `${date(s.from)} to ${date(s.to)}${byMonth ? ", a column per month" : compare === "prior_period" ? ", with the period before" : compare === "prior_year" ? ", with the same months a year earlier" : ""}`
+    ? `${date(s.from)} to ${date(s.to)}${
+        columns === "dimension"
+          ? `, a column per ${dims.dimensions.find((d) => d.id === pivot)?.name ?? "dimension value"}`
+          : byMonth
+            ? ", a column per month"
+            : compare === "prior_period"
+              ? ", with the period before"
+              : compare === "prior_year"
+                ? ", with the same months a year earlier"
+                : ""
+      }${pl && only ? `, only ${valueCodes([only], dims.dimensions, dims.byId)}` : ""}`
     : "";
 
   return (
@@ -278,7 +305,7 @@ export function FinancialStatement() {
           kind={kind}
           name={name}
           shown={shown}
-          query={{ from: run.from, to: run.to, compare: compare || undefined, columns: byMonth ? "month" : "total", as_at_revision: s.ledger_revision }}
+          query={{ from: run.from, to: run.to, compare: columns === "dimension" ? undefined : compare || undefined, columns, ...dimensionQuery, as_at_revision: s.ledger_revision }}
         />
       )}
       <nav className="fy-tabs" aria-label="Statements">
@@ -322,15 +349,51 @@ export function FinancialStatement() {
           <label className="fy-label" htmlFor={`${id}-compare`}>
             Compare with
           </label>
-          <select className="fy-select" id={`${id}-compare`} value={compare} disabled={byMonth} onChange={(e) => setCompare(e.target.value as typeof compare)}>
+          <select className="fy-select" id={`${id}-compare`} value={compare} disabled={byMonth || columns === "dimension"} onChange={(e) => setCompare(e.target.value as typeof compare)}>
             <option value="">Nothing</option>
             <option value="prior_period">The period before</option>
             <option value="prior_year">The same months a year earlier</option>
           </select>
         </div>
         <label className="fy-row gap-2 self-end fy-expert-only">
-          <input type="checkbox" checked={byMonth} onChange={(e) => setByMonth(e.target.checked)} />A column per month
+          <input type="checkbox" checked={byMonth} disabled={columns === "dimension"} onChange={(e) => setByMonth(e.target.checked)} />A column per month
         </label>
+        {pl && dims.dimensions.length > 0 && (
+          <>
+            <div className="fy-field fy-expert-only">
+              <label className="fy-label" htmlFor={`${id}-pivot`} title={helpText("statement.by-dimension").tooltip}>
+                Columns by dimension
+              </label>
+              <select className="fy-select" id={`${id}-pivot`} value={pivot} onChange={(e) => setPivot(e.target.value)}>
+                <option value="">None</option>
+                {dims.dimensions.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="fy-field fy-expert-only">
+              <label className="fy-label" htmlFor={`${id}-only`}>
+                Only for
+              </label>
+              <select className="fy-select" id={`${id}-only`} value={only} onChange={(e) => setOnly(e.target.value)}>
+                <option value="">Every line</option>
+                {dims.dimensions.map((d) => (
+                  <optgroup key={d.id} label={d.name}>
+                    {dims.values
+                      .filter((v) => v.dimension_id === d.id)
+                      .map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.code} {v.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
       </div>
       {last && last.status !== "closed" && (
         <div className="fy-banner fy-banner--warning" role="status">
@@ -392,7 +455,7 @@ export function FinancialStatement() {
               </thead>
               <tbody>
                 {s.blocks.map((b) => (
-                  <BlockRows key={b.key} b={b} s={s} percent={kind === "pl"} />
+                  <BlockRows key={b.key} b={b} s={s} percent={kind === "pl"} only={pl ? only || undefined : undefined} />
                 ))}
               </tbody>
             </table>

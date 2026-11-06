@@ -274,7 +274,8 @@ type AccountLine struct {
 	BaseAmount      Decimal
 	Description     string
 	Number          string
-	PartyID         *uuid.UUID // the person of a line on a director's account (B.7), else nil
+	PartyID         *uuid.UUID  // the person of a line on a director's account (B.7), else nil
+	DimensionValues []uuid.UUID // the line's dimension values in ascending order (FR-DIM-02), nil for none
 }
 
 // Balances is the materialised balances cache (INV-08).
@@ -287,6 +288,9 @@ type Balances interface {
 	// ForPeriodBySet is a period's balances with each dimension set on its own row (FR-DIM-02), for a reader that asks
 	// for the dimensions to see them apart.
 	ForPeriodBySet(ctx context.Context, periodID uuid.UUID) ([]SetBalance, error)
+	// ForPeriodBySetAt is ForPeriodBySet as at a ledger revision (FR-RPT-08): the lines of its entries with a revision up
+	// to it, summed by account, currency and dimension set.
+	ForPeriodBySetAt(ctx context.Context, periodID uuid.UUID, revision int64) ([]SetBalance, error)
 	// Differences compares the cache with a recomputation from the lines; empty means they agree.
 	Differences(ctx context.Context) ([]BalanceDifference, error)
 	// Rebuild recomputes the cache from the lines under the ledger lock and returns the rows written.

@@ -948,6 +948,14 @@
       "label": "Accountant exports",
       "tooltip": "The general ledger, the trial balance, the journal entries, the fixed asset schedule, and the receivables and payables in detail, as Excel or CSV for the accountant or the auditor."
     },
+    "statement.by-dimension": {
+      "label": "By department or project",
+      "tooltip": "A column per value of a dimension, or the profit and loss of one value alone, such as a department's."
+    },
+    "ledger.by-dimension": {
+      "label": "Only the lines of",
+      "tooltip": "The lines of a dimension value alone, such as a department's: their opening balance, lines and running balance."
+    },
     "statement.export": {
       "label": "Export",
       "tooltip": "Download the statement as shown, at its ledger revision: an Excel workbook with a data tab, a PDF to print, or CSV. Each export is recorded in the audit trail."

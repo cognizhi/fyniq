@@ -153,6 +153,47 @@ describe("a financial statement", () => {
     await noViolations(document.body);
   });
 
+  // req: FR-DIM-02
+  it("asks for the P&L by dimension or of one value, labels its columns as the API names them, and opens a value's lines", async () => {
+    const byDept: Statement = {
+      ...pl,
+      columns: [
+        { key: "value:v1", label: "ENG Engineering", from: "2026-10-01", to: "2026-10-31" },
+        { key: "none", label: "No Department", from: "2026-10-01", to: "2026-10-31" },
+        { key: "total", label: "Total", from: "2026-10-01", to: "2026-10-31" },
+      ],
+      blocks: [
+        {
+          key: "revenue",
+          title: "Revenue",
+          measure: false,
+          totals: [m("100.00"), m("10.00"), m("110.00")],
+          percents: ["", "", ""],
+          groups: [{ name: "Revenue", totals: [m("100.00"), m("10.00"), m("110.00")], percents: ["", "", ""], lines: [{ account_id: "a4000", code: "4000", name: "Sales", amounts: [m("100.00"), m("10.00"), m("110.00")], percents: ["", "", ""] }] }],
+        },
+      ],
+    };
+    answer({
+      "GET /v1/periods": { status: 200, body: { items: periods } },
+      "GET /v1/dimensions": { status: 200, body: { items: [{ id: "d1", kind: "department", name: "Department", active: true, version: 1 }] } },
+      "GET /v1/dimension-values": { status: 200, body: { items: [{ id: "v1", dimension_id: "d1", code: "ENG", name: "Engineering", active: true, version: 1 }] } },
+      "GET /v1/reports/statements/pl": (_b, req) => ({ status: 200, body: req.url.includes("columns=dimension") ? byDept : pl }),
+    });
+    renderPage(FinancialStatement, { path: "/reports/statements/pl", route: "/reports/statements/$kind", session: accountant, mode: "expert" });
+    await screen.findByRole("table");
+    await screen.findByRole("option", { name: "Department" });
+    fireEvent.change(screen.getByLabelText("Columns by dimension"), { target: { value: "d1" } });
+    await vi.waitFor(() => expect(seen.some((s) => s.path === "/v1/reports/statements/pl" && s.query.includes("columns=dimension") && s.query.includes("dimension_id=d1"))).toBe(true));
+    expect(await screen.findByRole("columnheader", { name: "ENG Engineering" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "No Department" })).toBeTruthy();
+    expect((screen.getByLabelText("Compare with") as HTMLSelectElement).disabled).toBe(true);
+    const engineering = screen.getAllByRole("link", { name: "100.00" })[0]!;
+    expect(decodeURIComponent(engineering.getAttribute("href") ?? "")).toContain('dimension_value_id=["v1"]');
+    expect(screen.queryByRole("link", { name: "10.00" })).toBeNull(); // the lines with no department: the general ledger cannot pick them out
+    fireEvent.change(screen.getByLabelText("Only for"), { target: { value: "v1" } });
+    await vi.waitFor(() => expect(seen.some((s) => s.path === "/v1/reports/statements/pl" && s.query.includes("dimension_value_id=v1"))).toBe(true));
+  });
+
   it("asks for a comparison and a column per month in Expert mode", async () => {
     answer({ "GET /v1/periods": { status: 200, body: { items: periods } }, "GET /v1/reports/statements/pl": { status: 200, body: pl } });
     renderPage(FinancialStatement, { path: "/reports/statements/pl", route: "/reports/statements/$kind", session: accountant });

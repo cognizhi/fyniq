@@ -11,9 +11,16 @@
       "type": "string"
     },
     "key": {
-      "description": "current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P\u0026L by month.",
+      "description": "current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P\u0026L by month or by dimension; value:\u003cid\u003e and none, a P\u0026L by dimension's columns.",
       "examples": [
         "current"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "A P\u0026L by dimension's column: the value's code and name, No \u003cdimension\u003e for the lines with no value of it, or Total.",
+      "examples": [
+        "ENG Engineering"
       ],
       "type": "string"
     },

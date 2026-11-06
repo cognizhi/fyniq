@@ -14,10 +14,12 @@ import (
 
 const accountLines = `-- name: AccountLines :many
 SELECT e.id AS entry_id, e.ledger_revision, e.posting_date, e.source_type, e.source_id, e.source_version, e.memo,
-       e.reverses_entry_id, l.line_no, l.currency, l.amount, l.base_amount, l.description, n.number, l.party_id
+       e.reverses_entry_id, l.line_no, l.currency, l.amount, l.base_amount, l.description, n.number, l.party_id,
+       coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids
 FROM fyniq.journal_line l
 JOIN fyniq.journal_entry e ON e.organisation_id = l.organisation_id AND e.id = l.entry_id
 LEFT JOIN fyniq.document_number n ON n.organisation_id = e.organisation_id AND n.id::text = e.source_id
+LEFT JOIN fyniq.dimension_set d ON d.organisation_id = l.organisation_id AND d.id = l.dimension_set_id
 WHERE l.account_id = $1 AND e.posting_date BETWEEN $2 AND $3
 ORDER BY e.posting_date, e.ledger_revision, l.line_no
 LIMIT $4
@@ -31,21 +33,22 @@ type AccountLinesParams struct {
 }
 
 type AccountLinesRow struct {
-	EntryID         uuid.UUID
-	LedgerRevision  int64
-	PostingDate     time.Time
-	SourceType      string
-	SourceID        string
-	SourceVersion   int32
-	Memo            *string
-	ReversesEntryID *uuid.UUID
-	LineNo          int32
-	Currency        string
-	Amount          string
-	BaseAmount      string
-	Description     *string
-	Number          *string
-	PartyID         *uuid.UUID
+	EntryID           uuid.UUID
+	LedgerRevision    int64
+	PostingDate       time.Time
+	SourceType        string
+	SourceID          string
+	SourceVersion     int32
+	Memo              *string
+	ReversesEntryID   *uuid.UUID
+	LineNo            int32
+	Currency          string
+	Amount            string
+	BaseAmount        string
+	Description       *string
+	Number            *string
+	PartyID           *uuid.UUID
+	DimensionValueIds []uuid.UUID
 }
 
 // An account's lines dated from..to, in posting order: date, then revision, then line (FR-GL-11), with their entry's
@@ -80,6 +83,7 @@ func (q *Queries) AccountLines(ctx context.Context, arg AccountLinesParams) ([]A
 			&i.Description,
 			&i.Number,
 			&i.PartyID,
+			&i.DimensionValueIds,
 		); err != nil {
 			return nil, err
 		}

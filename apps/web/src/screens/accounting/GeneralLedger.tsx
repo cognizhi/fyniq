@@ -14,6 +14,7 @@ import { sign } from "../../format/decimal";
 import { helpText } from "../../i18n";
 import { Icon, problemOf } from "../../ui";
 import { listAccounts, postable } from "./data";
+import { useDimensions, valueCodes } from "./lines";
 
 type Report = components["schemas"]["GeneralLedgerReport"];
 type AccountLedger = components["schemas"]["AccountLedger"];
@@ -79,6 +80,9 @@ function Source({ l }: { l: Line }) {
 
 function Ledger({ a, from, to, currency }: { a: AccountLedger; from: string; to: string; currency: string }) {
   const id = useId();
+  const dims = useDimensions();
+  // A Dimensions column once a line carries values (FR-DIM-02).
+  const tagged = a.lines.some((l) => (l.dimension_value_ids ?? []).length > 0);
   return (
     <section className="fy-stack fy-stack--3" aria-labelledby={id}>
       <div className="fy-row fy-row--between fy-row--wrap">
@@ -107,6 +111,7 @@ function Ledger({ a, from, to, currency }: { a: AccountLedger; from: string; to:
               <th scope="col" className="fy-num">
                 Balance
               </th>
+              {tagged && <th scope="col">Dimensions</th>}
             </tr>
           </thead>
           <tbody>
@@ -117,6 +122,7 @@ function Ledger({ a, from, to, currency }: { a: AccountLedger; from: string; to:
               <td className="fy-num" data-card="status">
                 {formatAmount(a.opening.amount)}
               </td>
+              {tagged && <td data-card="hide" />}
             </tr>
             {a.lines.map((l) => {
               const s = sign(l.base.amount);
@@ -146,6 +152,11 @@ function Ledger({ a, from, to, currency }: { a: AccountLedger; from: string; to:
                     <span className="fy-only-compact fy-muted">Balance </span>
                     <span>{formatAmount(l.balance.amount)}</span>
                   </td>
+                  {tagged && (
+                    <td data-card="meta" className="fy-mono">
+                      {valueCodes(l.dimension_value_ids ?? [], dims.dimensions, dims.byId)}
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -161,6 +172,7 @@ function Ledger({ a, from, to, currency }: { a: AccountLedger; from: string; to:
                 {formatAmount(a.credits.amount)}
               </td>
               <td className="fy-num">{formatAmount(a.closing.amount)}</td>
+              {tagged && <td data-card="hide" />}
             </tr>
           </tfoot>
         </table>
@@ -171,23 +183,26 @@ function Ledger({ a, from, to, currency }: { a: AccountLedger; from: string; to:
 
 // GeneralLedger is Reports › General ledger (docs/design/screens GeneralLedger; FR-GL-11): every posted line of the
 // accounts chosen over a range of dates, with the balance before, a running balance and the balance at the end, each
-// line opening its source; read at one ledger revision; exported as CSV. Dimensions, saved views and the background
-// export of larger ranges arrive with p1-reports.
+// line opening its source; read at one ledger revision; exported as CSV. The lines of some dimension values only, such as
+// a department's, with their values shown (FR-DIM-02); saved views and the background export of larger ranges arrive
+// with p1-reports.
 export function GeneralLedger() {
   const id = useId();
   // A statement's figure opens it with its accounts and run (FR-UX-04).
-  const search = useSearch({ strict: false }) as { account_id?: string[] | string; from?: string; to?: string };
+  const search = useSearch({ strict: false }) as { account_id?: string[] | string; from?: string; to?: string; dimension_value_id?: string[] | string };
   const first = `${today().slice(0, 8)}01`;
   const [from, setFrom] = useState(search.from ?? first);
   const [to, setTo] = useState(search.to ?? today);
   const [chosen, setChosen] = useState<string[]>(() => (search.account_id === undefined ? [] : ([] as string[]).concat(search.account_id).slice(0, 20)));
   const [adding, setAdding] = useState("");
+  const [only, setOnly] = useState<string[]>(() => (search.dimension_value_id === undefined ? [] : ([] as string[]).concat(search.dimension_value_id).slice(0, 10)));
+  const dims = useDimensions();
   const accounts = useQuery({ queryKey: ["accounts"], queryFn: listAccounts });
   const report = useQuery({
-    queryKey: ["general-ledger", chosen, from, to],
+    queryKey: ["general-ledger", chosen, from, to, only],
     enabled: chosen.length > 0 && Boolean(from) && Boolean(to),
     queryFn: async () => {
-      const r = await api.GET("/v1/reports/general-ledger", { params: { query: { account_id: chosen, from, to } } });
+      const r = await api.GET("/v1/reports/general-ledger", { params: { query: { account_id: chosen, from, to, dimension_value_id: only.length ? only : undefined } } });
       if (r.error) throw r.error;
       return r.data;
     },
@@ -271,6 +286,37 @@ export function GeneralLedger() {
             </label>
             <input className="fy-input" id={`${id}-to`} type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
+          {(dims.dimensions.length > 0 || only.length > 0) && (
+            <div className="fy-field fy-field--full">
+              <label className="fy-label" htmlFor={`${id}-only`} title={helpText("ledger.by-dimension").tooltip}>
+                Only the lines of
+              </label>
+              <div className="fy-row fy-row--wrap gap-2">
+                {only.map((v) => (
+                  <span key={v} className="fy-tag">
+                    <span className="fy-mono">{valueCodes([v], dims.dimensions, dims.byId) || "A value"}</span>
+                    <button type="button" className="fy-btn fy-btn--ghost fy-btn--sm" aria-label={`Remove ${valueCodes([v], dims.dimensions, dims.byId) || "the value"}`} onClick={() => setOnly(only.filter((x) => x !== v))}>
+                      <Icon of={X} />
+                    </button>
+                  </span>
+                ))}
+                <select className="fy-select" id={`${id}-only`} value="" onChange={(e) => e.target.value && setOnly([...only, e.target.value])}>
+                  <option value="">{only.length ? "Add a value" : "Every line"}</option>
+                  {dims.dimensions.map((d) => (
+                    <optgroup key={d.id} label={d.name}>
+                      {dims.values
+                        .filter((v) => v.dimension_id === d.id && !only.includes(v.id))
+                        .map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {v.code} {v.name}
+                          </option>
+                        ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       {chosen.length === 0 && (
