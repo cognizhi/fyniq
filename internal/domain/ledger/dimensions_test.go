@@ -331,3 +331,40 @@ func TestABankLinesPartsCarryTheirDimensionValues(t *testing.T) {
 		t.Errorf("a rule's part with a department out of use: %v", err)
 	}
 }
+
+// FR-DIM-01 and FR-DIM-02 on an expense claim (rev 0.171; slice 3d): each line's cost carries its values, and what is
+// owed and the input tax none; a claimant enters it, so a line whose category's account requires a dimension names a
+// value of it (DIM-05) and every value is one in use (DIM-06).
+// req: FR-DIM-01
+// req: FR-DIM-02
+func TestAClaimsLinesCarryTheirDimensionValues(t *testing.T) {
+	s := claiming()
+	d := withDimensions()
+	s.Dimensions, s.Values = d.Dimensions, d.Values
+	tagged := meals
+	tagged.Requires = []uuid.UUID{dept}
+	s.Accounts[meals.ID] = tagged
+	lunch := claimLine(t, meals, "54.50", "4.50", sgd, true)
+	lunch.Values = []uuid.UUID{eng, atlas}
+	e, err := PostExpenseClaim(aClaim(lunch), s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range e.Lines {
+		got, want := l.Values, []uuid.UUID(nil)
+		if l.AccountID == meals.ID {
+			want = []uuid.UUID{atlas, eng}
+		}
+		if !slices.Equal(got, want) {
+			t.Errorf("the line on %s: %v, want %v", s.Accounts[l.AccountID].Code, got, want)
+		}
+	}
+	lunch.Values = nil
+	if _, err := PostExpenseClaim(aClaim(lunch), s); dimensionCodes(err) != "DIM-05 lines[1].dimension_value_ids" {
+		t.Errorf("a line with no department: %v", err)
+	}
+	lunch.Values = []uuid.UUID{retired}
+	if _, err := PostExpenseClaim(aClaim(lunch), s); dimensionCodes(err) != "DIM-06 lines[1].dimension_value_ids" {
+		t.Errorf("a department out of use: %v", err)
+	}
+}

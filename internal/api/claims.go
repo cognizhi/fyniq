@@ -73,6 +73,8 @@ type ExpenseClaimLine struct {
 	Rate        *Money `json:"rate,omitempty" doc:"A trip, in answers: the vehicle's rate per km on its date."`
 	ReceiptID   string `json:"receipt_id,omitempty" format:"uuid" doc:"A receipt: its file among the claim's evidence (addExpenseClaimEvidence). Above its category's receipt threshold it is required (FR-AP-15)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
 	Duplicate   string `json:"duplicate_reason,omitempty" maxLength:"500" doc:"A receipt whose file is on another record: why it is not a duplicate. Required before submitting such a line; the approver sees it (UC-EXP-01)." example:"The hotel issued one invoice for both rooms; each of us claims their own night"`
+	// Dimensions (FR-DIM-01, FR-DIM-02; rev 0.171).
+	DimensionValueIDs []DimensionValueRef `json:"dimension_value_ids,omitempty" maxItems:"10" doc:"The line's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06); its cost carries them. A line whose category's account requires a dimension names a value of it, or the claim does not post when it is approved (DIM-05)."`
 }
 
 // ExpenseClaimDraft is a claim as its claimant enters it.
@@ -203,6 +205,9 @@ func claimDraftOf(in ExpenseClaimDraft, base money.Currency) (claim.Draft, error
 		at := func(f string) string { return "body.lines[" + strconv.Itoa(i) + "]." + f }
 		line := claim.Line{Kind: claim.LineReceipt, Merchant: strings.TrimSpace(l.Merchant), Description: l.Description, GSTCode: l.GSTCode,
 			Attendees: strings.TrimSpace(l.Attendees), Document: l.Document, AddressedTo: l.AddressedTo, DuplicateReason: strings.TrimSpace(l.Duplicate)}
+		values, fps := valuesOf(l.DimensionValueIDs, at("dimension_value_ids"))
+		fields = append(fields, fps...)
+		line.Values = values
 		if l.ReceiptID != "" {
 			r, err := uuid.Parse(l.ReceiptID)
 			if err != nil {
@@ -281,7 +286,7 @@ func claimLinesOut(d claim.Draft, trips map[int]claim.Trip) []ExpenseClaimLine {
 	for i, l := range d.Lines {
 		if l.Kind == claim.LineMileage {
 			x := ExpenseClaimLine{Kind: claim.LineMileage, Date: dayText(l.Date), CategoryID: l.CategoryID.String(), Description: l.Description,
-				From: l.From, To: l.To, Return: l.Return, Vehicle: l.Vehicle, Distance: l.Distance.String()}
+				From: l.From, To: l.To, Return: l.Return, Vehicle: l.Vehicle, Distance: l.Distance.String(), DimensionValueIDs: valueRefs(l.Values)}
 			if t, ok := trips[i]; ok {
 				amount, rate := moneyOut(t.Amount), moneyOut(t.Rate)
 				x.Amount, x.Rate, x.ClaimedKm = &amount, &rate, t.Km.String()
@@ -292,7 +297,7 @@ func claimLinesOut(d claim.Draft, trips map[int]claim.Trip) []ExpenseClaimLine {
 		amount := moneyOut(l.Amount)
 		x := ExpenseClaimLine{Kind: claim.LineReceipt, Date: dayText(l.Date), Merchant: l.Merchant, CategoryID: l.CategoryID.String(),
 			Description: l.Description, Amount: &amount, GSTCode: l.GSTCode, Attendees: l.Attendees, Document: l.Document,
-			AddressedTo: l.AddressedTo, Duplicate: l.DuplicateReason}
+			AddressedTo: l.AddressedTo, Duplicate: l.DuplicateReason, DimensionValueIDs: valueRefs(l.Values)}
 		if l.ReceiptID != nil {
 			x.ReceiptID = l.ReceiptID.String()
 		}

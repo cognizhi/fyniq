@@ -148,6 +148,11 @@ Source: PRD-001 §8.2 · Priority M · Phase P1
 - **WHEN** a person enters a journal whose lines on that account net to zero, one without a value and one with the value the amount belongs to
 - **THEN** it posts, and the amount without a value is gone from Checks
 
+#### Scenario: A claimant tags their own claim (rev 0.173)
+- **GIVEN** a claim category whose account requires a dimension, and an Employee who has no right on the chart of accounts
+- **WHEN** the Employee enters a claim's line in it
+- **THEN** they read the dimension's values in use and choose one, and the claim is held to the requirement like any line a person enters (Appendix D "Dimension values, to tag a line")
+
 ### Requirement: FR-DIM-02 Dimensions on every line and report
 Every ledger line SHALL carry its dimension values, and every report SHALL be filterable, groupable and pivotable by dimension.
 

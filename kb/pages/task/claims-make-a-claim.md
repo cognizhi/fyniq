@@ -4,14 +4,14 @@ type: task
 title: Claim back money spent for the company
 summary: How a member claims a receipt or a trip in My claims, submits it, completes card lines, uses a cash advance, or keeps it as a loan
 sources:
-  - docs/user-guide/claims-my-claims.md sha256:b25229e4fd97d03d971bf3596f4b264521c25c56e346ff555ac0a2f538a338d7
+  - docs/user-guide/claims-my-claims.md sha256:095d578fd5789a4c9fb01fce86cc7d98124a2629c240fd5e2cfa239f27186e9e
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-03
+compiled_at: 2026-11-06
 aliases:
   - expense claim
   - reimbursement
@@ -20,6 +20,8 @@ aliases:
   - personal spend
   - cash advance
   - mileage claim
+  - department on a claim
+  - project on a claim
 ---
 
 # Claim back money spent for the company
@@ -60,6 +62,14 @@ aliases:
 - The **Mileage** tab is the log of a month's trips.
 
 (src: docs/user-guide/claims-my-claims.md#claim-a-trip-in-your-own-vehicle)
+
+## Say which team or project it was for
+
+- When the company tracks costs by department, project or something of its own, a category may need to know which: under the category, a choice such as **Department** says "needs one" ([[accounting.chart]]).
+- Choose the team, such as ENG Engineering, for each receipt or trip in that category; the claim cannot be paid back until each has one (DIM-05: choose it under the line's category, then submit again).
+- Other choices, for a category that does not need them, are in Expert mode.
+
+(src: docs/user-guide/claims-my-claims.md#say-which-team-or-project-it-was-for) (src: docs/user-guide/claims-my-claims.md#common-problems)
 
 ## Attach the receipt
 

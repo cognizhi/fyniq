@@ -139,6 +139,7 @@ type Line struct {
 	// receipt whose file is on another record is not a duplicate (FR-AP-15, UC-EXP-01).
 	ReceiptID       *uuid.UUID
 	DuplicateReason string
+	Values          []uuid.UUID // its dimension values (FR-DIM-02), checked when the claim posts
 }
 
 // payload is a claim as a document version stores it: dates as text, amounts with their currency.
@@ -176,6 +177,8 @@ type payloadLine struct {
 	Distance     string       `json:"distance,omitempty"`
 	ReceiptID    *uuid.UUID   `json:"receipt_id,omitempty"`
 	Duplicate    string       `json:"duplicate_reason,omitempty"`
+	// The line's dimension values (FR-DIM-02).
+	DimensionValueIDs []uuid.UUID `json:"dimension_value_ids,omitempty"`
 }
 
 func day(t time.Time) string {
@@ -236,7 +239,7 @@ func Encode(d Draft) ([]byte, error) {
 		pl := payloadLine{Kind: LineReceipt, Date: day(r.Date), Merchant: r.Merchant, CategoryID: r.CategoryID, Description: r.Description,
 			Amount: &amount, GSTCode: r.GSTCode, GST: &gst, StatedGST: r.StatedGST, Paid: r.Paid, Attendees: r.Attendees,
 			Document: or(r.Document, bill.DocTaxInvoice, ""), AddressedTo: or(r.AddressedTo, bill.ToCompany, ""), ReceiptID: r.ReceiptID,
-			Duplicate: r.DuplicateReason}
+			Duplicate: r.DuplicateReason, DimensionValueIDs: r.Values}
 		if r.Rate != nil {
 			pl.FXRate, pl.FXRateSource = r.Rate.String(), r.Rate.Source
 		}
@@ -293,7 +296,7 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 		}
 		r := Line{Kind: LineReceipt, Merchant: l.Merchant, CategoryID: l.CategoryID, Description: l.Description, Amount: *l.Amount, GSTCode: l.GSTCode, GST: *l.GST,
 			StatedGST: l.StatedGST, Paid: l.Paid, Attendees: l.Attendees, Document: l.Document, AddressedTo: l.AddressedTo, ReceiptID: l.ReceiptID,
-			DuplicateReason: l.Duplicate}
+			DuplicateReason: l.Duplicate, Values: l.DimensionValueIDs}
 		if l.Date != "" {
 			if r.Date, err = time.Parse(time.DateOnly, l.Date); err != nil {
 				return Draft{}, bad(fmt.Sprintf("the receipt's date %q", l.Date))
@@ -325,12 +328,13 @@ func encodeTrip(r Line, f func(string) string) (payloadLine, error) {
 		return payloadLine{}, &Error{CodeMileage, fmt.Sprintf("%s: %q is not a vehicle Fyniq has a rate for", f("vehicle"), r.Vehicle), "Choose car or motorcycle"}
 	}
 	return payloadLine{Kind: LineMileage, Date: day(r.Date), CategoryID: r.CategoryID, Description: r.Description, From: r.From, To: r.To,
-		Return: r.Return, Vehicle: r.Vehicle, Distance: r.Distance.String()}, nil
+		Return: r.Return, Vehicle: r.Vehicle, Distance: r.Distance.String(), DimensionValueIDs: r.Values}, nil
 }
 
 // readTrip reads a mileage line as it was saved.
 func readTrip(l payloadLine) (Line, error) {
-	t := Line{Kind: LineMileage, CategoryID: l.CategoryID, Description: l.Description, From: l.From, To: l.To, Return: l.Return, Vehicle: l.Vehicle}
+	t := Line{Kind: LineMileage, CategoryID: l.CategoryID, Description: l.Description, From: l.From, To: l.To, Return: l.Return, Vehicle: l.Vehicle,
+		Values: l.DimensionValueIDs}
 	if l.Date != "" {
 		d, err := time.Parse(time.DateOnly, l.Date)
 		if err != nil {

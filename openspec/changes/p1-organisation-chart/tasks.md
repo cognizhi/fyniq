@@ -170,6 +170,16 @@
   rules' tagging, compiled into `banking.categorise` and `banking.rules`. Tests
   `TestABankLinesPartsCarryTheirDimensionValues`, `TestBankLinePartsCarryTheirDimensionValues`,
   `TestBankLinePartsTakeDimensionValues`, `categorise.test.tsx`. **Left:** claims.)
+  (6 Nov 2026, slice 3d, claims: a claim's receipt and trip lines take `dimension_value_ids`, held to the requirement
+  like any line a person enters. Building it found an Employee could not read the dimensions (Appendix D), so such a
+  claim could never post: the owner chose, interactively, PRD-001 rev 0.173, a new Appendix D row "Dimension values,
+  to tag a line" (V to every role that views the chart, and the Employee), which `listDimensions` and
+  `listDimensionValues` now follow. A claim category shows its account's `required_dimension_ids`, since a claimant
+  reads no accounts; the claim editor and the mileage screen have a choice per dimension, shown in Basic when the
+  category needs one ("<category> needs one"). Help key `claim.line-dimensions`; the guide's "Say which team or project
+  it was for", compiled into `claims.make-a-claim`. Tests `TestAClaimsLinesCarryTheirDimensionValues`,
+  `TestClaimLinesCarryTheirDimensionValues`, `TestClaimLinesTakeDimensionValues`, `claims.test.tsx`. **Left:**
+  reports by dimension and the oracle's half (slice 4).)
 
 ## 4. Contacts and items
 

@@ -48,6 +48,7 @@ type ClaimLine struct {
 	StatedBase  *money.Money
 	Paid        *money.Money
 	Mileage     bool
+	Values      []uuid.UUID // the line's dimension values (FR-DIM-02), in any order; its cost carries them
 }
 
 // Claim is one version of an expense claim as the rule reads it: its date (the entry's posting date), its memo (the
@@ -160,6 +161,7 @@ func postExpenseClaim(c Claim, s Settings, rule string) (Entry, error) {
 		if len(l.Description) > MaxDescription {
 			add(CodeTooLong, f("description"), fmt.Sprintf("the description has %d characters; the most is %d", len(l.Description), MaxDescription), "Shorten it")
 		}
+		probs = append(probs, documentLine(s, acc, ok, canonical(l.Values), f("dimension_value_ids"))...)
 		cur := l.Amount.Currency()
 		rate := money.Identity(s.Base)
 		rated := true
@@ -245,7 +247,7 @@ func postExpenseClaim(c Claim, s Settings, rule string) (Entry, error) {
 			continue
 		}
 		baseTotal, _ = baseTotal.Add(base)
-		lines = append(lines, Line{AccountID: l.AccountID, Amount: cost, Rate: rate, Base: base, Description: l.Description})
+		lines = append(lines, Line{AccountID: l.AccountID, Amount: cost, Rate: rate, Base: base, Description: l.Description, Values: canonical(l.Values)})
 	}
 	if !gstBase.IsZero() && !hasGST {
 		add(CodeSystemRole, "lines", "the chart has no GST control account for the input tax", "Load the standard chart's 2200 GST control, or give a liability account the role")

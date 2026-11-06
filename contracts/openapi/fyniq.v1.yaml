@@ -6569,6 +6569,17 @@ components:
         receipt_above:
           $ref: "#/components/schemas/Money"
           description: "Above it, a line needs its receipt attached (✖ until it is). Absent: never required."
+        required_dimension_ids:
+          description: "The dimensions its account requires (listDimensions): a claim line in it names a value of each, or the claim does not post (DIM-05). Read-only: the account says, in the chart of accounts."
+          items:
+            description: A dimension's ID (listDimensions).
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+            format: uuid
+            type: string
+          type:
+            - array
+            - "null"
         version:
           description: Its version, for If-Match.
           examples:
@@ -12701,6 +12712,18 @@ components:
             - Taxi to Acme
           maxLength: 500
           type: string
+        dimension_value_ids:
+          description: The line's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06); its cost carries them. A line whose category's account requires a dimension names a value of it, or the claim does not post when it is approved (DIM-05).
+          items:
+            description: A dimension value's ID (listDimensionValues).
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21
+            format: uuid
+            type: string
+          maxItems: 10
+          type:
+            - array
+            - "null"
         distance:
           description: "A trip: the whole trip's distance in km, as driven."
           examples:
@@ -56284,7 +56307,7 @@ paths:
         right: P
   /v1/dimension-values:
     get:
-      description: "The values of one dimension, or of every dimension, those out of use included (FR-DIM-01): by dimension as listDimensions orders them, then by code, a page at a time. Read-only; no side effects."
+      description: "The values of one dimension, or of every dimension, those out of use included (FR-DIM-01): by dimension as listDimensions orders them, then by code, a page at a time. Every role that tags a line reads them, an Employee too, for their claims (Appendix D, rev 0.173). Read-only; no side effects."
       operationId: listDimensionValues
       parameters:
         - description: How many items per page, up to 500.
@@ -56403,7 +56426,7 @@ paths:
         - API-INPUT-02
         - API-RATE-01
       x-fyniq-permission:
-        capability: Chart of accounts, dimensions
+        capability: Dimension values, to tag a line (rev 0.173)
         right: V
     post:
       description: "Adds a value to a dimension in use (FR-DIM-01): its code, unique in the dimension and never changed, and its name. Every problem comes back together. Side effects: the value, and an audit event of its dimension that names it. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
@@ -56797,7 +56820,7 @@ paths:
         right: C
   /v1/dimensions:
     get:
-      description: "The organisation's dimensions (FR-DIM-01): Department, Project, then the custom ones by place, those out of use included, a page at a time. Read-only; no side effects."
+      description: "The organisation's dimensions (FR-DIM-01): Department, Project, then the custom ones by place, those out of use included, a page at a time. Every role that tags a line reads them, an Employee too, for their claims (Appendix D, rev 0.173). Read-only; no side effects."
       operationId: listDimensions
       parameters:
         - description: How many items per page, up to 500.
@@ -56906,7 +56929,7 @@ paths:
         - API-INPUT-02
         - API-RATE-01
       x-fyniq-permission:
-        capability: Chart of accounts, dimensions
+        capability: Dimension values, to tag a line (rev 0.173)
         right: V
     post:
       description: "Adds Department or Project, once each, or a custom dimension in the first free of places 1 to 8 (FR-DIM-01), named uniquely. Every problem comes back together. Side effects: the dimension and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
