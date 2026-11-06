@@ -11,6 +11,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { Changes, ConfirmDecision, HashLine } from "./Decide";
+import { Impact } from "./Impact";
 import { objectLabel, operationLabel, StatusChip, stepWho, type Approval } from "./words";
 import { EvidencePanel } from "../accounting/JournalEvidence";
 import { CompareNumbers } from "../contacts/BankDetails";
@@ -239,6 +240,20 @@ export function ApprovalPage() {
         </div>
       </section>
 
+      {a.impact && (
+        <section className="fy-card" aria-labelledby="impact-title">
+          <div className="fy-card__head">
+            <h2 className="fy-h3" id="impact-title">
+              What approving it would post
+            </h2>
+            <span className="fy-small fy-muted">Worked out now; nothing is kept</span>
+          </div>
+          <div className="fy-card__body">
+            <Impact impact={a.impact} />
+          </div>
+        </section>
+      )}
+
       {a.object_type === "payee_bank_change" && (
         <>
           <CompareNumbers changeId={a.object_key} envelope={a.envelope} />
@@ -260,6 +275,11 @@ export function ApprovalPage() {
           <span className="fy-badge fy-badge--quiet fy-expert-only">{a.policy}</span>
         </div>
         <div className="fy-card__body fy-stack fy-stack--3">
+          {a.policy_rule ? (
+            <p className="fy-small fy-secondary">
+              Rule {a.policy_rule} of its policy chose these steps: the first rule whose conditions this change meets.
+            </p>
+          ) : null}
           <Steps a={a} />
           <h3 className="fy-h3">Signatures</h3>
           <Signatures a={a} />
