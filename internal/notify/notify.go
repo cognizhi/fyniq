@@ -214,6 +214,22 @@ func Recipients(a Audience, members []storage.Member) []uuid.UUID {
 	return out
 }
 
+// Sees reports whether user, holding roles now, still sees a notification of an event for the audience audience
+// (SEC-34): one that names them does, and one by row only while their roles hold one of its rights there, so that a
+// role taken away takes the row's notifications with it, from the centre, the bell's count and the email not yet sent.
+// An audience that does not read as one is seen by nobody.
+func Sees(audience json.RawMessage, user uuid.UUID, roles []authz.Role) bool {
+	var a Audience
+	if err := json.Unmarshal(audience, &a); err != nil {
+		return false
+	}
+	held := make([]storage.RoleAssignment, 0, len(roles))
+	for _, r := range roles {
+		held = append(held, storage.RoleAssignment{Role: string(r)})
+	}
+	return len(Recipients(a, []storage.Member{{Membership: storage.Membership{UserID: user, Status: "active"}, Roles: held}})) == 1
+}
+
 // Cadence is how a notification of t goes by email to a person with preferences prefs: their choice for t, else t's
 // recommendation; a locked type as it says, whatever they chose.
 func Cadence(t Type, prefs []storage.NotificationPreference) string {
@@ -349,7 +365,8 @@ func due(cadence string, created, now time.Time) bool {
 }
 
 // Digest sends every organisation's held email: an immediate one held in quiet hours once they end, and each person's
-// daily or weekly digest when it is due, one email for all its notifications.
+// daily or weekly digest when it is due, one email for all its notifications. Held email its person no longer sees,
+// having lost the role or left, is withdrawn instead (SEC-34).
 func (f Fanout) Digest(ctx context.Context) (int, error) {
 	orgs, err := f.Store.Organisations(ctx)
 	if err != nil {
@@ -368,14 +385,32 @@ func (f Fanout) Digest(ctx context.Context) (int, error) {
 			if err != nil {
 				return err
 			}
+			members, err := u.Members().List(ctx, now)
+			if err != nil {
+				return err
+			}
+			live := map[uuid.UUID][]authz.Role{} // the active members' roles now
+			for _, m := range members {
+				if m.Status == "active" {
+					roles := make([]authz.Role, 0, len(m.Roles))
+					for _, r := range m.Roles {
+						roles = append(roles, authz.Role(r.Role))
+					}
+					live[m.UserID] = roles
+				}
+			}
 			for _, cadence := range []string{storage.EmailImmediate, storage.EmailDaily, storage.EmailWeekly} {
 				held, err := u.Notifications().Held(ctx, cadence)
 				if err != nil {
 					return err
 				}
 				byUser := map[uuid.UUID][]storage.Notification{}
-				var users []uuid.UUID
+				var users, gone []uuid.UUID
 				for _, n := range held {
+					if roles, member := live[n.UserID]; !member || !Sees(n.Audience, n.UserID, roles) {
+						gone = append(gone, n.ID) // what they no longer see is never emailed (SEC-34)
+						continue
+					}
 					if !due(cadence, n.CreatedAt, now) || emails[n.UserID] == "" {
 						continue
 					}
@@ -422,6 +457,9 @@ func (f Fanout) Digest(ctx context.Context) (int, error) {
 						return err
 					}
 					sent++
+				}
+				if _, err := u.Notifications().Withdraw(ctx, gone, now); err != nil {
+					return err
 				}
 			}
 			return nil

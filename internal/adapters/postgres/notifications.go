@@ -30,7 +30,7 @@ type notificationRow = sqlcdb.GetNotificationRow
 func toNotification(r notificationRow) storage.Notification {
 	return storage.Notification{ID: r.ID, EventID: r.EventID, UserID: r.UserID, Type: r.Type, Severity: r.Severity, Actionable: r.Actionable,
 		Email: r.Email, EmailMessageID: r.EmailMessageID, DigestID: r.DigestID, CreatedAt: r.CreatedAt, ReadAt: r.ReadAt, ArchivedAt: r.ArchivedAt,
-		Title: r.Title, Link: str(r.Link)}
+		Title: r.Title, Link: str(r.Link), Audience: r.Audience}
 }
 
 func (r notifications) Emit(ctx context.Context, e storage.NewNotificationEvent) (storage.NotificationEvent, error) {
@@ -103,6 +103,17 @@ func (r notifications) Emailed(ctx context.Context, id, message uuid.UUID) error
 	}
 	_, err := r.u.q.EmailedNotification(ctx, sqlcdb.EmailedNotificationParams{ID: id, Message: &message})
 	return mapError(err)
+}
+
+func (r notifications) Withdraw(ctx context.Context, ids []uuid.UUID, at time.Time) (int, error) {
+	if err := r.u.check(); err != nil {
+		return 0, err
+	}
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	n, err := r.u.q.WithdrawNotifications(ctx, sqlcdb.WithdrawNotificationsParams{Ids: ids, At: &at})
+	return int(n), mapError(err)
 }
 
 func (r notifications) Get(ctx context.Context, id uuid.UUID) (storage.Notification, error) {

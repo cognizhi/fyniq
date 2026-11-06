@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"slices"
 	"strconv"
 	"time"
 
@@ -77,7 +78,7 @@ type Notification struct {
 // NotificationPage is a page of the caller's notifications, newest first, with their unread count.
 type NotificationPage struct {
 	Items      []Notification `json:"items" nullable:"false" doc:"The notifications, newest first."`
-	Unread     int            `json:"unread" doc:"How many of the caller's notifications are unread and not archived: the bell's count." example:"3"`
+	Unread     int            `json:"unread" doc:"How many of the caller's notifications are unread and not archived, of those they still see: the bell's count." example:"3"`
 	NextCursor string         `json:"next_cursor,omitempty" doc:"Send it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjAxOTI4ZjZlIn0"`
 }
 
@@ -129,7 +130,7 @@ type NotificationTypePath struct {
 
 // MarkedAll is how many notifications were marked read.
 type MarkedAll struct {
-	Marked int `json:"marked" doc:"How many were unread." example:"3"`
+	Marked int `json:"marked" doc:"How many were unread, of those the caller still sees." example:"3"`
 }
 
 type notificationsInput struct {
@@ -237,6 +238,25 @@ func preferencesOf(prefs []storage.NotificationPreference) NotificationPreferenc
 }
 
 // person is the caller's user, or a problem when the caller is not a person.
+// maxUnreadCounted is the most unread notifications the bell counts; maxPagesScanned the most pages a list reads past
+// notifications the caller no longer sees before it answers with what it has.
+const (
+	maxUnreadCounted = 10000
+	maxPagesScanned  = 20
+)
+
+// seeing keeps the notifications of ns that p still sees (SEC-34): those naming them, and those by row while their roles
+// hold the right.
+func seeing(p authn.Principal, ns []storage.Notification) []storage.Notification {
+	return slices.DeleteFunc(ns, func(n storage.Notification) bool { return !notify.Sees(n.Audience, p.UserID, p.Roles) })
+}
+
+// unread counts p's unread notifications that are not archived and that they still see.
+func unread(ctx context.Context, u storage.UnitOfWork, p authn.Principal) (int, error) {
+	ns, err := u.Notifications().List(ctx, storage.NotificationFilter{UserID: p.UserID, Unread: true, Limit: maxUnreadCounted})
+	return len(seeing(p, ns)), err
+}
+
 func person(ctx context.Context) (uuid.UUID, error) {
 	p, _ := authn.From(ctx)
 	if p.UserID == uuid.Nil || p.Class != authn.ClassUser {
@@ -254,7 +274,9 @@ func registerNotifications(a *API) {
 		Summary: "List your notifications",
 		Description: "The caller's notifications, newest first, with the bell's unread count (FR-NTF-01): what happened, each with its type, " +
 			"severity, the record it is about and a link; an actionable one links to its Inbox item, where what waits for the caller is. " +
-			"Archived ones only with archived=true. Empty for a caller who is not a person. Read-only; no side effects.",
+			"Archived ones only with archived=true. One sent to the people whose roles hold a right shows, and counts, only while the " +
+			"caller still holds it (SEC-34); a page may then be short, with next_cursor where the reading stopped. Empty for a caller who " +
+			"is not a person. Read-only; no side effects.",
 	}, append([]string{CodeCursor}, locks...), func(ctx context.Context, in *notificationsInput) (*notificationsOutput, error) {
 		p, _ := authn.From(ctx)
 		out := NotificationPage{Items: []Notification{}}
@@ -272,18 +294,35 @@ func registerNotifications(a *API) {
 			}
 		}
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-			ns, err := u.Notifications().List(ctx, f)
-			if err != nil {
-				return err
+			var kept []storage.Notification
+			for scanned := 1; ; scanned++ {
+				ns, err := u.Notifications().List(ctx, f)
+				if err != nil {
+					return err
+				}
+				more := len(ns) == f.Limit
+				if more {
+					f.Before = ns[len(ns)-1].ID
+				}
+				kept = append(kept, seeing(p, ns)...)
+				if len(kept) > in.PageSize {
+					kept = kept[:in.PageSize]
+					out.NextCursor = encodeCursor(kept[len(kept)-1].ID.String())
+					break
+				}
+				if !more {
+					break
+				}
+				if scanned == maxPagesScanned { // a short page, then the rest from where the reading stopped
+					out.NextCursor = encodeCursor(f.Before.String())
+					break
+				}
 			}
-			if len(ns) > in.PageSize {
-				ns = ns[:in.PageSize]
-				out.NextCursor = encodeCursor(ns[len(ns)-1].ID.String())
-			}
-			for _, n := range ns {
+			for _, n := range kept {
 				out.Items = append(out.Items, notificationOf(n))
 			}
-			out.Unread, err = u.Notifications().Unread(ctx, p.UserID)
+			var err error
+			out.Unread, err = unread(ctx, u, p)
 			return err
 		})
 		return &notificationsOutput{Body: out}, err
@@ -304,7 +343,7 @@ func registerNotifications(a *API) {
 				}
 				w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (Notification, error) {
 					n, err := u.Notifications().Get(ctx, nid)
-					if err == nil && n.UserID != user {
+					if p, _ := authn.From(ctx); err == nil && (n.UserID != user || !notify.Sees(n.Audience, user, p.Roles)) {
 						return Notification{}, problem(CodeNotFound, "No notification of yours has that ID.", "List your notifications")
 					}
 					if err != nil {
@@ -346,7 +385,12 @@ func registerNotifications(a *API) {
 				return nil, err
 			}
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (MarkedAll, error) {
-				n, err := u.Notifications().MarkAllRead(ctx, user, a.deps.Clock.Now())
+				p, _ := authn.From(ctx)
+				n, err := unread(ctx, u, p) // what they see: the ones they no longer see are marked too, uncounted
+				if err != nil {
+					return MarkedAll{}, err
+				}
+				_, err = u.Notifications().MarkAllRead(ctx, user, a.deps.Clock.Now())
 				return MarkedAll{Marked: n}, err
 			})
 			if err != nil {

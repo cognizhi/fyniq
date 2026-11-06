@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/authz"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -37,6 +38,34 @@ func TestAnEventConcernsItsAudience(t *testing.T) {
 	members = append(members, member(admin, "active", "administrator"))
 	if got := Recipients(Audience{Capability: "Users, roles, team mode", Need: "CA"}, members); len(got) != 2 || got[0] != owner || got[1] != admin {
 		t.Fatalf("any of the rights: %v", got)
+	}
+}
+
+// A person sees a notification while its audience still holds them (SEC-34): one naming them whatever their roles, one
+// by row only while a role of theirs holds the right there, never one that leaves them out, and nothing for an
+// audience that does not read as one.
+// req: SEC-34
+// asvs: V8.2.2, V8.3.2
+func TestAPersonSeesWhatTheirRolesHoldNow(t *testing.T) {
+	me := uuid.New()
+	approvals := []byte(`{"capability":"Journals","need":"A"}`)
+	for _, c := range []struct {
+		what     string
+		audience []byte
+		roles    []authz.Role
+		want     bool
+	}{
+		{"by row, with the right", approvals, []authz.Role{authz.Controller}, true},
+		{"by row, the right gone", approvals, []authz.Role{authz.Accountant}, false},
+		{"by row, no roles", approvals, nil, false},
+		{"naming them, no roles", []byte(`{"users":["` + me.String() + `"]}`), nil, true},
+		{"naming someone else", []byte(`{"users":["` + uuid.NewString() + `"]}`), []authz.Role{authz.Owner}, false},
+		{"leaving them out", []byte(`{"capability":"Journals","need":"A","except":["` + me.String() + `"]}`), []authz.Role{authz.Controller}, false},
+		{"not an audience", []byte(`not json`), []authz.Role{authz.Controller}, false},
+	} {
+		if got := Sees(c.audience, me, c.roles); got != c.want {
+			t.Errorf("%s: sees %v, want %v", c.what, got, c.want)
+		}
 	}
 }
 

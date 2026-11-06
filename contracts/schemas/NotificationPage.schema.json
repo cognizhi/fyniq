@@ -17,7 +17,7 @@
       "type": "string"
     },
     "unread": {
-      "description": "How many of the caller's notifications are unread and not archived: the bell's count.",
+      "description": "How many of the caller's notifications are unread and not archived, of those they still see: the bell's count.",
       "examples": [
         3
       ],

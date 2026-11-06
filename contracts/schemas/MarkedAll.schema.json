@@ -3,7 +3,7 @@
   "additionalProperties": false,
   "properties": {
     "marked": {
-      "description": "How many were unread.",
+      "description": "How many were unread, of those the caller still sees.",
       "examples": [
         3
       ],

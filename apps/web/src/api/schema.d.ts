@@ -5917,7 +5917,7 @@ export interface paths {
         };
         /**
          * List your notifications
-         * @description The caller's notifications, newest first, with the bell's unread count (FR-NTF-01): what happened, each with its type, severity, the record it is about and a link; an actionable one links to its Inbox item, where what waits for the caller is. Archived ones only with archived=true. Empty for a caller who is not a person. Read-only; no side effects.
+         * @description The caller's notifications, newest first, with the bell's unread count (FR-NTF-01): what happened, each with its type, severity, the record it is about and a link; an actionable one links to its Inbox item, where what waits for the caller is. Archived ones only with archived=true. One sent to the people whose roles hold a right shows, and counts, only while the caller still holds it (SEC-34); a page may then be short, with next_cursor where the reading stopped. Empty for a caller who is not a person. Read-only; no side effects.
          */
         get: operations["listNotifications"];
         put?: never;
@@ -21693,7 +21693,7 @@ export interface components {
         MarkedAll: {
             /**
              * Format: int64
-             * @description How many were unread.
+             * @description How many were unread, of those the caller still sees.
              * @example 3
              */
             marked: number;
@@ -22336,7 +22336,7 @@ export interface components {
             next_cursor?: string;
             /**
              * Format: int64
-             * @description How many of the caller's notifications are unread and not archived: the bell's count.
+             * @description How many of the caller's notifications are unread and not archived, of those they still see: the bell's count.
              * @example 3
              */
             unread: number;

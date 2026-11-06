@@ -59,6 +59,8 @@ type Notification struct {
 	ArchivedAt     *time.Time
 	// From its event.
 	Title, Link string
+	// Audience is whom the event concerns, as notify wrote it: one by row shows while its person holds the right (SEC-34).
+	Audience json.RawMessage
 }
 
 // NewNotification is a notification to add at fan-out.
@@ -118,6 +120,9 @@ type Notifications interface {
 	// Held are the notifications going by email that no email carried yet: of cadence immediate (held in quiet hours),
 	// daily or weekly, oldest first.
 	Held(ctx context.Context, cadence string) ([]Notification, error)
+	// Withdraw records that held email of these notifications will not be sent, because their people no longer see what
+	// they are about (SEC-34), and says how many; one already sent, digested or withdrawn is left as it is.
+	Withdraw(ctx context.Context, ids []uuid.UUID, at time.Time) (int, error)
 	// Digested records a digest of a person's notifications, sent as message.
 	Digested(ctx context.Context, user uuid.UUID, cadence string, message uuid.UUID, ids []uuid.UUID, at time.Time) error
 	// Prefer records a person's preference.

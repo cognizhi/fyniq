@@ -681,7 +681,7 @@ fyniq_worker    SELECT    money_account
 fyniq_worker    SELECT    money_account_source
 fyniq_worker    INSERT    notification (actionable, created_at, email, event_id, severity, type, user_id)
 fyniq_worker    SELECT    notification
-fyniq_worker    UPDATE    notification (digest_id, email_message_id)
+fyniq_worker    UPDATE    notification (digest_id, email_message_id, withdrawn_at)
 fyniq_worker    INSERT    notification_digest (cadence, email_message_id, sent_at, user_id)
 fyniq_worker    SELECT    notification_digest
 fyniq_worker    INSERT    notification_event (actor, audience, link, occurred_at, record_id, record_type, title, type)

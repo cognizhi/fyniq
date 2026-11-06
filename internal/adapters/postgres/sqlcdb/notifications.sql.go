@@ -84,7 +84,7 @@ func (q *Queries) FannedOutNotificationEvent(ctx context.Context, arg FannedOutN
 
 const getNotification = `-- name: GetNotification :one
 SELECT n.id, n.event_id, n.user_id, n.type, n.severity, n.actionable, n.email, n.email_message_id, n.digest_id, n.created_at, n.read_at,
-  n.archived_at, e.title, e.link
+  n.archived_at, e.title, e.link, e.audience
 FROM fyniq.notification n JOIN fyniq.notification_event e ON e.organisation_id = n.organisation_id AND e.id = n.event_id
 WHERE n.id = $1
 `
@@ -104,6 +104,7 @@ type GetNotificationRow struct {
 	ArchivedAt     *time.Time
 	Title          string
 	Link           *string
+	Audience       []byte
 }
 
 func (q *Queries) GetNotification(ctx context.Context, id uuid.UUID) (GetNotificationRow, error) {
@@ -124,6 +125,7 @@ func (q *Queries) GetNotification(ctx context.Context, id uuid.UUID) (GetNotific
 		&i.ArchivedAt,
 		&i.Title,
 		&i.Link,
+		&i.Audience,
 	)
 	return i, err
 }
@@ -166,9 +168,9 @@ func (q *Queries) GetNotificationEvent(ctx context.Context, id uuid.UUID) (GetNo
 
 const heldNotifications = `-- name: HeldNotifications :many
 SELECT n.id, n.event_id, n.user_id, n.type, n.severity, n.actionable, n.email, n.email_message_id, n.digest_id, n.created_at, n.read_at,
-  n.archived_at, e.title, e.link
+  n.archived_at, e.title, e.link, e.audience
 FROM fyniq.notification n JOIN fyniq.notification_event e ON e.organisation_id = n.organisation_id AND e.id = n.event_id
-WHERE n.email = $1 AND n.email_message_id IS NULL AND n.digest_id IS NULL
+WHERE n.email = $1 AND n.email_message_id IS NULL AND n.digest_id IS NULL AND n.withdrawn_at IS NULL
 ORDER BY n.id
 LIMIT 5000
 `
@@ -188,6 +190,7 @@ type HeldNotificationsRow struct {
 	ArchivedAt     *time.Time
 	Title          string
 	Link           *string
+	Audience       []byte
 }
 
 func (q *Queries) HeldNotifications(ctx context.Context, cadence string) ([]HeldNotificationsRow, error) {
@@ -214,6 +217,7 @@ func (q *Queries) HeldNotifications(ctx context.Context, cadence string) ([]Held
 			&i.ArchivedAt,
 			&i.Title,
 			&i.Link,
+			&i.Audience,
 		); err != nil {
 			return nil, err
 		}
@@ -486,7 +490,7 @@ func (q *Queries) NotificationPreferences(ctx context.Context, userID uuid.UUID)
 
 const notifications = `-- name: Notifications :many
 SELECT n.id, n.event_id, n.user_id, n.type, n.severity, n.actionable, n.email, n.email_message_id, n.digest_id, n.created_at, n.read_at,
-  n.archived_at, e.title, e.link
+  n.archived_at, e.title, e.link, e.audience
 FROM fyniq.notification n JOIN fyniq.notification_event e ON e.organisation_id = n.organisation_id AND e.id = n.event_id
 WHERE n.user_id = $1
   AND ($2::boolean = (n.archived_at IS NOT NULL))
@@ -519,6 +523,7 @@ type NotificationsRow struct {
 	ArchivedAt     *time.Time
 	Title          string
 	Link           *string
+	Audience       []byte
 }
 
 func (q *Queries) Notifications(ctx context.Context, arg NotificationsParams) ([]NotificationsRow, error) {
@@ -551,6 +556,7 @@ func (q *Queries) Notifications(ctx context.Context, arg NotificationsParams) ([
 			&i.ArchivedAt,
 			&i.Title,
 			&i.Link,
+			&i.Audience,
 		); err != nil {
 			return nil, err
 		}
@@ -571,4 +577,22 @@ func (q *Queries) UnreadNotifications(ctx context.Context, userID uuid.UUID) (in
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const withdrawNotifications = `-- name: WithdrawNotifications :execrows
+UPDATE fyniq.notification SET withdrawn_at = $1
+WHERE id = ANY($2::uuid[]) AND withdrawn_at IS NULL AND email_message_id IS NULL AND digest_id IS NULL
+`
+
+type WithdrawNotificationsParams struct {
+	At  *time.Time
+	Ids []uuid.UUID
+}
+
+func (q *Queries) WithdrawNotifications(ctx context.Context, arg WithdrawNotificationsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, withdrawNotifications, arg.At, arg.Ids)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
