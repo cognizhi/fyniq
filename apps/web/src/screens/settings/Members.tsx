@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarClock, Check, ClockAlert, Copy, Hourglass, Mail, Plus, TriangleAlert, UserMinus, UserPlus, Users, X } from "lucide-react";
+import { CalendarClock, Check, ClockAlert, Copy, Hourglass, Mail, Plus, ShieldAlert, TriangleAlert, UserMinus, UserPlus, Users, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -14,6 +14,7 @@ import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { roleLabel, type Approval } from "../approvals/words";
 import { SettingsPage } from "./SettingsPage";
+import { StartSuccession, Successions } from "./Successions";
 
 type Member = components["schemas"]["Member"];
 type Invitation = components["schemas"]["MemberInvitation"];
@@ -560,6 +561,10 @@ export function Members() {
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
   const [withdrawing, setWithdrawing] = useState<Invitation | null>(null);
+  const [succeeding, setSucceeding] = useState<Member | null>(null);
+  const succeed = helpText("member.start-succession");
+  const owner = (m: { roles?: { role: string }[] | null }) => (m.roles ?? []).some((r) => r.role === "owner");
+  const youOwn = (session.roles ?? []).includes("owner");
   const invite = helpText("member.invite");
   const change = helpText("member.change-roles");
   const withdraw = helpText("member.withdraw-invitation");
@@ -628,6 +633,12 @@ export function Members() {
                       Role conflict
                     </span>
                   )}
+                  {youOwn && !you && owner(m) && (
+                    <Button size="sm" variant="ghost" onClick={() => setSucceeding(m)} aria-label={`${succeed.label}: ${m.display_name}`} title={succeed.tooltip}>
+                      <Icon of={ShieldAlert} />
+                      <span className="fy-from-medium">{succeed.label}</span>
+                    </Button>
+                  )}
                   <Button size="sm" onClick={() => setEditing(m)} aria-label={`${change.label}: ${m.display_name}`} title={change.tooltip}>
                     <Icon of={Users} />
                     <span className="fy-from-medium">{change.label}</span>
@@ -638,6 +649,7 @@ export function Members() {
           </ul>
         )}
       </section>
+      <Successions />
       <section className="fy-card" aria-labelledby="invites-title">
         <div className="fy-card__head">
           <h2 className="fy-h3" id="invites-title">
@@ -674,6 +686,7 @@ export function Members() {
       <Invite open={inviting} onClose={() => setInviting(false)} />
       <MemberRoles member={editing ? (people.find((p) => p.id === editing.id) ?? editing) : null} conflict={editing ? conflictOf(editing) : undefined} blocks={team.data?.blocks ?? false} onClose={() => setEditing(null)} />
       <WithdrawInvitation target={withdrawing} onClose={() => setWithdrawing(null)} />
+      <StartSuccession outgoing={succeeding} people={people} onClose={() => setSucceeding(null)} />
     </SettingsPage>
   );
 }

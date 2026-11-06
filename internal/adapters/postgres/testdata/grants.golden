@@ -194,6 +194,8 @@ fyniq_api       EXECUTE   installation_connector_secrets()
 fyniq_api       EXECUTE   installation_connectors()
 fyniq_api       EXECUTE   installation_org()
 fyniq_api       EXECUTE   invite_super_admin()
+fyniq_api       EXECUTE   is_owner()
+fyniq_api       EXECUTE   is_super_admin()
 fyniq_api       INSERT    item (code, description, gst_code, name, revenue_account_id, type, unit)
 fyniq_api       SELECT    item
 fyniq_api       UPDATE    item (description, gst_code, is_active, name, revenue_account_id, type, unit, version)
@@ -246,6 +248,9 @@ fyniq_api       SELECT    organisation_setting
 fyniq_api       INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_api       SELECT    outbox
 fyniq_api       UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
+fyniq_api       INSERT    owner_succession (document_id, due_at, evidence_kind, outgoing_membership_id, outgoing_user_id, reason, started_at, started_by, successor_membership_id)
+fyniq_api       SELECT    owner_succession
+fyniq_api       UPDATE    owner_succession (ended_at, ended_by, status, version)
 fyniq_api       INSERT    payee_bank_account (change_id, change_version, contact_id, currency, member_user_id, number_fingerprint, number_last4, number_sealed)
 fyniq_api       SELECT    payee_bank_account
 fyniq_api       UPDATE    payee_bank_account (state)
@@ -512,6 +517,7 @@ fyniq_readonly  SELECT    organisation_connector
 fyniq_readonly  SELECT    organisation_connector_secret
 fyniq_readonly  SELECT    organisation_setting
 fyniq_readonly  SELECT    outbox
+fyniq_readonly  SELECT    owner_succession
 fyniq_readonly  SELECT    payee_bank_account
 fyniq_readonly  SELECT    payment_batch_payment
 fyniq_readonly  SELECT    payment_batch_release
@@ -691,6 +697,7 @@ fyniq_worker    SELECT    organisation_setting
 fyniq_worker    INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_worker    SELECT    outbox
 fyniq_worker    UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
+fyniq_worker    SELECT    owner_succession
 fyniq_worker    SELECT    payee_bank_account
 fyniq_worker    SELECT    payment_batch_payment
 fyniq_worker    SELECT    payment_batch_release

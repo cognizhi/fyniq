@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "evidence_kind": {
+      "description": "What it rests on: attach the file with addOwnerSuccessionEvidence before it is completed.",
+      "enum": [
+        "board_resolution",
+        "accountant_confirmation"
+      ],
+      "examples": [
+        "board_resolution"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why the Owner is permanently unavailable: departure, incapacity or death, and what was decided. The outgoing Owner and every Owner read it.",
+      "examples": [
+        "Ben left the company on 31 October; the board resolved on his removal"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    },
+    "successor_member_id": {
+      "description": "A member who becomes an Owner when it completes, such as a new director, so the company keeps two Owners; leave it out to name none.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f03"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason",
+    "evidence_kind"
+  ],
+  "title": "OwnerSuccessionRequest",
+  "type": "object"
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "member_id": {
+      "description": "The membership.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Their name, while they are a member.",
+      "examples": [
+        "Ben Ong"
+      ],
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The user.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "member_id",
+    "user_id"
+  ],
+  "title": "SuccessionMember",
+  "type": "object"
+}

@@ -58,6 +58,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/salesreminder"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/statement"
+	"github.com/cognizhi/fyniq/internal/domain/succession"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/domain/writeoff"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -765,6 +766,13 @@ var codeFacts = map[string]struct {
 	storage.CodePayee:                {409, "Bank details do not change that way"},
 	storage.CodeBatch:                {409, "A payment batch does not change that way"},
 	storage.CodeBreakGlass:           {409, "Break-glass does not allow that"},
+	storage.CodeSuccession:           {409, "The succession does not allow that"},
+	succession.CodeNotOwner:          {409, "Not another Owner"},
+	succession.CodeNotDue:            {409, "The succession's notice is not over"},
+	succession.CodeNoFile:            {409, "No evidence is attached"},
+	succession.CodeNotYours:          {403, "Not yours to do"},
+	succession.CodeEnded:             {409, "The succession ended already"},
+	succession.CodeSuccessor:         {422, "The successor is not a member who can become an Owner"},
 	breakglass.CodeFounderOnly:       {409, "Break-glass is for Founder mode only"},
 	breakglass.CodeWaiting:           {409, "An earlier break-glass waits for its review"},
 	breakglass.CodeNotActive:         {409, "You have no active break-glass"},
@@ -866,6 +874,7 @@ var storageFixes = map[string]string{
 	storage.CodePayee:                "Prepare a change of the bank details and ask for approval: a second person, who neither prepared nor asked for it, approves it, which puts its account in force",
 	storage.CodeBatch:                "A batch is approved by a second person, released once, and never changed after; a payment the bank rejects is voided on its own",
 	storage.CodeBreakGlass:           "Break-glass is an Owner's, in Founder mode, for 24 hours and within its cap; start another once the last one is reviewed",
+	storage.CodeSuccession:           "Read the succession again: an Owner starts it for another Owner, one at a time, and it ends once, by the outgoing Owner's objection, its starter's withdrawal or a Super admin completing it after 7 days with a file attached",
 	storage.CodeAccountantReview:     "Review a closed month's latest close once; raise and answer its queries while it is in review, and sign it off once every query has its answer",
 	storage.CodeShareIssue:           "An allotment is recorded once and never changed; share capital moves only with the register or the opening balances",
 	storage.CodeConversionStep:       "A conversion's ACRA steps are recorded between its approval and its effective date, and never changed",

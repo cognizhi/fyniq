@@ -2,16 +2,16 @@
 key: members.remove
 type: task
 title: Remove someone from the company, or give an external person a new end date
-summary: When an external person's roles end, giving a role again with a new end date, and removing a member with another Owner's approval
+summary: When an external person's roles end, removing a member with another Owner's approval, and succeeding an Owner who is permanently unavailable
 sources:
-  - docs/user-guide/members-and-roles.md sha256:a5ef440ad5c2de54990e7d895bc9ba13f9932be7b21882574ec8311478762aba
+  - docs/user-guide/members-and-roles.md sha256:fc847fc063f659ee62bd49077c2ac19ac2170af9d0c1dc64afb03043f750bd5a
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-02
+compiled_at: 2026-11-06
 aliases:
   - remove a user
   - remove member
@@ -20,6 +20,10 @@ aliases:
   - roles ended
   - external user expired
   - delete a user
+  - owner succession
+  - owner left the company
+  - co-founder died
+  - remove an owner
 ---
 
 # Remove someone from the company, or give an external person a new end date
@@ -40,5 +44,16 @@ aliases:
 - The last Owner cannot be removed: the company always keeps an Owner.
 - Before the second person joins, the Owner removes someone at once; after that, removing someone waits for another Owner's approval, as a role change does ([[approvals.decide]]).
 - A person who was removed can be invited again later, and joins with the new invitation's roles ([[members.invite]]).
+- Every Owner is told, at once and by email, when someone becomes an Owner, stops being one, or an Owner is removed.
 
 (src: docs/user-guide/members-and-roles.md#remove-someone)
+
+## When an Owner is permanently unavailable
+
+- When another Owner has left, cannot act or has died, removing them would wait for their own approval: a succession removes them instead.
+- **Start a succession** next to the Owner, say why, and choose what it rests on: a **board resolution**, or the external accountant's recorded confirmation; you may name someone to become an Owner, so the company keeps two.
+- Confirm it's you; the Owner and every other Owner are told at once, by email. Attach the file under **Owner successions** (**Attach the evidence**).
+- For **7 days** the Owner may **object**, which ends it, and you may **withdraw** it; only one succession of the same Owner waits at a time.
+- After the 7 days, a Super admin, any one, you included, selects **Complete it, as a Super admin**: the named person becomes an Owner and the outgoing Owner's membership ends; their records and the audit trail stay. It needs the file attached.
+
+(src: docs/user-guide/members-and-roles.md#when-an-owner-is-permanently-unavailable)

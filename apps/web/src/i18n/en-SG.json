@@ -172,6 +172,14 @@
       "label": "Settle",
       "tooltip": "Repay, keep as a loan or waive what the company owes this person, with the agreement attached; another person approves it, never them."
     },
+    "member.start-succession": {
+      "label": "Start a succession",
+      "tooltip": "For an Owner who is permanently unavailable: they are told and may object for 7 days; then a Super admin completes it and their membership ends."
+    },
+    "owner-succession.attach-evidence": {
+      "label": "Attach the evidence",
+      "tooltip": "The board resolution, or the external accountant's recorded confirmation: the succession completes only with one attached."
+    },
     "director-settlement.attach-evidence": {
       "label": "Attach",
       "tooltip": "Attach the agreement the settlement rests on: the loan note or board minute, or the deed of waiver."

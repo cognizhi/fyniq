@@ -118,6 +118,7 @@ type UnitOfWork interface {
 	PaymentBatches() PaymentBatches
 	// BreakGlasses are the Owners' break-glasses and the batches each released (FM-8).
 	BreakGlasses() BreakGlasses
+	OwnerSuccessions() OwnerSuccessions
 	// AccountantReviews are the accountant's reviews of closed months (FM-7).
 	AccountantReviews() AccountantReviews
 	ShareIssues() ShareIssues
@@ -562,6 +563,9 @@ const (
 	// DocumentAccountMerge is an approved merge of one account into another: the two accounts, the date and what the
 	// account merged held, each currency and dimension set apart (posted account_merge@1, FR-COA-04, Appendix B.8).
 	DocumentAccountMerge DocumentType = "account_merge"
+	// DocumentOwnerSuccession holds an Owner succession's evidence files: the board resolution or the accountant's
+	// confirmation (FR-ADM-09, rev 0.181). It is made and posted with the succession, so its files are append-only.
+	DocumentOwnerSuccession DocumentType = "owner_succession"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -764,6 +768,10 @@ const (
 	// its review, and only ends, once, inside its window; a use is its Owner's, inside its window and within its cap, of a
 	// batch waiting for approval, and never changes (FM-8).
 	CodeBreakGlass = "STORAGE-BREAKGLASS-01"
+	// CodeSuccession: an Owner succession starts in notice, by an active Owner, of another active Owner, one at a time, and
+	// ends once: objected by the outgoing Owner, withdrawn by the one who started it, or completed by a Super admin from its
+	// due time with a file attached (FR-ADM-09).
+	CodeSuccession = "STORAGE-SUCCESSION-01"
 	// CodeAccountantReview: an accountant's review covers a closed month's latest close, once; it gains queries, answers
 	// and journals only while in review, is signed off once every query has its answer, and is superseded only by its
 	// month's reopening (FM-7).

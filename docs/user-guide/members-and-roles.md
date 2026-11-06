@@ -3,7 +3,7 @@ key: settings.members
 title: Invite people and give them roles
 mode: basic
 roles: [owner, admin, controller, auditor, dpo]
-requirements: [FR-ADM-01, FM-1, SEC-06]
+requirements: [FR-ADM-01, FR-ADM-09, FM-1, SEC-06]
 ---
 
 # Invite people and give them roles
@@ -79,3 +79,25 @@ close until you act. Either give them a role again with a new end date (**Change
 - Before the second person joins, the Owner removes someone at once. After that, removing someone
   waits for another Owner's approval, as a role change does.
 - A person you removed can be invited again later: they join with the new invitation's roles.
+- Every Owner is told, at once and by email, when someone becomes an Owner, stops being one, or an
+  Owner is removed.
+
+## When an Owner is permanently unavailable
+
+When another Owner has left, cannot act or has died, removing them would wait for their own
+approval. A succession removes them instead, with safeguards.
+
+1. In **Settings → Members and roles**, select **Start a succession** next to the Owner, say why,
+   and choose what it rests on: a **board resolution**, or the external accountant's recorded
+   confirmation. You may name someone to become an Owner, so the company keeps two.
+2. Confirm it's you. The Owner is told at once, by email, and every other Owner too.
+3. Attach the file under **Owner successions**: **Attach the evidence**.
+4. For **7 days** the Owner may **object**, which ends it. You may **withdraw** it.
+5. After the 7 days, a Super admin, any one, you included, selects **Complete it, as a Super
+   admin** and confirms it's them. The person you named becomes an Owner, and the outgoing Owner's
+   membership ends: every role, and their next page no longer opens the company. Their records
+   and the audit trail stay.
+
+- Completing needs the file attached and the 7 days over.
+- Only one succession of the same Owner waits at a time.
+- Every step is kept in the audit trail, and every Owner is told.
