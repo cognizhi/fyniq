@@ -1182,7 +1182,12 @@ func (a *API) billRequest(ctx context.Context, rawID, key, ifMatch, prefer strin
 		if err != nil {
 			return Approval{}, err
 		}
-		return a.requestApproval(ctx, u, change(doc, b, payable))
+		c := change(doc, b, payable)
+		// FR-APR-01: its total in the base currency, accounts, dimension values and supplier for the policy's rules.
+		if c.Facts, err = billFacts(ctx, u, b, payable); err != nil {
+			return Approval{}, err
+		}
+		return a.requestApproval(ctx, u, c)
 	})
 	if err != nil {
 		return nil, err
