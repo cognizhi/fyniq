@@ -7,7 +7,10 @@ import { authenticator, credentialJSON } from "../../test/webauthn";
 import { visit } from "../../route";
 import { Profile } from "./Profile";
 
-vi.mock("../../route", async (original) => ({ ...(await original<typeof import("../../route")>()), visit: vi.fn() }));
+vi.mock("../../route", async (original) => {
+  const route = (await original()) as Record<string, unknown>; // no generic call: Semgrep's TypeScript parser refuses it
+  return { ...route, visit: vi.fn() };
+});
 
 const laptop = { id: "k-1", name: "Work laptop", authenticator: "00000000-0000-0000-0000-000000000000", backed_up: true, backup_eligible: true, created_at: "2026-10-01T02:00:00Z", last_used_at: "2026-10-20T01:00:00Z", transports: ["internal"] };
 const revoked = { ...laptop, id: "k-0", name: "Old phone", revoked_at: "2026-10-02T02:00:00Z" };
