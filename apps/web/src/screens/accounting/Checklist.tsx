@@ -277,7 +277,7 @@ export function Checklist({ periodId, open, mayMark, onChanged }: { periodId: st
     setBusy(false);
     if (!out.data) return setProblem(problemOf(out.error));
     setSkipping(null);
-    queries.setQueryData(["period-checklist", periodId], out.data);
+    queries.setQueryData(["period-checklist", periodId], out.data); // the server's answer (FR-UX-22)
     const words = state === "done" ? "Done" : state === "skipped" ? "Skipped for this month" : "Opened again";
     onChanged(`${words}: ${it.title}. Run the checks again so they see it.`);
   };

@@ -217,7 +217,7 @@ export function ClaimEditor() {
       return null;
     }
     const saved = { claim: out.data, etag: etagOf(out.response) };
-    queries.setQueryData(["expense-claim", out.data.id], saved);
+    queries.setQueryData(["expense-claim", out.data.id], saved); // the server's answer (FR-UX-22)
     await queries.invalidateQueries({ queryKey: ["expense-claims"] });
     setForm(formOf(out.data, base));
     if (!claim) await navigate({ to: "/me/claims/$claimId", params: { claimId: out.data.id } });
