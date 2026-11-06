@@ -24,6 +24,8 @@ export function valueText(kind: Setting["kind"], v: string): string {
   switch (kind) {
     case "switch":
       return v === "true" ? "On" : "Off";
+    case "minutes":
+      return `${v} ${v === "1" ? "minute" : "minutes"}`;
     case "days":
       return `${v} ${v === "1" ? "day" : "days"}`;
     case "years":
@@ -90,7 +92,7 @@ function ValueInput({ setting: s, value, onChange, id, describedBy, invalid }: {
       className="fy-input max-w-72"
       id={id}
       value={value}
-      inputMode={s.kind === "days" || s.kind === "years" ? "numeric" : numeric ? "decimal" : undefined}
+      inputMode={s.kind === "minutes" || s.kind === "days" || s.kind === "years" ? "numeric" : numeric ? "decimal" : undefined}
       onChange={(e) => onChange(e.target.value)}
       aria-invalid={invalid || undefined}
       aria-describedby={describedBy}
@@ -101,7 +103,7 @@ function ValueInput({ setting: s, value, onChange, id, describedBy, invalid }: {
 // check finds what the page can tell before asking the API: the shape of the value for its kind.
 function check(s: Setting, v: string): string {
   const t = v.trim();
-  if (s.kind === "days" || s.kind === "years") return /^\d{1,6}$/.test(t) ? "" : `Enter a whole number of ${s.kind}.`;
+  if (s.kind === "minutes" || s.kind === "days" || s.kind === "years") return /^\d{1,6}$/.test(t) ? "" : `Enter a whole number of ${s.kind}.`;
   if (s.kind === "amount_sgd") return /^\d{1,14}(\.\d{1,2})?$/.test(t) ? "" : "Enter an amount in Singapore dollars, such as 1000.00, without the S$ or commas.";
   if (s.kind === "percent") return /^\d{1,3}(\.\d{1,4})?$/.test(t) ? "" : "Enter a percentage, such as 3, without the % sign.";
   if (s.kind === "text") return t ? "" : "Enter a value.";

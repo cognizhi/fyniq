@@ -50,8 +50,8 @@ the month the year starts in and the end of the first year no longer change.
 ## Settings that need a second approver
 
 - Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when
-  incoming-funds alerts expire, the AI assistant and details in notification email need a second approver before
-  they change: they show **Needs a second approver**.
+  incoming-funds alerts expire, the AI assistant, details in notification email and the sign-out after inactivity
+  need a second approver before they change: they show **Needs a second approver**.
 - For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
   approves settings, such as an Owner, approves it (see [Approve a change](approvals.md)).
@@ -241,6 +241,13 @@ whatever the invoice's month.
 - Above the threshold, posting a journal needs another founder's approval, and the one who prepared
   it never approves it.
 - Changing the threshold needs a second approver.
+
+## Sign out after inactivity
+
+- A session ends after 30 minutes without using Fyniq, by default; sign in again to go on. Whatever
+  happens, a session ends 12 hours after you signed in.
+- It can be set from 5 to 60 minutes. Changing it needs a second approver.
+- If you belong to several organisations, your session follows the organisation you are signed in to.
 
 ## Variances at the close
 

@@ -34,6 +34,9 @@ func (noSessions) EndSession(context.Context, []byte, time.Time) error { return 
 func (noSessions) UserSessions(context.Context, uuid.UUID, time.Time, time.Duration) ([]storage.Device, error) {
 	return nil, nil
 }
+func (noSessions) IdleTimeout(_ context.Context, _ uuid.UUID, _ time.Time, fallback time.Duration) (time.Duration, error) {
+	return fallback, nil
+}
 func (noSessions) EndUserSession(context.Context, uuid.UUID, []byte, time.Time) error {
 	return ports.ErrNotFound
 }

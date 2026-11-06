@@ -27,6 +27,7 @@ type Kind string
 // The kinds of setting.
 const (
 	Switch    Kind = "switch"     // "true" or "false"
+	Minutes   Kind = "minutes"    // a whole number of minutes
 	Days      Kind = "days"       // a whole number of days
 	Years     Kind = "years"      // a whole number of years
 	AmountSGD Kind = "amount_sgd" // Singapore dollars, with cents, such as "50.00"
@@ -178,6 +179,9 @@ var Catalogue = []Definition{
 	{Key: "sales.simplified_tax_invoices", Group: "Defaults", Label: "Simplified tax invoices up to S$1,000", Kind: Switch, Recommended: "false",
 		Reason: "Every invoice is a full tax invoice, with the customer's name and address and the GST breakdown that customers' accounts teams ask for",
 		Guide:  guide + "simplified-tax-invoices", Requirement: "FR-AR-05"},
+	{Key: "security.idle_timeout_minutes", Group: "Security", Label: "Sign out after inactivity", Kind: Minutes, Recommended: "30",
+		Reason: "A session ends after 30 minutes without a request, whatever happens it ends 12 hours after sign-in (SEC-05; the owner's decision of 6 Nov 2026)",
+		Guide:  guide + "sign-out-after-inactivity", Requirement: "SEC-05", DualControl: true, Min: "5", Max: "60"},
 }
 
 // Lookup returns the setting with key, if there is one.
@@ -227,7 +231,7 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 			return bad("Send true or false")
 		}
 		return raw, nil
-	case Days, Years:
+	case Minutes, Days, Years:
 		if !whole.MatchString(raw) {
 			return bad(fmt.Sprintf("Send a whole number of %s, from %s to %s", d.Kind, d.Min, d.Max))
 		}

@@ -77,7 +77,12 @@ func (a *API) devicePerson(ctx context.Context, what string) (authn.Principal, [
 		return p, nil, problem(CodeSessionRequired, what+" needs a person with a Fyniq user, signed in to Fyniq in the browser.",
 			"Sign in to Fyniq in the browser and do it there.")
 	}
-	ds, err := sessions.UserSessions(ctx, p.UserID, a.deps.Clock.Now(), authn.SessionIdle)
+	now := a.deps.Clock.Now()
+	idle, err := sessions.IdleTimeout(ctx, p.Organisation, now, authn.SessionIdle) // the organisation's (SEC-05, rev 0.180)
+	if err != nil {
+		return p, nil, err
+	}
+	ds, err := sessions.UserSessions(ctx, p.UserID, now, idle)
 	return p, ds, err
 }
 
