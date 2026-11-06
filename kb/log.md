@@ -373,3 +373,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | docs/user-guide/invoices.md → sales.invoices (sent again: the copy kept as issued, FR-DOC-04, rev 0.191)
 
 ## [2026-11-06] compile | docs/user-guide/approvals.md → approvals.decide (the Inbox's keys, FR-UX-03, rev 0.192)
+
+## [2026-11-06] compile | docs/user-guide/home.md → home.overview (copy and paste amounts, FR-UX-20, rev 0.193)

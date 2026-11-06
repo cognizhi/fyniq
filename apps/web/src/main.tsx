@@ -6,9 +6,11 @@ import { createRoot } from "react-dom/client";
 import "./styles/globals.css";
 import "./app.css";
 import { startAppearance } from "./appearance";
+import { installClipboard } from "./format/amount";
 import { router } from "./router";
 
 startAppearance();
+installClipboard();
 
 const root = document.getElementById("root");
 if (!root) throw new Error("index.html has no #root element");
