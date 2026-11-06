@@ -366,6 +366,8 @@ brand_version | accent | text | null |
 brand_version | cleaned | jsonb | not null | '{}'::jsonb
 brand_version | created_by | uuid | not null | 
 brand_version | created_at | timestamp with time zone | not null | 
+brand_version | print_sha256 | bytea | null | 
+brand_version | print_size | integer | null | 
 break_glass | organisation_id | uuid | not null | current_org()
 break_glass | id | uuid | not null | uuidv7()
 break_glass | started_by | uuid | not null | 
@@ -2118,6 +2120,7 @@ brand_version | brand_version_organisation_fkey | FOREIGN KEY (organisation_id) 
 brand_version | brand_version_organisation_id_not_null | NOT NULL organisation_id
 brand_version | brand_version_pkey | PRIMARY KEY (organisation_id, id)
 brand_version | brand_version_positive | CHECK ((version > 0))
+brand_version | brand_version_print | CHECK ((((print_sha256 IS NULL) = (print_size IS NULL)) AND ((print_sha256 IS NULL) OR (light_sha256 IS NOT NULL)) AND (COALESCE(length(print_sha256), 32) = 32) AND ((COALESCE(print_size, 1) >= 1) AND (COALESCE(print_size, 1) <= 524288))))
 brand_version | brand_version_sizes | CHECK ((((COALESCE(light_size, 1) >= 1) AND (COALESCE(light_size, 1) <= 2097152)) AND ((COALESCE(dark_size, 1) >= 1) AND (COALESCE(dark_size, 1) <= 2097152)) AND ((COALESCE(icon_size, 1) >= 1) AND (COALESCE(icon_size, 1) <= 2097152))))
 brand_version | brand_version_types | CHECK (((COALESCE(light_type, 'image/png'::text) = ANY (ARRAY['image/svg+xml'::text, 'image/png'::text])) AND (COALESCE(dark_type, 'image/png'::text) = ANY (ARRAY['image/svg+xml'::text, 'image/png'::text])) AND (COALESCE(icon_type, 'image/png'::text) = ANY (ARRAY['image/svg+xml'::text, 'image/png'::text]))))
 brand_version | brand_version_version_not_null | NOT NULL version

@@ -22,6 +22,7 @@ const (
 	CodeFormat = "BRAND-01" // not an SVG or a PNG, or not one Fyniq reads
 	CodeSize   = "BRAND-02" // too large, too small, too many elements or nested too deep
 	CodeAccent = "BRAND-03" // not one of the accent options
+	CodeDraw   = "BRAND-04" // the render service cannot draw the logo for documents and emails
 )
 
 // Error is a refused file or colour, with its code.

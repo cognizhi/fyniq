@@ -26,6 +26,10 @@ func toBrand(r sqlcdb.FyniqBrandVersion) storage.BrandVersion {
 	b := storage.BrandVersion{ID: r.ID, Version: int(r.Version), Light: brandFile(r.LightType, r.LightSha256, r.LightSize),
 		Dark: brandFile(r.DarkType, r.DarkSha256, r.DarkSize), Icon: brandFile(r.IconType, r.IconSha256, r.IconSize), Cleaned: r.Cleaned,
 		CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt}
+	if r.PrintSha256 != nil {
+		png := "image/png"
+		b.Print = brandFile(&png, r.PrintSha256, r.PrintSize)
+	}
 	if r.Accent != nil {
 		b.Accent = *r.Accent
 	}
@@ -65,6 +69,10 @@ func (r brand) Save(ctx context.Context, by uuid.UUID, b storage.BrandVersion, a
 	set(b.Light, &p.LightType, &p.LightSha256, &p.LightSize)
 	set(b.Dark, &p.DarkType, &p.DarkSha256, &p.DarkSize)
 	set(b.Icon, &p.IconType, &p.IconSha256, &p.IconSize)
+	if b.Print != nil {
+		n := int32(min(b.Print.Size, 1<<30)) // #nosec G115 -- bounded
+		p.PrintSha256, p.PrintSize = b.Print.SHA256, &n
+	}
 	if b.Accent != "" {
 		p.Accent = &b.Accent
 	}
@@ -81,5 +89,6 @@ func (r brand) Save(ctx context.Context, by uuid.UUID, b storage.BrandVersion, a
 	}
 	version := out.Version
 	return out, r.u.event(ctx, "brand_version.saved", "brand_version", out.ID, &version, map[string][2]any{
-		"light": {nil, hash(out.Light)}, "dark": {nil, hash(out.Dark)}, "icon": {nil, hash(out.Icon)}, "accent": {nil, out.Accent}})
+		"light": {nil, hash(out.Light)}, "dark": {nil, hash(out.Dark)}, "icon": {nil, hash(out.Icon)}, "print": {nil, hash(out.Print)},
+		"accent": {nil, out.Accent}})
 }

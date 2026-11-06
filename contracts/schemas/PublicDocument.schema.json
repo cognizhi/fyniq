@@ -71,6 +71,14 @@
       "format": "date-time",
       "type": "string"
     },
+    "logo": {
+      "contentEncoding": "base64",
+      "description": "The supplier's logo as its documents show it (FR-ORG-09): a PNG, base64, of the brand in force when the document was issued. Absent when it has none.",
+      "examples": [
+        "iVBORw0KGgo="
+      ],
+      "type": "string"
+    },
     "number": {
       "description": "Its number.",
       "examples": [

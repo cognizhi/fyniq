@@ -5,16 +5,21 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"mime/multipart"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/brand"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/render"
 )
 
 const hostileLogo = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 132 28" onload="steal()"><script>alert(1)</script>` +
@@ -125,4 +130,78 @@ var matrixBrand = map[string]func(e *env, tok string) (response, func() bool){
 		return e.call(http.MethodPut, "/v1/organisation/brand/accent", steppedUp(e, tok), map[string]any{"accent": brand.Accents[0]}, "If-Match", "*",
 			"Prefer", "return=preview"), nil
 	},
+}
+
+// recordingRenderer renders through the render service and keeps the last document it was asked for.
+type recordingRenderer struct {
+	render.Renderer
+	mu   sync.Mutex
+	last render.Request
+}
+
+func (r *recordingRenderer) Render(ctx context.Context, q render.Request) (render.Response, error) {
+	if len(q.Raster) == 0 {
+		r.mu.Lock()
+		r.last = q
+		r.mu.Unlock()
+	}
+	return r.Renderer.Render(ctx, q)
+}
+
+// The logo on documents (FR-ORG-09, rev 0.201): uploading the logo for light backgrounds has the render service draw it
+// as documents show it, a PNG 192 pixels high kept with the version; an invoice rendered later shows the logo and accent
+// of the brand in force when it was issued, not a later one's (FR-DOC-04), the platform's starter taking the brand's
+// accent; removing the logo removes its drawing from the next version.
+// req: FR-ORG-09
+// req: FR-DOC-04
+// req: G4-099
+func TestAnIssuedDocumentKeepsItsLogo(t *testing.T) {
+	e := newEnv(t)
+	rec := &recordingRenderer{Renderer: testRenderer(t)}
+	e.api.deps.Renderer = rec
+	admin := steppedUp(e, e.as(authz.Administrator))
+
+	up := e.put("/v1/organisation/brand/files/light", admin, nil, "logo.svg", []byte(hostileLogo), "If-Match", `"0"`)
+	if up.Status != 200 || up.str("print", "media_type") != "image/png" || len(up.str("print", "sha256")) != 64 {
+		t.Fatalf("uploading the logo: %d %s", up.Status, up.Raw)
+	}
+	issuedPrint := up.str("print", "sha256")
+	if r := e.call(http.MethodPut, "/v1/organisation/brand/accent", admin, map[string]any{"accent": brand.Accents[1]}, "If-Match", `"1"`); r.Status != 200 ||
+		r.str("print", "sha256") != issuedPrint {
+		t.Fatalf("the accent keeps the drawing: %d %s", r.Status, r.Raw)
+	}
+	file := e.call(http.MethodGet, "/v1/organisation/brand/files/print", e.as(authz.Employee), nil)
+	drawn, _ := base64.StdEncoding.DecodeString(file.str("content_base64"))
+	if p, err := brand.Size(drawn); file.Status != 200 || err != nil || p.Y != 163 || p.X != 768 {
+		t.Fatalf("reading the drawing: %d %v %v", file.Status, p, err)
+	}
+
+	id, _ := e.issuedInvoice("1", "100.00")
+	// The invoice is posted at the store's time; the later versions come after it.
+	e.clock.Set(time.Date(2099, 1, 2, 9, 0, 0, 0, time.UTC))
+	later := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#9F1239"/></svg>`
+	if r := e.put("/v1/organisation/brand/files/light", admin, nil, "later.svg", []byte(later), "If-Match", `"2"`); r.Status != 200 || r.str("print", "sha256") == issuedPrint {
+		t.Fatalf("a later logo: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPut, "/v1/organisation/brand/accent", admin, map[string]any{"accent": brand.Accents[5]}, "If-Match", `"3"`); r.Status != 200 {
+		t.Fatalf("a later accent: %d %s", r.Status, r.Raw)
+	}
+
+	if r := e.call(http.MethodGet, "/v1/invoices/"+id+"/document", e.as(authz.Accountant), nil); r.Status != 200 || r.str("template", "source") != "platform" {
+		t.Fatalf("rendering the invoice: %d %.300s", r.Status, r.Raw)
+	}
+	rec.mu.Lock()
+	last := rec.last
+	rec.mu.Unlock()
+	if sum := sha256.Sum256(last.Logo); hex.EncodeToString(sum[:]) != issuedPrint {
+		t.Errorf("the invoice was rendered with another logo than the one in force when it was issued (%d bytes)", len(last.Logo))
+	}
+	if last.Content.Theme.Accent != brand.Accents[1] {
+		t.Errorf("the invoice was rendered in %s, not in the accent in force when it was issued", last.Content.Theme.Accent)
+	}
+
+	if r := e.call(http.MethodDelete, "/v1/organisation/brand/files/light", admin, nil, "If-Match", `"4"`); r.Status != 200 || r.Body["print"] != nil {
+		t.Fatalf("removing the logo: %d %s", r.Status, r.Raw)
+	}
+	e.problemIs(e.call(http.MethodGet, "/v1/organisation/brand/files/print", admin, nil), "getBrandFile", 404, CodeNotFound)
 }

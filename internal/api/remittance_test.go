@@ -26,8 +26,8 @@ func (e *env) remittances() remitmail.Sender {
 	r := testRenderer(e.t)
 	w := workerStore(e.t)
 	return remitmail.Sender{Store: w, Staging: e.blobs, Outbox: outbox.Dispatcher{Store: w, Queue: e.queue, Clock: e.clock},
-		Render: func(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time) (render.Response, error) {
-			return r.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: created, Check: true})
+		Render: func(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time, logo []byte) (render.Response, error) {
+			return r.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: created, Logo: logo, Check: true})
 		}}
 }
 
