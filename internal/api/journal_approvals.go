@@ -227,6 +227,10 @@ func (a *API) requestFor(ctx context.Context, rawID, key, ifMatch, prefer string
 		if err != nil {
 			return Approval{}, err
 		}
+		// FR-APR-01: its debits in the base currency, accounts and dimension values for the policy's rules.
+		if c.Facts, err = journalFacts(ctx, u, j, debits); err != nil {
+			return Approval{}, err
+		}
 		return a.requestApproval(ctx, u, c)
 	})
 	if err != nil {

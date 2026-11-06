@@ -175,6 +175,7 @@ type FyniqApprovalPolicy struct {
 	RequestID      uuid.UUID
 	CreatedBy      uuid.UUID
 	CreatedAt      time.Time
+	Rules          []byte
 }
 
 type FyniqApprovalRequest struct {
