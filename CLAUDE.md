@@ -9,7 +9,9 @@ The shared coding instructions for every agent and contributor are in `AGENTS.md
 - **Use the skills.** Before you change something, load the matching `fyniq-*` skill (table in
   AGENTS.md). Load `fyniq-design-system` for any UI work. It explains when and how to consult
   **uipro** (`ui-ux-pro-max`): `python3 .claude/skills/ui-ux-pro-max/scripts/search.py "<query>"
-  --domain ux|style|color|typography|chart|icons` or `--stack shadcn|react`.
+  --domain ux|style|color|typography|chart|icons` or `--stack shadcn|react`. While
+  `META_MODEL_API_KEY` works (`make imagery-check`), draw logos, icons and illustrations with
+  `scripts/imagery.py` (Muse Image, art-directed by Muse Spark), as that skill's "Generated imagery" says.
 - **Few subagents.** Use the Agent and Workflow tools only for a self-contained task that ends in
   under about five minutes; do long work in the main thread, even when it could run in parallel
   ("Working as an AI agent" in AGENTS.md).
