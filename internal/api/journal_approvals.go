@@ -13,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -223,6 +224,15 @@ func (a *API) requestFor(ctx context.Context, rawID, key, ifMatch, prefer string
 		if err != nil {
 			return Approval{}, err
 		}
+		if status == storage.DocumentDraft { // asking to post: its evidence first (FR-DOC-06)
+			d, err := a.journals.Debits(ctx, p.Organisation, doc.ID)
+			if err != nil {
+				return Approval{}, err
+			}
+			if err := a.requireJournalEvidence(ctx, u, doc.ID, d); err != nil {
+				return Approval{}, err
+			}
+		}
 		c, err := change(ctx, u, doc, j, debits)
 		if err != nil {
 			return Approval{}, err
@@ -253,7 +263,7 @@ func journalName(doc storage.Document, j Journal) string {
 func registerJournalApprovals(a *API) {
 	codes := []string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeSessionRequired,
 		CodeStepUpRequired, approval.CodePending, storage.CodeApproval, journal.CodeNotJournal, journal.CodeNotDraft, journal.CodeNotPosted,
-		journal.CodeBadDraft, storage.CodeRetry, storage.CodeLockTimeout}
+		journal.CodeBadDraft, storage.CodeRetry, storage.CodeLockTimeout, evidence.CodeMissing}
 	codes = append(codes, LedgerCodes...)
 
 	register(a, authz.RequestJournalPost, huma.Operation{

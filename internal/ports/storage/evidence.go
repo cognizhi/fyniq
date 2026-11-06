@@ -85,6 +85,9 @@ type EvidenceFiles interface {
 	// ByHash returns at most 100 files of the organisation, removed ones aside, whose SHA-256 as received or as stored
 	// is hash (hexadecimal), earliest first: the same file on other records (FR-AP-15's duplicate receipts).
 	ByHash(ctx context.Context, hash string) ([]Evidence, error)
+	// Counts returns how many files each of documents holds, removed ones aside; a document with none is absent
+	// (FR-DOC-06's missing evidence).
+	Counts(ctx context.Context, documents []uuid.UUID) (map[uuid.UUID]int, error)
 	// Remove takes a file off a draft record at its version, with the reason audited: CodeEvidence when the
 	// record is not a draft, CodeVersion when the file changed since.
 	Remove(ctx context.Context, id uuid.UUID, version int) (Evidence, error)

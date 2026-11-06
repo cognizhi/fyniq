@@ -238,6 +238,21 @@ func (r evidenceFiles) Known(ctx context.Context, lockedKeys []string) (map[stri
 	return keySet(r.u.q.KnownLockedKeys(ctx, lockedKeys))
 }
 
+func (r evidenceFiles) Counts(ctx context.Context, documents []uuid.UUID) (map[uuid.UUID]int, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.EvidenceCounts(ctx, documents)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make(map[uuid.UUID]int, len(rows))
+	for _, x := range rows {
+		out[x.DocumentID] = int(x.Files)
+	}
+	return out, nil
+}
+
 func (r evidenceFiles) ByHash(ctx context.Context, hash string) ([]storage.Evidence, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err

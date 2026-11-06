@@ -87,6 +87,37 @@ func (q *Queries) EvidenceByHash(ctx context.Context, hash string) ([]EvidenceBy
 	return items, nil
 }
 
+const evidenceCounts = `-- name: EvidenceCounts :many
+SELECT document_id, count(*)::integer AS files FROM fyniq.evidence
+ WHERE document_id = ANY($1::uuid[]) AND removed_at IS NULL
+ GROUP BY document_id
+`
+
+type EvidenceCountsRow struct {
+	DocumentID uuid.UUID
+	Files      int32
+}
+
+func (q *Queries) EvidenceCounts(ctx context.Context, documents []uuid.UUID) ([]EvidenceCountsRow, error) {
+	rows, err := q.db.Query(ctx, evidenceCounts, documents)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EvidenceCountsRow
+	for rows.Next() {
+		var i EvidenceCountsRow
+		if err := rows.Scan(&i.DocumentID, &i.Files); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const finaliseEvidence = `-- name: FinaliseEvidence :one
 UPDATE fyniq.evidence SET state = 'final', locked_key = $1, retain_until = $2,
   finalised_at = $3, version = version + 1

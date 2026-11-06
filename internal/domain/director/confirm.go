@@ -51,7 +51,9 @@ type confirmationPayload struct {
 }
 
 // IsConfirmation says whether a document is a year-end confirmation.
-func IsConfirmation(doc storage.Document) bool { return doc.Type == storage.DocumentDirectorConfirmation }
+func IsConfirmation(doc storage.Document) bool {
+	return doc.Type == storage.DocumentDirectorConfirmation
+}
 
 // ReadConfirmation reads a confirmation as it was saved.
 func ReadConfirmation(doc storage.Document) (Confirmation, error) {

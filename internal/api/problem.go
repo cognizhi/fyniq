@@ -768,6 +768,7 @@ var codeFacts = map[string]struct {
 	storage.CodeBatch:                {409, "A payment batch does not change that way"},
 	storage.CodeBreakGlass:           {409, "Break-glass does not allow that"},
 	storage.CodeSuccession:           {409, "The succession does not allow that"},
+	evidence.CodeMissing:             {409, "The record's evidence is missing"},
 	succession.CodeNotOwner:          {409, "Not another Owner"},
 	succession.CodeNotDue:            {409, "The succession's notice is not over"},
 	succession.CodeNoFile:            {409, "No evidence is attached"},

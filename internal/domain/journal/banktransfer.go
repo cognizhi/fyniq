@@ -202,7 +202,6 @@ func (s BankTransactions) CompleteTransfer(ctx context.Context, org, transferID,
 	return out, err
 }
 
-
 // UndoTransfer undoes a transfer with a reason, while its period is open (FY220, FY224): its entry is reversed on its
 // own date, the record is marked undone, the matches of its lines are undone and the lines go back to the queue
 // unreconciled, free to join another transfer. The record stays as history, and is in transit no more.

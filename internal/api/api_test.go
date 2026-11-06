@@ -1031,6 +1031,12 @@ func TestOrganisationSettings(t *testing.T) {
 	}
 	for _, it := range items {
 		s := it.(map[string]any)
+		if relaxed := s["key"] == "evidence.bill" || s["key"] == "evidence.manual_journal"; relaxed { // the tests' books relax them (relaxEvidence)
+			if s["recommended_value"] != "required" || s["value"] != "optional" {
+				t.Errorf("%s: %v", s["key"], s)
+			}
+			continue
+		}
 		if s["status"] != "recommended" || s["value"] != s["recommended_value"] || s["version"] != float64(0) || s["guide"] == "" {
 			t.Errorf("%s does not ship at its recommended value: %v", s["key"], s)
 		}

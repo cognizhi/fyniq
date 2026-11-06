@@ -4,7 +4,7 @@ type: task
 title: Prepare, post and reverse journals
 summary: Prepare, check and post journals, ask for approval, edit or reverse a posted one, attach evidence, recurring journals, reversals that wait
 sources:
-  - docs/user-guide/journals.md sha256:5575f2567086f4d892ff70b84aaea94049cf70934e7292a2fc46d45957b9d30f
+  - docs/user-guide/journals.md sha256:95276851a4fef950457477099153ece4a53918220b4623aa0c0d70e64bd1bd8f
 data_class: general
 taint: trusted
 status: draft
@@ -150,6 +150,7 @@ aliases:
 - Say what the file is, add a note if it helps, and whether it holds personal data or bank details, then select **Attach**.
 - Fyniq decides the file's type from its content, scans it for malware and strips image metadata such as location before keeping it.
 - On a draft a file can come off again; once the journal is posted its files are kept, and never deleted, for as long as the records are, as is a file added later.
+- A journal whose debits are above S$1,000 posts only with a supporting calculation or document attached, unless the organisation's **Evidence for manual journals** settings say otherwise ([[settings.organisation]]).
 - The Owner, the Controller, the Accountant and the Tax agent attach files; everyone who can see the journal sees them.
 
 (src: docs/user-guide/journals.md#attach-evidence)

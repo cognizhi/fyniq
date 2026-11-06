@@ -54,6 +54,7 @@ func inStandardMode(e *env) *env {
 	if e.standard == nil {
 		s := *e
 		s.books = porttest.NewBooks(e.t, e.store, "Standard "+uuid.NewString()[:8]+" Pte Ltd")
+		relaxEvidence(e.t, e.store, s.books.Org)
 		standardMode(&s)
 		e.standard = &s
 	}

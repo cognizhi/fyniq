@@ -68,7 +68,9 @@ type Conversion struct {
 // checkConversion is what is wrong with a conversion's details, every problem at once.
 func checkConversion(s Settlement, ls ledger.Settings) ledger.Problems {
 	var probs ledger.Problems
-	add := func(field, msg, fix string) { probs = append(probs, ledger.Problem{Code: CodeSettlement, Field: field, Message: msg, Fix: fix}) }
+	add := func(field, msg, fix string) {
+		probs = append(probs, ledger.Problem{Code: CodeSettlement, Field: field, Message: msg, Fix: fix})
+	}
 	c := s.Conversion
 	if c == nil {
 		add("conversion", "a conversion needs its class, price, price basis, capacity and measurement basis", "Fill in the conversion")

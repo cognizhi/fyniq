@@ -62,7 +62,9 @@ func TestPostSupplierRefund(t *testing.T) {
 	_, _, err = PostSupplierRefund(SupplierRefund{ID: refundID, Version: 1, Currency: sgd, Account: software.ID, Credit: PaidBill{BillID: creditID, Amount: money.Zero(sgd), StoredRate: money.Identity(sgd)}}, s)
 	probs, _ := err.(Problems)
 	if !slices.Equal(codes(err), sortedCopy([]string{CodeNoDate, CodeNotMoneyAccount, CodePaymentAmount})) ||
-		!slices.ContainsFunc(probs, func(p Problem) bool { return p.Message == "the refund has no date" && p.Fix == "Enter the date the money came into the account" }) ||
+		!slices.ContainsFunc(probs, func(p Problem) bool {
+			return p.Message == "the refund has no date" && p.Fix == "Enter the date the money came into the account"
+		}) ||
 		!slices.ContainsFunc(probs, func(p Problem) bool { return p.Field == "amount" && strings.Contains(p.Message, "the amount refunded") }) {
 		t.Errorf("a refusal: %+v", err)
 	}

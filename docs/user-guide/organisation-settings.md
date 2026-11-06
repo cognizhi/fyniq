@@ -249,6 +249,18 @@ whatever the invoice's month.
 - It can be set from 5 to 60 minutes. Changing it needs a second approver.
 - If you belong to several organisations, your session follows the organisation you are signed in to.
 
+## Evidence rules
+
+Some records need a file to show they are real before they post:
+
+- **Evidence for bills**: a bill posts only with the supplier's invoice or receipt attached.
+- **Evidence for manual journals**: a manual journal whose debits are above S$1,000 posts only with a
+  supporting calculation or document attached. **Evidence for manual journals above** sets the amount.
+
+Each is **required** by default. **Recommended** lets the record post without a file, and **Checks**
+lists it (missing recommended evidence). **Optional** asks for nothing. Changing any of these needs a
+second approver. Attach files in the record's **Evidence** panel.
+
 ## Variances at the close
 
 Before a month closes, Fyniq compares each income and expense account's total for the month with
