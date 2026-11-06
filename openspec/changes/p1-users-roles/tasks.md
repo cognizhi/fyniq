@@ -67,6 +67,11 @@
   sign-in to the provider-verified address through the outbox in the installation's organisation (email purpose
   `sign_in_alert`). Test: `TestYourDevices`. **Left:** a configurable idle timeout (SEC-05), with the security
   settings; the devices screen (4.1).)
+  (6 Nov 2026, PRD-001 rev 0.180, on the owner's decision of the same day: the idle timeout is the organisation setting
+  `security.idle_timeout_minutes` ("Sign out after inactivity", 5 to 60 minutes, 30 by default, dual control; the new
+  setting kind `minutes`). Migration 000233: `fyniq.idle_timeout` reads the value in force on the organisation's date,
+  and `session_for` finds the session's organisation before applying it; the devices list uses the same
+  (`Sessions.IdleTimeout`). Test: `TestBrowserSessions` (10 and 60 minutes). **Left:** the devices screen (4.1).)
 - [ ] 2.4 Sign-in providers by configuration, allowed domains and identity linking; the Super admin's scope; Owner succession with dual control. Tests `// req: FR-ADM-07`, `// req: FR-ADM-08` and `// req: FR-ADM-09` extend P0's
 - [ ] 2.5 Account recovery as an audited state machine with two independent proofs, cooling-off, notices and revocation. Test `// req: SEC-35` with G4-060
 

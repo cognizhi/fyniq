@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings and recommended values: features, terms, GST, tolerances, banking, claims, mileage, thresholds, asset disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:0355ec2e5f169c3c68ac81ea3c6a6d25b05e88e20adef3de6c9ff22bec6a69e4
+  - docs/user-guide/organisation-settings.md sha256:5b6d4ea485b8a1acd49a70c7071973ac4dd7b85dd36856130e9bcdd119c5f485
 data_class: general
 taint: trusted
 status: draft
@@ -19,6 +19,8 @@ aliases:
   - retention period
   - data residency
   - self-approval threshold
+  - idle timeout
+  - signed out automatically
   - break-glass payment cap
   - self-approved
   - variance threshold
@@ -205,6 +207,14 @@ aliases:
 - Changing the threshold needs a second approver.
 
 (src: docs/user-guide/organisation-settings.md#self-approval-threshold)
+
+## Sign out after inactivity
+
+- A session ends after 30 minutes without using Fyniq, by default; sign in again to go on. Whatever happens, a session ends 12 hours after signing in.
+- It can be set from 5 to 60 minutes; changing it needs a second approver.
+- Someone in several organisations has a session that follows the organisation they are signed in to ([[preferences.security]]).
+
+(src: docs/user-guide/organisation-settings.md#sign-out-after-inactivity)
 
 ## Variances at the close
 

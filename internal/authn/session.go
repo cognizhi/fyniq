@@ -13,8 +13,9 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// The session's lifetimes (SEC-05): it ends after SessionIdle without a request, and SessionLifetime
-// after it began, whatever happens.
+// The session's lifetimes (SEC-05): it ends after SessionIdle without a request, unless its organisation set its
+// own idle timeout (security.idle_timeout_minutes, 5 to 60 minutes; rev 0.180), and SessionLifetime after it began,
+// whatever happens.
 const (
 	SessionIdle     = 30 * time.Minute
 	SessionLifetime = 12 * time.Hour

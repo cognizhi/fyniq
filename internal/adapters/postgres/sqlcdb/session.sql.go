@@ -69,6 +69,24 @@ func (q *Queries) EndUserSessions(ctx context.Context, arg EndUserSessionsParams
 	return ended, err
 }
 
+const idleTimeout = `-- name: IdleTimeout :one
+SELECT extract(epoch FROM fyniq.idle_timeout($1::uuid, $2::timestamptz,
+       $3::bigint * interval '1 second'))::bigint AS seconds
+`
+
+type IdleTimeoutParams struct {
+	Org             uuid.UUID
+	Now             time.Time
+	FallbackSeconds int64
+}
+
+func (q *Queries) IdleTimeout(ctx context.Context, arg IdleTimeoutParams) (int64, error) {
+	row := q.db.QueryRow(ctx, idleTimeout, arg.Org, arg.Now, arg.FallbackSeconds)
+	var seconds int64
+	err := row.Scan(&seconds)
+	return seconds, err
+}
+
 const sessionFor = `-- name: SessionFor :one
 SELECT coalesce(s.issuer, '')::text AS issuer, coalesce(s.subject, '')::text AS subject, coalesce(s.provider, '')::text AS provider,
        coalesce(s.user_id, '00000000-0000-0000-0000-000000000000')::uuid AS user_id,

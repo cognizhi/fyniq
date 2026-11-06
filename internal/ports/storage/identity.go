@@ -120,13 +120,16 @@ type Sessions interface {
 	// the person sends to an email-in address is known as theirs (FR-INT-22, rev 0.106).
 	RecordIdentityEmail(ctx context.Context, issuer, subject, email string, now time.Time) error
 	// Session returns the live session behind a token's hash at now, or ports.ErrNotFound: unknown,
-	// ended, idle for longer than idle, or past its expiry. The identity's user, their organisation and
+	// ended, idle for longer than its organisation's timeout (idle when it has none, rev 0.180), or past its expiry. The identity's user, their organisation and
 	// their live roles are read at that moment, so a role change applies at the next request.
 	Session(ctx context.Context, tokenHash []byte, now time.Time, idle time.Duration) (Session, error)
 	// EndSession ends a session: its holder signed out.
 	EndSession(ctx context.Context, tokenHash []byte, now time.Time) error
 	// UserSessions returns a user's live sessions at now, newest first (FR-ADM-03): their devices.
 	UserSessions(ctx context.Context, userID uuid.UUID, now time.Time, idle time.Duration) ([]Device, error)
+	// IdleTimeout is an organisation's idle timeout at now: its setting security.idle_timeout_minutes in force on its
+	// date, or fallback when it has none (SEC-05, rev 0.180). Session applies the same, so the devices listed agree.
+	IdleTimeout(ctx context.Context, org uuid.UUID, now time.Time, fallback time.Duration) (time.Duration, error)
 	// EndUserSession ends one of a user's sessions, or returns ports.ErrNotFound when they have no live one with that hash.
 	EndUserSession(ctx context.Context, userID uuid.UUID, tokenHash []byte, now time.Time) error
 }

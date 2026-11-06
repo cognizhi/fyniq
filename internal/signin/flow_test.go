@@ -69,6 +69,10 @@ func (f *fakeSessions) UserSessions(context.Context, uuid.UUID, time.Time, time.
 	return nil, nil
 }
 
+func (f *fakeSessions) IdleTimeout(_ context.Context, _ uuid.UUID, _ time.Time, fallback time.Duration) (time.Duration, error) {
+	return fallback, nil
+}
+
 func (f *fakeSessions) EndUserSession(context.Context, uuid.UUID, []byte, time.Time) error {
 	return ports.ErrNotFound
 }

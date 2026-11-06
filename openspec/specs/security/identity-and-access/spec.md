@@ -129,6 +129,11 @@ Source: PRD-001 §13.1 · Priority M · Phase P1
 - **THEN** the session ends
 - **AND** the idle timeout can be configured
 
+#### Scenario: Each organisation sets its idle timeout (rev 0.180)
+- **GIVEN** the organisation set "Sign out after inactivity" (`security.idle_timeout_minutes`) to a value from 5 to 60 minutes, under dual control (the owner's decision of 6 Nov 2026)
+- **WHEN** a session signed in to it is idle for longer than that value
+- **THEN** the session ends; while it is idle for less, it goes on, and the 12 hours still end it
+
 #### Scenario: Absolute timeout
 - **WHEN** a session reaches 12 hours from its start
 - **THEN** the session ends, whatever its activity

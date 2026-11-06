@@ -181,6 +181,7 @@ fyniq_api       EXECUTE   hold_outbox()
 fyniq_api       INSERT    idempotency_key (client_id, created_at, expires_at, key, request_hash)
 fyniq_api       SELECT    idempotency_key
 fyniq_api       UPDATE    idempotency_key (response_body, response_status)
+fyniq_api       EXECUTE   idle_timeout()
 fyniq_api       SELECT    inbound_file
 fyniq_api       UPDATE    inbound_file (removed_at)
 fyniq_api       INSERT    inbound_message (address_id, provider, provider_id, received_at, sender, subject)

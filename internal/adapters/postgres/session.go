@@ -44,6 +44,15 @@ func (s *Store) EndSession(ctx context.Context, tokenHash []byte, now time.Time)
 	return mapError(s.q().EndSession(ctx, sqlcdb.EndSessionParams{TokenHash: tokenHash, Now: now}))
 }
 
+// IdleTimeout implements storage.Sessions.
+func (s *Store) IdleTimeout(ctx context.Context, org uuid.UUID, now time.Time, fallback time.Duration) (time.Duration, error) {
+	n, err := s.q().IdleTimeout(ctx, sqlcdb.IdleTimeoutParams{Org: org, Now: now, FallbackSeconds: int64(fallback / time.Second)})
+	if err != nil {
+		return 0, mapError(err)
+	}
+	return time.Duration(n) * time.Second, nil
+}
+
 // UserSessions implements storage.Sessions.
 func (s *Store) UserSessions(ctx context.Context, userID uuid.UUID, now time.Time, idle time.Duration) ([]storage.Device, error) {
 	rows, err := s.q().UserSessions(ctx, sqlcdb.UserSessionsParams{UserID: userID, Now: now, IdleSeconds: int64(idle / time.Second)})

@@ -24,6 +24,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/members"
 	"github.com/cognizhi/fyniq/internal/outbox"
+	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/setupcode"
 	"github.com/cognizhi/fyniq/internal/signin"
@@ -153,10 +154,12 @@ func roles(r response) string {
 // A person signs in through the sign-in page and gets a first-party session: an HttpOnly cookie, never
 // a bearer token in the browser (SEC-08). The session is in the database, which resolves its identity's
 // user, organisation and live roles on every request, so first-run setup, a role change and a recovery
-// apply at the next request. It ends after 30 minutes idle, 12 hours in all, and at sign-out (SEC-05;
+// apply at the next request. It ends after 30 minutes idle, or the organisation's own idle timeout (rev 0.180), 12 hours
+// in all, and at sign-out (SEC-05;
 // a recovery: TestARecoveryEndsTheSessionsItReplaces). A write it authenticates must come from the web
 // app's own origin.
 // req: SEC-05
+// req: security/identity-and-access Each organisation sets its idle timeout (rev 0.180)
 // req: SEC-08
 // req: FR-ADM-06
 // req: FR-ADM-08
@@ -242,6 +245,33 @@ func TestBrowserSessions(t *testing.T) {
 	}
 	s.clock.Advance(25 * time.Minute)
 	s.problemIs(a.session(), "getSession", 401, CodeUnauthenticated)
+
+	// The organisation's own idle timeout (rev 0.180): at 10 minutes a session idle for 11 ends; at 60 one idle for 45
+	// goes on.
+	idleAt := func(was, minutes string, version int) {
+		t.Helper()
+		as := storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: user}})
+		if err := s.store.Do(as, orgID, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Settings().Record(ctx, "security.idle_timeout_minutes", was, minutes, porttest.Day(10, 1), version)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	idleAt("30", "10", 1)
+	a.signIn("founder-a", false)
+	s.clock.Advance(9 * time.Minute)
+	if r := a.session(); r.Status != 200 {
+		t.Fatalf("a session idle for 9 minutes under a 10-minute timeout: %d %s", r.Status, r.Raw)
+	}
+	s.clock.Advance(11 * time.Minute)
+	s.problemIs(a.session(), "getSession", 401, CodeUnauthenticated)
+	idleAt("10", "60", 2)
+	a.signIn("founder-a", false)
+	s.clock.Advance(45 * time.Minute)
+	if r := a.session(); r.Status != 200 {
+		t.Fatalf("a session idle for 45 minutes under a 60-minute timeout: %d %s", r.Status, r.Raw)
+	}
 
 	// Signing out ends the session.
 	a.signIn("founder-a", false)

@@ -28,3 +28,7 @@ SELECT s.token_hash, s.provider, s.created_at, s.last_seen_at, s.expires_at, coa
 
 -- name: EndUserSession :one
 SELECT fyniq.end_user_session(sqlc.arg(user_id)::uuid, sqlc.arg(token_hash)::bytea, sqlc.arg(now)::timestamptz)::boolean AS ended;
+
+-- name: IdleTimeout :one
+SELECT extract(epoch FROM fyniq.idle_timeout(sqlc.arg(org)::uuid, sqlc.arg(now)::timestamptz,
+       sqlc.arg(fallback_seconds)::bigint * interval '1 second'))::bigint AS seconds;

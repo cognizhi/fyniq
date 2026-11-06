@@ -32,6 +32,7 @@ describe("Organisation settings", () => {
   it("writes each value by its kind", () => {
     expect(valueText("switch", "true")).toBe("On");
     expect(valueText("days", "1")).toBe("1 day");
+    expect(valueText("minutes", "30")).toBe("30 minutes");
     expect(valueText("years", "7")).toBe("7 years");
     expect(valueText("amount_sgd", "1000.00")).toBe("S$1,000.00");
     expect(valueText("percent", "3")).toBe("3%");
