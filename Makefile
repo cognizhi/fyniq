@@ -239,6 +239,9 @@ design-check: ## Lint the screen inventory and fragments for the Claude Design c
 design-status: ## Screens designed per canvas
 	@python3 $(SCREENS)/build.py status
 
+imagery-check: ## Check META_MODEL_API_KEY works for generated design imagery (Muse Image and Muse Spark; never prints the key)
+	@python3 scripts/imagery.py check
+
 hooks: ## Install the git hooks (Conventional Commit check on every commit)
 	@git config core.hooksPath scripts/hooks && echo "✔ hooks installed from scripts/hooks"
 
