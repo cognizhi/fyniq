@@ -88,7 +88,10 @@ runner should fail the same way). The input is not a `fyniq-scenario@1` document
   without `settings.accounts.unrealised_fx` naming an active revenue or expense account that is not a group and has no
   role, a flagged account in a scenario with `statements`, or a period-end rate dated other than a month's last day, in
   the base currency or one not in `currencies`, a second for its currency and date, or whose rate or quote is not a
-  valid rate (a quote's stored rate included).
+  valid rate (a quote's stored rate included);
+- a rule of dimensions is broken (section "Dimensions"): two dimensions share a name or a dimension two values a code,
+  an account `requires` a name not in `dimensions`, or a line's `dimensions` names a dimension not in `dimensions` or
+  a code not among its values.
 
 **A document is rejected** (it is listed in `rejected`, and none of its lines posts). A journal posts
 only when it meets every rule:
@@ -114,6 +117,10 @@ only when it meets every rule:
    has either (FR-EQ-01, Appendix B.7). A scenario with no `people` has none, so any `party` is refused.
 10. (PRD-001 rev 0.55) A `reverse_on`, when there is one, is after the journal's date (FR-GL-02, JOURNAL-11:
     "a reversal date on or before the journal's date is refused when it posts").
+11. (PRD-001 rev 0.171, 0.172) A line's dimension values are each a value in use of a dimension in use (DIM-06), and
+    a line on an account that `requires` a dimension in use names a value of it (DIM-05), unless the journal's lines on
+    that account sum to zero in the base currency: such a journal moves an amount between values. Section
+    "Dimensions".
 
 A reversal is rejected when its document is unknown or was rejected, when the document was
 already reversed (a document is reversed at most once), or when it is dated before the document's
@@ -260,10 +267,11 @@ A P1 document is rejected whole (it posts nothing) when any of these fails, besi
 A P1 document posts at most one entry, `kind` `post`, on its date (the opening balances too, on theirs, the books'
 start; an edit adds a `reversal` and a `replacement`). To keep the comparison independent of
 how each side splits a leg into lines, a P1 entry is written in its **canonical form**: one line per
-(account, currency, person), whose amount and base amount are the sums of that account's lines in that
-currency naming that person (a director's account's lines stay apart by person, FR-EQ-01), lines whose sums are
-both zero left out, sorted by account, then currency, then person (a line naming none first). A manual journal's
-entries keep their lines in the journal's order, as before.
+(account, currency, person, dimension set), whose amount and base amount are the sums of that account's lines in that
+currency naming that person and exactly those dimension values (a director's account's lines stay apart by person,
+FR-EQ-01, and every account's by dimension set, FR-DIM-02 rev 0.171), lines whose sums are both zero left out, sorted
+by account, then currency, then person (a line naming none first), then dimension set as section "Dimensions" writes
+it (`""`, the lines with none, first). A manual journal's entries keep their lines in the journal's order, as before.
 
 Scheduled entries come after every document, reversal and edit, `kind` `release` (a spread's),
 `depreciation` (an asset's) or `auto_reversal` (a journal's): one entry per document, kind and date, ordered by
@@ -617,7 +625,7 @@ So they are rejected whole when they do not net to zero (the balance check, Appe
 than two lines or a zero line, reach an unknown, inactive or group account, or put a line on a director's account
 without its person and origin, or a person on another account (rule 9: "every journal line on 2500 or 2120 carries
 that contact as its sub-ledger key", FR-EQ-01 rev 0.167). Their entry is in the canonical form of a P1 entry (one
-line per account, currency and person; the opening balances' guide: "each account's balance"), which must keep two
+line per account, currency, person and dimension set; the opening balances' guide: "each account's balance"), which must keep two
 lines and fit NUMERIC(20,4).
 A director's balance credited here is what the company owes the person from the books' start, so a waiver,
 repayment or conversion after it may draw on it ("P1 readings": what is owed reads the entries of the documents
@@ -896,6 +904,39 @@ comparison with the engine shows any difference, and the decision settles it.
 | A rate the cascade averaged, on a document | Not in the format: `fx_rate_source` is free text, so neither side knows a rate is an average or refuses one ("an average never sets a GST amount"; rev 0.74: "an average rate is refused") | ENG-40, ENG-42 rev 0.74 (not yet modelled) | Not generated |
 | The GST exchange-rate source of an invoice in another currency | The invoice's own rate, until `p1-gst` adds the organisation's setting | ENG-42 rev 0.116 ("the invoice's own rate stands in for it `[verify]`") [accountant to confirm] | Generated |
 | `gst_base` on a line with no GST in the bill's currency | Claims nothing: the line charges no GST, so the SGD figure is not read (it is read only beside the GST charged, as for G4-023) | ENG-42 ("the difference between the stated GST and the GST at the book rate"), FR-AP-20 [accountant to confirm] | Not generated (`gst_base` only beside `gst`) |
+
+## Dimensions (FR-DIM-01, FR-DIM-02; PRD-001 rev 0.171, 0.172)
+
+A scenario may declare `dimensions`, such as Department and Project, each with its values; an account may list in
+`requires` the dimensions a line a person enters on it names a value of; and a manual journal's or the opening
+balances' line may carry `dimensions`, a dimension's name to one of its values' codes, so a line names at most one
+value of each. Names and codes match exactly, case included; `"dimensions": []` declares none and a line's
+`"dimensions": {}` names none. A dimension in use with no values can be required, and then only a journal moving an
+amount between values (below) posts a line on its account.
+
+- **What a line may name.** Each value is in use and of a dimension in use (DIM-06): a line naming a value out of
+  use, or a value of a dimension out of use, is rejected with its document.
+- **What an account requires.** A manual journal's line on an account that `requires` a dimension in use names a
+  value of it (DIM-05), unless the journal's lines on that account, in its own entry, sum to zero in the base
+  currency: such a journal moves an amount between values, as a person moves an amount a posting of the system left
+  without one (rev 0.172). A dimension out of use requires nothing. The opening balances are not held to it (each of
+  their values is still in use, DIM-06).
+- **Edits and reversals.** A manual journal's edit is held to both rules as a journal is; an edit of the opening
+  balances is held to DIM-06 only, as they are. A reversal, an edit's reversal and an automatic reversal keep each
+  line's values, so every dimension set of a journal nets to zero once it is reversed.
+- **Other sources.** The P1 sources carry no dimension values in this format yet, so their lines post with none. A
+  line a person enters on an invoice, a credit note, a bill, a vendor credit, a bank line or an expense claim is still
+  held to `requires`: one on an account that requires a dimension in use, a spread line by its own account, rejects
+  its document (DIM-05). Only those lines' own accounts are checked: a bank line's parts, not its money account; an
+  expense claim's receipt and trip lines; never the lines the system adds (receivables, payables, GST, the holding
+  accounts of a spread). The other P1 sources (receipts, payments, deposits, refunds, write-offs, transfers, the
+  founders' documents and the fixed assets) and every scheduled entry (releases, depreciation, automatic reversals,
+  revaluations) post without the check, as the system's own postings do.
+- **The result.** A posted line with values carries them as `dimensions`; `dimension_balances` (present when the
+  scenario declares dimensions) is each posting month's base-currency total of the posted lines on each account by
+  their exact set of values, the set written as `Name=CODE` joined by `|` in name order, `""` for the lines with
+  none. A zero total may be left out, and a comparator reads a missing month, account or set as zero. Each month's
+  sets of an account add up to its `trial_balance` total.
 
 ## Statements
 

@@ -39,6 +39,12 @@
             "description": "Optional. \"share-capital\" marks an account a manual journal may not post to (INV-13, PRD-001 rev 0.24), such as 3010 and 3020 in the default chart. The statements read three more (FR-RPT-01 rev 0.159): \"retained-earnings\" (an equity account, 3100), \"depreciation\" (an expense account, 6610) and \"income-tax-expense\" (an expense account, 8010); a chart has at most one account with each of these three. \"director-loan\" (2500) and \"deferred-remuneration\" (2120) mark the director's accounts, each of whose lines names its person and origin, while no other line names either (FR-EQ-01, B.7; PRD-001 rev 0.167).",
             "enum": ["share-capital", "retained-earnings", "depreciation", "income-tax-expense", "director-loan", "deferred-remuneration"]
           },
+          "requires": {
+            "description": "Optional (FR-DIM-01): the dimensions, by name, each one of dimensions, that a line a person enters on the account names a value of (README, \"Dimensions\").",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string"}
+          },
           "report_group": {
             "description": "Optional (FR-COA-02): the line a statement shows the account under. An account without one is shown under its code.",
             "type": "string",
@@ -67,6 +73,31 @@
       "type": "array",
       "uniqueItems": true,
       "items": {"$ref": "#/$defs/documentId"}
+    },
+    "dimensions": {
+      "description": "Optional (FR-DIM-01; README, \"Dimensions\"). The organisation's dimensions, such as Department, each with its values: the only ones a line may name. Names are unique, and a value's code is unique within its dimension. Left out, there are none.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "active", "values"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9 ]{0,49}$"},
+          "active": {"description": "false: out of use, so no line names a value of it and no account requires it.", "type": "boolean"},
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["code", "active"],
+              "properties": {
+                "code": {"type": "string", "pattern": "^[0-9A-Za-z][0-9A-Za-z._-]{0,29}$"},
+                "active": {"description": "false: out of use, so no line names it.", "type": "boolean"}
+              }
+            }
+          }
+        }
+      }
     },
     "statements": {
       "description": "Optional. true asks both sides for every month's statements (FR-RPT-01, README \"Statements\"); the chart then needs an account with the role retained-earnings.",
@@ -761,7 +792,8 @@
         "fx_rate": {"description": "Base per unit of the line's currency. Only on lines not in the base currency, and always with fx_rate_source.", "type": "string"},
         "fx_rate_source": {"description": "Where the rate came from (ENG-40), e.g. \"document\". Only with fx_rate.", "type": "string", "minLength": 1},
         "party": {"description": "The person a line on a director's account belongs to, one of people (FR-EQ-01, B.7). Whether it is there exactly when the account is a director's, and one of people, is a posting rule (README, rule 9).", "type": "string"},
-        "origin": {"description": "Where the amount on a director's account came from (FR-EQ-01): lent, paid_personally, pay, fee, paid_out or other. A posting rule, as party is.", "type": "string"}
+        "origin": {"description": "Where the amount on a director's account came from (FR-EQ-01): lent, paid_personally, pay, fee, paid_out or other. A posting rule, as party is.", "type": "string"},
+        "dimensions": {"description": "Optional (FR-DIM-02): the line's dimension values, a dimension's name to one of its values' codes, so a line names at most one value of each. A name or a code the scenario does not declare makes it invalid; whether each is in use, and the values the line's account requires, are posting rules (README, \"Dimensions\").", "type": "object", "additionalProperties": {"type": "string"}}
       }
     }
   }

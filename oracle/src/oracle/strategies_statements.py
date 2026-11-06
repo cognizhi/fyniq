@@ -11,7 +11,8 @@ to an account the settings name under another key (the settings' ``depreciation`
 borrowings account, so up to four journals in the base currency are added that do: bought for cash, a
 loan received, a sale at a gain or loss, equipment on account and a cost a director paid (the last two
 moved no money). With ``kpis``, the scenario also asks for the KPIs, with a financial year starting in
-any month and counts entered for some months (FR-KPI-02 rev 0.161). ``make differential`` draws these
+any month and counts entered for some months (FR-KPI-02 rev 0.161). In a scenario that declares dimensions, the added
+journals name the values their accounts require (README, "Dimensions"). ``make differential`` draws these
 once ``statements`` (or ``kpis``) is in FYNIQ_DIFFERENTIAL_SOURCES.
 
 Statements read back each account's balance for a month, which the database keeps as NUMERIC(20,4), so these
@@ -42,7 +43,7 @@ from hypothesis import assume
 from hypothesis import strategies as st
 
 from oracle import money
-from oracle.strategies import BOUNDED
+from oracle.strategies import BOUNDED, Dimensions, tag
 from oracle.statements import CAPITAL_EXPENDITURE, CASH, DEPRECIATION, SHARE_CAPITAL
 
 RETAINED = "9100"  # generated codes are 1000 to 8999, and the P1 chart has none from 9000
@@ -122,6 +123,10 @@ def with_statements(draw: st.DrawFn, base: st.SearchStrategy[dict[str, Any]], kp
         if streams:
             draw(st.sampled_from(streams))["report_group"] = draw(st.sampled_from(["Subscriptions", "SaaS subscription fees"]))
     journals = draw(_journals(scenario, accounts))
+    if "dimensions" in scenario:  # FR-DIM-01: each line names the values its account requires, so it posts
+        dims = Dimensions(scenario["dimensions"], {a["code"]: a["requires"] for a in accounts if "requires" in a})
+        for journal in journals:
+            tag(draw, dims, journal["lines"])
     result = {**scenario, "accounts": accounts, "documents": [*scenario["documents"], *journals], "statements": True}
     if kpis:
         result["kpis"] = draw(_kpi_settings([d["date"][:7] for d in result["documents"]]))

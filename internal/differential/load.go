@@ -144,7 +144,62 @@ func ParseScenario(data []byte) (Scenario, error) {
 	if reason := p1Format(s); reason != "" {
 		return Scenario{}, &InvalidError{reason}
 	}
+	if reason := dimensionFormat(s); reason != "" {
+		return Scenario{}, &InvalidError{reason}
+	}
 	return s, nil
+}
+
+// dimensionFormat names the first break of the dimensions' format rules (README, "Invalid scenario or rejected
+// document" and "Dimensions"), or returns "": two dimensions of one name or two values of one code, an account that
+// requires a dimension not declared, or a journal's line naming a dimension or a code not declared.
+func dimensionFormat(s Scenario) string {
+	codes := map[string]map[string]bool{}
+	for _, d := range s.Dimensions {
+		if codes[d.Name] != nil {
+			return fmt.Sprintf("dimension %s appears twice", d.Name)
+		}
+		codes[d.Name] = map[string]bool{}
+		for _, v := range d.Values {
+			if codes[d.Name][v.Code] {
+				return fmt.Sprintf("dimension %s has the value %s twice", d.Name, v.Code)
+			}
+			codes[d.Name][v.Code] = true
+		}
+	}
+	for _, a := range s.Accounts {
+		for _, name := range a.Requires {
+			if codes[name] == nil {
+				return fmt.Sprintf("account %s requires %s, which is not among the dimensions", a.Code, name)
+			}
+		}
+	}
+	lines := func(doc string, ls []Line) string {
+		for i, l := range ls {
+			for name, code := range l.Dimensions {
+				switch {
+				case codes[name] == nil:
+					return fmt.Sprintf("%s line %d names the dimension %s, which is not among the dimensions", doc, i+1, name)
+				case !codes[name][code]:
+					return fmt.Sprintf("%s line %d names %s %s, which is not among its values", doc, i+1, name, code)
+				}
+			}
+		}
+		return ""
+	}
+	for _, d := range s.Documents {
+		if reason := lines(d.ID, d.Lines); reason != "" {
+			return reason
+		}
+	}
+	for _, r := range s.Reversals {
+		if r.Edit != nil {
+			if reason := lines(r.Document+"/edit", r.Edit.Lines); reason != "" {
+				return reason
+			}
+		}
+	}
+	return ""
 }
 
 // dateKeys are the keys whose string values are dates in fyniq-scenario@1 (scenario.schema.json's "date").
