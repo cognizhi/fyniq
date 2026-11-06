@@ -70,6 +70,7 @@ export const routes = [
   { kind: "route", id: "review-log", path: "/review-log", mode: "basic", signedIn: true, help: "approvals.review-log", guide: "approvals.decide#review-high-risk-actions" },
   { kind: "route", id: "break-glass", path: "/break-glass", mode: "basic", signedIn: true, help: "approvals.break-glass", guide: "settings.team-mode#break-glass" },
   { kind: "route", id: "contacts", path: "/contacts", mode: "basic", signedIn: true, help: "contacts.overview", guide: "contacts.manage" },
+  { kind: "route", id: "contact-record", path: "/contacts/$contactId", mode: "basic", signedIn: true, help: "contacts.record", guide: "contacts.manage#what-a-contact-stands-at" },
   { kind: "route", id: "items", path: "/items", mode: "basic", signedIn: true, help: "items.overview", guide: "contacts.manage#items-and-prices" },
   { kind: "route", id: "invoices", path: "/sales/invoices", mode: "basic", signedIn: true, help: "sales.invoices", guide: "sales.invoices" },
   { kind: "route", id: "invoice-new", path: "/sales/invoices/new", mode: "basic", signedIn: true, help: "invoice.new", guide: "sales.invoices#enter-an-invoice" },

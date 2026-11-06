@@ -3,7 +3,7 @@ key: contacts.manage
 title: Keep your contacts, items and prices
 mode: basic
 roles: [bookkeeper, ar_specialist, ap_specialist, accountant, controller, owner, auditor, tax_agent]
-requirements: [FR-CT-01, FR-CT-03, FR-CT-04, FR-ITM-01, FR-AP-19, FR-AP-13, FR-TPL-05]
+requirements: [FR-CT-01, FR-CT-02, FR-CT-03, FR-CT-04, FR-ITM-01, FR-AP-19, FR-AP-13, FR-TPL-05]
 status: draft            # written with the contacts and items screens (P1); reviewed when sales and purchases arrive
 ---
 
@@ -42,6 +42,23 @@ Before it adds a contact, Fyniq checks for one with the same name, UEN or tax ID
 finds one, it shows which and why. Check that it really is a new company, then select **Add it
 anyway**, or cancel and use the one you have. A contact that may duplicate another shows **Possible
 duplicate** in the list.
+
+## What a contact stands at
+
+Select a contact's name in **Contacts** to open its page. It shows, for today:
+
+- **Owed to us**: what the customer owes, from its open invoices less the credits not yet applied,
+  in each currency.
+- **We owe**: what the company owes the supplier, from its open bills less its credits.
+- **Invoiced this financial year** and **Billed this financial year**: invoices less credit notes,
+  and bills less vendor credits, dated in the financial year, GST included, in the base currency.
+- **By days past due**: the open amounts by how late they are (current, 1–30, 31–60, 61–90 and
+  over 90 days), as in the receivables and payables ageing.
+- **Activity**: their latest 50 documents, newest first, each with what it added to or took off
+  what is owed. Select an invoice or a bill to open it.
+
+The customer side shows to whoever sees invoices, the supplier side to whoever sees bills. The
+figures come from the posted ledger, so a draft shows in the activity without an amount.
 
 ## Change a contact
 

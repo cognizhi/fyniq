@@ -185,6 +185,9 @@ type Documents interface {
 	Edit(ctx context.Context, id uuid.UUID, payload []byte, preparer string) (Document, error)
 	// Page lists documents of a type at their current version, newest date first, after a cursor.
 	Page(ctx context.Context, f DocumentFilter) ([]Document, error)
+	// OfContact lists at most limit documents of any type that name contact as their customer or supplier, at their
+	// current version, newest date first (FR-CT-02).
+	OfContact(ctx context.Context, contact uuid.UUID, limit int) ([]Document, error)
 	// ScheduledRevaluation saves a period's month-end revaluation as the scheduler does (FR-GL-04, FR-AUT-02; the
 	// database's create_scheduled_revaluation): a posted fx_revaluation document whose version 1 is payload, saved and
 	// posted by "scheduler:fx.revalue" at the clock's now. CodeFXRevaluation when the period is not open, or the payload

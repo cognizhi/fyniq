@@ -368,8 +368,11 @@ var (
 		Note: "Removing a member is a role change under FM-1 (rev 0.165): until a second member joins, the Owner acts alone; after that another Owner approves it, and the request needs step-up."}
 	AcceptMemberInvitation = Policy{Operation: "acceptMemberInvitation", Capability: Joining, Need: Create, NoOrganisation: true,
 		Note: "The invitation's code decides; a person signed in, never the AI or an OAuth client."}
-	ListContacts      = Policy{Operation: "listContacts", Capability: ContactsAndItems, Need: View}
-	GetContact        = Policy{Operation: "getContact", Capability: ContactsAndItems, Need: View}
+	ListContacts = Policy{Operation: "listContacts", Capability: ContactsAndItems, Need: View}
+	GetContact   = Policy{Operation: "getContact", Capability: ContactsAndItems, Need: View}
+	// A contact's balances and activity (FR-CT-02, rev 0.185): its receivable side for whoever views invoices, its payable
+	// side for whoever views bills.
+	GetContactSummary = Policy{Operation: "getContactSummary", Capability: ContactsAndItems, Need: View}
 	CreateContact     = Policy{Operation: "createContact", Capability: ContactsAndItems, Need: Create}
 	UpdateContact     = Policy{Operation: "updateContact", Capability: ContactsAndItems, Need: Create}
 	ListItems         = Policy{Operation: "listItems", Capability: ContactsAndItems, Need: View}
@@ -1217,7 +1220,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	TestOrganisationConnector,
 	GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, RequestAccountMerge,
-	ListDimensions, CreateDimension, ReplaceDimension, ListDimensionValues, CreateDimensionValue, ReplaceDimensionValue, ListContacts, GetContact,
+	ListDimensions, CreateDimension, ReplaceDimension, ListDimensionValues, CreateDimensionValue, ReplaceDimensionValue, ListContacts, GetContact, GetContactSummary,
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, RemoveMember, SearchEvidence, ListOwnerSuccessions, StartOwnerSuccession, AddOwnerSuccessionEvidence, ListOwnerSuccessionEvidence,
 	ObjectToOwnerSuccession, WithdrawOwnerSuccession, CompleteOwnerSuccession, GetAccessReview, ExportAccessReview, AttestAccessReview, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,

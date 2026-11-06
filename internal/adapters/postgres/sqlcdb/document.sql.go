@@ -125,6 +125,67 @@ func (q *Queries) CreditNotesOfInvoice(ctx context.Context, invoiceID string) ([
 	return items, nil
 }
 
+const documentsOfContact = `-- name: DocumentsOfContact :many
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at,
+       coalesce(v.payload->>'date', '')::text AS date
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+WHERE v.payload->>'customer_id' = $1::text OR v.payload->>'supplier_id' = $1::text
+ORDER BY coalesce(v.payload->>'date', '') DESC, d.id DESC
+LIMIT $2
+`
+
+type DocumentsOfContactParams struct {
+	Contact  string
+	PageSize int32
+}
+
+type DocumentsOfContactRow struct {
+	ID             uuid.UUID
+	Type           string
+	Status         string
+	CurrentVersion int32
+	Payload        []byte
+	Number         *string
+	CreatedBy      *string
+	PostedBy       *string
+	PostedAt       *time.Time
+	Date           string
+}
+
+// Documents of any type naming the contact as their customer or supplier, at their current version, newest date first.
+func (q *Queries) DocumentsOfContact(ctx context.Context, arg DocumentsOfContactParams) ([]DocumentsOfContactRow, error) {
+	rows, err := q.db.Query(ctx, documentsOfContact, arg.Contact, arg.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DocumentsOfContactRow
+	for rows.Next() {
+		var i DocumentsOfContactRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Status,
+			&i.CurrentVersion,
+			&i.Payload,
+			&i.Number,
+			&i.CreatedBy,
+			&i.PostedBy,
+			&i.PostedAt,
+			&i.Date,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const dueReversals = `-- name: DueReversals :many
 SELECT d.id
 FROM fyniq.document d

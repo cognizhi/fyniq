@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What it moved on the receivables or payables account, in its currency, as owed: positive when the customer owes more (an invoice) or the company owes the supplier more (a bill), negative for what settles or credits it. Absent for a draft."
+    },
+    "date": {
+      "description": "Its date.",
+      "examples": [
+        "2026-10-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The document.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number, once it has one.",
+      "examples": [
+        "INV-0012"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "Its status, such as draft, posted or reversed.",
+      "examples": [
+        "posted"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "description": "The document's type, such as invoice, customer_receipt, bill or bill_payment.",
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "id",
+    "status"
+  ],
+  "title": "ContactEvent",
+  "type": "object"
+}

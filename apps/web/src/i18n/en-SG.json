@@ -416,6 +416,10 @@
       "label": "Contacts",
       "tooltip": "The customers and vendors the company deals with."
     },
+    "contacts.record": {
+      "label": "What this contact stands at",
+      "tooltip": "What they owe the company and what it owes them today, by days past due, what was invoiced and billed this financial year, and their latest documents."
+    },
     "items.overview": {
       "label": "Items and prices",
       "tooltip": "The products and services the company sells, with a unit price per currency."

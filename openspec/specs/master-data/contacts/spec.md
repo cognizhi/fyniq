@@ -36,6 +36,16 @@ Source: PRD-001 §8.3 · Priority M · Phase P1
 - **WHEN** a user opens a contact
 - **THEN** an activity timeline of that contact is shown
 
+#### Scenario: Each side shows to whoever views its documents (rev 0.185)
+- **GIVEN** a contact that is both a customer and a supplier
+- **WHEN** a person who views invoices but not bills opens it
+- **THEN** what the customer owes, the year's invoiced total and its sales documents are shown
+- **AND** what the company owes it, the year's billed total and its purchase documents are not
+
+#### Scenario: A timeline entry shows what it moved (rev 0.185)
+- **WHEN** a contact's activity timeline is shown
+- **THEN** each posted document shows what it added to or took off what is owed, in its currency, and a draft shows none
+
 ### Requirement: FR-CT-03 Vendor bank details are high-risk data
 The system SHALL treat vendor bank details as high-risk data: a change MUST be dual-controlled (SOD-1, FM-1), MUST notify all founders and MUST freeze payments to that vendor until it is approved.
 

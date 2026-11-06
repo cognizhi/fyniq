@@ -2,16 +2,16 @@
 key: contacts.manage
 type: task
 title: Keep your contacts, items and prices
-summary: Add or change a contact, possible duplicates, a vendor's bank details and their approved changes, a contact's own templates, and items with prices
+summary: Add or change a contact, its balances and activity, duplicates, a vendor's bank details and their approved changes, its templates, and items with prices
 sources:
-  - docs/user-guide/contacts-and-items.md sha256:d59661a5417bcaa5f02afad4db879d8869cf3663dd8b5178892378e0411051cd
+  - docs/user-guide/contacts-and-items.md sha256:7e7e36c67712ded8a18d13273f63b3c22f06ba0137c6162e9c22673035be8371
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-27
+compiled_at: 2026-11-06
 aliases:
   - customer
   - vendor
@@ -36,6 +36,10 @@ aliases:
   - IBAN
   - payments frozen
   - show account number
+  - contact balance
+  - what a customer owes
+  - what we owe a supplier
+  - contact activity
 ---
 
 # Keep your contacts, items and prices
@@ -58,6 +62,16 @@ aliases:
 - The pencil changes a contact; **Save the contact**. Clearing **Active** stops offering it for new documents. Vendor bank details have their own change, which another person approves (below).
 
 (src: docs/user-guide/contacts-and-items.md#add-a-contact) (src: docs/user-guide/contacts-and-items.md#possible-duplicates) (src: docs/user-guide/contacts-and-items.md#change-a-contact)
+
+## What a contact stands at
+
+- Selecting a contact's name opens its page, for today: **Owed to us** (its open invoices less credits not yet applied, per currency) and **We owe** (its open bills less its credits).
+- **Invoiced this financial year** and **Billed this financial year**: invoices less credit notes, and bills less vendor credits, dated in the financial year, GST included, in the base currency.
+- **By days past due**: current, 1–30, 31–60, 61–90 and over 90 days, as in the receivables and payables ageing.
+- **Activity**: their latest 50 documents, newest first, each with what it added to or took off what is owed; an invoice or a bill opens from there ([[sales.invoices]], [[purchases.bills]]).
+- The customer side shows to whoever sees invoices, the supplier side to whoever sees bills. Figures come from the posted ledger, so a draft has no amount.
+
+(src: docs/user-guide/contacts-and-items.md#what-a-contact-stands-at)
 
 ## Bank details
 

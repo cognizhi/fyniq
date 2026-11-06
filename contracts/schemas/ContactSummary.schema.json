@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_at": {
+      "description": "The day: the organisation's today.",
+      "examples": [
+        "2026-11-06"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "billed": {
+      "$ref": "Money.schema.json",
+      "description": "Billed by the supplier in the year, less vendor credits, in the base currency, GST included; absent when you do not view bills."
+    },
+    "invoiced": {
+      "$ref": "Money.schema.json",
+      "description": "Invoiced to the customer in the year, less credit notes, in the base currency, GST included; absent when you do not view invoices."
+    },
+    "payable": {
+      "description": "What the company owes the supplier, by currency and days past due, with its unapplied credits; empty when nothing is open, or when you do not view bills.",
+      "items": {
+        "$ref": "PayablesRow.schema.json"
+      },
+      "type": "array"
+    },
+    "receivable": {
+      "description": "What the customer owes the company, by currency and days past due, with its unapplied credits; empty when nothing is open, or when you do not view invoices.",
+      "items": {
+        "$ref": "ReceivablesRow.schema.json"
+      },
+      "type": "array"
+    },
+    "timeline": {
+      "description": "Their latest documents you may see, newest first: at most 50.",
+      "items": {
+        "$ref": "ContactEvent.schema.json"
+      },
+      "type": "array"
+    },
+    "year": {
+      "$ref": "ContactYear.schema.json",
+      "description": "The financial year holding the day; absent when the years are not set."
+    }
+  },
+  "required": [
+    "as_at",
+    "receivable",
+    "payable",
+    "timeline"
+  ],
+  "title": "ContactSummary",
+  "type": "object"
+}
