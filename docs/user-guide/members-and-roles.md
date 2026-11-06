@@ -3,7 +3,7 @@ key: settings.members
 title: Invite people and give them roles
 mode: basic
 roles: [owner, admin, controller, auditor, dpo]
-requirements: [FR-ADM-01, FR-ADM-09, FM-1, SEC-06]
+requirements: [FR-ADM-01, FR-ADM-09, FM-1, SEC-06, SEC-35]
 ---
 
 # Invite people and give them roles
@@ -101,3 +101,18 @@ approval. A succession removes them instead, with safeguards.
 - Completing needs the file attached and the 7 days over.
 - Only one succession of the same Owner waits at a time.
 - Every step is kept in the audit trail, and every Owner is told.
+
+## Confirm a member's recovery
+
+A member who lost every authenticator, their phone with its authenticator app and passkeys, gets
+their account back with one of their recovery codes and your confirmation. Fyniq never takes an
+email or a support request instead.
+
+1. Speak to them first: in person, or on a call you make to a number you already know.
+2. In **Settings → Members and roles**, open the member and select **Confirm the recovery**.
+3. Confirm it's you. Read the confirmation to them now: it is shown once and works for 24 hours.
+
+- You cannot confirm your own recovery: another Owner or Administrator does.
+- The member and every Owner are told of each confirmation, in Fyniq and by email.
+- After recovering, the member cools off for 24 hours: approving, releasing payments, changing bank
+  details, roles or sign-ins, break-glass and confirming others' recoveries wait.

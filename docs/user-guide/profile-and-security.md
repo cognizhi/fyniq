@@ -3,7 +3,7 @@ key: preferences.security
 title: Your profile and security
 mode: basic
 roles: [all]
-requirements: [FR-UX-23, FR-UX-24, FR-UX-27, FR-ADM-02, FR-ADM-03, FR-ADM-08, SEC-01, FR-AP-22, FM-1, SEC-11]
+requirements: [FR-UX-23, FR-UX-24, FR-UX-27, FR-ADM-02, FR-ADM-03, FR-ADM-08, SEC-01, SEC-35, FR-AP-22, FM-1, SEC-11]
 status: draft            # written with the app shell's settings pages (P1); reviewed with the shell's screens
 ---
 
@@ -51,6 +51,19 @@ your other devices says so.
 
 Select **Revoke** next to the passkey, then **Revoke** again to confirm. It stops working at once.
 You cannot undo it: add a new passkey instead.
+
+Add a second passkey on another device, so losing one device does not lock you out.
+
+## Recovery codes
+
+Recovery codes give your account back if you lose every authenticator, together with a confirmation
+from an Owner or Administrator ([Sign in to Fyniq](sign-in.md)).
+
+1. Under **Recovery codes**, select **Make recovery codes** and confirm it's you.
+2. Keep the ten codes Fyniq shows once: print them, or keep them in a password manager. Each works
+   once.
+
+The card says how many are unused. **Make new codes** replaces them all: the old ones stop working.
 
 ## Link another sign-in
 

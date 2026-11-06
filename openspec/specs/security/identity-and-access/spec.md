@@ -245,6 +245,16 @@ Source: PRD-001 §13.1 · Priority M · Phase P1
 - **THEN** they sign in with another provider they linked (FR-ADM-08), so each person is asked to link a second one
 - **AND** a person with one provider who loses it is recovered by two people
 
+#### Scenario: The proofs of a recovery (rev 0.198)
+- **WHEN** a person still has an authenticator (a passkey, or the provider's authenticator app)
+- **THEN** they confirm it's them with it, and need no recovery
+- **AND** a person who lost every authenticator recovers with a recovery code plus the confirmation an Owner or Administrator of their organisation gives after speaking to them, never their own
+
+#### Scenario: What the cooling-off holds (rev 0.198)
+- **WHEN** an account is in its cooling-off
+- **THEN** approving, releasing payments, changing payees' or their own bank details, roles, sign-ins or provider switches, break-glass and confirming others' recoveries are refused
+- **AND** adding a passkey stays open, since restoring the second factor is the recovery's purpose
+
 #### Scenario: Ten hashed one-time recovery codes (rev 0.196)
 - **WHEN** a user saves recovery codes
 - **THEN** there are 10 one-time codes of 10 characters, shown once and kept only as keyed hashes

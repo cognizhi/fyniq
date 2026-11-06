@@ -40,6 +40,10 @@ func SecondFactor(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork
 	return err
 }
 
+// RecoveryType tells a person, and every Owner of their organisations, that their account was recovered or a recovery of
+// it confirmed (SEC-35, rev 0.198).
+const RecoveryType = "security.recovery"
+
 // SignInProviderType tells every Super admin that a sign-in provider was turned on or off, or its domains changed
 // (FR-ADM-08, rev 0.197).
 const SignInProviderType = "security.sign_in_provider"

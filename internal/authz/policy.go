@@ -1191,6 +1191,29 @@ var (
 		Note: superAdminNote + " With two Super admins a change waits for the other's approval."}
 )
 
+// Account recovery (SEC-35, rev 0.198): a person's own recovery codes; the confirmation an Owner or Administrator gives
+// after speaking to them; the recovery itself, open to a session that passed no second factor, since that is what it
+// gives back.
+const recoveryNote = "Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35)."
+
+var (
+	GetMyRecoveryCodes     = Policy{Operation: "getMyRecoveryCodes", Capability: Session, Need: View, NoOrganisation: true, Note: recoveryNote}
+	ReplaceMyRecoveryCodes = Policy{Operation: "replaceMyRecoveryCodes", Capability: Session, Need: Create, NoOrganisation: true,
+		Note: recoveryNote + " The session passed a second factor in the last 5 minutes."}
+	RecoverAccount = Policy{Operation: "recoverAccount", Capability: Session, Need: Create, NoOrganisation: true, SingleFactor: true,
+		Note: recoveryNote + " Open to a session that passed no second factor: a recovery code and a confirmation give one back."}
+	ConfirmAccountRecovery = Policy{Operation: "confirmAccountRecovery", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
+		Note: "An Owner or Administrator, who passed step-up in the last 5 minutes, after speaking to the person; never for themselves (SEC-35)."}
+)
+
+// HeldInCoolingOff are the operations the API refuses during the cooling-off after a person's account recovery (SEC-35,
+// rev 0.198): approving, releasing payments, changing bank details, roles or sign-in methods, break-glass, and confirming
+// someone else's recovery. Registering a new passkey stays open: restoring the second factor is the recovery's purpose.
+var HeldInCoolingOff = []string{"approveApproval", "challengeApproval", "releasePaymentBatch", "releasePaymentBatchUnderBreakGlass",
+	"createPayeeBankChange", "replacePayeeBankChange", "requestPayeeBankChangeApproval", "createMyBankChange", "replaceMyBankChange",
+	"requestMyBankChangeApproval", "assignRole", "revokeRole", "createMemberInvitation", "createSuperAdminInvitation", "startOwnerSuccession",
+	"completeOwnerSuccession", "unlinkIdentity", "changeSignInMethod", "startBreakGlass", "confirmAccountRecovery"}
+
 // A person's sign-ins (FR-ADM-08, rev 0.196): linked from the sign-in flow, listed and removed here.
 const identityNote = "Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-08)."
 
@@ -1325,7 +1348,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,
 	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp,
-	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod)
+	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod,
+	GetMyRecoveryCodes, ReplaceMyRecoveryCodes, RecoverAccount, ConfirmAccountRecovery)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

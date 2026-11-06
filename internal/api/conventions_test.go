@@ -22,7 +22,8 @@ import (
 func TestConventionExemptions(t *testing.T) {
 	var want []string
 	for _, op := range []string{"acceptMemberInvitation", "acceptSuperAdminInvitation", "completeSetup", "confirmSuperAdminRecovery",
-		"createMemberInvitation", "createSuperAdminInvitation", "recoverSuperAdmin", "replaceSuperAdminRecoveryCodes"} {
+		"createMemberInvitation", "createSuperAdminInvitation", "recoverSuperAdmin", "replaceSuperAdminRecoveryCodes", "replaceMyRecoveryCodes",
+		"confirmAccountRecovery", "recoverAccount"} {
 		want = append(want, op+" Idempotency-Key", op+" Prefer")
 	}
 	for _, op := range []string{"challengeApproval", "registerPasskey", "startPasskeyRegistration", "startStepUp", "stepUp"} { // a challenge makes them one-time

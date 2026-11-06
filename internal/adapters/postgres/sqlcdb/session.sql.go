@@ -94,7 +94,8 @@ SELECT coalesce(s.issuer, '')::text AS issuer, coalesce(s.subject, '')::text AS 
        coalesce(s.roles, '{}')::text[] AS roles,
        coalesce(extract(epoch FROM s.step_up_at), 0)::bigint AS step_up_unix,
        coalesce(s.expires_at, 'epoch')::timestamptz AS expires_at,
-       coalesce(fyniq.session_step_up_method($1::bytea), '')::text AS step_up_method
+       coalesce(fyniq.session_step_up_method($1::bytea), '')::text AS step_up_method,
+       coalesce(extract(epoch FROM fyniq.user_cooling_off_until(s.user_id, $2::timestamptz)), 0)::bigint AS cooling_off_unix
   FROM fyniq.session_for($1::bytea, $2::timestamptz,
        $3::bigint * interval '1 second') AS s
 `
@@ -115,6 +116,7 @@ type SessionForRow struct {
 	StepUpUnix     int64
 	ExpiresAt      time.Time
 	StepUpMethod   string
+	CoolingOffUnix int64
 }
 
 // An empty issuer means no live session. Step-up is in Unix seconds, 0 when the sign-in passed none.
@@ -131,6 +133,7 @@ func (q *Queries) SessionFor(ctx context.Context, arg SessionForParams) (Session
 		&i.StepUpUnix,
 		&i.ExpiresAt,
 		&i.StepUpMethod,
+		&i.CoolingOffUnix,
 	)
 	return i, err
 }

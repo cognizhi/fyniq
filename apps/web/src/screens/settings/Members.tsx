@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarClock, Check, ClockAlert, Copy, Hourglass, Mail, Plus, ShieldAlert, TriangleAlert, UserMinus, UserPlus, Users, X } from "lucide-react";
+import { CalendarClock, Check, ClockAlert, Copy, Hourglass, LifeBuoy, Mail, Plus, ShieldAlert, TriangleAlert, UserMinus, UserPlus, Users, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -13,6 +13,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { roleLabel, type Approval } from "../approvals/words";
+import { ConfirmRecovery } from "../Recovery";
 import { SettingsPage } from "./SettingsPage";
 import { StartSuccession, Successions } from "./Successions";
 
@@ -296,6 +297,9 @@ function Invite({ open, onClose }: { open: boolean; onClose: () => void }) {
 }
 
 function MemberRoles({ member, conflict, blocks, onClose }: { member: Member | null; conflict?: Conflict; blocks: boolean; onClose: () => void }) {
+  const { session } = useSignedIn();
+  const [recovering, setRecovering] = useState(false);
+  const recover = helpText("recovery.confirm");
   const queries = useQueryClient();
   const confirm = useConfirm();
   const roleId = useId();
@@ -477,6 +481,16 @@ function MemberRoles({ member, conflict, blocks, onClose }: { member: Member | n
           </Button>
         </div>
       </form>
+      {member && member.user_id !== session.user_id && (
+        <div className="fy-row fy-row--wrap justify-between gap-3 border-t border-border pt-3">
+          <span className="fy-small fy-secondary">Lost every authenticator? After speaking to them, confirm their recovery.</span>
+          <Button variant="secondary" size="sm" onClick={() => setRecovering(true)} disabled={busy} title={recover.tooltip}>
+            <Icon of={LifeBuoy} />
+            {recover.label}
+          </Button>
+        </div>
+      )}
+      {recovering && member && <ConfirmRecovery memberId={member.id} name={member.display_name} onClose={() => setRecovering(false)} />}
       <div className="fy-row fy-row--wrap justify-between gap-3 border-t border-border pt-3">
         <span className="fy-small fy-secondary">Removing ends their membership and every role. The company always keeps an Owner.</span>
         <Button variant="destructive" size="sm" onClick={() => setRemoving(true)} disabled={busy} title={leave.tooltip}>

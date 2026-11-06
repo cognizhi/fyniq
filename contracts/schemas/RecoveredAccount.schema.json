@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cooling_off_until": {
+      "description": "Until when your account cools off: approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait until then.",
+      "examples": [
+        "2026-11-08T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recovery_codes": {
+      "description": "Ten recovery codes, each usable once. They are shown once: print them or keep them in a password manager. With an Owner's or Administrator's confirmation, one gives your account back if you lose every authenticator (SEC-35). Your earlier unused codes no longer work.",
+      "items": {
+        "description": "A recovery code, usable once: 10 characters.",
+        "examples": [
+          "K7MQ2-WXP4R"
+        ],
+        "type": "string"
+      },
+      "maxItems": 10,
+      "minItems": 10,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "cooling_off_until",
+    "recovery_codes"
+  ],
+  "title": "RecoveredAccount",
+  "type": "object"
+}

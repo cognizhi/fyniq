@@ -5656,6 +5656,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/members/{member_id}/recovery-confirmations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm a member's account recovery
+         * @description Creates the one-time confirmation that, with one of their recovery codes, gives a member who lost every authenticator their account back: the second proof a recovery needs (SEC-35). Confirm only after speaking to them, in person or on a call you started, and give them the code that way. An Owner or Administrator, who passed step-up in the last 5 minutes, after speaking to the person; never for themselves (SEC-35). Side effects: the confirmation (it lasts 24 hours and replaces an unused one), its event in the organisation's trail, and a security notice to the member and every Owner. It takes no Idempotency-Key: a response with a code is never stored.
+         */
+        post: operations["confirmAccountRecovery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/members/{member_id}/roles": {
         parameters: {
             query?: never;
@@ -8880,6 +8900,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/session/recovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Recover your account
+         * @description Gives your account back after you lost every authenticator, with two proofs (SEC-35): one of your recovery codes and the confirmation an Owner or Administrator gave you. Your session passes its second factor by recovery, so you can add a new passkey; your other sessions and tokens end; your recovery codes are replaced; and for 24 hours approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait. Email alone or a support request never recovers an account. Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). Open to a session that passed no second factor: a recovery code and a confirmation give one back. Side effects: the recovery, ten new codes (shown once), the revocation of your tokens (AI-38), events in the installation's trail, an entry in the weekly review and a security notice to you and every Owner. Wrong, used or expired codes change nothing. It takes no Idempotency-Key: a response with codes is never stored.
+         */
+        post: operations["recoverAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/session/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Say whether you keep recovery codes
+         * @description How many of your recovery codes are unused, and when you made them (SEC-35); never the codes. Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). Read-only; no side effects.
+         */
+        get: operations["getMyRecoveryCodes"];
+        put?: never;
+        /**
+         * Make your recovery codes
+         * @description Gives you ten recovery codes, shown once; your earlier unused codes stop working (SEC-35). Keep them offline or in a password manager: with an Owner's or Administrator's confirmation, one gives your account back if you lose every authenticator. Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). The session passed a second factor in the last 5 minutes. Side effects: the codes, kept as keyed hashes only, and their event in the installation's trail. It takes no Idempotency-Key: a response with codes is never stored.
+         */
+        post: operations["replaceMyRecoveryCodes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/session/step-up": {
         parameters: {
             query?: never;
@@ -10005,6 +10069,18 @@ export interface components {
              * @example eyJhZnRlciI6IjYxMDAifQ
              */
             next_cursor?: string;
+        };
+        AccountRecoveryRequest: {
+            /**
+             * @description The confirmation an Owner or Administrator of your organisation gave you after speaking to you.
+             * @example FGHIJ-KLMNO-PQRST-UVWXY-ZABCD-E
+             */
+            confirmation_code: string;
+            /**
+             * @description One of your recovery codes. Case, spaces and dashes do not matter.
+             * @example K7MQ2-WXP4R
+             */
+            recovery_code: string;
         };
         AccountantReview: {
             /** @description The close it reviews (AUD-04). */
@@ -16306,11 +16382,11 @@ export interface components {
              */
             signed_in_at: string;
             /**
-             * @description How it last passed a second factor.
+             * @description How it last passed a second factor: recovery after an account recovery (SEC-35).
              * @example sign_in
              * @enum {string}
              */
-            step_up_method?: "sign_in" | "passkey";
+            step_up_method?: "sign_in" | "passkey" | "recovery";
         };
         DevicePage: {
             /** @description Your signed-in sessions on this page. */
@@ -22335,6 +22411,10 @@ export interface components {
              */
             linked: boolean;
         };
+        MyRecoveryCodes: {
+            /** @description Ten recovery codes, each usable once. They are shown once: print them or keep them in a password manager. With an Owner's or Administrator's confirmation, one gives your account back if you lose every authenticator (SEC-35). Your earlier unused codes no longer work. */
+            recovery_codes: string[] | null;
+        };
         NewMemberInvitation: {
             /**
              * @description The name of the person you invite.
@@ -25440,6 +25520,16 @@ export interface components {
              */
             next_cursor?: string;
         };
+        RecoveredAccount: {
+            /**
+             * Format: date-time
+             * @description Until when your account cools off: approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait until then.
+             * @example 2026-11-08T09:00:00Z
+             */
+            cooling_off_until: string;
+            /** @description Ten recovery codes, each usable once. They are shown once: print them or keep them in a password manager. With an Owner's or Administrator's confirmation, one gives your account back if you lose every authenticator (SEC-35). Your earlier unused codes no longer work. */
+            recovery_codes: string[] | null;
+        };
         RecoveredSuperAdmin: {
             /** @description Ten recovery codes, each usable once. They are shown once: print them and keep them offline. With the other Super admin's confirmation, one gives your access back if you lose your sign-in (FR-ADM-09). Any earlier unused codes no longer work. */
             recovery_codes: string[] | null;
@@ -25449,6 +25539,20 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
              */
             user_id: string;
+        };
+        RecoveryCodeStatus: {
+            /**
+             * Format: date-time
+             * @description When you made them; absent until you do.
+             * @example 2026-11-07T09:00:00Z
+             */
+            created_at?: string;
+            /**
+             * Format: int64
+             * @description How many of your recovery codes are unused: 0 until you make them.
+             * @example 10
+             */
+            unused: number;
         };
         RecoveryCodes: {
             /** @description Ten recovery codes, each usable once. They are shown once: print them and keep them offline. With the other Super admin's confirmation, one gives your access back if you lose your sign-in (FR-ADM-09). Any earlier unused codes no longer work. */
@@ -26382,11 +26486,11 @@ export interface components {
              */
             id: string;
             /**
-             * @description approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14); release_conflict: in Founder mode, a payment batch released by who prepared or approved it or a payee's account change (SOD-1, SOD-2); break_glass: an Owner's break-glass, reviewed with what it released through reviewBreakGlass once it has ended (FM-8).
+             * @description approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14); release_conflict: in Founder mode, a payment batch released by who prepared or approved it or a payee's account change (SOD-1, SOD-2); break_glass: an Owner's break-glass, reviewed with what it released through reviewBreakGlass once it has ended (FM-8); account_recovery: a member recovered their account with a recovery code and a confirmation (SEC-35).
              * @example approved_change
              * @enum {string}
              */
-            kind: "approved_change" | "founder_bootstrap" | "self_approved" | "scheduled_issue" | "auto_reconciled" | "release_conflict" | "break_glass";
+            kind: "approved_change" | "founder_bootstrap" | "self_approved" | "scheduled_issue" | "auto_reconciled" | "release_conflict" | "break_glass" | "account_recovery";
             /**
              * Format: date-time
              * @description When it executed.
@@ -27151,6 +27255,12 @@ export interface components {
             next_cursor?: string;
         };
         SessionInfo: {
+            /**
+             * Format: date-time
+             * @description Until when your account cools off after its recovery (SEC-35): approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait until then. Absent when it does not.
+             * @example 2026-11-08T09:00:00Z
+             */
+            cooling_off_until?: string;
             /** @description The organisation's feature switches today (FR-ORG-06); absent when you are a member of none. */
             features?: components["schemas"]["Features"];
             /**
@@ -27167,11 +27277,11 @@ export interface components {
             /** @description Your roles in that organisation (PRD-001 §7.1); they are read on every request, so a change applies at once. */
             roles: string[] | null;
             /**
-             * @description How your session last passed a second factor: at sign-in (your authenticator app) or with a passkey; absent when it passed none, which leaves it only reading itself and stepping up (SEC-01, rev 0.43).
+             * @description How your session last passed a second factor: at sign-in (your authenticator app), with a passkey, or by recovering your account (SEC-35); absent when it passed none, which leaves it only reading itself, stepping up and recovering (SEC-01, rev 0.43).
              * @example sign_in
              * @enum {string}
              */
-            step_up_method?: "sign_in" | "passkey";
+            step_up_method?: "sign_in" | "passkey" | "recovery";
             /**
              * Format: date-time
              * @description Until when your last step-up (a second factor at sign-in, or a passkey) counts for the actions that need one; absent when it does not.
@@ -32401,7 +32511,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `APR-15` The person settled does not approve their own settlement; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `FOUNDER-04` Another person approves your own link; `FOUNDER-19` The director paid does not approve their own fee; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9). */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `APR-15` The person settled does not approve their own settlement; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `FOUNDER-04` Another person approves your own link; `FOUNDER-19` The director paid does not approve their own fee; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -32546,7 +32656,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -33605,7 +33715,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -33839,7 +33949,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -34005,7 +34115,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -41925,7 +42035,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -66427,7 +66537,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -71883,7 +71993,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `PAYEE-21` Only another person approves your bank account. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -72117,7 +72227,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `PAYEE-21` Only another person approves your bank account. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -72283,7 +72393,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `PAYEE-21` Only another person approves your bank account. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -73800,7 +73910,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -74125,6 +74235,111 @@ export interface operations {
             };
         };
     };
+    confirmAccountRecovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The membership's ID. */
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OneTimeCode"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RECOVERY-01` The recovery is not valid. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     assignRole: {
         parameters: {
             query?: never;
@@ -74208,7 +74423,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -74354,7 +74569,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -74494,7 +74709,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `SUCC-04` Not yours to do. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `SUCC-04` Not yours to do. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -83018,7 +83233,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required; `SUCC-04` Not yours to do. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `SUCC-04` Not yours to do. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -84567,7 +84782,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `TEAM-04` Your roles conflict for this action. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `TEAM-04` Your roles conflict for this action. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -85268,7 +85483,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `PB-19` Another person releases this batch; `TEAM-04` Your roles conflict for this action. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `PB-19` Another person releases this batch; `TEAM-04` Your roles conflict for this action. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -96155,7 +96370,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `STORAGE-IDENTITY-01` Confirm it's you first. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `STORAGE-IDENTITY-01` Confirm it's you first. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -96628,6 +96843,316 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recoverAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountRecoveryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveredAccount"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RECOVERY-01` The recovery is not valid. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyRecoveryCodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCodeStatus"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replaceMyRecoveryCodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyRecoveryCodes"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RECOVERY-01` The recovery is not valid. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -98658,7 +99183,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery. */
             403: {
                 headers: {
                     [name: string]: unknown;

@@ -254,10 +254,50 @@ type Session struct {
 	UserID, Organisation uuid.UUID
 	Roles                []string // the user's live roles in Organisation
 	StepUpAt             time.Time
-	// StepUpMethod is how the session passed its last second factor: sign_in (at the provider, TOTP) or passkey;
-	// empty when it passed none.
+	// StepUpMethod is how the session passed its last second factor: sign_in (at the provider, TOTP), passkey or
+	// recovery (SEC-35); empty when it passed none.
 	StepUpMethod string
 	ExpiresAt    time.Time
+	// CoolingOffUntil is when the cooling-off after the user's recovery ends; zero when they are in none (SEC-35).
+	CoolingOffUntil time.Time
+}
+
+// Recoveries keep the account recovery of every person (SEC-35, rev 0.198; migration 000242): their recovery codes, the
+// confirmations an Owner or Administrator gives, and each recovery. The rows are global; each change is audited in the
+// trail of the unit of work it runs in.
+type Recoveries interface {
+	// Codes says how many of user's recovery codes are unused, and when they were made (zero: never).
+	Codes(ctx context.Context, user uuid.UUID) (RecoveryCodes, error)
+	// SetCodes replaces the recovery codes of a live session's user, the session having passed a second factor in the
+	// last 5 minutes (CodeRecovery otherwise), with ten keyed hashes; returns the user.
+	SetCodes(ctx context.Context, sessionHash []byte, hashes [][]byte, now time.Time) (uuid.UUID, error)
+	// Confirm records by's confirmation, as an Owner or Administrator of org, of user's recovery: a one-time code
+	// (SHA-256 hash) until expires, replacing an unused one. CodeRecovery for their own, or by someone in a cooling-off.
+	Confirm(ctx context.Context, by, user, org uuid.UUID, hash []byte, now, expires time.Time) (uuid.UUID, error)
+	// Recover recovers the user of a live session with one of their recovery codes and a confirmation (CodeRecovery when
+	// either is wrong, used or expired: the same for each).
+	Recover(ctx context.Context, r NewRecovery) (AccountRecovered, error)
+}
+
+// RecoveryCodes is the state of a person's recovery codes.
+type RecoveryCodes struct {
+	Unused    int
+	CreatedAt time.Time
+}
+
+// NewRecovery is what Recoveries.Recover needs: the code's keyed hash, the confirmation's SHA-256, ten new keyed hashes.
+type NewRecovery struct {
+	SessionHash, CodeHash, ConfirmationHash []byte
+	NewHashes                               [][]byte
+	Now                                     time.Time
+	CoolingOff                              time.Duration
+}
+
+// AccountRecovered is a person's recovery done: who recovered, who confirmed it in which organisation, and until when
+// they cool off.
+type AccountRecovered struct {
+	ID, UserID, ConfirmedBy, Organisation uuid.UUID
+	CoolingOffUntil                       time.Time
 }
 
 // Members are an organisation's memberships and role assignments (§11.4). A role change goes with a

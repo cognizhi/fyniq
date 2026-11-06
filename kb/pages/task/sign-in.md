@@ -4,7 +4,7 @@ type: task
 title: Sign in to Fyniq, confirm it's you with a passkey, or join with an invitation
 summary: Signing in with a second factor, passkeys, your devices, when a session ends, joining a company or as the second Super admin by invitation, and errors
 sources:
-  - docs/user-guide/sign-in.md sha256:55bebddbc93393d4acf8276fa4c56682b0e14bb797f4da156547ecf7170468e8
+  - docs/user-guide/sign-in.md sha256:ccbef63dc8438dc813742459954ea56a025cacd4656cf52a033264b08b90b0bc
 data_class: general
 taint: trusted
 status: published
@@ -85,6 +85,15 @@ aliases:
 
 (src: docs/user-guide/sign-in.md#join-as-the-second-super-admin) (src: docs/user-guide/sign-in.md#before-you-start)
 
+## Recover your account
+
+- A provider that is down, or an account lost there: sign in with another provider linked on the profile ([[preferences.security]]).
+- Every authenticator lost: sign in with the provider, select **Lost every authenticator?**, ask an Owner or Administrator in person or by phone for a confirmation, then type a recovery code and the confirmation and **Recover my account**.
+- Keep the ten new codes shown once and add a new passkey; other sessions end, and the person and every Owner are told.
+- For 24 hours approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait. Email alone or a support request never recovers an account.
+
+(src: docs/user-guide/sign-in.md#recover-your-account)
+
 ## Sign-in errors
 
 - AUTH-SIGNIN-01: the provider is not available; choose another way to sign in.
@@ -92,6 +101,8 @@ aliases:
 - AUTH-SIGNIN-03: the provider's answer did not pass Fyniq's checks; sign in again, and tell the Super admin if it repeats.
 - AUTH-SIGNIN-04: the sign-in service did not answer; try again in a moment.
 - AUTH-SIGNIN-08: that provider accepts only accounts on some email domains; sign in with the work account at that provider, or choose another way to sign in ([[settings.sign-in-providers]]).
+- STORAGE-RECOVERY-01: the recovery is not valid; check both codes: a recovery code works once, a confirmation for 24 hours.
+- API-AUTHZ-08: held while the account cools off after its recovery; do it after the time shown, or ask another member.
 - An invitation code that is not valid, used or expired: ask whoever invited you for a new invitation.
 - API-AUTHZ-07, a second factor is required: sign in again with the authenticator app, or confirm with a passkey.
 - API-PASSKEY-02, no passkey: sign in again with the authenticator app, then add a passkey.

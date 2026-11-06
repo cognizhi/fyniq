@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "description": "When you made them; absent until you do.",
+      "examples": [
+        "2026-11-07T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "unused": {
+      "description": "How many of your recovery codes are unused: 0 until you make them.",
+      "examples": [
+        10
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "unused"
+  ],
+  "title": "RecoveryCodeStatus",
+  "type": "object"
+}

@@ -5,6 +5,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -66,7 +67,13 @@ func startSessionsWith(t *testing.T, more ...signin.Provider) *sessionStack {
 	s := &sessionStack{env: e, migrator: fresh.URL("fyniq_migrator"), readonly: fresh.URL("fyniq_readonly"), api: fresh.URL("fyniq_api"),
 		out: out}
 	auth := authn.Local{Dev: e.tokens, Sessions: authn.Sessions{Store: e.store, Clock: e.clock, Cookie: authn.SessionCookie(false)}}
-	e.api = New(mux, Deps{Store: e.store, Installation: e.store, Outbox: &s.out, Clock: e.clock, Auth: auth, SignIn: dev,
+	seed := make([]byte, 64)
+	_, _ = rand.Read(seed)
+	fields, err := local.NewFieldKeys(seed) // the keyed hashes of recovery codes (SEC-35)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.api = New(mux, Deps{Store: e.store, Installation: e.store, Outbox: &s.out, Clock: e.clock, Auth: auth, SignIn: dev, Fields: fields,
 		Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test", Origin: strings.Replace(srv.URL, "127.0.0.1", "localhost", 1)}) // a relying party ID is a host name
 	e.srv = srv
 	return s

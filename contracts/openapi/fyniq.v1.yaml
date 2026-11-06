@@ -779,6 +779,27 @@ components:
       required:
         - items
       type: object
+    AccountRecoveryRequest:
+      additionalProperties: false
+      properties:
+        confirmation_code:
+          description: The confirmation an Owner or Administrator of your organisation gave you after speaking to you.
+          examples:
+            - FGHIJ-KLMNO-PQRST-UVWXY-ZABCD-E
+          maxLength: 100
+          minLength: 20
+          type: string
+        recovery_code:
+          description: One of your recovery codes. Case, spaces and dashes do not matter.
+          examples:
+            - K7MQ2-WXP4R
+          maxLength: 40
+          minLength: 10
+          type: string
+      required:
+        - recovery_code
+        - confirmation_code
+      type: object
     AccountantReview:
       additionalProperties: false
       properties:
@@ -9958,10 +9979,11 @@ components:
           format: date-time
           type: string
         step_up_method:
-          description: How it last passed a second factor.
+          description: "How it last passed a second factor: recovery after an account recovery (SEC-35)."
           enum:
             - sign_in
             - passkey
+            - recovery
           examples:
             - sign_in
           type: string
@@ -18667,6 +18689,24 @@ components:
       required:
         - linked
       type: object
+    MyRecoveryCodes:
+      additionalProperties: false
+      properties:
+        recovery_codes:
+          description: "Ten recovery codes, each usable once. They are shown once: print them or keep them in a password manager. With an Owner's or Administrator's confirmation, one gives your account back if you lose every authenticator (SEC-35). Your earlier unused codes no longer work."
+          items:
+            description: "A recovery code, usable once: 10 characters."
+            examples:
+              - K7MQ2-WXP4R
+            type: string
+          maxItems: 10
+          minItems: 10
+          type:
+            - array
+            - "null"
+      required:
+        - recovery_codes
+      type: object
     NewMemberInvitation:
       additionalProperties: false
       properties:
@@ -23086,6 +23126,31 @@ components:
       required:
         - items
       type: object
+    RecoveredAccount:
+      additionalProperties: false
+      properties:
+        cooling_off_until:
+          description: "Until when your account cools off: approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait until then."
+          examples:
+            - "2026-11-08T09:00:00Z"
+          format: date-time
+          type: string
+        recovery_codes:
+          description: "Ten recovery codes, each usable once. They are shown once: print them or keep them in a password manager. With an Owner's or Administrator's confirmation, one gives your account back if you lose every authenticator (SEC-35). Your earlier unused codes no longer work."
+          items:
+            description: "A recovery code, usable once: 10 characters."
+            examples:
+              - K7MQ2-WXP4R
+            type: string
+          maxItems: 10
+          minItems: 10
+          type:
+            - array
+            - "null"
+      required:
+        - cooling_off_until
+        - recovery_codes
+      type: object
     RecoveredSuperAdmin:
       additionalProperties: false
       properties:
@@ -23110,6 +23175,24 @@ components:
       required:
         - user_id
         - recovery_codes
+      type: object
+    RecoveryCodeStatus:
+      additionalProperties: false
+      properties:
+        created_at:
+          description: When you made them; absent until you do.
+          examples:
+            - "2026-11-07T09:00:00Z"
+          format: date-time
+          type: string
+        unused:
+          description: "How many of your recovery codes are unused: 0 until you make them."
+          examples:
+            - 10
+          format: int64
+          type: integer
+      required:
+        - unused
       type: object
     RecoveryCodes:
       additionalProperties: false
@@ -24429,7 +24512,7 @@ components:
           format: uuid
           type: string
         kind:
-          description: "approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14); release_conflict: in Founder mode, a payment batch released by who prepared or approved it or a payee's account change (SOD-1, SOD-2); break_glass: an Owner's break-glass, reviewed with what it released through reviewBreakGlass once it has ended (FM-8)."
+          description: "approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14); release_conflict: in Founder mode, a payment batch released by who prepared or approved it or a payee's account change (SOD-1, SOD-2); break_glass: an Owner's break-glass, reviewed with what it released through reviewBreakGlass once it has ended (FM-8); account_recovery: a member recovered their account with a recovery code and a confirmation (SEC-35)."
           enum:
             - approved_change
             - founder_bootstrap
@@ -24438,6 +24521,7 @@ components:
             - auto_reconciled
             - release_conflict
             - break_glass
+            - account_recovery
           examples:
             - approved_change
           type: string
@@ -25584,6 +25668,12 @@ components:
     SessionInfo:
       additionalProperties: false
       properties:
+        cooling_off_until:
+          description: "Until when your account cools off after its recovery (SEC-35): approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait until then. Absent when it does not."
+          examples:
+            - "2026-11-08T09:00:00Z"
+          format: date-time
+          type: string
         features:
           $ref: "#/components/schemas/Features"
           description: The organisation's feature switches today (FR-ORG-06); absent when you are a member of none.
@@ -25609,10 +25699,11 @@ components:
             - array
             - "null"
         step_up_method:
-          description: "How your session last passed a second factor: at sign-in (your authenticator app) or with a passkey; absent when it passed none, which leaves it only reading itself and stepping up (SEC-01, rev 0.43)."
+          description: "How your session last passed a second factor: at sign-in (your authenticator app), with a passkey, or by recovering your account (SEC-35); absent when it passed none, which leaves it only reading itself, stepping up and recovering (SEC-01, rev 0.43)."
           enum:
             - sign_in
             - passkey
+            - recovery
           examples:
             - sign_in
           type: string
@@ -32918,7 +33009,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `APR-15` The person settled does not approve their own settlement; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `FOUNDER-04` Another person approves your own link; `FOUNDER-19` The director paid does not approve their own fee; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9)."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `APR-15` The person settled does not approve their own settlement; `BILL-11` You prepared it, so another person approves it; `CLAIM-11` Nobody approves their own claim; `FOUNDER-04` Another person approves your own link; `FOUNDER-19` The director paid does not approve their own fee; `INVOICE-12` You prepared it, so another person approves it; `JOURNAL-09` You prepared it, so another person approves it; `PAYEE-18` You prepared it, so another person approves it; `PO-15` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action; `TPL-15` You saved the draft, so another person approves it; `WRITEOFF-11` Another person approves the write-off (SOD-9)."
         "404":
           content:
             application/problem+json:
@@ -33010,6 +33101,7 @@ paths:
         - API-AUTHZ-04
         - API-AUTHZ-05
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
@@ -33323,7 +33415,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else."
         "404":
           content:
             application/problem+json:
@@ -33402,6 +33494,7 @@ paths:
         - API-AUTHZ-03
         - API-AUTHZ-04
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IF-MATCH-01
         - API-IF-MATCH-02
@@ -34792,7 +34885,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery."
         "404":
           content:
             application/problem+json:
@@ -34870,6 +34963,7 @@ paths:
         - API-AUTHZ-02
         - API-AUTHZ-03
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
@@ -35100,7 +35194,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery."
         "404":
           content:
             application/problem+json:
@@ -35190,6 +35284,7 @@ paths:
         - API-AUTHZ-02
         - API-AUTHZ-03
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IF-MATCH-01
         - API-IF-MATCH-02
@@ -35324,7 +35419,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery."
         "404":
           content:
             application/problem+json:
@@ -35404,6 +35499,7 @@ paths:
         - API-AUTHZ-04
         - API-AUTHZ-05
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
@@ -46474,7 +46570,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery."
         "409":
           content:
             application/problem+json:
@@ -46548,6 +46644,7 @@ paths:
         - API-AUTHZ-04
         - API-AUTHZ-05
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
@@ -79835,7 +79932,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery."
         "404":
           content:
             application/problem+json:
@@ -79928,6 +80025,7 @@ paths:
         - API-AUTHZ-05
         - API-AUTHZ-06
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
@@ -87547,7 +87645,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `PAYEE-21` Only another person approves your bank account."
         "404":
           content:
             application/problem+json:
@@ -87625,6 +87723,7 @@ paths:
         - API-AUTHZ-02
         - API-AUTHZ-03
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
@@ -87855,7 +87954,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `PAYEE-21` Only another person approves your bank account."
         "404":
           content:
             application/problem+json:
@@ -87945,6 +88044,7 @@ paths:
         - API-AUTHZ-02
         - API-AUTHZ-03
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IF-MATCH-01
         - API-IF-MATCH-02
@@ -88079,7 +88179,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `PAYEE-21` Only another person approves your bank account."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `PAYEE-21` Only another person approves your bank account."
         "404":
           content:
             application/problem+json:
@@ -88159,6 +88259,7 @@ paths:
         - API-AUTHZ-04
         - API-AUTHZ-05
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
@@ -90065,7 +90166,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery."
         "409":
           content:
             application/problem+json:
@@ -90139,6 +90240,7 @@ paths:
         - API-AUTHZ-04
         - API-AUTHZ-05
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-INPUT-01
         - API-INPUT-02
@@ -90482,6 +90584,136 @@ paths:
         capability: Users, roles, team mode
         note: "Removing a member is a role change under FM-1 (rev 0.165): until a second member joins, the Owner acts alone; after that another Owner approves it, and the request needs step-up."
         right: C
+  /v1/members/{member_id}/recovery-confirmations:
+    post:
+      description: "Creates the one-time confirmation that, with one of their recovery codes, gives a member who lost every authenticator their account back: the second proof a recovery needs (SEC-35). Confirm only after speaking to them, in person or on a call you started, and give them the code that way. An Owner or Administrator, who passed step-up in the last 5 minutes, after speaking to the person; never for themselves (SEC-35). Side effects: the confirmation (it lasts 24 hours and replaces an unused one), its event in the organisation's trail, and a security notice to the member and every Owner. It takes no Idempotency-Key: a response with a code is never stored."
+      operationId: confirmAccountRecovery
+      parameters:
+        - description: The membership's ID.
+          in: path
+          name: member_id
+          required: true
+          schema:
+            description: The membership's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+            format: uuid
+            type: string
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OneTimeCode"
+          description: Created
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RECOVERY-01` The recovery is not valid."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Confirm a member's account recovery
+      tags:
+        - Members
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-AUTHZ-08
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RECOVERY-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: Its response carries a one-time secret, which a stored response would keep at rest; the code already makes the command one-time (FR-INT-08, rev 0.27).
+        Prefer: A preview would confirm a one-time code without spending it (FR-INT-14, rev 0.28).
+      x-fyniq-permission:
+        capability: Users, roles, team mode
+        note: An Owner or Administrator, who passed step-up in the last 5 minutes, after speaking to the person; never for themselves (SEC-35).
+        right: C
   /v1/members/{member_id}/roles:
     post:
       description: "Gives a member a role, theirs until it is revoked or, for an external user, until it expires (FR-ADM-01). A role change falls under FM-1: until the organisation has a second member its Owner acts alone, their own roles included (the founder bootstrap, rev 0.35); after that the answer is 202 with an approval request, and another Owner's approval makes the change, if the member's roles did not change meanwhile (rev 0.36); asking needs a person signed in who passed step-up in the last 5 minutes. Side effects: the role and its audit event, or the approval request and its audit event; the member's next request holds the role, and their OAuth tokens are revoked (AI-38). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
@@ -90613,7 +90845,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery."
         "404":
           content:
             application/problem+json:
@@ -90693,6 +90925,7 @@ paths:
         - API-AUTHZ-04
         - API-AUTHZ-05
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
@@ -90819,7 +91052,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery."
         "404":
           content:
             application/problem+json:
@@ -90887,6 +91120,7 @@ paths:
         - API-AUTHZ-04
         - API-AUTHZ-05
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-INPUT-02
         - API-NOT-FOUND-01
@@ -91016,7 +91250,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `SUCC-04` Not yours to do."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `SUCC-04` Not yours to do."
         "404":
           content:
             application/problem+json:
@@ -91102,6 +91336,7 @@ paths:
         - API-AUTHZ-04
         - API-AUTHZ-05
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
@@ -102347,7 +102582,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required; `SUCC-04` Not yours to do."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `SUCC-04` Not yours to do."
         "404":
           content:
             application/problem+json:
@@ -102434,6 +102669,7 @@ paths:
         - API-AUTHZ-05
         - API-AUTHZ-06
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
@@ -104471,7 +104707,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `TEAM-04` Your roles conflict for this action."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `TEAM-04` Your roles conflict for this action."
         "404":
           content:
             application/problem+json:
@@ -104551,6 +104787,7 @@ paths:
         - API-AUTHZ-04
         - API-AUTHZ-05
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
@@ -105476,7 +105713,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `PB-19` Another person releases this batch; `TEAM-04` Your roles conflict for this action."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `PB-19` Another person releases this batch; `TEAM-04` Your roles conflict for this action."
         "404":
           content:
             application/problem+json:
@@ -105556,6 +105793,7 @@ paths:
         - API-AUTHZ-04
         - API-AUTHZ-05
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
@@ -120416,7 +120654,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `STORAGE-IDENTITY-01` Confirm it's you first."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery; `STORAGE-IDENTITY-01` Confirm it's you first."
         "404":
           content:
             application/problem+json:
@@ -120478,6 +120716,7 @@ paths:
         - API-AUTHZ-04
         - API-AUTHZ-05
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-INPUT-02
         - API-NOT-FOUND-01
@@ -121000,6 +121239,358 @@ paths:
       x-fyniq-permission:
         capability: (your session)
         note: Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-02, SEC-01). The session passed a second factor in the last 5 minutes.
+        right: C
+  /v1/session/recovery:
+    post:
+      description: "Gives your account back after you lost every authenticator, with two proofs (SEC-35): one of your recovery codes and the confirmation an Owner or Administrator gave you. Your session passes its second factor by recovery, so you can add a new passkey; your other sessions and tokens end; your recovery codes are replaced; and for 24 hours approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait. Email alone or a support request never recovers an account. Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). Open to a session that passed no second factor: a recovery code and a confirmation give one back. Side effects: the recovery, ten new codes (shown once), the revocation of your tokens (AI-38), events in the installation's trail, an entry in the weekly review and a security notice to you and every Owner. Wrong, used or expired codes change nothing. It takes no Idempotency-Key: a response with codes is never stored."
+      operationId: recoverAccount
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountRecoveryRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveredAccount"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RECOVERY-01` The recovery is not valid."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Recover your account
+      tags:
+        - Session
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RECOVERY-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: Its response carries a one-time secret, which a stored response would keep at rest; the code already makes the command one-time (FR-INT-08, rev 0.27).
+        Prefer: A preview would confirm a one-time code without spending it (FR-INT-14, rev 0.28).
+      x-fyniq-permission:
+        capability: (your session)
+        note: "Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). Open to a session that passed no second factor: a recovery code and a confirmation give one back."
+        right: C
+  /v1/session/recovery-codes:
+    get:
+      description: How many of your recovery codes are unused, and when you made them (SEC-35); never the codes. Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). Read-only; no side effects.
+      operationId: getMyRecoveryCodes
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryCodeStatus"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Say whether you keep recovery codes
+      tags:
+        - Session
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: (your session)
+        note: Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35).
+        right: V
+    post:
+      description: "Gives you ten recovery codes, shown once; your earlier unused codes stop working (SEC-35). Keep them offline or in a password manager: with an Owner's or Administrator's confirmation, one gives your account back if you lose every authenticator. Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). The session passed a second factor in the last 5 minutes. Side effects: the codes, kept as keyed hashes only, and their event in the installation's trail. It takes no Idempotency-Key: a response with codes is never stored."
+      operationId: replaceMyRecoveryCodes
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyRecoveryCodes"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RECOVERY-01` The recovery is not valid."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Make your recovery codes
+      tags:
+        - Session
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RECOVERY-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: Its response carries a one-time secret, which a stored response would keep at rest; the code already makes the command one-time (FR-INT-08, rev 0.27).
+        Prefer: A preview would confirm a one-time code without spending it (FR-INT-14, rev 0.28).
+      x-fyniq-permission:
+        capability: (your session)
+        note: Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (SEC-35). The session passed a second factor in the last 5 minutes.
         right: C
   /v1/session/step-up:
     post:
@@ -123564,7 +124155,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required; `API-AUTHZ-08` Held while your account cools off after its recovery."
         "409":
           content:
             application/problem+json:
@@ -123627,6 +124218,7 @@ paths:
         - API-AUTHZ-05
         - API-AUTHZ-06
         - API-AUTHZ-07
+        - API-AUTHZ-08
         - API-FAILURE-01
         - API-INPUT-02
         - API-RATE-01

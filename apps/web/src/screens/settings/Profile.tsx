@@ -28,6 +28,7 @@ import { linkURL, visit } from "../../route";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { MyRecoveryCodes } from "../Recovery";
 import { MyBankAccount } from "./MyBankAccount";
 import { SettingsPage } from "./SettingsPage";
 
@@ -291,6 +292,7 @@ function Passkeys() {
       </div>
       {keys.isError && <Refusal problem={problemOf(keys.error)} title="Your passkeys could not be listed" />}
       {keys.isPending && <p className="fy-small fy-secondary">Loading your passkeys…</p>}
+      {live.length === 1 && <p className="fy-small fy-secondary">Add a second passkey on another device, so losing one device does not lock you out.</p>}
       {keys.data && live.length === 0 && (
         <p className="fy-small fy-secondary">No passkey yet. Add one so that confirming it's you, and signing approvals, takes a touch instead of signing in again.</p>
       )}
@@ -595,6 +597,7 @@ export function Profile() {
         </div>
         <SecondFactor session={session} />
         <Passkeys />
+        <MyRecoveryCodes />
         <SignIns />
         <Devices />
       </section>

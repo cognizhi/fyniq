@@ -104,6 +104,7 @@ fyniq_api       INSERT    close_checklist_entry (note, period_id, state, task_ke
 fyniq_api       SELECT    close_checklist_entry
 fyniq_api       INSERT    close_checklist_template (tasks, version, written_at, written_by)
 fyniq_api       SELECT    close_checklist_template
+fyniq_api       EXECUTE   confirm_account_recovery()
 fyniq_api       EXECUTE   confirm_super_admin_recovery()
 fyniq_api       INSERT    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_customer, is_director, is_shareholder, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id)
 fyniq_api       SELECT    contact
@@ -277,6 +278,7 @@ fyniq_api       INSERT    rate_limit_window (client_id, kind, window_start)
 fyniq_api       SELECT    rate_limit_window
 fyniq_api       UPDATE    rate_limit_window (used)
 fyniq_api       EXECUTE   record_identity_email()
+fyniq_api       EXECUTE   recover_account()
 fyniq_api       EXECUTE   recover_super_admin()
 fyniq_api       INSERT    recurring_bill (day_of_month, ends_on, every_months, name, next_on, starts_on, status)
 fyniq_api       SELECT    recurring_bill
@@ -312,6 +314,7 @@ fyniq_api       EXECUTE   session_step_up_method()
 fyniq_api       EXECUTE   set_installation_connector_secret()
 fyniq_api       EXECUTE   set_recovery_codes()
 fyniq_api       EXECUTE   set_sign_in_method()
+fyniq_api       EXECUTE   set_user_recovery_codes()
 fyniq_api       EXECUTE   setup_done()
 fyniq_api       INSERT    share_issue (amount, class_account_id, consideration, currency, effective_on, entry_id, holder_id, id, lodgement_ref, minor_units, price, recorded_at, recorded_by, resolution_refs, settlement_id, shares)
 fyniq_api       SELECT    share_issue
@@ -336,11 +339,13 @@ fyniq_api       INSERT    team_mode (created_at, created_by, mode, request_id, v
 fyniq_api       SELECT    team_mode
 fyniq_api       SELECT    tenants
 fyniq_api       EXECUTE   unlink_identity()
+fyniq_api       EXECUTE   user_cooling_off_until()
 fyniq_api       EXECUTE   user_for_identity()
 fyniq_api       EXECUTE   user_identities()
 fyniq_api       INSERT    user_membership (user_id)
 fyniq_api       SELECT    user_membership
 fyniq_api       UPDATE    user_membership (status, version)
+fyniq_api       EXECUTE   user_recovery_codes()
 fyniq_api       EXECUTE   user_sessions()
 fyniq_api       EXECUTE   webauthn_approval_answer()
 fyniq_api       EXECUTE   webauthn_approval_challenge_issue()

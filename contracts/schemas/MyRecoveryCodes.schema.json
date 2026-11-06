@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "recovery_codes": {
+      "description": "Ten recovery codes, each usable once. They are shown once: print them or keep them in a password manager. With an Owner's or Administrator's confirmation, one gives your account back if you lose every authenticator (SEC-35). Your earlier unused codes no longer work.",
+      "items": {
+        "description": "A recovery code, usable once: 10 characters.",
+        "examples": [
+          "K7MQ2-WXP4R"
+        ],
+        "type": "string"
+      },
+      "maxItems": 10,
+      "minItems": 10,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "recovery_codes"
+  ],
+  "title": "MyRecoveryCodes",
+  "type": "object"
+}

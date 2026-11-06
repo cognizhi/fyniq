@@ -32,6 +32,7 @@ const (
 	CodeLinkStepUp      = "AUTH-SIGNIN-06" // a link from a session that confirmed it is the person no more than 5 minutes ago (FR-ADM-08)
 	CodeLinked          = "AUTH-SIGNIN-07" // that account at the provider signs someone in already (FR-ADM-08)
 	CodeDomain          = "AUTH-SIGNIN-08" // the provider accepts only some email domains, and the account's verified email is on none (FR-ADM-08)
+	CodeCoolingOff      = "AUTH-SIGNIN-09" // a link during the cooling-off after an account recovery (SEC-35)
 )
 
 // startLifetime is how long a sign-in may take at the provider.
@@ -270,6 +271,9 @@ func (f Flow) link(w http.ResponseWriter, r *http.Request, who ports.SignedIn) {
 		return
 	case storage.CodeIdentity:
 		f.failLink(w, r, CodeLinked, "linked already", nil)
+		return
+	case storage.CodeCoolingOff:
+		f.failLink(w, r, CodeCoolingOff, "cooling off after a recovery", nil)
 		return
 	default:
 		f.failLink(w, r, CodeFailure, "link", err)

@@ -29,6 +29,7 @@ type relayPayload struct {
 	Link       string      `json:"link"`
 	Users      []uuid.UUID `json:"users,omitempty"`
 	Supers     bool        `json:"super_admins,omitempty"` // every active Super admin, but Except
+	Owners     bool        `json:"owners,omitempty"`       // also every Owner where one of Users is a member
 	Except     []uuid.UUID `json:"except,omitempty"`
 	At         time.Time   `json:"at"`
 }
@@ -41,6 +42,14 @@ func SuperAdmins(except ...uuid.UUID) Audience {
 // superAdmins marks the audience SuperAdmins makes; it is no Appendix D row, so Recipients never matches it.
 const superAdmins = "super admins"
 
+// UsersAndTheirOwners is an audience for Relay: users, and every Owner of each organisation one of them belongs to (SEC-35).
+func UsersAndTheirOwners(users ...uuid.UUID) Audience {
+	return Audience{Users: users, Capability: theirOwners}
+}
+
+// theirOwners marks the audience UsersAndTheirOwners makes; it is no Appendix D row either.
+const theirOwners = "their owners"
+
 // Relay queues e, in u of the organisation org, for the users e.Audience names or, with SuperAdmins, every Super admin
 // but those it excepts; nobody named, nothing is queued.
 func Relay(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org uuid.UUID, e Event) error {
@@ -52,7 +61,7 @@ func Relay(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org u
 		return nil
 	}
 	b, err := json.Marshal(relayPayload{Type: e.Type, RecordType: e.RecordType, RecordID: e.RecordID, Title: e.Title, Link: e.Link,
-		Users: e.Audience.Users, Supers: supers, Except: e.Audience.Except, At: e.At})
+		Users: e.Audience.Users, Supers: supers, Owners: e.Audience.Capability == theirOwners, Except: e.Audience.Except, At: e.At})
 	if err != nil {
 		return err
 	}
@@ -101,6 +110,13 @@ func (r Relays) Work() outbox.Work {
 				here := Recipients(Audience{Users: users}, members)
 				if len(here) == 0 {
 					return nil
+				}
+				if p.Owners {
+					for _, o := range Recipients(Audience{Capability: string(authz.UsersAndRoles), Need: "A", Except: p.Except}, members) {
+						if !slices.Contains(here, o) {
+							here = append(here, o)
+						}
+					}
 				}
 				_, err = Emit(ctx, r.Dispatcher, u, org, Event{Type: p.Type, RecordType: p.RecordType, RecordID: p.RecordID, Title: p.Title,
 					Link: p.Link, Audience: Audience{Users: here}, At: p.At})

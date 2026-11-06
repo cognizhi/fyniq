@@ -27,6 +27,7 @@ const kinds: Record<ReviewEntry["kind"], string> = {
   auto_reconciled: "Bank line reconciled by Fyniq itself, in the week's sample",
   release_conflict: "Released by someone who prepared or approved it, as Founder mode allows",
   break_glass: "Break-glass: payments released by one founder alone",
+  account_recovery: "Account recovered with a recovery code and a confirmation",
 };
 
 function MarkReviewed({ ids, open, onClose, onDone }: { ids: string[]; open: boolean; onClose: () => void; onDone: (n: number) => void }) {

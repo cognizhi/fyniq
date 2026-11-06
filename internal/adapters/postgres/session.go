@@ -36,6 +36,9 @@ func (s *Store) Session(ctx context.Context, tokenHash []byte, now time.Time, id
 	if row.StepUpUnix != 0 {
 		out.StepUpAt = time.Unix(row.StepUpUnix, 0).UTC()
 	}
+	if row.CoolingOffUnix != 0 {
+		out.CoolingOffUntil = time.Unix(row.CoolingOffUnix, 0).UTC()
+	}
 	return out, nil
 }
 
