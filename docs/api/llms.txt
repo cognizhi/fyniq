@@ -392,6 +392,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/organisation/accounting/framework/{version}/confirm` (confirmAccountingFramework): Confirm the accounting framework
 - `POST /v1/organisation/accounting/policies/{area}` (recordAccountingPolicy): Record an accounting policy
 - `POST /v1/organisation/accounting/policies/{area}/{version}/approve` (approveAccountingPolicy): Approve an accounting policy
+- `GET /v1/organisation/brand` (getBrand): Read the logo and brand
+- `PUT /v1/organisation/brand/accent` (setBrandAccent): Set the accent colour
+- `GET /v1/organisation/brand/files/{kind}` (getBrandFile): Read a logo or icon file
+- `PUT /v1/organisation/brand/files/{kind}` (uploadBrandFile): Upload a logo or icon
+- `DELETE /v1/organisation/brand/files/{kind}` (removeBrandFile): Remove a logo or icon
 - `GET /v1/organisation/connectors` (listOrganisationConnectors): List the organisation's connectors
 - `POST /v1/organisation/connectors` (installOrganisationConnector): Install a connector for the organisation
 - `GET /v1/organisation/connectors/{connector_id}` (getOrganisationConnector): Read one of the organisation's connectors

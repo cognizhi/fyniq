@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cleaned": {
+      "$ref": "BrandCleaned.schema.json",
+      "description": "What was taken out of the SVG when it was saved; absent when nothing was."
+    },
+    "media_type": {
+      "description": "An SVG cleaned to a safe subset, or a PNG written again without its metadata.",
+      "enum": [
+        "image/svg+xml",
+        "image/png"
+      ],
+      "examples": [
+        "image/svg+xml"
+      ],
+      "type": "string"
+    },
+    "sha256": {
+      "description": "The SHA-256 of the file as kept, in hexadecimal.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "size_bytes": {
+      "examples": [
+        6144
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "media_type",
+    "size_bytes",
+    "sha256"
+  ],
+  "title": "BrandFileView",
+  "type": "object"
+}

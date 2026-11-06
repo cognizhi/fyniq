@@ -69,6 +69,8 @@ async function serve(page: Page) {
         return json(200, session);
       case "GET /v1/organisation":
         return json(200, organisation);
+      case "GET /v1/organisation/brand": // the header shows the logo (FR-ORG-09): none uploaded
+        return json(200, { version: 0, accent_options: [] });
       case "GET /v1/checks":
         return json(200, checks(removed));
       case "GET /v1/members":

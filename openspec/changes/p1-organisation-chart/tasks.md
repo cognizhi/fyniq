@@ -81,6 +81,13 @@
   FR-DOC-06's settings (rev 0.182), the fixed assets read the capitalisation threshold, and Settings › Organisation shows
   them.)
 - [ ] 2.4 Logo and brand: SVG and PNG, light and dark, the icon and the accent colour, through the blob-store port with SVG sanitising. Test `// req: FR-ORG-09` covers G4-099's hostile files, and an issued document keeps its logo version
+  (7 Nov 2026, PRD-001 rev 0.200, part: migration 000246 adds `brand_version`, insert-only and numbered by the database
+  (FY282, FY283); the files go to the blob store under their SHA-256. `internal/domain/brand` cleans an SVG and writes a
+  PNG again; the accent is one of eight contrast-checked options. `GET /v1/organisation/brand`, the files by kind and
+  version, upload, remove and the accent; Settings › Logo and brand; the header shows the logo. Tests
+  `TestAHostileSVGLogoIsMadeSafe`, `TestASVSWithEntitiesOrNoShapeIsRefused`, `TestTheLogoAndBrand`, `brand.test.tsx`.
+  **Left:** the PNG rasterised from an SVG by the render service, and the logo on documents (an issued document keeps
+  its version), emails, reports, the sign-in page and the portal.)
 
 ## 3. Chart of accounts and dimensions
 

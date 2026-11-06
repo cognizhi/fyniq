@@ -65,6 +65,8 @@ async function batches(page: Page) {
         return json(200, session);
       case "GET /v1/organisation":
         return json(200, organisation);
+      case "GET /v1/organisation/brand": // the header shows the logo (FR-ORG-09): none uploaded
+        return json(200, { version: 0, accent_options: [] });
       case "GET /v1/approvals":
         return json(200, { items: [] });
       case "GET /v1/review-log":
