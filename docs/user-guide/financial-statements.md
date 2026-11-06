@@ -54,10 +54,24 @@ year's framework and policies in **Settings → Accounting**. The way accounts a
 each account's report group, function and cash-flow line in the chart of accounts, and waits for
 the accountant's confirmation too.
 
+## By department or project
+
+When the organisation uses dimensions, such as Department or Project, the profit and loss shows them
+in Expert mode:
+
+- **Columns by dimension** gives a column for each of its values, such as ENG Engineering, one for the
+  lines with no value of it, and their total, which the others add up to. It shows one run of months,
+  without a comparison.
+- **Only for** shows the profit and loss of one value alone, such as the Engineering department.
+
+The balance sheet, the cash flow and the trial balance show the whole company: a department's lines
+are one side of their entries, so its own figures would not balance.
+
 ## See the lines behind a figure
 
 Select an account's figure, or a group's total, to open the general ledger at its lines for the
-same months. A computed figure, such as gross profit, does not open.
+same months, and of the column's value or the value chosen. A computed figure, such as gross profit,
+does not open, nor does a figure of the lines with no value of a dimension.
 
 ## Export a statement
 

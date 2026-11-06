@@ -35,6 +35,8 @@ type LedgerLine struct {
 	Amount         Money  `json:"amount" doc:"In the line's currency: debit positive, credit negative."`
 	Base           Money  `json:"base" doc:"In the base currency, as posted."`
 	Balance        Money  `json:"balance" doc:"The account's running balance in the base currency after this line."`
+	// FR-DIM-02.
+	DimensionValueIDs []DimensionValueRef `json:"dimension_value_ids,omitempty" doc:"The line's dimension values (listDimensionValues)."`
 }
 
 // AccountLedger is one account's general ledger over the range.
@@ -62,6 +64,7 @@ type generalLedgerInput struct {
 	AccountID []string `query:"account_id,explode" minItems:"1" maxItems:"20" doc:"The accounts, one to 20, each as its own account_id parameter." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"`
 	From      string   `query:"from" required:"true" format:"date" doc:"The first day." example:"2026-10-01"`
 	To        string   `query:"to" required:"true" format:"date" doc:"The last day." example:"2026-10-31"`
+	ValueIDs  []string `query:"dimension_value_id,explode" maxItems:"10" doc:"Only the lines that carry each of these dimension values (FR-DIM-02; listDimensionValues), such as a department's: the opening balance, the lines and the running balance are theirs. Each as its own dimension_value_id parameter." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d91"`
 }
 
 type generalLedgerOutput struct {
@@ -106,6 +109,27 @@ func registerReports(a *API) {
 				ids = append(ids, id)
 			}
 		}
+		var values []uuid.UUID
+		for i, s := range in.ValueIDs {
+			id, err := uuid.Parse(s)
+			if err != nil {
+				bad = append(bad, FieldProblem{Code: CodeInvalid, Field: fmt.Sprintf("dimension_value_id[%d]", i), Message: "is not a dimension value's ID",
+					Fix: "Send the ID listDimensionValues gives"})
+				continue
+			}
+			values = append(values, id)
+		}
+		var only func([]uuid.UUID) bool
+		if len(values) > 0 {
+			only = func(vs []uuid.UUID) bool {
+				for _, v := range values {
+					if !slices.Contains(vs, v) {
+						return false
+					}
+				}
+				return true
+			}
+		}
 		if len(bad) > 0 {
 			return nil, invalid(bad)
 		}
@@ -128,7 +152,7 @@ func registerReports(a *API) {
 				if err != nil {
 					return err
 				}
-				gl, err := balance.GeneralLedger(ctx, u, base, id, from, to)
+				gl, err := balance.GeneralLedgerOnly(ctx, u, base, id, from, to, only)
 				if err != nil {
 					return err
 				}
@@ -157,7 +181,8 @@ func accountLedgerOf(acc storage.Account, gl balance.AccountLedger) AccountLedge
 	for _, l := range gl.Lines {
 		out.Lines = append(out.Lines, LedgerLine{PostingDate: dateOf(l.PostingDate), EntryID: l.EntryID.String(), LedgerRevision: l.LedgerRevision,
 			SourceType: l.Source.Type, SourceID: l.Source.ID, SourceVersion: l.Source.Version, Number: l.Number, Reversal: l.ReversesEntryID != nil,
-			Memo: l.Memo, Description: l.Description, Amount: m(l.Amount), Base: m(l.Base), Balance: m(l.Balance)})
+			Memo: l.Memo, Description: l.Description, Amount: m(l.Amount), Base: m(l.Base), Balance: m(l.Balance),
+			DimensionValueIDs: valueRefs(l.DimensionValues)})
 	}
 	return out
 }

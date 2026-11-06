@@ -37,13 +37,16 @@ type ReportFile struct {
 }
 
 type financialExportInput struct {
-	Kind     string `path:"kind" enum:"pl,bs,cf,tb" doc:"pl: the profit and loss; bs: the balance sheet; cf: the cash flow; tb: the trial balance." example:"pl"`
-	From     string `query:"from" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's first month, YYYY-MM; left out, the last month's. A balance sheet is at the last month's end, with the movement in equity over the run; a trial balance is at the last month's end." example:"2026-10"`
-	To       string `query:"to" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's last month, YYYY-MM; left out, the month of the organisation's today." example:"2026-10"`
-	Compare  string `query:"compare" enum:"prior_period,prior_year" doc:"A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning." example:"prior_period"`
-	Columns  string `query:"columns" enum:"total,month" default:"total" doc:"total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative." example:"total"`
-	Revision int64  `query:"as_at_revision" minimum:"1" doc:"Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands." example:"42"`
-	Format   string `query:"format" enum:"csv,xlsx,pdf" default:"xlsx" doc:"csv: the statement's rows, plain decimals with an ASCII minus; xlsx: a workbook with the statement and a data tab of every figure, amounts as number cells; pdf: the statement to print, archival (PDF/A-2a) and accessible (PDF/UA-1), with the revision on every page." example:"xlsx"`
+	Kind    string `path:"kind" enum:"pl,bs,cf,tb" doc:"pl: the profit and loss; bs: the balance sheet; cf: the cash flow; tb: the trial balance." example:"pl"`
+	From    string `query:"from" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's first month, YYYY-MM; left out, the last month's. A balance sheet is at the last month's end, with the movement in equity over the run; a trial balance is at the last month's end." example:"2026-10"`
+	To      string `query:"to" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's last month, YYYY-MM; left out, the month of the organisation's today." example:"2026-10"`
+	Compare string `query:"compare" enum:"prior_period,prior_year" doc:"A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning." example:"prior_period"`
+	Columns string `query:"columns" enum:"total,month,dimension" default:"total" doc:"total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02)." example:"total"`
+	// A P&L by dimension (FR-DIM-02), as getFinancialStatement takes it.
+	DimensionID string   `query:"dimension_id" format:"uuid" doc:"With columns=dimension: the dimension whose values make the columns (listDimensions)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"`
+	ValueIDs    []string `query:"dimension_value_id,explode" maxItems:"10" doc:"A P&L of the lines that carry each of these values only (listDimensionValues); each as its own dimension_value_id parameter." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d91"`
+	Revision    int64    `query:"as_at_revision" minimum:"1" doc:"Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands." example:"42"`
+	Format      string   `query:"format" enum:"csv,xlsx,pdf" default:"xlsx" doc:"csv: the statement's rows, plain decimals with an ASCII minus; xlsx: a workbook with the statement and a data tab of every figure, amounts as number cells; pdf: the statement to print, archival (PDF/A-2a) and accessible (PDF/UA-1), with the revision on every page." example:"xlsx"`
 }
 
 // CodeReportRender is a PDF the render service could not make: none is configured, it is busy, or it failed.
@@ -62,6 +65,9 @@ var statementSlugs = map[string]string{"pl": "profit-and-loss", "bs": "balance-s
 
 // columnHeading is a column's heading: its month, its run of months, or the total.
 func columnHeading(c FinancialColumn) string {
+	if c.Label != "" { // a P&L by dimension's column (FR-DIM-02)
+		return c.Label
+	}
 	if c.Key == "total" {
 		return "Total"
 	}
@@ -284,7 +290,7 @@ func registerFinancialExports(a *API) {
 		author := ""
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) (err error) {
 			s, err = a.financialStatement(ctx, u, &financialStatementInput{Kind: in.Kind, From: in.From, To: in.To, Compare: in.Compare,
-				Columns: in.Columns, Revision: in.Revision})
+				Columns: in.Columns, Revision: in.Revision, DimensionID: in.DimensionID, ValueIDs: in.ValueIDs})
 			if err != nil {
 				return err
 			}

@@ -35,6 +35,9 @@ type TrialBalance struct {
 type Snapshot struct {
 	at       bool
 	revision int64
+	// only, when set, keeps the lines whose dimension values it accepts (FR-DIM-02): a department's P&L reads the lines
+	// with that department's value; nil reads every line.
+	only func(values []uuid.UUID) bool
 }
 
 // Current reads the balances as they stand.
@@ -46,7 +49,33 @@ func At(revision int64) Snapshot { return Snapshot{at: true, revision: revision}
 // Revision is the revision s reads as at, and whether it reads at one.
 func (s Snapshot) Revision() (int64, bool) { return s.revision, s.at }
 
+// Only is s reading only the lines whose dimension values keep accepts (FR-DIM-02), as a set's values are held: once
+// each, in ascending order, nil for none.
+func (s Snapshot) Only(keep func(values []uuid.UUID) bool) Snapshot {
+	s.only = keep
+	return s
+}
+
 func (s Snapshot) forPeriod(ctx context.Context, u storage.UnitOfWork, period uuid.UUID) ([]storage.Balance, error) {
+	if s.only != nil {
+		var sets []storage.SetBalance
+		var err error
+		if s.at {
+			sets, err = u.Balances().ForPeriodBySetAt(ctx, period, s.revision)
+		} else {
+			sets, err = u.Balances().ForPeriodBySet(ctx, period)
+		}
+		if err != nil {
+			return nil, err
+		}
+		var out []storage.Balance
+		for _, b := range sets {
+			if s.only(b.Values) {
+				out = append(out, b.Balance)
+			}
+		}
+		return out, nil
+	}
 	if s.at {
 		return u.Balances().ForPeriodAt(ctx, period, s.revision)
 	}
@@ -187,6 +216,13 @@ type AccountLedger struct {
 // balance before from, then each line dated in the range in posting order with the running balance. With year-end
 // (FR-GL-10), a range within one financial year: one that crosses a year's start is refused (CrossesYear).
 func GeneralLedger(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, from, to time.Time) (AccountLedger, error) {
+	return GeneralLedgerOnly(ctx, u, base, account, from, to, nil)
+}
+
+// GeneralLedgerOnly is GeneralLedger of the lines whose dimension values only accepts (FR-DIM-02), such as Engineering's:
+// its opening balance and its lines are of those lines alone. nil reads every line.
+func GeneralLedgerOnly(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, from, to time.Time,
+	only func(values []uuid.UUID) bool) (AccountLedger, error) {
 	y, err := yearEndOf(ctx, u)
 	if err != nil {
 		return AccountLedger{}, err
@@ -194,7 +230,7 @@ func GeneralLedger(ctx context.Context, u storage.UnitOfWork, base money.Currenc
 	if ys := y.start(to); !ys.IsZero() && from.Before(ys) && !y.start(from).IsZero() {
 		return AccountLedger{}, &CrossesYear{YearStart: ys}
 	}
-	opening, err := before(ctx, u, base, y, account, from)
+	opening, err := before(ctx, u, base, y, account, from, only)
 	if err != nil {
 		return AccountLedger{}, err
 	}
@@ -208,6 +244,9 @@ func GeneralLedger(ctx context.Context, u storage.UnitOfWork, base money.Currenc
 	out := AccountLedger{AccountID: account, Opening: opening, Debits: money.Zero(base), Credits: money.Zero(base), Closing: opening,
 		Lines: make([]LedgerLine, 0, len(lines))}
 	for _, l := range lines {
+		if only != nil && !only(l.DimensionValues) {
+			continue
+		}
 		cur, err := money.Lookup(l.Currency)
 		if err != nil {
 			return AccountLedger{}, err
@@ -240,7 +279,8 @@ func GeneralLedger(ctx context.Context, u storage.UnitOfWork, base money.Currenc
 // (INV-08), and the lines of the period that holds it dated before it. Year-end applies (FR-GL-10): a revenue or expense
 // account counts only the periods of the financial year that holds the day, and the retained-earnings account also
 // counts the profit or loss of every earlier year.
-func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, y yearEnd, account uuid.UUID, day time.Time) (money.Money, error) {
+func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, y yearEnd, account uuid.UUID, day time.Time,
+	only func(values []uuid.UUID) bool) (money.Money, error) {
 	ys := y.start(day)
 	total := money.Zero(base)
 	periods, err := u.Periods().List(ctx)
@@ -257,7 +297,7 @@ func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, y ye
 	for _, p := range periods {
 		switch {
 		case p.EndsOn.Before(day):
-			rows, err := u.Balances().ForPeriod(ctx, p.ID)
+			rows, err := Current.Only(only).forPeriod(ctx, u, p.ID)
 			if err != nil {
 				return total, err
 			}
@@ -277,6 +317,9 @@ func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, y ye
 				return total, err
 			}
 			for _, l := range lines {
+				if only != nil && !only(l.DimensionValues) {
+					continue
+				}
 				if err := add(l.BaseAmount); err != nil {
 					return total, err
 				}

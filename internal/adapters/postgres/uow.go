@@ -979,6 +979,9 @@ func (r ledger) AccountLines(ctx context.Context, account uuid.UUID, from, to ti
 			Source: storage.Source{Type: x.SourceType, ID: x.SourceID, Version: int(x.SourceVersion)}, Memo: str(x.Memo), ReversesEntryID: x.ReversesEntryID,
 			LineNo: int(x.LineNo), Currency: x.Currency, Amount: storage.Decimal(x.Amount), BaseAmount: storage.Decimal(x.BaseAmount),
 			Description: str(x.Description), Number: str(x.Number), PartyID: x.PartyID}
+		if len(x.DimensionValueIds) > 0 {
+			out[i].DimensionValues = x.DimensionValueIds
+		}
 	}
 	return out, nil
 }
@@ -1040,6 +1043,26 @@ func (r balances) ForPeriodBySet(ctx context.Context, periodID uuid.UUID) ([]sto
 		return nil, err
 	}
 	rows, err := r.u.q.BalancesForPeriodBySet(ctx, periodID)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.SetBalance, 0, len(rows))
+	for _, b := range rows {
+		x := storage.SetBalance{Balance: storage.Balance{AccountID: b.AccountID, PeriodID: b.PeriodID, Currency: b.Currency,
+			Amount: storage.Decimal(b.Amount), BaseAmount: storage.Decimal(b.BaseAmount), LineCount: b.LineCount}}
+		if len(b.ValueIds) > 0 {
+			x.Values = b.ValueIds
+		}
+		out = append(out, x)
+	}
+	return out, nil
+}
+
+func (r balances) ForPeriodBySetAt(ctx context.Context, periodID uuid.UUID, revision int64) ([]storage.SetBalance, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.BalancesForPeriodBySetAt(ctx, sqlcdb.BalancesForPeriodBySetAtParams{PeriodID: periodID, LedgerRevision: revision})
 	if err != nil {
 		return nil, mapError(err)
 	}

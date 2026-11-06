@@ -49,15 +49,21 @@ type Request struct {
 	Compare     Compare
 	ByMonth     bool  // a column per period of the run and, for the P&L, their total
 	Revision    int64 // the ledger revision every figure is read as at
+	// A P&L by dimension (FR-DIM-02): Only keeps the lines that carry each of these values, such as Engineering's; Pivot,
+	// a dimension, gives a column per value of it, one for the lines with no value of it, and their total.
+	Only  []uuid.UUID
+	Pivot uuid.UUID
 }
 
 // Column is one column of figures: a run of whole periods. A P&L column holds the run's movements; a balance sheet's
 // and a trial balance's hold the positions at the run's end.
 type Column struct {
-	Key     string // "current", "prior_period", "prior_year", a month such as "2026-10", or "total"
+	Key     string // "current", "prior_period", "prior_year", a month such as "2026-10", "total", or a pivot's "value:<id>" or "none"
+	Label   string // a pivot's column: the value's code and name, "No <dimension>", or "Total"
 	From    time.Time
 	To      time.Time
 	Periods []storage.Period
+	only    func(values []uuid.UUID) bool // the lines the column reads (FR-DIM-02); nil for every line
 }
 
 // Line is one account's figures, one amount per column, signed as the statement shows them.
@@ -252,14 +258,18 @@ func figures(ctx context.Context, u storage.UnitOfWork, base money.Currency, r R
 	for i, c := range cols {
 		var tb balance.TrialBalance
 		var err error
+		snap := at
+		if c.only != nil {
+			snap = at.Only(c.only)
+		}
 		if r.Kind == ProfitAndLoss {
 			ids := make([]uuid.UUID, len(c.Periods))
 			for j, p := range c.Periods {
 				ids[j] = p.ID
 			}
-			tb, err = balance.TrialAt(ctx, u, base, at, ids...)
+			tb, err = balance.TrialAt(ctx, u, base, snap, ids...)
 		} else {
-			tb, err = balance.PositionAt(ctx, u, base, at, r.All, c.Periods[len(c.Periods)-1])
+			tb, err = balance.PositionAt(ctx, u, base, snap, r.All, c.Periods[len(c.Periods)-1])
 		}
 		if err != nil {
 			return nil, nil, err
@@ -277,6 +287,9 @@ func figures(ctx context.Context, u storage.UnitOfWork, base money.Currency, r R
 func Lay(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Request) (Statement, error) {
 	cols, err := Columns(r)
 	if err != nil {
+		return Statement{}, err
+	}
+	if cols, err = byDimension(ctx, u, r, cols); err != nil {
 		return Statement{}, err
 	}
 	accounts, err := u.Accounts().List(ctx)
@@ -726,4 +739,64 @@ func (l layout) checks(totals []money.Money) []Check {
 		}
 	}
 	return out
+}
+
+// byDimension narrows a P&L's columns to the lines with the request's values, and with a pivot turns its one column into a
+// column per value of the dimension, in code order, one for the lines with no value of it, and their total, which the
+// others add up to (FR-DIM-02). Other statements take no dimension: a dimension's lines are one side of their entries,
+// so a trial balance or a balance sheet of them would not balance.
+func byDimension(ctx context.Context, u storage.UnitOfWork, r Request, cols []Column) ([]Column, error) {
+	if len(r.Only) == 0 && r.Pivot == uuid.Nil {
+		return cols, nil
+	}
+	if r.Kind != ProfitAndLoss {
+		return nil, fmt.Errorf("financials: a %s takes no dimension", r.Kind)
+	}
+	carries := func(values []uuid.UUID) bool {
+		for _, v := range r.Only {
+			if !slices.Contains(values, v) {
+				return false
+			}
+		}
+		return true
+	}
+	var filter func([]uuid.UUID) bool
+	if len(r.Only) > 0 {
+		filter = carries
+	}
+	if r.Pivot == uuid.Nil {
+		for i := range cols {
+			cols[i].only = filter
+		}
+		return cols, nil
+	}
+	if len(cols) != 1 {
+		return nil, fmt.Errorf("financials: a pivot by dimension takes one column, without a comparative or months")
+	}
+	d, err := u.Dimensions().Get(ctx, r.Pivot)
+	if err != nil {
+		return nil, err
+	}
+	values, err := u.Dimensions().Values(ctx, &d.ID)
+	if err != nil {
+		return nil, err
+	}
+	of := map[uuid.UUID]bool{}
+	for _, v := range values {
+		of[v.ID] = true
+	}
+	run := cols[0]
+	column := func(key, label string, keep func([]uuid.UUID) bool) Column {
+		c := run
+		c.Key, c.Label, c.only = key, label, func(vs []uuid.UUID) bool { return carries(vs) && keep(vs) }
+		return c
+	}
+	var out []Column
+	for _, v := range values {
+		out = append(out, column("value:"+v.ID.String(), v.Code+" "+v.Name, func(vs []uuid.UUID) bool { return slices.Contains(vs, v.ID) }))
+	}
+	out = append(out, column("none", "No "+d.Name, func(vs []uuid.UUID) bool { return !slices.ContainsFunc(vs, func(x uuid.UUID) bool { return of[x] }) }))
+	total := run
+	total.Key, total.Label, total.only = KeyTotal, "Total", filter
+	return append(out, total), nil
 }

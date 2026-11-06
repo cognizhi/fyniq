@@ -4,15 +4,18 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/financials"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/period"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -63,7 +66,8 @@ type FinancialBlock struct {
 
 // FinancialColumn is a column of a statement: a run of whole months.
 type FinancialColumn struct {
-	Key  string `json:"key" doc:"current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month." example:"current"`
+	Key   string `json:"key" doc:"current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month or by dimension; value:<id> and none, a P&L by dimension's columns." example:"current"`
+	Label string `json:"label,omitempty" doc:"A P&L by dimension's column: the value's code and name, No <dimension> for the lines with no value of it, or Total." example:"ENG Engineering"`
 	From string `json:"from" format:"date" doc:"The run's first day." example:"2026-10-01"`
 	To   string `json:"to" format:"date" doc:"The run's last day: a balance sheet's or a trial balance's figures are at its end." example:"2026-10-31"`
 }
@@ -109,7 +113,10 @@ type financialStatementInput struct {
 	From     string `query:"from" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's first month, YYYY-MM; left out, the last month's. A balance sheet is at the last month's end, with the movement in equity over the run; a trial balance is at the last month's end." example:"2026-10"`
 	To       string `query:"to" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's last month, YYYY-MM; left out, the month of the organisation's today." example:"2026-10"`
 	Compare  string `query:"compare" enum:"prior_period,prior_year" doc:"A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning." example:"prior_period"`
-	Columns  string `query:"columns" enum:"total,month" default:"total" doc:"total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative." example:"total"`
+	Columns  string `query:"columns" enum:"total,month,dimension" default:"total" doc:"total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02), without a comparative." example:"total"`
+	// A P&L by dimension (FR-DIM-02; rev 0.171).
+	DimensionID string   `query:"dimension_id" format:"uuid" doc:"With columns=dimension: the dimension whose values make the columns (listDimensions)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"`
+	ValueIDs    []string `query:"dimension_value_id,explode" maxItems:"10" doc:"A P&L of the lines that carry each of these values only (listDimensionValues), such as a department's P&L; each as its own dimension_value_id parameter. A dimension's lines are one side of their entries, so a balance sheet, a cash flow or a trial balance takes none." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d91"`
 	Revision int64  `query:"as_at_revision" minimum:"1" doc:"Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands." example:"42"`
 }
 
@@ -248,8 +255,12 @@ func (a *API) financialStatement(ctx context.Context, u storage.UnitOfWork, in *
 		return out, err
 	}
 	all, first, last, revision, current := run.all, run.first, run.last, run.revision, run.current
+	only, pivot, err := statementDimensions(ctx, u, in)
+	if err != nil {
+		return out, err
+	}
 	s, err := financials.Lay(ctx, u, base, financials.Request{Kind: financials.Kind(in.Kind), All: all, First: first, Last: last,
-		Compare: financials.Compare(in.Compare), ByMonth: in.Columns == "month", Revision: revision})
+		Compare: financials.Compare(in.Compare), ByMonth: in.Columns == "month", Revision: revision, Only: only, Pivot: pivot})
 	if err != nil {
 		return out, err
 	}
@@ -271,7 +282,7 @@ func (a *API) financialStatement(ctx context.Context, u storage.UnitOfWork, in *
 		PlatformVersion: a.deps.Version, Columns: []FinancialColumn{}, Blocks: []FinancialBlock{}, Checks: []FinancialCheck{}, NonCash: []FinancialNonCash{}}
 	n := len(s.Columns)
 	for _, c := range s.Columns {
-		out.Columns = append(out.Columns, FinancialColumn{Key: c.Key, From: dateOf(c.From), To: dateOf(c.To)})
+		out.Columns = append(out.Columns, FinancialColumn{Key: c.Key, Label: c.Label, From: dateOf(c.From), To: dateOf(c.To)})
 	}
 	for _, b := range s.Blocks {
 		x := FinancialBlock{Key: b.Key, Title: b.Title, Measure: b.Measure, Totals: moneysOut(b.Totals), Percents: percentsOut(b.Percents, n),
@@ -294,4 +305,62 @@ func (a *API) financialStatement(ctx context.Context, u storage.UnitOfWork, in *
 			Label: x.Label})
 	}
 	return out, nil
+}
+
+// statementDimensions reads a P&L by dimension (FR-DIM-02): the values its lines carry, each one the organisation has, and
+// the dimension whose values make its columns. Only a P&L takes them, and a pivot takes no comparative.
+func statementDimensions(ctx context.Context, u storage.UnitOfWork, in *financialStatementInput) ([]uuid.UUID, uuid.UUID, error) {
+	var bad []FieldProblem
+	pl := in.Kind == string(financials.ProfitAndLoss)
+	if !pl && (len(in.ValueIDs) > 0 || in.Columns == "dimension" || in.DimensionID != "") {
+		return nil, uuid.Nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "query.dimension_value_id",
+			Message: "a balance sheet, a cash flow or a trial balance takes no dimension: a dimension's lines are one side of their entries",
+			Fix:     "Ask for the P&L by dimension instead"}})
+	}
+	var only []uuid.UUID
+	for i, x := range in.ValueIDs {
+		field := "query.dimension_value_id[" + strconv.Itoa(i) + "]"
+		id, err := uuid.Parse(x)
+		if err != nil {
+			bad = append(bad, FieldProblem{Code: CodeInvalid, Field: field, Message: "is not a dimension value's ID", Fix: "Send the ID listDimensionValues gives"})
+			continue
+		}
+		switch _, err := u.Dimensions().GetValue(ctx, id); {
+		case errors.Is(err, ports.ErrNotFound):
+			bad = append(bad, FieldProblem{Code: CodeInvalid, Field: field, Message: "is not one of the organisation's dimension values", Fix: "Send the ID listDimensionValues gives"})
+		case err != nil:
+			return nil, uuid.Nil, err
+		default:
+			only = append(only, id)
+		}
+	}
+	var pivot uuid.UUID
+	switch {
+	case in.Columns == "dimension" && in.DimensionID == "":
+		bad = append(bad, FieldProblem{Code: CodeInvalid, Field: "query.dimension_id", Message: "is missing: columns by dimension need the dimension",
+			Fix: "Send the dimension_id whose values make the columns"})
+	case in.DimensionID != "" && in.Columns != "dimension":
+		bad = append(bad, FieldProblem{Code: CodeInvalid, Field: "query.columns", Message: "is not dimension, so dimension_id has nothing to do",
+			Fix: "Send columns=dimension, or leave dimension_id out"})
+	case in.Columns == "dimension" && in.Compare != "":
+		bad = append(bad, FieldProblem{Code: CodeInvalid, Field: "query.compare", Message: "a P&L by dimension takes no comparative",
+			Fix: "Leave compare out, or ask for the P&L by dimension of each run"})
+	case in.Columns == "dimension":
+		id, err := uuid.Parse(in.DimensionID)
+		if err == nil {
+			_, err = u.Dimensions().Get(ctx, id)
+		}
+		switch {
+		case err == nil:
+			pivot = id
+		case errors.Is(err, ports.ErrNotFound):
+			bad = append(bad, FieldProblem{Code: CodeInvalid, Field: "query.dimension_id", Message: "is not one of the organisation's dimensions", Fix: "Send the ID listDimensions gives"})
+		default:
+			return nil, uuid.Nil, err
+		}
+	}
+	if len(bad) > 0 {
+		return nil, uuid.Nil, invalid(bad)
+	}
+	return only, pivot, nil
 }

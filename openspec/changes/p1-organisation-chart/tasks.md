@@ -180,6 +180,18 @@
   it was for", compiled into `claims.make-a-claim`. Tests `TestAClaimsLinesCarryTheirDimensionValues`,
   `TestClaimLinesCarryTheirDimensionValues`, `TestClaimLinesTakeDimensionValues`, `claims.test.tsx`. **Left:**
   reports by dimension and the oracle's half (slice 4).)
+  (6 Nov 2026, slice 4, reports: the P&L by dimension (FR-DIM-02): `columns=dimension` with `dimension_id` gives a
+  column per value, one for the lines with no value of it, and their total, which they add up to; `dimension_value_id`
+  keeps a P&L of the lines with those values, such as a department's. Every figure is read as at the statement's
+  revision, through the balance service's snapshot, which now takes a selection of dimension values, from the new
+  `fyniq.balances_by_set_at` (migration 000223) and the cache by set. The balance sheet, the cash flow and the trial
+  balance take no dimension: a dimension's lines are one side of their entries. The general ledger takes
+  `dimension_value_id` (its opening balance, lines and running balance theirs) and shows each line's values; the
+  statement's export takes the same query. The statement screen's **Columns by dimension** and **Only for** (Expert),
+  each figure opening its value's lines; the general ledger's **Only the lines of** and **Dimensions** column. Help
+  keys `statement.by-dimension`, `ledger.by-dimension`; the guides' "By department or project", compiled into
+  `reports.statements` and `reports.general-ledger`. Tests `TestThePLAndTheGeneralLedgerByDimension`,
+  `TestReportsByDimension`, `statements.test.tsx`, `GeneralLedger.test.tsx`. **Left:** the oracle's half.)
 
 ## 4. Contacts and items
 

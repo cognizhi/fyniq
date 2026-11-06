@@ -205,6 +205,59 @@ func (q *Queries) BalancesForPeriodBySet(ctx context.Context, periodID uuid.UUID
 	return items, nil
 }
 
+const balancesForPeriodBySetAt = `-- name: BalancesForPeriodBySetAt :many
+SELECT account_id::uuid AS account_id, period_id::uuid AS period_id, currency::text AS currency, value_ids::uuid[] AS value_ids,
+       amount::numeric(20, 4) AS amount, base_amount::numeric(20, 4) AS base_amount, line_count::bigint AS line_count
+FROM fyniq.balances_by_set_at($1::uuid, $2::bigint) AS b
+ORDER BY account_id, currency
+`
+
+type BalancesForPeriodBySetAtParams struct {
+	PeriodID       uuid.UUID
+	LedgerRevision int64
+}
+
+type BalancesForPeriodBySetAtRow struct {
+	AccountID  uuid.UUID
+	PeriodID   uuid.UUID
+	Currency   string
+	ValueIds   []uuid.UUID
+	Amount     string
+	BaseAmount string
+	LineCount  int64
+}
+
+// A period's balances by dimension set as at a ledger revision (FR-DIM-02, FR-RPT-08), from fyniq.balances_by_set_at:
+// each account, currency and set on its own row, '{}' for the lines with no dimension. The balance service alone reads
+// it.
+func (q *Queries) BalancesForPeriodBySetAt(ctx context.Context, arg BalancesForPeriodBySetAtParams) ([]BalancesForPeriodBySetAtRow, error) {
+	rows, err := q.db.Query(ctx, balancesForPeriodBySetAt, arg.PeriodID, arg.LedgerRevision)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []BalancesForPeriodBySetAtRow
+	for rows.Next() {
+		var i BalancesForPeriodBySetAtRow
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.PeriodID,
+			&i.Currency,
+			&i.ValueIds,
+			&i.Amount,
+			&i.BaseAmount,
+			&i.LineCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const rebuildBalances = `-- name: RebuildBalances :one
 SELECT fyniq.rebuild_balances()::bigint AS rows
 `
