@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -92,12 +93,15 @@ func (r signInMethods) Set(ctx context.Context, by uuid.UUID, change *uuid.UUID,
 			}
 		}
 	}
+	if c.Version < 0 || c.Version > math.MaxInt32 {
+		return storage.SignInMethod{}, &storage.Error{Code: storage.CodeVersion, Message: "the provider's version is out of range"}
+	}
 	domains := c.AllowedDomains
 	if domains == nil {
 		domains = []string{}
 	}
 	row, err := r.u.q.SetSignInMethod(ctx, sqlcdb.SetSignInMethodParams{ByUser: by, ChangeID: change, Provider: c.Provider,
-		Version: int32(c.Version), Enabled: c.Enabled, Domains: domains, EndSessions: c.EndSessions, At: at})
+		Version: int32(c.Version), Enabled: c.Enabled, Domains: domains, EndSessions: c.EndSessions, At: at}) // #nosec G115 -- a version number, checked below
 	if err != nil {
 		return storage.SignInMethod{}, mapError(err)
 	}
