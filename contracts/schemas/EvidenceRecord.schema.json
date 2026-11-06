@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "activity": {
+      "description": "The kind of record.",
+      "enum": [
+        "bill",
+        "invoice",
+        "journal",
+        "bank",
+        "claim",
+        "vendor_bank_change",
+        "person_bank_change",
+        "founders",
+        "owner_succession"
+      ],
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    },
+    "date": {
+      "description": "Its date.",
+      "examples": [
+        "2026-10-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The record's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number, once it has one.",
+      "examples": [
+        "BILL-0012"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "Its status, such as draft or posted.",
+      "examples": [
+        "posted"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "description": "The record's document type, such as bill or vendor_credit.",
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "activity",
+    "type",
+    "id",
+    "status"
+  ],
+  "title": "EvidenceRecord",
+  "type": "object"
+}

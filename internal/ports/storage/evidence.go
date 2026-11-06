@@ -89,6 +89,9 @@ type EvidenceFiles interface {
 	// Counts returns how many files each of documents holds, removed ones aside; a document with none is absent
 	// (FR-DOC-06's missing evidence).
 	Counts(ctx context.Context, documents []uuid.UUID) (map[uuid.UUID]int, error)
+	// Search returns at most f.Limit files on documents of f's types, removed ones aside, newest record date first, then
+	// newest file, after the cursor's (date, id) (FR-DOC-10).
+	Search(ctx context.Context, f EvidenceSearch) ([]EvidenceHit, error)
 	// Remove takes a file off a draft record at its version, with the reason audited: CodeEvidence when the
 	// record is not a draft, CodeVersion when the file changed since.
 	Remove(ctx context.Context, id uuid.UUID, version int) (Evidence, error)
@@ -104,4 +107,25 @@ type EvidenceFiles interface {
 	// Final returns at most limit committed files by ID after after (uuid.Nil for the first page), for the
 	// nightly re-verification of their hashes.
 	Final(ctx context.Context, after uuid.UUID, limit int) ([]Evidence, error)
+}
+
+// EvidenceSearch is what an evidence search asks for (FR-DOC-10): the document types the person may see, and the
+// filters they set; "" or nil sets none.
+type EvidenceSearch struct {
+	Types      []DocumentType
+	Kind       string // in the evidence type, as typed, case aside
+	From, To   string // the record's date, YYYY-MM-DD, inclusive
+	UploadedBy string // the uploader's actor ID
+	AfterDate  string // the cursor: the record date and ID of the last file of the previous page
+	AfterID    *uuid.UUID
+	Limit      int
+}
+
+// EvidenceHit is a file an evidence search found, with the record it is on.
+type EvidenceHit struct {
+	Evidence
+	DocumentType   DocumentType
+	DocumentStatus DocumentStatus
+	DocumentNumber string
+	DocumentDate   string // YYYY-MM-DD, or "" for a record without one
 }

@@ -3808,6 +3808,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search the evidence
+         * @description Every file attached across the organisation's records, removed ones aside, newest record date first, a page at a time (FR-DOC-10; PRD-001 rev 0.184): by activity, evidence type, the record's date and uploader. Only files on records whose Appendix D rows you view are listed, and activities lists the kinds you may search. The missing-evidence list is Checks' C.2 #30 (getCheck evidence.missing). Read-only.
+         */
+        get: operations["searchEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/exempt-statuses": {
         parameters: {
             query?: never;
@@ -18049,6 +18069,65 @@ export interface components {
              */
             version: number;
         };
+        EvidenceFound: {
+            /**
+             * @description The personal data it holds (FR-DOC-09).
+             * @example general
+             * @enum {string}
+             */
+            data_class: "general" | "personal" | "bank" | "payroll" | "identity";
+            /**
+             * @description What the file is.
+             * @example invoice
+             */
+            evidence_type: string;
+            /**
+             * @description As the uploader named it.
+             * @example AU-100.pdf
+             */
+            file_name: string;
+            /**
+             * Format: uuid
+             * @description The file's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+             */
+            id: string;
+            /**
+             * @description Its type, from its content.
+             * @example application/pdf
+             */
+            media_type: string;
+            /** @description The record it is attached to. */
+            record: components["schemas"]["EvidenceRecord"];
+            /**
+             * Format: int64
+             * @description Its size in bytes.
+             * @example 18432
+             */
+            size_bytes: number;
+            /**
+             * @description Attached, or final: committed to the retention-locked store.
+             * @example final
+             * @enum {string}
+             */
+            state: "attached" | "removed" | "final";
+            /**
+             * @description true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09).
+             * @example false
+             */
+            unmasked_nric?: boolean;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-10-20T09:15:00Z
+             */
+            uploaded_at: string;
+            /**
+             * @description Who attached it: an actor of the audit trail.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            uploaded_by: string;
+        };
         EvidencePage: {
             /** @description The files on this page, removed ones included. */
             items: components["schemas"]["Evidence"][] | null;
@@ -18057,6 +18136,41 @@ export interface components {
              * @example eyJhZnRlciI6IjAxOTIifQ
              */
             next_cursor?: string;
+        };
+        EvidenceRecord: {
+            /**
+             * @description The kind of record.
+             * @example bill
+             * @enum {string}
+             */
+            activity: "bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession";
+            /**
+             * Format: date
+             * @description Its date.
+             * @example 2026-10-20
+             */
+            date?: string;
+            /**
+             * Format: uuid
+             * @description The record's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+             */
+            id: string;
+            /**
+             * @description Its number, once it has one.
+             * @example BILL-0012
+             */
+            number?: string;
+            /**
+             * @description Its status, such as draft or posted.
+             * @example posted
+             */
+            status: string;
+            /**
+             * @description The record's document type, such as bill or vendor_credit.
+             * @example bill
+             */
+            type: string;
         };
         ExemptStatusDraft: {
             /**
@@ -26691,6 +26805,17 @@ export interface components {
             holdings: components["schemas"]["ScheduleHolding"][];
             /** @description The schedules, prepayments first, by the date of their first month, then the document's number and line. */
             schedules: components["schemas"]["Schedule"][];
+        };
+        SearchEvidenceOutputBody: {
+            /** @description The kinds of record you may search. */
+            activities: ("bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession")[];
+            /** @description The files on this page, newest record date first. */
+            items: components["schemas"]["EvidenceFound"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjIwMjYtMTAtMjAifQ
+             */
+            next_cursor?: string;
         };
         SendSalesReminder: {
             /**
@@ -58963,6 +59088,96 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    searchEvidence: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only files on this kind of record; every kind you may see when left out. */
+                activity?: "bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession";
+                /** @description Only files whose evidence type contains this, case aside. */
+                evidence_type?: string;
+                /** @description Only files on records dated on or after this day. */
+                from?: string;
+                /** @description Only files on records dated on or before this day. */
+                to?: string;
+                /** @description Only files this actor attached, such as user:<user id>. */
+                uploaded_by?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchEvidenceOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

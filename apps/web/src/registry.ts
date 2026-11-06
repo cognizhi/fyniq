@@ -126,6 +126,7 @@ export const routes = [
   { kind: "route", id: "pre-incorporation-costs", path: "/accounting/pre-incorporation", mode: "basic", signedIn: true, help: "accounting.pre-incorporation", guide: "equity.pre-incorporation-costs" },
   { kind: "route", id: "period-close", path: "/accounting/close/$periodId", mode: "expert", signedIn: true, help: "accounting.period-close", guide: "accounting.periods#close-a-month" },
   { kind: "route", id: "accountant-reviews", path: "/accounting/reviews", mode: "expert", signedIn: true, help: "accounting.reviews", guide: "accounting.reviews" },
+  { kind: "route", id: "evidence-search", path: "/compliance/evidence", mode: "expert", signedIn: true, help: "compliance.evidence", guide: "compliance.evidence" },
   { kind: "route", id: "accountant-review", path: "/accounting/reviews/$reviewId", mode: "expert", signedIn: true, help: "accounting.review", guide: "accounting.reviews#raise-and-answer-queries" },
   { kind: "route", id: "reports", path: "/reports", mode: "basic", signedIn: true, help: "reports.index", guide: "reports.statements" },
   { kind: "route", id: "financial-statement", path: "/reports/statements/$kind", mode: "basic", signedIn: true, help: "reports.statement", guide: "reports.statements" },

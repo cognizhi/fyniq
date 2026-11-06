@@ -410,6 +410,11 @@ Source: PRD-001 §8.16 · Priority S · Phase P1 (search) / P2 (packs)
 - **THEN** the pack includes a manifest of file hashes
 - **AND** it feeds the auditor pack of FR-RPT-10
 
+#### Scenario: Search the evidence (rev 0.184)
+- **WHEN** a person who holds the evidence right without a qualifier searches by kind of record, evidence type, the record's date or uploader (provisional until sign-off)
+- **THEN** they get the matching files, removed ones aside, newest record first, only on the records whose Appendix D rows they view
+- **AND** the missing-evidence list is C.2 #30's: the open months' posted records without their evidence
+
 ### Requirement: FR-DOC-11 Evidence through the API
 Integrations SHALL upload evidence with `POST /v1/{collection}/{id}/evidence` (multipart, `Idempotency-Key`), under the same scanning and rules as any other upload.
 

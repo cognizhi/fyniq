@@ -259,7 +259,8 @@ Some records need a file to show they are real before they post:
 
 Each is **required** by default. **Recommended** lets the record post without a file, and **Checks**
 lists it (missing recommended evidence). **Optional** asks for nothing. Changing any of these needs a
-second approver. Attach files in the record's **Evidence** panel.
+second approver. Attach files in the record's **Evidence** panel. **Accounting › Evidence** lists the
+records still missing theirs ([Find evidence](evidence-search.md)).
 
 ## Variances at the close
 

@@ -172,6 +172,10 @@
       "label": "Settle",
       "tooltip": "Repay, keep as a loan or waive what the company owes this person, with the agreement attached; another person approves it, never them."
     },
+    "compliance.evidence": {
+      "label": "Evidence",
+      "tooltip": "Find the files attached across your records, by kind of record, evidence type and date, and see which posted records still miss theirs."
+    },
     "member.start-succession": {
       "label": "Start a succession",
       "tooltip": "For an Owner who is permanently unavailable: they are told and may object for 7 days; then a Super admin completes it and their membership ends."
