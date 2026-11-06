@@ -87,12 +87,13 @@ export function ModeSwitch({ mode }: { mode: Mode }) {
 // ⌘K), the Basic | Expert switch, the notification bell, appearance and sign out, and the main region with the
 // banners on top (FR-NTF-01, FR-NTF-03; the signed-in layout passes both, which read the API). The organisation
 // switcher and the AI button join it with p1-app-shell 2.1–4.1 and wave 6.
-export function AppFrame({ session, title, mode, bell, banners, children }: {
+export function AppFrame({ session, title, mode, bell, banners, logo, children }: {
   session: Pick<Session, "roles" | "features">;
   title: string;
   mode: Mode;
   bell?: ReactNode;
   banners?: ReactNode;
+  logo?: ReactNode; // the organisation's logo (FR-ORG-09), which the signed-in layout reads
   children: ReactNode;
 }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -145,6 +146,7 @@ export function AppFrame({ session, title, mode, bell, banners, children }: {
             f
           </span>
         </Link>
+        {logo}
         <span className="fy-top__title fy-truncate">{title}</span>
         <button className="fy-search fy-from-expanded" type="button" onClick={openPalette} title={search.tooltip} aria-keyshortcuts="Control+K Meta+K">
           <Icon of={Search} />

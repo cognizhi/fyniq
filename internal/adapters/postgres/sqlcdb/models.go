@@ -444,6 +444,25 @@ type FyniqBillPaymentPlan struct {
 	RecordedAt     time.Time
 }
 
+type FyniqBrandVersion struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Version        int32
+	LightType      *string
+	LightSha256    []byte
+	LightSize      *int32
+	DarkType       *string
+	DarkSha256     []byte
+	DarkSize       *int32
+	IconType       *string
+	IconSha256     []byte
+	IconSize       *int32
+	Accent         *string
+	Cleaned        []byte
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+}
+
 type FyniqBreakGlass struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

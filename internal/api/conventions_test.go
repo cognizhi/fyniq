@@ -29,7 +29,7 @@ func TestConventionExemptions(t *testing.T) {
 	for _, op := range []string{"challengeApproval", "registerPasskey", "startPasskeyRegistration", "startStepUp", "stepUp"} { // a challenge makes them one-time
 		want = append(want, op+" Idempotency-Key", op+" Prefer")
 	}
-	want = append(want, "requestToJoin Idempotency-Key", "requestToJoin Prefer", "releaseJoinDomain Prefer")
+	want = append(want, "requestToJoin Idempotency-Key", "requestToJoin Prefer", "releaseJoinDomain Prefer", "removeBrandFile Idempotency-Key")
 	for _, op := range []string{"approveJoinRequest", "rejectJoinRequest", "claimJoinDomain"} { // decided or claimed once
 		want = append(want, op+" Idempotency-Key", op+" Prefer")
 	}

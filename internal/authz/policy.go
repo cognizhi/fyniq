@@ -1206,6 +1206,15 @@ var (
 		Note: "An Owner or Administrator, who passed step-up in the last 5 minutes, after speaking to the person; never for themselves (SEC-35)."}
 )
 
+// The logo and brand (FR-ORG-09, rev 0.200): every member reads it, for the app's header; the profile's editors change it.
+var (
+	GetBrand        = Policy{Operation: "getBrand", Capability: Membership, Need: View}
+	GetBrandFile    = Policy{Operation: "getBrandFile", Capability: Membership, Need: View}
+	ChangeBrand     = Policy{Operation: "uploadBrandFile", Capability: OrganisationProfile, Need: Create}
+	RemoveBrandFile = Policy{Operation: "removeBrandFile", Capability: OrganisationProfile, Need: Create}
+	SetBrandAccent  = Policy{Operation: "setBrandAccent", Capability: OrganisationProfile, Need: Create}
+)
+
 // Joining by email domain (FR-ADM-08, rev 0.199): a person without a Fyniq account finds and asks; an Owner decides and
 // claims the organisation's domains.
 const joinNote = "Needs a person signed in to Fyniq in the browser, with a second factor; an OAuth client or the AI is refused (FR-ADM-08)."
@@ -1366,7 +1375,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp,
 	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod,
 	GetMyRecoveryCodes, ReplaceMyRecoveryCodes, RecoverAccount, ConfirmAccountRecovery, GetJoinOffer, RequestToJoin, ListJoinRequests,
-	ApproveJoinRequest, RejectJoinRequest, ListJoinDomains, ClaimJoinDomain, ReleaseJoinDomain)
+	ApproveJoinRequest, RejectJoinRequest, ListJoinDomains, ClaimJoinDomain, ReleaseJoinDomain, GetBrand, GetBrandFile, ChangeBrand,
+	RemoveBrandFile, SetBrandAccent)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

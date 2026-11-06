@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accent": {
+      "description": "One of accent_options; empty for the design's default.",
+      "examples": [
+        "#1E3A8A"
+      ],
+      "maxLength": 7,
+      "type": "string"
+    }
+  },
+  "required": [
+    "accent"
+  ],
+  "title": "BrandAccent",
+  "type": "object"
+}

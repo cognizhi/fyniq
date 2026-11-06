@@ -25,6 +25,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/banktransaction"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
+	"github.com/cognizhi/fyniq/internal/domain/brand"
 	"github.com/cognizhi/fyniq/internal/domain/breakglass"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
@@ -620,6 +621,9 @@ var codeFacts = map[string]struct {
 	storage.CodeRecovery:        {409, "The recovery is not valid"},
 	storage.CodeCoolingOff:      {403, "Held while your account cools off after its recovery"},
 	storage.CodeJoin:            {409, "The request to join cannot be made or decided"},
+	brand.CodeFormat:            {422, "Not an SVG or a PNG Fyniq reads"},
+	brand.CodeSize:              {422, "The file is too large, too small or too complex"},
+	brand.CodeAccent:            {422, "Not one of the accent options"},
 	storage.CodeConnectorChange: {409, "The other Super admin's approval is needed"},
 
 	// Banking (FR-BNK-01…18).

@@ -84,6 +84,14 @@
       "label": "Domains",
       "tooltip": "Accept only accounts whose verified email ends with one of these domains."
     },
+    "settings.brand": {
+      "label": "Logo and brand",
+      "tooltip": "Your logo for light and dark backgrounds, the square icon, and the accent colour of documents and emails."
+    },
+    "brand.upload": {
+      "label": "Upload",
+      "tooltip": "An SVG or a PNG. An SVG is cleaned of scripts, outside links, images and fonts before it is used."
+    },
     "join.ask": {
       "label": "Ask to join",
       "tooltip": "Send your request to the organisation's Owners; it grants nothing until one approves it."

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "colour": {
+      "examples": [
+        "#0F766E"
+      ],
+      "pattern": "^#[0-9A-F]{6}$",
+      "type": "string"
+    },
+    "name": {
+      "examples": [
+        "Deep teal"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "colour",
+    "name"
+  ],
+  "title": "AccentOption",
+  "type": "object"
+}

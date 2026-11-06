@@ -10,6 +10,7 @@ import { routes, type Mode } from "./registry";
 import { go } from "./route";
 import { AppFrame } from "./shell/AppFrame";
 import { CoolingOff, RecoverAccount } from "./screens/Recovery";
+import { CompanyLogo } from "./screens/settings/Brand";
 import { Banners } from "./shell/Banners";
 import { NotificationBell } from "./shell/NotificationBell";
 import { ConfirmItsYou, StepUpProvider } from "./stepup";
@@ -153,7 +154,7 @@ export function SignedIn() {
   return (
     <Ctx.Provider value={{ session: state.session, organisation: state.organisation, mode }}>
       <StepUpProvider provider={state.session.provider}>
-        <AppFrame session={state.session} title={title} mode={mode} bell={<NotificationBell />} banners={<Banners />}>
+        <AppFrame session={state.session} title={title} mode={mode} bell={<NotificationBell />} banners={<Banners />} logo={<CompanyLogo name={state.organisation?.name} />}>
           <CoolingOff session={state.session} />
           {route?.mode === "expert" && mode === "basic" && <ExpertHint />}
           <Outlet />
