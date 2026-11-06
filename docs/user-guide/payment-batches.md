@@ -3,7 +3,7 @@ key: purchases.payment-batches
 title: Pay suppliers and claims in a batch
 mode: basic
 roles: [accountant, ap_specialist, controller, payment_releaser, owner, auditor, tax_agent]
-requirements: [FR-BNK-12, FR-AP-13, FR-AP-22, FR-EQ-05, G4-055, SOD-1, SOD-2, FM-1, FM-3, FM-9]
+requirements: [FR-BNK-12, FR-AP-13, FR-AP-22, FR-EQ-05, G4-055, SOD-1, SOD-2, FM-1, FM-3, FM-8, FM-9]
 status: draft            # written with p1-payments-out; reviewed with the batch screens
 ---
 
@@ -62,6 +62,9 @@ does, dated the payment date, and writes the payment list.
 In Standard mode the releaser is a third person, who neither prepared, asked for nor approved the batch, nor the change
 of a payee's bank account. In Founder mode the founder who prepared or approved it may release it; it is still never one
 person alone, because another person approved it, and the release is listed for the weekly review.
+
+When the other founder can't be reached, an Owner who holds the Payment releaser role can release a batch that waits
+for approval under break-glass, within its limits ([Break-glass](team-mode.md#break-glass)).
 
 ## Pay it in the bank
 

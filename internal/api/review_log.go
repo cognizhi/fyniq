@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/breakglass"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -23,7 +24,7 @@ import (
 // ReviewLogItem is a high-risk action that executed, with its review once it has one.
 type ReviewLogItem struct {
 	ID             string     `json:"id" format:"uuid" doc:"The entry's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f50"`
-	Kind           string     `json:"kind" enum:"approved_change,founder_bootstrap,self_approved,scheduled_issue,auto_reconciled" doc:"approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14)." example:"approved_change"`
+	Kind           string     `json:"kind" enum:"approved_change,founder_bootstrap,self_approved,scheduled_issue,auto_reconciled,release_conflict,break_glass" doc:"approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14); release_conflict: in Founder mode, a payment batch released by who prepared or approved it or a payee's account change (SOD-1, SOD-2); break_glass: an Owner's break-glass, reviewed with what it released through reviewBreakGlass once it has ended (FM-8)." example:"approved_change"`
 	ObjectType     string     `json:"object_type" doc:"What it changed." example:"organisation_setting"`
 	ObjectKey      string     `json:"object_key" doc:"Which one." example:"bank.tolerance_base"`
 	Summary        string     `json:"summary" doc:"What it did, in a sentence." example:"Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20"`
@@ -31,12 +32,13 @@ type ReviewLogItem struct {
 	ActorName      string     `json:"actor_name,omitempty" doc:"Their name." example:"Mei Ling Tan"`
 	ApprovalID     string     `json:"approval_id,omitempty" format:"uuid" doc:"The approved request, for an approved change." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
 	LoggedAt       time.Time  `json:"logged_at" doc:"When it executed." example:"2026-10-20T09:30:00Z"`
-	Overdue        bool       `json:"overdue" doc:"true when it is still unreviewed 14 days after it executed, in Founder mode: Checks shows it as a warning (FM-3)." example:"false"`
+	Overdue        bool       `json:"overdue" doc:"true when it is still unreviewed 14 days after it executed, in Founder mode: Checks shows it as a warning (FM-3). A break-glass is overdue from its due date, in any mode, and Checks shows it as cannot post until fixed (C.2 #53)." example:"false"`
+	DueAt          *time.Time `json:"due_at,omitempty" doc:"A break-glass's review's due date: 7 days after it ended (FM-8). Absent for other entries." example:"2026-11-14T01:00:00Z"`
 	ReviewedBy     string     `json:"reviewed_by,omitempty" format:"uuid" doc:"Who reviewed it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"`
 	ReviewedByName string     `json:"reviewed_by_name,omitempty" doc:"Their name." example:"Wei Jie Lim"`
 	ReviewedAt     *time.Time `json:"reviewed_at,omitempty" doc:"When." example:"2026-10-24T09:00:00Z"`
 	Note           string     `json:"note,omitempty" doc:"What the reviewer noted." example:"Agreed at Monday's meeting"`
-	YouMayReview   bool       `json:"you_may_review" doc:"true when you may review it now: it is unreviewed, you did not act on it and you hold the approval right on what it changed." example:"true"`
+	YouMayReview   bool       `json:"you_may_review" doc:"true when you may review it now: it is unreviewed, you did not act on it and you hold the approval right on what it changed. Always false for a break-glass, reviewed through reviewBreakGlass." example:"true"`
 }
 
 // ReviewLogPage is a page of the review log, oldest first, with counts over the whole log.
@@ -86,12 +88,12 @@ type reviewLogReviewOutput struct {
 }
 
 // ReviewCodes are the review log's rules.
-var ReviewCodes = []string{approval.CodeReviewOwn, approval.CodeReviewed}
+var ReviewCodes = []string{approval.CodeReviewOwn, approval.CodeReviewed, breakglass.CodeReviewer}
 
 // mayReview reports whether the person may review e: it is unreviewed, they did not act on it, and they hold the approval
 // right on the row of what it changed.
 func mayReview(p authn.Principal, e storage.ReviewLogEntry) bool {
-	return e.ReviewedBy == nil && p.UserID != uuid.Nil && (e.Actor == nil || *e.Actor != p.UserID) && mayApprove(p, e.ObjectType)
+	return e.Kind != storage.ReviewBreakGlass && e.ReviewedBy == nil && p.UserID != uuid.Nil && (e.Actor == nil || *e.Actor != p.UserID) && mayApprove(p, e.ObjectType)
 }
 
 // seesEntry reports whether the person may see e: a right on the row of what it changed, or having acted on it.
@@ -102,10 +104,13 @@ func seesEntry(p authn.Principal, e storage.ReviewLogEntry) bool {
 	if e.Actor != nil && *e.Actor == p.UserID {
 		return true
 	}
+	if e.Kind == storage.ReviewBreakGlass { // whoever sees break-glass (FM-8)
+		return authz.Decide(authz.ListBreakGlass, p.Roles, false).Allowed
+	}
 	return authz.Decide(authz.Policy{Operation: "view", Capability: approvalRow(e.ObjectType), Need: authz.View}, p.Roles, false).Allowed
 }
 
-func reviewItemOf(p authn.Principal, e storage.ReviewLogEntry, names map[uuid.UUID]string, founder bool, now time.Time) ReviewLogItem {
+func reviewItemOf(p authn.Principal, e storage.ReviewLogEntry, names map[uuid.UUID]string, founder bool, now time.Time, gs glasses) ReviewLogItem {
 	v := ReviewLogItem{ID: e.ID.String(), Kind: e.Kind, ObjectType: e.ObjectType, ObjectKey: e.ObjectKey, Summary: e.Summary,
 		LoggedAt: e.LoggedAt.UTC(), Note: e.Note, YouMayReview: mayReview(p, e)}
 	if e.Actor != nil {
@@ -120,6 +125,14 @@ func reviewItemOf(p authn.Principal, e storage.ReviewLogEntry, names map[uuid.UU
 		v.ReviewedAt = &at
 	}
 	v.Overdue = founder && e.ReviewedBy == nil && now.Sub(e.LoggedAt) > approval.ReviewOverdue
+	if e.Kind == storage.ReviewBreakGlass { // due 7 days after it ends, in any mode (FM-8)
+		i := slices.IndexFunc(gs.all, func(g storage.BreakGlass) bool { return g.ID.String() == e.ObjectKey })
+		v.Overdue = false
+		if i >= 0 {
+			due := breakglass.Due(gs.all[i]).UTC()
+			v.DueAt, v.Overdue = &due, e.ReviewedBy == nil && !now.Before(due)
+		}
+	}
 	return v
 }
 
@@ -129,7 +142,8 @@ func registerReviewLog(a *API) {
 		Summary: "List the review log",
 		Description: "The high-risk actions that executed, oldest first: each approved change (FM-1) and each role change or invitation the " +
 			"Owner made alone before a second member joined (FR-ADM-01), with its review once another founder reviewed it (FM-3). In " +
-			"Founder mode an entry still unreviewed 14 days after it executed is overdue. Shown to whoever holds a right on what each " +
+			"Founder mode an entry still unreviewed 14 days after it executed is overdue; a break-glass from its review's due date, 7 " +
+			"days after it ended, in any mode (FM-8). Shown to whoever holds a right on what each " +
 			"changed, and to the one who acted; never to the AI. Read-only; no side effects.",
 	}, []string{CodeCursor}, func(ctx context.Context, in *reviewLogListInput) (*reviewLogListOutput, error) {
 		p, _ := authn.From(ctx)
@@ -138,6 +152,10 @@ func registerReviewLog(a *API) {
 		var all []ReviewLogItem
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			mode, _, _, err := teamModeOf(ctx, u)
+			if err != nil {
+				return err
+			}
+			gs, err := readGlasses(ctx, u)
 			if err != nil {
 				return err
 			}
@@ -153,7 +171,7 @@ func registerReviewLog(a *API) {
 				if !seesEntry(p, e) {
 					continue
 				}
-				v := reviewItemOf(p, e, names, mode == team.Founder, now)
+				v := reviewItemOf(p, e, names, mode == team.Founder, now, gs)
 				if v.ReviewedBy == "" {
 					page.Unreviewed++
 				}
@@ -226,6 +244,9 @@ func registerReviewLog(a *API) {
 						return ReviewLogReviewed{}, problem(CodeNotFound, "No entry of the review log has the ID "+id.String()+".", "List the review log to find the entries' IDs")
 					case es[j].ReviewedBy != nil:
 						fps = append(fps, FieldProblem{Code: approval.CodeReviewed, Field: field, Message: "was reviewed already", Fix: "Leave it out"})
+					case es[j].Kind == storage.ReviewBreakGlass:
+						fps = append(fps, FieldProblem{Code: breakglass.CodeReviewer, Field: field, Message: "is a break-glass, reviewed with what it released",
+							Fix: "Review it on Team mode, under Break-glass"})
 					case es[j].Actor != nil && *es[j].Actor == p.UserID:
 						fps = append(fps, FieldProblem{Code: approval.CodeReviewOwn, Field: field, Message: "is an action you took", Fix: "Ask another founder to review it"})
 					case !mayApprove(p, es[j].ObjectType):
@@ -256,10 +277,14 @@ func registerReviewLog(a *API) {
 				if err != nil {
 					return ReviewLogReviewed{}, err
 				}
+				gs, err := readGlasses(ctx, u)
+				if err != nil {
+					return ReviewLogReviewed{}, err
+				}
 				out := ReviewLogReviewed{Reviewed: []ReviewLogItem{}}
 				for _, e := range es {
 					if slices.Contains(ids, e.ID) {
-						out.Reviewed = append(out.Reviewed, reviewItemOf(p, e, names, mode == team.Founder, now))
+						out.Reviewed = append(out.Reviewed, reviewItemOf(p, e, names, mode == team.Founder, now, gs))
 					}
 				}
 				return out, nil

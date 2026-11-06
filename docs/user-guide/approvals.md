@@ -84,6 +84,9 @@ reviews the log.
 You can't review an action you took yourself. Each action is reviewed once. An action still
 unreviewed 14 days after it was made shows as overdue in the Inbox and the review log.
 
+A break-glass is listed too, but reviewed on **Break-glass** with each batch it released
+([Break-glass](team-mode.md#break-glass)).
+
 ## When a request can no longer be approved
 
 - **Changed**: if the setting, the person's roles, the approval policy or the team mode changed

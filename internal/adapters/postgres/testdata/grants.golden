@@ -65,6 +65,11 @@ fyniq_api       EXECUTE   beat()
 fyniq_api       INSERT    bill_payment_plan (bill_id, planned_on, recorded_by)
 fyniq_api       SELECT    bill_payment_plan
 fyniq_api       EXECUTE   bootstrap_installation_connectors()
+fyniq_api       INSERT    break_glass (cap, currency, expires_at, minor_units, reason, started_at, started_by)
+fyniq_api       SELECT    break_glass
+fyniq_api       UPDATE    break_glass (ended_at, ended_by, version)
+fyniq_api       INSERT    break_glass_use (batch_id, batch_version, break_glass_id, currency, minor_units, total, used_at, used_by)
+fyniq_api       SELECT    break_glass_use
 fyniq_api       INSERT    capture_address (created_at, created_by, kind, local_part, user_id)
 fyniq_api       SELECT    capture_address
 fyniq_api       UPDATE    capture_address (retired_at, retired_by)
@@ -237,7 +242,7 @@ fyniq_api       SELECT    payee_bank_account
 fyniq_api       UPDATE    payee_bank_account (state)
 fyniq_api       INSERT    payment_batch_payment (payment_id, release_id)
 fyniq_api       SELECT    payment_batch_payment
-fyniq_api       INSERT    payment_batch_release (approval_id, batch_id, batch_version, currency, file_name, file_sealed, file_sha256, media_type, minor_units, payments, released_at, released_by, total, writer)
+fyniq_api       INSERT    payment_batch_release (approval_id, batch_id, batch_version, break_glass_id, currency, file_name, file_sealed, file_sha256, media_type, minor_units, payments, released_at, released_by, total, writer)
 fyniq_api       SELECT    payment_batch_release
 fyniq_api       INSERT    period (ends_on, starts_on)
 fyniq_api       SELECT    period
@@ -335,6 +340,8 @@ fyniq_executor  SELECT    approval_signature
 fyniq_executor  INSERT    audit_event (body, id)
 fyniq_executor  SELECT    balance
 fyniq_executor  SELECT    bill_payment_plan
+fyniq_executor  SELECT    break_glass
+fyniq_executor  SELECT    break_glass_use
 fyniq_executor  SELECT    close_checklist_entry
 fyniq_executor  SELECT    close_checklist_template
 fyniq_executor  SELECT    contact
@@ -427,6 +434,8 @@ fyniq_readonly  SELECT    bank_signal
 fyniq_readonly  SELECT    bank_statement
 fyniq_readonly  SELECT    bank_transfer
 fyniq_readonly  SELECT    bill_payment_plan
+fyniq_readonly  SELECT    break_glass
+fyniq_readonly  SELECT    break_glass_use
 fyniq_readonly  SELECT    capture_address
 fyniq_readonly  SELECT    capture_sender
 fyniq_readonly  SELECT    check_owner
@@ -554,6 +563,8 @@ fyniq_worker    SELECT    bank_transfer
 fyniq_worker    UPDATE    bank_transfer (entry_id, from_line_id, to_line_id, undo_reason, undone_at, undone_by, version)
 fyniq_worker    EXECUTE   beat()
 fyniq_worker    SELECT    bill_payment_plan
+fyniq_worker    SELECT    break_glass
+fyniq_worker    SELECT    break_glass_use
 fyniq_worker    SELECT    capture_address
 fyniq_worker    EXECUTE   capture_route()
 fyniq_worker    SELECT    capture_sender

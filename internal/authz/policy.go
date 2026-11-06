@@ -759,6 +759,19 @@ var (
 		Note: "A person stepped up in the last 5 minutes; in Standard mode never who prepared, asked for or approved the batch or a payee's account change (SOD-1, SOD-2)."}
 	GetPaymentBatchFile = Policy{Operation: "getPaymentBatchFile", Capability: PaymentBatches, Need: Release, Unqualified: true,
 		Note: "A person stepped up in the last 5 minutes; each download is audited."}
+	// Break-glass (FM-8; PRD-001 rev 0.175): an Owner, the one who holds A on "Users, roles, team mode", starts and ends it;
+	// whoever views payment batches sees it; reviewing it is the review log's, so whoever sees approvals asks and the handler
+	// decides (another Owner once it has ended, the Accountant from its review's due date); the Owner who started it
+	// releases a waiting batch under it with the Payment releaser's right.
+	ListBreakGlass  = Policy{Operation: "listBreakGlass", Capability: PaymentBatches, Need: View, Unqualified: true}
+	GetBreakGlass   = Policy{Operation: "getBreakGlass", Capability: PaymentBatches, Need: View, Unqualified: true}
+	StartBreakGlass = Policy{Operation: "startBreakGlass", Capability: UsersAndRoles, Need: Approve,
+		Note: "An Owner signed in to Fyniq who passed step-up in the last 5 minutes; Founder mode only, and never while an earlier break-glass waits for its review (FM-8)."}
+	EndBreakGlass    = Policy{Operation: "endBreakGlass", Capability: UsersAndRoles, Need: Approve, Note: "An Owner signed in to Fyniq (FM-8)."}
+	ReviewBreakGlass = Policy{Operation: "reviewBreakGlass", Capability: Approvals, Need: View,
+		Note: approvalNote + " Once it has ended: another Owner, or the Accountant from its review's due date, 7 days after it ended; never the Owner who used it, and never the AI (FM-8)."}
+	ReleasePaymentBatchUnderBreakGlass = Policy{Operation: "releasePaymentBatchUnderBreakGlass", Capability: PaymentBatches, Need: Release, Unqualified: true,
+		Note: "The Owner whose break-glass is active, holding the Payment releaser's right, stepped up in the last 5 minutes (FM-8)."}
 	// Invoices (FR-AR-03; p1-sales), as bills: read under V, prepared under C (the Bookkeeper, the AR specialist, the
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
 	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
@@ -1208,6 +1221,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	AddPayeeBankChangeEvidence, ListPayeeBankChangeEvidence, GetPayeeBankChangeEvidence, RemovePayeeBankChangeEvidence,
 	ListPaymentBatches, GetPaymentBatch, GetPaymentBatchSuggestion, CreatePaymentBatch, ReplacePaymentBatch,
 	RequestPaymentBatchApproval, RequestPaymentBatchReapproval, CancelPaymentBatch, SendRemittanceAgain, ReleasePaymentBatch, GetPaymentBatchFile,
+	ListBreakGlass, GetBreakGlass, StartBreakGlass, EndBreakGlass, ReviewBreakGlass, ReleasePaymentBatchUnderBreakGlass,
 	GetMyBankDetails, CreateMyBankChange, GetMyBankChange, ReplaceMyBankChange, RequestMyBankChangeApproval, WithdrawMyBankChange, RevealMyBankAccount,
 	GetClaimantBankChange, RevealClaimantBankAccount, AddMyBankChangeEvidence, ListMyBankChangeEvidence, GetMyBankChangeEvidence,
 	RemoveMyBankChangeEvidence, ListClaimantBankChangeEvidence, GetClaimantBankChangeEvidence,

@@ -254,6 +254,20 @@ export function TeamMode() {
             </h2>
             <ModeCards current={team.mode} chosen={to} onChoose={setChosen} />
           </section>
+          {team.mode === "founder" && (
+            <section className="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="break-glass-title">
+              <h2 className="fy-h3" id="break-glass-title">
+                Break-glass
+              </h2>
+              <p className="fy-small fy-secondary">
+                When the other founder is unreachable, an Owner may release payment batches waiting for approval alone, for 24 hours and up to a cap. Another Owner reviews it
+                afterwards (FM-8).
+              </p>
+              <Link className="fy-btn fy-btn--secondary self-start" to="/break-glass">
+                Open break-glass
+              </Link>
+            </section>
+          )}
           {to !== team.mode && !waiting && (
             <SwitchForm
               team={team}

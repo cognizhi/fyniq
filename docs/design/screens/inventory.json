@@ -3951,7 +3951,8 @@
     "Mode cards: Founder (1-3 founders, compensating controls), Standard (4-15, conflicts blocked), Enterprise (15+, SSO and SCIM)",
     "Founder-mode controls FM-1…FM-9 with status: two-person rule, self-approval threshold S$2,000, weekly review, close attestation, accountant review",
     "Switch to Standard: list of users whose role combinations now conflict; switch blocked until resolved or overridden with a reason (dual-controlled)",
-    "Break-glass: start dialog (reason, step-up, 24-hour expiry, total limit) with what is allowed and never allowed"
+    "Break-glass: start dialog (reason, step-up, 24-hour expiry, total limit) with what is allowed and never allowed",
+    "(rev 0.175) Built as its own page, /break-glass, linked from here, the banner and the review log, so the Accountant who reviews it and the Payment releaser who uses it reach it: start (reason, step-up, the cap in force), the active one with what it released and End now, and every break-glass with its review, due 7 days after it ends (another Owner; the Accountant from the due date), overdue shown as cannot post until fixed; a payment batch waiting for approval offers Release under break-glass to the Owner whose break-glass is on"
    ],
    "states": [
     "switch blocked by conflicts",

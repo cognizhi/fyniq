@@ -34,6 +34,7 @@ const screens: Record<RouteId, RouteComponent> = {
   inbox: lazyRouteComponent(() => import("./screens/approvals/Inbox"), "Inbox"),
   approval: lazyRouteComponent(() => import("./screens/approvals/ApprovalPage"), "ApprovalPage"),
   "review-log": lazyRouteComponent(() => import("./screens/approvals/ReviewLog"), "ReviewLog"),
+  "break-glass": lazyRouteComponent(() => import("./screens/approvals/BreakGlass"), "BreakGlassPage"),
   contacts: lazyRouteComponent(() => import("./screens/contacts/Contacts"), "Contacts"),
   items: lazyRouteComponent(() => import("./screens/contacts/Items"), "Items"),
   quotes: lazyRouteComponent(() => import("./screens/sales/Quotes"), "Quotes"),

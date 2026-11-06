@@ -451,6 +451,8 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"bank_transfer.fee":            func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "fee", v) },
 	"bank_signal.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawSignal(t, b, v) },
 	"payment_batch_release.total":  func(t *testing.T, b porttest.Books, v string) error { return rawRelease(t, b, v) },
+	"break_glass.cap":              func(t *testing.T, b porttest.Books, v string) error { return rawBreakGlassCap(t, b, v) },
+	"break_glass_use.total":        func(t *testing.T, b porttest.Books, v string) error { return rawBreakGlassUse(t, b, v) },
 	"share_issue.shares":           func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "shares", v) },
 	"share_issue.price":            func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "price", v) },
 	"share_issue.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "amount", v) },
@@ -1261,6 +1263,26 @@ func rawRelease(t *testing.T, b porttest.Books, value string) error {
 file_name, media_type, file_sealed, file_sha256, payments, currency, minor_units, total)
 VALUES ($1, 1, $2, $3, now(), 'payment-list@1', 'PB-0001.csv', 'text/csv', $4, $5, 1, 'SGD', 2, $6::numeric)`,
 			uuid.New(), uuid.New(), uuid.New(), make([]byte, 64), make([]byte, 32), value)
+		return err
+	})
+}
+
+func rawBreakGlassCap(t *testing.T, b porttest.Books, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.break_glass (started_by, reason, started_at, expires_at, currency, minor_units, cap)
+VALUES ($1, 'Attack', now(), now() + interval '24 hours', 'SGD', 2, $2::numeric)`, uuid.New(), value)
+		return err
+	})
+}
+
+func rawBreakGlassUse(t *testing.T, b porttest.Books, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.break_glass_use (break_glass_id, batch_id, batch_version, used_by, used_at, currency, minor_units, total)
+VALUES ($1, $2, 1, $3, now(), 'SGD', 2, $4::numeric)`, uuid.New(), uuid.New(), uuid.New(), value)
 		return err
 	})
 }

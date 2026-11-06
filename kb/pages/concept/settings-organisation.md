@@ -4,14 +4,14 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings and recommended values: features, terms, GST, tolerances, banking, claims, mileage, thresholds, asset disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:d755185d56dce817cada7d3fb8fdb699e4d30467d4a60656518e9bad6d97f5d1
+  - docs/user-guide/organisation-settings.md sha256:0355ec2e5f169c3c68ac81ea3c6a6d25b05e88e20adef3de6c9ff22bec6a69e4
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-27
+compiled_at: 2026-11-06
 aliases:
   - feature switches
   - default settings
@@ -19,6 +19,7 @@ aliases:
   - retention period
   - data residency
   - self-approval threshold
+  - break-glass payment cap
   - self-approved
   - variance threshold
   - flux analysis
@@ -188,6 +189,14 @@ aliases:
 - It is on by default; turning it off needs a second approver, like the other thresholds.
 
 (src: docs/user-guide/organisation-settings.md#accounting-sign-off)
+
+## Break-glass payment cap
+
+- In Founder mode, while the other founder is unreachable, an Owner may start break-glass and release payment batches waiting for approval alone, up to this total: S$20,000 by default ([[settings.team-mode]]).
+- The cap a break-glass starts with stays with it; a later change applies to the next one.
+- Changing the cap needs a second approver.
+
+(src: docs/user-guide/organisation-settings.md#break-glass-payment-cap)
 
 ## Self-approval threshold
 

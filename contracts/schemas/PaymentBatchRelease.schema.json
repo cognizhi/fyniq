@@ -3,9 +3,17 @@
   "additionalProperties": false,
   "properties": {
     "approval_id": {
-      "description": "The approval it was released under.",
+      "description": "The approval it was released under; absent when it was released under break-glass.",
       "examples": [
         "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "break_glass_id": {
+      "description": "The break-glass it was released under, which approved it instead of a second person (FM-8); absent when an approval did.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c30"
       ],
       "format": "uuid",
       "type": "string"
@@ -54,7 +62,6 @@
   "required": [
     "released_by",
     "released_at",
-    "approval_id",
     "writer",
     "file_name",
     "sha256",

@@ -84,6 +84,10 @@
       "label": "Review log",
       "tooltip": "Every high-risk action, for another founder to review once a week. Nobody reviews their own."
     },
+    "approvals.break-glass": {
+      "label": "Break-glass",
+      "tooltip": "When the other founder is unreachable, an Owner releases waiting payment batches alone for 24 hours, up to a cap. Reviewed afterwards."
+    },
     "approval.approve": {
       "label": "Approve",
       "tooltip": "Opens the confirmation: what you sign, then your passkey. The change is made with the last approval."
@@ -103,6 +107,18 @@
     "review.mark": {
       "label": "Mark as reviewed",
       "tooltip": "Record that you checked the actions you picked. Each is reviewed once."
+    },
+    "break-glass.start": {
+      "label": "Start break-glass",
+      "tooltip": "Only when the other founder is unreachable: for 24 hours you release waiting payment batches alone, up to the cap. Everyone is told."
+    },
+    "break-glass.end": {
+      "label": "End now",
+      "tooltip": "Ends break-glass before its 24 hours: it releases nothing more, and another Owner may review it."
+    },
+    "break-glass.review": {
+      "label": "Review",
+      "tooltip": "Record that you checked why it was used and each batch it released. Another Owner, or the Accountant once due."
     },
     "settings.members": {
       "label": "Members and roles",
@@ -443,6 +459,10 @@
     "batch.release": {
       "label": "Release",
       "tooltip": "Posts each payment and writes the payment list, once you confirm it's you. Then pay it in the bank."
+    },
+    "batch.release-break-glass": {
+      "label": "Release under break-glass",
+      "tooltip": "Your break-glass approves it instead of a second person, and it is released at once. Never a director, yourself or a new account."
     },
     "batch.download": {
       "label": "Download payment list",

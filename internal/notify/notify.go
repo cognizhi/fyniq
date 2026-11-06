@@ -60,6 +60,7 @@ var Catalogue = []Type{
 	{Key: "security.roles", Label: "Your roles changed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: ConnectorType, Label: "A connector was paused", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: PayeeBankType, Label: "Supplier bank details", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
+	{Key: BreakGlassType, Label: "Break-glass", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
 	{Key: "approval.requested", Label: "An approval waits for you", Category: Approvals, Severity: "info", Actionable: true, Email: storage.EmailImmediate},
 	{Key: "approval.decided", Label: "Your request was decided", Category: Approvals, Severity: "info", Email: storage.EmailImmediate},
 	{Key: "email.quarantined", Label: "Mail waits in quarantine", Category: Email, Severity: "info", Actionable: true, Email: storage.EmailDaily},
@@ -74,6 +75,10 @@ var Catalogue = []Type{
 	{Key: ExportReadyType, Label: "Your export is ready", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: TestType, Label: "A test notification you sent", Category: Operations, Severity: "info", Email: storage.EmailImmediate},
 }
+
+// BreakGlassType is the notice to every Owner and the Accountant that an Owner started break-glass, released a batch
+// under it or ended it (FM-8): a security type, so always on and emailed at once.
+const BreakGlassType = "security.break_glass"
 
 // PayeeBankType is the notice to every founder that a vendor's bank details are changing, and then changed (FR-CT-03):
 // a security type, so always on and emailed at once.

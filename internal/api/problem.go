@@ -24,6 +24,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/banktransaction"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
+	"github.com/cognizhi/fyniq/internal/domain/breakglass"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
@@ -761,6 +762,18 @@ var codeFacts = map[string]struct {
 	CodeRemittanceNotFailed:          {409, "The remittance advice did not fail"},
 	storage.CodePayee:                {409, "Bank details do not change that way"},
 	storage.CodeBatch:                {409, "A payment batch does not change that way"},
+	storage.CodeBreakGlass:           {409, "Break-glass does not allow that"},
+	breakglass.CodeFounderOnly:       {409, "Break-glass is for Founder mode only"},
+	breakglass.CodeWaiting:           {409, "An earlier break-glass waits for its review"},
+	breakglass.CodeNotActive:         {409, "You have no active break-glass"},
+	breakglass.CodeNotWaiting:        {409, "The batch is not waiting for approval"},
+	breakglass.CodeDirector:          {422, "Break-glass never repays a director"},
+	breakglass.CodeOwn:               {422, "Break-glass never pays the founder using it"},
+	breakglass.CodeNewAccount:        {422, "A payee's bank account is too new for break-glass"},
+	breakglass.CodeCap:               {422, "The batch is above what the break-glass may still release"},
+	breakglass.CodeEnded:             {409, "The break-glass has ended already"},
+	breakglass.CodeTooEarly:          {409, "The break-glass is reviewed once it has ended"},
+	breakglass.CodeReviewer:          {403, "You may not review this break-glass"},
 	storage.CodeShareIssue:           {409, "The register of share issues does not change that way"},
 	storage.CodeBatchHeld:            {409, "The item is paid by an approved payment batch"},
 	ledger.CodeParty:                 {422, "A director's account line needs its person"},
@@ -843,6 +856,7 @@ var storageFixes = map[string]string{
 
 	storage.CodePayee:                "Prepare a change of the bank details and ask for approval: a second person, who neither prepared nor asked for it, approves it, which puts its account in force",
 	storage.CodeBatch:                "A batch is approved by a second person, released once, and never changed after; a payment the bank rejects is voided on its own",
+	storage.CodeBreakGlass:           "Break-glass is an Owner's, in Founder mode, for 24 hours and within its cap; start another once the last one is reviewed",
 	storage.CodeShareIssue:           "An allotment is recorded once and never changed; share capital moves only with the register or the opening balances",
 	storage.CodeConversionStep:       "A conversion's ACRA steps are recorded between its approval and its effective date, and never changed",
 	storage.CodeDimension:            "Name at most one value of each of the organisation's dimensions",

@@ -89,8 +89,27 @@
   `GET /v1/review-log` (with the unreviewed and overdue counts: 14 days in Founder mode) and `POST /v1/review-log/reviews`
   (APR-13, APR-14). Tests: `TestTheReviewLog`, `TestAttackTheReviewLogNeverChanges`. **Left:** FM-2, with the first
   documents that carry an amount; the weekly Inbox task, with the Inbox; the Checks warning, with Checks.)
-- [ ] 3.3 FM-8 break-glass and FM-9 beneficiary exclusion. Tests `// req: FM-8` (G4-062, G4-063) and `// req: FM-9`
-  **Left.**
+- [x] 3.3 FM-8 break-glass and FM-9 beneficiary exclusion. Tests `// req: FM-8` (G4-062, G4-063) and `// req: FM-9`
+  (FM-9 built with `p1-founders-money`: the person settled, repaid or issued shares never approves it (APR-15, FY253),
+  and the Accountant's step is added when every member who could sign benefits; tests `TestEveryApproverBenefits`,
+  `TestDirectorSettlements`, `TestADirectorIsRepaidThroughABatch`, `TestADirectorsBalanceIsConvertedToShares`.)
+  (6 Nov 2026, FM-8, on the owner's decisions of PRD-001 rev 0.175: a break-glass's review is due 7 days after it ends,
+  another Owner reviewing it once it ends and the Accountant from the due date; a new one waits until the last is
+  reviewed. In Founder mode an Owner starts one with a reason, stepped up (`POST /v1/break-glass`), for 24 hours or
+  until an Owner ends it (`/end`), at the setting `approvals.break_glass_cap` (S$20,000.00, dual control) as it stood
+  then. While it is active, that Owner, holding the Payment releaser's right, releases a draft or waiting batch without
+  a second person (`POST /v1/payment-batches/{batch_id}/break-glass-release`): a `break_glass_use` approves it instead
+  (FY242 takes it), a waiting request is voided, and the release writes as any other, naming the break-glass. Refused
+  for a director's repayment, a payment to that Owner (FM-9, G4-063), an account in force for less than 30 days, or
+  above the cap (BREAKGLASS-05 to -08). Every Owner and the Accountant are emailed at once (`security.break_glass`);
+  `listBanners` shows a critical banner nobody dismisses. Each is logged for review (`break_glass` entries) and reviewed
+  through `/review` (another Owner after it ends; the Accountant from the due date); C.2 #53
+  (`controls.break-glass-unreviewed`) is ✖ once overdue, which refuses the close (FM-4). Migrations 000226 and 000227
+  (FY261 to FY263, FY242, FY239 and FY151 widened). Screens: Break-glass (`/break-glass`), Release under break-glass on
+  a batch, the review log's entry, the Team mode card; guide `team-mode.md` "Break-glass", compiled. Tests
+  `TestAFounderAloneReleasesUnderBreakGlass`, `TestAttackBreakGlassKeepsItsLimits`, `TestAnUnreviewedBreakGlassRefusesTheClose`,
+  `breakglass_test.go`, `BreakGlass.test.tsx`, `paymentBatches.test.tsx`. **Left:** pay runs and statutory payments
+  (IRAS, CPF) under break-glass, with their modules; the canvas's break-glass frames redrawn as their own page.)
 - [ ] 3.4 The rules and records for FM-4, FM-5 and FM-7, called by the close (wave 2) and reconciliation (wave 3). FM-6's advisory review arrives with wave 6. Tests `// req: FM-4`, `// req: FM-5` and `// req: FM-7` on the records (G4-109)
   **Left.**
 - [ ] 3.5 The control check: period lock, approvals, segregation of duties and team mode together. Test `// req: FR-CTL-04`
@@ -128,7 +147,8 @@
   (`ApprovalPolicies.tsx`: each kind of change with its steps; a change sets 1 to 5 steps, each a quorum narrowed to
   roles or named members, over the policy's ETag; the fixed policy stays fixed). Tests `TeamMode.test.tsx`.
   27 Oct 2026: bank-details-change, with vendors' bank details (`screens/contacts/BankDetails.tsx`; the approval page
-  shows both numbers beside the letter). **Left:** accountant-review, payment-batch and personal-approvals with their modules; Founder
-  mode's other controls (FM-4…9) and break-glass on team-mode as they are built; the Inbox's keyboard triage (J/K, A
+  shows both numbers beside the letter). 6 Nov 2026: break-glass, its own page linked from team-mode (task 3.3).
+  **Left:** accountant-review, payment-batch and personal-approvals with their modules; Founder mode's other controls
+  (FM-4…7) as they are built; the Inbox's keyboard triage (J/K, A
   opens the confirmation) with p1-app-shell 2.2.)
 - [ ] 5.2 Finish with `make check` and `make test`

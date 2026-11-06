@@ -115,6 +115,35 @@ describe("payment batches", () => {
     expect(seen.find((s) => s.path === "/v1/payment-batches/b1/release")!.headers.get("If-Match")).toBe('"1-posted"');
   });
 
+  // req: FM-8
+  // req: access/team-modes Releasing a batch under break-glass
+  it("releases a waiting batch under the releaser's own break-glass; axe finds nothing", async () => {
+    const mine = { id: "g-1", status: "active", started_by: { kind: "user", id: releaser.user_id, name: "Wei Ling Tan" }, reason: "Ah Kow is away", started_at: "2026-11-06T01:00:00Z",
+      expires_at: "2026-11-07T01:00:00Z", cap: sgd("20000.00"), released: sgd("0.00"), left: sgd("20000.00"), releases: [], review_due_at: "2026-11-14T01:00:00Z", overdue: false,
+      you_may_end: true, you_may_review: false, version: 1 };
+    const seen = page({ ...base, status: "waiting", approval_id: "a1" }, releaser, {
+      "GET /v1/break-glass": { status: 200, body: { items: [mine], active: mine, cap: sgd("20000.00"), you_may_start: false } },
+      "POST /v1/payment-batches/b1/break-glass-release": { status: 200, body: { ...base, status: "released", number: "PB-0005" } },
+    });
+    expect(await screen.findByText(/Your break-glass is on until/)).toBeTruthy();
+    expect(screen.getByText(/SGD 20000.00 left/)).toBeTruthy();
+    await noViolations(document.body);
+    fireEvent.click(screen.getByRole("button", { name: "Release under break-glass" }));
+    expect(await screen.findByText(/Released under break-glass: its payments are posted/)).toBeTruthy();
+    expect(seen.find((s) => s.path === "/v1/payment-batches/b1/break-glass-release")!.headers.get("If-Match")).toBe('"1-posted"');
+  });
+
+  it("does not offer a release under another person's break-glass", async () => {
+    const theirs = { id: "g-1", status: "active", started_by: { kind: "user", id: "someone-else", name: "Ah Kow Lim" }, reason: "Wei Ling is away", started_at: "2026-11-06T01:00:00Z",
+      expires_at: "2026-11-07T01:00:00Z", cap: sgd("20000.00"), released: sgd("0.00"), left: sgd("20000.00"), releases: [], review_due_at: "2026-11-14T01:00:00Z", overdue: false,
+      you_may_end: true, you_may_review: false, version: 1 };
+    page({ ...base, status: "waiting", approval_id: "a1" }, releaser, {
+      "GET /v1/break-glass": { status: 200, body: { items: [theirs], active: theirs, cap: sgd("20000.00"), you_may_start: false } },
+    });
+    await screen.findAllByText("Northwind Analytics Pte Ltd");
+    expect(screen.queryByRole("button", { name: "Release under break-glass" })).toBeNull();
+  });
+
   it("shows a released batch's payments as paid or waiting, the remittance sent or not, and downloads its payment list; axe finds nothing", async () => {
     const paid = { ...northwind, payment_id: "p1", paid: true, remittance: "sent" as const };
     const gaveUp = { ...northwind, payee: { kind: "vendor" as const, id: "v2", name: "Quiet Supplier Pte Ltd" }, payment_id: "p3", paid: false, remittance: "failed" as const };

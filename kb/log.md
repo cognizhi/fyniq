@@ -333,3 +333,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | docs/user-guide/financial-statements.md, docs/user-guide/general-ledger.md → reports.statements, reports.general-ledger (the P&L and the general ledger by dimension)
 
 ## [2026-11-06] compile | docs/user-guide/chart-of-accounts.md → accounting.chart (merging an account into another, FR-COA-04 rev 0.174)
+
+## [2026-11-06] compile | team-mode.md, payment-batches.md, approvals.md, organisation-settings.md → settings.team-mode, purchases.payment-batches, approvals.decide, settings.organisation, settings.change (break-glass, FM-8, PRD-001 rev 0.175)
+
+## [2026-11-06] compile | team-mode.md, payment-batches.md, approvals.md, organisation-settings.md → settings.team-mode, purchases.payment-batches, approvals.decide, settings.organisation, settings.change (break-glass, FM-8, PRD-001 rev 0.175)

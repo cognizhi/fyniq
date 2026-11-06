@@ -346,8 +346,21 @@ Source: PRD-001 §6.4
 
 #### Scenario: Post-review
 - **WHEN** break-glass has been used
-- **THEN** the other founder must review it within 7 days of their return
-- **AND** the external accountant (FM-7) reviews it instead if the other founder is still unavailable after 7 days
+- **THEN** another Owner reviews it at any time after it ends, its review being due 7 days after it ends (rev 0.175)
+- **AND** from the due date the Accountant (FM-7) may review it instead, the other founder being still unavailable
+- **AND** neither the Owner who used it nor anyone before it ends reviews it
+
+#### Scenario: A new break-glass waits for the last one's review
+- **GIVEN** an earlier break-glass is not reviewed yet
+- **WHEN** an Owner starts break-glass
+- **THEN** it is refused until the earlier one is reviewed (rev 0.175)
+
+#### Scenario: Releasing a batch under break-glass
+- **GIVEN** an Owner's break-glass is active and they hold the Payment releaser's right
+- **WHEN** they release a payment batch still waiting for approval
+- **THEN** the break-glass approves it instead of a second person, and it is numbered and released as any batch is
+- **AND** a request waiting for its approval is voided
+- **AND** it is refused when it repays a director, pays that Owner, pays a payee whose account came into force in the last 30 days, or would take the break-glass's releases above the cap it started with
 
 #### Scenario: Unreviewed break-glass
 - **WHEN** a break-glass has not been post-reviewed in time

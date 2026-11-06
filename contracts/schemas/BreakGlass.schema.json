@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cap": {
+      "$ref": "Money.schema.json",
+      "description": "What it may release in all: the break-glass payment cap when it started."
+    },
+    "ended_at": {
+      "description": "When an Owner ended it sooner; absent unless one did.",
+      "examples": [
+        "2026-11-06T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "ended_by": {
+      "$ref": "Person.schema.json",
+      "description": "The Owner who ended it sooner."
+    },
+    "expires_at": {
+      "description": "When it expires: 24 hours after it started (FM-8).",
+      "examples": [
+        "2026-11-07T01:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The break-glass's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "left": {
+      "$ref": "Money.schema.json",
+      "description": "What it may still release."
+    },
+    "overdue": {
+      "description": "true while it is unreviewed after its review's due date: Checks shows it as cannot post until fixed (C.2 #53), which refuses the close (FM-4).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "reason": {
+      "description": "Why they started it.",
+      "examples": [
+        "Wei Jie is on a flight until Friday; salaries are due tomorrow"
+      ],
+      "type": "string"
+    },
+    "released": {
+      "$ref": "Money.schema.json",
+      "description": "What it released."
+    },
+    "releases": {
+      "description": "The batches it released, oldest first.",
+      "items": {
+        "$ref": "BreakGlassRelease.schema.json"
+      },
+      "type": "array"
+    },
+    "review": {
+      "$ref": "BreakGlassReviewed.schema.json",
+      "description": "Its review, once given."
+    },
+    "review_due_at": {
+      "description": "When its review is due: 7 days after it ends. Until then only another Owner reviews it; from then the Accountant may too.",
+      "examples": [
+        "2026-11-14T01:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "started_at": {
+      "description": "When it started.",
+      "examples": [
+        "2026-11-06T01:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "started_by": {
+      "$ref": "Person.schema.json",
+      "description": "The Owner who started it: the only one who releases under it."
+    },
+    "status": {
+      "description": "active for 24 hours from its start unless an Owner ends it sooner; ended after.",
+      "enum": [
+        "active",
+        "ended"
+      ],
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "Its version: send it as If-Match to end it.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "you_may_end": {
+      "description": "true when you, an Owner, may end it now.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "you_may_review": {
+      "description": "true when you may review it now.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "started_by",
+    "reason",
+    "started_at",
+    "expires_at",
+    "cap",
+    "released",
+    "left",
+    "releases",
+    "review_due_at",
+    "overdue",
+    "you_may_end",
+    "you_may_review",
+    "version"
+  ],
+  "title": "BreakGlass",
+  "type": "object"
+}
