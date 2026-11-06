@@ -208,3 +208,64 @@ func TestAnInvoicesLinesCarryTheirDimensionValues(t *testing.T) {
 		t.Errorf("a department out of use: %v", err)
 	}
 }
+
+// FR-DIM-01 and FR-DIM-02 on a bill (rev 0.171; slice 3d): each line's cost carries its values, a spread line's
+// prepayment and every month it releases too, and its payable and input tax none; a line on an account that requires a
+// dimension names a value of it (DIM-05) and every value is one in use (DIM-06); a vendor credit keeps them.
+// req: FR-DIM-01
+// req: FR-DIM-02
+// req: ENG-05
+func TestABillsLinesCarryTheirDimensionValues(t *testing.T) {
+	s := purchasing()
+	d := withDimensions()
+	s.Dimensions, s.Values = d.Dimensions, d.Values
+	tagged := software
+	tagged.Requires = []uuid.UUID{dept}
+	s.Accounts[software.ID] = tagged
+	cost := billLine(t, software, "200.00", "18.00", sgd, true)
+	cost.Values = []uuid.UUID{ops}
+	spread := billLine(t, hosting, "1200.00", "0.00", sgd, false)
+	spread.Spread, spread.Values = &Spread{From: october, Months: 12}, []uuid.UUID{eng, atlas}
+	b := sgdBill(cost, spread)
+	e, err := PostBill(b, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	valuesOn := func(lines []Line) map[string][]uuid.UUID {
+		out := map[string][]uuid.UUID{}
+		for _, l := range lines {
+			out[s.Accounts[l.AccountID].Code] = l.Values
+		}
+		return out
+	}
+	if got := valuesOn(e.Lines); !slices.Equal(got["6120"], []uuid.UUID{ops}) || !slices.Equal(got["1210"], []uuid.UUID{atlas, eng}) ||
+		got["2010"] != nil || got["2200"] != nil {
+		t.Errorf("the bill's lines' values: %v", got)
+	}
+	rs, err := BillReleases(b, e, s)
+	if err != nil || len(rs) != 12 {
+		t.Fatalf("the releases: %d %v", len(rs), err)
+	}
+	r, err := PostBillRelease(rs[0], s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := valuesOn(r.Lines); !slices.Equal(got["5010"], []uuid.UUID{atlas, eng}) || !slices.Equal(got["1210"], []uuid.UUID{atlas, eng}) {
+		t.Errorf("a release's values: %v", got)
+	}
+	vc, err := PostVendorCredit(sgdBill(cost), s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := valuesOn(vc.Lines); !slices.Equal(got["6120"], []uuid.UUID{ops}) {
+		t.Errorf("the vendor credit's values: %v", got)
+	}
+	cost.Values = nil
+	if _, err := PostBill(sgdBill(cost), s); dimensionCodes(err) != "DIM-05 lines[1].dimension_value_ids" {
+		t.Errorf("a line with no department: %v", err)
+	}
+	cost.Values = []uuid.UUID{retired}
+	if _, err := PostBill(sgdBill(cost), s); dimensionCodes(err) != "DIM-06 lines[1].dimension_value_ids" {
+		t.Errorf("a department out of use: %v", err)
+	}
+}

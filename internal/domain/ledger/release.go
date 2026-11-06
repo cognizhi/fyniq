@@ -126,7 +126,7 @@ func BillReleases(b Bill, e Entry, s Settings) ([]Release, error) {
 	}
 	lines := make([]scheduledLine, 0, len(b.Lines))
 	for _, l := range b.Lines {
-		lines = append(lines, scheduledLine{AccountID: l.AccountID, Description: l.Description, Spread: l.Spread})
+		lines = append(lines, scheduledLine{AccountID: l.AccountID, Description: l.Description, Spread: l.Spread, Values: l.Values})
 	}
 	return releases(SourceBillRelease, b.ID, b.Version, b.Date, b.Memo, lines, amounts, "prepayments")
 }

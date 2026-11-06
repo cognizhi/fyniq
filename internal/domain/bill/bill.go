@@ -120,6 +120,7 @@ type Line struct {
 	// BusinessShare is the percentage of the purchase used for the business (FR-AP-20; rev 0.89): only that share of
 	// its GST is claimed, under RND-GST-SHARE. Empty is 100.
 	BusinessShare string
+	Values        []uuid.UUID // its dimension values (FR-DIM-02), checked when it posts
 }
 
 // OrderRef names the line of a purchase order a bill's line bills, and the quantity of it (FR-AP-01; rev 0.87).
@@ -190,6 +191,8 @@ type payloadLine struct {
 	Order        *payloadOrder `json:"order,omitempty"`
 	// BusinessShare is kept as typed, empty for 100.
 	BusinessShare string `json:"business_share,omitempty"`
+	// The line's dimension values (FR-DIM-02).
+	DimensionValueIDs []uuid.UUID `json:"dimension_value_ids,omitempty"`
 }
 
 func day(t time.Time) string {
@@ -229,7 +232,7 @@ func Encode(d Draft) ([]byte, error) {
 	}
 	for _, l := range d.Lines {
 		pl := payloadLine{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST,
-			SpreadMonths: l.SpreadMonths, SpreadFrom: day(l.SpreadFrom), BusinessShare: l.BusinessShare}
+			SpreadMonths: l.SpreadMonths, SpreadFrom: day(l.SpreadFrom), BusinessShare: l.BusinessShare, DimensionValueIDs: l.Values}
 		if o := l.Order; o != nil {
 			pl.Order = &payloadOrder{PurchaseOrderID: o.PurchaseOrderID, Line: o.Line, Quantity: o.Quantity.String()}
 		}
@@ -294,7 +297,7 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 	}
 	for _, l := range p.Lines {
 		line := Line{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST, SpreadMonths: l.SpreadMonths,
-			BusinessShare: l.BusinessShare}
+			BusinessShare: l.BusinessShare, Values: l.DimensionValueIDs}
 		if l.SpreadFrom != "" {
 			if line.SpreadFrom, err = time.Parse(time.DateOnly, l.SpreadFrom); err != nil {
 				return Draft{}, bad(fmt.Sprintf("the spread's first month %q", l.SpreadFrom))
@@ -457,7 +460,7 @@ func PrepareAt(ctx context.Context, u storage.UnitOfWork, doc storage.Document, 
 		dec := decide(d.InputTax, l, code, ok, x)
 		out.InputTax = append(out.InputTax, dec)
 		bl := ledger.BillLine{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GST: l.GST, StatedBase: l.StatedGST,
-			Claimable: dec.Condition == Claimable && dec.Reason != ReasonNoGST, Spread: l.Spread(d.Date)}
+			Claimable: dec.Condition == Claimable && dec.Reason != ReasonNoGST, Spread: l.Spread(d.Date), Values: l.Values}
 		if dec.Share != "" {
 			bl.Shares = []string{dec.Share}
 		}

@@ -11719,6 +11719,8 @@ export interface components {
              * @example Confluence, 10 seats, October
              */
             description?: string;
+            /** @description The line's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06): its cost, and each month a spread releases, carry them. A line on an account that requires a dimension names a value of it, or the bill does not post (DIM-05). */
+            dimension_value_ids?: string[] | null;
             /** @description The line's GST as the supplier states it, in the bill's currency; 0 when none is charged. */
             gst: components["schemas"]["Money"];
             /**

@@ -58,6 +58,7 @@ export function recurringBillFormOf(r: RecurringBill): RecurringBillForm {
       stated_gst: "",
       spread_months: "",
       spread_from: "",
+      dimension_value_ids: [...(l.dimension_value_ids ?? [])],
     })),
   };
 }

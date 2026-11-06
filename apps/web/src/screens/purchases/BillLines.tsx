@@ -6,6 +6,7 @@ import { Button } from "../../components/ui/button";
 import { helpText } from "../../i18n";
 import { Icon } from "../../ui";
 import type { Account } from "../accounting/data";
+import { DimensionFields } from "../accounting/lines";
 
 type GSTCode = components["schemas"]["PurchaseGSTCodes"]["codes"][number];
 export type LineOrder = components["schemas"]["BillLineOrder"];
@@ -23,10 +24,11 @@ export interface Line {
   spread_from: string; // the spread's first month, "2026-10"; blank for the bill's month
   order?: LineOrder; // the purchase order line it bills (FR-AP-01), kept as the order made it
   business_share?: string; // the percentage used for the business (FR-AP-20); blank for all of it
+  dimension_value_ids: string[]; // its dimension values (FR-DIM-02): at most one of each dimension
 }
 
 let keys = 0;
-export const newLine = (): Line => ({ key: `bl-${++keys}`, account_id: "", description: "", gst_code: "", net: "", gst: "", stated_gst: "", spread_months: "", spread_from: "" });
+export const newLine = (): Line => ({ key: `bl-${++keys}`, account_id: "", description: "", gst_code: "", net: "", gst: "", stated_gst: "", spread_months: "", spread_from: "", dimension_value_ids: [] });
 
 // lineKey is a fresh key for a line read from a saved bill.
 export const lineKey = (): string => `bl-${++keys}`;
@@ -134,6 +136,16 @@ export function BillLines({ id, lines, onChange, editable, errors, currency, bas
                 </select>
                 {err(`${l.key}.gst_code`)}
               </div>
+              <DimensionFields
+                ids={l.dimension_value_ids}
+                keyPrefix={l.key}
+                n={i + 1}
+                account={choices.find((a) => a.id === l.account_id)}
+                set={(ids) => setLine(l.key, { dimension_value_ids: ids })}
+                className="fy-field"
+                disabled={!editable}
+                expertOnly
+              />
               <div className="fy-field">
                 <label className="fy-label" htmlFor={`${l.key}-net`}>
                   Amount before GST ({currency})

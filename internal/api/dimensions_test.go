@@ -284,3 +284,34 @@ func TestInvoiceLinesTakeDimensionValues(t *testing.T) {
 		t.Errorf("issuing with Engineering: %d %s", issued.Status, issued.Raw)
 	}
 }
+
+// FR-DIM-01 and FR-DIM-02 on bills through the API (rev 0.171; slice 3d): a bill's line takes dimension_value_ids and
+// shows them; with Rent requiring Department, a bill without one does not post (DIM-05) and one with Engineering does,
+// its cost line showing the value.
+// req: FR-DIM-01
+// req: FR-DIM-02
+func TestBillLinesTakeDimensionValues(t *testing.T) {
+	e := newEnv(t)
+	accountant := e.as(authz.Accountant)
+	dept := e.call(http.MethodPost, "/v1/dimensions", accountant, map[string]any{"kind": "department", "name": "Department"}).str("id")
+	eng := e.call(http.MethodPost, "/v1/dimension-values", accountant, map[string]any{"dimension_id": dept, "code": "ENG", "name": "Engineering"}).str("id")
+	if r := e.call(http.MethodPatch, "/v1/accounts/"+e.books.Rent.ID.String(), accountant, map[string]any{"required_dimension_ids": []string{dept}}, "If-Match", "*"); r.Status != 200 {
+		t.Fatalf("rent requires Department: %d %s", r.Status, r.Raw)
+	}
+	id, tag := e.createBill("100.00", "0.00")
+	e.problemIs(e.call(http.MethodPost, "/v1/bills/"+id+"/post", accountant, nil, "If-Match", tag), "postBill", 422, ledger.CodeDimensionRequired)
+
+	d := e.billDraft("100.00", "0.00")
+	d["supplier_ref"] = "AU-DIM"
+	d["lines"].([]map[string]any)[0]["dimension_value_ids"] = []string{"nope"}
+	e.problemIs(e.call(http.MethodPost, "/v1/bills", accountant, d), "createBill", 422, CodeInvalid)
+	d["lines"].([]map[string]any)[0]["dimension_value_ids"] = []string{eng}
+	b := e.call(http.MethodPost, "/v1/bills", accountant, d)
+	if got := b.Body["lines"].([]any)[0].(map[string]any)["dimension_value_ids"]; fmt.Sprint(got) != "["+eng+"]" {
+		t.Errorf("the saved line's values: %v (%s)", got, b.Raw)
+	}
+	posted := e.call(http.MethodPost, "/v1/bills/"+b.str("id")+"/post", accountant, nil, "If-Match", b.Header.Get("ETag"))
+	if posted.Status != 200 || !strings.Contains(posted.Raw, `"dimension_value_ids":["`+eng+`"]`) {
+		t.Errorf("posting with Engineering: %d %s", posted.Status, posted.Raw)
+	}
+}

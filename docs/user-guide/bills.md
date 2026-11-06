@@ -163,6 +163,16 @@ shows both fields in Basic mode too.
 
 Only a cost on an expense account is spread, and a credit note's lines never are.
 
+## Tag a line with dimensions
+
+When the organisation uses dimensions, such as Department or Project, each line can take one value
+of each, such as OPS Operations, so its cost shows by team or by project. The choices are in Expert
+mode; a line on an account that requires a dimension shows its choice in Basic mode too, with "needs
+one" under it, and the bill does not post until the line has one (DIM-05).
+
+A spread line's cost keeps its values each month it is released. A credit note's lines take values
+in the same way, and a recurring bill's lines pass theirs to each draft it makes.
+
 ## Recurring bills
 
 A bill that comes every month, quarter or year, such as the office rent, can be set up once under
@@ -288,6 +298,8 @@ voided or edited while it is applied or refunded.
 | The bill's supplier is not an active vendor (BILL-05) | Choose a contact marked as a vendor, or reactivate it |
 | Not a GST code for purchases (BILL-06) | Choose the code on the supplier's invoice, such as TX, BL or NR |
 | The due date is before the bill's date (BILL-07) | Enter a due date on or after the invoice date, or leave it blank |
+| A line's account needs a value of a dimension (DIM-05) | Choose the line's value, such as its department |
+| A dimension value that does not exist or is out of use, or two values of one dimension (DIM-06) | Choose one value in use of each dimension, or None |
 | The bill needs another person's approval (BILL-09) | Select **Ask for approval** |
 | A system account is missing (LEDGER-22) | Load the standard chart, which has 2010 Accounts payable and 2200 GST control |
 | More than the bill has open (BILLPAY-05) | Enter at most what is open; void a payment entered twice |
