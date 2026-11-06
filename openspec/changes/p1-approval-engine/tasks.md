@@ -110,8 +110,20 @@
   `TestAFounderAloneReleasesUnderBreakGlass`, `TestAttackBreakGlassKeepsItsLimits`, `TestAnUnreviewedBreakGlassRefusesTheClose`,
   `breakglass_test.go`, `BreakGlass.test.tsx`, `paymentBatches.test.tsx`. **Left:** pay runs and statutory payments
   (IRAS, CPF) under break-glass, with their modules; the canvas's break-glass frames redrawn as their own page.)
-- [ ] 3.4 The rules and records for FM-4, FM-5 and FM-7, called by the close (wave 2) and reconciliation (wave 3). FM-6's advisory review arrives with wave 6. Tests `// req: FM-4`, `// req: FM-5` and `// req: FM-7` on the records (G4-109)
-  **Left.**
+- [x] 3.4 The rules and records for FM-4, FM-5 and FM-7, called by the close (wave 2) and reconciliation (wave 3). FM-6's advisory review arrives with wave 6. Tests `// req: FM-4`, `// req: FM-5` and `// req: FM-7` on the records (G4-109)
+  (FM-4 built with the close (`TestThePeriodClose`, the attester never the one who ran the checks, FY153) and FM-5 with
+  the bank reconciliation (typed balances refused in Founder mode, `bankreconcile_test.go`).)
+  (6 Nov 2026, FM-7, on the owner's decisions of PRD-001 rev 0.176: a review covers one closed month, normally the
+  quarter's last; in Founder mode a calendar quarter is overdue 60 days after it ends with no signed-off review of its
+  last month, ⚠ on Checks (C.2 #61, `controls.accountant-review-overdue`). A new Appendix D row, "Accountant review": the
+  Accountant opens a review of a closed month's latest close (`POST /v1/periods/{period_id}/accountant-review`), raises
+  queries, links adjusting journals and signs it off, stepped up, once every query has its answer (A); the Owner and the
+  Controller answer each query once (C). Reopening the month supersedes its reviews in the reopening's transaction
+  (`closing.Reopen`), kept; the month closed again is reviewed afresh. Migration 000228 (FY264 to FY266). Screens:
+  Accountant reviews (`/accounting/reviews`, `/accounting/reviews/$reviewId`); guide `accountant-review.md`, compiled.
+  Tests `TestTheAccountantReviewsAClosedMonth` (G4-109), `TestAttackAnAccountantReviewKeepsItsRules`,
+  `TestAQuarterWithoutTheAccountantsReviewWarns`, `accountantreview_test.go`, `AccountantReviews.test.tsx`. FM-6 arrives
+  with wave 6. **Left:** notices to management when a query is raised, with the notification types.)
 - [x] 3.5 The control check: period lock, approvals, segregation of duties and team mode together. Test `// req: FR-CTL-04`
   (6 Nov 2026: each control is built and tested on its own (FR-GL-07, FR-GL-08, FM-1, FM-2, FM-4, SOD-6, the team modes);
   `TestTheControlsHoldTogether` runs them in one company's books: in Founder mode a journal above the threshold posts

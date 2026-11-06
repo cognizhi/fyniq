@@ -9,6 +9,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/accessreview"
+	"github.com/cognizhi/fyniq/internal/domain/accountantreview"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/breakglass"
 	"github.com/cognizhi/fyniq/internal/domain/team"
@@ -20,10 +21,14 @@ const viewUsers = "Users, roles, team mode"
 
 // Where the controls' items are reviewed, being the control itself (rev 0.165).
 const (
-	InReviewLog    = "the review log"
-	InAccessReview = "the access review"
-	InBreakGlass   = "the break-glass review" // on Team mode (FM-8)
+	InReviewLog        = "the review log"
+	InAccessReview     = "the access review"
+	InBreakGlass       = "the break-glass review"  // on Team mode (FM-8)
+	InAccountantReview = "the accountant's review" // on Accountant reviews (FM-7)
 )
+
+// The Appendix D row whose view opens the accountant's reviews (FM-7, rev 0.176).
+const viewReviews = "Accountant review (rev 0.176)"
 
 // The Appendix D row whose view opens the break-glass's items: whoever views payment batches sees break-glass (FM-8).
 const viewBatches = "Payment batches"
@@ -34,6 +39,7 @@ var (
 	onRoles     = []string{"role_assignment", "user_membership", "team_mode", "sod_override"}
 	onAttest    = []string{"access_review_attestation", "user_membership"}
 	onGlass     = []string{"break_glass", "review_log_review"}
+	onReview    = []string{"accountant_review", "team_mode"}
 	onOverride  = []string{"bank_reconciliation", "team_mode"}
 )
 
@@ -67,6 +73,12 @@ var controlChecks = []Definition{
 			"Unreviewed by then, it refuses the month's close (FM-4). Review it on Team mode, under Break-glass: it cannot be marked " +
 			"reviewed here.",
 		Rules: "FM-8, FM-4", Owner: "owner", View: viewBatches, Triggers: onGlass, ReviewedIn: InBreakGlass, Run: breakGlassUnreviewed},
+	{Key: "controls.accountant-review-overdue", Ref: "C.2 #61", Area: "Controls", Worst: Warning, Title: "The accountant reviews each quarter",
+		Explain: "In Founder mode the external accountant reviews the books at least once a quarter (FM-7): a review of the " +
+			"quarter's last closed month, whose close snapshot is the trial balance at the quarter end, with the accountant's " +
+			"queries answered and signed off. A quarter is overdue 60 days after it ends. The review is recorded on Accountant " +
+			"reviews: it cannot be marked reviewed here.",
+		Rules: "FM-7", Owner: "owner", View: viewReviews, Triggers: onReview, ReviewedIn: InAccountantReview, Run: accountantReviewOverdue},
 	{Key: "controls.sod-overrides", Ref: "C.2 #62", Area: "Controls", Worst: Warning, Title: "Every override of a conflict of duties is reported",
 		Explain: "In Standard and Enterprise modes a person who decided bank lines of an account in a month does not sign off its " +
 			"reconciliation (SOD-5), unless they asked for an override with a reason and another person approved it (§6.4). Each " +
@@ -281,4 +293,47 @@ func breakGlassUnreviewed(ctx context.Context, u storage.UnitOfWork, e *Env) (Re
 	}
 	return Found(Error, items, fmt.Sprintf("%d break-glass(es) unreviewed 7 days after they ended", len(items)),
 		"Another Owner, or the Accountant, reviews each on Team mode"), nil
+}
+
+// C.2 #61: in Founder mode, calendar quarters ended more than 60 days ago with no signed-off accountant review of their
+// last month (FM-7; the owner's decision of 6 Nov 2026).
+func accountantReviewOverdue(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
+	mode, _, err := modeOf(ctx, u)
+	if err != nil {
+		return Result{}, err
+	}
+	if mode != team.Founder {
+		return Fine(fmt.Sprintf("%s mode: the accountant's quarterly review is a Founder-mode control", strings.ToUpper(mode[:1])+mode[1:])), nil
+	}
+	var from time.Time
+	switch {
+	case e.Org.Profile.BooksStart != nil:
+		from = *e.Org.Profile.BooksStart
+	case len(e.Periods) > 0:
+		from = e.Periods[0].StartsOn
+	default:
+		return Fine("No books yet"), nil
+	}
+	reviews, err := u.AccountantReviews().List(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	var items []Item
+	for _, q := range accountantreview.Quarters(e.Periods, reviews, from, e.Today) {
+		if q.Status != accountantreview.Late {
+			continue
+		}
+		month := "its last month, which has no period"
+		id := ""
+		if q.Period != nil {
+			month, id = q.Period.EndsOn.Format("January 2006"), q.Period.ID.String()
+		}
+		items = append(items, Item{Kind: "accountant_review", ID: id, Label: q.Label() + " accountant review",
+			Detail: fmt.Sprintf("No signed-off review of %s; due by %s", month, day(q.DueBy))})
+	}
+	if len(items) == 0 {
+		return Fine("Every quarter ended more than 60 days ago has the accountant's signed-off review"), nil
+	}
+	return Found(Warning, items, fmt.Sprintf("%d quarter(s) without the accountant's review 60 days after they ended", len(items)),
+		"The accountant reviews the quarter's last closed month and signs it off on Accountant reviews"), nil
 }

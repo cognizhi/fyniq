@@ -8,6 +8,14 @@ fyniq_api       SELECT    access_review_attestation
 fyniq_api       INSERT    account (cash_flow_line, code, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, required_dimension_ids, revalue, role, type, useful_life_months)
 fyniq_api       SELECT    account
 fyniq_api       UPDATE    account (cash_flow_line, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, merged_into_id, name, parent_id, report_group, required_dimension_ids, revalue, useful_life_months, version)
+fyniq_api       INSERT    accountant_review (close_id, opened_at, opened_by, period_id)
+fyniq_api       SELECT    accountant_review
+fyniq_api       UPDATE    accountant_review (reopen_id, signed_at, signed_by, statement, status, superseded_at, version)
+fyniq_api       INSERT    accountant_review_journal (journal_id, linked_at, linked_by, review_id)
+fyniq_api       SELECT    accountant_review_journal
+fyniq_api       INSERT    accountant_review_query (asked_at, asked_by, question, review_id)
+fyniq_api       SELECT    accountant_review_query
+fyniq_api       UPDATE    accountant_review_query (answer, answered_at, answered_by)
 fyniq_api       INSERT    accounting_framework (edition, framework, from_on, version, written_by)
 fyniq_api       SELECT    accounting_framework
 fyniq_api       UPDATE    accounting_framework (confirmed_at, confirmed_by)
@@ -333,6 +341,9 @@ fyniq_api       EXECUTE   withdraw_installation_announcement()
 fyniq_api       INSERT    withholding_decision (bill_id, nature, note, outcome, rate_percent, recorded_by, supplier_id, tax_agent)
 fyniq_api       SELECT    withholding_decision
 fyniq_executor  SELECT    account
+fyniq_executor  SELECT    accountant_review
+fyniq_executor  SELECT    accountant_review_journal
+fyniq_executor  SELECT    accountant_review_query
 fyniq_executor  SELECT    allocation
 fyniq_executor  SELECT    approval_policy
 fyniq_executor  SELECT    approval_request
@@ -410,6 +421,9 @@ fyniq_executor  SELECT    team_mode
 fyniq_executor  SELECT    withholding_decision
 fyniq_readonly  SELECT    access_review_attestation
 fyniq_readonly  SELECT    account
+fyniq_readonly  SELECT    accountant_review
+fyniq_readonly  SELECT    accountant_review_journal
+fyniq_readonly  SELECT    accountant_review_query
 fyniq_readonly  SELECT    accounting_framework
 fyniq_readonly  SELECT    accounting_policy
 fyniq_readonly  SELECT    allocation
@@ -530,6 +544,9 @@ fyniq_readonly  SELECT    user_membership
 fyniq_readonly  SELECT    withholding_decision
 fyniq_worker    SELECT    access_review_attestation
 fyniq_worker    SELECT    account
+fyniq_worker    SELECT    accountant_review
+fyniq_worker    SELECT    accountant_review_journal
+fyniq_worker    SELECT    accountant_review_query
 fyniq_worker    SELECT    allocation
 fyniq_worker    SELECT    approval_policy
 fyniq_worker    SELECT    approval_request

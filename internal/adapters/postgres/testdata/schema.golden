@@ -34,6 +34,34 @@ account | useful_life_months | smallint | null |
 account | changed_at | timestamp with time zone | null | 
 account | required_dimension_ids | uuid[] | not null | '{}'::uuid[]
 account | merged_into_id | uuid | null | 
+accountant_review | organisation_id | uuid | not null | current_org()
+accountant_review | id | uuid | not null | uuidv7()
+accountant_review | period_id | uuid | not null | 
+accountant_review | close_id | uuid | not null | 
+accountant_review | opened_by | uuid | not null | 
+accountant_review | opened_at | timestamp with time zone | not null | 
+accountant_review | status | text | not null | 'in_review'::text
+accountant_review | signed_by | uuid | null | 
+accountant_review | signed_at | timestamp with time zone | null | 
+accountant_review | statement | text | null | 
+accountant_review | superseded_at | timestamp with time zone | null | 
+accountant_review | reopen_id | uuid | null | 
+accountant_review | version | integer | not null | 1
+accountant_review_journal | organisation_id | uuid | not null | current_org()
+accountant_review_journal | id | uuid | not null | uuidv7()
+accountant_review_journal | review_id | uuid | not null | 
+accountant_review_journal | journal_id | uuid | not null | 
+accountant_review_journal | linked_by | uuid | not null | 
+accountant_review_journal | linked_at | timestamp with time zone | not null | 
+accountant_review_query | organisation_id | uuid | not null | current_org()
+accountant_review_query | id | uuid | not null | uuidv7()
+accountant_review_query | review_id | uuid | not null | 
+accountant_review_query | asked_by | uuid | not null | 
+accountant_review_query | asked_at | timestamp with time zone | not null | 
+accountant_review_query | question | text | not null | 
+accountant_review_query | answered_by | uuid | null | 
+accountant_review_query | answered_at | timestamp with time zone | null | 
+accountant_review_query | answer | text | null | 
 accounting_framework | organisation_id | uuid | not null | current_org()
 accounting_framework | id | uuid | not null | uuidv7()
 accounting_framework | version | integer | not null | 
@@ -1473,6 +1501,52 @@ account | account_useful_life_months | CHECK (((useful_life_months >= 1) AND (us
 account | account_version_not_null | NOT NULL version
 account | account_version_positive | CHECK ((version > 0))
 account | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+accountant_review | accountant_review_close_fkey | FOREIGN KEY (organisation_id, close_id) REFERENCES period_close(organisation_id, id)
+accountant_review | accountant_review_close_id_not_null | NOT NULL close_id
+accountant_review | accountant_review_close_once | UNIQUE (organisation_id, close_id)
+accountant_review | accountant_review_id_not_null | NOT NULL id
+accountant_review | accountant_review_opened_at_not_null | NOT NULL opened_at
+accountant_review | accountant_review_opened_by_fkey | FOREIGN KEY (opened_by) REFERENCES app_user(user_id)
+accountant_review | accountant_review_opened_by_not_null | NOT NULL opened_by
+accountant_review | accountant_review_organisation_id_not_null | NOT NULL organisation_id
+accountant_review | accountant_review_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)
+accountant_review | accountant_review_period_id_not_null | NOT NULL period_id
+accountant_review | accountant_review_pkey | PRIMARY KEY (organisation_id, id)
+accountant_review | accountant_review_reopen_fkey | FOREIGN KEY (organisation_id, reopen_id) REFERENCES period_reopen(organisation_id, id)
+accountant_review | accountant_review_signed | CHECK ((((signed_by IS NULL) = (signed_at IS NULL)) AND ((signed_by IS NULL) = (statement IS NULL)) AND ((status <> 'signed_off'::text) OR (signed_by IS NOT NULL))))
+accountant_review | accountant_review_signed_by_fkey | FOREIGN KEY (signed_by) REFERENCES app_user(user_id)
+accountant_review | accountant_review_statement_length | CHECK (((statement IS NULL) OR ((length(btrim(statement)) >= 1) AND (length(btrim(statement)) <= 1000))))
+accountant_review | accountant_review_status_known | CHECK ((status = ANY (ARRAY['in_review'::text, 'signed_off'::text, 'superseded'::text])))
+accountant_review | accountant_review_status_not_null | NOT NULL status
+accountant_review | accountant_review_superseded | CHECK ((((status = 'superseded'::text) = (superseded_at IS NOT NULL)) AND ((status = 'superseded'::text) = (reopen_id IS NOT NULL))))
+accountant_review | accountant_review_version_not_null | NOT NULL version
+accountant_review | accountant_review_version_positive | CHECK ((version > 0))
+accountant_review | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+accountant_review_journal | accountant_review_journal_by_fkey | FOREIGN KEY (linked_by) REFERENCES app_user(user_id)
+accountant_review_journal | accountant_review_journal_document_fkey | FOREIGN KEY (organisation_id, journal_id) REFERENCES document(organisation_id, id)
+accountant_review_journal | accountant_review_journal_id_not_null | NOT NULL id
+accountant_review_journal | accountant_review_journal_journal_id_not_null | NOT NULL journal_id
+accountant_review_journal | accountant_review_journal_linked_at_not_null | NOT NULL linked_at
+accountant_review_journal | accountant_review_journal_linked_by_not_null | NOT NULL linked_by
+accountant_review_journal | accountant_review_journal_once | UNIQUE (organisation_id, review_id, journal_id)
+accountant_review_journal | accountant_review_journal_organisation_id_not_null | NOT NULL organisation_id
+accountant_review_journal | accountant_review_journal_pkey | PRIMARY KEY (organisation_id, id)
+accountant_review_journal | accountant_review_journal_review_fkey | FOREIGN KEY (organisation_id, review_id) REFERENCES accountant_review(organisation_id, id)
+accountant_review_journal | accountant_review_journal_review_id_not_null | NOT NULL review_id
+accountant_review_journal | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+accountant_review_query | accountant_review_query_answered | CHECK ((((answered_by IS NULL) = (answered_at IS NULL)) AND ((answered_by IS NULL) = (answer IS NULL)) AND ((answer IS NULL) OR ((length(btrim(answer)) >= 1) AND (length(btrim(answer)) <= 2000)))))
+accountant_review_query | accountant_review_query_answered_by_fkey | FOREIGN KEY (answered_by) REFERENCES app_user(user_id)
+accountant_review_query | accountant_review_query_asked_at_not_null | NOT NULL asked_at
+accountant_review_query | accountant_review_query_asked_by_fkey | FOREIGN KEY (asked_by) REFERENCES app_user(user_id)
+accountant_review_query | accountant_review_query_asked_by_not_null | NOT NULL asked_by
+accountant_review_query | accountant_review_query_id_not_null | NOT NULL id
+accountant_review_query | accountant_review_query_organisation_id_not_null | NOT NULL organisation_id
+accountant_review_query | accountant_review_query_pkey | PRIMARY KEY (organisation_id, id)
+accountant_review_query | accountant_review_query_question_length | CHECK (((length(btrim(question)) >= 1) AND (length(btrim(question)) <= 2000)))
+accountant_review_query | accountant_review_query_question_not_null | NOT NULL question
+accountant_review_query | accountant_review_query_review_fkey | FOREIGN KEY (organisation_id, review_id) REFERENCES accountant_review(organisation_id, id)
+accountant_review_query | accountant_review_query_review_id_not_null | NOT NULL review_id
+accountant_review_query | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 accounting_framework | accounting_framework_confirmed_by_format | CHECK (((confirmed_by IS NULL) OR (confirmed_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
 accounting_framework | accounting_framework_confirmed_together | CHECK (((confirmed_by IS NULL) = (confirmed_at IS NULL)))
 accounting_framework | accounting_framework_edition_length | CHECK (((length(btrim(edition)) >= 1) AND (length(btrim(edition)) <= 120)))
@@ -3196,6 +3270,7 @@ period_close_check | period_close_check_result_array | CHECK (((jsonb_typeof(res
 period_close_check | period_close_check_result_not_null | NOT NULL result
 period_close_check | period_close_check_revision | CHECK ((ledger_revision >= 0))
 period_close_check | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+period_reopen | accountant_review_reopened | TRIGGER DEFERRABLE INITIALLY DEFERRED
 period_reopen | period_reopen_actor_format | CHECK ((reopened_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 period_reopen | period_reopen_after_hash | CHECK ((after_hash = sha256(convert_to(after_snapshot, 'UTF8'::name))))
 period_reopen | period_reopen_after_hash_not_null | NOT NULL after_hash
@@ -3704,6 +3779,8 @@ withholding_decision | withholding_decision_tax_agent_not_null | NOT NULL tax_ag
 
 ## indexes
 CREATE INDEX account_parent_idx ON fyniq.account USING btree (organisation_id, parent_id)
+CREATE INDEX accountant_review_period ON fyniq.accountant_review USING btree (organisation_id, period_id)
+CREATE INDEX accountant_review_query_review ON fyniq.accountant_review_query USING btree (organisation_id, review_id)
 CREATE INDEX allocation_document ON fyniq.allocation USING btree (organisation_id, document_id, on_date)
 CREATE INDEX allocation_source ON fyniq.allocation USING btree (organisation_id, source_id)
 CREATE INDEX announcement_ends ON fyniq.announcement USING btree (organisation_id, ends_at)
@@ -3783,6 +3860,11 @@ CREATE UNIQUE INDEX access_review_attestation_pkey ON fyniq.access_review_attest
 CREATE UNIQUE INDEX access_review_attestation_quarter_key ON fyniq.access_review_attestation USING btree (organisation_id, quarter)
 CREATE UNIQUE INDEX account_code_key ON fyniq.account USING btree (organisation_id, code)
 CREATE UNIQUE INDEX account_pkey ON fyniq.account USING btree (organisation_id, id)
+CREATE UNIQUE INDEX accountant_review_close_once ON fyniq.accountant_review USING btree (organisation_id, close_id)
+CREATE UNIQUE INDEX accountant_review_journal_once ON fyniq.accountant_review_journal USING btree (organisation_id, review_id, journal_id)
+CREATE UNIQUE INDEX accountant_review_journal_pkey ON fyniq.accountant_review_journal USING btree (organisation_id, id)
+CREATE UNIQUE INDEX accountant_review_pkey ON fyniq.accountant_review USING btree (organisation_id, id)
+CREATE UNIQUE INDEX accountant_review_query_pkey ON fyniq.accountant_review_query USING btree (organisation_id, id)
 CREATE UNIQUE INDEX accounting_framework_pkey ON fyniq.accounting_framework USING btree (organisation_id, id)
 CREATE UNIQUE INDEX accounting_framework_version_key ON fyniq.accounting_framework USING btree (organisation_id, version)
 CREATE UNIQUE INDEX accounting_policy_pkey ON fyniq.accounting_policy USING btree (organisation_id, id)
@@ -4005,6 +4087,7 @@ CREATE UNIQUE INDEX webauthn_credential_pkey ON fyniq.webauthn_credential USING 
 CREATE UNIQUE INDEX withholding_decision_pkey ON fyniq.withholding_decision USING btree (organisation_id, id)
 
 ## triggers
+CREATE CONSTRAINT TRIGGER accountant_review_reopened AFTER INSERT ON fyniq.period_reopen DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION accountant_review_reopened()
 CREATE CONSTRAINT TRIGGER break_glass_logged AFTER INSERT ON fyniq.break_glass DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION break_glass_logged()
 CREATE CONSTRAINT TRIGGER claimant_bank_change_approved AFTER INSERT OR UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.type = 'claimant_bank_change'::text) AND (new.status = 'posted'::text))) EXECUTE FUNCTION payee_bank_change_approved()
 CREATE CONSTRAINT TRIGGER contact_member_approved AFTER UPDATE OF member_user_id ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((new.member_user_id IS DISTINCT FROM old.member_user_id)) EXECUTE FUNCTION contact_member_approved()
@@ -4023,6 +4106,7 @@ CREATE CONSTRAINT TRIGGER payee_bank_change_approved AFTER INSERT OR UPDATE OF s
 CREATE CONSTRAINT TRIGGER payment_batch_approved AFTER INSERT OR UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.type = 'payment_batch'::text) AND (new.status = 'posted'::text))) EXECUTE FUNCTION payment_batch_approved()
 CREATE CONSTRAINT TRIGGER payment_batch_holds AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION payment_batch_holds()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.access_review_attestation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('access_review_attestation', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.accountant_review_journal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accountant_review', 'review_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('allocation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
@@ -4072,6 +4156,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF revoked_at ON 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.email_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.inbound_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('account', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accountant_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accountant_review', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accountant_review_query DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accountant_review', 'review_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_framework DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_framework', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.announcement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('announcement', 'id')
@@ -4128,6 +4214,12 @@ CREATE TRIGGER account_changed_at BEFORE UPDATE ON fyniq.account FOR EACH ROW WH
 CREATE TRIGGER account_guard BEFORE INSERT OR UPDATE ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_guard()
 CREATE TRIGGER account_merge_guard BEFORE INSERT OR UPDATE ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_merge_guard()
 CREATE TRIGGER account_required_dimensions_check BEFORE INSERT OR UPDATE OF required_dimension_ids ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_required_dimensions_check()
+CREATE TRIGGER accountant_review_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.accountant_review FOR EACH ROW EXECUTE FUNCTION accountant_review_guard()
+CREATE TRIGGER accountant_review_journal_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.accountant_review_journal FOR EACH ROW EXECUTE FUNCTION accountant_review_journal_guard()
+CREATE TRIGGER accountant_review_journal_no_truncate BEFORE TRUNCATE ON fyniq.accountant_review_journal FOR EACH STATEMENT EXECUTE FUNCTION accountant_review_journal_guard()
+CREATE TRIGGER accountant_review_no_truncate BEFORE TRUNCATE ON fyniq.accountant_review FOR EACH STATEMENT EXECUTE FUNCTION accountant_review_guard()
+CREATE TRIGGER accountant_review_query_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.accountant_review_query FOR EACH ROW EXECUTE FUNCTION accountant_review_query_guard()
+CREATE TRIGGER accountant_review_query_no_truncate BEFORE TRUNCATE ON fyniq.accountant_review_query FOR EACH STATEMENT EXECUTE FUNCTION accountant_review_query_guard()
 CREATE TRIGGER accounting_framework_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_framework FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('framework', 'confirmed')
 CREATE TRIGGER accounting_policy_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_policy FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('policy', 'approved')
 CREATE TRIGGER allocation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.allocation FOR EACH ROW EXECUTE FUNCTION allocation_guard()
@@ -4343,6 +4435,9 @@ CREATE TRIGGER withholding_decision_immutable BEFORE DELETE OR UPDATE ON fyniq.w
 ## policies
 access_review_attestation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+accountant_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+accountant_review_journal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+accountant_review_query | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 accounting_framework | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 accounting_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 allocation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -4459,6 +4554,10 @@ account_changed_at() → trigger | security invoker | v | search_path=pg_catalog
 account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 78889030731483263211599be66a7331
 account_merge_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a14c600f743a9d36737eb9b70fb7be62
 account_required_dimensions_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c214041f09e2caefd3dcc34d90b2084a
+accountant_review_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a2ff7829118ff6e84f63b1555498d9e7
+accountant_review_journal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 011ed8a485a15d00757b44f9689b9dd2
+accountant_review_query_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4c9fdcd8d05d9ece150bcf6a4cf43107
+accountant_review_reopened() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 491d4ed52fee22eca39aaef26dfcb647
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
 allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | faf46a2ff4eb5c3d17fcbdc8baa47c5b
 announcement_dismissal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5e05644e02afe264e8eef087f5ad7218

@@ -118,6 +118,8 @@ type UnitOfWork interface {
 	PaymentBatches() PaymentBatches
 	// BreakGlasses are the Owners' break-glasses and the batches each released (FM-8).
 	BreakGlasses() BreakGlasses
+	// AccountantReviews are the accountant's reviews of closed months (FM-7).
+	AccountantReviews() AccountantReviews
 	ShareIssues() ShareIssues
 	ConversionSteps() ConversionSteps
 	// ReportExports are the exports that run in the background (FR-RPT-09).
@@ -762,6 +764,10 @@ const (
 	// its review, and only ends, once, inside its window; a use is its Owner's, inside its window and within its cap, of a
 	// batch waiting for approval, and never changes (FM-8).
 	CodeBreakGlass = "STORAGE-BREAKGLASS-01"
+	// CodeAccountantReview: an accountant's review covers a closed month's latest close, once; it gains queries, answers
+	// and journals only while in review, is signed off once every query has its answer, and is superseded only by its
+	// month's reopening (FM-7).
+	CodeAccountantReview = "STORAGE-REVIEW-01"
 	// CodeShareIssue: the register of share issues is append-only, its classes share capital and its holders directors
 	// or shareholders, and share capital moves only with it (FR-EQ-08, INV-13).
 	CodeShareIssue = "STORAGE-SHARE-01"

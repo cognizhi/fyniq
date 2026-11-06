@@ -970,7 +970,8 @@ func Reopenable(ctx context.Context, u storage.UnitOfWork, periodID uuid.UUID) (
 
 // Reopen reopens a closed period on an approved request, in the approving unit of work (FR-GL-08, FM-1): under the
 // ledger lock (ENG-47) it checks the period still reopens, takes the snapshot after (the trial balance at the period
-// end now), reopens it and records the reopening with the close's snapshot as the one before.
+// end now), reopens it, records the reopening with the close's snapshot as the one before, and supersedes the
+// accountant's reviews of that close (FM-7).
 func Reopen(ctx context.Context, u storage.UnitOfWork, periodID, approvalID uuid.UUID, reason string) (storage.PeriodReopen, storage.Period, error) {
 	rev, err := u.Ledger().Lock(ctx)
 	if err != nil {
@@ -994,7 +995,12 @@ func Reopen(ctx context.Context, u storage.UnitOfWork, periodID, approvalID uuid
 	}
 	r, err := u.Closes().RecordReopen(ctx, storage.NewReopen{PeriodID: p.ID, CloseID: c.ID, ApprovalID: approvalID, Reason: reason, ReopenedRevision: rev,
 		BeforeHash: c.SnapshotHash, AfterSnapshot: snap, AfterHash: hash})
-	return r, opened, err
+	if err != nil {
+		return r, opened, err
+	}
+	// The accountant's reviews of the close it undoes are superseded and kept; the month closed again is reviewed afresh
+	// (FM-7, rev 0.176).
+	return r, opened, u.AccountantReviews().Supersede(ctx, c.ID, r.ID, r.ReopenedAt)
 }
 
 // recurringChecks are the close's checks of the recurring journals (FR-GL-02; Appendix C.1 #28, #29; rev 0.60).

@@ -904,6 +904,34 @@
       "label": "Close a month",
       "tooltip": "Run the close checks, then another founder attests and closes the month, which then refuses every posting."
     },
+    "accounting.reviews": {
+      "label": "Accountant reviews",
+      "tooltip": "Each quarter the external accountant reviews a closed month, normally the quarter's last, and signs it off."
+    },
+    "accounting.review": {
+      "label": "Accountant review",
+      "tooltip": "One closed month's review: its close snapshot, the queries and answers, any adjusting journals and the sign-off."
+    },
+    "accountant-review.open": {
+      "label": "Open a review",
+      "tooltip": "Review a closed month's close, normally the quarter's last month, whose snapshot is the trial balance at the quarter end."
+    },
+    "accountant-review.ask": {
+      "label": "Raise query",
+      "tooltip": "A question for an Owner or the Controller, who answers it once."
+    },
+    "accountant-review.answer": {
+      "label": "Answer",
+      "tooltip": "Management's answer to the accountant's query, given once."
+    },
+    "accountant-review.link": {
+      "label": "Link journal",
+      "tooltip": "An adjusting journal the review raised. It posts through approval, as any journal does."
+    },
+    "accountant-review.sign-off": {
+      "label": "Sign off",
+      "tooltip": "Once every query has its answer: confirm it's you, and the review covers its quarter."
+    },
     "checks.overview": {
       "label": "Books health",
       "tooltip": "Every check of the books in one place: OK, to review, blocking the close, due, or not assessed for want of an input, each with what it found and who owns it."

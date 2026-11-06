@@ -16,6 +16,12 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/access-review` (getAccessReview): Read the user access review
 - `POST /v1/access-review/attestations` (attestAccessReview): Attest the user access review for a quarter
 - `GET /v1/access-review/export` (exportAccessReview): Export the user access review
+- `GET /v1/accountant-reviews` (listAccountantReviews): List the accountant's reviews
+- `GET /v1/accountant-reviews/{review_id}` (getAccountantReview): Get an accountant's review
+- `POST /v1/accountant-reviews/{review_id}/journals` (linkAccountantReviewJournal): Link an adjusting journal to a review
+- `POST /v1/accountant-reviews/{review_id}/queries` (askAccountantReviewQuery): Raise a query in a review
+- `POST /v1/accountant-reviews/{review_id}/queries/{query_id}/answer` (answerAccountantReviewQuery): Answer a review's query
+- `POST /v1/accountant-reviews/{review_id}/sign-off` (signOffAccountantReview): Sign off a review
 - `GET /v1/accounts` (listAccounts): List the chart of accounts
 - `POST /v1/accounts` (createAccount): Add an account
 - `GET /v1/accounts/{account_id}` (getAccount): Get an account
@@ -426,6 +432,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/payment-batches/{batch_id}/release` (releasePaymentBatch): Release a payment batch
 - `GET /v1/periods` (listPeriods): List the periods
 - `GET /v1/periods/{period_id}` (getPeriod): Get a period
+- `POST /v1/periods/{period_id}/accountant-review` (openAccountantReview): Open the accountant's review of a closed month
 - `GET /v1/periods/{period_id}/checklist` (getPeriodChecklist): Get a month's close checklist
 - `POST /v1/periods/{period_id}/checklist/{task_key}` (markChecklistTask): Mark a task of a month's close checklist
 - `GET /v1/periods/{period_id}/close` (getPeriodClose): Get a period's close

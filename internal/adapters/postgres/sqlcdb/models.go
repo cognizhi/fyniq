@@ -50,6 +50,43 @@ type FyniqAccount struct {
 	MergedIntoID         *uuid.UUID
 }
 
+type FyniqAccountantReview struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PeriodID       uuid.UUID
+	CloseID        uuid.UUID
+	OpenedBy       uuid.UUID
+	OpenedAt       time.Time
+	Status         string
+	SignedBy       *uuid.UUID
+	SignedAt       *time.Time
+	Statement      *string
+	SupersededAt   *time.Time
+	ReopenID       *uuid.UUID
+	Version        int32
+}
+
+type FyniqAccountantReviewJournal struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ReviewID       uuid.UUID
+	JournalID      uuid.UUID
+	LinkedBy       uuid.UUID
+	LinkedAt       time.Time
+}
+
+type FyniqAccountantReviewQuery struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ReviewID       uuid.UUID
+	AskedBy        uuid.UUID
+	AskedAt        time.Time
+	Question       string
+	AnsweredBy     *uuid.UUID
+	AnsweredAt     *time.Time
+	Answer         *string
+}
+
 type FyniqAccountingFramework struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
