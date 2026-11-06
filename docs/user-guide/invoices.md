@@ -64,7 +64,9 @@ adds to what the customer owes; Expert mode shows the ledger impact, debit by de
 Select **Email** on an issued invoice. It goes from the organisation's invoices sender to the
 customer's billing email, or the address you give, with the PDF of the invoice and a secure link the
 customer opens without signing in. The PDF is kept with the invoice, and **Emails** lists each send
-with its delivery. Sending again sends the same version again.
+with its delivery. Sending it again sends the very copy kept when it was first sent, the same PDF
+with the same fingerprint, even if a template has changed since; an edited invoice's new version is
+made afresh.
 
 A tax invoice that lacks a particular IRAS requires, such as the customer's address, is not sent:
 add the detail, then send it again.

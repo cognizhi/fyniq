@@ -89,6 +89,11 @@ Source: PRD-001 §8.16 · Priority M · Phase P1
 - **WHEN** a copy of an issued document is produced again
 - **THEN** its hash can be compared with the stored hash to prove it is identical
 
+#### Scenario: Sent again, the copy kept as issued (rev 0.191)
+- **WHEN** a version of an invoice, quote, order or statement that was sent is sent again
+- **THEN** the PDF kept when it was first sent goes, with the template it was issued with, never a new rendering
+- **AND** its SHA-256 is the one stored
+
 ### Requirement: FR-DOC-05 Evidence on every important activity
 The system SHALL show an Evidence panel on every record and on every important activity, holding several files per item, each with an evidence type, a short note and the date it relates to.
 

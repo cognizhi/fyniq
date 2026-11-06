@@ -3,7 +3,11 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"regexp"
@@ -143,6 +147,8 @@ func (e *env) emailedQuoteLink() (id, token string) {
 // req: FR-AR-06
 // req: FR-AR-16
 // req: FR-INT-01
+// req: FR-DOC-04
+// req: documents/attachments-and-evidence Sent again, the copy kept as issued (rev 0.191)
 func TestInvoicesAndQuotesAreEmailed(t *testing.T) {
 	e := newEnv(t)
 	acc := e.as(authz.Accountant)
@@ -194,6 +200,24 @@ func TestInvoicesAndQuotesAreEmailed(t *testing.T) {
 	log := e.call(http.MethodGet, "/v1/organisation/email/messages?purpose=invoice", e.as(authz.Administrator), nil)
 	if items, _ := log.Body["items"].([]any); log.Status != 200 || len(items) != 1 || items[0].(map[string]any)["recipient"] != "ap@acme.example" {
 		t.Errorf("the delivery log: %d %s", log.Status, log.Raw)
+	}
+
+	// FR-DOC-04 (rev 0.191): the invoice is kept as issued, with its hash; sent again, it sends that same copy, by its
+	// evidence and hash, and the file opened is byte for byte the one hashed.
+	again := emailIt("/v1/invoices/"+id, tag, nil, "Idempotency-Key", uuid.NewString())
+	twice, _ := again.Body["sends"].([]any)
+	if again.Status != 200 || len(twice) != 2 {
+		t.Fatalf("sending it again: %d %s", again.Status, again.Raw)
+	}
+	for _, x := range twice {
+		if x.(map[string]any)["evidence_id"] != s["evidence_id"] || x.(map[string]any)["pdf_sha256"] != s["pdf_sha256"] {
+			t.Errorf("a copy sent again is not the one kept as issued: %v", x)
+		}
+	}
+	opened := e.call(http.MethodGet, "/v1/evidence/"+s["evidence_id"].(string)+"/file", acc, nil)
+	pdf, _ := base64.StdEncoding.DecodeString(opened.str("content_base64"))
+	if sum := sha256.Sum256(pdf); opened.Status != 200 || hex.EncodeToString(sum[:]) != s["pdf_sha256"] || !bytes.HasPrefix(pdf, []byte("%PDF")) {
+		t.Errorf("the copy kept as issued, opened: %d, %d bytes", opened.Status, len(pdf))
 	}
 
 	qid, qtag := e.sentQuote()
