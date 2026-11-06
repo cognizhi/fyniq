@@ -331,3 +331,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | docs/user-guide/claims-my-claims.md → claims.make-a-claim (a claim line's department or project, rev 0.173)
 
 ## [2026-11-06] compile | docs/user-guide/financial-statements.md, docs/user-guide/general-ledger.md → reports.statements, reports.general-ledger (the P&L and the general ledger by dimension)
+
+## [2026-11-06] compile | docs/user-guide/chart-of-accounts.md → accounting.chart (merging an account into another, FR-COA-04 rev 0.174)

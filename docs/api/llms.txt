@@ -20,6 +20,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/accounts` (createAccount): Add an account
 - `GET /v1/accounts/{account_id}` (getAccount): Get an account
 - `PATCH /v1/accounts/{account_id}` (updateAccount): Change an account
+- `POST /v1/accounts/{account_id}/merge-approval` (requestAccountMerge): Ask for approval to merge an account into another
 - `POST /v1/accounts:load-standard-chart` (loadStandardChart): Load the standard chart of accounts
 - `GET /v1/announcements` (listAnnouncements): List the organisation's announcements
 - `POST /v1/announcements` (publishAnnouncement): Publish a banner to the organisation

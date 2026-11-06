@@ -380,6 +380,10 @@
       "label": "Required dimensions",
       "tooltip": "The dimensions every journal line you enter on this account needs a value of; Fyniq's own postings without one are flagged at the close."
     },
+    "chart.merge": {
+      "label": "Merge into another account",
+      "tooltip": "Move this account's balance into another account of the same type by one approved entry; it then stays inactive, and earlier postings stay where they are."
+    },
     "contacts.overview": {
       "label": "Contacts",
       "tooltip": "The customers and vendors the company deals with."

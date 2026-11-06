@@ -239,6 +239,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 		}
 		return strings.Join(ledger.Differences(want, stored), "; "), nil
 	}
+	if doc.Type == storage.DocumentAccountMerge { // an account's balance moved into another, as its document kept it (FR-COA-04)
+		want, err := replayAccountMerge(doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
 	if doc.Type == storage.DocumentDirectorRepayment { // a batch's repayment to a director, settling their settlements (FR-EQ-05)
 		want, err := replayDirectorRepayment(ctx, u, doc, s, e)
 		if err != nil {

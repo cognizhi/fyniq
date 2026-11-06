@@ -2,9 +2,9 @@
 key: accounting.chart
 type: task
 title: Set up and keep the chart of accounts
-summary: Load the standard chart; add, change or deactivate accounts; system accounts; dimensions, their values and the ones an account requires
+summary: Load the standard chart; add, change, deactivate or merge accounts; system accounts; dimensions, their values and the ones an account requires
 sources:
-  - docs/user-guide/chart-of-accounts.md sha256:a0419305ab911e2b909a02331aed5a5b1ac1b1bba653074abada648c322fff5c
+  - docs/user-guide/chart-of-accounts.md sha256:1dd9f5771f2c7259642b482ee8f54d368d7fefeee8adaf236f24b2230ccca836
 data_class: general
 taint: trusted
 status: draft
@@ -21,6 +21,9 @@ aliases:
   - new account
   - account code
   - deactivate account
+  - merge accounts
+  - merge an account
+  - combine two accounts
   - standard chart
   - system account
   - dimension
@@ -64,6 +67,16 @@ aliases:
 
 (src: docs/user-guide/chart-of-accounts.md#add-an-account) (src: docs/user-guide/chart-of-accounts.md#change-an-account) (src: docs/user-guide/chart-of-accounts.md#system-accounts) (src: docs/user-guide/chart-of-accounts.md#related)
 
+## Merge an account
+
+- Merging moves an account's balance into another account by one entry; the account becomes inactive for good, and every earlier posting stays where it is, so earlier and closed months read as before.
+- The merge button next to an account, then the account to **Merge it into** (same type, same currency, not a group, a system, money or control account) and the day its balance moves (in an open period, on or after its last posting), then **Ask for approval** ([[approvals.decide]]).
+- An Owner or a Controller who did not ask approves it; until then nothing moves and the chart shows **Merge awaiting approval**.
+- On approval a balance-sheet account moves its whole balance and an income or expense account its movement in the financial year; each currency and dimension value moves at the amount the books recorded; the account then shows **Merged into** the other and takes no posting.
+- A merge waits while something still posts to the account by itself (a spread, a fixed asset, a journal that reverses by itself); a change to either account or its balance before the approval voids it: ask again.
+
+(src: docs/user-guide/chart-of-accounts.md#merge-an-account)
+
 ## Dimensions and their values
 
 - Dimensions tag amounts beyond the account, to see costs and revenue by team, by project or by anything else tracked; the **Dimensions** section under the accounts lists each with its values in use.
@@ -95,5 +108,8 @@ aliases:
 - DIM-02, the name does not fit: give a name no other dimension, or no other value of the dimension, has, whatever the case.
 - DIM-03, the value's code does not fit: a letter or digit, then up to 29 letters, digits, dots, slashes, underscores or hyphens, not used by another value of the dimension.
 - DIM-04, not a dimension in use: put the dimension back in use before adding values to it.
+- MERGE-01, the accounts do not merge: choose an active account of the same type and currency that is not a group, a system, money or control account.
+- MERGE-02, the merge's date does not fit: a day in an open period, on or after the account's last posting.
+- MERGE-03, something scheduled still posts to the account: let the spread, asset or reversal post, or move it to another account, then merge.
 
 (src: docs/user-guide/chart-of-accounts.md#common-problems)

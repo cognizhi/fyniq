@@ -194,7 +194,7 @@ func months(n int) *int16 {
 
 func toAccount(r accountRow) storage.Account {
 	a := storage.Account{ID: r.ID, Code: r.Code, Name: r.Name, Type: storage.AccountType(r.Type), ParentID: r.ParentID,
-		Group: r.IsGroup, Active: r.IsActive, Version: int(r.Version), AccountAttributes: storage.AccountAttributes{
+		Group: r.IsGroup, Active: r.IsActive, Version: int(r.Version), MergedInto: r.MergedIntoID, AccountAttributes: storage.AccountAttributes{
 			ReportGroup: str(r.ReportGroup), CashFlowLine: str(r.CashFlowLine), Function: str(r.Function), MoneyAccount: r.IsMoneyAccount,
 			DefaultGSTCode: str(r.DefaultGstCode), Currency: str(r.Currency), Control: r.IsControl, PayrollCost: r.IsPayrollCost,
 			Guidance: str(r.Guidance), Revalue: r.Revalue}}
@@ -339,11 +339,14 @@ func (r accounts) Update(ctx context.Context, id uuid.UUID, version int, c stora
 		return storage.Account{}, &storage.Error{Code: storage.CodeVersion,
 			Message: fmt.Sprintf("account %s changed since it was read: it is at version %d, not %d", before.Code, before.Version, version)}
 	}
+	if c.MergedInto == nil { // a change that names no merge keeps the account's, which never clears (FY260)
+		c.MergedInto = before.MergedInto
+	}
 	row, err := r.u.q.UpdateAccount(ctx, sqlcdb.UpdateAccountParams{ID: id, Name: c.Name, ParentID: c.ParentID, IsGroup: c.Group,
 		IsActive: c.Active, ReportGroup: opt(c.ReportGroup), CashFlowLine: opt(c.CashFlowLine), Function: opt(c.Function),
 		IsMoneyAccount: c.MoneyAccount, DefaultGstCode: opt(c.DefaultGSTCode), Currency: opt(c.Currency), IsControl: c.Control,
 		IsPayrollCost: c.PayrollCost, Guidance: opt(c.Guidance), Revalue: c.Revalue, UsefulLifeMonths: months(c.UsefulLife),
-		RequiredDimensionIds: uuids(c.RequiredDimensions)})
+		RequiredDimensionIds: uuids(c.RequiredDimensions), MergedIntoID: c.MergedInto})
 	if err != nil {
 		return storage.Account{}, mapError(err)
 	}
@@ -362,6 +365,7 @@ func (r accounts) Update(ctx context.Context, id uuid.UUID, version int, c stora
 	}
 	diff("name", before.Name, after.Name)
 	diff("parent_id", parent(before.ParentID), parent(after.ParentID))
+	diff("merged_into_id", parent(before.MergedInto), parent(after.MergedInto))
 	diff("is_group", before.Group, after.Group)
 	diff("is_active", before.Active, after.Active)
 	diff("report_group", before.ReportGroup, after.ReportGroup)

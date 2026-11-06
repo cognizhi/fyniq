@@ -47,6 +47,7 @@ type FyniqAccount struct {
 	UsefulLifeMonths     *int16
 	ChangedAt            *time.Time
 	RequiredDimensionIds []uuid.UUID
+	MergedIntoID         *uuid.UUID
 }
 
 type FyniqAccountingFramework struct {
