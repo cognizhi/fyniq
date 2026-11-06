@@ -275,6 +275,11 @@ export function ApprovalPage() {
           <span className="fy-badge fy-badge--quiet fy-expert-only">{a.policy}</span>
         </div>
         <div className="fy-card__body fy-stack fy-stack--3">
+          {a.policy_rule ? (
+            <p className="fy-small fy-secondary">
+              Rule {a.policy_rule} of its policy chose these steps: the first rule whose conditions this change meets.
+            </p>
+          ) : null}
           <Steps a={a} />
           <h3 className="fy-h3">Signatures</h3>
           <Signatures a={a} />
