@@ -1096,6 +1096,11 @@ type FyniqInstallationConnectorSecret struct {
 	DestroyedAt *time.Time
 }
 
+type FyniqInvitationCode struct {
+	CodeHash []byte
+	Owner    uuid.UUID
+}
+
 type FyniqItem struct {
 	OrganisationID   uuid.UUID
 	ID               uuid.UUID
