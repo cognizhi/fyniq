@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "due_at": {
+      "description": "When its 7 days of notice end and a Super admin may complete it.",
+      "examples": [
+        "2026-11-13T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "ended_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-13T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "ended_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who objected, withdrew or completed it."
+    },
+    "evidence_kind": {
+      "description": "What it rests on: a board resolution, or the external accountant's recorded confirmation (FR-DOC-05).",
+      "enum": [
+        "board_resolution",
+        "accountant_confirmation"
+      ],
+      "examples": [
+        "board_resolution"
+      ],
+      "type": "string"
+    },
+    "files": {
+      "description": "How many evidence files are attached: completing it needs at least one.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "id": {
+      "description": "The succession's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "outgoing": {
+      "$ref": "SuccessionMember.schema.json",
+      "description": "The Owner whose membership it ends."
+    },
+    "reason": {
+      "description": "Why, as the Owner who started it gave it.",
+      "examples": [
+        "Ben left the company on 31 October; the board resolved on his removal"
+      ],
+      "type": "string"
+    },
+    "started_at": {
+      "description": "When; the outgoing Owner was told then.",
+      "examples": [
+        "2026-11-06T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "started_by": {
+      "$ref": "Person.schema.json",
+      "description": "The Owner who started it."
+    },
+    "status": {
+      "description": "notice while it waits; objected by the outgoing Owner; withdrawn by the one who started it; completed by a Super admin.",
+      "enum": [
+        "notice",
+        "objected",
+        "withdrawn",
+        "completed"
+      ],
+      "examples": [
+        "notice"
+      ],
+      "type": "string"
+    },
+    "successor": {
+      "$ref": "SuccessionMember.schema.json",
+      "description": "The member who becomes an Owner when it completes; absent when it names none."
+    },
+    "version": {
+      "description": "Its version, as its ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "you_may_attach": {
+      "description": "Whether you may attach evidence to it now: an Owner other than the outgoing one, while it waits.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "you_may_complete": {
+      "description": "Whether you, a Super admin, may complete it now: its notice is over and a file is attached.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "you_may_object": {
+      "description": "Whether you, the outgoing Owner, may object to it now.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "you_may_withdraw": {
+      "description": "Whether you, who started it, may withdraw it now.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "outgoing",
+    "reason",
+    "evidence_kind",
+    "files",
+    "started_by",
+    "started_at",
+    "due_at",
+    "status",
+    "version",
+    "you_may_object",
+    "you_may_withdraw",
+    "you_may_attach",
+    "you_may_complete"
+  ],
+  "title": "OwnerSuccession",
+  "type": "object"
+}

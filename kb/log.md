@@ -354,3 +354,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | docs/user-guide/banking.md, team-mode.md → banking.reconcile, settings.team-mode (SOD-5's override, SOD-6 when approving, PRD-001 rev 0.179); other banking pages rehashed
 
 ## [2026-11-06] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (sign out after inactivity, SEC-05, PRD-001 rev 0.180)
+
+## [2026-11-06] compile | docs/user-guide/members-and-roles.md → members.remove (Owner succession, FR-ADM-09, PRD-001 rev 0.181); members.roles, members.invite rehashed

@@ -296,6 +296,12 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **WHEN** succession is requested
 - **THEN** it needs documentary evidence (a board resolution, or the external accountant's recorded confirmation; FR-DOC-05), a waiting period with notice to the outgoing Owner's channels, and an audited Super admin action
 
+#### Scenario: Owner succession (rev 0.181)
+- **GIVEN** another Owner is permanently unavailable (the owner's decisions of 6 Nov 2026, provisional until sign-off)
+- **WHEN** an Owner starts a succession with a reason and the kind of evidence, optionally naming a member to become an Owner
+- **THEN** the outgoing Owner and every Owner are told at once, and for 7 days the outgoing Owner may object and its starter withdraw it, each ending it
+- **AND** from the 7th day a Super admin, any one, completes it with a file attached: the named member becomes an Owner and the outgoing Owner's membership ends; anything else is refused (FY268)
+
 #### Scenario: Last Super admin cannot sign in
 - **WHEN** the last Super admin cannot sign in
 - **THEN** a deployment-held recovery procedure in the runbook restores access (open question 36)

@@ -1096,6 +1096,11 @@ type FyniqInstallationConnectorSecret struct {
 	DestroyedAt *time.Time
 }
 
+type FyniqInvitationCode struct {
+	CodeHash []byte
+	Owner    uuid.UUID
+}
+
 type FyniqItem struct {
 	OrganisationID   uuid.UUID
 	ID               uuid.UUID
@@ -1390,6 +1395,24 @@ type FyniqOutbox struct {
 	LastError      *string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+}
+
+type FyniqOwnerSuccession struct {
+	OrganisationID        uuid.UUID
+	ID                    uuid.UUID
+	DocumentID            uuid.UUID
+	OutgoingMembershipID  uuid.UUID
+	OutgoingUserID        uuid.UUID
+	SuccessorMembershipID *uuid.UUID
+	Reason                string
+	EvidenceKind          string
+	StartedBy             uuid.UUID
+	StartedAt             time.Time
+	DueAt                 time.Time
+	Status                string
+	EndedBy               *uuid.UUID
+	EndedAt               *time.Time
+	Version               int32
 }
 
 type FyniqPayeeBankAccount struct {

@@ -61,6 +61,7 @@ var Catalogue = []Type{
 	{Key: ConnectorType, Label: "A connector was paused", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: PayeeBankType, Label: "Supplier bank details", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: BreakGlassType, Label: "Break-glass", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
+	{Key: OwnersType, Label: "An Owner is added, removed or succeeded", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
 	{Key: "approval.requested", Label: "An approval waits for you", Category: Approvals, Severity: "info", Actionable: true, Email: storage.EmailImmediate},
 	{Key: "approval.decided", Label: "Your request was decided", Category: Approvals, Severity: "info", Email: storage.EmailImmediate},
 	{Key: "email.quarantined", Label: "Mail waits in quarantine", Category: Email, Severity: "info", Actionable: true, Email: storage.EmailDaily},
@@ -79,6 +80,10 @@ var Catalogue = []Type{
 // BreakGlassType is the notice to every Owner and the Accountant that an Owner started break-glass, released a batch
 // under it or ended it (FM-8): a security type, so always on and emailed at once.
 const BreakGlassType = "security.break_glass"
+
+// OwnersType is the notice to every Owner that an Owner was added, removed or succeeded, and to the outgoing Owner of
+// each step of their succession (FR-ADM-09): a security type, so always on and emailed at once.
+const OwnersType = "security.owners"
 
 // PayeeBankType is the notice to every founder that a vendor's bank details are changing, and then changed (FR-CT-03):
 // a security type, so always on and emailed at once.

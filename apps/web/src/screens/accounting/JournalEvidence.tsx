@@ -40,7 +40,7 @@ export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeepe
 // books start, a director's pay choice or fee, or the exempt-private-company status (FR-DOC-05, FR-AP-14, FR-AP-18,
 // FR-CT-03, FR-AP-22, FR-EQ-03, FR-EQ-04, FR-EQ-11), at its ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement";
+  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement" | "owner-succession";
   id: string;
   etag: string;
 }
@@ -62,6 +62,7 @@ const kindsOf = {
   "director-fee": ["shareholders' resolution", "AGM minutes", "written resolution"],
   "exempt-status": ["ACRA business profile", "register of members"],
   "director-settlement": ["loan note", "board minute", "deed of waiver", "directors' resolution", "shareholders' approval", "board resolution", "conversion agreement", "balance confirmation"],
+  "owner-succession": ["board resolution", "accountant's confirmation"],
 };
 
 // nouns name each record in the panel's words.
@@ -79,6 +80,7 @@ const nouns = {
   "director-fee": "director's fee",
   "exempt-status": "exempt status",
   "director-settlement": "settlement",
+  "owner-succession": "succession",
 };
 
 // Result is an evidence call's answer, whichever record it went to.
@@ -111,6 +113,8 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
                           ? await api.GET("/v1/exempt-statuses/{status_id}/evidence", { params: { path: { status_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "director-settlement"
                           ? await api.GET("/v1/director-settlements/{settlement_id}/evidence", { params: { path: { settlement_id: r.id }, query: { page_size: 100 } } })
+                        : r.kind === "owner-succession"
+                          ? await api.GET("/v1/owner-successions/{succession_id}/evidence", { params: { path: { succession_id: r.id }, query: { page_size: 100 } } })
                     : await api.GET("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: r.id }, query: { page_size: 100 } } });
   if (out.error) throw out.error;
   return out.data.items ?? [];
@@ -221,6 +225,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                           ? api.POST("/v1/exempt-statuses/{status_id}/evidence", { params: { path: { status_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "director-settlement"
                           ? api.POST("/v1/director-settlements/{settlement_id}/evidence", { params: { path: { settlement_id: record.id }, header }, body, bodySerializer })
+                        : record.kind === "owner-succession"
+                          ? api.POST("/v1/owner-successions/{succession_id}/evidence", { params: { path: { succession_id: record.id }, header }, body, bodySerializer })
                     : api.POST("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: record.id }, header }, body, bodySerializer });
     const out = await guarded(confirm, post);
     setBusy(false);
@@ -238,7 +244,7 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
   const remove = async (e: Evidence) => {
     setBusy(true);
     setProblem(null);
-    if (record.kind === "card-line" || record.kind === "claimant-bank-change") return; // posted, or not the caller's: its files stay
+    if (record.kind === "card-line" || record.kind === "claimant-bank-change" || record.kind === "owner-succession") return; // posted, or not the caller's: its files stay
     const read: Result & { response: Response } =
       record.kind === "bill"
         ? await api.GET("/v1/bills/{bill_id}/evidence/{evidence_id}", { params: { path: { bill_id: record.id, evidence_id: e.id } } })

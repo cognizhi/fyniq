@@ -73,6 +73,16 @@
   and `session_for` finds the session's organisation before applying it; the devices list uses the same
   (`Sessions.IdleTimeout`). Test: `TestBrowserSessions` (10 and 60 minutes). **Left:** the devices screen (4.1).)
 - [ ] 2.4 Sign-in providers by configuration, allowed domains and identity linking; the Super admin's scope; Owner succession with dual control. Tests `// req: FR-ADM-07`, `// req: FR-ADM-08` and `// req: FR-ADM-09` extend P0's
+  (6 Nov 2026, PRD-001 rev 0.181, on the owner's decisions of the same day: Owner succession. An Owner starts one for
+  another Owner who is permanently unavailable (`POST /v1/members/{member_id}/succession`), with a reason and the kind
+  of evidence, naming a member to become an Owner if wanted; the outgoing Owner and every Owner are told
+  (`security.owners`, emailed at once); for 7 days the outgoing Owner may object and its starter withdraw it; its files
+  go on its own `owner_succession` document. From the 7th day a Super admin, any one, completes it with a file
+  attached: the named member becomes an Owner and the outgoing Owner's membership ends. Every Owner is told of every
+  Owner change. Migrations 000234 and 000235 (FY268). Screen: Owner successions on Settings › Members and roles. Tests
+  `TestAnOwnerIsSucceededAfterSevenDaysNotice`, `TestAttackAnOwnerSuccessionKeepsItsRules`, `Successions.test.tsx`.
+  **Left:** sign-in providers by configuration, allowed domains and identity linking (FR-ADM-08); the Super admin
+  console for organisations a Super admin is not a member of (P3).)
 - [ ] 2.5 Account recovery as an audited state machine with two independent proofs, cooling-off, notices and revocation. Test `// req: SEC-35` with G4-060
 
 ## 3. Clients, outputs and administration

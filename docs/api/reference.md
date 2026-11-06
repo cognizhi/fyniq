@@ -11141,6 +11141,138 @@ Ends a member's role; their next request no longer holds it (FR-ADM-01). The org
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-06`, `MEM-07`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/members/{member_id}/succession`
+
+**Start the succession of an Owner who is permanently unavailable** (`startOwnerSuccession`)
+
+Starts a succession of another Owner who is permanently unavailable, such as after a departure, incapacity or death (FR-ADM-09; PRD-001 rev 0.181, the owner's decisions of 6 Nov 2026). Needs an Owner signed in who passed step-up in the last 5 minutes, a reason and the kind of evidence it rests on: a board resolution, or the external accountant's recorded confirmation, attached with addOwnerSuccessionEvidence. It may name a member who becomes an Owner when it completes. The outgoing Owner is told at once, by email, and for 7 days may object (objectToOwnerSuccession), which ends it; you may withdraw it. From the 7th day a Super admin, any one, completes it (completeOwnerSuccession). Refused for a member who is no Owner or is you (SUCC-01), a successor who is not an active member other than the outgoing Owner (SUCC-06), and while another succession of the same Owner waits (STORAGE-SUCCESSION-01). Side effects: the succession and the document that holds its files, audited; notices to the outgoing Owner and every Owner. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Approve on Users, roles, team mode. A person stepped up in the last 5 minutes, an Owner, for another Owner.
+- **Parameters:**
+  - `member_id` (path, required): The membership's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`OwnerSuccessionRequest`](../../contracts/schemas/OwnerSuccessionRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`OwnerSuccession`](../../contracts/schemas/OwnerSuccession.schema.json)
+  - `201` Created [`OwnerSuccession`](../../contracts/schemas/OwnerSuccession.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `SUCC-04` Not yours to do.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SUCCESSION-01` The succession does not allow that; `SUCC-01` Not another Owner; `SUCC-02` The succession's notice is not over; `SUCC-03` No evidence is attached; `SUCC-05` The succession ended already.
+  - `412` Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SUCC-06` The successor is not a member who can become an Owner.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SUCCESSION-01`, `STORAGE-VERSION-01`, `SUCC-01`, `SUCC-02`, `SUCC-03`, `SUCC-04`, `SUCC-05`, `SUCC-06`
+
+### `GET /v1/owner-successions`
+
+**List the Owner successions** (`listOwnerSuccessions`)
+
+Every succession of an Owner who is permanently unavailable, latest first (FR-ADM-09): its outgoing Owner and successor, its reason and evidence, its 7 days of notice and how it ended, with what you may do with it, a page at a time. Read-only.
+
+- **Permission:** View on Users, roles, team mode
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`SuccessionListOutputBody`](../../contracts/schemas/SuccessionListOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/owner-successions/{succession_id}/complete`
+
+**Complete a succession, as a Super admin** (`completeOwnerSuccession`)
+
+Completes a succession once its 7 days of notice are over (FR-ADM-09; the owner's decisions of 6 Nov 2026): a Super admin, any one, the Owner who started it included, stepped up in the last 5 minutes, in the organisation they are signed in to. Refused before its due time (SUCC-02) and without an evidence file attached (SUCC-03). In one transaction: the successor it names, if any, becomes an Owner; the outgoing Owner's membership ends, each role revoked and their tokens ended; the succession completed, audited; every Owner and the outgoing Owner told. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on (Super admins). A Super admin, any one, stepped up in the last 5 minutes, from the 7th day of notice, with a file attached.
+- **Parameters:**
+  - `succession_id` (path, required): The succession's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`OwnerSuccession`](../../contracts/schemas/OwnerSuccession.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required; `SUCC-04` Not yours to do.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SUCCESSION-01` The succession does not allow that; `SUCC-01` Not another Owner; `SUCC-02` The succession's notice is not over; `SUCC-03` No evidence is attached; `SUCC-05` The succession ended already.
+  - `412` Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SUCC-06` The successor is not a member who can become an Owner.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-06`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `MEM-06`, `MEM-07`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SUCCESSION-01`, `STORAGE-VERSION-01`, `SUCC-01`, `SUCC-02`, `SUCC-03`, `SUCC-04`, `SUCC-05`, `SUCC-06`
+
+### `POST /v1/owner-successions/{succession_id}/object`
+
+**Object to a succession of you as Owner** (`objectToOwnerSuccession`)
+
+Ends a waiting succession of you as Owner (FR-ADM-09): you are not permanently unavailable. Only the outgoing Owner, signed in and stepped up in the last 5 minutes (SUCC-04 otherwise); every Owner is told. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Approve on Users, roles, team mode. Only the outgoing Owner.
+- **Parameters:**
+  - `succession_id` (path, required): The succession's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`OwnerSuccession`](../../contracts/schemas/OwnerSuccession.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `SUCC-04` Not yours to do.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SUCCESSION-01` The succession does not allow that; `SUCC-01` Not another Owner; `SUCC-02` The succession's notice is not over; `SUCC-03` No evidence is attached; `SUCC-05` The succession ended already.
+  - `412` Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SUCC-06` The successor is not a member who can become an Owner.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SUCCESSION-01`, `STORAGE-VERSION-01`, `SUCC-01`, `SUCC-02`, `SUCC-03`, `SUCC-04`, `SUCC-05`, `SUCC-06`
+
+### `POST /v1/owner-successions/{succession_id}/withdraw`
+
+**Withdraw a succession you started** (`withdrawOwnerSuccession`)
+
+Ends a waiting succession you started (FR-ADM-09). Only the Owner who started it, stepped up in the last 5 minutes (SUCC-04 otherwise); the outgoing Owner and every Owner are told. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Approve on Users, roles, team mode. Only the Owner who started it.
+- **Parameters:**
+  - `succession_id` (path, required): The succession's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`OwnerSuccession`](../../contracts/schemas/OwnerSuccession.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `SUCC-04` Not yours to do.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SUCCESSION-01` The succession does not allow that; `SUCC-01` Not another Owner; `SUCC-02` The succession's notice is not over; `SUCC-03` No evidence is attached; `SUCC-05` The succession ended already.
+  - `412` Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SUCC-06` The successor is not a member who can become an Owner.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SUCCESSION-01`, `STORAGE-VERSION-01`, `SUCC-01`, `SUCC-02`, `SUCC-03`, `SUCC-04`, `SUCC-05`, `SUCC-06`
+
 ### `GET /v1/team-mode`
 
 **Get the team mode** (`getTeamMode`)
@@ -12685,6 +12817,57 @@ Takes a file off a draft change of your own bank account (FR-DOC-07). Once it is
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`, `PAYEE-21`, `STORAGE-EVIDENCE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/owner-successions/{succession_id}/evidence`
+
+**List a succession's evidence** (`listOwnerSuccessionEvidence`)
+
+The files attached to a succession, oldest first, a page at a time (FR-ADM-09, FR-DOC-05). Read-only; no side effects.
+
+- **Permission:** View on Users, roles, team mode
+- **Parameters:**
+  - `succession_id` (path, required): The succession's ID.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`EvidencePage`](../../contracts/schemas/EvidencePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `POST /v1/owner-successions/{succession_id}/evidence`
+
+**Attach the evidence of a succession** (`addOwnerSuccessionEvidence`)
+
+Attaches a file to a waiting succession, as multipart/form-data: the board resolution, or the external accountant's recorded confirmation (FR-ADM-09, FR-DOC-05). An Owner other than the outgoing one. The file is checked and scanned as any evidence is (FR-DOC-08) and committed to the retention-locked store at once: it is append-only (FR-DOC-13). Needs If-Match with the succession's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing.
+
+- **Permission:** Approve on Users, roles, team mode
+- **Parameters:**
+  - `succession_id` (path, required): The succession's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Evidence`](../../contracts/schemas/Evidence.schema.json)
+  - `201` Created [`Evidence`](../../contracts/schemas/Evidence.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `SUCC-04` Not yours to do.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `SUCC-05` The succession ended already.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `DOC-01`, `DOC-02`, `DOC-03`, `DOC-04`, `DOC-05`, `DOC-06`, `DOC-07`, `DOC-08`, `DOC-09`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `SUCC-04`, `SUCC-05`
 
 ### `GET /v1/pre-incorporation-costs/{cost_id}/evidence`
 

@@ -174,6 +174,8 @@ export const actions = [
   { kind: "action", id: "break-glass.review", mode: "basic", help: "break-glass.review", guide: "settings.team-mode#end-and-review-a-break-glass" },
   { kind: "action", id: "member.invite", mode: "expert", help: "member.invite", guide: "settings.members#invite-someone" },
   { kind: "action", id: "member.change-roles", mode: "expert", help: "member.change-roles", guide: "settings.members#change-someones-roles" },
+  { kind: "action", id: "member.start-succession", mode: "expert", help: "member.start-succession", guide: "settings.members#when-an-owner-is-permanently-unavailable" },
+  { kind: "action", id: "owner-succession.attach-evidence", mode: "expert", help: "owner-succession.attach-evidence", guide: "settings.members#when-an-owner-is-permanently-unavailable" },
   { kind: "action", id: "member.add-role", mode: "expert", help: "member.add-role", guide: "settings.members#change-someones-roles" },
   { kind: "action", id: "member.end-role", mode: "expert", help: "member.end-role", guide: "settings.members#change-someones-roles" },
   { kind: "action", id: "member.withdraw-invitation", mode: "expert", help: "member.withdraw-invitation", guide: "settings.members#invite-someone" },

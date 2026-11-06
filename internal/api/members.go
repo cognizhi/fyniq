@@ -290,6 +290,9 @@ func (a *API) assignRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.U
 	if err := a.notifyRoles(ctx, u, m, role+" assigned"); err != nil {
 		return Member{}, err
 	}
+	if err := a.notifyOwners(ctx, u, m, role, m.DisplayName+" became an Owner"); err != nil {
+		return Member{}, err
+	}
 	m, err = findMember(ctx, u, id, now)
 	return memberOf(m), err
 }
@@ -315,6 +318,9 @@ func (a *API) revokeRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.U
 		return Member{}, err
 	}
 	if err := a.notifyRoles(ctx, u, m, role+" revoked"); err != nil {
+		return Member{}, err
+	}
+	if err := a.notifyOwners(ctx, u, m, role, m.DisplayName+" is no longer an Owner"); err != nil {
 		return Member{}, err
 	}
 	m, err = findMember(ctx, u, id, now)
@@ -347,6 +353,11 @@ func (a *API) removeMemberNow(ctx context.Context, u storage.UnitOfWork, id uuid
 	if err := a.notifyRoles(ctx, u, m, "removed from the organisation"); err != nil {
 		return Member{}, err
 	}
+	if slices.ContainsFunc(m.Roles, func(r storage.RoleAssignment) bool { return r.Role == "owner" }) {
+		if err := a.notifyOwners(ctx, u, m, "owner", m.DisplayName+", an Owner, was removed from the organisation"); err != nil {
+			return Member{}, err
+		}
+	}
 	if err := u.Members().Remove(ctx, m.ID, m.Version); err != nil {
 		return Member{}, err
 	}
@@ -362,6 +373,16 @@ func (a *API) removeMemberNow(ctx context.Context, u storage.UnitOfWork, id uuid
 func (a *API) notifyRoles(ctx context.Context, u storage.UnitOfWork, m storage.Member, what string) error {
 	return a.notify(ctx, u, notify.Event{Type: "security.roles", RecordType: "membership", RecordID: &m.ID, Title: "Your roles changed: " + what,
 		Link: "/settings/profile", Audience: notify.Audience{Users: []uuid.UUID{m.UserID}}})
+}
+
+// notifyOwners tells every other Owner that m was added or removed as an Owner (FR-ADM-09): a security notice, always
+// on and emailed at once. A change of another role tells nobody else.
+func (a *API) notifyOwners(ctx context.Context, u storage.UnitOfWork, m storage.Member, role, title string) error {
+	if role != "owner" {
+		return nil
+	}
+	return a.notify(ctx, u, notify.Event{Type: notify.OwnersType, RecordType: "membership", RecordID: &m.ID, Title: title, Link: "/settings/members",
+		Audience: notify.Audience{Capability: string(authz.UsersAndRoles), Need: "A", Except: []uuid.UUID{m.UserID}}})
 }
 
 // endTokens asks for the member's OAuth tokens to be revoked in the same unit of work: their claims are a
