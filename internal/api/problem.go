@@ -16,6 +16,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/bankfile"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/accessreview"
+	"github.com/cognizhi/fyniq/internal/domain/accountantreview"
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
@@ -774,6 +775,13 @@ var codeFacts = map[string]struct {
 	breakglass.CodeEnded:             {409, "The break-glass has ended already"},
 	breakglass.CodeTooEarly:          {409, "The break-glass is reviewed once it has ended"},
 	breakglass.CodeReviewer:          {403, "You may not review this break-glass"},
+	storage.CodeAccountantReview:     {409, "The accountant's review does not change that way"},
+	accountantreview.CodeNotClosed:   {409, "The month is not closed"},
+	accountantreview.CodeReviewed:    {409, "The close has a review already"},
+	accountantreview.CodeNotInReview: {409, "The review is signed off or superseded"},
+	accountantreview.CodeAnswered:    {409, "The query is answered already"},
+	accountantreview.CodeNotJournal:  {422, "Not a journal"},
+	accountantreview.CodeOpenQueries: {409, "A query has no answer yet"},
 	storage.CodeShareIssue:           {409, "The register of share issues does not change that way"},
 	storage.CodeBatchHeld:            {409, "The item is paid by an approved payment batch"},
 	ledger.CodeParty:                 {422, "A director's account line needs its person"},
@@ -857,6 +865,7 @@ var storageFixes = map[string]string{
 	storage.CodePayee:                "Prepare a change of the bank details and ask for approval: a second person, who neither prepared nor asked for it, approves it, which puts its account in force",
 	storage.CodeBatch:                "A batch is approved by a second person, released once, and never changed after; a payment the bank rejects is voided on its own",
 	storage.CodeBreakGlass:           "Break-glass is an Owner's, in Founder mode, for 24 hours and within its cap; start another once the last one is reviewed",
+	storage.CodeAccountantReview:     "Review a closed month's latest close once; raise and answer its queries while it is in review, and sign it off once every query has its answer",
 	storage.CodeShareIssue:           "An allotment is recorded once and never changed; share capital moves only with the register or the opening balances",
 	storage.CodeConversionStep:       "A conversion's ACRA steps are recorded between its approval and its effective date, and never changed",
 	storage.CodeDimension:            "Name at most one value of each of the organisation's dimensions",

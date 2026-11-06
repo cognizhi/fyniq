@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "answer": {
+      "description": "Management's answer, once given.",
+      "examples": [
+        "The October rent was paid early; the journal JNL-0214 moves it to prepayments"
+      ],
+      "type": "string"
+    },
+    "answered_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-21T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "answered_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who answered: an Owner or the Controller."
+    },
+    "asked_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-20T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "asked_by": {
+      "$ref": "Person.schema.json",
+      "description": "The Accountant who asked."
+    },
+    "id": {
+      "description": "The query's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "question": {
+      "description": "The query.",
+      "examples": [
+        "Why is the September rent on 6010 twice?"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "asked_by",
+    "asked_at",
+    "question"
+  ],
+  "title": "ReviewQueryItem",
+  "type": "object"
+}

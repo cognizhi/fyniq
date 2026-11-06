@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "journal_id": {
+      "description": "The journal the review raised: a draft, or one posted already.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "journal_id"
+  ],
+  "title": "ReviewJournalLink",
+  "type": "object"
+}

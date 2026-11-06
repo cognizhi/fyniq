@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "question": {
+      "description": "The query, for an Owner or the Controller to answer.",
+      "examples": [
+        "Why is the September rent on 6010 twice?"
+      ],
+      "maxLength": 2000,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "question"
+  ],
+  "title": "ReviewQuestion",
+  "type": "object"
+}

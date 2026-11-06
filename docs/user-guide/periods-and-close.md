@@ -3,7 +3,7 @@ key: accounting.periods
 title: Open the financial year and close the periods
 mode: expert
 roles: [accountant, controller, owner, auditor, tax_agent]
-requirements: [FR-ORG-02, FR-GL-04, FR-GL-07, FR-GL-08, FR-GL-10, FR-GL-14, FM-4, AUD-04, INV-07]
+requirements: [FM-7, FR-ORG-02, FR-GL-04, FR-GL-07, FR-GL-08, FR-GL-10, FR-GL-14, FM-4, AUD-04, INV-07]
 status: draft            # written with the periods page (P1, p1-general-ledger-close); the close joins it
 ---
 
@@ -179,6 +179,12 @@ Only the latest closed month reopens: months reopen in the reverse of the order 
 
 Once approved, the month takes postings again until it is closed again. Fyniq keeps the close's
 fingerprint as the one before, and takes a new one of the trial balance as the one after.
+
+## The accountant's review
+
+Once a month is closed, the external accountant may review it: each quarter, normally its last month
+([The accountant's quarterly review](accountant-review.md)). Reopening a reviewed month supersedes
+its review, and the month closed again is reviewed afresh.
 
 ## Common problems
 

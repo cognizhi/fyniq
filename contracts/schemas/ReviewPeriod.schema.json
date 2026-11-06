@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ends_on": {
+      "description": "Its last day.",
+      "examples": [
+        "2026-09-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The period's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "The month.",
+      "examples": [
+        "September 2026"
+      ],
+      "type": "string"
+    },
+    "starts_on": {
+      "description": "Its first day.",
+      "examples": [
+        "2026-09-01"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "starts_on",
+    "ends_on"
+  ],
+  "title": "ReviewPeriod",
+  "type": "object"
+}

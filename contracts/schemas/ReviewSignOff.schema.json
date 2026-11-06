@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "statement": {
+      "description": "What you sign off.",
+      "examples": [
+        "Reviewed the September close: no further adjustments"
+      ],
+      "maxLength": 1000,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "statement"
+  ],
+  "title": "ReviewSignOff",
+  "type": "object"
+}

@@ -4,7 +4,7 @@ type: task
 title: Open the financial year and close the periods
 summary: What accounting periods are, opening the next financial year, closing a month with two people, explaining its variances, and year end
 sources:
-  - docs/user-guide/periods-and-close.md sha256:28dc2fafd7b4ff2af34dc50d5f3a47ead0a38662bbfd5b44f00e83a4e8cd8c85
+  - docs/user-guide/periods-and-close.md sha256:29dfcd124d844246f6441c189a88adb4f13ba1eb556c4cb2205b05ed66efe32d
 data_class: general
 taint: trusted
 status: draft
@@ -105,6 +105,13 @@ aliases:
 - Once approved, the month takes postings again until it is closed again; Fyniq keeps the close's fingerprint as the one before and takes a new one as the one after.
 
 (src: docs/user-guide/periods-and-close.md#reopen-a-month)
+
+## The accountant's review
+
+- Once a month is closed, the external accountant may review it: each quarter, normally its last month ([[accounting.reviews]]).
+- Reopening a reviewed month supersedes its review, and the month closed again is reviewed afresh.
+
+(src: docs/user-guide/periods-and-close.md#the-accountants-review)
 
 ## Common problems
 

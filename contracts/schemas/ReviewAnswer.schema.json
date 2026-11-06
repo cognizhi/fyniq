@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "answer": {
+      "description": "Management's answer, given once.",
+      "examples": [
+        "The October rent was paid early; the journal JNL-0214 moves it to prepayments"
+      ],
+      "maxLength": 2000,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "answer"
+  ],
+  "title": "ReviewAnswer",
+  "type": "object"
+}

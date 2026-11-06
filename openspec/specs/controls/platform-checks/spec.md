@@ -843,6 +843,20 @@ Source: PRD-001 §C.2
 - **WHEN** no automatic reversal is due by the period's end and none from the period waits
 - **THEN** the check passes
 
+### Requirement: C.2 #61 Accountant review overdue
+The system SHALL warn (⚠) in Founder mode when a calendar quarter ended more than 60 days ago and no signed-off accountant review covers its last month (FM-7; the owner's decision of 6 Nov 2026).
+
+Source: PRD-001 §C.2
+
+#### Scenario: A quarter unreviewed after 60 days
+- **GIVEN** Founder mode
+- **WHEN** a calendar quarter ended more than 60 days ago and no signed-off review covers its last month
+- **THEN** the check warns (⚠), naming the quarter
+
+#### Scenario: Reviewed, or not due yet
+- **WHEN** a signed-off review that is not superseded covers the quarter's last month, or the quarter ended 60 days ago or less
+- **THEN** the check passes
+
 ### Requirement: C.2 #60 Amounts without a required dimension
 The system SHALL warn (⚠) when an account that requires a dimension has, for the period, a movement on lines with no value for it, which only the postings the system makes by itself can leave; a journal that moves the amount to a value clears it (FR-DIM-01; the owner's decision of 5 Nov 2026).
 

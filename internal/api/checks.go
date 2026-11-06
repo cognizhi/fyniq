@@ -74,7 +74,7 @@ type CheckOut struct {
 	Items       []CheckItem   `json:"items" nullable:"false" doc:"The first 50 items it found, each with what is wrong. Empty when the caller cannot open them (items_hidden)."`
 	ItemsHidden bool          `json:"items_hidden" doc:"true when it found items the caller cannot open: their area's right is another role's." example:"false"`
 	ItemsArea   string        `json:"items_area,omitempty" doc:"The Appendix D row whose view opens its items." example:"Reports, dashboards"`
-	ReviewedIn  string        `json:"reviewed_in,omitempty" enum:"review_log,access_review,break_glass" doc:"Where its items are reviewed when that is the control itself: they are never marked reviewed here (rev 0.165); break_glass is the break-glass review on Team mode (FM-8). Absent for the others." example:"review_log"`
+	ReviewedIn  string        `json:"reviewed_in,omitempty" enum:"review_log,access_review,break_glass,accountant_review" doc:"Where its items are reviewed when that is the control itself: they are never marked reviewed here (rev 0.165); break_glass is the break-glass review (FM-8), accountant_review the accountant's review (FM-7). Absent for the others." example:"review_log"`
 	Detail      string        `json:"detail,omitempty" doc:"What it found, in words." example:"The balance sheet balances in every open month"`
 	Fix         string        `json:"fix,omitempty" doc:"How to fix what it found." example:"Report it: the ledger's own checks should have refused this"`
 	Needs       string        `json:"needs,omitempty" doc:"For a check not assessed, the input it needs." example:"an open month that has started"`
@@ -175,7 +175,7 @@ func seerOf(p authn.Principal) seer {
 }
 
 // reviewedIn names, for the API, where a check's items are reviewed.
-var reviewedIn = map[string]string{"": "", checks.InReviewLog: "review_log", checks.InAccessReview: "access_review", checks.InBreakGlass: "break_glass"}
+var reviewedIn = map[string]string{"": "", checks.InReviewLog: "review_log", checks.InAccessReview: "access_review", checks.InBreakGlass: "break_glass", checks.InAccountantReview: "accountant_review"}
 
 // sees reports whether the reader sees a check at all.
 func (s seer) sees(d checks.Definition) bool {

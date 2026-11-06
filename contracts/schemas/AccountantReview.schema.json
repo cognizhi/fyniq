@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "close": {
+      "$ref": "ReviewClose.schema.json",
+      "description": "The close it reviews (AUD-04)."
+    },
+    "id": {
+      "description": "The review's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "journals": {
+      "description": "The adjusting journals it raised, oldest first. Each posts through approval (FR-GL-01); a closed month reopens for one first (FR-GL-08), which supersedes this review.",
+      "items": {
+        "$ref": "ReviewJournalItem.schema.json"
+      },
+      "type": "array"
+    },
+    "opened_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-20T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "opened_by": {
+      "$ref": "Person.schema.json",
+      "description": "The Accountant who opened it."
+    },
+    "period": {
+      "$ref": "ReviewPeriod.schema.json",
+      "description": "The month it covers."
+    },
+    "queries": {
+      "description": "The Accountant's queries, oldest first, each with management's answer once given.",
+      "items": {
+        "$ref": "ReviewQueryItem.schema.json"
+      },
+      "type": "array"
+    },
+    "reopen_id": {
+      "description": "The reopening that superseded it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "signed_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-24T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "signed_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who signed it off."
+    },
+    "statement": {
+      "description": "What the Accountant signed off.",
+      "examples": [
+        "Reviewed the September close: no further adjustments"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "in_review until the Accountant signs it off; superseded once its month reopens, kept as it was.",
+      "enum": [
+        "in_review",
+        "signed_off",
+        "superseded"
+      ],
+      "examples": [
+        "in_review"
+      ],
+      "type": "string"
+    },
+    "superseded_at": {
+      "description": "When its month reopened.",
+      "examples": [
+        "2026-11-02T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "unanswered": {
+      "description": "How many queries wait for an answer: it is signed off only at none.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "version": {
+      "description": "Its version: send it as If-Match with each change.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "you_may_answer": {
+      "description": "true when you, an Owner or the Controller, may answer its queries now.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "you_may_ask": {
+      "description": "true when you, the Accountant, may raise a query or link a journal now.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "you_may_sign_off": {
+      "description": "true when you, the Accountant, may sign it off now: every query has its answer.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "period",
+    "close",
+    "opened_by",
+    "opened_at",
+    "queries",
+    "unanswered",
+    "journals",
+    "you_may_ask",
+    "you_may_answer",
+    "you_may_sign_off",
+    "version"
+  ],
+  "title": "AccountantReview",
+  "type": "object"
+}

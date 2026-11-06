@@ -288,6 +288,16 @@ Source: PRD-001 §6.4
 - **WHEN** an accountant review is recorded for a period
 - **THEN** it holds the close snapshot it covers (AUD-04), the accountant's queries with management's answers, any adjusting journals and the sign-off
 
+#### Scenario: One closed month per review
+- **WHEN** the Accountant opens a review (rev 0.176)
+- **THEN** it covers one closed month and that month's latest close, normally the quarter's last month
+- **AND** an Owner or the Controller answers each query once, and the Accountant signs it off, stepped up, only once every query has its answer
+
+#### Scenario: A quarter overdue for its review
+- **GIVEN** Founder mode
+- **WHEN** a calendar quarter ended more than 60 days ago and no signed-off review covers its last month (rev 0.176)
+- **THEN** Checks warns (⚠, C.2 #61)
+
 #### Scenario: Adjusting journals
 - **WHEN** the review raises an adjusting journal
 - **THEN** it goes through FR-GL-01 approval
