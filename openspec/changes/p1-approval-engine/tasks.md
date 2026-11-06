@@ -124,8 +124,14 @@
   Tests `TestTheAccountantReviewsAClosedMonth` (G4-109), `TestAttackAnAccountantReviewKeepsItsRules`,
   `TestAQuarterWithoutTheAccountantsReviewWarns`, `accountantreview_test.go`, `AccountantReviews.test.tsx`. FM-6 arrives
   with wave 6. **Left:** notices to management when a query is raised, with the notification types.)
-- [ ] 3.5 The control check: period lock, approvals, segregation of duties and team mode together. Test `// req: FR-CTL-04`
-  **Left.**
+- [x] 3.5 The control check: period lock, approvals, segregation of duties and team mode together. Test `// req: FR-CTL-04`
+  (6 Nov 2026: each control is built and tested on its own (FR-GL-07, FR-GL-08, FM-1, FM-2, FM-4, SOD-6, the team modes);
+  `TestTheControlsHoldTogether` runs them in one company's books: in Founder mode a journal above the threshold posts
+  only on the other founder's approval and a founder whose roles conflict still posts; October closes on two people's
+  acts, the one who ran its checks never attesting; closed, it takes no posting, by hand or by an approval that waited
+  (STORAGE-INV-03), and it reopens only on another's approval; switched to Standard mode by one founder asking as
+  Administrator and the other approving as Owner, the conflict no longer posts (TEAM-04) and roles that do not conflict
+  still do.)
 
 ## 4. Wire the waiting refusals
 
