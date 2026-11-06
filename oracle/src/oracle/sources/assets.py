@@ -50,6 +50,7 @@ class Asset:
     months: list[tuple[date, Decimal]]
     scheduled: list[Scheduled] = field(default_factory=list)
     disposed: bool = False
+    disposed_on: date | None = None  # its disposal's date, which an account merge reads (README, "Account merges")
 
 
 def _last_day(month: date) -> date:
@@ -128,6 +129,7 @@ def asset_disposal(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
 
     def apply() -> None:
         asset.disposed = True
+        asset.disposed_on = doc.date
         asset.scheduled[:] = [s for s in asset.scheduled if s.posting_date < disposal_month]
 
     return Posting(lines, effects=[apply])

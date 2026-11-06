@@ -400,9 +400,15 @@ func RunEngine(s Scenario) (Result, error) {
 		}
 		current[d.ID] = &journalState{index: i, typ: d.Type, entry: e, version: d.Version, reverseOn: d.ReverseOn}
 		record(d.ID, "post", e, false)
+		if on, err := time.Parse(time.DateOnly, d.ReverseOn); err == nil { // what a later account merge reads (README, "Account merges")
+			sources.journals = append(sources.journals, reversing{entry: e, on: on})
+		}
 	}
 	for _, r := range s.Reversals {
 		c, ok := current[r.Document]
+		if ok && touchesInactive(c.entry, settings) { // a journal with a line on an account merged since (README, "Account merges")
+			ok = false
+		}
 		if r.Edit != nil {
 			// An edit reverses the current entry on its own date and posts the next version's, both or neither, at its
 			// place; a document never posted, voided, or edited out of version order is not edited (FR-GL-12).

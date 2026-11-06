@@ -38,7 +38,11 @@ month-end revaluation of foreign-currency monetary items with its reversal, and 
 task 6.1 of `p1-multi-currency-fx`, `src/oracle/revaluation.py`, whose golden case waits in `test/differential/pending/`); and
 dimensions (FR-DIM-01, FR-DIM-02, PRD-001 rev 0.171 and 0.172): the values a journal's or the opening balances' line
 names, what an account requires of the lines a person enters, and each month's balances by account and set of values
-(`golden/dimensions.json`, its figures worked by hand in `tests/test_dimensions.py`). Their
+(`golden/dimensions.json`, its figures worked by hand in `tests/test_dimensions.py`); and account merges
+(`account_merge@1`, FR-COA-04, Appendix B.8, PRD-001 rev 0.174): what an account holds in each currency and dimension set
+(an income or expense account in the financial year of `settings.books_start` and `settings.first_year_end`), moved at its
+recorded base value with the base `RND-RATE` leaves in the base currency, and the account inactive afterwards
+(`src/oracle/sources/merge.py`; `golden/account-merge.json`, its figures worked by hand in `tests/test_merge.py`). Their
 scenario shapes, the canonical form of their entries and the readings where the PRD leaves a shape
 open are in [`test/differential/README.md`](../test/differential/README.md), "P1 sources". The
 engine's `cmd/scenario-run` does not read them yet, so their golden cases wait in
@@ -69,7 +73,7 @@ The scenario and result formats, and the rules a comparator relies on, are in
 | `src/oracle/revaluation.py` | The month-end revaluation (FR-GL-04): the open items on the accounts marked revalue, document by document on 1100 and 2010, their base-only lines against 7040, and the reversal on the next month's first day |
 | `src/oracle/book.py` | Lines (with their dimension values), entries, scheduled entries, rejections and the canonical form of a P1 entry |
 | `src/oracle/rules.py` | What every P1 rule set checks the same way: the boundary, rates, accounts (and what a line a person enters on one requires), GST, spreads |
-| `src/oracle/sources/` | One rule set per P1 source (`bank.py`, `purchases.py`, `sales.py`, `claims.py`, `assets.py`) and the settlement of posted documents by money (`settle.py`) |
+| `src/oracle/sources/` | One rule set per P1 source (`bank.py`, `purchases.py`, `sales.py`, `claims.py`, `assets.py`, `founders.py`, `merge.py`) and the settlement of posted documents by money (`settle.py`) |
 | `src/oracle/strategies.py` | Hypothesis strategies that generate manual-journal scenarios (task 2.4), a quarter of them declaring dimensions |
 | `src/oracle/strategies_p1.py` | Hypothesis strategies for the P1 sources, with each document's intent; the `fx` source marks accounts revalue and draws period-end rates |
 | `src/oracle/strategies_gl.py` | The general ledger's source of `strategies_p1`: opening balances, journals that reverse by themselves, voids and edits, each built to an intent; a third of its scenarios declare dimensions |

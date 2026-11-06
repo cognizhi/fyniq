@@ -7,7 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
-from builders import P1_SETTINGS, bank_line, journal, line, p1_scenario, part, scenario
+from builders import P1_ACCOUNTS, P1_SETTINGS, bank_line, journal, line, p1_scenario, part, scenario
 from hypothesis import given
 from jsonschema import Draft202012Validator
 
@@ -69,13 +69,16 @@ def test_the_p1_examples_in_the_readme_are_documents_that_post_in_order():
     # registered asset posts no entry of its own, only its depreciation.
     # The cost before the books start needs a books start before its date (FR-EQ-03); the asset starts after it.
     # The opening balances are dated the books' start; the edit of the accrual posts its reversal and replacement,
-    # and the scheduler reverses the replacement on its reverse_on.
-    data = p1_scenario(*P1_EXAMPLES, settings={**P1_SETTINGS, "books_start": "2026-01-01"})
+    # and the scheduler reverses the replacement on its reverse_on. The account merge moves an expense account that
+    # holds nothing, so it posts no entry (README, "Account merges"); it reads the financial year, so first_year_end.
+    merged = [{"code": code, "type": "expense", "group": False, "active": True} for code in ("6100", "6120")]
+    data = p1_scenario(*P1_EXAMPLES, settings={**P1_SETTINGS, "books_start": "2026-01-01",
+                                               "first_year_end": "2026-12-31"}, accounts=P1_ACCOUNTS + merged)
     data["reversals"] = CORRECTION_EXAMPLES
     result = Ledger(scenario_from_json(data)).result()
     assert result["rejected"] == []
     assert [e["document"] for e in result["entries"] if e["kind"] == "post"] == [
-        d["id"] for d in P1_EXAMPLES if d["type"] != "fixed_asset"]
+        d["id"] for d in P1_EXAMPLES if d["type"] not in ("fixed_asset", "account_merge")]
     assert any(e["kind"] == "depreciation" for e in result["entries"])
     assert [(e["document"], e["kind"]) for e in result["entries"] if e["kind"] in ("replacement", "auto_reversal")] == [
         (c["document"], "replacement") for c in CORRECTION_EXAMPLES] + [(c["document"], "auto_reversal")

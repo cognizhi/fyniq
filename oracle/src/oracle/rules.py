@@ -27,7 +27,11 @@ source shares:
   day of its month or, for a month that starts before the document, the document's date.
 
 A rule set may also read back what is already posted (``posted``): the entries of the documents before
-it in the scenario, since reversals and scheduled entries post after every document.
+it in the scenario, since reversals and scheduled entries post after every document; and what those documents
+schedule (``scheduled``), which an account merge reads (README, "Account merges").
+
+* **Merged accounts** (FR-COA-04, Appendix B.8): an account merged into another is inactive from then on, so a later
+  document with a line on it is rejected as on any inactive account (``merged``, which the ledger keeps).
 """
 
 from __future__ import annotations
@@ -66,7 +70,8 @@ def month_start(day: date) -> date:
 class Rules:
     """The shared checks and conversions, for one scenario."""
 
-    def __init__(self, scenario: Scenario, posted: Sequence[Entry] = ()) -> None:
+    def __init__(self, scenario: Scenario, posted: Sequence[Entry] = (),
+                 scheduled: Sequence[tuple[int, Sequence[Scheduled]]] = (), merged: set[str] | None = None) -> None:
         if scenario.settings is None:  # the scenario reader refuses a P1 source without settings
             raise RuntimeError("a P1 rule set needs the scenario's settings")
         self.scenario = scenario
@@ -76,6 +81,11 @@ class Rules:
         # The ledger's own list of entries, read as it grows: while a document posts, the entries of the documents
         # before it (reversals and scheduled entries come after every document).
         self.posted = posted
+        # The ledger's own list of what the documents posted so far schedule, (their place in the scenario, entries),
+        # read as it grows; a later document (a disposal) may still shorten one.
+        self.scheduled = scheduled
+        # The accounts merged so far (README, "Account merges"), inactive from then on; the ledger's own set.
+        self.merged = merged if merged is not None else set()
 
     # ---------------------------------------------------------------- the input boundary
     def minor(self, currency: str) -> int:
@@ -144,7 +154,7 @@ class Rules:
             raise Rejected("unknown-account")
         if account.group:
             raise Rejected("group-account")
-        if not account.active:
+        if not account.active or code in self.merged:  # a merged account is inactive from then on (FR-COA-04)
             raise Rejected("inactive-account")
         if account.role == "share-capital":
             raise Rejected("share-capital-account")

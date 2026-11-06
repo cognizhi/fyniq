@@ -25,7 +25,10 @@ import (
 
 // Settings are the organisation's settings a P1 scenario declares (README, "Settings and as_of").
 type Settings struct {
-	BooksStart    string            `json:"books_start,omitempty"`
+	BooksStart string `json:"books_start,omitempty"`
+	// FirstYearEnd is the first financial year's last day (FR-ORG-02): with BooksStart, the years an income or expense
+	// account's merge reads (README, "Account merges").
+	FirstYearEnd  string            `json:"first_year_end,omitempty"`
 	Accounts      map[string]string `json:"accounts,omitempty"`
 	MoneyAccounts map[string]string `json:"money_accounts,omitempty"`
 	MileageRates  []MileageRate     `json:"mileage_rates,omitempty"`
@@ -138,6 +141,9 @@ type p1 struct {
 	deposits map[string]*deposit.Open // the posted customer deposits, as invoices and refunds use them
 	advances map[string]*advance      // the posted cash advances, as claims and refunds settle them
 	assets   map[string]*registered   // the assets in the register, by the scenario's ID
+	posted   []postedLine             // every line of the entries posted so far, for what an account merge moves
+	toCome   []toCome                 // what spreads release to accounts, as_of or not, for an account merge's rule 5
+	journals []reversing              // the manual journals that reverse by themselves, as posted
 }
 
 // scheduled is one entry the scheduler posts after every document: a spread's release or an asset's depreciation.
@@ -232,6 +238,8 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return r.directorRepayment(d, date)
 	case "director_conversion":
 		return r.directorConversion(d, date)
+	case ledger.SourceAccountMerge:
+		return r.accountMerge(d, date)
 	}
 	return ledger.Entry{}, false
 }
@@ -347,6 +355,11 @@ func (r *p1) gstRate(code string, day time.Time) (string, bool) {
 // nothing (the P1 rules, rule 5).
 func (r *p1) schedule(i int, doc string, releases []ledger.Release, post func(ledger.Release, ledger.Settings) (ledger.Entry, error)) bool {
 	for _, x := range releases {
+		if !x.Amount.IsZero() {
+			r.toCome = append(r.toCome, toCome{date: x.Date, account: x.AccountID})
+		}
+	}
+	for _, x := range releases {
 		if x.Date.After(r.asOf) || x.Amount.IsZero() {
 			continue
 		}
@@ -397,8 +410,12 @@ type named struct {
 	base money.Money
 }
 
-// note keeps the lines of an entry that name a person, for what a later settlement may settle.
+// note keeps the lines of an entry that name a person, for what a later settlement may settle, and every line, for
+// what a later account merge moves.
 func (r *p1) note(e ledger.Entry) {
+	for _, l := range e.Lines {
+		r.posted = append(r.posted, postedLine{day: e.PostingDate, line: l})
+	}
 	for _, l := range e.Lines {
 		if l.Party != uuid.Nil {
 			k := [2]uuid.UUID{l.Party, l.AccountID}

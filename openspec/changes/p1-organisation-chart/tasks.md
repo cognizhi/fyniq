@@ -82,7 +82,7 @@
   organisation with no account; it is not a side effect of setup, because `make seed-load` and the smoke test load the
   sample company's own chart into a new organisation. The first-run wizard calls it when the screens arrive. **For the
   accountant:** the data file, the payroll-cost set (rev 0.31 [verify]) and the control accounts.)
-- [ ] 3.2 System accounts by role, deactivation, the approved journal-preserving merge, and the hierarchy with posting only to leaves. Tests `// req: FR-COA-03`, `// req: FR-COA-04` and `// req: FR-COA-05`, each attacked as the application role
+- [x] 3.2 System accounts by role, deactivation, the approved journal-preserving merge, and the hierarchy with posting only to leaves. Tests `// req: FR-COA-03`, `// req: FR-COA-04` and `// req: FR-COA-05`, each attacked as the application role
   (19 Oct 2026: migrations 000024 and 000025 give every B.5 system account its role, one account per role, two for
   share capital, and keep a system account active (PRD-001 rev 0.32); the standard chart sets the roles. P0 already
   keeps code, type and role fixed, accounts undeletable, the hierarchy acyclic with postings only to active leaves.
@@ -109,6 +109,12 @@
   (the roles INV-07 lists, and any account marked as a control account); it posts all the same. Guide `journals.md`
   (Check and post a journal), compiled into `accounting.journals`. Test `TestJournalsCarryTheWorkbooksStatuses`.
   **Left:** the oracle's half of `account_merge@1`.)
+  (6 Nov 2026, PRD-001 rev 0.195: the oracle's half. The differential contract's "Account merges" (and
+  `settings.first_year_end`), the oracle's `sources/merge.py` written from it alone by a separate agent, the engine's
+  runner `internal/differential/p1_merge.go` (holdings from the lines posted before, `ledger.PostAccountMerge`, the
+  account inactive after; voids and edits on it refused), and the golden case `account-merge.json`. Both agree on it and
+  on the generated scenarios. Tests `oracle/tests/test_merge.py`, `TestP1AccountMergesMoveWhatTheAccountHolds`,
+  `TestTheEngineAgreesWithTheOracle`. **Left:** merges in the Hypothesis generator.)
 - [x] 3.3 Dimensions and dimension sets on journal lines. The balances cache is keyed by dimension set, and the INV-08 rebuild and the oracle's half are extended. Tests `// req: FR-DIM-01` and `// req: FR-DIM-02`; the differential gate is green
   (4 Nov 2026, slice 1, the database: migrations 000218 to 000220 add `dimension` (Department, Project and custom
   places 1 to 8), `dimension_value` and `dimension_set` (one row per combination, its values in ascending order, at

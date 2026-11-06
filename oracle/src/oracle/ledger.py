@@ -66,6 +66,11 @@ edits"), written from FR-GL-02, FR-GL-06, FR-GL-12, §10.2 and INV-13:
   the new version's entry on its date, both or neither. An edit of a journal never posted or reversed, a
   version that does not follow, or content the rules refuse is refused and changes nothing.
 
+From P1 an account may be **merged** into another (FR-COA-04, Appendix B.8 rev 0.174; README, "Account merges"), by the
+rule set in :mod:`oracle.sources.merge`: one entry moves what it holds, and it is inactive from then on, so a later
+document with a line on it is rejected (rule 4 of a journal, rule 3 of a P1 source), and so is a void or an edit of a
+journal (or of the opening balances) whose current entry has a line on it, or an edit whose new version has one.
+
 From P1 the scheduler also revalues the accounts marked ``revalue`` at each month end (FR-GL-04), in
 :mod:`oracle.revaluation`: base-only lines at the period-end rate against the unrealised FX account, reversed on the
 next month's first day (README, "Month-end revaluation").
@@ -81,6 +86,7 @@ from those statements and the trial balance by :mod:`oracle.kpis` (FR-KPI-02).
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, localcontext
@@ -141,11 +147,13 @@ class Ledger:
         self._posted: dict[str, Entry] = {}  # each posted document's current entry
         self._journals: dict[str, _Journal] = {}  # the posted manual journals and opening balances, as they stand
         self._reversed: set[str] = set()
-        self.rules = Rules(scenario, self.entries) if scenario.settings is not None else None
         self.books: dict[str, Any] = {}  # what each posted P1 document left for later ones to read
         # (the document's position, its scheduled entries): the list is read when the schedules post,
         # so a later document (an asset's disposal) can still end it.
         self._scheduled: list[tuple[int, list[Scheduled]]] = []
+        self._merged: set[str] = set()  # the accounts merged so far, inactive from then on (FR-COA-04)
+        self.rules = (Rules(scenario, self.entries, self._scheduled, self._merged)
+                      if scenario.settings is not None else None)
         with localcontext(money.EXACT):  # an operator that slipped past money.* still cannot round
             for index, document in enumerate(scenario.documents):
                 if isinstance(document, Source):
@@ -235,7 +243,7 @@ class Ledger:
                 raise Rejected("unknown-account")
             if account.group:
                 raise Rejected("group-account")
-            if not account.active:
+            if not account.active or line.account in self._merged:  # a merged account is inactive (FR-COA-04)
                 raise Rejected("inactive-account")
             if account.role == "share-capital" and not opening:  # INV-13: the opening balances may reach it
                 raise Rejected("share-capital-account")
@@ -310,6 +318,10 @@ class Ledger:
             # S$0.00; a USD 0.10 invoice on SR at 0.1 leaves USD 0.11 against 0.10 once its GST is S$0.00.
             if len({ln.currency for ln in lines}) == 1 and not money.total([ln.amount for ln in lines]).is_zero():
                 raise Rejected("unbalanced-currency")
+            # README, "Account merges": a merged account is inactive, so a later document with a line on it (or a
+            # schedule that would post one) is rejected; each rule set's own account check refuses it first.
+            if self._touches_merged([*lines, *(ln for s in posting.scheduled for ln in s.lines)]):
+                raise Rejected("inactive-account")
         except Rejected as exc:
             self._reject(document.id, exc.reason)
             return
@@ -323,6 +335,9 @@ class Ledger:
             self._posted[document.id] = entry
             self._record(entry)
         self._scheduled.append((index, posting.scheduled))
+
+    def _touches_merged(self, lines: Iterable[PostedLine]) -> bool:
+        return any(ln.account in self._merged for ln in lines)
 
     def _schedule(self) -> None:
         """Scheduled entries dated up to ``as_of``, one per (date, document, kind), in that order.
@@ -368,6 +383,9 @@ class Ledger:
         if reversal.date < original.posting_date:  # FR-GL-12: on or after the entry's posting date
             self._reject(key, "reversal-before-entry")
             return
+        if self._touches_merged(original.lines):  # README, "Account merges": whatever its date
+            self._reject(key, "line-on-merged-account")
+            return
         self._reversed.add(reversal.document)
         self._record(_negated(original, "reversal", reversal.date))
 
@@ -384,6 +402,9 @@ class Ledger:
             return
         if edit.version != journal.version + 1:  # it saves the next version
             self._reject(key, "version-does-not-follow")
+            return
+        if self._touches_merged(journal.entry.lines):  # README, "Account merges": its reversal would post there
+            self._reject(key, "line-on-merged-account")
             return
         try:
             lines = self._content(journal.type, edit.date, edit.lines, edit.reverse_on)
