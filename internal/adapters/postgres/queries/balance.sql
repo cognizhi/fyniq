@@ -14,6 +14,15 @@ FROM fyniq.balance b
 LEFT JOIN fyniq.dimension_set s ON s.organisation_id = b.organisation_id AND s.id = b.dimension_set_id
 WHERE b.period_id = $1 ORDER BY b.account_id, b.currency, b.dimension_set_id NULLS FIRST;
 
+-- name: BalancesForPeriodBySetAt :many
+-- A period's balances by dimension set as at a ledger revision (FR-DIM-02, FR-RPT-08), from fyniq.balances_by_set_at:
+-- each account, currency and set on its own row, '{}' for the lines with no dimension. The balance service alone reads
+-- it.
+SELECT account_id::uuid AS account_id, period_id::uuid AS period_id, currency::text AS currency, value_ids::uuid[] AS value_ids,
+       amount::numeric(20, 4) AS amount, base_amount::numeric(20, 4) AS base_amount, line_count::bigint AS line_count
+FROM fyniq.balances_by_set_at(sqlc.arg(period_id)::uuid, sqlc.arg(ledger_revision)::bigint) AS b
+ORDER BY account_id, currency;
+
 -- name: BalanceDifferences :many
 SELECT d.account_id::uuid AS account_id, d.period_id::uuid AS period_id, d.currency::text AS currency,
        coalesce(d.dimension_set_id::text, '')::text AS dimension_set_id, -- '' for the lines with no dimension

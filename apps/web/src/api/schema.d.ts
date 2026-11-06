@@ -18156,10 +18156,15 @@ export interface components {
              */
             from: string;
             /**
-             * @description current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month.
+             * @description current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month or by dimension; value:<id> and none, a P&L by dimension's columns.
              * @example current
              */
             key: string;
+            /**
+             * @description A P&L by dimension's column: the value's code and name, No <dimension> for the lines with no value of it, or Total.
+             * @example ENG Engineering
+             */
+            label?: string;
             /**
              * Format: date
              * @description The run's last day: a balance sheet's or a trial balance's figures are at its end.
@@ -20562,6 +20567,8 @@ export interface components {
              * @example October office rent
              */
             description?: string;
+            /** @description The line's dimension values (listDimensionValues). */
+            dimension_value_ids?: string[] | null;
             /**
              * Format: uuid
              * @description Its entry.
@@ -88809,6 +88816,8 @@ export interface operations {
                 from: string;
                 /** @description The last day. */
                 to: string;
+                /** @description Only the lines that carry each of these dimension values (FR-DIM-02; listDimensionValues), such as a department's: the opening balance, the lines and the running balance are theirs. Each as its own dimension_value_id parameter. */
+                dimension_value_id?: string[] | null;
             };
             header?: never;
             path?: never;
@@ -89226,8 +89235,12 @@ export interface operations {
                 to?: string;
                 /** @description A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning. */
                 compare?: "prior_period" | "prior_year";
-                /** @description total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative. */
-                columns?: "total" | "month";
+                /** @description total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02), without a comparative. */
+                columns?: "total" | "month" | "dimension";
+                /** @description With columns=dimension: the dimension whose values make the columns (listDimensions). */
+                dimension_id?: string;
+                /** @description A P&L of the lines that carry each of these values only (listDimensionValues), such as a department's P&L; each as its own dimension_value_id parameter. A dimension's lines are one side of their entries, so a balance sheet, a cash flow or a trial balance takes none. */
+                dimension_value_id?: string[] | null;
                 /** @description Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands. */
                 as_at_revision?: number;
             };
@@ -89315,8 +89328,12 @@ export interface operations {
                 to?: string;
                 /** @description A comparative column: the run of the same length just before, or the same months a year earlier. Left out when the books do not have all its months. Budget and forecast arrive with planning. */
                 compare?: "prior_period" | "prior_year";
-                /** @description total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative. */
-                columns?: "total" | "month";
+                /** @description total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02). */
+                columns?: "total" | "month" | "dimension";
+                /** @description With columns=dimension: the dimension whose values make the columns (listDimensions). */
+                dimension_id?: string;
+                /** @description A P&L of the lines that carry each of these values only (listDimensionValues); each as its own dimension_value_id parameter. */
+                dimension_value_id?: string[] | null;
                 /** @description Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands. */
                 as_at_revision?: number;
                 /** @description csv: the statement's rows, plain decimals with an ASCII minus; xlsx: a workbook with the statement and a data tab of every figure, amounts as number cells; pdf: the statement to print, archival (PDF/A-2a) and accessible (PDF/UA-1), with the revision on every page. */

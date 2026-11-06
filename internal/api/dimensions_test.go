@@ -372,3 +372,54 @@ func TestClaimLinesTakeDimensionValues(t *testing.T) {
 		t.Errorf("the saved line's values: %d %v (%s)", r.Status, got, r.Raw)
 	}
 }
+
+// FR-DIM-02 through the API (rev 0.171; slice 4): the P&L by Department has a column per value, one for the lines with no
+// department and their total, each labelled; Engineering's P&L is its column; a balance sheet takes no dimension; the
+// general ledger of Rent for Engineering lists its lines, each showing its value.
+// req: FR-DIM-02
+func TestReportsByDimension(t *testing.T) {
+	e := newEnv(t)
+	accountant := e.as(authz.Accountant)
+	dept := e.call(http.MethodPost, "/v1/dimensions", accountant, map[string]any{"kind": "department", "name": "Department"}).str("id")
+	eng := e.call(http.MethodPost, "/v1/dimension-values", accountant, map[string]any{"dimension_id": dept, "code": "ENG", "name": "Engineering"}).str("id")
+	post := func(amount string, values ...string) {
+		t.Helper()
+		d := e.draft(amount)
+		if len(values) > 0 {
+			d["lines"].([]map[string]any)[0]["dimension_value_ids"] = values
+		}
+		j := e.call(http.MethodPost, "/v1/journals", accountant, d)
+		if r := e.call(http.MethodPost, "/v1/journals/"+j.str("id")+"/post", accountant, nil, "If-Match", j.Header.Get("ETag")); r.Status != 200 {
+			t.Fatalf("posting: %d %s", r.Status, r.Raw)
+		}
+	}
+	post("30.00", eng)
+	post("12.00")
+
+	pl := e.call(http.MethodGet, "/v1/reports/statements/pl?from=2026-10&to=2026-10&columns=dimension&dimension_id="+dept, accountant, nil)
+	if pl.Status != 200 {
+		t.Fatalf("the P&L by Department: %d %s", pl.Status, pl.Raw)
+	}
+	var labels []string
+	for _, c := range pl.Body["columns"].([]any) {
+		labels = append(labels, c.(map[string]any)["label"].(string))
+	}
+	if got := strings.Join(labels, ", "); got != "ENG Engineering, No Department, Total" {
+		t.Errorf("the columns: %s", got)
+	}
+	if !strings.Contains(pl.Raw, `"amount":"30.00"`) || !strings.Contains(pl.Raw, `"amount":"42.00"`) {
+		t.Errorf("the figures by department: %s", pl.Raw)
+	}
+	only := e.call(http.MethodGet, "/v1/reports/statements/pl?from=2026-10&to=2026-10&dimension_value_id="+eng, accountant, nil)
+	if only.Status != 200 || strings.Contains(only.Raw, `"amount":"42.00"`) || !strings.Contains(only.Raw, `"amount":"30.00"`) {
+		t.Errorf("Engineering's P&L: %d %s", only.Status, only.Raw)
+	}
+	e.problemIs(e.call(http.MethodGet, "/v1/reports/statements/bs?to=2026-10&dimension_value_id="+eng, accountant, nil), "getFinancialStatement", 422, CodeInvalid)
+	e.problemIs(e.call(http.MethodGet, "/v1/reports/statements/pl?to=2026-10&columns=dimension", accountant, nil), "getFinancialStatement", 422, CodeInvalid)
+
+	gl := e.call(http.MethodGet, "/v1/reports/general-ledger?account_id="+e.books.Rent.ID.String()+"&from=2026-10-01&to=2026-10-31&dimension_value_id="+eng, accountant, nil)
+	lines, _ := gl.Body["accounts"].([]any)[0].(map[string]any)["lines"].([]any)
+	if gl.Status != 200 || len(lines) != 1 || fmt.Sprint(lines[0].(map[string]any)["dimension_value_ids"]) != "["+eng+"]" {
+		t.Errorf("Rent for Engineering: %d %s", gl.Status, gl.Raw)
+	}
+}

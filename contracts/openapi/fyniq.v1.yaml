@@ -13432,9 +13432,14 @@ components:
           format: date
           type: string
         key:
-          description: current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month.
+          description: current, prior_period or prior_year; a month such as 2026-10 when the columns are by month; total, the run's total of a P&L by month or by dimension; value:<id> and none, a P&L by dimension's columns.
           examples:
             - current
+          type: string
+        label:
+          description: "A P&L by dimension's column: the value's code and name, No <dimension> for the lines with no value of it, or Total."
+          examples:
+            - ENG Engineering
           type: string
         to:
           description: "The run's last day: a balance sheet's or a trial balance's figures are at its end."
@@ -16892,6 +16897,17 @@ components:
           examples:
             - October office rent
           type: string
+        dimension_value_ids:
+          description: The line's dimension values (listDimensionValues).
+          items:
+            description: A dimension value's ID (listDimensionValues).
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21
+            format: uuid
+            type: string
+          type:
+            - array
+            - "null"
         entry_id:
           description: Its entry.
           examples:
@@ -111031,6 +111047,20 @@ paths:
               - "2026-10-31"
             format: date
             type: string
+        - description: "Only the lines that carry each of these dimension values (FR-DIM-02; listDimensionValues), such as a department's: the opening balance, the lines and the running balance are theirs. Each as its own dimension_value_id parameter."
+          explode: true
+          in: query
+          name: dimension_value_id
+          schema:
+            description: "Only the lines that carry each of these dimension values (FR-DIM-02; listDimensionValues), such as a department's: the opening balance, the lines and the running balance are theirs. Each as its own dimension_value_id parameter."
+            examples:
+              - - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d91
+            items:
+              type: string
+            maxItems: 10
+            type:
+              - array
+              - "null"
       responses:
         "200":
           content:
@@ -111658,19 +111688,44 @@ paths:
             examples:
               - prior_period
             type: string
-        - description: "total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative."
+        - description: "total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02), without a comparative."
           explode: false
           in: query
           name: columns
           schema:
             default: total
-            description: "total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative."
+            description: "total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02), without a comparative."
             enum:
               - total
               - month
+              - dimension
             examples:
               - total
             type: string
+        - description: "With columns=dimension: the dimension whose values make the columns (listDimensions)."
+          explode: false
+          in: query
+          name: dimension_id
+          schema:
+            description: "With columns=dimension: the dimension whose values make the columns (listDimensions)."
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+            format: uuid
+            type: string
+        - description: A P&L of the lines that carry each of these values only (listDimensionValues), such as a department's P&L; each as its own dimension_value_id parameter. A dimension's lines are one side of their entries, so a balance sheet, a cash flow or a trial balance takes none.
+          explode: true
+          in: query
+          name: dimension_value_id
+          schema:
+            description: A P&L of the lines that carry each of these values only (listDimensionValues), such as a department's P&L; each as its own dimension_value_id parameter. A dimension's lines are one side of their entries, so a balance sheet, a cash flow or a trial balance takes none.
+            examples:
+              - - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d91
+            items:
+              type: string
+            maxItems: 10
+            type:
+              - array
+              - "null"
         - description: Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands.
           explode: false
           in: query
@@ -111820,19 +111875,44 @@ paths:
             examples:
               - prior_period
             type: string
-        - description: "total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative."
+        - description: "total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02)."
           explode: false
           in: query
           name: columns
           schema:
             default: total
-            description: "total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative."
+            description: "total: one column for the run, and its comparative; month: a column per month and, for a P&L, the total, without a comparative; dimension: a P&L's column per value of dimension_id, one for the lines with no value of it, and their total (FR-DIM-02)."
             enum:
               - total
               - month
+              - dimension
             examples:
               - total
             type: string
+        - description: "With columns=dimension: the dimension whose values make the columns (listDimensions)."
+          explode: false
+          in: query
+          name: dimension_id
+          schema:
+            description: "With columns=dimension: the dimension whose values make the columns (listDimensions)."
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+            format: uuid
+            type: string
+        - description: A P&L of the lines that carry each of these values only (listDimensionValues); each as its own dimension_value_id parameter.
+          explode: true
+          in: query
+          name: dimension_value_id
+          schema:
+            description: A P&L of the lines that carry each of these values only (listDimensionValues); each as its own dimension_value_id parameter.
+            examples:
+              - - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d91
+            items:
+              type: string
+            maxItems: 10
+            type:
+              - array
+              - "null"
         - description: Read as at this ledger revision (FR-RPT-08), as an earlier statement recorded it; left out, the ledger as it stands.
           explode: false
           in: query
