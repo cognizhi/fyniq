@@ -211,8 +211,8 @@ func (k *Kit) dispatcher(clock ports.Clock) outbox.Dispatcher {
 func (k *Kit) SalesSender(clock ports.Clock) salesmail.Sender {
 	out := salesmail.Sender{Store: k.Store, Staging: k.Staging, Outbox: k.dispatcher(clock), Origin: k.Origin, Clock: clock}
 	if k.Render != nil {
-		out.Render = func(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time) (render.Response, error) {
-			return k.Render.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: created, Check: true})
+		out.Render = func(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time, logo []byte) (render.Response, error) {
+			return k.Render.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: created, Logo: logo, Check: true})
 		}
 	}
 	return out
@@ -223,8 +223,8 @@ func (k *Kit) SalesSender(clock ports.Clock) salesmail.Sender {
 func (k *Kit) Remittances(clock ports.Clock) remitmail.Sender {
 	out := remitmail.Sender{Store: k.Store, Staging: k.Staging, Outbox: k.dispatcher(clock)}
 	if k.Render != nil {
-		out.Render = func(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time) (render.Response, error) {
-			return k.Render.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: created, Check: true})
+		out.Render = func(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time, logo []byte) (render.Response, error) {
+			return k.Render.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: created, Logo: logo, Check: true})
 		}
 	}
 	return out

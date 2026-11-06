@@ -16,12 +16,15 @@ type BrandFile struct {
 }
 
 // BrandVersion is a version of the organisation's logo and brand (FR-ORG-09, rev 0.200): the logo for light and dark
-// backgrounds, the square icon (each optional) and the accent colour (empty: the design's default). Cleaned records,
-// per file kind, what the SVG sanitiser removed. Versions are never changed: a change is the next version.
+// backgrounds, the square icon (each optional) and the accent colour (empty: the design's default). Print is the PNG
+// the render service drew from the light logo for documents and emails (rev 0.201); nil without a light logo, or
+// when no render service drew it. Cleaned records, per file kind, what the SVG sanitiser removed. Versions are never
+// changed: a change is the next version.
 type BrandVersion struct {
 	ID                uuid.UUID
 	Version           int
 	Light, Dark, Icon *BrandFile
+	Print             *BrandFile
 	Accent            string
 	Cleaned           []byte // JSON: {"light": {"elements": {...}, "attributes": n, "external": n}, ...}
 	CreatedBy         uuid.UUID

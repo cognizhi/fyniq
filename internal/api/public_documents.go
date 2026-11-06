@@ -13,6 +13,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/brand"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
@@ -79,6 +80,7 @@ type PublicDocument struct {
 	Answer        *PublicAnswer `json:"answer,omitempty" doc:"A quote's answer, once given."`
 	CanAnswer     bool          `json:"can_answer" doc:"Whether the customer can accept or decline it here: a sent quote, still valid, with no answer." example:"true"`
 	LinkExpiresAt time.Time     `json:"link_expires_at" doc:"When the link stops working, at the latest." example:"2027-04-22T09:30:00Z"`
+	Logo          []byte        `json:"logo,omitempty" doc:"The supplier's logo as its documents show it (FR-ORG-09): a PNG, base64, of the brand in force when the document was issued. Absent when it has none." example:"iVBORw0KGgo="`
 }
 
 // PublicPDF is a document's PDF opened through its link.
@@ -367,15 +369,23 @@ func registerPublicDocuments(a *API) {
 			"full; every link that opens nothing answers the same 404 LINK-01. At most 30 a minute per link. Never cached or indexed.",
 	}, readCodes, func(ctx context.Context, in *LinkHeader) (*publicDocumentOutput, error) {
 		var out PublicDocument
+		var org uuid.UUID
+		var issued storage.BrandVersion
 		err := a.openLink(ctx, in.Token, func(ctx context.Context, u storage.UnitOfWork, o *opened) error {
 			if _, _, err := u.DocumentLinks().Viewed(ctx, o.link.ID, a.deps.Clock.Now()); err != nil {
 				return err
 			}
-			out = publicOf(o)
-			return nil
+			out, org = publicOf(o), o.org
+			var err error
+			issued, err = brand.At(ctx, u, o.data.Created)
+			return err
 		})
 		if err != nil {
 			return nil, err
+		}
+		// The page shows the document without its logo rather than not at all when the store cannot give it.
+		if out.Logo, err = brand.PrintLogo(ctx, a.deps.Staging, org, issued); err != nil {
+			logFailure(ctx, err)
 		}
 		return &publicDocumentOutput{CacheControl: noStore, Robots: noIndex, ReferrerPolicy: noReferrer, Body: out}, nil
 	})
@@ -390,14 +400,22 @@ func registerPublicDocuments(a *API) {
 		var data salesdoc.Invoice
 		var applied doctemplate.Applied
 		var docType string
+		var org uuid.UUID
+		var issued storage.BrandVersion
 		err := a.openLink(ctx, in.Token, func(ctx context.Context, u storage.UnitOfWork, o *opened) error {
-			data, docType = o.data, doctemplate.Quote
+			data, docType, org = o.data, doctemplate.Quote, o.org
 			if o.invoice {
 				docType = doctemplate.Invoice
 			}
 			var err error
-			applied, err = doctemplate.Applying(ctx, u, doctemplate.KindDocument, docType, &o.customer)
-			return err
+			if applied, err = doctemplate.Applying(ctx, u, doctemplate.KindDocument, docType, &o.customer); err != nil {
+				return err
+			}
+			if issued, err = brand.At(ctx, u, data.Created); err != nil {
+				return err
+			}
+			applied.Content = brand.Themed(applied.Content, applied.Source, issued)
+			return nil
 		})
 		if err != nil {
 			return nil, err
@@ -405,7 +423,11 @@ func registerPublicDocuments(a *API) {
 		if a.deps.Renderer == nil {
 			return nil, problem(doctemplate.CodeRenderer, "The document cannot be rendered just now.", "Try again later")
 		}
-		res, err := a.renderDocumentAt(ctx, docType, applied.Content, data.Data, data.Created)
+		logo, err := brand.PrintLogo(ctx, a.deps.Staging, org, issued)
+		if err != nil {
+			return nil, err
+		}
+		res, err := a.renderDocumentAt(ctx, docType, applied.Content, data.Data, data.Created, logo)
 		if err != nil {
 			return nil, err
 		}

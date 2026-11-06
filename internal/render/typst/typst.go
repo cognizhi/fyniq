@@ -30,6 +30,9 @@ var source []byte
 //go:embed report.typ
 var reportSource []byte
 
+//go:embed raster.typ
+var rasterSource []byte
+
 //go:embed fonts
 var fonts embed.FS
 
@@ -187,6 +190,38 @@ func (c *Compiler) Pages(ctx context.Context, in Input) ([][]byte, error) {
 		out = append(out, b)
 	}
 	return out, nil
+}
+
+// RasterPPI is the resolution of a rasterised logo: raster.typ draws it 96 points high, so 192 pixels.
+const RasterPPI = 144
+
+// Raster draws a logo, a cleaned SVG (svg) or a PNG, as a PNG with a transparent background, 192 pixels high and at
+// most 768 wide (FR-ORG-09): the copy documents and emails show. The logo and raster.typ are the folder's only files,
+// and the run is sandboxed as a document's.
+func (c *Compiler) Raster(ctx context.Context, logo []byte, svg bool) ([]byte, error) {
+	dir, err := os.MkdirTemp("", "fyniq-raster-")
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = os.RemoveAll(dir) }()
+	name := "logo.png"
+	if svg {
+		name = "logo.svg"
+	}
+	if err := os.WriteFile(filepath.Join(dir, name), logo, 0o600); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(filepath.Join(dir, "raster.typ"), rasterSource, 0o600); err != nil {
+		return nil, err
+	}
+	if err := os.Mkdir(filepath.Join(dir, "packages"), 0o700); err != nil {
+		return nil, err
+	}
+	if _, err := c.run(ctx, dir, "compile", "--input", "logo="+name, "--format", "png", "--ppi", strconv.Itoa(RasterPPI), "raster.typ",
+		"raster.png"); err != nil {
+		return nil, err
+	}
+	return os.ReadFile(filepath.Join(dir, "raster.png"))
 }
 
 // Particulars are the IRAS particulars the compiled document holds (render.Required lists those it must), each once,

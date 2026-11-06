@@ -7,18 +7,21 @@ import { BrandPage } from "./Brand";
 
 const options = ["Deep teal", "Navy", "Forest"].map((name, i) => ({ colour: `c-${i}`, name }));
 const light = { media_type: "image/svg+xml", size_bytes: 6144, sha256: "a".repeat(64), cleaned: { elements: ["image", "script"], attributes: 1, external: 1 } };
+const print = { media_type: "image/png", size_bytes: 7208, sha256: "b".repeat(64) };
 const svg = btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>');
 
 // req: FR-ORG-09
 describe("Logo and brand", () => {
-  it("shows the logo, says what was cleaned, and axe finds nothing", async () => {
+  it("shows the logo and how documents show it, says what was cleaned, and axe finds nothing", async () => {
     answer({
-      "GET /v1/organisation/brand": { status: 200, body: { version: 2, light, accent: "c-1", accent_options: options, updated_at: "2026-11-07T01:00:00Z" } },
+      "GET /v1/organisation/brand": { status: 200, body: { version: 2, light, print, accent: "c-1", accent_options: options, updated_at: "2026-11-07T01:00:00Z" } },
       "GET /v1/organisation/brand/files/light": { status: 200, body: { kind: "light", version: 2, media_type: "image/svg+xml", sha256: light.sha256, content_base64: svg } },
+      "GET /v1/organisation/brand/files/print": { status: 200, body: { kind: "print", version: 2, media_type: "image/png", sha256: print.sha256, content_base64: "iVBORw0KGgo=" } },
     });
     renderPage(BrandPage, { path: "/settings/brand" });
     expect(await screen.findByAltText("For light backgrounds: your logo")).toBeTruthy();
     expect(screen.getByText(/We removed image, script, 1 unsafe attribute and 1 outside reference/)).toBeTruthy();
+    expect(await screen.findByAltText("Your logo as documents show it")).toBeTruthy();
     expect(screen.getByRole("radio", { name: /Navy/ }).getAttribute("aria-checked")).toBe("true");
     await noViolations(document.body);
   });

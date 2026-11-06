@@ -2,9 +2,9 @@
 key: settings.brand
 type: task
 title: Upload the company logo and choose the accent colour
-summary: The logo for light and dark backgrounds and the square icon, what Fyniq cleans from an SVG, versions, and the accent colour of documents and emails
+summary: The logo for light and dark backgrounds, the icon, what Fyniq cleans from an SVG, the logo on documents, versions and the accent colour
 sources:
-  - docs/user-guide/logo-and-brand.md sha256:6ee20cf84e77146cec223f275fbf188d1d475c177582d914a29e340711e31c76
+  - docs/user-guide/logo-and-brand.md sha256:f10a560536849ecd2fb1e5a77f6798ac0d37937e350563029494285ebabda0f5
 data_class: general
 taint: trusted
 status: draft
@@ -20,6 +20,7 @@ aliases:
   - upload logo
   - svg logo
   - app icon
+  - logo on invoices
 ---
 
 # Upload the company logo and choose the accent colour
@@ -45,9 +46,16 @@ aliases:
 
 (src: docs/user-guide/logo-and-brand.md#what-fyniq-cleans-from-an-svg)
 
+## The logo on documents
+
+- Uploading the logo for light backgrounds also draws it as documents show it: a PNG 192 pixels high on a transparent background, shown under **On documents and emails**.
+- Quotes, invoices, statements, remittance advice and the page a customer opens from a quote's or invoice's link show it; a document always shows the logo and accent in force when it was issued, so a later change never alters a document already sent.
+
+(src: docs/user-guide/logo-and-brand.md#your-logo-on-documents)
+
 ## Accent colour and problems
 
-- **Accent colour**: one of the options, or **The default**; it colours documents and emails only, the app keeps its own colours, and each option reads clearly against white ([[settings.organisation]]).
-- "Not an SVG or a PNG Fyniq reads.": export the logo again. "The file is too large, too small or too complex.": an SVG is at most 512 KB, a PNG at most 2 MB and at least 512 pixels wide (an icon square, at least 192).
+- **Accent colour**: one of the options, or **The default**; it colours documents and emails only, the app keeps its own colours, and each option reads clearly against white ([[settings.organisation]]). Documents laid out with Fyniq's own template take it; a published template keeps its own colour.
+- "Not an SVG or a PNG Fyniq reads.": export the logo again. "The file is too large, too small or too complex.": an SVG is at most 512 KB, a PNG at most 2 MB and at least 512 pixels wide (an icon square, at least 192). "The logo cannot be drawn for documents and emails.": upload a simpler SVG, or the logo as a PNG.
 
 (src: docs/user-guide/logo-and-brand.md#choose-the-accent-colour) (src: docs/user-guide/logo-and-brand.md#common-problems) (src: docs/user-guide/logo-and-brand.md#related)

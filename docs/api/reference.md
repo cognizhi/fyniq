@@ -1302,22 +1302,22 @@ Sets the accent colour of documents and emails to one of the contrast-checked op
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
-  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BRAND-01` Not an SVG or a PNG Fyniq reads; `BRAND-02` The file is too large, too small or too complex; `BRAND-03` Not one of the accent options.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BRAND-01` Not an SVG or a PNG Fyniq reads; `BRAND-02` The file is too large, too small or too complex; `BRAND-03` Not one of the accent options; `BRAND-04` The logo cannot be drawn for documents and emails.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `BRAND-01`, `BRAND-02`, `BRAND-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `BRAND-01`, `BRAND-02`, `BRAND-03`, `BRAND-04`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
 ### `GET /v1/organisation/brand/files/{kind}`
 
 **Read a logo or icon file** (`getBrandFile`)
 
-One of the brand's files, of the version in force or of an earlier one (a document keeps the logo it was issued with, FR-ORG-09), in base64. An SVG is the cleaned copy: show it as an image, never inline as markup. Read-only; no side effects.
+One of the brand's files, of the version in force or of an earlier one (a document keeps the logo it was issued with, FR-ORG-09), in base64, the logo as documents show it included. An SVG is the cleaned copy: show it as an image, never inline as markup. Read-only; no side effects.
 
 - **Permission:** View on (membership)
 - **Parameters:**
-  - `kind` (path, required): light: the logo for light backgrounds; dark: for dark ones; icon: the square icon.
+  - `kind` (path, required): light: the logo for light backgrounds; dark: for dark ones; icon: the square icon; print: the logo as documents show it.
   - `version` (query): The version to read; 0 or absent for the one in force.
 - **Responses:**
   - `200` OK [`BrandFileContent`](../../contracts/schemas/BrandFileContent.schema.json)
@@ -1335,7 +1335,7 @@ One of the brand's files, of the version in force or of an earlier one (a docume
 
 **Upload a logo or icon** (`uploadBrandFile`)
 
-Replaces one of the brand's files, as multipart/form-data (FR-ORG-09). An SVG is reduced to a safe subset: no scripts, event handlers, external references, embedded images or fonts, and no document type or entities; the answer says what was removed. A PNG is written again without its metadata. Needs the Owner, the Administrator or the Controller. Side effects: the next brand version and its event in the organisation's trail; it takes effect at once. Needs If-Match with the brand's ETag ("0" before the first version). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+Replaces one of the brand's files, as multipart/form-data (FR-ORG-09). An SVG is reduced to a safe subset: no scripts, event handlers, external references, embedded images or fonts, and no document type or entities; the answer says what was removed. A PNG is written again without its metadata. The logo for light backgrounds is also drawn by the render service as documents and emails show it: a PNG 192 pixels high (print). Needs the Owner, the Administrator or the Controller. Side effects: the next brand version and its event in the organisation's trail; it takes effect at once. Needs If-Match with the brand's ETag ("0" before the first version). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
 
 - **Permission:** Create on Organisation profile, financial year, defaults (rev 0.29)
 - **Parameters:**
@@ -1352,18 +1352,18 @@ Replaces one of the brand's files, as multipart/form-data (FR-ORG-09). An SVG is
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
-  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BRAND-01` Not an SVG or a PNG Fyniq reads; `BRAND-02` The file is too large, too small or too complex; `BRAND-03` Not one of the accent options.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BRAND-01` Not an SVG or a PNG Fyniq reads; `BRAND-02` The file is too large, too small or too complex; `BRAND-03` Not one of the accent options; `BRAND-04` The logo cannot be drawn for documents and emails.
   - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
-  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-UNAVAILABLE-01`, `BRAND-01`, `BRAND-02`, `BRAND-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-UNAVAILABLE-01`, `BRAND-01`, `BRAND-02`, `BRAND-03`, `BRAND-04`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`, `TPL-17`
 
 ### `DELETE /v1/organisation/brand/files/{kind}`
 
 **Remove a logo or icon** (`removeBrandFile`)
 
-Removes one of the brand's files from the next version (FR-ORG-09); earlier versions keep it. Needs the Owner, the Administrator or the Controller. Side effects: the next brand version and its event in the organisation's trail; it takes effect at once. Needs If-Match with the brand's ETag ("0" before the first version). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+Removes one of the brand's files from the next version (FR-ORG-09), with the logo for light backgrounds its drawing for documents; earlier versions keep them. Needs the Owner, the Administrator or the Controller. Side effects: the next brand version and its event in the organisation's trail; it takes effect at once. Needs If-Match with the brand's ETag ("0" before the first version). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
 
 - **Permission:** Create on Organisation profile, financial year, defaults (rev 0.29)
 - **Parameters:**

@@ -19,6 +19,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
+	"github.com/cognizhi/fyniq/internal/domain/brand"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -118,6 +119,7 @@ type prepared struct {
 	doc               storage.Document
 	to, subject, body string
 	applied           doctemplate.Applied
+	brand             storage.BrandVersion // in force when the payment was made: its accent and logo (FR-ORG-09)
 	data              salesdoc.Invoice
 }
 
@@ -179,6 +181,10 @@ func (s Sender) prepare(ctx context.Context, org, id uuid.UUID) (prepared, error
 		if out.applied, err = doctemplate.Applying(ctx, u, doctemplate.KindDocument, doctemplate.Remittance, &d.SupplierID); err != nil {
 			return err
 		}
+		if out.brand, err = brand.At(ctx, u, out.data.Created); err != nil {
+			return err
+		}
+		out.applied.Content = brand.Themed(out.applied.Content, out.applied.Source, out.brand)
 		mail, err := doctemplate.Applying(ctx, u, doctemplate.KindEmail, doctemplate.Remittance, &d.SupplierID)
 		if err != nil {
 			return err
@@ -210,7 +216,11 @@ func (s Sender) Work() func(ctx context.Context, org uuid.UUID, row storage.Outb
 		if s.Render == nil {
 			return ErrNoRenderer
 		}
-		res, err := s.Render(ctx, doctemplate.Remittance, x.applied.Content, x.data.Data, x.data.Created)
+		logo, err := brand.PrintLogo(ctx, s.Staging, org, x.brand)
+		if err != nil {
+			return err
+		}
+		res, err := s.Render(ctx, doctemplate.Remittance, x.applied.Content, x.data.Data, x.data.Created, logo)
 		if err != nil {
 			return err
 		}

@@ -385,3 +385,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | sign-in.md, members-and-roles.md, sign-in-providers.md → auth.sign-in, members.invite, settings.sign-in-providers (joining by email domain, FR-ADM-08, PRD-001 rev 0.199); members.remove, members.roles rehashed
 
 ## [2026-11-07] compile | logo-and-brand.md (new) → settings.brand (new) (logo, icon, SVG cleaning and accent colour, FR-ORG-09, PRD-001 rev 0.200)
+
+## [2026-11-07] compile | docs/user-guide/logo-and-brand.md → settings.brand (the logo drawn for documents, the brand in force when a document was issued, BRAND-04; rev 0.201)
+
+## [2026-11-07] compile | docs/user-guide/logo-and-brand.md → settings.brand (the logo drawn for documents, the brand in force when a document was issued, BRAND-04; rev 0.201)

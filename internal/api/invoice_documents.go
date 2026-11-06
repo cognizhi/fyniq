@@ -9,6 +9,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/brand"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
@@ -57,6 +58,7 @@ func registerInvoiceDocuments(a *API) {
 			var out InvoiceDocument
 			var data salesdoc.Invoice
 			var applied doctemplate.Applied
+			var issued storage.BrandVersion
 			err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 				doc, err := u.Documents().Get(ctx, id)
 				if err != nil {
@@ -76,14 +78,24 @@ func registerInvoiceDocuments(a *API) {
 				if err != nil {
 					return err
 				}
-				applied, err = doctemplate.Applying(ctx, u, doctemplate.KindDocument, doctemplate.Invoice, &d.CustomerID)
+				if applied, err = doctemplate.Applying(ctx, u, doctemplate.KindDocument, doctemplate.Invoice, &d.CustomerID); err != nil {
+					return err
+				}
 				out.InvoiceNumber = doc.Number
-				return err
+				if issued, err = brand.At(ctx, u, data.Created); err != nil {
+					return err
+				}
+				applied.Content = brand.Themed(applied.Content, applied.Source, issued)
+				return nil
 			})
 			if err != nil {
 				return nil, err
 			}
-			res, err := a.renderInvoice(ctx, applied.Content, data)
+			logo, err := brand.PrintLogo(ctx, a.deps.Staging, p.Organisation, issued)
+			if err != nil {
+				return nil, err
+			}
+			res, err := a.renderInvoice(ctx, applied.Content, data, logo)
 			if err != nil {
 				return nil, err
 			}
@@ -110,11 +122,12 @@ func registerInvoiceDocuments(a *API) {
 		})
 }
 
-// renderInvoice renders an invoice's data with a template, finding its particulars, at the time it was issued.
-func (a *API) renderInvoice(ctx context.Context, c doctemplate.Content, d salesdoc.Invoice) (render.Response, error) {
+// renderInvoice renders an invoice's data with a template and the logo of the brand then in force, finding its
+// particulars, at the time it was issued.
+func (a *API) renderInvoice(ctx context.Context, c doctemplate.Content, d salesdoc.Invoice, logo []byte) (render.Response, error) {
 	if a.deps.Renderer == nil {
 		return render.Response{}, problem(doctemplate.CodeRenderer, "No render service is configured, so the invoice cannot be rendered.",
 			"Ask the operator to configure the render service")
 	}
-	return a.renderDocumentAt(ctx, doctemplate.Invoice, c, d.Data, d.Created)
+	return a.renderDocumentAt(ctx, doctemplate.Invoice, c, d.Data, d.Created, logo)
 }

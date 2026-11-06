@@ -14,6 +14,7 @@ import { SettingsPage } from "./SettingsPage";
 
 type Brand = components["schemas"]["Brand"];
 type Kind = "light" | "dark" | "icon";
+type FileKind = Kind | "print"; // print: the logo as documents show it, drawn by the render service
 
 const kinds: { kind: Kind; title: string; hint: string }[] = [
   { kind: "light", title: "For light backgrounds", hint: "Your main logo: the app, emails, documents and reports." },
@@ -28,7 +29,7 @@ export async function brandOf(): Promise<Brand> {
 }
 
 // useBrandImage is a data URL of one of the brand's files, of the version in force; undefined while there is none.
-export function useBrandImage(brand: Brand | undefined, kind: Kind) {
+export function useBrandImage(brand: Brand | undefined, kind: FileKind) {
   const file = brand?.[kind];
   return useQuery({
     queryKey: ["brand-file", kind, brand?.version, file?.sha256],
@@ -140,6 +141,20 @@ function Slot({ brand, kind, title, hint, may, onChanged }: { brand: Brand; kind
   );
 }
 
+// PrintPreview is the logo as documents show it: the PNG the render service drew from the logo for light backgrounds,
+// the size documents print it at (rev 0.201).
+function PrintPreview({ brand }: { brand: Brand }) {
+  const image = useBrandImage(brand, "print");
+  if (!brand.print) {
+    return <span className="fy-small fy-muted">Documents show no logo until the render service draws one: upload the logo again once it runs.</span>;
+  }
+  return (
+    <div className="grid h-[88px] place-items-center rounded-md border border-border" style={{ background: "var(--surface-1)" }}>
+      {image.data && <img src={image.data} alt="Your logo as documents show it" style={{ maxHeight: 48, maxWidth: "80%" }} />}
+    </div>
+  );
+}
+
 // BrandPage is Settings › Logo and brand (docs/design/screens LogoBrand; FR-ORG-09, PRD-001 rev 0.200): the logo for light
 // and dark backgrounds, the square icon and the accent colour of documents and emails. Each change is the next version
 // and takes effect at once; an SVG is cleaned first and the page says what went.
@@ -189,6 +204,12 @@ export function BrandPage() {
                 ))}
               </div>
             </div>
+            {b.light && (
+              <div className="fy-card__body fy-stack fy-stack--2">
+                <span className="fy-strong">On documents and emails</span>
+                <PrintPreview brand={b} />
+              </div>
+            )}
             <div className="fy-card__foot">
               <span className="fy-small fy-secondary">
                 {b.version ? `Version ${b.version}${b.updated_at ? `, saved ${dateTime(b.updated_at)}` : ""}. ` : ""}

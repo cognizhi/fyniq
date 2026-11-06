@@ -86,8 +86,12 @@
   PNG again; the accent is one of eight contrast-checked options. `GET /v1/organisation/brand`, the files by kind and
   version, upload, remove and the accent; Settings › Logo and brand; the header shows the logo. Tests
   `TestAHostileSVGLogoIsMadeSafe`, `TestASVSWithEntitiesOrNoShapeIsRefused`, `TestTheLogoAndBrand`, `brand.test.tsx`.
-  **Left:** the PNG rasterised from an SVG by the render service, and the logo on documents (an issued document keeps
-  its version), emails, reports, the sign-in page and the portal.)
+  (7 Nov 2026, rev 0.201, part 2: the render service draws the light logo as documents show it (`raster`, Typst, a
+  transparent PNG 192 pixels high), kept with the version (migrations 000247 and 000248); quotes, invoices, statements,
+  remittance advice, previews and the customer's page show the logo, and the platform's starter the accent, of the brand
+  in force when the document was issued. Tests `TestTheRenderServiceRasterisesTheLogo`, `TestAnIssuedDocumentKeepsItsLogo`,
+  `TestTheBrandInForceAndItsAccent`, `documentView.test.tsx`.)
+  **Left:** the logo in emails (HTML email), PDF reports and board packs, and the sign-in page.)
 
 ## 3. Chart of accounts and dimensions
 

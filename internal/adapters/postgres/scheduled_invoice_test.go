@@ -128,7 +128,7 @@ func TestTheSchedulerIssuesOnlyApprovedRecurringInvoices(t *testing.T) {
 	frozen := clock.NewFrozen(time.Date(2026, 11, 1, 2, 0, 0, 0, time.UTC))
 	sender := salesmail.Sender{Store: worker, Staging: blobs, Outbox: outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: frozen},
 		Origin: "https://fyniq.test", Clock: frozen,
-		Render: func(context.Context, string, doctemplate.Content, render.Data, time.Time) (render.Response, error) {
+		Render: func(context.Context, string, doctemplate.Content, render.Data, time.Time, []byte) (render.Response, error) {
 			return render.Response{PDF: pdf, SHA256: hex.EncodeToString(sum[:])}, nil
 		}}
 	if n, err := sender.SendScheduled(context.Background(), b.Org); err != nil || n != 1 {
