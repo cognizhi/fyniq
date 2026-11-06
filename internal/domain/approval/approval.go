@@ -113,6 +113,9 @@ const (
 	// (FR-EQ-05, FR-GL-12, FM-1, FM-9): another person who holds A on "Payment batches" approves it, never the person
 	// repaid (APR-15); its key is its id.
 	ObjectDirectorRepayment = "director_repayment"
+	// ObjectAccount is an account of the chart to merge into another (FR-COA-04, FM-1; PRD-001 rev 0.174); its key is the
+	// account's id.
+	ObjectAccount = "account"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -186,6 +189,9 @@ const (
 	OpSettlementApprove = "director_settlement.approve"
 	// OpRepaymentVoid voids a director's repayment: its entry reversed, the settlements open again.
 	OpRepaymentVoid = "director_repayment.void"
+	// OpAccountMerge merges an account into another: its balance moved by one entry, the account inactive for good
+	// (account_merge@1, Appendix B.8).
+	OpAccountMerge = "account.merge"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -212,6 +218,7 @@ var Operations = map[string]string{
 	OpDirectorFeePost:    ObjectDirectorFee,
 	OpSettlementApprove:  ObjectDirectorSettlement,
 	OpRepaymentVoid:      ObjectDirectorRepayment,
+	OpAccountMerge:       ObjectAccount,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -290,6 +297,8 @@ var Dependencies = map[string][]string{
 	ObjectDirectorSettlement: {"status", "amount", "owed"},
 	// the repayment's version and status, and what it repaid in the base currency: what the void reverses
 	ObjectDirectorRepayment: {"status", "repaid"},
+	// the two accounts' versions, and what the account merged holds now in each currency and dimension set: what moves
+	ObjectAccount: {"account_version", "into_version", "holdings"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -332,6 +341,7 @@ var Rows = map[string]string{
 	ObjectDirectorFee:         "Director accounts, settlements, share issues (rev 0.3)",
 	ObjectDirectorSettlement:  "Director accounts, settlements, share issues (rev 0.3)",
 	ObjectDirectorRepayment:   "Payment batches",
+	ObjectAccount:             "Chart of accounts, dimensions",
 }
 
 // The limits of a policy.
@@ -403,6 +413,7 @@ var Policies = map[string]Policy{
 	ObjectDirectorFee:         {ObjectType: ObjectDirectorFee, Version: "founder/director_fee@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
 	ObjectDirectorSettlement:  {ObjectType: ObjectDirectorSettlement, Version: "founder/director_settlement@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
 	ObjectDirectorRepayment:   {ObjectType: ObjectDirectorRepayment, Version: "founder/director_repayment@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
+	ObjectAccount:             {ObjectType: ObjectAccount, Version: "founder/account@2026-11-06.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

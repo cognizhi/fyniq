@@ -181,4 +181,52 @@ describe("the chart of accounts", () => {
     await waitFor(() => expect(calls()).toContain("PATCH /v1/accounts/a1"));
     expect(seen.find((s) => s.method === "PATCH")?.body).toEqual({ required_dimension_ids: ["d3", "d2"] });
   });
+
+  // req: FR-COA-04
+  it("asks for a merge into an account of the same type, over the account's version, and offers none on a system account", async () => {
+    const asked = { id: "ap1", object_type: "account", object_key: "a1", operation: "account.merge", summary: "Merge 6110 Rent into 6115 Co-working on 2026-11-30", status: "pending" };
+    const seen = answer({
+      "GET /v1/accounts": { status: 200, body: { items: [office, rent, desk, ar] } },
+      "GET /v1/approvals": { status: 200, body: { items: [] } },
+      "POST /v1/accounts/a1/merge-approval": { status: 202, body: asked },
+    });
+    renderPage(ChartOfAccounts, { path: "/accounting/chart-of-accounts", session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "Merge 6110 Rent into another account" }));
+    expect(screen.queryByRole("button", { name: "Merge 1100 Accounts receivable into another account" })).toBeNull();
+    const dialog = await screen.findByRole("dialog");
+    const into = within(dialog).getByLabelText("Merge it into") as HTMLSelectElement;
+    expect([...into.options].map((o) => o.text)).toEqual(["Choose an account", "6115 Co-working"]);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Ask for approval" }));
+    expect(await within(dialog).findByText("Choose the account to merge it into.")).toBeTruthy();
+    fireEvent.change(into, { target: { value: "a2" } });
+    fireEvent.change(within(dialog).getByLabelText("On"), { target: { value: "2026-11-30" } });
+    await noViolations(dialog);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Ask for approval" }));
+    expect(await screen.findByText("Merge 6110 Rent into 6115 Co-working on 2026-11-30: waiting for approval.")).toBeTruthy();
+    const post = seen.find((s) => s.method === "POST");
+    expect(post?.body).toEqual({ into_account_id: "a2", date: "2026-11-30" });
+    expect(post?.headers.get("If-Match")).toBe('"1"');
+    expect(post?.headers.get("Idempotency-Key")).toBeTruthy();
+  });
+
+  // req: FR-COA-04
+  it("shows a merge waiting for approval, and an account merged into another for good", async () => {
+    const merged = acc("a5", "6135", "SaaS tools", { active: false, merged_into_id: "a2" });
+    answer({
+      "GET /v1/accounts": { status: 200, body: { items: [office, rent, desk, merged] } },
+      "GET /v1/approvals": {
+        status: 200,
+        body: { items: [{ id: "ap1", object_type: "account", object_key: "a1", operation: "account.merge", summary: "Merge 6110 Rent into 6115 Co-working on 2026-11-30", status: "pending" }] },
+      },
+    });
+    renderPage(ChartOfAccounts, { path: "/accounting/chart-of-accounts", session: accountant });
+    expect(await screen.findByText("Merge waiting for approval")).toBeTruthy();
+    const expenses = await screen.findByRole("table", { name: "Expenses" });
+    expect(within(expenses).getByText("Merge awaiting approval")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Merge 6110 Rent into another account" })).toBeNull();
+    fireEvent.click(screen.getByLabelText("Show inactive accounts"));
+    expect(within(screen.getByRole("table", { name: "Expenses" })).getByText("Merged into 6115")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Change 6135 SaaS tools" })).toBeNull();
+    await noViolations(document.body);
+  });
 });

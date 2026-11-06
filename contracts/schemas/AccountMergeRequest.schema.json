@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "The day its balance moves: in an open period, on or after its last posting.",
+      "examples": [
+        "2026-11-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "into_account_id": {
+      "description": "The account it is merged into: an active account of the same type, held in the same currency (or in none, as it is), that is not a group, a system account, a money account or a control account; one marked revalue when it is.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d62"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "into_account_id",
+    "date"
+  ],
+  "title": "AccountMergeRequest",
+  "type": "object"
+}

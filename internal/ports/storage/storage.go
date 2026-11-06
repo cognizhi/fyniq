@@ -403,6 +403,9 @@ type AccountChange struct {
 	ParentID *uuid.UUID
 	Group    bool
 	Active   bool
+	// MergedInto is the account it was merged into (FR-COA-04, rev 0.174): set once, as it becomes inactive, by an
+	// approved merge after its entry; the database keeps it, and the account inactive, from then on. nil keeps it.
+	MergedInto *uuid.UUID
 	AccountAttributes
 }
 
@@ -417,6 +420,8 @@ type Account struct {
 	Active   bool
 	Version  int
 	Role     AccountRole
+	// MergedInto is the account it was merged into, nil until an approved merge (FR-COA-04, rev 0.174).
+	MergedInto *uuid.UUID
 	AccountAttributes
 }
 
@@ -550,6 +555,9 @@ const (
 	// approved to be repaid (posted Dr 2500/2120 · Cr the money account), recorded only with the release (FR-EQ-05,
 	// FR-BNK-12; design D10); numbered DR-.
 	DocumentDirectorRepayment DocumentType = "director_repayment"
+	// DocumentAccountMerge is an approved merge of one account into another: the two accounts, the date and what the
+	// account merged held, each currency and dimension set apart (posted account_merge@1, FR-COA-04, Appendix B.8).
+	DocumentAccountMerge DocumentType = "account_merge"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).

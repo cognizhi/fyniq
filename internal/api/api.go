@@ -97,6 +97,7 @@ type API struct {
 	advances             journal.CashAdvances        // cash advances to members and their refunds (FR-AP-17)
 	preCosts             journal.PreCosts            // costs founders paid before the books start (FR-EQ-03)
 	fees                 journal.DirectorFees        // directors' fees, posted on another person's approval (FR-EQ-04)
+	merges               journal.AccountMerges       // accounts merged into others, on another person's approval (FR-COA-04)
 	settlements          journal.DirectorSettlements // settlements of founders' balances, kept or waived (FR-EQ-05, FR-EQ-07)
 	repayments           journal.DirectorRepayments  // what payment batches repay directors (FR-EQ-05, FR-BNK-12)
 	assets               journal.FixedAssets         // the fixed asset register (FR-FA-01…03)
@@ -241,6 +242,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.advances.AfterPosting = a.afterPosting
 	a.preCosts.AfterPosting = a.afterPosting
 	a.fees.AfterPosting = a.afterPosting
+	a.merges.AfterPosting = a.afterPosting
 	a.settlements.AfterPosting = a.afterPosting
 	a.repayments.AfterPosting = a.afterPosting
 	a.disposals.AfterPosting = a.afterPosting
@@ -273,6 +275,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerChecks(a)
 	registerReportExports(a)
 	registerSchedules(a)
+	registerAccountMerges(a)
 	registerAccountEditing(a)
 	registerDimensions(a)
 	registerContacts(a)

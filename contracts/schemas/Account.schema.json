@@ -80,6 +80,14 @@
       "format": "uuid",
       "type": "string"
     },
+    "merged_into_id": {
+      "description": "The account it was merged into by an approved merge (FR-COA-04, PRD-001 rev 0.174): it is then inactive for good, and its balance moved there. Left out for an account never merged.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d62"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "money_account": {
       "description": "A bank, cash, card or wallet account money moves through.",
       "examples": [

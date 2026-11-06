@@ -90,6 +90,20 @@
   control and payroll-cost flags are refused until the approval engine. Manual journals to system accounts post, as
   question 55 decided, except share capital (INV-13). **Left:** the approved journal-preserving merge (FR-COA-04), which
   needs the approval engine; the ⚠ on a manual journal to a control account (question 55), with the checks.)
+  (6 Nov 2026, the merge, on the owner's decision of rev 0.174: `POST /v1/accounts/{account_id}/merge-approval` asks for
+  account.merge (C on "Chart of accounts, dimensions"), which A approves, never the one who asked (FM-1); its envelope
+  binds both accounts' versions and what the account holds (FR-APR-05). On the approval an `account_merge` document and
+  its entry `account_merge@1` (Appendix B.8, `ledger.PostAccountMerge`) move a balance-sheet account's whole balance, or
+  an income or expense account's movement in the financial year, each currency and dimension set at its recorded base
+  value, and the account becomes inactive for good, `merged_into_id` naming the other; earlier postings stay. Refused for
+  a system, group, money or control account, accounts of different types or currencies, a date outside an open period or
+  before the last posting (MERGE-01, MERGE-02), and while a spread, an asset or an automatic reversal still posts to it
+  (MERGE-03). Migrations 000224 and 000225: the column, `account_merge_guard` (FY260) and the widened checks. The chart's
+  merge button, "Merge awaiting approval", the banner and "Merged into"; help key `chart.merge`; the guide's "Merge an
+  account", compiled into `accounting.chart`. Tests `TestPostAccountMerge`, `TestAnAccountMergesOnAnotherFoundersApproval`,
+  `TestAMergeMovesTheYearsMovementOrTheWholeBalance`, `TestAttackAMergedAccountStaysMerged`, `ChartOfAccounts.test.tsx`.
+  **Left:** the ⚠ on a manual journal to a control account (question 55), with the checks; the oracle's half of
+  `account_merge@1`.)
 - [ ] 3.3 Dimensions and dimension sets on journal lines. The balances cache is keyed by dimension set, and the INV-08 rebuild and the oracle's half are extended. Tests `// req: FR-DIM-01` and `// req: FR-DIM-02`; the differential gate is green
   (4 Nov 2026, slice 1, the database: migrations 000218 to 000220 add `dimension` (Department, Project and custom
   places 1 to 8), `dimension_value` and `dimension_set` (one row per combination, its values in ascending order, at

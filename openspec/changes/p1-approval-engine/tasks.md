@@ -109,6 +109,10 @@
   `payee_bank_change.approve`, approved by A on "Vendor bank details" by someone who neither prepared nor asked for the
   change, in every team mode (FY237). **Left:** account merges, the rest of FR-ADM-04 and Owner changes, as those
   features land.)
+  (6 Nov 2026, rev 0.174: account merges go through the engine as the object type `account` with `account.merge`,
+  asked for with C and approved with A on "Chart of accounts, dimensions"; dependencies: both accounts' versions and what
+  the account holds, each currency and dimension set (`p1-organisation-chart` task 3.2). **Left:** the rest of
+  FR-ADM-04 and Owner changes.)
 
 ## 5. Screens
 
