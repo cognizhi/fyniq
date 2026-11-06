@@ -11348,7 +11348,7 @@ The approval requests you asked for or hold a right on the object of, oldest fir
 
 **Get an approval request** (`getApproval`)
 
-One approval request with exactly what an approver signs: the envelope (RFC 8785 canonical JSON) and its SHA-256, what it changes before and after, and its signatures (FR-APR-02, FR-APR-03, FR-APR-10). Shown to its requester and to whoever holds a right on its object. Read-only; no side effects.
+One approval request with exactly what an approver signs: the envelope (RFC 8785 canonical JSON) and its SHA-256, what it changes before and after, and its signatures (FR-APR-02, FR-APR-03, FR-APR-10). While it waits, also what approving it would post now, with the balances of the accounts it moves before and after, or what would refuse it: the change is carried out in a transaction that is rolled back, so nothing is kept (rev 0.177). Shown to its requester and to whoever holds a right on its object. Read-only; no side effects.
 
 - **Permission:** View on (approvals). Each approval's own policy decides: the Appendix D row of the object it changes. Never the AI (§9.6). Shows a request to its requester and to whoever holds a right on its object.
 - **Parameters:**

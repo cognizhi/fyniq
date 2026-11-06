@@ -11,6 +11,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { Changes, ConfirmDecision, HashLine } from "./Decide";
+import { Impact } from "./Impact";
 import { objectLabel, operationLabel, StatusChip, stepWho, type Approval } from "./words";
 import { EvidencePanel } from "../accounting/JournalEvidence";
 import { CompareNumbers } from "../contacts/BankDetails";
@@ -238,6 +239,20 @@ export function ApprovalPage() {
           <Changes diff={a.diff} />
         </div>
       </section>
+
+      {a.impact && (
+        <section className="fy-card" aria-labelledby="impact-title">
+          <div className="fy-card__head">
+            <h2 className="fy-h3" id="impact-title">
+              What approving it would post
+            </h2>
+            <span className="fy-small fy-muted">Worked out now; nothing is kept</span>
+          </div>
+          <div className="fy-card__body">
+            <Impact impact={a.impact} />
+          </div>
+        </section>
+      )}
 
       {a.object_type === "payee_bank_change" && (
         <>

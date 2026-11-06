@@ -48,6 +48,12 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 - **WHEN** an approver opens an item waiting for their approval
 - **THEN** the document, its ledger impact as debits and credits, the balances it affects and its checks are shown
 
+#### Scenario: What approving would post now
+- **GIVEN** a request waiting for approval (rev 0.177)
+- **WHEN** someone who may see it reads it
+- **THEN** it shows the entries approving it would post now and the balances of the accounts they move before and after, worked out in a transaction that is rolled back
+- **AND** shows instead what would refuse it now, such as a month closed since it was asked for, and keeps nothing
+
 #### Scenario: Diff against the previous version
 - **GIVEN** the record being approved has a previous version
 - **WHEN** the approver opens it
