@@ -63,9 +63,9 @@ type SignInMethodPage struct {
 
 // SignInMethodRequest is a provider's switches as a Super admin wants them.
 type SignInMethodRequest struct {
-	Enabled        bool     `json:"enabled" doc:"Whether it signs people in." example:"false"`
+	Enabled        bool          `json:"enabled" doc:"Whether it signs people in." example:"false"`
 	AllowedDomains []EmailDomain `json:"allowed_domains" maxItems:"20" doc:"The email domains it accepts, such as example.com; empty: any."`
-	EndSessions    bool     `json:"end_sessions,omitempty" doc:"With enabled false: also sign out every session it started, at once." example:"true"`
+	EndSessions    bool          `json:"end_sessions,omitempty" doc:"With enabled false: also sign out every session it started, at once." example:"true"`
 }
 
 // SignInMethodPath names a sign-in provider.
