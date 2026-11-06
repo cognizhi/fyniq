@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "finished_at": {
+      "description": "When it succeeded or failed; absent while it runs.",
+      "examples": [
+        "2026-11-07T09:00:04Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The operation.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "What the work is: report_export prepares an accountant export (requestReportExport); checks_run runs every check (runChecks).",
+      "enum": [
+        "report_export",
+        "checks_run"
+      ],
+      "examples": [
+        "report_export"
+      ],
+      "type": "string"
+    },
+    "requested_at": {
+      "description": "When it was asked for.",
+      "examples": [
+        "2026-11-07T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "resource": {
+      "description": "The path of what the work makes or changes: read it for the outcome, such as the export's file or the checks' last run.",
+      "examples": [
+        "/v1/report-exports/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "running: waiting or under way, and retried after a failure; succeeded: done, so read the resource; failed: it gave up after its attempts, so ask again.",
+      "enum": [
+        "running",
+        "succeeded",
+        "failed"
+      ],
+      "examples": [
+        "succeeded"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "status",
+    "resource",
+    "requested_at"
+  ],
+  "title": "Operation",
+  "type": "object"
+}

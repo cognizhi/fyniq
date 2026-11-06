@@ -1891,7 +1891,7 @@ export interface paths {
         put?: never;
         /**
          * Run every check now
-         * @description Asks the worker to run every check of the organisation now (Run now; FR-CTL-01, design D5). The answer is 202: listChecks' last_run finishes after requested_at once it has run, and run_requested is true until then. A Run now asked while one waits joins it. At most one a minute for the organisation: 429 with Retry-After after that. Side effects: the background run, which records each check's result, audits each change of status and records the run. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.
+         * @description Asks the worker to run every check of the organisation now (Run now; FR-CTL-01, design D5). The answer is 202: listChecks' last_run finishes after requested_at once it has run, and run_requested is true until then; its Location is the operation to poll (FR-INT-11). A Run now asked while one waits joins it, and its operation names the same run. At most one a minute for the organisation: 429 with Retry-After after that. Side effects: the background run, which records each check's result, audits each change of status and records the run. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.
          */
         post: operations["runChecks"];
         delete?: never;
@@ -6232,6 +6232,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/operations/{operation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Poll a long operation
+         * @description The status of long work the caller asked for, which runs in the background (FR-INT-11): an answer of 202 names it in its Location. running answers Retry-After; succeeded and failed say when, and resource is what the work made or changed. Only whoever asked for it reads it: anyone else gets 404. Read-only; no side effects.
+         */
+        get: operations["getOperation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/organisation": {
         parameters: {
             query?: never;
@@ -8539,7 +8559,7 @@ export interface paths {
         put?: never;
         /**
          * Ask for an accountant export
-         * @description Asks for one of the accountant exports (FR-RPT-10) as CSV or XLSX, which the worker prepares in the background (FR-RPT-09): the general ledger or the journal entries over a range of days, or the trial balance, the fixed asset schedule, or the receivables or payables in detail at a day. The answer is 202 with the export, pending; getReportExport says when it is ready, and the caller is notified. Its file is downloaded with getReportExportFile, by the caller only, until 24 hours after it is ready. Side effects: the export and its audit event, and the job. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.
+         * @description Asks for one of the accountant exports (FR-RPT-10) as CSV or XLSX, which the worker prepares in the background (FR-RPT-09): the general ledger or the journal entries over a range of days, or the trial balance, the fixed asset schedule, or the receivables or payables in detail at a day. The answer is 202 with the export, pending, and its Location is the operation to poll (FR-INT-11); getReportExport also says when it is ready, and the caller is notified. Its file is downloaded with getReportExportFile, by the caller only, until 24 hours after it is ready. Side effects: the export and its audit event, and the job. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks for nothing.
          */
         post: operations["requestReportExport"];
         delete?: never;
@@ -14370,6 +14390,12 @@ export interface components {
              * @example false
              */
             already_waiting: boolean;
+            /**
+             * Format: uuid
+             * @description The operation to poll at getOperation until the run is done (FR-INT-11); absent in a preview.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+             */
+            operation_id?: string;
             /**
              * Format: date-time
              * @description When it was asked for: the run that follows finishes after it.
@@ -23168,6 +23194,43 @@ export interface components {
             entry: components["schemas"]["Entry"];
             opening_balances: components["schemas"]["OpeningBalances"];
         };
+        Operation: {
+            /**
+             * Format: date-time
+             * @description When it succeeded or failed; absent while it runs.
+             * @example 2026-11-07T09:00:04Z
+             */
+            finished_at?: string;
+            /**
+             * Format: uuid
+             * @description The operation.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+             */
+            id: string;
+            /**
+             * @description What the work is: report_export prepares an accountant export (requestReportExport); checks_run runs every check (runChecks).
+             * @example report_export
+             * @enum {string}
+             */
+            kind: "report_export" | "checks_run";
+            /**
+             * Format: date-time
+             * @description When it was asked for.
+             * @example 2026-11-07T09:00:00Z
+             */
+            requested_at: string;
+            /**
+             * @description The path of what the work makes or changes: read it for the outcome, such as the export's file or the checks' last run.
+             * @example /v1/report-exports/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+             */
+            resource: string;
+            /**
+             * @description running: waiting or under way, and retried after a failure; succeeded: done, so read the resource; failed: it gave up after its attempts, so ask again.
+             * @example succeeded
+             * @enum {string}
+             */
+            status: "running" | "succeeded" | "failed";
+        };
         OrderBillLine: {
             /**
              * Format: int64
@@ -26504,6 +26567,12 @@ export interface components {
              * @example application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
              */
             media_type?: string;
+            /**
+             * Format: uuid
+             * @description In the answer that asked for it: the operation to poll at getOperation until it is ready (FR-INT-11).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+             */
+            operation_id?: string;
             /**
              * Format: date-time
              * @description When it was ready.
@@ -44583,6 +44652,7 @@ export interface operations {
             /** @description Accepted */
             202: {
                 headers: {
+                    Location?: string;
                     /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
                     "Preference-Applied"?: string;
                     /** @description What is left of the limit (r) and the seconds until the window ends (t). */
@@ -78785,6 +78855,112 @@ export interface operations {
             };
         };
     };
+    getOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The operation, from the Location of the answer that started it. */
+                operation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Operation"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getOrganisation: {
         parameters: {
             query?: never;
@@ -95839,6 +96015,7 @@ export interface operations {
             202: {
                 headers: {
                     "Idempotent-Replayed"?: string;
+                    Location?: string;
                     /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
                     "Preference-Applied"?: string;
                     /** @description What is left of the limit (r) and the seconds until the window ends (t). */

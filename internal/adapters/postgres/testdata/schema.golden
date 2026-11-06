@@ -1044,6 +1044,13 @@ notification_preference | quiet_to | smallint | null |
 notification_preference | set_at | timestamp with time zone | not null | 
 opening_balance | organisation_id | uuid | not null | current_org()
 opening_balance | document_id | uuid | not null | 
+operation | organisation_id | uuid | not null | current_org()
+operation | id | uuid | not null | uuidv7()
+operation | kind | text | not null | 
+operation | job_id | uuid | not null | 
+operation | resource | text | not null | 
+operation | requested_by | text | not null | 
+operation | requested_at | timestamp with time zone | not null | 
 organisation | organisation_id | uuid | not null | current_org()
 organisation | name | text | not null | 
 organisation | base_currency | text | not null | 
@@ -3199,6 +3206,19 @@ opening_balance | opening_balance_document_id_not_null | NOT NULL document_id
 opening_balance | opening_balance_organisation_id_not_null | NOT NULL organisation_id
 opening_balance | opening_balance_pkey | PRIMARY KEY (organisation_id)
 opening_balance | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+operation | operation_id_not_null | NOT NULL id
+operation | operation_job_fkey | FOREIGN KEY (organisation_id, job_id) REFERENCES outbox(organisation_id, id)
+operation | operation_job_id_not_null | NOT NULL job_id
+operation | operation_kind_known | CHECK ((kind = ANY (ARRAY['report_export'::text, 'checks_run'::text])))
+operation | operation_kind_not_null | NOT NULL kind
+operation | operation_organisation_id_not_null | NOT NULL organisation_id
+operation | operation_pkey | PRIMARY KEY (organisation_id, id)
+operation | operation_requested_at_not_null | NOT NULL requested_at
+operation | operation_requested_by_format | CHECK ((requested_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+operation | operation_requested_by_not_null | NOT NULL requested_by
+operation | operation_resource_not_null | NOT NULL resource
+operation | operation_resource_path | CHECK ((resource ~ '^/v1/[a-z0-9/_-]{1,200}$'::text))
+operation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 organisation | organisation_base_currency_fkey | FOREIGN KEY (base_currency, base_minor_units) REFERENCES currency(code, minor_units)
 organisation | organisation_base_currency_not_null | NOT NULL base_currency
 organisation | organisation_base_minor_units_not_null | NOT NULL base_minor_units
@@ -4039,6 +4059,7 @@ CREATE INDEX notification_digest_due ON fyniq.notification USING btree (organisa
 CREATE INDEX notification_event_pending ON fyniq.notification_event USING btree (organisation_id, occurred_at) WHERE (fanned_out_at IS NULL)
 CREATE INDEX notification_inbox ON fyniq.notification USING btree (organisation_id, user_id, created_at DESC) WHERE (archived_at IS NULL)
 CREATE INDEX notification_preference_latest ON fyniq.notification_preference USING btree (organisation_id, user_id, type, set_at)
+CREATE INDEX operation_job ON fyniq.operation USING btree (organisation_id, job_id)
 CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, state, deadline_at)
 CREATE INDEX payee_bank_account_fingerprint ON fyniq.payee_bank_account USING btree (organisation_id, number_fingerprint) WHERE (state = 'in_force'::text)
 CREATE INDEX payment_batch_payment_release ON fyniq.payment_batch_payment USING btree (organisation_id, release_id)
@@ -4228,6 +4249,7 @@ CREATE UNIQUE INDEX notification_once ON fyniq.notification USING btree (organis
 CREATE UNIQUE INDEX notification_pkey ON fyniq.notification USING btree (organisation_id, id)
 CREATE UNIQUE INDEX notification_preference_pkey ON fyniq.notification_preference USING btree (organisation_id, id)
 CREATE UNIQUE INDEX opening_balance_pkey ON fyniq.opening_balance USING btree (organisation_id)
+CREATE UNIQUE INDEX operation_pkey ON fyniq.operation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX organisation_connector_live ON fyniq.organisation_connector USING btree (organisation_id, connector) WHERE (state <> 'uninstalled'::text)
 CREATE UNIQUE INDEX organisation_connector_pkey ON fyniq.organisation_connector USING btree (organisation_id, id)
 CREATE UNIQUE INDEX organisation_connector_secret_current ON fyniq.organisation_connector_secret USING btree (organisation_id, connector_id, name) WHERE ((valid_until IS NULL) AND (destroyed_at IS NULL))
@@ -4353,6 +4375,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.money_account_sour
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.notification_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('notification_event', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.notification_preference DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('notification_preference', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.opening_balance DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.operation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('operation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payment_batch_payment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'payment_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payment_batch_release DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'batch_id')
@@ -4590,6 +4613,8 @@ CREATE TRIGGER notification_preference_guard BEFORE DELETE OR UPDATE ON fyniq.no
 CREATE TRIGGER notification_preference_no_truncate BEFORE TRUNCATE ON fyniq.notification_preference FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER opening_balance_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.opening_balance FOR EACH ROW EXECUTE FUNCTION opening_balance_guard()
 CREATE TRIGGER opening_balance_no_truncate BEFORE TRUNCATE ON fyniq.opening_balance FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER operation_guard BEFORE DELETE OR UPDATE ON fyniq.operation FOR EACH ROW EXECUTE FUNCTION operation_guard()
+CREATE TRIGGER operation_no_truncate BEFORE TRUNCATE ON fyniq.operation FOR EACH STATEMENT EXECUTE FUNCTION operation_guard()
 CREATE TRIGGER organisation_connector_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.organisation_connector FOR EACH ROW EXECUTE FUNCTION connector_guard()
 CREATE TRIGGER organisation_connector_no_truncate BEFORE TRUNCATE ON fyniq.organisation_connector FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER organisation_connector_routed AFTER INSERT OR UPDATE OF state ON fyniq.organisation_connector FOR EACH ROW EXECUTE FUNCTION organisation_connector_routed()
@@ -4742,6 +4767,7 @@ notification_digest | tenant_isolation | * | (organisation_id = current_org()) |
 notification_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 notification_preference | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 opening_balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+operation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 organisation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 organisation_connector | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 organisation_connector_secret | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -4947,6 +4973,7 @@ notification_append_only() → trigger | security invoker | v | search_path=pg_c
 notification_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d9d3ebc8e803ce5555a7d2b708d60ba
 notification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a87982bcfd592985b20b311ab99d6c53
 opening_balance_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c2ce7b1e284de3ad59fe6cb84f6a4efd
+operation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cf33967b1fa7a0928b933d6b266a0ba7
 organisation_connector_route(p_id uuid) → TABLE(organisation_id uuid, connector text, state text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 5f3c5bc22d3b807ee390beb8be8df823
 organisation_connector_routed() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e2531e8042725c748ea5b1b3618ba342
 organisation_created() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 680a26e58b46782835405da52a7402e9

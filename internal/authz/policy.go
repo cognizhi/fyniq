@@ -1215,6 +1215,11 @@ var (
 	SetBrandAccent  = Policy{Operation: "setBrandAccent", Capability: OrganisationProfile, Need: Create}
 )
 
+// GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
+// only the operations they asked for, so an operation is decided past this policy by its own record.
+var GetOperation = Policy{Operation: "getOperation", Capability: Membership, Need: View, ByRecord: true,
+	Note: "Only whoever asked for the work reads its operation; anyone else gets 404."}
+
 // Joining by email domain (FR-ADM-08, rev 0.199): a person without a Fyniq account finds and asks; an Owner decides and
 // claims the organisation's domains.
 const joinNote = "Needs a person signed in to Fyniq in the browser, with a second factor; an OAuth client or the AI is refused (FR-ADM-08)."
@@ -1375,7 +1380,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp,
 	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod,
 	GetMyRecoveryCodes, ReplaceMyRecoveryCodes, RecoverAccount, ConfirmAccountRecovery, GetJoinOffer, RequestToJoin, ListJoinRequests,
-	ApproveJoinRequest, RejectJoinRequest, ListJoinDomains, ClaimJoinDomain, ReleaseJoinDomain, GetBrand, GetBrandFile, ChangeBrand,
+	ApproveJoinRequest, RejectJoinRequest, ListJoinDomains, ClaimJoinDomain, ReleaseJoinDomain, GetBrand, GetBrandFile, ChangeBrand, GetOperation,
 	RemoveBrandFile, SetBrandAccent)
 
 func index(ps ...Policy) map[string]Policy {

@@ -305,7 +305,7 @@ func TestAChangeTellsTheHookAndARefreshWaitsOnce(t *testing.T) {
 			t.Errorf("the hook was told of organisation %s", org)
 		}
 		seen = append(seen, types)
-		if waiting, err := u.Outbox().Waiting(ctx, "checks.refresh"); err != nil || waiting {
+		if waiting, err := u.Outbox().Waiting(ctx, "checks.refresh"); err != nil || waiting != nil {
 			return err
 		}
 		_, err := u.Outbox().Enqueue(ctx, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: "checks.refresh"})
@@ -349,14 +349,14 @@ func TestAChangeTellsTheHookAndARefreshWaitsOnce(t *testing.T) {
 	}
 	worker := store(t, "fyniq_worker")
 	waiting := func() bool {
-		var out bool
+		var out *storage.OutboxRow
 		if err := worker.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
 			out, err = u.Outbox().Waiting(ctx, "checks.refresh")
 			return err
 		}); err != nil {
 			t.Fatal(err)
 		}
-		return out
+		return out != nil
 	}
 	if err := worker.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
 		return u.Outbox().MarkDispatched(ctx, rows[0].ID, "task-1", far.Add(time.Hour))
