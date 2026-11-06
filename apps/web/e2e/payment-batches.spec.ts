@@ -73,6 +73,8 @@ async function batches(page: Page) {
         return json(200, { items: [], unread: 0 });
       case "GET /v1/banners":
         return json(200, { items: [] });
+      case "GET /v1/break-glass": // a releaser's page asks whether their own break-glass is on (FM-8): none is
+        return json(200, { items: [], cap: { amount: "20000.00", currency: "SGD" }, you_may_start: false });
       case "GET /v1/payment-batches":
         return json(200, { items: state.status === "none" ? [] : [batch()] });
       case "GET /v1/money-accounts":
