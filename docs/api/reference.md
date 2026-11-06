@@ -10676,6 +10676,25 @@ Chooses the template a contact's documents of a kind and document type render wi
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-TEMPLATE-01`, `TPL-19`, `TPL-20`
 
+### `GET /v1/contacts/{contact_id}/summary`
+
+**Get a contact's balances and activity** (`getContactSummary`)
+
+What a customer or supplier stands at today (FR-CT-02; PRD-001 rev 0.185): what they owe the company and what it owes them, by currency and days past due, from the AR and AP sub-ledgers (INV-07); what was invoiced to them and billed by them in the financial year, in the base currency; and their latest documents with what each moved. The receivable side shows to whoever views invoices, the payable side to whoever views bills. Read-only.
+
+- **Permission:** View on Contacts and items (rev 0.33)
+- **Parameters:**
+  - `contact_id` (path, required): The contact's ID.
+- **Responses:**
+  - `200` OK [`ContactSummary`](../../contracts/schemas/ContactSummary.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
 ### `GET /v1/customer-groups`
 
 **List the customer groups** (`listCustomerGroups`)

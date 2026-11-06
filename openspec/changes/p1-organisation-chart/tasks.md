@@ -217,12 +217,18 @@
 
 ## 4. Contacts and items
 
-- [ ] 4.1 Contacts with roles and details, live balances, financial-year totals, ageing and a timeline. Tests `// req: FR-CT-01` and `// req: FR-CT-02` cover the balances P0's ledger holds
+- [x] 4.1 Contacts with roles and details, live balances, financial-year totals, ageing and a timeline. Tests `// req: FR-CT-01` and `// req: FR-CT-02` cover the balances P0's ledger holds
   (20 Oct 2026, the records: migration 000026 adds `fyniq.contact` (customer, vendor or both, with every FR-CT-01
   detail, mutable at its version, audited, never deleted) under the new Appendix D row "Contacts and items" (PRD-001
   rev 0.33). `GET`/`POST /v1/contacts`, `GET`/`PATCH /v1/contacts/{contact_id}`. **Left:** the live balances, the
   financial-year totals, the ageing and the timeline (FR-CT-02): P0's ledger lines carry no contact, so they come with
   the sales and purchase documents that post to one.)
+  (6 Nov 2026, the rest, PRD-001 rev 0.185: `GET /v1/contacts/{contact_id}/summary` (`contactsummary.Of`) reads the
+  contact's rows of the AR and AP ageing, the financial year's invoiced and billed totals from each document's current
+  posting on the control accounts, and the latest 50 documents (`Documents.OfContact`), each with what it moved; the
+  receivable side needs the Invoices view, the payable side the Bills view. The page `screens/contacts/ContactRecord.tsx`
+  opens from each name in Contacts. Guide `contacts-and-items.md` (What a contact stands at), compiled into
+  `contacts.manage`. Tests `TestAContactShowsWhatItStandsAt`, `contactRecord.test.tsx`, the matrix's row.)
 - [x] 4.2 Vendor bank details as versioned high-risk data. A pending version freezes payments and notifies every founder through the outbox; values are masked in logs. Test `// req: FR-CT-03`; approval waits for `p1-approval-engine`, and until then the change is refused, never applied
   (20 Oct 2026: waits for `p1-approval-engine` and the notifications. A pending version must freeze payments and reach
   every founder, and neither exists yet; storing bank details with no way to approve them would only hold personal data

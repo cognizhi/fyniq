@@ -577,7 +577,11 @@ export function Contacts() {
                     {c.legal_name.slice(0, 2).toUpperCase()}
                   </span>
                   <span className="fy-list__main">
-                    <span className="fy-list__title whitespace-normal">{c.legal_name}</span>
+                    <span className="fy-list__title whitespace-normal">
+                      <Link to="/contacts/$contactId" params={{ contactId: c.id }}>
+                        {c.legal_name}
+                      </Link>
+                    </span>
                     <span className="fy-list__meta whitespace-normal">
                       {kinds(c)}
                       {c.uen_or_tax_id ? ` · ${c.uen_or_tax_id}` : ""}

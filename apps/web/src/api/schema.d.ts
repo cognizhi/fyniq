@@ -2424,6 +2424,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/contacts/{contact_id}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a contact's balances and activity
+         * @description What a customer or supplier stands at today (FR-CT-02; PRD-001 rev 0.185): what they owe the company and what it owes them, by currency and days past due, from the AR and AP sub-ledgers (INV-07); what was invoiced to them and billed by them in the financial year, in the base currency; and their latest documents with what each moved. The receivable side shows to whoever views invoices, the payable side to whoever views bills. Read-only.
+         */
+        get: operations["getContactSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/contacts/{contact_id}/withholding-decisions": {
         parameters: {
             query?: never;
@@ -15279,6 +15299,37 @@ export interface components {
              */
             vendor?: boolean;
         };
+        ContactEvent: {
+            /** @description What it moved on the receivables or payables account, in its currency, as owed: positive when the customer owes more (an invoice) or the company owes the supplier more (a bill), negative for what settles or credits it. Absent for a draft. */
+            amount?: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description Its date.
+             * @example 2026-10-20
+             */
+            date?: string;
+            /**
+             * Format: uuid
+             * @description The document.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+             */
+            id: string;
+            /**
+             * @description Its number, once it has one.
+             * @example INV-0012
+             */
+            number?: string;
+            /**
+             * @description Its status, such as draft, posted or reversed.
+             * @example posted
+             */
+            status: string;
+            /**
+             * @description The document's type, such as invoice, customer_receipt, bill or bill_payment.
+             * @example invoice
+             */
+            type: string;
+        };
         ContactPage: {
             /** @description The contacts on this page. */
             items: components["schemas"]["Contact"][] | null;
@@ -15287,6 +15338,40 @@ export interface components {
              * @example eyJhZnRlciI6IjAxOTI4ZjZlIn0
              */
             next_cursor?: string;
+        };
+        ContactSummary: {
+            /**
+             * Format: date
+             * @description The day: the organisation's today.
+             * @example 2026-11-06
+             */
+            as_at: string;
+            /** @description Billed by the supplier in the year, less vendor credits, in the base currency, GST included; absent when you do not view bills. */
+            billed?: components["schemas"]["Money"];
+            /** @description Invoiced to the customer in the year, less credit notes, in the base currency, GST included; absent when you do not view invoices. */
+            invoiced?: components["schemas"]["Money"];
+            /** @description What the company owes the supplier, by currency and days past due, with its unapplied credits; empty when nothing is open, or when you do not view bills. */
+            payable: components["schemas"]["PayablesRow"][];
+            /** @description What the customer owes the company, by currency and days past due, with its unapplied credits; empty when nothing is open, or when you do not view invoices. */
+            receivable: components["schemas"]["ReceivablesRow"][];
+            /** @description Their latest documents you may see, newest first: at most 50. */
+            timeline: components["schemas"]["ContactEvent"][];
+            /** @description The financial year holding the day; absent when the years are not set. */
+            year?: components["schemas"]["ContactYear"];
+        };
+        ContactYear: {
+            /**
+             * Format: date
+             * @description Its first day.
+             * @example 2026-01-01
+             */
+            from: string;
+            /**
+             * Format: date
+             * @description Its last day.
+             * @example 2026-12-31
+             */
+            to: string;
         };
         ConversionACRA: {
             /**
@@ -47598,6 +47683,93 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getContactSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The contact's ID. */
+                contact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactSummary"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

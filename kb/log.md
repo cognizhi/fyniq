@@ -365,3 +365,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | evidence-search.md (new) → compliance.evidence (new) (evidence search and missing evidence, FR-DOC-10, PRD-001 rev 0.184)
 
 ## [2026-11-06] compile | organisation-settings.md → settings.organisation, settings.change (link to Accounting › Evidence, FR-DOC-10)
+
+## [2026-11-06] compile | docs/user-guide/contacts-and-items.md → contacts.manage (what a contact stands at: balances, the year's totals, ageing and activity; FR-CT-02)
+
+## [2026-11-06] compile | docs/user-guide/contacts-and-items.md → contacts.manage (what a contact stands at: balances, the year's totals, ageing and activity; FR-CT-02)

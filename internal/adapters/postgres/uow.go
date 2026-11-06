@@ -608,6 +608,23 @@ func (r documents) Page(ctx context.Context, f storage.DocumentFilter) ([]storag
 	return out, nil
 }
 
+func (r documents) OfContact(ctx context.Context, contact uuid.UUID, limit int) ([]storage.Document, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.DocumentsOfContact(ctx, sqlcdb.DocumentsOfContactParams{Contact: contact.String(), PageSize: int32(min(max(limit, 1), 1000))})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Document, len(rows))
+	for i, row := range rows {
+		out[i] = storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
+			Version: int(row.CurrentVersion), Payload: row.Payload, Number: str(row.Number), SavedBy: str(row.CreatedBy),
+			PostedBy: str(row.PostedBy), PostedAt: row.PostedAt, Date: row.Date}
+	}
+	return out, nil
+}
+
 func (r documents) ScheduledRevaluation(ctx context.Context, periodID uuid.UUID, payload []byte) (storage.Document, error) {
 	if err := r.u.check(); err != nil {
 		return storage.Document{}, err

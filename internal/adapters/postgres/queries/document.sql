@@ -134,6 +134,17 @@ WHERE d.type = sqlc.arg(type)
 ORDER BY coalesce(v.payload->>'date', '') DESC, d.id DESC
 LIMIT sqlc.arg(page_size);
 
+-- name: DocumentsOfContact :many
+-- Documents of any type naming the contact as their customer or supplier, at their current version, newest date first.
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at,
+       coalesce(v.payload->>'date', '')::text AS date
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+WHERE v.payload->>'customer_id' = sqlc.arg(contact)::text OR v.payload->>'supplier_id' = sqlc.arg(contact)::text
+ORDER BY coalesce(v.payload->>'date', '') DESC, d.id DESC
+LIMIT sqlc.arg(page_size);
+
 -- name: SetDocumentStatus :exec
 -- Posting records who posted and when (FY053); reversing leaves them as they are.
 UPDATE fyniq.document

@@ -154,6 +154,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/contacts/{contact_id}/document-templates/{kind}/{document_type}` (setContactDocumentTemplate): Choose a contact's template
 - `PUT /v1/contacts/{contact_id}/member` (linkContactMember): Link a director or shareholder to the member who signs in as them
 - `GET /v1/contacts/{contact_id}/statement` (getCustomerStatement): Work out a customer's statement
+- `GET /v1/contacts/{contact_id}/summary` (getContactSummary): Get a contact's balances and activity
 - `GET /v1/contacts/{contact_id}/withholding-decisions` (listWithholdingDecisions): List a supplier's withholding decisions
 - `POST /v1/contacts/{contact_id}/withholding-decisions` (recordWithholdingDecision): Record the tax agent's withholding decision
 - `POST /v1/credit-applications` (applyCredit): Apply a supplier credit to a bill
