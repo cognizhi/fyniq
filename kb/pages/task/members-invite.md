@@ -4,7 +4,7 @@ type: task
 title: Invite someone, or join with an invitation
 summary: Create a one-time invitation with roles, give the code in person, withdraw it if unused, and join a company with a code
 sources:
-  - docs/user-guide/members-and-roles.md sha256:38ea220e1fde3ec19cf0a7435a26a08b1c86f8414d3f998d3f9bce3568dff9d4
+  - docs/user-guide/members-and-roles.md sha256:844f7c14c68abc44b5c06fce47f45aea1f98ef72b45feedb3a8269d800c7bb40
 data_class: general
 taint: trusted
 status: published
@@ -45,3 +45,11 @@ aliases:
 - A wrong, used, withdrawn or expired code is refused and nothing changes: ask for a new invitation.
 
 (src: docs/user-guide/members-and-roles.md#join-with-an-invitation)
+
+## Email domains and requests to join
+
+- An Owner claims the company's email domain (such as cognizhi.com) under **Email domains for joining** and confirms it's them; a domain belongs to one organisation only. A Super admin also lets the sign-in provider accept it and take requests ([[settings.sign-in-providers]]); both are needed.
+- **Release** stops new requests by a domain; waiting requests stay for an Owner.
+- **Requests to join** lists people who signed in with a verified email on a claimed domain and asked; a request gives nothing until an Owner decides. **Approve** makes them a member with the Employee role, after confirming it's them; **Reject** leaves them without an account. Every Owner is told of each request.
+
+(src: docs/user-guide/members-and-roles.md#email-domains-for-joining) (src: docs/user-guide/members-and-roles.md#requests-to-join)

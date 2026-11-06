@@ -4,7 +4,7 @@ type: concept
 title: Members, roles and the first founder's setup
 summary: What roles do, why the Owner sets up members alone until a second person joins, and why role changes then need a second approver
 sources:
-  - docs/user-guide/members-and-roles.md sha256:38ea220e1fde3ec19cf0a7435a26a08b1c86f8414d3f998d3f9bce3568dff9d4
+  - docs/user-guide/members-and-roles.md sha256:844f7c14c68abc44b5c06fce47f45aea1f98ef72b45feedb3a8269d800c7bb40
 data_class: general
 taint: trusted
 status: published

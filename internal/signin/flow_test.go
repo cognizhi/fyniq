@@ -48,6 +48,8 @@ type fakeSessions struct {
 	links   []storage.IdentityLink
 	linkErr error
 	methods []storage.SignInMethod
+	// sessionEmails are the verified emails kept on new sessions, for joining by domain
+	sessionEmails []string
 }
 
 func (f *fakeSessions) RecordIdentityEmail(_ context.Context, issuer, subject, email string, _ time.Time) error {
@@ -98,6 +100,11 @@ func (f *fakeSessions) UnlinkIdentity(context.Context, []byte, string, string, t
 
 func (f *fakeSessions) Identities(context.Context, uuid.UUID) ([]storage.Identity, error) {
 	return nil, nil
+}
+
+func (f *fakeSessions) RecordSessionEmail(_ context.Context, h []byte, email string) error {
+	f.sessionEmails = append(f.sessionEmails, email)
+	return nil
 }
 
 func (f *fakeSessions) SignInMethods(context.Context) ([]storage.SignInMethod, error) {
@@ -214,6 +221,9 @@ func TestTheSignInFlowStartsASessionOnlyForTheBrowserThatBegan(t *testing.T) {
 	}
 
 	// The verified email is kept on the identity, so mail the person sends to an email-in address is known (FR-INT-22).
+	if len(e.sessions.sessionEmails) != 1 || e.sessions.sessionEmails[0] != "Mei@Example.com" {
+		t.Errorf("the session's verified email (FR-ADM-08): %v", e.sessions.sessionEmails)
+	}
 	if len(e.sessions.emails) != 1 || e.sessions.emails[0] != "https://accounts.google.com 110 Mei@Example.com" {
 		t.Errorf("the emails recorded: %v", e.sessions.emails)
 	}

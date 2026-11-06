@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, type Session, type SignInProvider } from "../api/client";
 import { go, safeReturn, signInURL } from "../route";
 import { Brand, Icon, problemOf } from "../ui";
+import { AskToJoin } from "./Join";
 import { RecoveryCodes } from "./RecoveryCodes";
 
 // What a sign-in refusal means, by its code (internal/signin), in plain words; the code is shown too (ENG-23).
@@ -114,6 +115,7 @@ export function SignIn() {
             </p>
           )}
           {state.kind === "signed-out" && <Providers providers={state.providers} returnTo={returnTo} />}
+          {state.kind === "no-account" && <AskToJoin />}
           {state.kind === "no-account" && <Invitation session={state.session} />}
         </div>
       </main>

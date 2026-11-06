@@ -151,6 +151,8 @@ type Sessions interface {
 	SignInEssential(ctx context.Context) ([]string, error)
 	// SignInCounts are how many sessions each provider started since since, by provider.
 	SignInCounts(ctx context.Context, since time.Time) (map[string]int, error)
+	// RecordSessionEmail keeps the verified email the provider gave a live session at sign-in, for joining by domain.
+	RecordSessionEmail(ctx context.Context, tokenHash []byte, email string) error
 	// Identities are a user's sign-in identities: the one they joined or set up with first, then those linked, in order.
 	Identities(ctx context.Context, userID uuid.UUID) ([]Identity, error)
 }
@@ -160,9 +162,12 @@ type SignInMethod struct {
 	Provider       string
 	Enabled        bool
 	AllowedDomains []string
-	Version        int // 0: never set
-	ChangedBy      uuid.UUID
-	ChangedAt      time.Time
+	// JoinByDomain lets a person with a verified email on one of AllowedDomains, which an organisation claimed, ask to
+	// join it (rev 0.199).
+	JoinByDomain bool
+	Version      int // 0: never set
+	ChangedBy    uuid.UUID
+	ChangedAt    time.Time
 }
 
 // Accepts reports whether the switches let an account with email (verified or not) sign in.
@@ -193,7 +198,56 @@ type SignInMethodChange struct {
 	Version        int      `json:"version"`
 	Enabled        bool     `json:"enabled"`
 	AllowedDomains []string `json:"allowed_domains"`
+	JoinByDomain   bool     `json:"join_by_domain,omitempty"`
 	EndSessions    bool     `json:"end_sessions,omitempty"`
+}
+
+// Joining is joining an organisation by email domain (FR-ADM-08, rev 0.199; migration 000244): what a person signed
+// in without a Fyniq account may ask to join, and their request, audited in that organisation's trail.
+type Joining interface {
+	// JoinOffer is the organisation a live session without a user may ask to join; false when there is none.
+	JoinOffer(ctx context.Context, sessionHash []byte, now time.Time) (JoinOffer, bool, error)
+	// RequestToJoin records the session's person's request to join their offer, as name: CodeJoin without an offer or
+	// with a request pending already.
+	RequestToJoin(ctx context.Context, sessionHash []byte, name string, now time.Time) (JoinRequest, error)
+}
+
+// JoinOffer is an organisation a person may ask to join, by their verified email's domain.
+type JoinOffer struct {
+	Organisation        uuid.UUID
+	Name, Domain, Email string
+	Provider            string
+}
+
+// JoinRequest is a person's request to join an organisation by their email domain.
+type JoinRequest struct {
+	ID, Organisation      uuid.UUID
+	Provider, Email, Name string
+	RequestedAt           time.Time
+	Status                string // pending, approved or rejected
+	DecidedBy, UserID     *uuid.UUID
+	DecidedAt             *time.Time
+}
+
+// JoinRequests are the organisation's requests to join by email domain, and the domains it claimed.
+type JoinRequests interface {
+	// List is every request, newest first.
+	List(ctx context.Context) ([]JoinRequest, error)
+	// Decide approves or rejects pending request id by by, an Owner: approving makes the person a user and a member
+	// with the Employee role (CodeJoin when they have an account by now); ports.ErrNotFound for no pending request.
+	Decide(ctx context.Context, by, id uuid.UUID, approve bool, now time.Time) (JoinRequest, error)
+	// Domains are the email domains the organisation claimed for joining.
+	Domains(ctx context.Context) ([]JoinDomain, error)
+	// Claim claims domain for the organisation (CodeJoin when another organisation has it); Release gives it up.
+	Claim(ctx context.Context, by uuid.UUID, domain string, now time.Time) error
+	Release(ctx context.Context, domain string) (bool, error)
+}
+
+// JoinDomain is an email domain an organisation claimed for joining.
+type JoinDomain struct {
+	Domain    string
+	ClaimedBy uuid.UUID
+	ClaimedAt time.Time
 }
 
 // SignInMethods changes the providers' switches, in a unit of work of the installation organisation, whose trail records

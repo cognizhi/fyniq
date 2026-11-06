@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "domain": {
+      "description": "The email domain the organisation claimed, which your verified email is on.",
+      "examples": [
+        "cognizhi.com"
+      ],
+      "type": "string"
+    },
+    "email": {
+      "description": "Your verified email, as your provider gave it.",
+      "examples": [
+        "wei.jie@cognizhi.com"
+      ],
+      "type": "string"
+    },
+    "organisation_name": {
+      "description": "The organisation's name.",
+      "examples": [
+        "Cognizhi Pte. Ltd."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "organisation_name",
+    "domain",
+    "email"
+  ],
+  "title": "JoinOffer",
+  "type": "object"
+}

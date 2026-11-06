@@ -619,6 +619,7 @@ var codeFacts = map[string]struct {
 	storage.CodeSignInMethod:    {409, "That would leave a Super admin no way to sign in"},
 	storage.CodeRecovery:        {409, "The recovery is not valid"},
 	storage.CodeCoolingOff:      {403, "Held while your account cools off after its recovery"},
+	storage.CodeJoin:            {409, "The request to join cannot be made or decided"},
 	storage.CodeConnectorChange: {409, "The other Super admin's approval is needed"},
 
 	// Banking (FR-BNK-01…18).

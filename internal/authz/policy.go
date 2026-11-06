@@ -1206,13 +1206,29 @@ var (
 		Note: "An Owner or Administrator, who passed step-up in the last 5 minutes, after speaking to the person; never for themselves (SEC-35)."}
 )
 
+// Joining by email domain (FR-ADM-08, rev 0.199): a person without a Fyniq account finds and asks; an Owner decides and
+// claims the organisation's domains.
+const joinNote = "Needs a person signed in to Fyniq in the browser, with a second factor; an OAuth client or the AI is refused (FR-ADM-08)."
+
+var (
+	GetJoinOffer       = Policy{Operation: "getJoinOffer", Capability: Session, Need: View, NoOrganisation: true, Note: joinNote}
+	RequestToJoin      = Policy{Operation: "requestToJoin", Capability: Session, Need: Create, NoOrganisation: true, Note: joinNote}
+	ListJoinRequests   = Policy{Operation: "listJoinRequests", Capability: UsersAndRoles, Need: View}
+	ApproveJoinRequest = Policy{Operation: "approveJoinRequest", Capability: UsersAndRoles, Need: Approve, Note: "An Owner, stepped up in the last 5 minutes."}
+	RejectJoinRequest  = Policy{Operation: "rejectJoinRequest", Capability: UsersAndRoles, Need: Approve, Note: "An Owner, stepped up in the last 5 minutes."}
+	ListJoinDomains    = Policy{Operation: "listJoinDomains", Capability: UsersAndRoles, Need: View}
+	ClaimJoinDomain    = Policy{Operation: "claimJoinDomain", Capability: UsersAndRoles, Need: Approve, Note: "An Owner, stepped up in the last 5 minutes."}
+	ReleaseJoinDomain  = Policy{Operation: "releaseJoinDomain", Capability: UsersAndRoles, Need: Approve, Note: "An Owner, stepped up in the last 5 minutes."}
+)
+
 // HeldInCoolingOff are the operations the API refuses during the cooling-off after a person's account recovery (SEC-35,
 // rev 0.198): approving, releasing payments, changing bank details, roles or sign-in methods, break-glass, and confirming
 // someone else's recovery. Registering a new passkey stays open: restoring the second factor is the recovery's purpose.
 var HeldInCoolingOff = []string{"approveApproval", "challengeApproval", "releasePaymentBatch", "releasePaymentBatchUnderBreakGlass",
 	"createPayeeBankChange", "replacePayeeBankChange", "requestPayeeBankChangeApproval", "createMyBankChange", "replaceMyBankChange",
 	"requestMyBankChangeApproval", "assignRole", "revokeRole", "createMemberInvitation", "createSuperAdminInvitation", "startOwnerSuccession",
-	"completeOwnerSuccession", "unlinkIdentity", "changeSignInMethod", "startBreakGlass", "confirmAccountRecovery"}
+	"completeOwnerSuccession", "unlinkIdentity", "changeSignInMethod", "startBreakGlass", "confirmAccountRecovery", "approveJoinRequest",
+	"claimJoinDomain"}
 
 // A person's sign-ins (FR-ADM-08, rev 0.196): linked from the sign-in flow, listed and removed here.
 const identityNote = "Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-08)."
@@ -1349,7 +1365,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,
 	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp,
 	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod,
-	GetMyRecoveryCodes, ReplaceMyRecoveryCodes, RecoverAccount, ConfirmAccountRecovery)
+	GetMyRecoveryCodes, ReplaceMyRecoveryCodes, RecoverAccount, ConfirmAccountRecovery, GetJoinOffer, RequestToJoin, ListJoinRequests,
+	ApproveJoinRequest, RejectJoinRequest, ListJoinDomains, ClaimJoinDomain, ReleaseJoinDomain)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

@@ -1152,6 +1152,28 @@ type FyniqJobSlots struct {
 	Detail         *string
 }
 
+type FyniqJoinDomain struct {
+	Domain               string
+	ClaimingOrganisation uuid.UUID
+	ClaimedBy            uuid.UUID
+	ClaimedAt            time.Time
+}
+
+type FyniqJoinRequest struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Issuer         string
+	Subject        string
+	Provider       string
+	Email          string
+	DisplayName    string
+	RequestedAt    time.Time
+	Status         string
+	DecidedBy      *uuid.UUID
+	DecidedAt      *time.Time
+	UserID         *uuid.UUID
+}
+
 type FyniqJournalEntry struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID
@@ -1732,6 +1754,7 @@ type FyniqSignInMethod struct {
 	ChangedBy      uuid.UUID
 	ChangedAt      time.Time
 	ChangeID       *uuid.UUID
+	JoinByDomain   bool
 }
 
 type FyniqSodOverride struct {
@@ -1898,6 +1921,7 @@ type FyniqUserSession struct {
 	EndedAt      *time.Time
 	StepUpMethod *string
 	UserAgent    *string
+	Email        *string
 }
 
 type FyniqWebauthnChallenge struct {

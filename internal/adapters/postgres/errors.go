@@ -159,6 +159,8 @@ var fyCodes = map[string]string{
 	"FY277": storage.CodeRecovery,       // a recovery code or confirmation wrong, used or expired (000242)
 	"FY278": storage.CodeCoolingOff,     // a sign-in linked during the cooling-off after a recovery (000242)
 	"FY279": storage.CodeRecovery,       // an account recovery changed (000242)
+	"FY280": storage.CodeJoin,           // a request to join refused, or a person with an account by now (000244)
+	"FY281": storage.CodeJoin,           // a domain another organisation claimed (000244)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

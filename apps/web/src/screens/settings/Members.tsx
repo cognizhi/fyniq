@@ -13,6 +13,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { roleLabel, type Approval } from "../approvals/words";
+import { JoinDomains, JoinRequests } from "../Join";
 import { ConfirmRecovery } from "../Recovery";
 import { SettingsPage } from "./SettingsPage";
 import { StartSuccession, Successions } from "./Successions";
@@ -664,6 +665,8 @@ export function Members() {
         )}
       </section>
       <Successions />
+      <JoinRequests />
+      <JoinDomains owner={youOwn} />
       <section className="fy-card" aria-labelledby="invites-title">
         <div className="fy-card__head">
           <h2 className="fy-h3" id="invites-title">

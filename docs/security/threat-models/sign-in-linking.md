@@ -1,4 +1,4 @@
-# Threat model: linking sign-ins and switching sign-in providers
+# Threat model: linking sign-ins, switching sign-in providers and joining by domain
 
 | | |
 |---|---|
@@ -37,6 +37,9 @@ only write path to `user_identity`).
 | T10 | Super admin → API, switches | Denial of service: a Super admin (or a hijacked Super admin session) turns off, or narrows the domains of, the only way a Super admin signs in | The installation loses its administrators | Medium |
 | T11 | Super admin → API, switches | Elevation / repudiation: one Super admin widens a provider's domains or turns one on alone, with a second Super admin present | A provider the other did not agree to signs people in | Low |
 | T12 | provider → API, domains | Spoofing: an account with an unverified email, or on another domain, signs in through a provider limited to the organisation's domain | Outsiders sign in through the company's provider | Medium |
+| T13 | Owner → API, domains | Spoofing: an Owner claims a domain that is not theirs (gmail.com, another company's) to collect its people | Strangers ask to join; another company's staff are drawn in | Low |
+| T14 | person → API, join | Spoofing: someone with an unverified, or another person's, email on the domain asks to join | An outsider becomes a member | Medium |
+| T15 | person → API, join | Elevation: a pending request reads or does anything in the organisation before an Owner decides | Data seen without approval | Low |
 
 ## 3. What we do about it
 
@@ -54,11 +57,14 @@ only write path to `user_identity`).
 | T10 | `set_sign_in_method` refuses a change that leaves an active Super admin with no identity on a provider that is on and accepts their verified email (FY272); the list marks such a provider | `TestSignInProviders` (FR-ADM-08; V8.2.1) |
 | T11 | With two active Super admins `set_sign_in_method` applies only an approved, unapplied installation change of step `sign_in` for that provider (`apply_installation_change`, FY213), decided by the other over the envelope's hash; every change is audited and sent to every Super admin | `TestSignInProviders` (FR-ADM-07) |
 | T12 | The flow checks the switches when a sign-in starts and when it comes back: a provider turned off is refused, and with domains set only a verified email on one of them signs in or links (AUTH-SIGNIN-08) | `TestTheFlowFollowsTheProvidersSwitches`, `TestSignInProviders` (V6.8.1) |
+| T13 | A claim opens nothing alone: a Super admin must also let the provider accept the domain and take requests; one organisation per domain (FY281); each claim is audited, and every request still needs an Owner | `TestJoinByDomain` |
+| T14 | The session keeps only an email its provider verified (`set_session_email`, from the flow's verified claim); the offer needs it on a claimed domain the provider accepts; the identity is the (issuer, subject) the person signed in with | `TestJoinByDomain`, `TestTheSignInFlowStartsASessionOnlyForTheBrowserThatBegan` (V6.8.1) |
+| T15 | A request creates no user and no membership: `decide_join_request` does, when an Owner approves after step-up, with the Employee role only; approving is held in a cooling-off after a recovery | `TestJoinByDomain`, `TestTheCoolingOffHoldsRealOperations` |
 
 ## 4. What remains
 
-- Joining by domain (a pending Employee membership an Owner approves) arrives with the rest of task 2.4 (rev 0.196);
-  adding providers in the app in P2 or P3.
+- Adding providers in the app comes in P2 or P3. A claim is not proved by DNS (the owner's choice of 7 Nov 2026): the
+  Super admin's switch is the second check.
 - The last-method guard knows the providers from each identity's recorded provider or last session; a provider
   removed from the deployment's configuration is not seen by the database, so an operator who removes one first checks
   that each Super admin signs in with another [live-verify].

@@ -70,6 +70,8 @@ type UnitOfWork interface {
 	ApprovalPolicies() ApprovalPolicies
 	TeamModes() TeamModes
 	Passkeys() Passkeys
+	// JoinRequests are the organisation's requests to join by email domain, and its claimed domains (FR-ADM-08).
+	JoinRequests() JoinRequests
 	// Recoveries keep account recovery (SEC-35): global rows, audited in this unit of work's trail.
 	Recoveries() Recoveries
 	// SignInMethods changes the sign-in providers' switches: in a unit of work of the installation organisation only.
@@ -781,6 +783,9 @@ const (
 	CodeRecovery = "STORAGE-RECOVERY-01"
 	// CodeCoolingOff is a change held during the cooling-off after a recovery (SEC-35, rev 0.198).
 	CodeCoolingOff = "STORAGE-RECOVERY-02"
+	// CodeJoin is a request to join by email domain refused: no organisation takes it, one is pending, the person has an
+	// account by now, or a domain claimed by another organisation (FR-ADM-08, rev 0.199).
+	CodeJoin = "STORAGE-JOIN-01"
 	// CodeConnectorChange: a step on an installation connector needs the other Super admin's approved change, decided
 	// once, by another person, before it expires (FR-ADM-07).
 	CodeConnectorChange = "STORAGE-CONNECTOR-02"

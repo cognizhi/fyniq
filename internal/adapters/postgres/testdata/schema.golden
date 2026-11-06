@@ -887,6 +887,22 @@ job_slots | lease_expires_at | timestamp with time zone | null |
 job_slots | claimed_at | timestamp with time zone | null | 
 job_slots | finished_at | timestamp with time zone | null | 
 job_slots | detail | text | null | 
+join_domain | domain | text | not null | 
+join_domain | claiming_organisation | uuid | not null | 
+join_domain | claimed_by | uuid | not null | 
+join_domain | claimed_at | timestamp with time zone | not null | 
+join_request | organisation_id | uuid | not null | current_org()
+join_request | id | uuid | not null | uuidv7()
+join_request | issuer | text | not null | 
+join_request | subject | text | not null | 
+join_request | provider | text | not null | 
+join_request | email | text | not null | 
+join_request | display_name | text | not null | 
+join_request | requested_at | timestamp with time zone | not null | 
+join_request | status | text | not null | 'pending'::text
+join_request | decided_by | uuid | null | 
+join_request | decided_at | timestamp with time zone | null | 
+join_request | user_id | uuid | null | 
 journal_entry | organisation_id | uuid | not null | current_org()
 journal_entry | id | uuid | not null | uuidv7()
 journal_entry | ledger_revision | bigint | not null | 
@@ -1343,6 +1359,7 @@ sign_in_method | version | integer | not null | 1
 sign_in_method | changed_by | uuid | not null | 
 sign_in_method | changed_at | timestamp with time zone | not null | 
 sign_in_method | change_id | uuid | null | 
+sign_in_method | join_by_domain | boolean | not null | false
 sod_override | organisation_id | uuid | not null | current_org()
 sod_override | id | uuid | not null | uuidv7()
 sod_override | team_mode_version | integer | not null | 
@@ -1461,6 +1478,7 @@ user_session | step_up_at | timestamp with time zone | null |
 user_session | ended_at | timestamp with time zone | null | 
 user_session | step_up_method | text | null | 
 user_session | user_agent | text | null | 
+user_session | email | text | null | 
 webauthn_challenge | id | uuid | not null | uuidv7()
 webauthn_challenge | user_id | uuid | not null | 
 webauthn_challenge | purpose | text | not null | 
@@ -2912,6 +2930,31 @@ job_slot | job_slot_pkey | PRIMARY KEY (job, slot)
 job_slot | job_slot_slot_not_null | NOT NULL slot
 job_slot | job_slot_state_known | CHECK ((state = ANY (ARRAY['running'::text, 'done'::text, 'failed'::text, 'skipped'::text])))
 job_slot | job_slot_state_not_null | NOT NULL state
+join_domain | join_domain_claimed_at_not_null | NOT NULL claimed_at
+join_domain | join_domain_claimed_by_fkey | FOREIGN KEY (claimed_by) REFERENCES app_user(user_id)
+join_domain | join_domain_claimed_by_not_null | NOT NULL claimed_by
+join_domain | join_domain_claiming_organisation_not_null | NOT NULL claiming_organisation
+join_domain | join_domain_domain_not_null | NOT NULL domain
+join_domain | join_domain_format | CHECK ((domain ~ '^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$'::text))
+join_domain | join_domain_pkey | PRIMARY KEY (domain)
+join_request | join_request_decided_by_fkey | FOREIGN KEY (decided_by) REFERENCES app_user(user_id)
+join_request | join_request_decided_whole | CHECK ((((status = 'pending'::text) = (decided_by IS NULL)) AND ((decided_by IS NULL) = (decided_at IS NULL)) AND ((status = 'approved'::text) = (user_id IS NOT NULL))))
+join_request | join_request_display_name_not_null | NOT NULL display_name
+join_request | join_request_email_length | CHECK (((length(email) >= 3) AND (length(email) <= 320)))
+join_request | join_request_email_not_null | NOT NULL email
+join_request | join_request_id_not_null | NOT NULL id
+join_request | join_request_issuer_not_null | NOT NULL issuer
+join_request | join_request_name_length | CHECK (((length(display_name) >= 1) AND (length(display_name) <= 200)))
+join_request | join_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+join_request | join_request_organisation_id_not_null | NOT NULL organisation_id
+join_request | join_request_pkey | PRIMARY KEY (organisation_id, id)
+join_request | join_request_provider_not_null | NOT NULL provider
+join_request | join_request_requested_at_not_null | NOT NULL requested_at
+join_request | join_request_status_known | CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))
+join_request | join_request_status_not_null | NOT NULL status
+join_request | join_request_subject_not_null | NOT NULL subject
+join_request | join_request_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+join_request | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 journal_entry | journal_entry_balanced | TRIGGER DEFERRABLE INITIALLY DEFERRED
 journal_entry | journal_entry_created_xact_not_null | NOT NULL created_xact
 journal_entry | journal_entry_id_not_null | NOT NULL id
@@ -3662,6 +3705,8 @@ sign_in_method | sign_in_method_changed_by_fkey | FOREIGN KEY (changed_by) REFER
 sign_in_method | sign_in_method_changed_by_not_null | NOT NULL changed_by
 sign_in_method | sign_in_method_domains_count | CHECK ((cardinality(allowed_domains) <= 20))
 sign_in_method | sign_in_method_enabled_not_null | NOT NULL enabled
+sign_in_method | sign_in_method_join_by_domain_not_null | NOT NULL join_by_domain
+sign_in_method | sign_in_method_join_needs_domains | CHECK (((NOT join_by_domain) OR (cardinality(allowed_domains) > 0)))
 sign_in_method | sign_in_method_pkey | PRIMARY KEY (provider)
 sign_in_method | sign_in_method_provider_format | CHECK ((provider ~ '^[a-z0-9][a-z0-9-]{0,62}$'::text))
 sign_in_method | sign_in_method_provider_not_null | NOT NULL provider
@@ -3821,6 +3866,7 @@ user_recovery_code | user_recovery_code_used_after | CHECK (((used_at IS NULL) O
 user_recovery_code | user_recovery_code_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
 user_recovery_code | user_recovery_code_user_id_not_null | NOT NULL user_id
 user_session | user_session_created_at_not_null | NOT NULL created_at
+user_session | user_session_email_length | CHECK (((email IS NULL) OR ((length(email) >= 3) AND (length(email) <= 320))))
 user_session | user_session_ended_after_start | CHECK ((ended_at >= created_at))
 user_session | user_session_expires_at_not_null | NOT NULL expires_at
 user_session | user_session_expiry_after_start | CHECK ((expires_at > created_at))
@@ -3946,6 +3992,7 @@ CREATE INDEX inbound_file_message ON fyniq.inbound_file USING btree (organisatio
 CREATE INDEX inbound_message_sender ON fyniq.inbound_message USING btree (organisation_id, sender, address_id) WHERE (status = 'quarantined'::text)
 CREATE INDEX inbound_message_status ON fyniq.inbound_message USING btree (organisation_id, status, received_at)
 CREATE INDEX installation_change_pending ON fyniq.installation_change USING btree (connector) WHERE (status = 'pending'::text)
+CREATE INDEX join_domain_organisation ON fyniq.join_domain USING btree (claiming_organisation)
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
 CREATE INDEX journal_entry_posting_date_idx ON fyniq.journal_entry USING btree (organisation_id, posting_date)
 CREATE INDEX journal_entry_source_idx ON fyniq.journal_entry USING btree (organisation_id, source_id)
@@ -4117,6 +4164,9 @@ CREATE UNIQUE INDEX item_pkey ON fyniq.item USING btree (organisation_id, id)
 CREATE UNIQUE INDEX item_price_currency_key ON fyniq.item_price USING btree (organisation_id, item_id, currency)
 CREATE UNIQUE INDEX item_price_pkey ON fyniq.item_price USING btree (organisation_id, id)
 CREATE UNIQUE INDEX job_slot_pkey ON fyniq.job_slot USING btree (job, slot)
+CREATE UNIQUE INDEX join_domain_pkey ON fyniq.join_domain USING btree (domain)
+CREATE UNIQUE INDEX join_request_one_pending ON fyniq.join_request USING btree (organisation_id, issuer, subject) WHERE (status = 'pending'::text)
+CREATE UNIQUE INDEX join_request_pkey ON fyniq.join_request USING btree (organisation_id, id)
 CREATE UNIQUE INDEX journal_entry_pkey ON fyniq.journal_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX journal_entry_posting_identity_key ON fyniq.journal_entry USING btree (organisation_id, posting_identity)
 CREATE UNIQUE INDEX journal_entry_reverses_key ON fyniq.journal_entry USING btree (organisation_id, reverses_entry_id)
@@ -4321,6 +4371,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_regi
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'message_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.join_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('join_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.kpi_input DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kpi_input', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.member_invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('member_invitation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.money_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('money_account', 'id')
@@ -4636,6 +4687,7 @@ inbound_file | tenant_isolation | * | (organisation_id = current_org()) | (organ
 inbound_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+join_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 kpi_input | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -4746,6 +4798,7 @@ check_run_guard() → trigger | security invoker | v | search_path=pg_catalog, f
 check_state_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5d0771ae59040d5aa848b3f53f0dff8b
 claim_category_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e3555d3e253fa24e081bd77a62a656f2
 claim_job_slot(p_job text, p_slot timestamp with time zone, p_holder text, p_until timestamp with time zone, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 25c90e46d6e3d1e87666459f6db394db
+claim_join_domain(p_by uuid, p_org uuid, p_domain text, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c01a87b2344b96e828cfe452ae23182c
 claim_place_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b9d945198410ff448d1bc24902010e4d
 claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 57aedc912c161d7d32a66f3e8840bd12
 close_checklist_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f4af92af3952d349375bb5a90970c137
@@ -4764,6 +4817,7 @@ create_scheduled_invoice_draft(p_recurring_invoice uuid, p_on date) → uuid | s
 create_scheduled_revaluation(p_period uuid, p_payload jsonb, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3a11f739d0529e16f9662b7ad7fd8477
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
 decide_installation_change(p_by uuid, p_id uuid, p_hash bytea, p_approve boolean, p_mfa_at timestamp with time zone, p_reason text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 338fe991475e9f427093a25bef17d1d0
+decide_join_request(p_by uuid, p_id uuid, p_approve boolean, p_now timestamp with time zone, OUT user_id uuid, OUT membership_id uuid, OUT role_assignment_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7989699e7aeef23a35e52dbc46bc826a
 destroyed_installation_connector_secret(p_ref text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 87e77fee8faaf36987cfc16b94dc2d7c
 dimension_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6222e01e146f6948cd2702cac2428d63
 dimension_set_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 646ba8ce3dffe9bcedfa0157c5b0a85f
@@ -4817,6 +4871,9 @@ invite_super_admin(p_by uuid, p_hash bytea, p_now timestamp with time zone, p_ex
 is_owner(p_org uuid, p_membership uuid, p_now timestamp with time zone) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 97b45f40b83ee4da8c083c1ed8bd9b3b
 is_super_admin(p_user uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 74b765a558e7f7fc6d37b5f2a3be3c11
 issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1c6a399b76934acce5ae3a3dc9d8d7e8
+join_domains(p_org uuid) → SETOF join_domain | security definer | s | search_path=pg_catalog, fyniq, pg_temp | b323dc2db0dac5d21310e82931a6855b
+join_offer(p_session bytea, p_now timestamp with time zone) → TABLE(organisation_id uuid, domain text, email text, provider text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 7ed62c1dab795a1de86f5096e9282304
+join_offer_name(p_org uuid) → text | security definer | s | search_path=pg_catalog, fyniq, pg_temp | b7c93d17ab22b13ef328df6ad8a78c9f
 journal_entry_asset_depreciation() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 50e84c71ecf0c7176fbc2b5d91aa6ee9
 journal_entry_assign() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2cae35f178d2305aad6634028ac535b2
 journal_entry_bank_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 34be50f43608217c20b3ec61982adec8
@@ -4878,11 +4935,13 @@ recover_super_admin(p_recovery_hash bytea, p_confirmation_hash bytea, p_issuer t
 recurring_bill_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78176a4c51f0d011b1ad10b5635a8e7
 recurring_invoice_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2276687a770939a7a49195de610ec237
 recurring_journal_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4998ee7053cefac747e643b32d1a0311
+release_join_domain(p_org uuid, p_domain text) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2eaf866e51b2dbac145aa151e2ef88e9
 remittance_allowed(p_payment uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 71486c98f030e272cb2b831b924e47d1
 remittance_email_sent() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f9c42f700a81ca6d6d0fd3fc96e9ba53
 removed_member_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 217d2428d697906d9215522a21f5c049
 report_export_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 20502c6b8dfb382053b912027176702f
 request_installation_change(p_by uuid, p_connector_id uuid, p_connector text, p_step text, p_summary text, p_change jsonb, p_envelope text, p_hash bytea, p_mfa_at timestamp with time zone, p_at timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 081e531ac2fa6d7a04725c2968ee4893
+request_to_join(p_session bytea, p_name text, p_now timestamp with time zone, OUT organisation_id uuid, OUT request_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 48fe2b7d682eeb278e1638056c897cd0
 require_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88b80585540483298b0397296b364b9d
 require_grant_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 10dc33c6231fa48667c6b95ffe2a04c4
 require_installation_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f9c3cec49b84db3497dc1be8e78f5180
@@ -4900,8 +4959,9 @@ session_step_up(p_challenge uuid, p_session bytea, p_credential uuid, p_sign_cou
 session_step_up_method(p_hash bytea) → text | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 69b01e01a7b355f060b2e48248d0d248
 set_installation_connector_secret(p_by uuid, p_change uuid, p_id uuid, p_name text, p_ref text, p_valid_until timestamp with time zone, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8e2b7bc27e6a1464a4d6957cd45085f4
 set_recovery_codes(p_user uuid, p_hashes bytea[], p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | fa0ec035edd7677410f7fb3b8de88b51
+set_session_email(p_hash bytea, p_email text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 77ff64489a70bce9ce69f4ac69245f26
 set_setup_code(p_hash bytea) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1401833c664206cef80dad827e0bd549
-set_sign_in_method(p_by uuid, p_change uuid, p_provider text, p_version integer, p_enabled boolean, p_domains text[], p_end_sessions boolean, p_at timestamp with time zone) → sign_in_method | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 5d40fc290515550ad14721ab54b88667
+set_sign_in_method(p_by uuid, p_change uuid, p_provider text, p_version integer, p_enabled boolean, p_domains text[], p_join boolean, p_end_sessions boolean, p_at timestamp with time zone) → sign_in_method | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b5356cec9d00fe426f79febbb4e6cf1
 set_user_recovery_codes(p_session bytea, p_hashes bytea[], p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e728985ab2ec95c6ef13d75a527f5742
 setup_done() → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 3872e1ae6024a26a11ca317f9463791c
 share_issue_entry_registered() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ecc9f7f60072d3973908c00c944e5815
