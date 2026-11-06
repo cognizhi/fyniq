@@ -456,6 +456,8 @@ export const actions = [
   { kind: "action", id: "passkey.revoke", mode: "basic", help: "passkey.revoke", guide: "preferences.security#revoke-a-passkey" },
   { kind: "action", id: "device.sign-out", mode: "basic", help: "device.sign-out", guide: "preferences.security#your-devices" },
   { kind: "action", id: "device.sign-out-others", mode: "basic", help: "device.sign-out-others", guide: "preferences.security#your-devices" },
+  { kind: "action", id: "identity.link", mode: "basic", help: "identity.link", guide: "preferences.security#link-another-sign-in" },
+  { kind: "action", id: "identity.unlink", mode: "basic", help: "identity.unlink", guide: "preferences.security#remove-a-sign-in" },
 ] as const satisfies readonly ActionFeature[];
 
 // The sidebar's items in the designed order (the NAV list in docs/design/screens/build.py). Each

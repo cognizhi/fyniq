@@ -1,17 +1,17 @@
 ---
 key: preferences.security
 type: task
-title: Your profile and security: Basic or Expert mode, your bank account, passkeys and devices
-summary: Basic or Expert mode, your bank account for reimbursements and its approval, confirming it's you, passkeys, and signing out other devices
+title: Your profile and security: Basic or Expert mode, your bank account, passkeys, sign-ins and devices
+summary: Basic or Expert mode, your bank account for reimbursements, confirming it's you, passkeys, linking or removing a sign-in, and signing out devices
 sources:
-  - docs/user-guide/profile-and-security.md sha256:4a55055eb003763c23c0e333089b9833d346ffcf99d488b838ade5681a0929d1
+  - docs/user-guide/profile-and-security.md sha256:f8f6a7c6539f10c2e355943bdbb681a6cb4782ed7fa81c53a946ecec6bf96497
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-28
+compiled_at: 2026-11-06
 aliases:
   - profile
   - security settings
@@ -27,15 +27,20 @@ aliases:
   - my bank account
   - change my bank account
   - where claims are paid
+  - link google
+  - link zoho
+  - linked sign-in accounts
+  - second sign-in provider
+  - remove a sign-in
 ---
 
-# Your profile and security: Basic or Expert mode, your bank account, passkeys and devices
+# Your profile and security: Basic or Expert mode, your bank account, passkeys, sign-ins and devices
 
 ## What the page holds
 
-- **Settings › Profile and security** holds what is the person's own: Basic or Expert mode, the bank account their expense claims are paid into, their passkeys and the devices they are signed in on; nobody else changes them.
+- **Settings › Profile and security** holds what is the person's own: Basic or Expert mode, the bank account their expense claims are paid into, their passkeys, the accounts they sign in with and the devices they are signed in on; nobody else changes them.
 - **Settings** is at the foot of the sidebar, under **More** on a phone ([[home.overview]]).
-- Adding or revoking a passkey needs a confirmation that it's you in the last 5 minutes; Fyniq asks first if there was none.
+- Adding or revoking a passkey, and linking or removing a sign-in, needs a confirmation that it's you in the last 5 minutes; Fyniq asks first if there was none.
 
 (src: docs/user-guide/profile-and-security.md#what-it-is) (src: docs/user-guide/profile-and-security.md#before-you-start)
 
@@ -83,6 +88,22 @@ aliases:
 
 (src: docs/user-guide/profile-and-security.md#add-a-passkey) (src: docs/user-guide/profile-and-security.md#revoke-a-passkey)
 
+## Link another sign-in
+
+- **Linked sign-in accounts** lists the accounts that sign the person in, such as Google or Zoho; a second one keeps them able to sign in if one provider is down or that account is lost.
+- **Link** with the provider's name (such as **Link Google**); Fyniq asks to confirm it's you first if that is older than 5 minutes; then sign in at the provider with the account to add, and the page says it is linked.
+- Only signing in with the account here links it: a matching email never does, and an account that signs someone in to Fyniq already is not linked.
+- The second factor is still asked for whichever account signs in; each link sends a security notice in Fyniq and by email.
+
+(src: docs/user-guide/profile-and-security.md#link-another-sign-in)
+
+## Remove a sign-in
+
+- **Remove** next to the account, then **Remove** again: it signs the person in no more, and devices signed in with it are signed out.
+- Never the one in use nor the last: sign in with another first, or link another. It can be linked again later.
+
+(src: docs/user-guide/profile-and-security.md#remove-a-sign-in)
+
 ## Your devices
 
 - Lists every browser signed in, with when it signed in, the provider and when it was last used; **This device** marks the current one.
@@ -98,6 +119,9 @@ aliases:
 - "This browser cannot make passkeys.": use a current browser on a device with a fingerprint reader, face recognition or a PIN.
 - "No screenshot of your banking app or statement header is attached.": attach one showing the name and the account number before asking for approval.
 - "An account for reimbursements is a Singapore bank's account.": use a bank in Singapore's code, such as DBSSSGSG, OCBCSGSG or UOVBSGSG.
+- "That account signs someone in to Fyniq already.": at the provider, sign in with the account meant to be added, then **Link** again.
+- "Linking needs you to have confirmed it's you in the last 5 minutes.": select **Link** again, confirm when asked, and sign in at the provider within a few minutes.
+- "The sign-in you are using, or your last one, cannot be removed.": sign in with another sign-in first, or link another.
 - Related: how Fyniq looks ([[preferences.appearance]]); claiming expenses ([[claims.make-a-claim]]); paying claims in a batch ([[purchases.payment-batches]]).
 
 (src: docs/user-guide/profile-and-security.md#common-problems) (src: docs/user-guide/profile-and-security.md#related)

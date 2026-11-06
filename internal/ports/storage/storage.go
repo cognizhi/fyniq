@@ -764,6 +764,11 @@ const (
 	// CodeConnector: a connector moves only along its lifecycle, is never deleted, and its secret versions are only
 	// replaced and destroyed (FR-INT-26).
 	CodeConnector = "STORAGE-CONNECTOR-01"
+	// CodeIdentityStepUp is a sign-in linked or removed from a session that passed no second factor in the last 5
+	// minutes (FR-ADM-08, rev 0.196).
+	CodeIdentityStepUp = "STORAGE-IDENTITY-01"
+	// CodeIdentity is a sign-in linked already, or the one in use or the last one removed (FR-ADM-08, rev 0.196).
+	CodeIdentity = "STORAGE-IDENTITY-02"
 	// CodeConnectorChange: a step on an installation connector needs the other Super admin's approved change, decided
 	// once, by another person, before it expires (FR-ADM-07).
 	CodeConnectorChange = "STORAGE-CONNECTOR-02"

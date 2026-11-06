@@ -945,6 +945,14 @@ var matrixCalls = map[string]matrixCall{
 	"signOutOtherDevices": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/session/devices/sign-out-others", tok, nil), nil
 	},
+	// A person's sign-ins are their browser session's user's, which the matrix's principals lack: an allowed role is
+	// refused past its policy (API-AUTHZ-04). TestYourSignIns runs them with real sessions.
+	"listIdentities": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/session/identities", tok, nil), nil
+	},
+	"unlinkIdentity": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodDelete, "/v1/session/identities/00000000000000000000000000000000", tok, nil), nil
+	},
 	"getTeamMode": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/team-mode", tok, nil), nil
 	},

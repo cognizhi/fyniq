@@ -3,7 +3,7 @@ key: preferences.security
 title: Your profile and security
 mode: basic
 roles: [all]
-requirements: [FR-UX-23, FR-UX-24, FR-UX-27, FR-ADM-02, FR-ADM-03, SEC-01, FR-AP-22, FM-1, SEC-11]
+requirements: [FR-UX-23, FR-UX-24, FR-UX-27, FR-ADM-02, FR-ADM-03, FR-ADM-08, SEC-01, FR-AP-22, FM-1, SEC-11]
 status: draft            # written with the app shell's settings pages (P1); reviewed with the shell's screens
 ---
 
@@ -13,14 +13,14 @@ status: draft            # written with the app shell's settings pages (P1); rev
 
 **Settings › Profile and security** holds what is yours alone: whether Fyniq shows you Basic or
 Expert mode, the bank account your expense claims are paid into, the passkeys you confirm it's you
-with, and the devices you are signed in on. Nobody else changes them.
+with, the accounts you sign in with, and the devices you are signed in on. Nobody else changes them.
 
 ## Before you start
 
 - Open **Settings** at the foot of the sidebar (on a phone, under **More**), then **Profile and
   security**.
-- Adding or revoking a passkey needs you to have confirmed it's you in the last 5 minutes. If you
-  have not, Fyniq asks first.
+- Adding or revoking a passkey, and linking or removing a sign-in, needs you to have confirmed it's
+  you in the last 5 minutes. If you have not, Fyniq asks first.
 
 ## Basic and Expert mode
 
@@ -51,6 +51,28 @@ your other devices says so.
 
 Select **Revoke** next to the passkey, then **Revoke** again to confirm. It stops working at once.
 You cannot undo it: add a new passkey instead.
+
+## Link another sign-in
+
+**Linked sign-in accounts** lists the accounts that sign you in to Fyniq, such as your Google or
+Zoho account. Link a second one, so that if one provider is down, or you lose that account, you can
+still sign in with the other.
+
+1. Select **Link** with the provider's name, such as **Link Google**.
+2. If you have not confirmed it's you in the last 5 minutes, Fyniq asks first.
+3. Sign in at the provider with the account you want to add. You come back to this page, which
+   says the sign-in is linked.
+
+Only signing in with the account here links it: an account whose email matches yours never links by
+itself. An account that signs someone in to Fyniq already cannot be linked. Whichever account you
+sign in with, Fyniq still asks for your second factor. Each link sends you a security notice, in
+Fyniq and by email.
+
+## Remove a sign-in
+
+Select **Remove** next to the account, then **Remove** again to confirm. It signs you in no more,
+and any device signed in with it is signed out. You cannot remove the one you are signed in with,
+nor your last one: sign in with another first, or link another. You can link it again later.
 
 ## Your devices
 
@@ -87,6 +109,13 @@ change back, select **Withdraw**: your account stays as it was, and payments to 
 held. Once approved, the new account replaces the old one for every payment from then on.
 
 ## Common problems
+
+- **"That account signs someone in to Fyniq already."** At the provider, sign in with the account
+  you mean to add, then select **Link** again.
+- **"Linking needs you to have confirmed it's you in the last 5 minutes."** Select **Link** again:
+  Fyniq asks you to confirm first. Sign in at the provider within a few minutes.
+- **"The sign-in you are using, or your last one, cannot be removed."** Sign in with another of
+  your sign-ins to remove this one, or link another first.
 
 - **"You have no passkey yet."** Select **Sign in again** and sign in with your authenticator app,
   then add a passkey.

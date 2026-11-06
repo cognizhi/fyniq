@@ -46,7 +46,7 @@ func init() {
 		}
 		return r
 	}
-	registerSignIn = func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, alert signin.Alert) ports.SignIn {
+	registerSignIn = func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, alert signin.Alert, linked signin.LinkAlert) ports.SignIn {
 		log := logging.New(os.Stderr, slog.LevelInfo)
 		c, err := releaseSignIn()
 		if err != nil {
@@ -59,7 +59,7 @@ func init() {
 		}
 		c.platform.Clock = clock
 		c.platform.Keys = &gcp.CertKeys{URL: gcp.IdentityPlatformCertsURL, Clock: clock}
-		signin.Flow{SignIn: c.platform, Sessions: sessions, Clock: clock, Origin: c.origin, Base: "/api", Log: log, Alert: alert}.Register(s)
+		signin.Flow{SignIn: c.platform, Sessions: sessions, Clock: clock, Origin: c.origin, Base: "/api", Log: log, Alert: alert, Linked: linked}.Register(s)
 		return c.platform
 	}
 	webOrigin = func() string {

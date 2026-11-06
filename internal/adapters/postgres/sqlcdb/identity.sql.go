@@ -245,6 +245,32 @@ func (q *Queries) IssueDeploymentRecovery(ctx context.Context, arg IssueDeployme
 	return err
 }
 
+const linkIdentity = `-- name: LinkIdentity :one
+SELECT fyniq.link_identity($1::bytea, $2::text, $3::text, $4::text,
+  $5::timestamptz)::uuid AS user_id
+`
+
+type LinkIdentityParams struct {
+	SessionHash []byte
+	Issuer      string
+	Subject     string
+	Provider    string
+	Now         time.Time
+}
+
+func (q *Queries) LinkIdentity(ctx context.Context, arg LinkIdentityParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, linkIdentity,
+		arg.SessionHash,
+		arg.Issuer,
+		arg.Subject,
+		arg.Provider,
+		arg.Now,
+	)
+	var user_id uuid.UUID
+	err := row.Scan(&user_id)
+	return user_id, err
+}
+
 const listLiveRoles = `-- name: ListLiveRoles :many
 SELECT a.id, a.membership_id, a.role, a.expires_at, a.revoked_at
   FROM fyniq.role_assignment a JOIN fyniq.user_membership m ON m.organisation_id = a.organisation_id AND m.id = a.membership_id
@@ -418,6 +444,48 @@ func (q *Queries) SuperAdminUsers(ctx context.Context) ([]uuid.UUID, error) {
 	return items, nil
 }
 
+const unlinkIdentity = `-- name: UnlinkIdentity :many
+SELECT unlinked_user::uuid AS user_id, coalesce(unlinked_provider, '')::text AS provider
+FROM fyniq.unlink_identity($1::bytea, $2::text, $3::text, $4::timestamptz)
+`
+
+type UnlinkIdentityParams struct {
+	SessionHash []byte
+	Issuer      string
+	Subject     string
+	Now         time.Time
+}
+
+type UnlinkIdentityRow struct {
+	UserID   uuid.UUID
+	Provider string
+}
+
+func (q *Queries) UnlinkIdentity(ctx context.Context, arg UnlinkIdentityParams) ([]UnlinkIdentityRow, error) {
+	rows, err := q.db.Query(ctx, unlinkIdentity,
+		arg.SessionHash,
+		arg.Issuer,
+		arg.Subject,
+		arg.Now,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UnlinkIdentityRow
+	for rows.Next() {
+		var i UnlinkIdentityRow
+		if err := rows.Scan(&i.UserID, &i.Provider); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const userForIdentity = `-- name: UserForIdentity :one
 SELECT coalesce(fyniq.user_for_identity($1::text, $2::text), '00000000-0000-0000-0000-000000000000')::uuid AS user_id
 `
@@ -432,4 +500,46 @@ func (q *Queries) UserForIdentity(ctx context.Context, arg UserForIdentityParams
 	var user_id uuid.UUID
 	err := row.Scan(&user_id)
 	return user_id, err
+}
+
+const userIdentities = `-- name: UserIdentities :many
+SELECT issuer::text AS issuer, subject::text AS subject, coalesce(provider, '')::text AS provider, created_at::timestamptz AS created_at,
+  coalesce(extract(epoch FROM linked_at), 0)::bigint AS linked_unix, coalesce(extract(epoch FROM last_used_at), 0)::bigint AS last_used_unix
+FROM fyniq.user_identities($1::uuid)
+`
+
+type UserIdentitiesRow struct {
+	Issuer       string
+	Subject      string
+	Provider     string
+	CreatedAt    time.Time
+	LinkedUnix   int64
+	LastUsedUnix int64
+}
+
+func (q *Queries) UserIdentities(ctx context.Context, userID uuid.UUID) ([]UserIdentitiesRow, error) {
+	rows, err := q.db.Query(ctx, userIdentities, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UserIdentitiesRow
+	for rows.Next() {
+		var i UserIdentitiesRow
+		if err := rows.Scan(
+			&i.Issuer,
+			&i.Subject,
+			&i.Provider,
+			&i.CreatedAt,
+			&i.LinkedUnix,
+			&i.LastUsedUnix,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

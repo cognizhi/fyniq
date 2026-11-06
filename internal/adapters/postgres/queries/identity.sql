@@ -72,3 +72,16 @@ SELECT fyniq.accept_super_admin_invitation(sqlc.arg(code_hash)::bytea, sqlc.arg(
 SELECT r.recovered::uuid AS user_id, r.via::text AS via, r.removed_subjects::text[] AS removed_subjects
   FROM fyniq.recover_super_admin(sqlc.narg(recovery_hash)::bytea, sqlc.arg(confirmation_hash)::bytea, sqlc.arg(issuer)::text,
        sqlc.arg(subject)::text, sqlc.arg(now)::timestamptz) AS r;
+
+-- name: LinkIdentity :one
+SELECT fyniq.link_identity(sqlc.arg(session_hash)::bytea, sqlc.arg(issuer)::text, sqlc.arg(subject)::text, sqlc.arg(provider)::text,
+  sqlc.arg(now)::timestamptz)::uuid AS user_id;
+
+-- name: UnlinkIdentity :many
+SELECT unlinked_user::uuid AS user_id, coalesce(unlinked_provider, '')::text AS provider
+FROM fyniq.unlink_identity(sqlc.arg(session_hash)::bytea, sqlc.arg(issuer)::text, sqlc.arg(subject)::text, sqlc.arg(now)::timestamptz);
+
+-- name: UserIdentities :many
+SELECT issuer::text AS issuer, subject::text AS subject, coalesce(provider, '')::text AS provider, created_at::timestamptz AS created_at,
+  coalesce(extract(epoch FROM linked_at), 0)::bigint AS linked_unix, coalesce(extract(epoch FROM last_used_at), 0)::bigint AS last_used_unix
+FROM fyniq.user_identities(sqlc.arg(user_id)::uuid);

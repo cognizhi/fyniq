@@ -132,6 +132,33 @@ type Sessions interface {
 	IdleTimeout(ctx context.Context, org uuid.UUID, now time.Time, fallback time.Duration) (time.Duration, error)
 	// EndUserSession ends one of a user's sessions, or returns ports.ErrNotFound when they have no live one with that hash.
 	EndUserSession(ctx context.Context, userID uuid.UUID, tokenHash []byte, now time.Time) error
+	// LinkIdentity links a sign-in identity, just signed in with its provider, to the user of a live session that passed a
+	// second factor in the last 5 minutes (FR-ADM-08, rev 0.196), recording it in the installation's trail, and returns
+	// the user: CodeIdentityStepUp when the session did not; CodeIdentity when any user has the identity already. A
+	// matching email never links.
+	LinkIdentity(ctx context.Context, l IdentityLink) (uuid.UUID, error)
+	// UnlinkIdentity removes one of the identities of a live session's user, the session having passed a second factor
+	// in the last 5 minutes, recording it in the installation's trail, and returns the user: CodeIdentityStepUp when the
+	// session did not; ports.ErrNotFound for an identity not theirs; CodeIdentity for the one the session signed in with,
+	// or their last.
+	UnlinkIdentity(ctx context.Context, sessionHash []byte, issuer, subject string, now time.Time) (uuid.UUID, error)
+	// Identities are a user's sign-in identities: the one they joined or set up with first, then those linked, in order.
+	Identities(ctx context.Context, userID uuid.UUID) ([]Identity, error)
+}
+
+// IdentityLink is what Sessions.LinkIdentity needs.
+type IdentityLink struct {
+	SessionHash               []byte
+	Issuer, Subject, Provider string
+	Now                       time.Time
+}
+
+// Identity is one of a person's sign-in identities: the provider it came from, when it was added, when it was linked (zero
+// for the one they joined or set up with) and when it last signed in (zero for never).
+type Identity struct {
+	Issuer, Subject, Provider string
+	CreatedAt, LinkedAt       time.Time
+	LastUsedAt                time.Time
 }
 
 // Device is one of a user's live sessions.

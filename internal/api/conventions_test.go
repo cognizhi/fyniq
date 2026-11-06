@@ -28,7 +28,7 @@ func TestConventionExemptions(t *testing.T) {
 	for _, op := range []string{"challengeApproval", "registerPasskey", "startPasskeyRegistration", "startStepUp", "stepUp"} { // a challenge makes them one-time
 		want = append(want, op+" Idempotency-Key", op+" Prefer")
 	}
-	want = append(want, "revokePasskey Prefer", "signOutDevice Prefer", "signOutOtherDevices Idempotency-Key", "signOutOtherDevices Prefer")
+	want = append(want, "revokePasskey Prefer", "signOutDevice Prefer", "unlinkIdentity Prefer", "signOutOtherDevices Idempotency-Key", "signOutOtherDevices Prefer")
 	// A preview saves nothing, so a repeat is harmless and return=preview would answer the same (rev 0.97).
 	want = append(want, "previewDocumentTemplate Idempotency-Key", "previewDocumentTemplate Prefer")
 	// A back-test saves nothing either (FR-BNK-05).

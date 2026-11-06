@@ -150,6 +150,8 @@ var fyCodes = map[string]string{
 	"FY266": storage.CodeAccountantReview,
 	"FY267": storage.CodeBanking,
 	"FY268": storage.CodeSuccession,
+	"FY270": storage.CodeIdentityStepUp, // a sign-in linked or removed without a recent second factor (000239)
+	"FY271": storage.CodeIdentity,       // a sign-in linked already, or the last or current one removed (000239)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

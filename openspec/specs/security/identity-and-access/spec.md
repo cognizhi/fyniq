@@ -240,6 +240,16 @@ Source: PRD-001 §13.1 · Priority M · Phase P1
 - **THEN** the recovery is audited
 - **AND** it enters the weekly review (FM-3)
 
+#### Scenario: A failed provider is replaced by another linked one (rev 0.196)
+- **WHEN** a person's sign-in provider is down, or their account there is lost
+- **THEN** they sign in with another provider they linked (FR-ADM-08), so each person is asked to link a second one
+- **AND** a person with one provider who loses it is recovered by two people
+
+#### Scenario: Ten hashed one-time recovery codes (rev 0.196)
+- **WHEN** a user saves recovery codes
+- **THEN** there are 10 one-time codes of 10 characters, shown once and kept only as keyed hashes
+- **AND** each works once, and regenerating them after step-up replaces them all
+
 #### Scenario: G4-060 Lost passkey while Zoho sign-in is down
 - **GIVEN** a founder has lost their passkey and Zoho sign-in is down
 - **WHEN** the founder recovers the account

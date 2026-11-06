@@ -83,6 +83,16 @@
   `TestAnOwnerIsSucceededAfterSevenDaysNotice`, `TestAttackAnOwnerSuccessionKeepsItsRules`, `Successions.test.tsx`.
   **Left:** sign-in providers by configuration, allowed domains and identity linking (FR-ADM-08); the Super admin
   console for organisations a Super admin is not a member of (P3).)
+  (6 Nov 2026, PRD-001 rev 0.196, on the owner's decisions of the same day: identity linking. From Settings › Profile
+  and security, in a session whose second factor is less than 5 minutes old, a person signs in with a provider
+  (`/api/auth/signin?provider=…&link=1`, sent from Fyniq only) and that account is added to theirs, unless it signs
+  someone in already; a matching email links nothing. `GET /v1/session/identities` lists their sign-ins and
+  `DELETE /v1/session/identities/{identity_id}` removes one, never the one in use nor the last, ending its sessions.
+  The database checks the second factor again (migration 000239, FY270, FY271); each change is audited in the
+  installation's trail and sent as `security.sign_in_methods`. Tests `TestYourSignIns`,
+  `TestLinkingASignInAddsItToTheSessionsUser`, `Profile.test.tsx`. **Left:** Super admins switching providers, their
+  allowed domains and ending their sessions, with the last-method guard and dual control; joining by domain as a
+  pending Employee membership an Owner approves; adding providers in the app (P2 or P3).)
 - [ ] 2.5 Account recovery as an audited state machine with two independent proofs, cooling-off, notices and revocation. Test `// req: SEC-35` with G4-060
 
 ## 3. Clients, outputs and administration

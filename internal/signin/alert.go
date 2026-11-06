@@ -73,3 +73,23 @@ func NotifyAlert(sessions storage.Sessions, store storage.Store, d outbox.Dispat
 		})
 	}
 }
+
+// NotifyLink tells a person, in their organisation's notification centre, that a sign-in was linked to their account
+// (FR-ADM-08, rev 0.196): a security notice, emailed at once. A person in no organisation is told nothing here.
+func NotifyLink(sessions storage.Sessions, store storage.Store, d outbox.Dispatcher) LinkAlert {
+	return func(ctx context.Context, user uuid.UUID, session []byte, provider string, at time.Time) error {
+		s, err := sessions.Session(ctx, session, at, authn.SessionIdle)
+		if errors.Is(err, ports.ErrNotFound) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if s.Organisation == uuid.Nil {
+			return nil
+		}
+		return store.Do(ctx, s.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			return notify.SignInMethod(ctx, d, u, s.Organisation, user, provider, true, at)
+		})
+	}
+}
