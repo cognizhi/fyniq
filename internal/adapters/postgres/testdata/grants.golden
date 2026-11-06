@@ -58,7 +58,7 @@ fyniq_api       SELECT    bank_match
 fyniq_api       UPDATE    bank_match (undo_reason, undone_at, undone_by)
 fyniq_api       INSERT    bank_reconciliation (book_balance, currency, difference, ledger_revision, minor_units, money_account_id, period_id, prepared_at, prepared_by, statement_balance, unreconciled_count, unreconciled_total)
 fyniq_api       SELECT    bank_reconciliation
-fyniq_api       UPDATE    bank_reconciliation (book_balance, difference, ledger_revision, prepared_at, prepared_by, signed_at, signed_by, signer_mfa_at, statement_balance, unreconciled_count, unreconciled_total, version)
+fyniq_api       UPDATE    bank_reconciliation (book_balance, difference, ledger_revision, prepared_at, prepared_by, signed_at, signed_by, signer_mfa_at, sod_override_approval, sod_override_reason, statement_balance, unreconciled_count, unreconciled_total, version)
 fyniq_api       INSERT    bank_rule (action, active, changed_at, changed_by, conditions, created_at, created_by, from_ai_proposal, name, position)
 fyniq_api       SELECT    bank_rule
 fyniq_api       UPDATE    bank_rule (action, active, auto_apply, auto_apply_approval_id, changed_at, changed_by, conditions, name, position, version)

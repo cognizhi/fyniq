@@ -63,7 +63,8 @@
         "director_fee",
         "director_settlement",
         "director_repayment",
-        "account"
+        "account",
+        "bank_reconciliation"
       ],
       "examples": [
         "organisation_setting"

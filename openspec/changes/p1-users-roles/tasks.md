@@ -18,6 +18,17 @@
   SOD-7 and SOD-9 per item, with their objects (payments, journals above the threshold, pay runs, reconciliations,
   close, write-offs); and SOD-6 when approving: once a transaction row's changes go through the approval engine (bills,
   payment batches, period close), `checkConflicts` belongs in `sign()` for those rows too, as it is in `posting` now.)
+  (6 Nov 2026, PRD-001 rev 0.179, on the owner's decisions of the same day: SOD-5 at the reconciliation's sign-off:
+  whoever decided a line of the account booked in the month (as it stands) does not sign it off in Standard and
+  Enterprise modes (BANK-15), unless they ask for an override with a reason (`requestReconciliationOverride`,
+  `bank_reconciliation.sign`) that an Owner approves; it is then signed off as them with the override kept, reported on
+  Checks (C.2 #62), and the database refuses any other (migrations 000231 and 000232, FY267). SOD-6 when acting:
+  `checkConflicts` in `sign()` for requests on a transaction's row, and on releasing a batch, signing off a
+  reconciliation and attesting a close. SOD-7 holds through FR-GL-08's reopening on another person's approval. SOD-1,
+  SOD-2, SOD-3 and SOD-9 were built with their objects (`payee_test.go`, `payment_batch_release_test.go`, the approval
+  tests, `writeoffs_test.go`). Tests `TestWhoDecidedTheLinesSignsOffOnlyUnderAnOverride`,
+  `TestAConflictOfRolesNeverApprovesATransaction`, `TestAttackAReconciliationKeepsSOD5`, `TestReopeningAClosedPeriod`
+  (SOD-7), `reconciliation.test.tsx`. **Left:** SOD-4, with pay runs (Nemura, FR-PPL-10).)
 - [ ] 1.4 The AI and integration principals: reads within the delegating user's rights minus the AI exclusions, and narrow scopes. Tests `// req: access/roles-and-segregation AI assistant principal` and `… Integration principal`
 
 ## 2. People and sign-in

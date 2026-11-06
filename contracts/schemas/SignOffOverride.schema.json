@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "description": "The approved request that allowed it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "conflict": {
+      "description": "The conflict overridden.",
+      "enum": [
+        "SOD-5"
+      ],
+      "examples": [
+        "SOD-5"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why, as the signer gave it.",
+      "examples": [
+        "The other Controller is on leave until December"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "conflict",
+    "approval_id",
+    "reason"
+  ],
+  "title": "SignOffOverride",
+  "type": "object"
+}

@@ -604,6 +604,10 @@
       "label": "Sign it off",
       "tooltip": "Sign off a reconciliation another person prepared, after confirming it's you; it is then locked with the month."
     },
+    "bank-reconciliation.override": {
+      "label": "Ask for an override",
+      "tooltip": "Ask an Owner to let you sign it off although you decided lines it covers (SOD-5): your reason is kept with it and shown on Checks."
+    },
     "purchases.bills": {
       "label": "Bills",
       "tooltip": "Every bill from a supplier: its total, when it falls due, and whether it is posted, waiting for approval or voided."

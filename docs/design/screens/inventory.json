@@ -1676,10 +1676,12 @@
     "FR-BNK-10",
     "FR-BNK-11",
     "FR-DOC-06",
-    "FR-GL-07"
+    "FR-GL-07",
+    "SOD-5"
    ],
    "purpose": "Prove the books agree with the bank for a period and have a different person sign it off.",
    "content": [
+    "SOD-5 (rev 0.179): whoever decided the month's lines does not sign off in Standard and Enterprise modes; they may ask an Owner for an override with a reason, kept on it and shown on Checks (C.2 #62)",
     "Statement balance from the feed or an uploaded statement (never typed in Founder mode), reconciled book balance, unreconciled items, difference",
     "Unreconciled list and suspense balance",
     "Required evidence: bank statement for the period",

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { ChevronRight, CircleCheck, FileCheck2, Lock, PenLine, RefreshCw, TriangleAlert, UserX } from "lucide-react";
+import { ChevronRight, CircleCheck, FileCheck2, Hourglass, Lock, PenLine, RefreshCw, ShieldAlert, TriangleAlert, UserX } from "lucide-react";
 import { useId, useState } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -54,6 +54,11 @@ export function BankReconciliation() {
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [busy, setBusy] = useState(false);
   const [typed, setTyped] = useState("");
+  // SOD-5 (rev 0.179): a signer who decided lines this reconciliation covers is refused in Standard and Enterprise
+  // modes, and may ask for an override, with a reason, which an Owner approves.
+  const [decided, setDecided] = useState(false);
+  const [reason, setReason] = useState("");
+  const [asked, setAsked] = useState<string | null>(null);
   const founder = organisation?.team_mode === "founder";
   const account = useQuery({
     queryKey: ["money-account", accountId],
@@ -106,8 +111,28 @@ export function BankReconciliation() {
       }),
     );
     setBusy(false);
-    if (!out.data) return setProblem(problemOf(out.error));
+    if (!out.data) {
+      const p = problemOf(out.error);
+      setDecided(p.code === "BANK-15");
+      return setProblem(p);
+    }
     void queries.invalidateQueries({ queryKey: ["bank-reconciliation", accountId, periodId] });
+  };
+  const askOverride = async () => {
+    if (!r) return;
+    if (!reason.trim()) return setProblem({ detail: "The override needs your reason.", fix: "Say why you sign it off although you decided lines it covers." });
+    setBusy(true);
+    setProblem(null);
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/money-accounts/{money_account_id}/reconciliations/{period_id}/sign-override", {
+        params: { path: { money_account_id: accountId, period_id: periodId }, header: { "Idempotency-Key": newKey(), "If-Match": r.etag } },
+        body: { reason: reason.trim() },
+      }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    setAsked(out.data.id);
+    setDecided(false);
   };
   const h = helpText("banking.reconciliation");
 
@@ -220,6 +245,21 @@ export function BankReconciliation() {
                   </dd>
                 </div>
               )}
+              {r.sod_override && (
+                <div>
+                  <dt>Under an override</dt>
+                  <dd>
+                    <span className="fy-chip fy-chip--warning">
+                      <Icon of={ShieldAlert} />
+                      {r.sod_override.conflict}
+                    </span>{" "}
+                    {r.sod_override.reason}.{" "}
+                    <Link to="/approvals/$approvalId" params={{ approvalId: r.sod_override.approval_id }}>
+                      The approval
+                    </Link>
+                  </dd>
+                </div>
+              )}
             </dl>
           </section>
           {(r.unreconciled_lines ?? []).length > 0 && (
@@ -307,6 +347,14 @@ export function BankReconciliation() {
               <Icon of={UserX} />
               You prepared it: another person signs it off.
             </p>
+          ) : asked ? (
+            <p className="fy-small fy-row gap-2" role="status">
+              <Icon of={Hourglass} />
+              Waiting for an Owner to approve the override.{" "}
+              <Link to="/approvals/$approvalId" params={{ approvalId: asked }}>
+                The request
+              </Link>
+            </p>
           ) : (
             <button type="button" className="fy-btn fy-btn--primary" onClick={() => void sign()} disabled={busy} title={helpText("bank-reconciliation.sign").tooltip}>
               <Icon of={PenLine} />
@@ -314,6 +362,33 @@ export function BankReconciliation() {
             </button>
           )}
         </div>
+      )}
+      {r && !signed && decided && !asked && (
+        <section className="fy-card" aria-labelledby={`${id}-override`}>
+          <div className="fy-card__head">
+            <h2 className="fy-h3" id={`${id}-override`}>
+              Ask for an override
+            </h2>
+          </div>
+          <div className="fy-card__body fy-stack fy-stack--3">
+            <p className="fy-small fy-secondary">
+              You decided lines this reconciliation covers, so you recorded its bank transactions (SOD-5). Ask another person who signs off reconciliations, or ask an Owner to approve
+              an override: it is kept on the reconciliation and reported on Checks.
+            </p>
+            <div className="fy-field">
+              <label className="fy-label" htmlFor={`${id}-reason`}>
+                Why you sign it off yourself
+              </label>
+              <textarea className="fy-textarea" id={`${id}-reason`} rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
+            </div>
+          </div>
+          <div className="fy-card__foot">
+            <button type="button" className="fy-btn fy-btn--secondary" onClick={() => void askOverride()} disabled={busy} title={helpText("bank-reconciliation.override").tooltip}>
+              <Icon of={ShieldAlert} />
+              {helpText("bank-reconciliation.override").label}
+            </button>
+          </div>
+        </section>
       )}
       <p className="fy-small fy-muted">The bank's statement for the month is the evidence: it is kept with its statement on the account.</p>
     </div>

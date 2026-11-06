@@ -62,7 +62,7 @@ func TestRoleCombinationsThatConflict(t *testing.T) {
 	// The PRD still says what the derivation reads.
 	prd := authztest.PRD(t)
 	for _, says := range []string{
-		"| SOD-6 | Administer users or roles **and** post or approve transactions | Privilege abuse |",
+		"| SOD-6 | Administer users or roles **and** post or approve transactions (rev 0.179",
 		"| **Administrator** | Users, roles, team mode, approval policies, integrations, settings | Post or approve financial transactions |",
 		"This is allowed only because every Owner action on users, roles,\napproval policies and bank details is dual-controlled",
 	} {

@@ -3,7 +3,7 @@ key: banking.accounts
 title: Bank accounts
 mode: basic
 roles: [bookkeeper, accountant, controller, owner, administrator, ar_specialist, ap_specialist, payment_releaser, auditor, tax_agent]
-requirements: [FR-BNK-01, FR-BNK-02, FR-BNK-04, FR-BNK-05, FR-BNK-06, FR-BNK-07, FR-BNK-08, FR-BNK-09, FR-BNK-10, FR-BNK-11, FR-BNK-13, FR-BNK-14, FR-BNK-15, FR-BNK-16, FR-BNK-17, FR-BNK-18, FR-DOC-08, FR-INT-22]
+requirements: [FR-BNK-01, FR-BNK-02, FR-BNK-04, FR-BNK-05, FR-BNK-06, FR-BNK-07, FR-BNK-08, FR-BNK-09, FR-BNK-10, FR-BNK-11, FR-BNK-13, FR-BNK-14, FR-BNK-15, FR-BNK-16, FR-BNK-17, FR-BNK-18, FR-DOC-08, FR-INT-22, SOD-5]
 status: draft            # written with the banking screens (P1, p1-bank-import-reconcile task 10.1); reviewed with the accountant
 ---
 
@@ -173,6 +173,12 @@ another signs it off.
   waiting lines and prepare it again.
 - The Controller **signs it off** after confirming it's them, but never one they prepared. Once signed
   off it is locked with the month.
+- In Standard mode, whoever decided any of the account's lines for the month (categorised, matched,
+  transferred, parked in suspense or excluded them) does not sign it off: they recorded its bank
+  transactions. Ask another person who signs off reconciliations. If nobody else can, select **Ask for
+  an override**, say why, and confirm it's you: an Owner approves it, and the reconciliation is then
+  signed off as you, with your reason kept on it and shown on **Checks**. Importing a statement does
+  not count as deciding its lines. Founder mode allows it.
 - Lines left in suspense are counted apart: categorise them before the month closes.
 
 ## Freshness and gaps

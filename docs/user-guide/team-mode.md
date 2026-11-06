@@ -27,6 +27,9 @@ and also posting or approving the books.
 - The Owner role on its own is not a conflict: every change an Owner makes to people, roles or
   approval policies needs another person's approval.
 - **Settings → Team mode** lists each member whose roles conflict, in every mode.
+- In Standard mode a person whose roles conflict, with no override, also cannot approve or reject a
+  request about money (a journal, a bill, a payment batch), release a payment batch, sign off a bank
+  reconciliation or close a month.
 
 ## Switch the team mode
 

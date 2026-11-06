@@ -1575,6 +1575,7 @@ components:
             - director_settlement
             - director_repayment
             - account
+            - bank_reconciliation
           examples:
             - organisation_setting
           type: string
@@ -1628,6 +1629,7 @@ components:
             - director_settlement.approve
             - director_repayment.void
             - account.merge
+            - bank_reconciliation.sign
           examples:
             - organisation_setting.change
           type: string
@@ -1864,6 +1866,7 @@ components:
             - director_settlement
             - director_repayment
             - account
+            - bank_reconciliation
           examples:
             - organisation_setting
           type: string
@@ -1974,6 +1977,7 @@ components:
             - director_settlement
             - director_repayment
             - account
+            - bank_reconciliation
           examples:
             - organisation_setting
           type: string
@@ -2992,6 +2996,9 @@ components:
           examples:
             - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a02
           type: string
+        sod_override:
+          $ref: "#/components/schemas/SignOffOverride"
+          description: "The override of SOD-5 it was signed off under: its signer decided lines it covers, in a team mode that blocks it, and another person approved the override (rev 0.179). Absent for none."
         statement_balance:
           $ref: "#/components/schemas/Money"
           description: The statement's balance at the period's end.
@@ -22584,6 +22591,19 @@ components:
           format: uuid
           type: string
       type: object
+    ReconciliationOverrideRequest:
+      additionalProperties: false
+      properties:
+        reason:
+          description: "Why you sign it off although you decided lines it covers: the approver reads it, and the reconciliation and Checks keep it."
+          examples:
+            - The other Controller is on leave until December
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - reason
+      type: object
     ReconciliationsOutputBody:
       additionalProperties: false
       properties:
@@ -25681,6 +25701,32 @@ components:
           type: string
       required:
         - items
+      type: object
+    SignOffOverride:
+      additionalProperties: false
+      properties:
+        approval_id:
+          description: The approved request that allowed it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+          format: uuid
+          type: string
+        conflict:
+          description: The conflict overridden.
+          enum:
+            - SOD-5
+          examples:
+            - SOD-5
+          type: string
+        reason:
+          description: Why, as the signer gave it.
+          examples:
+            - The other Controller is on leave until December
+          type: string
+      required:
+        - conflict
+        - approval_id
+        - reason
       type: object
     SkipSalesReminder:
       additionalProperties: false
@@ -32036,7 +32082,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APPLY-06` The application is not posted; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `BILL-02` The bill is not a draft; `BILL-03` The bill is not posted; `BILL-13` Payments settle the bill; `BILLPAY-06` The payment is not posted; `CLAIM-02` The claim is not a draft; `CLAIM-15` The reimbursement is not posted; `CLAIM-31` The advance cannot be voided as it stands; `CREDIT-06` The application is not posted; `DEPOSIT-06` The deposit is not posted; `DEPOSIT-08` Invoices or refunds use the deposit; `FOUNDER-18` The fee is posted; `FOUNDER-29` The settlement is decided; `FOUNDER-33` Not an approved repayment with that much open; `FOUNDER-34` The repayment is not posted; `INVOICE-02` The invoice is not a draft; `INVOICE-03` The invoice is not issued; `INVOICE-13` Receipts or credits settle the invoice; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `MERGE-03` Something scheduled still posts to the account; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `PO-10` The order is not a draft; `RECEIPT-06` The receipt is not posted; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DOC-04` An edit posts its reversal and its new version together; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way; `STORAGE-PAYEE-01` Bank details do not change that way; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-TEMPLATE-01` The template does not change that way; `TPL-12` That version is in force already; `WRITEOFF-07` The write-off is not a draft; `WRITEOFF-08` The write-off is not posted."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APPLY-06` The application is not posted; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `BILL-02` The bill is not a draft; `BILL-03` The bill is not posted; `BILL-13` Payments settle the bill; `BILLPAY-06` The payment is not posted; `CLAIM-02` The claim is not a draft; `CLAIM-15` The reimbursement is not posted; `CLAIM-31` The advance cannot be voided as it stands; `CREDIT-06` The application is not posted; `DEPOSIT-06` The deposit is not posted; `DEPOSIT-08` Invoices or refunds use the deposit; `FOUNDER-18` The fee is posted; `FOUNDER-29` The settlement is decided; `FOUNDER-33` Not an approved repayment with that much open; `FOUNDER-34` The repayment is not posted; `INVOICE-02` The invoice is not a draft; `INVOICE-03` The invoice is not issued; `INVOICE-13` Receipts or credits settle the invoice; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `MERGE-03` Something scheduled still posts to the account; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `PAYEE-10` The change is approved already; `PAYEE-13` Another change of that currency waits; `PO-10` The order is not a draft; `RECEIPT-06` The receipt is not posted; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-CLAIM-01` The expense claim record does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DOC-04` An edit posts its reversal and its new version together; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PARTY-01` A director's account does not change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way; `STORAGE-PAYEE-01` Bank details do not change that way; `STORAGE-PERIOD-01` No period covers the date; `STORAGE-TEMPLATE-01` The template does not change that way; `TPL-12` That version is in force already; `WRITEOFF-07` The write-off is not a draft; `WRITEOFF-08` The write-off is not posted."
         "412":
           content:
             application/problem+json:
@@ -32318,6 +32364,7 @@ paths:
         - SET-04
         - SET-06
         - STORAGE-APPROVAL-01
+        - STORAGE-BANKING-01
         - STORAGE-CLAIM-01
         - STORAGE-DOC-02
         - STORAGE-DOC-04
@@ -32629,7 +32676,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `TEAM-04` Your roles conflict for this action."
         "404":
           content:
             application/problem+json:
@@ -32750,6 +32797,7 @@ paths:
         - STORAGE-PASSKEY-01
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
+        - TEAM-04
       x-fyniq-permission:
         capability: (approvals)
         note: "Each approval's own policy decides: the Appendix D row of the object it changes. Never the AI (§9.6). Needs A on the object's row, a person signed in who passed step-up in the last 5 minutes, and someone other than the requester."
@@ -90625,7 +90673,7 @@ paths:
         right: V
   /v1/money-accounts/{money_account_id}/reconciliations/{period_id}/sign:
     post:
-      description: "Signs off a prepared reconciliation (FR-BNK-10, FM-5, SOD-5): by a person who did not prepare it, who passed step-up in the last 5 minutes, while its period is open; once signed it never changes. The close needs every money account with activity in the period signed off at the ledger revision it saw (FR-GL-07). Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      description: "Signs off a prepared reconciliation (FR-BNK-10, FM-5, SOD-5): by a person who did not prepare it, who passed step-up in the last 5 minutes, while its period is open; once signed it never changes. In Standard and Enterprise modes it is refused (BANK-15) to a person who decided lines of the account booked in the period (categorised, matched, transferred, parked in suspense or excluded them, as they stand): another person signs it off, or they ask for an override with requestReconciliationOverride (rev 0.179); and to a person whose roles hold SOD-6 without an override (TEAM-04). The close needs every money account with activity in the period signed off at the ledger revision it saw (FR-GL-07). Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
       operationId: signBankReconciliation
       parameters:
         - description: The money account's ID.
@@ -90726,7 +90774,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `BANK-15` You recorded the bank transactions this sign-off covers (SOD-5); `TEAM-04` Your roles conflict for this action."
         "404":
           content:
             application/problem+json:
@@ -90830,12 +90878,259 @@ paths:
         - API-INPUT-04
         - API-NOT-FOUND-01
         - API-RATE-01
+        - BANK-15
         - STORAGE-BANKING-01
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01
+        - TEAM-04
       x-fyniq-permission:
         capability: Bank reconciliation sign-off
+        right: A
+  /v1/money-accounts/{money_account_id}/reconciliations/{period_id}/sign-override:
+    post:
+      description: "Asks for an override of SOD-5 (§6.4; PRD-001 rev 0.179, the owner's decisions of 6 Nov 2026): in Standard and Enterprise modes a person who decided lines of the account booked in the period may not sign off its reconciliation, and this asks to sign it off anyway, with a reason. The answer is 202 with an approval request (bank_reconciliation.sign), which another person who holds A on \"Users, roles, team mode\" (the Owner) approves, stepped up, as they approve the role conflicts' overrides. On the approval the reconciliation is signed off as the person who asked, the override and its reason kept on it and reported on Checks (C.2 #62). Refused while there is nothing to override (CodeInvalid): another person may sign it off, or the team mode allows it. Preparing it again before the approval voids the request (FR-APR-05). Needs a person signed in who passed step-up, who holds the sign-off right and did not prepare it, and If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing."
+      operationId: requestReconciliationOverride
+      parameters:
+        - description: The money account's ID.
+          in: path
+          name: money_account_id
+          required: true
+          schema:
+            description: The money account's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+            format: uuid
+            type: string
+        - description: The period's ID.
+          in: path
+          name: period_id
+          required: true
+          schema:
+            description: The period's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a50
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReconciliationOverrideRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: Accepted
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `TEAM-04` Your roles conflict for this action."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-BANKING-01` The banking record does not allow that; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Ask to sign off a reconciliation under an override of SOD-5
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - APR-06
+        - STORAGE-APPROVAL-01
+        - STORAGE-BANKING-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+        - TEAM-04
+      x-fyniq-permission:
+        capability: Bank reconciliation sign-off
+        note: A person stepped up in the last 5 minutes, who decided lines it covers in a mode that blocks it (SOD-5); another person who holds A on "Users, roles, team mode" approves it.
         right: A
   /v1/money-accounts/{money_account_id}/sources:
     post:
@@ -103289,7 +103584,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `CLOSE-05` Another founder attests the close."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `CLOSE-05` Another founder attests the close; `TEAM-04` Your roles conflict for this action."
         "404":
           content:
             application/problem+json:
@@ -103405,6 +103700,7 @@ paths:
         - STORAGE-LOCK-01
         - STORAGE-PERIOD-03
         - STORAGE-RETRY-01
+        - TEAM-04
       x-fyniq-permission:
         capability: Period close / reopen
         note: A person stepped up in the last 5 minutes, who did not run the checks (FM-4).

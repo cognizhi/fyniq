@@ -72,6 +72,10 @@
       ],
       "type": "string"
     },
+    "sod_override": {
+      "$ref": "SignOffOverride.schema.json",
+      "description": "The override of SOD-5 it was signed off under: its signer decided lines it covers, in a team mode that blocks it, and another person approved the override (rev 0.179). Absent for none."
+    },
     "statement_balance": {
       "$ref": "Money.schema.json",
       "description": "The statement's balance at the period's end."

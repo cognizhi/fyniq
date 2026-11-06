@@ -111,7 +111,8 @@
         "director_fee",
         "director_settlement",
         "director_repayment",
-        "account"
+        "account",
+        "bank_reconciliation"
       ],
       "examples": [
         "organisation_setting"
@@ -167,7 +168,8 @@
         "director_fee.post",
         "director_settlement.approve",
         "director_repayment.void",
-        "account.merge"
+        "account.merge",
+        "bank_reconciliation.sign"
       ],
       "examples": [
         "organisation_setting.change"

@@ -396,6 +396,17 @@ Source: PRD-001 §6.3
 - **WHEN** a user who recorded bank transactions tries to sign off that bank reconciliation
 - **THEN** it is blocked
 
+#### Scenario: SOD-5 when signing off a reconciliation
+- **GIVEN** Standard or Enterprise mode (rev 0.179; the owner's decisions of 6 Nov 2026)
+- **WHEN** a person who decided a line of the money account booked in the month (categorised, matched, transferred, parked in suspense or excluded it, as it stands) signs off its reconciliation
+- **THEN** it is refused (BANK-15); importing the statement does not count
+- **AND** they may ask for an override with a reason, which an Owner approves: it is then signed off as them, the override and reason kept and reported (C.2 #62), and the database refuses any other override (FY267)
+
+#### Scenario: Founder mode allows SOD-5
+- **GIVEN** Founder mode (rev 0.179)
+- **WHEN** the person who decided the lines signs off a reconciliation they did not prepare
+- **THEN** it is signed off, FM-5 and the preparer rule compensating
+
 ### Requirement: SOD-6 Administer users and post or approve transactions
 The same person SHALL NOT both administer users or roles and post or approve transactions, to prevent privilege abuse.
 
@@ -406,6 +417,11 @@ Source: PRD-001 §6.3
 - **WHEN** a user who administers users or roles tries to post or approve a transaction
 - **THEN** it is blocked
 
+#### Scenario: SOD-6 when approving
+- **GIVEN** a mode that blocks conflicts, and a person whose roles hold SOD-6 with no override (rev 0.179, provisional until sign-off)
+- **WHEN** they approve or reject a request on a transaction's Appendix D row, release a payment batch, sign off a reconciliation or attest a close
+- **THEN** it is refused, as their posting is (TEAM-04)
+
 ### Requirement: SOD-7 Close a period and reopen it alone
 The same person SHALL NOT both close a period and reopen it alone, to prevent tampering with reported results.
 
@@ -415,6 +431,11 @@ Source: PRD-001 §6.3
 - **GIVEN** the team mode blocks conflicts (§6.4)
 - **WHEN** the user who closed a period tries to reopen it without anyone else
 - **THEN** it is blocked
+
+#### Scenario: Nobody reopens a period alone
+- **GIVEN** any team mode (rev 0.179)
+- **WHEN** whoever closed a period asks to reopen it
+- **THEN** another person approves the reopening (FR-GL-08), never they
 
 ### Requirement: SOD-8 Propose and approve a control change
 The same person SHALL NOT both propose a change to the AI task catalogue or approval policies and approve it, to prevent weakening controls.

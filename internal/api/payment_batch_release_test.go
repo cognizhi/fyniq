@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -171,6 +172,7 @@ func TestAPaymentBatchIsApprovedThenReleased(t *testing.T) {
 // req: FR-BNK-12
 // req: SOD-1
 // req: SOD-2
+// req: SOD-6
 // req: banking/bank-transactions Who releases (rev 0.154)
 // asvs: V8.2.2
 func TestAStandardModeReleaseNeedsAThirdPerson(t *testing.T) {
@@ -215,6 +217,9 @@ func TestAStandardModeReleaseNeedsAThirdPerson(t *testing.T) {
 			t.Errorf("released by %s = %d: %s", name, r.Status, r.Raw)
 		}
 	}
+	// SOD-6 when releasing (rev 0.179): the releaser's roles never hold the conflict without an override.
+	s.problemIs(s.call(http.MethodPost, "/v1/payment-batches/"+id+"/release", s.personAs(rel, authz.Administrator, authz.PaymentReleaser), nil, "If-Match", tag),
+		"releasePaymentBatch", 403, team.CodeAction)
 	if r := release(rel); r.Status != http.StatusOK || r.str("status") != "released" {
 		t.Fatalf("released by a third person = %d: %s", r.Status, r.Raw)
 	}

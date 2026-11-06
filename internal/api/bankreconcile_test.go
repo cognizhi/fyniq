@@ -10,7 +10,9 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -109,6 +111,30 @@ var matrixBankRules = map[string]func(e *env, tok string) (response, func() bool
 		return r, func() bool {
 			return e.call(http.MethodGet, "/v1/money-accounts/"+m.ID.String()+"/reconciliations/"+e.books.Oct.ID.String(), e.as(authz.Controller), nil).Status == 404
 		}
+	},
+	// An override is asked for only in a mode that blocks the conflict, so the row asks, as a preview, in the organisation
+	// in Standard mode, as Bo, who categorised the line itself: an allowed role is answered with the request it would make.
+	"requestReconciliationOverride": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		var bo string
+		for _, x := range s.call(http.MethodGet, "/v1/members", s.as(authz.Administrator), nil).Body["items"].([]any) {
+			if m := x.(map[string]any); m["display_name"] == "Bo" {
+				bo = m["user_id"].(string)
+			}
+		}
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		decider := authn.Principal{Subject: "member-Bo", UserID: uuid.MustParse(bo), Client: "web", Class: authn.ClassUser, Organisation: s.books.Org,
+			Roles: []authz.Role{authz.Bookkeeper}}
+		rec := s.decidedReconciliation(s.principal(decider))
+		if p.Organisation == e.books.Org && p.Class == authn.ClassUser {
+			p.Organisation, p.UserID, p.StepUpAt = s.books.Org, uuid.MustParse(bo), s.clock.Now()
+			tok = s.principal(p)
+		}
+		r := s.call(http.MethodPost, reconciliationURL(rec)+"/sign-override", tok, map[string]any{"reason": "Matrix test"}, "If-Match", etag(rec.Version),
+			"Prefer", "return=preview")
+		return r, func() bool { return s.reconciliationNow(rec).SignedBy == "" && requestsOf(s, approval.ObjectReconciliation) == 0 }
 	},
 	"signBankReconciliation": func(e *env, tok string) (response, func() bool) {
 		rec := e.preparedReconciliation()
