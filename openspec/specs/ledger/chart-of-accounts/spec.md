@@ -91,7 +91,7 @@ Source: PRD-001 §8.2 · Priority M · Phase P1
 - **THEN** the posting is refused
 
 ### Requirement: FR-COA-04 Accounts with postings
-An account with postings SHALL NOT be deleted; it SHALL be possible to deactivate it (blocked for new postings) or merge it by an approved journal-preserving merge.
+An account with postings SHALL NOT be deleted; it SHALL be possible to deactivate it (blocked for new postings) or merge it by an approved journal-preserving merge: one approved entry moves its balance into another account of the same type on a date in an open period, the account stays inactive as merged, and earlier postings are unchanged.
 
 Source: PRD-001 §8.2 · Priority M · Phase P1
 
@@ -109,6 +109,26 @@ Source: PRD-001 §8.2 · Priority M · Phase P1
 - **WHEN** an account with postings is merged into another account
 - **THEN** the merge needs approval
 - **AND** the existing journals are preserved
+
+#### Scenario: A merge moves the balance by one entry (rev 0.174)
+- **GIVEN** an Accountant asks to merge 6135 SaaS tools into 6120 Software subscriptions on a date in an open period, on or after 6135's last posting
+- **WHEN** an Owner or a Controller other than the Accountant approves it
+- **THEN** one entry moves 6135's balance into 6120 (Appendix B.8)
+- **AND** 6135 is inactive for good, shown as merged into 6120, and every earlier posting, closed period and snapshot reads as before
+
+#### Scenario: Accounts a merge refuses
+- **WHEN** a merge names a system account, a group, a money account or a control account, two accounts of different types or held in different currencies, an inactive target, or a source marked revalue into a target that is not
+- **THEN** it is refused, naming the reason
+
+#### Scenario: A merge waits for what is scheduled
+- **GIVEN** a spread with months to release to the account, a fixed asset on it, or a journal's automatic reversal still to post with a line on it
+- **WHEN** a merge of the account is asked for
+- **THEN** it is refused, naming what still posts to the account
+
+#### Scenario: A change before the approval voids it
+- **GIVEN** a merge waiting for approval
+- **WHEN** either account or the balance to move changes
+- **THEN** the approval is void and nothing posts (FR-APR-05)
 
 ### Requirement: FR-COA-05 Account hierarchy
 The system SHALL support a parent/child hierarchy of accounts for reporting roll-ups, with unlimited depth, and posting only to leaves.
