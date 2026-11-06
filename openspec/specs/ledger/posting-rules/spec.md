@@ -1,7 +1,7 @@
 # ledger/posting-rules Specification
 
 ## Purpose
-How each source document, schedule and founders' event becomes journal entries: the debit and credit legs and their accounts, the amounts and rounding policies of each leg, settlement tolerances, the payroll calculation, depreciation, the system accounts and the GST codes. Derived from PRD-001 §10.2, the conventions of PRD-001 §B and Appendix B.1–B.7.
+How each source document, schedule and founders' event becomes journal entries: the debit and credit legs and their accounts, the amounts and rounding policies of each leg, settlement tolerances, the payroll calculation, depreciation, the system accounts and the GST codes. Derived from PRD-001 §10.2, the conventions of PRD-001 §B and Appendix B.1–B.8.
 
 ## Requirements
 
@@ -910,3 +910,35 @@ Source: PRD-001 §B.7
 - **WHEN** the cash flow statement is produced
 - **THEN** conversions and waivers are not cash flows
 - **AND** they are listed as non-cash financing transactions (FR-EQ-10)
+
+### Requirement: Account merge
+A merge SHALL post one entry on its date moving what the merged account holds into the other: a balance-sheet account's whole balance, an income or expense account's movement in the financial year, separately for each currency and dimension set at its recorded base value, the currency amount at the rate B ÷ A implies under RND-RATE (or 1) and any base remainder on base-currency lines.
+
+Source: PRD-001 §B.8
+
+#### Scenario: The merged account holds nothing afterwards
+- **GIVEN** an account holding SGD 300.00, and USD 100.00 recorded at SGD 135.01
+- **WHEN** it is merged into another account
+- **THEN** one entry `account_merge@1` moves SGD 300.00 and USD 100.00 at rate 1.3501, base 135.01, to the other account
+- **AND** the merged account holds nothing in any currency, and the other gains exactly what it held
+
+#### Scenario: A base remainder moves in the base currency
+- **GIVEN** an account whose USD lines net to USD 0.00 with a base of SGD 0.50
+- **WHEN** it is merged
+- **THEN** the SGD 0.50 moves on base-currency lines between the two accounts
+
+#### Scenario: Income and expenses move the year's movement
+- **GIVEN** an expense account with postings last financial year and this one
+- **WHEN** it is merged
+- **THEN** only this financial year's movement moves, since earlier years are in retained earnings
+
+#### Scenario: Each dimension set moves apart
+- **GIVEN** an account holding amounts with Department ENG and with none
+- **WHEN** it is merged
+- **THEN** each set moves on lines keeping its values
+
+#### Scenario: Nothing to move
+- **GIVEN** an account that holds nothing
+- **WHEN** it is merged
+- **THEN** no entry is posted
+

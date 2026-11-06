@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, CircleCheck, Landmark, Lock, Pencil, Plus, Search } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { BookOpen, CircleCheck, GitMerge, Hourglass, Landmark, Lock, Pencil, Plus, Search } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -13,6 +14,7 @@ import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listAccounts, listDimensions } from "./data";
 import { Dimensions } from "./Dimensions";
+import { MergeAccount, mergeable, waitingMerges, type Approval } from "./MergeAccount";
 import { registerGroups } from "./registerGroups";
 
 type Account = components["schemas"]["Account"];
@@ -51,7 +53,8 @@ export function ordered(accounts: Account[]): { a: Account; depth: number }[] {
   return out;
 }
 
-function Flags({ a }: { a: Account }) {
+// into is the account a merged account went into, and waiting a merge of it that waits for approval (FR-COA-04).
+function Flags({ a, into, waiting }: { a: Account; into?: Account; waiting?: boolean }) {
   return (
     <span className="fy-row fy-row--wrap gap-1">
       {a.role && (
@@ -74,7 +77,20 @@ function Flags({ a }: { a: Account }) {
           Revalued
         </span>
       )}
-      {!a.active && <span className="fy-chip fy-chip--neutral">Inactive</span>}
+      {waiting && (
+        <span className="fy-chip fy-chip--info">
+          <Icon of={GitMerge} />
+          Merge awaiting approval
+        </span>
+      )}
+      {a.merged_into_id ? (
+        <span className="fy-chip fy-chip--neutral" title="Its balance moved into the other account, and it takes no posting.">
+          <Icon of={GitMerge} />
+          Merged into {into ? into.code : "another account"}
+        </span>
+      ) : (
+        !a.active && <span className="fy-chip fy-chip--neutral">Inactive</span>
+      )}
     </span>
   );
 }
@@ -419,6 +435,8 @@ export function ChartOfAccounts() {
   const [find, setFind] = useState("");
   const [inactive, setInactive] = useState(false);
   const [editing, setEditing] = useState<Account | "new" | null>(null);
+  const [merging, setMerging] = useState<Account | null>(null);
+  const waiting = useQuery({ queryKey: ["approvals", "account"], queryFn: waitingMerges });
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const findId = useId();
@@ -427,6 +445,9 @@ export function ChartOfAccounts() {
   const load = helpText("chart.load-standard");
   const all = q.data ?? [];
   const needle = find.trim().toLowerCase();
+  const byId = new Map(all.map((a) => [a.id, a]));
+  const merges = waiting.data ?? [];
+  const waitingFor = (a: Account) => merges.some((m: Approval) => m.object_key === a.id);
   const rows = ordered(all).filter(({ a }) => (inactive || a.active) && (!needle || a.code.toLowerCase().includes(needle) || a.name.toLowerCase().includes(needle)));
 
   return (
@@ -447,6 +468,20 @@ export function ChartOfAccounts() {
         )}
       </div>
       <ReviewBanner screen="chart-of-accounts" />
+      {merges.map((m) => (
+        <div key={m.id} className="fy-banner fy-banner--info" role="status">
+          <Icon of={Hourglass} size={20} />
+          <div className="fy-banner__text">
+            <span className="fy-strong">Merge waiting for approval</span>
+            <span className="fy-small">
+              {m.summary}. The journals keep their history; nothing moves until another person approves it.{" "}
+              <Link to="/approvals/$approvalId" params={{ approvalId: m.id }}>
+                Review
+              </Link>
+            </span>
+          </div>
+        </div>
+      ))}
       <p className="fy-small" role="status">
         {status}
       </p>
@@ -545,8 +580,13 @@ export function ChartOfAccounts() {
                           <td className="fy-from-expanded fy-mono">{a.default_gst_code}</td>
                           <td>
                             <span className="fy-row fy-row--wrap justify-end gap-2">
-                              <Flags a={a} />
-                              {may && (
+                              <Flags a={a} into={a.merged_into_id ? byId.get(a.merged_into_id) : undefined} waiting={waitingFor(a)} />
+                              {may && mergeable(a) && !waitingFor(a) && (
+                                <Button variant="ghost" size="sm" onClick={() => setMerging(a)} aria-label={`Merge ${a.code} ${a.name} into another account`} title={helpText("chart.merge").tooltip}>
+                                  <Icon of={GitMerge} />
+                                </Button>
+                              )}
+                              {may && !a.merged_into_id && (
                                 <Button variant="ghost" size="sm" onClick={() => setEditing(a)} aria-label={`Change ${a.code} ${a.name}`}>
                                   <Icon of={Pencil} />
                                 </Button>
@@ -571,6 +611,7 @@ export function ChartOfAccounts() {
         </>
       )}
       <AccountForm editing={editing} accounts={all} onClose={() => setEditing(null)} onSaved={setStatus} />
+      <MergeAccount from={merging} accounts={all} onClose={() => setMerging(null)} onAsked={(r) => setStatus(`${r.summary}: waiting for approval.`)} />
       <LoadStandard open={loading} onClose={() => setLoading(false)} onLoaded={(n) => setStatus(`The standard chart is loaded: ${n} accounts.`)} />
     </div>
   );

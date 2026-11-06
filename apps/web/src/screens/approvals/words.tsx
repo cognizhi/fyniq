@@ -54,6 +54,7 @@ const operations: Record<Approval["operation"], string> = {
   "director_fee.post": "Post a director's fee voted by the shareholders",
   "director_settlement.approve": "Settle what the company owes a director or shareholder",
   "director_repayment.void": "Void a repayment to a director or shareholder",
+  "account.merge": "Merge an account into another",
 };
 
 export function operationLabel(op: string): string {
@@ -97,6 +98,7 @@ const objects: Record<string, string> = {
   director_fee: "Director's fee",
   director_settlement: "Settlement of a founder's balance",
   director_repayment: "Repayment to a director",
+  account: "Account",
 };
 
 export function objectLabel(t: string): string {

@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/authz/authztest"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/outbox"
@@ -737,6 +738,24 @@ var matrixCalls = map[string]matrixCall{
 		return r, func() bool {
 			return e.call(http.MethodGet, "/v1/accounts/"+e.books.Rent.ID.String(), e.as(authz.Accountant), nil).str("name") != name
 		}
+	},
+	"requestAccountMerge": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, approval.ObjectAccount)
+		var from, into storage.Account
+		e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			if from, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "M" + uuid.NewString()[:8], Name: "Matrix merged", Type: "asset"}); err != nil {
+				return err
+			}
+			into, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "M" + uuid.NewString()[:8], Name: "Matrix kept", Type: "asset"})
+			return err
+		})
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/accounts/"+from.ID.String()+"/merge-approval", person,
+			map[string]any{"into_account_id": into.ID.String(), "date": "2026-10-31"}, "If-Match", etag(from.Version))
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, approval.ObjectAccount) == was }
 	},
 	"listContacts": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/contacts", tok, nil), nil

@@ -145,6 +145,8 @@ type Account struct {
 	UsefulLife     int    `json:"useful_life_months,omitempty" doc:"The default useful life in whole months the fixed asset register offers for an asset on it (FR-COA-02; PRD-001 rev 0.151); left out when it has none." example:"36"`
 	// The dimensions it requires (FR-DIM-01).
 	RequiredDimensionIDs []DimensionRef `json:"required_dimension_ids,omitempty" doc:"The dimensions a line a person enters on it needs a value of (FR-DIM-01, PRD-001 rev 0.171); left out when it requires none."`
+	// The account it was merged into (FR-COA-04).
+	MergedIntoID string `json:"merged_into_id,omitempty" format:"uuid" doc:"The account it was merged into by an approved merge (FR-COA-04, PRD-001 rev 0.174): it is then inactive for good, and its balance moved there. Left out for an account never merged." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d62"`
 }
 
 func accountOf(a storage.Account) Account {
@@ -155,6 +157,9 @@ func accountOf(a storage.Account) Account {
 	if a.ParentID != nil {
 		s := a.ParentID.String()
 		out.ParentID = &s
+	}
+	if a.MergedInto != nil {
+		out.MergedIntoID = a.MergedInto.String()
 	}
 	return out
 }

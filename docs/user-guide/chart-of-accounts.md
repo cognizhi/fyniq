@@ -61,6 +61,28 @@ Select the pencil next to an account, change what you need, and select **Save th
   assets; the company's accountant confirms them. Changing it never changes an asset already
   registered. Leave it empty for none.
 
+## Merge an account
+
+When two accounts hold the same kind of thing, such as SaaS tools and software subscriptions, merge
+one into the other. Its balance moves into the other account by one entry, and it becomes inactive
+for good. Every earlier posting stays where it is, so earlier months and closed months read as
+before.
+
+1. Select the merge button next to the account (it shows only on accounts a merge can take).
+2. Choose the account to **Merge it into**: one of the same type, held in the same currency, that is
+   not a group, a system, money or control account.
+3. Choose the day its balance moves: a day in an open period, on or after its last posting.
+4. Select **Ask for approval**. An Owner or a Controller who did not ask approves it; until then
+   nothing moves, and the chart shows **Merge awaiting approval**.
+
+On the approval, a balance-sheet account moves its whole balance; an income or expense account moves
+its movement in the financial year, since earlier years are in retained earnings. Each currency and
+dimension value moves at the amount the books recorded. The account then shows **Merged into** the
+other account and takes no posting. A merge waits while something still posts to the account by
+itself: a spread with months to release to it, a fixed asset on it, or a journal that reverses by
+itself. If either account or its balance changes before the approval, the approval is void: ask
+again.
+
 ## Dimensions
 
 Dimensions tag amounts beyond the account, so you can see costs and revenue by team, by project or
@@ -121,6 +143,9 @@ role the books rely on. Their code, type and role never change, and they stay ac
 | The name does not fit (DIM-02) | Give a name no other dimension, or no other value of the dimension, has, whatever the case |
 | The value's code does not fit (DIM-03) | Use a letter or digit, then up to 29 letters, digits, dots, slashes, underscores or hyphens, not used by another value of the dimension |
 | Not a dimension in use (DIM-04) | Put the dimension back in use before adding values to it |
+| The accounts do not merge (MERGE-01) | Choose an active account of the same type and currency that is not a group, a system, money or control account |
+| The merge's date does not fit (MERGE-02) | Choose a day in an open period, on or after the account's last posting |
+| Something scheduled still posts to the account (MERGE-03) | Let the spread, asset or reversal post, or move it to another account, then merge |
 
 ## Related
 

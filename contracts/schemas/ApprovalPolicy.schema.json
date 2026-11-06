@@ -62,7 +62,8 @@
         "contact_member_link",
         "director_fee",
         "director_settlement",
-        "director_repayment"
+        "director_repayment",
+        "account"
       ],
       "examples": [
         "organisation_setting"
