@@ -12333,6 +12333,30 @@ Takes a file off a settlement not decided yet (FR-DOC-07). Once decided its evid
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `FOUNDER-27`, `FOUNDER-29`, `STORAGE-EVIDENCE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+### `GET /v1/evidence`
+
+**Search the evidence** (`searchEvidence`)
+
+Every file attached across the organisation's records, removed ones aside, newest record date first, a page at a time (FR-DOC-10; PRD-001 rev 0.184): by activity, evidence type, the record's date and uploader. Only files on records whose Appendix D rows you view are listed, and activities lists the kinds you may search. The missing-evidence list is Checks' C.2 #30 (getCheck evidence.missing). Read-only.
+
+- **Permission:** View on Evidence: add, supersede (rev 0.3). Lists only files on the records whose Appendix D rows the person views.
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `activity` (query): Only files on this kind of record; every kind you may see when left out.
+  - `evidence_type` (query): Only files whose evidence type contains this, case aside.
+  - `from` (query): Only files on records dated on or after this day.
+  - `to` (query): Only files on records dated on or before this day.
+  - `uploaded_by` (query): Only files this actor attached, such as user:<user id>.
+- **Responses:**
+  - `200` OK [`SearchEvidenceOutputBody`](../../contracts/schemas/SearchEvidenceOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
 ### `GET /v1/exempt-statuses/{status_id}/evidence`
 
 **List an exempt status's files** (`listExemptStatusEvidence`)

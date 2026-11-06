@@ -83,6 +83,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "opening-balances": lazyRouteComponent(() => import("./screens/accounting/OpeningBalances"), "OpeningBalances"),
   "period-close": lazyRouteComponent(() => import("./screens/accounting/PeriodClose"), "PeriodClose"),
   "accountant-reviews": lazyRouteComponent(() => import("./screens/accounting/AccountantReviews"), "AccountantReviews"),
+  "evidence-search": lazyRouteComponent(() => import("./screens/accounting/EvidenceSearch"), "EvidenceSearch"),
   "accountant-review": lazyRouteComponent(() => import("./screens/accounting/AccountantReviews"), "AccountantReviewPage"),
   "general-ledger": lazyRouteComponent(() => import("./screens/accounting/GeneralLedger"), "GeneralLedger"),
   reports: lazyRouteComponent(() => import("./screens/reports/Reports"), "Reports"),

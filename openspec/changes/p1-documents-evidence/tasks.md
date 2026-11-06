@@ -31,7 +31,12 @@
   an M number on its shape alone [verify]. The flag is kept on the file (migration 000236, `nric_flagged`), audited,
   answered as `unmasked_nric` on every record's evidence, and shown as **Shows an NRIC** in the Evidence panel. Tests
   `TestUnmaskedNRICsAreFound`, `TestAnUnmaskedNRICIsFlagged`, `JournalEvidence.test.tsx`. The redaction tool is P2.)
-- [ ] 3.3 Evidence search by activity, type, date and uploader, and the missing-evidence list, under the person's scope. Test `// req: FR-DOC-10` (P1 part) **Left**
+- [x] 3.3 Evidence search by activity, type, date and uploader, and the missing-evidence list, under the person's scope. Test `// req: FR-DOC-10` (P1 part) **Left**
+  (6 Nov 2026, PRD-001 rev 0.184: `GET /v1/evidence` (`searchEvidence`, the evidence right without a qualifier) lists
+  the files on the records whose Appendix D rows the person views, removed ones aside, by activity, evidence type, the
+  record's date and uploader, newest record first, paged; `EvidenceFiles.Search`. The missing-evidence list is C.2 #30
+  (`evidence.missing`). Screen: Accounting › Evidence (`/compliance/evidence`), guide `evidence-search.md`, compiled.
+  Tests `TestEvidenceIsFoundByActivityTypeDateAndUploader`, `EvidenceSearch.test.tsx`. Packs are P2.)
 
 ## 4. API and screens
 

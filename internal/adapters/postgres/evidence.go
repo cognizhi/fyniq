@@ -241,6 +241,37 @@ func (r evidenceFiles) Known(ctx context.Context, lockedKeys []string) (map[stri
 	return keySet(r.u.q.KnownLockedKeys(ctx, lockedKeys))
 }
 
+func (r evidenceFiles) Search(ctx context.Context, f storage.EvidenceSearch) ([]storage.EvidenceHit, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	opt := func(s string) *string {
+		if s == "" {
+			return nil
+		}
+		return &s
+	}
+	types := make([]string, len(f.Types))
+	for i, t := range f.Types {
+		types[i] = string(t)
+	}
+	rows, err := r.u.q.SearchEvidence(ctx, sqlcdb.SearchEvidenceParams{Types: types, Kind: opt(f.Kind), DateFrom: opt(f.From), DateTo: opt(f.To),
+		UploadedBy: opt(f.UploadedBy), AfterID: f.AfterID, AfterDate: f.AfterDate, PageSize: int32(min(max(f.Limit, 1), 1000))})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.EvidenceHit, len(rows))
+	for i, x := range rows {
+		out[i] = storage.EvidenceHit{Evidence: toEvidence(evidenceRow{ID: x.ID, DocumentID: x.DocumentID, EvidenceType: x.EvidenceType, Note: x.Note,
+			RelatesOn: x.RelatesOn, FileName: x.FileName, MediaType: x.MediaType, SizeBytes: x.SizeBytes, Sha256: x.Sha256, OriginalSha256: x.OriginalSha256,
+			Source: x.Source, DataClass: x.DataClass, StagingKey: x.StagingKey, UploadedBy: x.UploadedBy, UploadedAt: x.UploadedAt, State: x.State,
+			RemovedAt: x.RemovedAt, LockedKey: x.LockedKey, RetainUntil: x.RetainUntil, FinalisedAt: x.FinalisedAt, Version: x.Version, NricFlagged: x.NricFlagged}),
+			DocumentType: storage.DocumentType(x.DocumentType), DocumentStatus: storage.DocumentStatus(x.DocumentStatus), DocumentNumber: x.DocumentNumber,
+			DocumentDate: x.DocumentDate}
+	}
+	return out, nil
+}
+
 func (r evidenceFiles) Counts(ctx context.Context, documents []uuid.UUID) (map[uuid.UUID]int, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err

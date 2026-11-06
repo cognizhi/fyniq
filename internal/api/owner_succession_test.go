@@ -216,6 +216,9 @@ func (e *env) asIn(tok string, user uuid.UUID) string {
 // matrixSuccession are the matrix's rows of Owner succession (QA-SEC-03): each in the organisation in Standard mode,
 // as a preview, as the person the row needs (its starter, its outgoing Owner), so an allowed role is answered.
 var matrixSuccession = map[string]func(e *env, tok string) (response, func() bool){
+	"searchEvidence": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/evidence", tok, nil), nil
+	},
 	"listOwnerSuccessions": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/owner-successions", tok, nil), nil
 	},

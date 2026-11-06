@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings and recommended values: features, terms, GST, tolerances, banking, claims, mileage, thresholds, asset disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:6bda26fee1860c5052d03e9f4351b0591d6e818fcbd7b78372f2d63a37176fcf
+  - docs/user-guide/organisation-settings.md sha256:6d986c163ffe7822ca8fcee94766d9a48a5b0d374e0769b73c40c39388c98deb
 data_class: general
 taint: trusted
 status: draft
@@ -207,7 +207,7 @@ aliases:
 - **Evidence for bills**: a bill posts only with the supplier's invoice or receipt attached.
 - **Evidence for manual journals**: a manual journal whose debits are above S$1,000 posts only with a supporting calculation or document attached; **Evidence for manual journals above** sets the amount.
 - Each is **required** by default; **recommended** lets the record post without a file and **Checks** lists it; **optional** asks for nothing. Changing any of them needs a second approver.
-- Files go in the record's **Evidence** panel ([[purchases.bills]], [[accounting.journals]]).
+- Files go in the record's **Evidence** panel ([[purchases.bills]], [[accounting.journals]]); **Accounting › Evidence** lists the records still missing theirs ([[compliance.evidence]]).
 
 (src: docs/user-guide/organisation-settings.md#evidence-rules)
 

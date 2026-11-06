@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "activities": {
+      "description": "The kinds of record you may search.",
+      "items": {
+        "description": "A kind of record files are attached to.",
+        "enum": [
+          "bill",
+          "invoice",
+          "journal",
+          "bank",
+          "claim",
+          "vendor_bank_change",
+          "person_bank_change",
+          "founders",
+          "owner_succession"
+        ],
+        "examples": [
+          "bill"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "items": {
+      "description": "The files on this page, newest record date first.",
+      "items": {
+        "$ref": "EvidenceFound.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjIwMjYtMTAtMjAifQ"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items",
+    "activities"
+  ],
+  "title": "SearchEvidenceOutputBody",
+  "type": "object"
+}

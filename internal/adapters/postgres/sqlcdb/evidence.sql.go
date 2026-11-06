@@ -688,6 +688,124 @@ func (q *Queries) RemoveEvidence(ctx context.Context, arg RemoveEvidenceParams) 
 	return i, err
 }
 
+const searchEvidence = `-- name: SearchEvidence :many
+SELECT e.id, e.document_id, e.evidence_type, e.note, e.relates_on, e.file_name, e.media_type, e.size_bytes, e.sha256, e.original_sha256,
+  e.source, e.data_class, e.staging_key, e.uploaded_by, e.uploaded_at, e.state, e.removed_at, e.locked_key, e.retain_until,
+  e.finalised_at, e.version, e.nric_flagged, d.type AS document_type, d.status AS document_status,
+  coalesce(n.number, '')::text AS document_number, coalesce(v.payload->>'date', '')::text AS document_date
+FROM fyniq.evidence e
+JOIN fyniq.document d ON d.organisation_id = e.organisation_id AND d.id = e.document_id
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+WHERE e.removed_at IS NULL AND d.type = ANY($1::text[])
+  AND ($2::text IS NULL OR strpos(lower(e.evidence_type), lower($2::text)) > 0)
+  AND ($3::text IS NULL OR coalesce(v.payload->>'date', '') >= $3::text)
+  AND ($4::text IS NULL OR (v.payload->>'date' IS NOT NULL AND v.payload->>'date' <= $4::text))
+  AND ($5::text IS NULL OR e.uploaded_by = $5::text)
+  AND ($6::uuid IS NULL
+       OR (coalesce(v.payload->>'date', ''), e.id) < ($7::text, $6::uuid))
+ORDER BY coalesce(v.payload->>'date', '') DESC, e.id DESC
+LIMIT $8
+`
+
+type SearchEvidenceParams struct {
+	Types      []string
+	Kind       *string
+	DateFrom   *string
+	DateTo     *string
+	UploadedBy *string
+	AfterID    *uuid.UUID
+	AfterDate  string
+	PageSize   int32
+}
+
+type SearchEvidenceRow struct {
+	ID             uuid.UUID
+	DocumentID     uuid.UUID
+	EvidenceType   string
+	Note           *string
+	RelatesOn      pgtype.Date
+	FileName       string
+	MediaType      string
+	SizeBytes      int64
+	Sha256         string
+	OriginalSha256 string
+	Source         string
+	DataClass      string
+	StagingKey     string
+	UploadedBy     string
+	UploadedAt     time.Time
+	State          string
+	RemovedAt      *time.Time
+	LockedKey      *string
+	RetainUntil    *time.Time
+	FinalisedAt    *time.Time
+	Version        int32
+	NricFlagged    bool
+	DocumentType   string
+	DocumentStatus string
+	DocumentNumber string
+	DocumentDate   string
+}
+
+// Files on documents of the types given, removed ones aside, newest record date first (a record without one last),
+// then newest file, after the cursor's (date, id).
+func (q *Queries) SearchEvidence(ctx context.Context, arg SearchEvidenceParams) ([]SearchEvidenceRow, error) {
+	rows, err := q.db.Query(ctx, searchEvidence,
+		arg.Types,
+		arg.Kind,
+		arg.DateFrom,
+		arg.DateTo,
+		arg.UploadedBy,
+		arg.AfterID,
+		arg.AfterDate,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchEvidenceRow
+	for rows.Next() {
+		var i SearchEvidenceRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DocumentID,
+			&i.EvidenceType,
+			&i.Note,
+			&i.RelatesOn,
+			&i.FileName,
+			&i.MediaType,
+			&i.SizeBytes,
+			&i.Sha256,
+			&i.OriginalSha256,
+			&i.Source,
+			&i.DataClass,
+			&i.StagingKey,
+			&i.UploadedBy,
+			&i.UploadedAt,
+			&i.State,
+			&i.RemovedAt,
+			&i.LockedKey,
+			&i.RetainUntil,
+			&i.FinalisedAt,
+			&i.Version,
+			&i.NricFlagged,
+			&i.DocumentType,
+			&i.DocumentStatus,
+			&i.DocumentNumber,
+			&i.DocumentDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const unfinalisedEvidence = `-- name: UnfinalisedEvidence :many
 SELECT e.id, e.document_id, e.evidence_type, e.note, e.relates_on, e.file_name, e.media_type, e.size_bytes, e.sha256, e.original_sha256,
   e.source, e.data_class, e.staging_key, e.uploaded_by, e.uploaded_at, e.state, e.removed_at, e.locked_key, e.retain_until,
