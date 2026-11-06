@@ -112,8 +112,14 @@
   (IRAS, CPF) under break-glass, with their modules; the canvas's break-glass frames redrawn as their own page.)
 - [ ] 3.4 The rules and records for FM-4, FM-5 and FM-7, called by the close (wave 2) and reconciliation (wave 3). FM-6's advisory review arrives with wave 6. Tests `// req: FM-4`, `// req: FM-5` and `// req: FM-7` on the records (G4-109)
   **Left.**
-- [ ] 3.5 The control check: period lock, approvals, segregation of duties and team mode together. Test `// req: FR-CTL-04`
-  **Left.**
+- [x] 3.5 The control check: period lock, approvals, segregation of duties and team mode together. Test `// req: FR-CTL-04`
+  (6 Nov 2026: each control is built and tested on its own (FR-GL-07, FR-GL-08, FM-1, FM-2, FM-4, SOD-6, the team modes);
+  `TestTheControlsHoldTogether` runs them in one company's books: in Founder mode a journal above the threshold posts
+  only on the other founder's approval and a founder whose roles conflict still posts; October closes on two people's
+  acts, the one who ran its checks never attesting; closed, it takes no posting, by hand or by an approval that waited
+  (STORAGE-INV-03), and it reopens only on another's approval; switched to Standard mode by one founder asking as
+  Administrator and the other approving as Owner, the conflict no longer posts (TEAM-04) and roles that do not conflict
+  still do.)
 
 ## 4. Wire the waiting refusals
 
