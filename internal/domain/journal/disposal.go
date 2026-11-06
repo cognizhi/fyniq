@@ -199,7 +199,9 @@ func (s AssetDisposals) prepareDisposal(ctx context.Context, u storage.UnitOfWor
 			Fix: "Void the disposal first, if it was a mistake"}
 	}
 	var probs ledger.Problems
-	add := func(code, field, msg, fix string) { probs = append(probs, ledger.Problem{Code: code, Field: field, Message: msg, Fix: fix}) }
+	add := func(code, field, msg, fix string) {
+		probs = append(probs, ledger.Problem{Code: code, Field: field, Message: msg, Fix: fix})
+	}
 	on := dateOf(d.Date)
 	m := asset.Month(on)
 	switch {

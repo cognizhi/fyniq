@@ -69,7 +69,9 @@ type Checked struct {
 // effective date on or after the books start.
 func CheckBeforeBooks(ctx context.Context, u storage.UnitOfWork, i Issue, s ledger.Settings, booksStart *time.Time) (Checked, error) {
 	var probs ledger.Problems
-	add := func(field, msg, fix string) { probs = append(probs, ledger.Problem{Code: CodeIssue, Field: field, Message: msg, Fix: fix}) }
+	add := func(field, msg, fix string) {
+		probs = append(probs, ledger.Problem{Code: CodeIssue, Field: field, Message: msg, Fix: fix})
+	}
 	out := Checked{Issue: i}
 	c, err := u.Contacts().Get(ctx, i.HolderID)
 	switch {

@@ -30,6 +30,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // The API's behaviour suites run against PostgreSQL in the local build (`make test`), like the
@@ -106,6 +107,7 @@ func newEnv(t *testing.T) *env {
 	orgs++
 	e := &env{t: t, store: store, books: porttest.NewBooks(t, store, fmt.Sprintf("API %d Pte Ltd", orgs)),
 		clock: clock.NewFrozen(time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC)), tokens: &tokens{m: map[string]authn.Principal{}}, log: &bytes.Buffer{}}
+	relaxEvidence(t, store, e.books.Org)
 	if e.blobs, err = local.NewDir(t.TempDir()); err != nil {
 		t.Fatal(err)
 	}
@@ -124,6 +126,23 @@ func newEnv(t *testing.T) *env {
 	e.srv = httptest.NewServer(mux)
 	t.Cleanup(e.srv.Close)
 	return e
+}
+
+// relaxEvidence makes the evidence of bills and manual journals optional in org from 2026, so the tests of posting
+// need not attach files; evidence_rules_test.go holds the rules as shipped (FR-DOC-06: required).
+func relaxEvidence(t *testing.T, store *postgres.Store, org uuid.UUID) {
+	t.Helper()
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
+	if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, key := range []string{"evidence.bill", "evidence.manual_journal"} {
+			if _, err := u.Settings().Record(ctx, key, "required", "optional", time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), 1); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // testFields are the tests' field keys (SEC-11): local mode's adapter on fixed bytes.

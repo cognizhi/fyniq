@@ -92,7 +92,9 @@ func ReadPayChoice(doc storage.Document) (PayChoice, error) {
 // director or shareholder, no month, a choice Fyniq does not know, or a note too long.
 func CheckPayChoice(ctx context.Context, u storage.UnitOfWork, c PayChoice) (ledger.Problems, error) {
 	var probs ledger.Problems
-	add := func(code, field, msg, fix string) { probs = append(probs, ledger.Problem{Code: code, Field: field, Message: msg, Fix: fix}) }
+	add := func(code, field, msg, fix string) {
+		probs = append(probs, ledger.Problem{Code: code, Field: field, Message: msg, Fix: fix})
+	}
 	ct, err := u.Contacts().Get(ctx, c.ContactID)
 	switch {
 	case errors.Is(err, ports.ErrNotFound):

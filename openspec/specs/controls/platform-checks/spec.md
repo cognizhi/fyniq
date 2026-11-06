@@ -461,6 +461,10 @@ Source: PRD-001 §C.2
 - **WHEN** a completed activity has the evidence its evidence rule recommends
 - **THEN** the check does not flag it
 
+#### Scenario: Posted records without their evidence (rev 0.182)
+- **WHEN** a posted bill, or a manual journal above the evidence threshold, of an open month has no file while its evidence is required or recommended
+- **THEN** the check warns (⚠), naming the record; while its evidence is optional it is not named
+
 #### Scenario: Built with the evidence rules (rev 0.166)
 - **WHEN** the evidence rules of FR-DOC-06 are built
 - **THEN** this check is built with them, on the checks engine, as a check is built with the module it guards (rev 0.162)

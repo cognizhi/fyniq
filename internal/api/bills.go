@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/credits"
+	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -1182,6 +1183,11 @@ func (a *API) billRequest(ctx context.Context, rawID, key, ifMatch, prefer strin
 		if err != nil {
 			return Approval{}, err
 		}
+		if status == storage.DocumentDraft { // asking to post: its evidence first (FR-DOC-06)
+			if err := a.requireEvidence(ctx, u, evidence.Bill, doc.ID); err != nil {
+				return Approval{}, err
+			}
+		}
 		return a.requestApproval(ctx, u, change(doc, b, payable))
 	})
 	if err != nil {
@@ -1390,7 +1396,7 @@ func registerBills(a *API) {
 			return &billOutput{Status: http.StatusOK, ETag: billETag(w.Body), Body: w.Body}, nil
 		})
 
-	postCodes := append(append([]string{bill.CodeNotDraft, bill.CodeNotPosted, bill.CodePaid, CodeBillNeedsApproval, CodeBillVoidApproval, CodeMalformed, CodeTooLarge,
+	postCodes := append(append([]string{evidence.CodeMissing, bill.CodeNotDraft, bill.CodeNotPosted, bill.CodePaid, CodeBillNeedsApproval, CodeBillVoidApproval, CodeMalformed, CodeTooLarge,
 		CodeMediaType}, postingCodes()...), append(BillCodes, readCodes...)...)
 
 	register(a, authz.PostBill, huma.Operation{
@@ -1407,6 +1413,9 @@ func registerBills(a *API) {
 		return a.billCommand(ctx, in.BillID, in.IdempotencyKey, in.IfMatch, in.Prefer, in, func(ctx context.Context, u storage.UnitOfWork, p authn.Principal, id uuid.UUID) (storage.Entry, error) {
 			self, total, err := a.gateBillPost(ctx, u, p, id)
 			if err != nil {
+				return storage.Entry{}, err
+			}
+			if err := a.requireEvidence(ctx, u, evidence.Bill, id); err != nil { // FR-DOC-06
 				return storage.Entry{}, err
 			}
 			e, err := a.bills.Post(ctx, p.Organisation, id)
@@ -1437,7 +1446,7 @@ func registerBills(a *API) {
 		})
 	})
 
-	requestCodes := append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
+	requestCodes := append([]string{evidence.CodeMissing, CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
 		CodeSessionRequired, CodeStepUpRequired, approval.CodePending, storage.CodeApproval, bill.CodeNotBill, bill.CodeNotDraft, bill.CodeNotPosted,
 		bill.CodeBadDraft, bill.CodePaid, storage.CodeRetry, storage.CodeLockTimeout, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid}, append(BillCodes, LedgerCodes...)...)
 

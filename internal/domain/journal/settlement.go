@@ -289,7 +289,7 @@ func (s DirectorSettlements) EffectiveIn(ctx context.Context, u storage.UnitOfWo
 	if c, _ := shares.Converted.Cmp(owed); c > 0 {
 		return storage.ShareIssue{}, storage.Entry{}, &director.Error{Code: director.CodeSettlement,
 			Message: fmt.Sprintf("the company owes %s on the account on %s, less than the %s converted", owed, day(e.EffectiveOn), shares.Converted),
-			Fix: "Draft the conversion again for what is owed"}
+			Fix:     "Draft the conversion again for what is owed"}
 	}
 	entry, err := ledger.PostConversion(rule, settings)
 	if err != nil {

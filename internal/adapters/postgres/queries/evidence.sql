@@ -59,3 +59,8 @@ SELECT id, document_id, evidence_type, note, relates_on, file_name, media_type, 
 FROM fyniq.evidence
 WHERE (original_sha256 = sqlc.arg(hash) OR sha256 = sqlc.arg(hash)) AND state <> 'removed'
 ORDER BY uploaded_at, id LIMIT 100;
+
+-- name: EvidenceCounts :many
+SELECT document_id, count(*)::integer AS files FROM fyniq.evidence
+ WHERE document_id = ANY(sqlc.arg(documents)::uuid[]) AND removed_at IS NULL
+ GROUP BY document_id;

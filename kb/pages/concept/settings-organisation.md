@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings and recommended values: features, terms, GST, tolerances, banking, claims, mileage, thresholds, asset disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:5b6d4ea485b8a1acd49a70c7071973ac4dd7b85dd36856130e9bcdd119c5f485
+  - docs/user-guide/organisation-settings.md sha256:6bda26fee1860c5052d03e9f4351b0591d6e818fcbd7b78372f2d63a37176fcf
 data_class: general
 taint: trusted
 status: draft
@@ -20,6 +20,8 @@ aliases:
   - data residency
   - self-approval threshold
   - idle timeout
+  - evidence rules
+  - required evidence
   - signed out automatically
   - break-glass payment cap
   - self-approved
@@ -199,6 +201,15 @@ aliases:
 - Changing the cap needs a second approver.
 
 (src: docs/user-guide/organisation-settings.md#break-glass-payment-cap)
+
+## Evidence rules
+
+- **Evidence for bills**: a bill posts only with the supplier's invoice or receipt attached.
+- **Evidence for manual journals**: a manual journal whose debits are above S$1,000 posts only with a supporting calculation or document attached; **Evidence for manual journals above** sets the amount.
+- Each is **required** by default; **recommended** lets the record post without a file and **Checks** lists it; **optional** asks for nothing. Changing any of them needs a second approver.
+- Files go in the record's **Evidence** panel ([[purchases.bills]], [[accounting.journals]]).
+
+(src: docs/user-guide/organisation-settings.md#evidence-rules)
 
 ## Self-approval threshold
 

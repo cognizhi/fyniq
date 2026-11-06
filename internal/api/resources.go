@@ -17,6 +17,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -1084,10 +1085,13 @@ func registerJournals(a *API) {
 			"the self-approval threshold (S$2,000 by default) is refused (JOURNAL-07): ask for approval with requestJournalPost; at or " +
 			"below it, a Founder-mode post is logged as self-approved for the weekly review (FM-2, FM-3). " +
 			"Idempotent with Idempotency-Key; the same version never posts twice.",
-	}, append([]string{journal.CodeNotDraft, CodeNeedsApproval}, postingCodes...), func(ctx context.Context, in *postJournalInput) (*postingOutput, error) {
+	}, append([]string{journal.CodeNotDraft, CodeNeedsApproval, evidence.CodeMissing}, postingCodes...), func(ctx context.Context, in *postJournalInput) (*postingOutput, error) {
 		return a.posting(ctx, in.JournalID, in.IdempotencyKey, in.IfMatch, in.Prefer, in, func(ctx context.Context, u storage.UnitOfWork, p authn.Principal, id uuid.UUID) (storage.Entry, error) {
 			self, debits, err := a.gatePosting(ctx, u, p, id)
 			if err != nil {
+				return storage.Entry{}, err
+			}
+			if err := a.requireJournalEvidence(ctx, u, id, debits); err != nil { // FR-DOC-06
 				return storage.Entry{}, err
 			}
 			e, err := a.journals.Post(ctx, p.Organisation, id)

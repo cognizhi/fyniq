@@ -61,7 +61,9 @@ func DepreciationIdentity(id uuid.UUID, version int, month time.Time, rule strin
 }
 
 // Identity is the depreciation's posting identity under rule.
-func (d Depreciation) Identity(rule string) string { return DepreciationIdentity(d.AssetID, d.Version, d.Month, rule) }
+func (d Depreciation) Identity(rule string) string {
+	return DepreciationIdentity(d.AssetID, d.Version, d.Month, rule)
+}
 
 // DepreciationSchedule is an asset version's months of depreciation (FR-FA-02; B.4): what is left to depreciate, its
 // cost less its residual value less what it carries, split under ALLOC-EVEN over the months from From to End, each

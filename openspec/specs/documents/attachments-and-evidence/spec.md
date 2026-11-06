@@ -126,6 +126,11 @@ Source: PRD-001 §8.16 · Priority M · Phase P1
 - **THEN** the recommended evidence rules are set to their defaults
 - **AND** they are organisation settings (FR-ORG-08)
 
+#### Scenario: Default evidence for bills and manual journals (rev 0.182)
+- **GIVEN** the owner's decisions of 6 Nov 2026 (provisional until sign-off): each activity's level is a setting, changed under dual control
+- **WHEN** a bill, or a manual journal whose debits are above the evidence threshold (S$1,000 by default), is posted or its post asked for or approved with no file attached while its evidence is required
+- **THEN** it is refused (DOC-10), saying what is missing and how to attach it; while recommended it posts and Checks lists it (C.2 #30); while optional nothing is asked
+
 ### Requirement: Default evidence for purchases, payee changes and payments
 By default the system SHALL require and recommend evidence for bills, expense claims, founder costs paid personally, payee bank-detail changes and payment batch releases as the §8.16 evidence rules table sets out.
 

@@ -56,6 +56,8 @@ Under **Evidence** on a saved bill or credit note, choose the file, say what it 
 invoice or a receipt) and select **Attach**. PDF, image, CSV, text, XLSX, DOCX and email files of up
 to 25 MB are accepted; Fyniq scans each one and strips image metadata such as location.
 
+- A bill posts only with the supplier's invoice or receipt attached, unless your organisation's
+  **Evidence for bills** setting says otherwise ([Organisation settings](organisation-settings.md#evidence-rules)).
 - While the bill is a draft, a file can come off again.
 - Once the bill is posted, its files are kept with it and never deleted, for as long as the records
   are. A file added later is kept the same way.

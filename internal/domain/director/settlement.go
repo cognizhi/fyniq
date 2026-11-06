@@ -111,12 +111,12 @@ type waiverPayload struct {
 }
 
 type settlementPayload struct {
-	Date            string         `json:"date"`
-	ContactID       uuid.UUID      `json:"contact_id"`
-	AccountID       uuid.UUID      `json:"account_id"`
-	Amount          *money.Money   `json:"amount"`
-	Route           string         `json:"route"`
-	Terms           *termsPayload  `json:"terms,omitempty"`
+	Date            string             `json:"date"`
+	ContactID       uuid.UUID          `json:"contact_id"`
+	AccountID       uuid.UUID          `json:"account_id"`
+	Amount          *money.Money       `json:"amount"`
+	Route           string             `json:"route"`
+	Terms           *termsPayload      `json:"terms,omitempty"`
 	Waiver          *waiverPayload     `json:"waiver,omitempty"`
 	Conversion      *conversionPayload `json:"conversion,omitempty"`
 	DeductedEarlier bool               `json:"deducted_earlier,omitempty"`
@@ -154,7 +154,9 @@ func ReadSettlement(doc storage.Document) (Settlement, error) {
 	if !IsSettlement(doc) {
 		return Settlement{}, &Error{CodeNotSettlement, fmt.Sprintf("document %s is a %s, not a settlement", doc.ID, doc.Type), "Open it with its own module"}
 	}
-	bad := func(what string) error { return &Error{CodeSettlement, "the saved settlement cannot be read: " + what, "Draft it again"} }
+	bad := func(what string) error {
+		return &Error{CodeSettlement, "the saved settlement cannot be read: " + what, "Draft it again"}
+	}
 	var p settlementPayload
 	if err := json.Unmarshal(doc.Payload, &p); err != nil {
 		return Settlement{}, bad(err.Error())
@@ -219,7 +221,9 @@ func Owed(ctx context.Context, u storage.UnitOfWork, base money.Currency, contac
 // account at a Singapore bank to repay the person into (CodeNoRepayTo).
 func CheckSettlement(ctx context.Context, u storage.UnitOfWork, s Settlement, s2 ledger.Settings, today time.Time) (ledger.Problems, error) {
 	var probs ledger.Problems
-	add := func(code, field, msg, fix string) { probs = append(probs, ledger.Problem{Code: code, Field: field, Message: msg, Fix: fix}) }
+	add := func(code, field, msg, fix string) {
+		probs = append(probs, ledger.Problem{Code: code, Field: field, Message: msg, Fix: fix})
+	}
 	base := s2.Base
 	ct, err := u.Contacts().Get(ctx, s.ContactID)
 	switch {

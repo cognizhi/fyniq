@@ -161,7 +161,9 @@ func ReadPreCost(doc storage.Document) (PreCost, error) {
 // amount or GST that is not in the base currency, the GST less than the amount.
 func CheckPreCost(ctx context.Context, u storage.UnitOfWork, c PreCost, booksStart *time.Time, base money.Currency) (ledger.Problems, error) {
 	var probs ledger.Problems
-	add := func(field, msg, fix string) { probs = append(probs, ledger.Problem{Code: CodePreCost, Field: field, Message: msg, Fix: fix}) }
+	add := func(field, msg, fix string) {
+		probs = append(probs, ledger.Problem{Code: CodePreCost, Field: field, Message: msg, Fix: fix})
+	}
 	switch {
 	case booksStart == nil:
 		add("date", "the organisation has no books start, so nothing is before it", "Set the books start in Settings › Organisation first")

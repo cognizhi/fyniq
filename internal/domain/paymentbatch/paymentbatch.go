@@ -142,7 +142,9 @@ func Encode(d Draft) ([]byte, error) {
 // Check returns every rule d breaks by itself, or nil: its method, its date, its items' kinds and count, each item once.
 func Check(d Draft) Problems {
 	var out Problems
-	add := func(code, field, message, fix string) { out = append(out, Problem{Code: code, Field: field, Message: message, Fix: fix}) }
+	add := func(code, field, message, fix string) {
+		out = append(out, Problem{Code: code, Field: field, Message: message, Fix: fix})
+	}
 	if d.Method != FAST && d.Method != GIRO {
 		add(CodeMethod, "method", fmt.Sprintf("%q is not a method of payment", d.Method), "Choose fast or giro")
 	}
@@ -426,11 +428,11 @@ func Evaluate(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s
 			case p.Frozen:
 				out.Errors = append(out.Errors, Problem{Code: payee.CodeFrozen, Field: "items", DocumentID: &id,
 					Message: fmt.Sprintf("a change of the bank account %s pays into waits for approval, so payments are frozen", name(l.Number, id)),
-					Fix: "Have the change approved, rejected or withdrawn first"})
+					Fix:     "Have the change approved, rejected or withdrawn first"})
 			case p.Account == nil || p.Bank == nil || p.Bank.Kind != payee.Singapore:
 				out.Errors = append(out.Errors, Problem{Code: CodeNoAccount, Field: "items", DocumentID: &id,
 					Message: fmt.Sprintf("the payee of %s has no approved SGD account at a Singapore bank", name(l.Number, id)),
-					Fix: "Have their bank details entered and approved first"})
+					Fix:     "Have their bank details entered and approved first"})
 			}
 		}
 		if out.Total, err = out.Total.Add(p.Amount); err != nil {

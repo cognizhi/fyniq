@@ -4,7 +4,7 @@ type: task
 title: Bills
 summary: Entering, posting and approving a supplier's bill; claiming its GST; recurring bills; spreading a prepaid cost; payments; voiding or editing a bill
 sources:
-  - docs/user-guide/bills.md sha256:869780a225552f9dd00b214c7b3293500c75bc2c0e929f9d414117cacfeedd35
+  - docs/user-guide/bills.md sha256:48c0fe20ac7da2210766b9d1584fdf7aba4a0be4bde177f17a6a936ac2ee9312
 data_class: general
 taint: trusted
 status: draft
@@ -71,6 +71,7 @@ aliases:
   - repeating bill
   - attach the invoice
   - bill attachment
+  - bill needs evidence
   - supplier invoice file
 ---
 
@@ -103,6 +104,8 @@ aliases:
 
 - Under **Evidence** on a saved bill or credit note: choose the file, say what it is (such as the invoice or a receipt) and select **Attach**. PDF, image, CSV, text, XLSX, DOCX and email files of up to 25 MB are accepted; Fyniq scans each one and strips image metadata such as location.
 - While the bill is a draft a file can come off again; once it is posted its files are kept with it and never deleted, for as long as the records are, and a file added later is kept the same way.
+
+- A bill posts only with the supplier's invoice or receipt attached, unless the organisation's **Evidence for bills** setting says otherwise ([[settings.organisation]]).
 
 (src: docs/user-guide/bills.md#attach-the-suppliers-invoice)
 

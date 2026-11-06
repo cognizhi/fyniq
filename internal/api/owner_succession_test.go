@@ -232,7 +232,9 @@ var matrixSuccession = map[string]func(e *env, tok string) (response, func() boo
 		}
 		r := s.call(http.MethodPost, "/v1/members/"+m.ID.String()+"/succession", e.asIn(tok, bo), map[string]any{"reason": "Matrix test",
 			"evidence_kind": "board_resolution"}, "Prefer", "return=preview")
-		return r, func() bool { return !strings.Contains(s.call(http.MethodGet, "/v1/owner-successions", s.as(authz.Owner), nil).Raw, next.String()) }
+		return r, func() bool {
+			return !strings.Contains(s.call(http.MethodGet, "/v1/owner-successions", s.as(authz.Owner), nil).Raw, next.String())
+		}
 	},
 	"addOwnerSuccessionEvidence": func(e *env, tok string) (response, func() bool) {
 		s := inStandardMode(e)

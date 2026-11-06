@@ -15,6 +15,16 @@
 ## 3. Rules, classes and search
 
 - [ ] 3.1 Evidence rules per activity type as FR-ORG-08 settings. Required rules block and recommended rules warn. Test `// req: FR-DOC-06`, and the five defaults `// req: documents/attachments-and-evidence Default evidence for <area>`, each with a fixture per activity that exists today; and C.2 #30, completed activities missing recommended evidence, on the checks engine (moved from p1-checks, rev 0.166: a check is built with the module it guards). Test `// req: C.2 #30` **Left**
+  (6 Nov 2026, PRD-001 rev 0.182, on the owner's decisions of the same day: the defaults enforced now, and each
+  activity's level a setting. `internal/domain/evidence/rules.go`: bills and manual journals above
+  `evidence.journal_threshold` (S$1,000.00), each `evidence.<activity>` required, recommended or optional under dual
+  control; a missing required file refuses the post, its request for approval and the approved post (DOC-10);
+  `EvidenceFiles.Counts`. C.2 #30 (`evidence.missing`) lists the open months' posted records without their evidence
+  while it is required or recommended. Expense claims keep FR-AP-15's thresholds; payee bank changes, founders' costs
+  and settlements already require their files; FM-5 and the close checks hold the reconciliation and the close. The
+  tests' books relax the two rules (`relaxEvidence`). Tests `TestEvidenceRulesHoldBillsAndJournals`. **Left:** the
+  rules of activities not built yet (filings, CPF, share transfers, instruments, investor records, grants) with their
+  modules; the PRD table's second recommended items (a business purpose note, a call-back note, an explanation).)
 - [ ] 3.2 Data classes per file, with unmasked NRIC flagged. Test `// req: FR-DOC-09` (P1 part) (20 Oct 2026, part: a data class per file; payroll and identity refused until FR-PAY-13, rev 0.38. **Left:** the NRIC flag)
 - [ ] 3.3 Evidence search by activity, type, date and uploader, and the missing-evidence list, under the person's scope. Test `// req: FR-DOC-10` (P1 part) **Left**
 

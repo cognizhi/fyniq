@@ -25,6 +25,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
+	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -1269,7 +1270,7 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 					"Ask another person who holds the approval right")
 			}
 		}
-		return nil
+		return a.requireEvidence(ctx, u, evidence.Bill, id) // FR-DOC-06: a file taken off since it was asked
 	case approval.OpRecurringApprove: // SOD-3: whoever wrote the content version never approves it for issue and send
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {
@@ -1376,7 +1377,15 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 					"Ask another person who holds the approval right")
 			}
 		}
-		return nil
+		org, err := u.Organisation(ctx)
+		if err != nil {
+			return err
+		}
+		debits, err := a.journals.Debits(ctx, org.ID, id)
+		if err != nil {
+			return err
+		}
+		return a.requireJournalEvidence(ctx, u, id, debits) // FR-DOC-06
 	case approval.OpPolicyChange:
 	default:
 		return nil
@@ -1867,7 +1876,8 @@ func registerApprovals(a *API) {
 		storage.CodeParty, CodeOwnLink, director.CodeOwnFee, director.CodeFeePosted, director.CodeNoVote, director.CodeNotFee, director.CodeFee,
 		ledger.CodeDirectorFee, approval.CodeBeneficiary, director.CodeSettled, director.CodeNoAgreement, director.CodeSettlement, director.CodeNotSettlement,
 		ledger.CodeWaiver, ledger.CodeRepayment, director.CodeNotRepayment, director.CodeNotPosted, director.CodeNotRepaid, ledger.CodeConversion,
-		journal.CodeMergeAccount, journal.CodeMergeDate, journal.CodeMergeScheduled, ledger.CodeAccountMerge, team.CodeAction, storage.CodeBanking},
+		journal.CodeMergeAccount, journal.CodeMergeDate, journal.CodeMergeScheduled, ledger.CodeAccountMerge, team.CodeAction, storage.CodeBanking,
+		evidence.CodeMissing},
 		append(append(append(append(append(append(append(locks, ApprovalCodes...), MemberCodes...), SettingCodes...), PolicyCodes...), PackCodes...), PasskeyCodes...),
 			append(append(append(append(JournalApprovalCodes(), PayeeApprovalCodes()...), BillApprovalCodes()...), PaymentApprovalCodes()...), append(append(append(ApplicationApprovalCodes(), RefundApprovalCodes()...), OrderApprovalCodes()...), append(append(append(TemplateApprovalCodes(), InvoiceApprovalCodes()...), ReceiptApprovalCodes()...), append(append(append(WriteOffApprovalCodes(), CustomerApplicationApprovalCodes()...), CustomerRefundApprovalCodes()...), append(append(append(DepositApprovalCodes(), ClaimApprovalCodes()...), ReimbursementApprovalCodes()...), AdvanceApprovalCodes()...)...)...)...)...)...)...),
 		func(ctx context.Context, in *approvalDecideInput) (*approvalWriteOutput, error) {
