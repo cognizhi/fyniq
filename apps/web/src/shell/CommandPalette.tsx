@@ -1,8 +1,8 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { useNavigate } from "@tanstack/react-router";
 import { Command } from "cmdk";
-import { Contrast, House, Monitor, Moon, Rows3, Sun } from "lucide-react";
-import type { ReactNode } from "react";
+import { Contrast, House, Monitor, Moon, Rows3, Search, Sun } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { setAppearance, type Appearance } from "../appearance";
 import { helpText } from "../i18n";
 import { routes, type Mode } from "../registry";
@@ -11,7 +11,8 @@ import { Icon } from "../ui";
 // The command palette (cmdk in a Base UI dialog; MASTER.md §7; FR-UX-01 in part): Go to the pages
 // the person can open, and switch the theme, contrast, density and motion (experience/visual-design
 // Themes: "from the header and the command palette"). Loaded on demand, so cmdk is not in the
-// initial bundle (NFR-PERF-UI-03). Search, create, reports and Ask AI arrive with p1-app-shell 2.2.
+// initial bundle (NFR-PERF-UI-03). What is typed can also be searched for across the records (FR-UX-02, rev 0.190); create,
+// reports and Ask AI arrive with p1-app-shell 2.2.
 
 const item =
   "flex min-h-9 cursor-default items-center gap-2 rounded-sm px-2 text-base text-foreground outline-none select-none data-[selected=true]:bg-surface-3 pointer-coarse:min-h-(--touch-target)";
@@ -23,6 +24,7 @@ function ModeTag({ mode }: { mode: Mode }) {
 
 export default function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const navigate = useNavigate();
+  const [typed, setTyped] = useState("");
   const run = (f: () => void) => () => {
     f();
     onOpenChange(false);
@@ -49,7 +51,9 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
           <Dialog.Description className="sr-only">{palette.tooltip}</Dialog.Description>
           <Command label={palette.label} loop>
             <Command.Input
-              placeholder="Type a page or a command…"
+              value={typed}
+              onValueChange={setTyped}
+              placeholder="Type a page, a command, or what to search for…"
               className="h-12 w-full border-0 border-b border-border bg-transparent px-4 text-md text-foreground outline-none placeholder:text-muted-foreground"
             />
             <Command.List className="max-h-80 overflow-y-auto p-1">
@@ -70,6 +74,19 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
                 {action("Reduce motion", <Icon of={Monitor} />, look({ motion: "reduce" }))}
                 {action("Motion on", <Icon of={Monitor} />, look({ motion: "on" }))}
               </Command.Group>
+              {typed.trim() !== "" && (
+                <Command.Group heading={helpText("shell.search").label} className={group} forceMount>
+                  <Command.Item
+                    value={`search ${typed}`}
+                    forceMount
+                    className={item}
+                    onSelect={run(() => void navigate({ to: "/search", search: { q: typed.trim() } }))}
+                  >
+                    <Icon of={Search} />
+                    Search the records for “{typed.trim()}”
+                  </Command.Item>
+                </Command.Group>
+              )}
             </Command.List>
           </Command>
         </Dialog.Popup>

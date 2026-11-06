@@ -62,6 +62,9 @@ type Contacts interface {
 	// Page returns at most limit contacts added after the contact after (uuid.Nil for the first page),
 	// customers or vendors only when role is "customer" or "vendor", directors and shareholders when it is "director".
 	Page(ctx context.Context, after uuid.UUID, role string, limit int) ([]Contact, error)
+	// Search returns at most limit contacts whose legal name, UEN or tax ID, or emails hold text, case aside, by name
+	// (FR-UX-02's global search, rev 0.190).
+	Search(ctx context.Context, text string, limit int) ([]Contact, error)
 	// LinkMember sets or clears a director's or shareholder's member at its version, and returns it at its next:
 	// CodeVersion when it changed since, CodeParty unless an approved request for the change, signed by neither its
 	// requester nor the member linked or unlinked, is in the transaction (FY251, FM-1).

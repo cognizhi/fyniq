@@ -539,6 +539,91 @@ func (q *Queries) PageContacts(ctx context.Context, arg PageContactsParams) ([]P
 	return items, nil
 }
 
+const searchContacts = `-- name: SearchContacts :many
+SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, member_user_id, is_active, version FROM fyniq.contact
+WHERE strpos(lower(concat_ws(' ', legal_name, uen_or_tax_id, billing_email, remittance_email)), lower($1::text)) > 0
+ORDER BY lower(legal_name), id
+LIMIT $2
+`
+
+type SearchContactsParams struct {
+	Needle   string
+	PageSize int32
+}
+
+type SearchContactsRow struct {
+	ID               uuid.UUID
+	LegalName        string
+	IsCustomer       bool
+	IsVendor         bool
+	UenOrTaxID       *string
+	PeppolID         *string
+	BillingEmail     *string
+	RemittanceEmail  *string
+	Phone            *string
+	Address          *string
+	Country          *string
+	TaxResidence     *string
+	Currency         *string
+	PaymentTermsDays *int16
+	DiscountPercent  string
+	DiscountDays     *int16
+	DefaultAccountID *uuid.UUID
+	DefaultGstCode   *string
+	CustomerGroupID  *uuid.UUID
+	IsDirector       bool
+	IsShareholder    bool
+	MemberUserID     *uuid.UUID
+	IsActive         bool
+	Version          int32
+}
+
+// Global search (FR-UX-02, rev 0.190): contacts whose legal name, UEN or tax ID, or emails hold the text, by name.
+func (q *Queries) SearchContacts(ctx context.Context, arg SearchContactsParams) ([]SearchContactsRow, error) {
+	rows, err := q.db.Query(ctx, searchContacts, arg.Needle, arg.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchContactsRow
+	for rows.Next() {
+		var i SearchContactsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LegalName,
+			&i.IsCustomer,
+			&i.IsVendor,
+			&i.UenOrTaxID,
+			&i.PeppolID,
+			&i.BillingEmail,
+			&i.RemittanceEmail,
+			&i.Phone,
+			&i.Address,
+			&i.Country,
+			&i.TaxResidence,
+			&i.Currency,
+			&i.PaymentTermsDays,
+			&i.DiscountPercent,
+			&i.DiscountDays,
+			&i.DefaultAccountID,
+			&i.DefaultGstCode,
+			&i.CustomerGroupID,
+			&i.IsDirector,
+			&i.IsShareholder,
+			&i.MemberUserID,
+			&i.IsActive,
+			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateContact = `-- name: UpdateContact :one
 UPDATE fyniq.contact SET legal_name = $1, is_customer = $2, is_vendor = $3,
   is_director = $4, is_shareholder = $5,

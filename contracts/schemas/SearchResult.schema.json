@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "A posted document's largest live line, in its currency: an invoice's or bill's total."
+    },
+    "date": {
+      "description": "A document's date.",
+      "examples": [
+        "2026-10-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "detail": {
+      "description": "Where the text was found, such as the memo or the line that holds it; a contact's UEN or email.",
+      "examples": [
+        "PO-1180, October platform fee"
+      ],
+      "type": "string"
+    },
+    "group": {
+      "description": "Its kind.",
+      "enum": [
+        "invoices",
+        "bills",
+        "journals",
+        "claims",
+        "quotes",
+        "purchase_orders",
+        "contacts",
+        "accounts",
+        "items"
+      ],
+      "examples": [
+        "invoices"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The record.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "link": {
+      "description": "Where in the web app it opens.",
+      "examples": [
+        "/sales/invoices/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "A document's status, such as draft or posted; an inactive record's inactive.",
+      "examples": [
+        "posted"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "What it is: a document's number and party, a contact's name, an account's or item's code and name.",
+      "examples": [
+        "INV-0012 · Acme Analytics Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "description": "Its type: a document's type, such as invoice or bill, or contact, account or item.",
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "group",
+    "type",
+    "id",
+    "title",
+    "link"
+  ],
+  "title": "SearchResult",
+  "type": "object"
+}

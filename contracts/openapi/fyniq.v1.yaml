@@ -25262,6 +25262,134 @@ components:
         - items
         - activities
       type: object
+    SearchGroupCount:
+      additionalProperties: false
+      properties:
+        count:
+          description: How many it found, up to the limit.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        key:
+          description: The kind.
+          enum:
+            - invoices
+            - bills
+            - journals
+            - claims
+            - quotes
+            - purchase_orders
+            - contacts
+            - accounts
+            - items
+          examples:
+            - invoices
+          type: string
+        label:
+          description: Its name, for a filter.
+          examples:
+            - Invoices and credit notes
+          type: string
+        more:
+          description: "true when it found more than the limit: refine the query."
+          examples:
+            - false
+          type: boolean
+      required:
+        - key
+        - label
+        - count
+        - more
+      type: object
+    SearchResult:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "A posted document's largest live line, in its currency: an invoice's or bill's total."
+        date:
+          description: A document's date.
+          examples:
+            - "2026-10-14"
+          format: date
+          type: string
+        detail:
+          description: Where the text was found, such as the memo or the line that holds it; a contact's UEN or email.
+          examples:
+            - PO-1180, October platform fee
+          type: string
+        group:
+          description: Its kind.
+          enum:
+            - invoices
+            - bills
+            - journals
+            - claims
+            - quotes
+            - purchase_orders
+            - contacts
+            - accounts
+            - items
+          examples:
+            - invoices
+          type: string
+        id:
+          description: The record.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+          format: uuid
+          type: string
+        link:
+          description: Where in the web app it opens.
+          examples:
+            - /sales/invoices/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+          type: string
+        status:
+          description: A document's status, such as draft or posted; an inactive record's inactive.
+          examples:
+            - posted
+          type: string
+        title:
+          description: "What it is: a document's number and party, a contact's name, an account's or item's code and name."
+          examples:
+            - INV-0012 · Acme Analytics Pte Ltd
+          type: string
+        type:
+          description: "Its type: a document's type, such as invoice or bill, or contact, account or item."
+          examples:
+            - invoice
+          type: string
+      required:
+        - group
+        - type
+        - id
+        - title
+        - link
+      type: object
+    SearchResults:
+      additionalProperties: false
+      properties:
+        groups:
+          description: The kinds of record the caller may search, each with what it found.
+          items:
+            $ref: "#/components/schemas/SearchGroupCount"
+          type: array
+        query:
+          description: The query, as read.
+          examples:
+            - "> 5k"
+          type: string
+        results:
+          description: "The records found: each kind's newest first, in the filters' order; only group's when it is given."
+          items:
+            $ref: "#/components/schemas/SearchResult"
+          type: array
+      required:
+        - query
+        - results
+        - groups
+      type: object
     SendSalesReminder:
       additionalProperties: false
       properties:
@@ -119039,6 +119167,127 @@ paths:
       x-fyniq-permission:
         capability: Invoices, credit notes
         right: V
+  /v1/search:
+    get:
+      description: Finds documents, contacts, accounts and items (FR-UX-02; PRD-001 rev 0.190). Text is looked for, case aside, in a document's number, reference, memo, notes, title, lines and party, and in a contact's name, UEN or tax ID and emails, an account's or item's code and name. An amount, exact (1,234.56) or above or below a bound (> 5k), is looked for, without its sign, in a document's live posted lines, in each line's currency; a bare whole number is looked for as both. Each kind of record is searched only by whoever views its Appendix D row without a qualifier, and an Employee finds their own claims, so results, counts and details never show a record the caller may not see (SEC-34). Read-only; no side effects.
+      operationId: searchRecords
+      parameters:
+        - description: "What to find: text such as a reference (INV-0138), a name or words of a note; or an amount, exact (1,234.56) or above or below a bound (> 5k, <= 2.5m)."
+          explode: false
+          in: query
+          name: q
+          required: true
+          schema:
+            description: "What to find: text such as a reference (INV-0138), a name or words of a note; or an amount, exact (1,234.56) or above or below a bound (> 5k, <= 2.5m)."
+            examples:
+              - "> 5k"
+            maxLength: 200
+            minLength: 1
+            type: string
+        - description: Only this kind of record's results, up to 100; every kind's, up to 20 each, when left out.
+          explode: false
+          in: query
+          name: group
+          schema:
+            description: Only this kind of record's results, up to 100; every kind's, up to 20 each, when left out.
+            enum:
+              - invoices
+              - bills
+              - journals
+              - claims
+              - quotes
+              - purchase_orders
+              - contacts
+              - accounts
+              - items
+            examples:
+              - invoices
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResults"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Search the records
+      tags:
+        - Search
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: (membership)
+        note: Each kind of record is searched only by whoever views its Appendix D row without a qualifier; an Employee finds their own claims.
+        right: V
   /v1/session:
     get:
       description: "Who you are signed in as: the provider, your user, the organisation your session is in, your roles there, whether you are a Super admin, until when your step-up counts and how you passed it (SEC-05, FR-ADM-07), and the organisation's feature switches (FR-ORG-06). The web app reads it after signing in; a 401 means it should show the sign-in page. Needs a person signed in; an OAuth client or the AI is refused. Read-only; no side effects."
@@ -125627,6 +125876,8 @@ tags:
     name: Statutory packs
   - description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."
     name: Evidence
+  - description: "The global search: documents, contacts, accounts and items by reference, name, words or amount, in what the caller may see (FR-UX-02, SEC-34)."
+    name: Search
   - description: Each person's notification centre and preferences, produced from one event stream (FR-NTF-01, FR-NTF-02, FR-NTF-05).
     name: Notifications
   - description: "Banners under the header: those each person sees now, and the announcements the Owner and Administrator publish to their organisation (FR-NTF-03)."

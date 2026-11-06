@@ -13029,6 +13029,29 @@ Takes a file off a cost that still needs the accountant's decision (FR-DOC-07). 
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `FOUNDER-05`, `FOUNDER-07`, `STORAGE-EVIDENCE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+## Search
+
+The global search: documents, contacts, accounts and items by reference, name, words or amount, in what the caller may see (FR-UX-02, SEC-34).
+
+### `GET /v1/search`
+
+**Search the records** (`searchRecords`)
+
+Finds documents, contacts, accounts and items (FR-UX-02; PRD-001 rev 0.190). Text is looked for, case aside, in a document's number, reference, memo, notes, title, lines and party, and in a contact's name, UEN or tax ID and emails, an account's or item's code and name. An amount, exact (1,234.56) or above or below a bound (> 5k), is looked for, without its sign, in a document's live posted lines, in each line's currency; a bare whole number is looked for as both. Each kind of record is searched only by whoever views its Appendix D row without a qualifier, and an Employee finds their own claims, so results, counts and details never show a record the caller may not see (SEC-34). Read-only; no side effects.
+
+- **Permission:** View on (membership). Each kind of record is searched only by whoever views its Appendix D row without a qualifier; an Employee finds their own claims.
+- **Parameters:**
+  - `q` (query, required): What to find: text such as a reference (INV-0138), a name or words of a note; or an amount, exact (1,234.56) or above or below a bound (> 5k, <= 2.5m).
+  - `group` (query): Only this kind of record's results, up to 100; every kind's, up to 20 each, when left out.
+- **Responses:**
+  - `200` OK [`SearchResults`](../../contracts/schemas/SearchResults.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
 ## Notifications
 
 Each person's notification centre and preferences, produced from one event stream (FR-NTF-01, FR-NTF-02, FR-NTF-05).

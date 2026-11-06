@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "groups": {
+      "description": "The kinds of record the caller may search, each with what it found.",
+      "items": {
+        "$ref": "SearchGroupCount.schema.json"
+      },
+      "type": "array"
+    },
+    "query": {
+      "description": "The query, as read.",
+      "examples": [
+        "\u003e 5k"
+      ],
+      "type": "string"
+    },
+    "results": {
+      "description": "The records found: each kind's newest first, in the filters' order; only group's when it is given.",
+      "items": {
+        "$ref": "SearchResult.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "query",
+    "results",
+    "groups"
+  ],
+  "title": "SearchResults",
+  "type": "object"
+}

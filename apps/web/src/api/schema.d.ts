@@ -8636,6 +8636,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search the records
+         * @description Finds documents, contacts, accounts and items (FR-UX-02; PRD-001 rev 0.190). Text is looked for, case aside, in a document's number, reference, memo, notes, title, lines and party, and in a contact's name, UEN or tax ID and emails, an account's or item's code and name. An amount, exact (1,234.56) or above or below a bound (> 5k), is looked for, without its sign, in a document's live posted lines, in each line's currency; a bare whole number is looked for as both. Each kind of record is searched only by whoever views its Appendix D row without a qualifier, and an Employee finds their own claims, so results, counts and details never show a record the caller may not see (SEC-34). Read-only; no side effects.
+         */
+        get: operations["searchRecords"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/session": {
         parameters: {
             query?: never;
@@ -26847,6 +26867,88 @@ export interface components {
              * @example eyJhZnRlciI6IjIwMjYtMTAtMjAifQ
              */
             next_cursor?: string;
+        };
+        SearchGroupCount: {
+            /**
+             * Format: int64
+             * @description How many it found, up to the limit.
+             * @example 3
+             */
+            count: number;
+            /**
+             * @description The kind.
+             * @example invoices
+             * @enum {string}
+             */
+            key: "invoices" | "bills" | "journals" | "claims" | "quotes" | "purchase_orders" | "contacts" | "accounts" | "items";
+            /**
+             * @description Its name, for a filter.
+             * @example Invoices and credit notes
+             */
+            label: string;
+            /**
+             * @description true when it found more than the limit: refine the query.
+             * @example false
+             */
+            more: boolean;
+        };
+        SearchResult: {
+            /** @description A posted document's largest live line, in its currency: an invoice's or bill's total. */
+            amount?: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description A document's date.
+             * @example 2026-10-14
+             */
+            date?: string;
+            /**
+             * @description Where the text was found, such as the memo or the line that holds it; a contact's UEN or email.
+             * @example PO-1180, October platform fee
+             */
+            detail?: string;
+            /**
+             * @description Its kind.
+             * @example invoices
+             * @enum {string}
+             */
+            group: "invoices" | "bills" | "journals" | "claims" | "quotes" | "purchase_orders" | "contacts" | "accounts" | "items";
+            /**
+             * Format: uuid
+             * @description The record.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+             */
+            id: string;
+            /**
+             * @description Where in the web app it opens.
+             * @example /sales/invoices/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+             */
+            link: string;
+            /**
+             * @description A document's status, such as draft or posted; an inactive record's inactive.
+             * @example posted
+             */
+            status?: string;
+            /**
+             * @description What it is: a document's number and party, a contact's name, an account's or item's code and name.
+             * @example INV-0012 · Acme Analytics Pte Ltd
+             */
+            title: string;
+            /**
+             * @description Its type: a document's type, such as invoice or bill, or contact, account or item.
+             * @example invoice
+             */
+            type: string;
+        };
+        SearchResults: {
+            /** @description The kinds of record the caller may search, each with what it found. */
+            groups: components["schemas"]["SearchGroupCount"][];
+            /**
+             * @description The query, as read.
+             * @example > 5k
+             */
+            query: string;
+            /** @description The records found: each kind's newest first, in the filters' order; only group's when it is given. */
+            results: components["schemas"]["SearchResult"][];
         };
         SendSalesReminder: {
             /**
@@ -95004,6 +95106,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SalesGSTCodes"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    searchRecords: {
+        parameters: {
+            query: {
+                /** @description What to find: text such as a reference (INV-0138), a name or words of a note; or an amount, exact (1,234.56) or above or below a bound (> 5k, <= 2.5m). */
+                q: string;
+                /** @description Only this kind of record's results, up to 100; every kind's, up to 20 each, when left out. */
+                group?: "invoices" | "bills" | "journals" | "claims" | "quotes" | "purchase_orders" | "contacts" | "accounts" | "items";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResults"];
                 };
             };
             /** @description Unauthorized: `API-AUTH-01` Sign-in required. */

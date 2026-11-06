@@ -353,6 +353,11 @@ Source: PRD-001 §7.2 · Priority M · Phase P1
 - **WHEN** the user searches for text in a reference or a note
 - **THEN** the records with that reference or note are found
 
+#### Scenario: Only what the person may see (rev 0.190)
+- **WHEN** a person searches
+- **THEN** each kind of record is searched only if their role views its records, and an Employee finds only their own claims
+- **AND** the results, their counts and their details never show a record they may not see
+
 ### Requirement: FR-UX-03 Inbox triage
 The Inbox SHALL support triage with keyboard shortcuts, bulk actions where safe and grouping by type and due date, and its approve shortcut SHALL open the approval confirmation and never approve directly.
 

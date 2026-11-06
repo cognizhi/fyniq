@@ -70,6 +70,11 @@ const (
 	OwnMCPConnection    Capability = "Own MCP connection (opt in, consent, revoke) (rev 0.2)"
 )
 
+// WholeRow are the qualifiers that limit what a role does on a row, not which of its records it sees: an approval or
+// posting limit, a second approver, editing and publishing, a schedule. A view of a row's records reads them as
+// unqualified (rev 0.190).
+var WholeRow = []string{"limit", "+ second approver", "+ second approver (enable); C (schedule)", "edit, publish", "schedule"}
+
 // Rows are Appendix D's rows in its order.
 var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, ChecksHealth, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
 
@@ -358,6 +363,9 @@ var (
 	// Evidence search (FR-DOC-10, rev 0.184): whoever views evidence without a qualifier, on the records whose rows they view.
 	SearchEvidence = Policy{Operation: "searchEvidence", Capability: Evidence, Need: View, Unqualified: true,
 		Note: "Lists only files on the records whose Appendix D rows the person views."}
+	// SearchRecords is the global search (FR-UX-02, rev 0.190): any member; each kind of record by its own row (SEC-34).
+	SearchRecords = Policy{Operation: "searchRecords", Capability: Membership, Need: View,
+		Note: "Each kind of record is searched only by whoever views its Appendix D row without a qualifier; an Employee finds their own claims."}
 	// GetEvidenceFile opens a file: the record's row decides it, as a search lists it, or the person's own claim (rev 0.188).
 	GetEvidenceFile = Policy{Operation: "getEvidenceFile", Capability: Evidence, Need: View, ByRecord: true,
 		Note: "Needs a view of the file's record's row without a qualifier as well, or its own Employee's expense claim or bank account change."}
@@ -1228,7 +1236,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, RequestAccountMerge,
 	ListDimensions, CreateDimension, ReplaceDimension, ListDimensionValues, CreateDimensionValue, ReplaceDimensionValue, ListContacts, GetContact, GetContactSummary,
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
-	RevokeRole, RemoveMember, SearchEvidence, GetEvidenceFile, ListOwnerSuccessions, StartOwnerSuccession, AddOwnerSuccessionEvidence, ListOwnerSuccessionEvidence,
+	RevokeRole, RemoveMember, SearchEvidence, GetEvidenceFile, SearchRecords, ListOwnerSuccessions, StartOwnerSuccession, AddOwnerSuccessionEvidence, ListOwnerSuccessionEvidence,
 	ObjectToOwnerSuccession, WithdrawOwnerSuccession, CompleteOwnerSuccession, GetAccessReview, ExportAccessReview, AttestAccessReview, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetKpis, ListKpiInputs, SetKpiInput, ListChecks, GetCheck, RunChecks, SetCheckOwner, ReviewCheckItem, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,

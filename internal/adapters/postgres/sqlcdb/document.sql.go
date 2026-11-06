@@ -611,6 +611,136 @@ func (q *Queries) LockDocument(ctx context.Context, id uuid.UUID) (LockDocumentR
 	return i, err
 }
 
+const searchDocuments = `-- name: SearchDocuments :many
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at,
+       coalesce(v.payload->>'date', '')::text AS date, coalesce(c.legal_name, '')::text AS party,
+       coalesce(big.amount::text, '')::text AS amount, coalesce(big.currency, '')::text AS currency
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+LEFT JOIN fyniq.contact c ON c.organisation_id = d.organisation_id
+  AND c.id::text = coalesce(v.payload->>'customer_id', v.payload->>'supplier_id')
+LEFT JOIN LATERAL (
+  SELECT abs(l.amount)::numeric(20, 4) AS amount, l.currency
+  FROM fyniq.journal_entry e
+  JOIN fyniq.journal_line l ON l.organisation_id = e.organisation_id AND l.entry_id = e.id
+  WHERE e.organisation_id = d.organisation_id AND e.source_id = d.id::text AND e.reverses_entry_id IS NULL
+    AND NOT EXISTS (SELECT 1 FROM fyniq.journal_entry r WHERE r.organisation_id = e.organisation_id AND r.reverses_entry_id = e.id)
+  ORDER BY abs(l.amount) DESC
+  LIMIT 1
+) big ON true
+WHERE d.type = ANY($1::text[])
+  AND ($2::text IS NULL OR d.type <> 'expense_claim' OR v.payload->>'claimant_id' = $2::text)
+  AND CASE WHEN $3::boolean
+    THEN ($4::text IS NOT NULL AND strpos(lower(concat_ws(' ', n.number, v.payload->>'memo', v.payload->>'reference',
+            v.payload->>'notes', v.payload->>'title', v.payload->>'supplier_ref', c.legal_name,
+            (SELECT string_agg(concat_ws(' ', x->>'description', x->>'merchant'), ' ')
+             FROM jsonb_array_elements(CASE WHEN jsonb_typeof(v.payload->'lines') = 'array' THEN v.payload->'lines' ELSE '[]'::jsonb END) x))),
+            lower($4::text)) > 0)
+      OR ($5::numeric IS NOT NULL OR $6::numeric IS NOT NULL) AND EXISTS (
+        SELECT 1 FROM fyniq.journal_entry e
+        JOIN fyniq.journal_line l ON l.organisation_id = e.organisation_id AND l.entry_id = e.id
+        WHERE e.organisation_id = d.organisation_id AND e.source_id = d.id::text AND e.reverses_entry_id IS NULL
+          AND NOT EXISTS (SELECT 1 FROM fyniq.journal_entry r WHERE r.organisation_id = e.organisation_id AND r.reverses_entry_id = e.id)
+          AND ($5::numeric IS NULL OR abs(l.amount) > $5::numeric
+               OR ($7::boolean AND abs(l.amount) = $5::numeric))
+          AND ($6::numeric IS NULL OR abs(l.amount) < $6::numeric
+               OR ($8::boolean AND abs(l.amount) = $6::numeric)))
+    ELSE ($4::text IS NULL OR strpos(lower(concat_ws(' ', n.number, v.payload->>'memo', v.payload->>'reference',
+            v.payload->>'notes', v.payload->>'title', v.payload->>'supplier_ref', c.legal_name,
+            (SELECT string_agg(concat_ws(' ', x->>'description', x->>'merchant'), ' ')
+             FROM jsonb_array_elements(CASE WHEN jsonb_typeof(v.payload->'lines') = 'array' THEN v.payload->'lines' ELSE '[]'::jsonb END) x))),
+            lower($4::text)) > 0)
+      AND ($5::numeric IS NULL AND $6::numeric IS NULL OR EXISTS (
+        SELECT 1 FROM fyniq.journal_entry e
+        JOIN fyniq.journal_line l ON l.organisation_id = e.organisation_id AND l.entry_id = e.id
+        WHERE e.organisation_id = d.organisation_id AND e.source_id = d.id::text AND e.reverses_entry_id IS NULL
+          AND NOT EXISTS (SELECT 1 FROM fyniq.journal_entry r WHERE r.organisation_id = e.organisation_id AND r.reverses_entry_id = e.id)
+          AND ($5::numeric IS NULL OR abs(l.amount) > $5::numeric
+               OR ($7::boolean AND abs(l.amount) = $5::numeric))
+          AND ($6::numeric IS NULL OR abs(l.amount) < $6::numeric
+               OR ($8::boolean AND abs(l.amount) = $6::numeric))))
+  END
+ORDER BY coalesce(v.payload->>'date', '') DESC, d.id DESC
+LIMIT $9
+`
+
+type SearchDocumentsParams struct {
+	Types        []string
+	Claimant     *string
+	Either       bool
+	Needle       *string
+	AmountMin    *string
+	AmountMax    *string
+	MinInclusive bool
+	MaxInclusive bool
+	PageSize     int32
+}
+
+type SearchDocumentsRow struct {
+	ID             uuid.UUID
+	Type           string
+	Status         string
+	CurrentVersion int32
+	Payload        []byte
+	Number         *string
+	CreatedBy      *string
+	PostedBy       *string
+	PostedAt       *time.Time
+	Date           string
+	Party          string
+	Amount         string
+	Currency       string
+}
+
+// Global search (FR-UX-02, rev 0.190): documents of the types given, at their current version, whose number, memo,
+// reference, notes, title, lines' descriptions and merchants, or party's name hold the text, and/or one of whose live
+// posted lines (not reversed, not a reversal) has an amount in the range, newest date first. An expense claim is only
+// the claimant's when a claimant is given. Each carries its largest live posted line, as its amount.
+func (q *Queries) SearchDocuments(ctx context.Context, arg SearchDocumentsParams) ([]SearchDocumentsRow, error) {
+	rows, err := q.db.Query(ctx, searchDocuments,
+		arg.Types,
+		arg.Claimant,
+		arg.Either,
+		arg.Needle,
+		arg.AmountMin,
+		arg.AmountMax,
+		arg.MinInclusive,
+		arg.MaxInclusive,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchDocumentsRow
+	for rows.Next() {
+		var i SearchDocumentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Status,
+			&i.CurrentVersion,
+			&i.Payload,
+			&i.Number,
+			&i.CreatedBy,
+			&i.PostedBy,
+			&i.PostedAt,
+			&i.Date,
+			&i.Party,
+			&i.Amount,
+			&i.Currency,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setDocumentStatus = `-- name: SetDocumentStatus :exec
 UPDATE fyniq.document
 SET status = $1,
