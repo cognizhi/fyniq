@@ -116,6 +116,11 @@ const (
 	// ObjectAccount is an account of the chart to merge into another (FR-COA-04, FM-1; PRD-001 rev 0.174); its key is the
 	// account's id.
 	ObjectAccount = "account"
+	// ObjectReconciliation is a money account's reconciliation for a period, to sign off under an override of SOD-5
+	// (§6.3, §6.4; PRD-001 rev 0.179): its signer decided lines it covers, in a mode that blocks it, and another person
+	// who holds A on "Users, roles, team mode" approves the override, as they do the role conflicts' (rev 0.42); its key
+	// is the reconciliation's id.
+	ObjectReconciliation = "bank_reconciliation"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -192,6 +197,9 @@ const (
 	// OpAccountMerge merges an account into another: its balance moved by one entry, the account inactive for good
 	// (account_merge@1, Appendix B.8).
 	OpAccountMerge = "account.merge"
+	// OpReconciliationSign signs off a reconciliation as the person who asked, under the override approved, with its
+	// reason (SOD-5).
+	OpReconciliationSign = "bank_reconciliation.sign"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -219,6 +227,7 @@ var Operations = map[string]string{
 	OpSettlementApprove:  ObjectDirectorSettlement,
 	OpRepaymentVoid:      ObjectDirectorRepayment,
 	OpAccountMerge:       ObjectAccount,
+	OpReconciliationSign: ObjectReconciliation,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -299,6 +308,8 @@ var Dependencies = map[string][]string{
 	ObjectDirectorRepayment: {"status", "repaid"},
 	// the two accounts' versions, and what the account merged holds now in each currency and dimension set: what moves
 	ObjectAccount: {"account_version", "into_version", "holdings"},
+	// the reconciliation's version and whether it is signed, and the ledger revision it was prepared at: what is signed
+	ObjectReconciliation: {"signed", "ledger_revision"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -342,6 +353,7 @@ var Rows = map[string]string{
 	ObjectDirectorSettlement:  "Director accounts, settlements, share issues (rev 0.3)",
 	ObjectDirectorRepayment:   "Payment batches",
 	ObjectAccount:             "Chart of accounts, dimensions",
+	ObjectReconciliation:      "Users, roles, team mode",
 }
 
 // The limits of a policy.
@@ -414,6 +426,7 @@ var Policies = map[string]Policy{
 	ObjectDirectorSettlement:  {ObjectType: ObjectDirectorSettlement, Version: "founder/director_settlement@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
 	ObjectDirectorRepayment:   {ObjectType: ObjectDirectorRepayment, Version: "founder/director_repayment@2026-11-03.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAccount:             {ObjectType: ObjectAccount, Version: "founder/account@2026-11-06.1", Steps: []Step{{Quorum: 1}}},
+	ObjectReconciliation:      {ObjectType: ObjectReconciliation, Version: "founder/bank_reconciliation@2026-11-06.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

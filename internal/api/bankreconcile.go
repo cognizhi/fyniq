@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -23,22 +25,43 @@ import (
 
 // BankReconciliation is a money account's reconciliation for a period.
 type BankReconciliation struct {
-	ID                string     `json:"id" format:"uuid" doc:"The reconciliation's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c10"`
-	MoneyAccountID    string     `json:"money_account_id" format:"uuid" doc:"The money account." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"`
-	PeriodID          string     `json:"period_id" format:"uuid" doc:"The period." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a50"`
-	StatementBalance  Money      `json:"statement_balance" doc:"The statement's balance at the period's end."`
-	BookBalance       Money      `json:"book_balance" doc:"The account's balance in the books at the period's end, in its currency."`
-	Unreconciled      Money      `json:"unreconciled" doc:"The lines booked by then that the books do not hold yet: unreconciled or possible duplicates."`
-	UnreconciledCount int        `json:"unreconciled_count" doc:"How many." example:"3"`
-	Difference        Money      `json:"difference" doc:"What they leave unexplained: statement − book − unreconciled. Zero when it matches."`
-	LedgerRevision    int64      `json:"ledger_revision" doc:"The ledger revision it saw (ENG-46): a later posting to the account in the period means preparing it again." example:"42"`
-	PreparedBy        string     `json:"prepared_by" doc:"Who prepared it." example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01"`
-	PreparedAt        time.Time  `json:"prepared_at" doc:"When." example:"2026-11-03T09:00:00Z"`
-	SignedBy          string     `json:"signed_by,omitempty" doc:"Who signed it off: never its preparer." example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a02"`
-	SignedAt          *time.Time `json:"signed_at,omitempty" doc:"When." example:"2026-11-04T09:00:00Z"`
-	Version           int        `json:"version" doc:"Its version, as its ETag." example:"1"`
-	StatementDate     string     `json:"statement_date,omitempty" format:"date" doc:"On preparing: the day the statement balance is of." example:"2026-10-31"`
-	Lines             []BankLine `json:"unreconciled_lines" nullable:"false" doc:"On preparing and reading one: the lines it counts as unreconciled, earliest first."`
+	ID                string           `json:"id" format:"uuid" doc:"The reconciliation's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c10"`
+	MoneyAccountID    string           `json:"money_account_id" format:"uuid" doc:"The money account." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"`
+	PeriodID          string           `json:"period_id" format:"uuid" doc:"The period." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a50"`
+	StatementBalance  Money            `json:"statement_balance" doc:"The statement's balance at the period's end."`
+	BookBalance       Money            `json:"book_balance" doc:"The account's balance in the books at the period's end, in its currency."`
+	Unreconciled      Money            `json:"unreconciled" doc:"The lines booked by then that the books do not hold yet: unreconciled or possible duplicates."`
+	UnreconciledCount int              `json:"unreconciled_count" doc:"How many." example:"3"`
+	Difference        Money            `json:"difference" doc:"What they leave unexplained: statement − book − unreconciled. Zero when it matches."`
+	LedgerRevision    int64            `json:"ledger_revision" doc:"The ledger revision it saw (ENG-46): a later posting to the account in the period means preparing it again." example:"42"`
+	PreparedBy        string           `json:"prepared_by" doc:"Who prepared it." example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01"`
+	PreparedAt        time.Time        `json:"prepared_at" doc:"When." example:"2026-11-03T09:00:00Z"`
+	SignedBy          string           `json:"signed_by,omitempty" doc:"Who signed it off: never its preparer." example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a02"`
+	SignedAt          *time.Time       `json:"signed_at,omitempty" doc:"When." example:"2026-11-04T09:00:00Z"`
+	SoDOverride       *SignOffOverride `json:"sod_override,omitempty" doc:"The override of SOD-5 it was signed off under: its signer decided lines it covers, in a team mode that blocks it, and another person approved the override (rev 0.179). Absent for none."`
+	Version           int              `json:"version" doc:"Its version, as its ETag." example:"1"`
+	StatementDate     string           `json:"statement_date,omitempty" format:"date" doc:"On preparing: the day the statement balance is of." example:"2026-10-31"`
+	Lines             []BankLine       `json:"unreconciled_lines" nullable:"false" doc:"On preparing and reading one: the lines it counts as unreconciled, earliest first."`
+}
+
+// SignOffOverride is the override of a conflict of duties a record was signed off under (§6.4).
+type SignOffOverride struct {
+	Conflict   string `json:"conflict" enum:"SOD-5" doc:"The conflict overridden." example:"SOD-5"`
+	ApprovalID string `json:"approval_id" format:"uuid" doc:"The approved request that allowed it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
+	Reason     string `json:"reason" doc:"Why, as the signer gave it." example:"The other Controller is on leave until December"`
+}
+
+// ReconciliationOverrideRequest asks to sign off a reconciliation under an override of SOD-5.
+type ReconciliationOverrideRequest struct {
+	Reason string `json:"reason" minLength:"1" maxLength:"500" doc:"Why you sign it off although you decided lines it covers: the approver reads it, and the reconciliation and Checks keep it." example:"The other Controller is on leave until December"`
+}
+
+type reconciliationOverrideInput struct {
+	ReconciliationPath
+	KeyHeader
+	IfMatchHeader
+	PreferHeader
+	Body ReconciliationOverrideRequest
 }
 
 // AutoReconciliation is a line the system reconciled by itself, and the rule it used.
@@ -142,7 +165,26 @@ func reconciliationOf(r storage.BankReconciliation) BankReconciliation {
 		StatementBalance: moneyOf(r.StatementBalance, r.Currency), BookBalance: moneyOf(r.BookBalance, r.Currency),
 		Unreconciled: moneyOf(r.UnreconciledTotal, r.Currency), UnreconciledCount: r.UnreconciledCount, Difference: moneyOf(r.Difference, r.Currency),
 		LedgerRevision: r.LedgerRevision, PreparedBy: r.PreparedBy, PreparedAt: r.PreparedAt.UTC(), SignedBy: r.SignedBy, SignedAt: r.SignedAt,
-		Version: r.Version, Lines: []BankLine{}}
+		SoDOverride: overrideOf(r), Version: r.Version, Lines: []BankLine{}}
+}
+
+func overrideOf(r storage.BankReconciliation) *SignOffOverride {
+	if r.SoDOverrideApproval == nil {
+		return nil
+	}
+	return &SignOffOverride{Conflict: "SOD-5", ApprovalID: r.SoDOverrideApproval.String(), Reason: r.SoDOverrideReason}
+}
+
+// decidedConflict refuses p's sign-off of r when p decided lines it covers and the team mode blocks it (SOD-5; PRD-001
+// rev 0.179, the owner's decisions of 6 Nov 2026); Founder mode allows it, FM-5 and the preparer rule compensating. It
+// returns the team mode, and how many lines p decided.
+func decidedConflict(ctx context.Context, u storage.UnitOfWork, p authn.Principal, r storage.BankReconciliation) (string, int, error) {
+	mode, _, _, err := teamModeOf(ctx, u)
+	if err != nil || !team.Blocks(mode) {
+		return mode, 0, err
+	}
+	n, err := banking.Decided(ctx, u, r, storage.Actor{Type: "user", ID: p.UserID.String()}.String())
+	return mode, n, err
 }
 
 func registerBankReconciliation(a *API) {
@@ -240,10 +282,13 @@ func registerBankReconciliation(a *API) {
 		OperationID: "signBankReconciliation", Method: http.MethodPost, Path: "/v1/money-accounts/{money_account_id}/reconciliations/{period_id}/sign",
 		Tags: []string{"Banking"}, Summary: "Sign off a money account's reconciliation",
 		Description: "Signs off a prepared reconciliation (FR-BNK-10, FM-5, SOD-5): by a person who did not prepare it, who passed step-up in " +
-			"the last 5 minutes, while its period is open; once signed it never changes. The close needs every money account with activity " +
-			"in the period signed off at the ledger revision it saw (FR-GL-07). Needs If-Match with its ETag. Idempotent with " +
-			"Idempotency-Key; Prefer: return=preview saves nothing.",
-	}, append([]string{CodeStale, CodeIfMatchRequired, CodeSessionRequired, CodeStepUpRequired}, writes...), func(ctx context.Context, in *signReconciliationInput) (*reconciliationOutput, error) {
+			"the last 5 minutes, while its period is open; once signed it never changes. In Standard and Enterprise modes it is refused " +
+			"(BANK-15) to a person who decided lines of the account booked in the period (categorised, matched, transferred, parked in " +
+			"suspense or excluded them, as they stand): another person signs it off, or they ask for an override with " +
+			"requestReconciliationOverride (rev 0.179); and to a person whose roles hold SOD-6 without an override (TEAM-04). The close " +
+			"needs every money account with activity in the period signed off at the ledger revision it saw (FR-GL-07). Needs If-Match " +
+			"with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.",
+	}, append([]string{CodeStale, CodeIfMatchRequired, CodeSessionRequired, CodeStepUpRequired, banking.CodeDecided, team.CodeAction}, writes...), func(ctx context.Context, in *signReconciliationInput) (*reconciliationOutput, error) {
 		account, period, err := paths(in.ReconciliationPath, "")
 		if err != nil {
 			return nil, err
@@ -267,6 +312,20 @@ func registerBankReconciliation(a *API) {
 			if err := checkIfMatch(in.IfMatch, etag(r.Version)); err != nil {
 				return BankReconciliation{}, err
 			}
+			if err := checkConflicts(ctx, u, p, "Signing off a reconciliation"); err != nil {
+				return BankReconciliation{}, err
+			}
+			if me := (storage.Actor{Type: "user", ID: p.UserID.String()}).String(); r.PreparedBy != me {
+				mode, n, err := decidedConflict(ctx, u, p, r)
+				if err != nil {
+					return BankReconciliation{}, err
+				}
+				if n > 0 {
+					return BankReconciliation{}, problem(banking.CodeDecided,
+						fmt.Sprintf("You decided %d of the lines this reconciliation covers, so you recorded its bank transactions (SOD-5), which %s mode blocks.", n, mode),
+						"Ask another person who holds the sign-off right to sign it off, or ask for an override with your reason: another person approves it")
+				}
+			}
 			signed, err := banking.SignOff(ctx, u, r.ID, r.Version, p.StepUpAt, a.deps.Clock.Now())
 			return reconciliationOf(signed), err
 		})
@@ -274,6 +333,82 @@ func registerBankReconciliation(a *API) {
 			return nil, err
 		}
 		return &reconciliationOutput{Status: w.Status, ETag: etag(w.Body.Version), Applied: applied(w), Replayed: replayedHeader(w.Replayed), Body: w.Body}, nil
+	})
+
+	register(a, authz.RequestReconciliationOverride, huma.Operation{
+		OperationID: "requestReconciliationOverride", Method: http.MethodPost,
+		Path: "/v1/money-accounts/{money_account_id}/reconciliations/{period_id}/sign-override", Tags: []string{"Banking"},
+		Summary: "Ask to sign off a reconciliation under an override of SOD-5", DefaultStatus: http.StatusAccepted,
+		Description: "Asks for an override of SOD-5 (§6.4; PRD-001 rev 0.179, the owner's decisions of 6 Nov 2026): in Standard and Enterprise " +
+			"modes a person who decided lines of the account booked in the period may not sign off its reconciliation, and this asks to sign " +
+			"it off anyway, with a reason. The answer is 202 with an approval request (bank_reconciliation.sign), which another person who " +
+			"holds A on \"Users, roles, team mode\" (the Owner) approves, stepped up, as they approve the role conflicts' overrides. On the " +
+			"approval the reconciliation is signed off as the person who asked, the override and its reason kept on it and reported on " +
+			"Checks (C.2 #62). Refused while there is nothing to override (CodeInvalid): another person may sign it off, or the team mode " +
+			"allows it. Preparing it again before the approval voids the request (FR-APR-05). Needs a person signed in who passed step-up, " +
+			"who holds the sign-off right and did not prepare it, and If-Match with its ETag. Idempotent with Idempotency-Key; " +
+			"Prefer: return=preview checks it and asks nothing.",
+	}, append([]string{CodeStale, CodeIfMatchRequired, CodeSessionRequired, CodeStepUpRequired, approval.CodePending, storage.CodeApproval,
+		team.CodeAction}, writes...), func(ctx context.Context, in *reconciliationOverrideInput) (*billRequestOutput, error) {
+		account, period, err := paths(in.ReconciliationPath, "")
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(in.IfMatch) == "" {
+			return nil, checkIfMatch(in.IfMatch, "")
+		}
+		reason := strings.TrimSpace(in.Body.Reason)
+		if reason == "" {
+			return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.reason", Message: "is blank", Fix: "Say why you sign it off although you decided lines it covers"}})
+		}
+		p, _ := authn.From(ctx)
+		if p.UserID == uuid.Nil {
+			return nil, problem(CodeSessionRequired, "Asking for an override needs a person signed in.", "Sign in to Fyniq as yourself and ask there.")
+		}
+		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (Approval, error) {
+			r, err := u.BankMatching().Reconciliation(ctx, account, period)
+			if err != nil {
+				return Approval{}, err
+			}
+			if err := checkIfMatch(in.IfMatch, etag(r.Version)); err != nil {
+				return Approval{}, err
+			}
+			if err := checkConflicts(ctx, u, p, "Signing off a reconciliation"); err != nil {
+				return Approval{}, err
+			}
+			me := storage.Actor{Type: "user", ID: p.UserID.String()}.String()
+			if r.SignedBy != "" || r.PreparedBy == me {
+				return Approval{}, problem(storage.CodeBanking, "The reconciliation is signed off already, or you prepared it, so no override lets you sign it off.",
+					"Ask another person who holds the sign-off right")
+			}
+			mode, n, err := decidedConflict(ctx, u, p, r)
+			if err != nil {
+				return Approval{}, err
+			}
+			if n == 0 {
+				return Approval{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.reason", Message: "there is no conflict to override: you decided none of its lines, or " + mode + " mode allows it",
+					Fix: "Sign it off without an override"}})
+			}
+			acc, err := u.Banking().MoneyAccount(ctx, account)
+			if err != nil {
+				return Approval{}, err
+			}
+			per, err := u.Periods().Get(ctx, period)
+			if err != nil {
+				return Approval{}, err
+			}
+			month := per.StartsOn.Format("January 2006")
+			c := pendingChange{ObjectType: approval.ObjectReconciliation, ObjectKey: r.ID.String(), Operation: approval.OpReconciliationSign,
+				Summary: fmt.Sprintf("Sign off %s's reconciliation for %s, overriding SOD-5", acc.Name, month),
+				Execute: map[string]any{"money_account_id": account.String(), "period_id": period.String(), "reason": reason},
+				Diff: []ApprovalDiff{{Field: "signed_by", Before: "", After: me},
+					{Field: "sod_override", After: fmt.Sprintf("SOD-5: decided %d of its lines; %s", n, reason)}}}
+			return a.requestApproval(ctx, u, c)
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &billRequestOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 	})
 
 	register(a, authz.ListBankReconciliations, huma.Operation{

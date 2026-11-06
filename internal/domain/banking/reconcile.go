@@ -31,6 +31,10 @@ const CodeNoStatement = "BANK-10"
 // CodeTyped is a statement balance typed in Founder mode, where it comes only from an imported statement or feed (FM-5).
 const CodeTyped = "BANK-12"
 
+// CodeDecided is a sign-off by a person who decided lines of the account in the period, which Standard and Enterprise
+// modes block unless an override is approved (SOD-5; PRD-001 rev 0.179).
+const CodeDecided = "BANK-15"
+
 // ReconcileRequest is a reconciliation to prepare: the money account, the period, and the statement's balance at the
 // period's end when it is entered from an e-statement (nil: the latest imported statement closing on or before the
 // period's end).
@@ -158,6 +162,17 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, r ReconcileRequest) (Rec
 // its preparer (FM-5, SOD-5; FY226 refuses it), and never once its period is closed.
 func SignOff(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, version int, mfaAt, at time.Time) (storage.BankReconciliation, error) {
 	return u.BankMatching().SignReconciliation(ctx, id, version, mfaAt, at)
+}
+
+// Decided counts the lines of r's account, booked in its period, that by (an actor string such as "user:<id>") decided
+// as they stand: categorised, matched, transferred, parked in suspense or excluded. They recorded its bank
+// transactions, so they sign it off only as their team mode allows (SOD-5; the owner's decision of 6 Nov 2026).
+func Decided(ctx context.Context, u storage.UnitOfWork, r storage.BankReconciliation, by string) (int, error) {
+	p, err := u.Periods().Get(ctx, r.PeriodID)
+	if err != nil {
+		return 0, err
+	}
+	return u.BankMatching().DecidedBy(ctx, r.MoneyAccountID, p.StartsOn, p.EndsOn, by)
 }
 
 // CashRow is one money account's cash on a day: its balance in its currency, its value in the base currency at the

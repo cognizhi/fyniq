@@ -287,24 +287,26 @@ type FyniqBankMatch struct {
 }
 
 type FyniqBankReconciliation struct {
-	OrganisationID    uuid.UUID
-	ID                uuid.UUID
-	MoneyAccountID    uuid.UUID
-	PeriodID          uuid.UUID
-	Currency          string
-	MinorUnits        int16
-	StatementBalance  string
-	BookBalance       string
-	UnreconciledTotal string
-	UnreconciledCount int32
-	Difference        string
-	LedgerRevision    int64
-	PreparedBy        string
-	PreparedAt        time.Time
-	SignedBy          *string
-	SignedAt          *time.Time
-	SignerMfaAt       *time.Time
-	Version           int32
+	OrganisationID      uuid.UUID
+	ID                  uuid.UUID
+	MoneyAccountID      uuid.UUID
+	PeriodID            uuid.UUID
+	Currency            string
+	MinorUnits          int16
+	StatementBalance    string
+	BookBalance         string
+	UnreconciledTotal   string
+	UnreconciledCount   int32
+	Difference          string
+	LedgerRevision      int64
+	PreparedBy          string
+	PreparedAt          time.Time
+	SignedBy            *string
+	SignedAt            *time.Time
+	SignerMfaAt         *time.Time
+	Version             int32
+	SodOverrideApproval *uuid.UUID
+	SodOverrideReason   *string
 }
 
 type FyniqBankRule struct {

@@ -120,6 +120,18 @@ UPDATE fyniq.bank_reconciliation
  WHERE id = sqlc.arg(id) AND version = sqlc.arg(version)
 RETURNING *;
 
+-- name: SignBankReconciliationOverridden :one
+UPDATE fyniq.bank_reconciliation
+   SET signed_by = sqlc.arg(by), signed_at = sqlc.arg(at), signer_mfa_at = sqlc.arg(mfa_at),
+       sod_override_approval = sqlc.arg(approval), sod_override_reason = sqlc.arg(reason), version = version + 1
+ WHERE id = sqlc.arg(id) AND version = sqlc.arg(version)
+RETURNING *;
+
+-- name: BankLinesDecidedBy :one
+SELECT count(*) FROM fyniq.bank_line
+ WHERE money_account_id = sqlc.arg(money_account_id) AND booking_date BETWEEN sqlc.arg(from_date)::date AND sqlc.arg(to_date)::date
+   AND status IN ('categorised', 'matched', 'transferred', 'suspense', 'excluded') AND status_by = sqlc.arg(by);
+
 -- name: BankReconciliations :many
 SELECT * FROM fyniq.bank_reconciliation WHERE period_id = sqlc.arg(period_id) ORDER BY money_account_id;
 

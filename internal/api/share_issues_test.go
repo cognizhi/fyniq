@@ -336,7 +336,9 @@ func matrixConversion(e *env) string {
 var matrixConversions = map[string]func(e *env, tok string) (response, func() bool){
 	"recordConversionStep": func(e *env, tok string) (response, func() bool) {
 		id := matrixConversion(e)
-		state := func() string { return e.call(http.MethodGet, "/v1/director-settlements/"+id, e.as(authz.Owner), nil).Raw }
+		state := func() string {
+			return e.call(http.MethodGet, "/v1/director-settlements/"+id, e.as(authz.Owner), nil).Raw
+		}
 		was := state()
 		g := e.call(http.MethodGet, "/v1/director-settlements/"+id, e.as(authz.Owner), nil)
 		r := e.call(http.MethodPost, "/v1/director-settlements/"+id+"/acra-steps", steppedUp(e, tok), map[string]any{"kind": "approval_lodged", "on": "2026-10-15",

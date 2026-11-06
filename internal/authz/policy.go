@@ -863,6 +863,9 @@ var (
 	ListBankReconciliations   = Policy{Operation: "listBankReconciliations", Capability: BankReconciliation, Need: View}
 	PrepareBankReconciliation = Policy{Operation: "prepareBankReconciliation", Capability: BankReconciliation, Need: Create}
 	SignBankReconciliation    = Policy{Operation: "signBankReconciliation", Capability: BankReconciliation, Need: Approve}
+	// The signer whose sign-off SOD-5 blocks asks for its override (rev 0.179): A, as signing; the Owner approves it.
+	RequestReconciliationOverride = Policy{Operation: "requestReconciliationOverride", Capability: BankReconciliation, Need: Approve,
+		Note: "A person stepped up in the last 5 minutes, who decided lines it covers in a mode that blocks it (SOD-5); another person who holds A on \"Users, roles, team mode\" approves it."}
 	// A money account's bank agreements (FR-DOC-05, design D13): attached by whoever may change its source.
 	AddMoneyAccountEvidence  = Policy{Operation: "addMoneyAccountEvidence", Capability: BankConnections, Need: Create}
 	ListMoneyAccountEvidence = Policy{Operation: "listMoneyAccountEvidence", Capability: BankTransactions, Need: View}
@@ -1253,7 +1256,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	CategoriseBankLine, SuspendBankLine, MatchBankLineInvoices, MatchBankLineBills, MatchBankLineRecorded, KeepBankLine, ExcludeBankLine,
 	UnreconcileBankLine, AutoReconcileBankLines, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,
 	ListBankRules, CreateBankRule, GetBankRule, ReplaceBankRule, BackTestBankRule, ListBankRuleOffers, ListAutoReconciliations, GetCashPosition,
-	GetBankReconciliation, ListBankReconciliations, PrepareBankReconciliation, SignBankReconciliation,
+	GetBankReconciliation, ListBankReconciliations, PrepareBankReconciliation, SignBankReconciliation, RequestReconciliationOverride,
 	AddMoneyAccountEvidence, ListMoneyAccountEvidence, ListBankSignals, DismissBankSignal,
 	ListQuotes, GetQuote, GetSalesPipeline, CreateQuote, ReplaceQuote, SendQuote, CancelQuote, AcceptQuote, DeclineQuote, InvoiceQuote,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
