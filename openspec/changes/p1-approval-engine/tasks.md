@@ -57,11 +57,17 @@
   /v1/approval-policies` and `GET /v1/approval-policies/{object_type}` (with its history). Tests:
   `TestApprovalPolicyChangesAreApprovedAndKept`, `TestAttackApprovalPoliciesAreApprovedVersions`. The pack-version
   half of G4-057 arrives with pack activation (task 4.1).)
-- [ ] 2.3 The approval view: document, ledger impact, affected balances and checks, and the diff against the previous version. Test `// req: FR-APR-02`
+- [x] 2.3 The approval view: document, ledger impact, affected balances and checks, and the diff against the previous version. Test `// req: FR-APR-02`
   (20 Oct 2026: `GET /v1/approvals` and `GET /v1/approvals/{id}` show the envelope, its hash, what the request changes
   before and after, the signatures and whether the caller may sign; a request is shown to its requester and to whoever
   holds a right on its object's Appendix D row, never to the AI. **Left:** the ledger impact, affected balances and
   checks, with wave 2's documents.)
+  (6 Nov 2026, PRD-001 rev 0.177: reading a waiting request carries its change out in a rolled-back unit of work, as a
+  preview does, and shows the entries it would post now (`impact.entries`), the balance of each account and currency they
+  post to before and after through their latest date (`impact.balances`, through the balance service), or what would
+  refuse it now (`impact.refused`: a check that fails, a month closed since, a record changed); a change that posts
+  nothing shows none, and nothing is kept. The approval page's "What approving it would post"; the guide's "Approve or
+  reject", compiled. Tests `TestAnApproverSeesWhatApprovingWouldPost`, `approvals.test.tsx`.)
 
 ## 3. Team modes and Founder mode
 

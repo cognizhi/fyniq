@@ -76,6 +76,38 @@ describe("an approval request", () => {
     expect(screen.getByRole("link", { name: "Open the journal and its lines" }).getAttribute("href")).toBe("/accounting/journals/j-7");
   });
 
+  // req: FR-APR-02
+  // req: access/approvals Approval view
+  it("shows what approving a journal would post, as debits and credits, and the balances it moves; axe finds nothing", async () => {
+    const sgd = (amount: string) => ({ amount, currency: "SGD" });
+    const line = (no: number, account: string, amount: string) => ({ line_no: no, account_id: account, amount: sgd(amount), fx_rate: "1", fx_rate_source: "base", base_amount: sgd(amount) });
+    const journal: Approval = { ...request, object_type: "journal", object_key: "j-7", operation: "journal.post", summary: "Post the draft journal (Accrued audit fee), debits 2500.00",
+      diff: [{ field: "status", before: "draft", after: "posted" }],
+      impact: {
+        entries: [{ id: "e-1", ledger_revision: 0, posting_date: "2026-10-31", period_id: "p-oct", posting_identity: "x", rule_version: "manual_journal@1", memo: "Accrued audit fee",
+          recorded_at: "2026-10-31T00:00:00Z", lines: [line(1, "acc-6110", "2500.00"), line(2, "acc-2110", "-2500.00")] }],
+        balances: [
+          { account_id: "acc-2110", code: "2110", name: "Accrued expenses", through: "2026-10-31", before: sgd("0.00"), after: sgd("-2500.00"), base_before: sgd("0.00"), base_after: sgd("-2500.00") },
+          { account_id: "acc-6110", code: "6110", name: "Audit fees", through: "2026-10-31", before: sgd("500.00"), after: sgd("3000.00"), base_before: sgd("500.00"), base_after: sgd("3000.00") },
+        ],
+      } as Approval["impact"] };
+    detail({}, journal);
+    renderPage(ApprovalPage, { path: "/approvals/a-1", route: "/approvals/$approvalId" });
+    const entry = await screen.findByRole("table", { name: "The entry of 31 Oct 2026" });
+    const debit = within(entry).getByRole("row", { name: /6110.*Audit fees/ });
+    expect(within(debit).getAllByRole("cell")[1]?.textContent).toBe("2,500.00");
+    const balances = screen.getByRole("table", { name: "Balances it moves" });
+    expect(within(balances).getByRole("row", { name: /6110.*Audit fees.*500\.00.*3,000\.00/ })).toBeTruthy();
+    await noViolations(document.body);
+  });
+
+  it("says when approving it now would be refused", async () => {
+    detail({}, { ...request, impact: { entries: [], balances: [], refused: { code: "STORAGE-INV-03", message: "The posting date is in a closed period.", fix: "Ask for the period to be reopened first" } } });
+    renderPage(ApprovalPage, { path: "/approvals/a-1", route: "/approvals/$approvalId" });
+    expect(await screen.findByText("Approving it now would be refused")).toBeTruthy();
+    expect(screen.getByText(/The posting date is in a closed period/)).toBeTruthy();
+  });
+
   // req: FR-CT-03
   // req: FR-APR-02
   it("lets the approver of a change of bank details show the new number and the one it replaces, beside the letter", async () => {

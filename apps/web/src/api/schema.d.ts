@@ -389,7 +389,7 @@ export interface paths {
         };
         /**
          * Get an approval request
-         * @description One approval request with exactly what an approver signs: the envelope (RFC 8785 canonical JSON) and its SHA-256, what it changes before and after, and its signatures (FR-APR-02, FR-APR-03, FR-APR-10). Shown to its requester and to whoever holds a right on its object. Read-only; no side effects.
+         * @description One approval request with exactly what an approver signs: the envelope (RFC 8785 canonical JSON) and its SHA-256, what it changes before and after, and its signatures (FR-APR-02, FR-APR-03, FR-APR-10). While it waits, also what approving it would post now, with the balances of the accounts it moves before and after, or what would refuse it: the change is carried out in a transaction that is rolled back, so nothing is kept (rev 0.177). Shown to its requester and to whoever holds a right on its object. Read-only; no side effects.
          */
         get: operations["getApproval"];
         put?: never;
@@ -10228,6 +10228,8 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
              */
             id: string;
+            /** @description getApproval only, while it waits: what approving it would post now, worked out by carrying the change out and rolling it back, with the balances it moves, or what would refuse it (FR-APR-02, rev 0.177). Absent for a change that posts nothing. */
+            impact?: components["schemas"]["ApprovalImpact"];
             /**
              * @description Only in the 202 answer to an invitation: its one-time code, shown once, which works once the invitation is approved.
              * @example ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z
@@ -10334,6 +10336,14 @@ export interface components {
              * @example bank.tolerance_base
              */
             field: string;
+        };
+        ApprovalImpact: {
+            /** @description Each account and currency those entries post to, with its balance through their latest date before and after. */
+            balances: components["schemas"]["ImpactBalance"][];
+            /** @description The entries approving it would post now, debits positive: its ledger impact. */
+            entries: components["schemas"]["Entry"][];
+            /** @description What would refuse it if it were approved now, such as a check that fails or a month closed since it was asked for; absent when nothing would. */
+            refused?: components["schemas"]["ImpactRefusal"];
         };
         ApprovalPage: {
             /** @description The requests on this page. */
@@ -19404,6 +19414,55 @@ export interface components {
              * @example 2026-10-31
              */
             to: string;
+        };
+        ImpactBalance: {
+            /**
+             * Format: uuid
+             * @description The account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+             */
+            account_id: string;
+            /** @description After the entries. */
+            after: components["schemas"]["Money"];
+            /** @description After the entries. */
+            base_after: components["schemas"]["Money"];
+            /** @description Its value in the base currency before. */
+            base_before: components["schemas"]["Money"];
+            /** @description Its balance in the currency before, debit positive. */
+            before: components["schemas"]["Money"];
+            /**
+             * @description Its code.
+             * @example 6010
+             */
+            code: string;
+            /**
+             * @description Its name.
+             * @example Rent
+             */
+            name: string;
+            /**
+             * Format: date
+             * @description The day the balances are through: the entries' latest date.
+             * @example 2026-10-31
+             */
+            through: string;
+        };
+        ImpactRefusal: {
+            /**
+             * @description The rule.
+             * @example STORAGE-INV-03
+             */
+            code: string;
+            /**
+             * @description What to do.
+             * @example Ask for the period to be reopened first.
+             */
+            fix?: string;
+            /**
+             * @description What would stop it, in plain words.
+             * @example The posting date is in a closed period.
+             */
+            message: string;
         };
         ImportedLine: {
             /** @description Signed: money in positive. */

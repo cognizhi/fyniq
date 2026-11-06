@@ -77,6 +77,7 @@ type Approval struct {
 	Envelope        string              `json:"envelope" doc:"The approval envelope exactly as signed: RFC 8785 canonical JSON (FR-APR-10)." example:"{\"amounts\":[]}"`
 	EnvelopeHash    string              `json:"envelope_hash" doc:"The envelope's SHA-256, in hex: send it to approve or reject exactly what you were shown." example:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
 	Diff            []ApprovalDiff      `json:"diff" doc:"What it changes, before and after (FR-APR-02)."`
+	Impact          *ApprovalImpact     `json:"impact,omitempty" doc:"getApproval only, while it waits: what approving it would post now, worked out by carrying the change out and rolling it back, with the balances it moves, or what would refuse it (FR-APR-02, rev 0.177). Absent for a change that posts nothing."`
 	Signatures      []ApprovalSignature `json:"signatures" doc:"Its signed approvals and rejections, in order (FR-APR-03)."`
 	YouMayApprove   bool                `json:"you_may_approve" doc:"true when you may approve or reject it now: it is pending, you did not ask for it and you hold the approval right." example:"true"`
 	Version         int                 `json:"version" doc:"The request's version." example:"1"`
@@ -1789,8 +1790,10 @@ func registerApprovals(a *API) {
 		OperationID: "getApproval", Method: http.MethodGet, Path: "/v1/approvals/{approval_id}", Tags: []string{"Approvals"},
 		Summary: "Get an approval request",
 		Description: "One approval request with exactly what an approver signs: the envelope (RFC 8785 canonical JSON) and its SHA-256, what " +
-			"it changes before and after, and its signatures (FR-APR-02, FR-APR-03, FR-APR-10). Shown to its requester and to whoever holds a " +
-			"right on its object. Read-only; no side effects.",
+			"it changes before and after, and its signatures (FR-APR-02, FR-APR-03, FR-APR-10). While it waits, also what approving it " +
+			"would post now, with the balances of the accounts it moves before and after, or what would refuse it: the change is " +
+			"carried out in a transaction that is rolled back, so nothing is kept (rev 0.177). Shown to its requester and to whoever holds " +
+			"a right on its object. Read-only; no side effects.",
 	}, []string{CodeNotFound}, func(ctx context.Context, in *approvalGetInput) (*approvalReadOutput, error) {
 		id, err := parseID("approval_id", in.ApprovalID)
 		if err != nil {
@@ -1810,6 +1813,9 @@ func registerApprovals(a *API) {
 			out.ETag = etag(out.Body.Version)
 			return err
 		})
+		if err == nil && out.Body.Status == string(approval.Pending) {
+			out.Body.Impact, err = a.impactOf(ctx, p, id)
+		}
 		return &out, err
 	})
 
