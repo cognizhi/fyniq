@@ -178,7 +178,8 @@ func registerDimensions(a *API) {
 		OperationID: "listDimensions", Method: http.MethodGet, Path: "/v1/dimensions", Tags: []string{"Chart of accounts"},
 		Summary: "List the dimensions",
 		Description: "The organisation's dimensions (FR-DIM-01): Department, Project, then the custom ones by place, those out of use " +
-			"included, a page at a time. Read-only; no side effects.",
+			"included, a page at a time. Every role that tags a line reads them, an Employee too, for their claims (Appendix D, rev 0.173). " +
+			"Read-only; no side effects.",
 	}, []string{CodeCursor}, func(ctx context.Context, in *dimensionListInput) (*dimensionListOutput, error) {
 		p, _ := authn.From(ctx)
 		out := dimensionListOutput{Body: DimensionPage{Items: []Dimension{}}}
@@ -276,7 +277,8 @@ func registerDimensions(a *API) {
 		OperationID: "listDimensionValues", Method: http.MethodGet, Path: "/v1/dimension-values", Tags: []string{"Chart of accounts"},
 		Summary: "List the dimensions' values",
 		Description: "The values of one dimension, or of every dimension, those out of use included (FR-DIM-01): by dimension as " +
-			"listDimensions orders them, then by code, a page at a time. Read-only; no side effects.",
+			"listDimensions orders them, then by code, a page at a time. Every role that tags a line reads them, an Employee too, for " +
+			"their claims (Appendix D, rev 0.173). Read-only; no side effects.",
 	}, []string{CodeCursor, CodeInvalid}, func(ctx context.Context, in *dimensionValueListInput) (*dimensionValueListOutput, error) {
 		var only *uuid.UUID
 		if in.DimensionID != "" {

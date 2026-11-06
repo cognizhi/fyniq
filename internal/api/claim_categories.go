@@ -26,16 +26,18 @@ import (
 
 // ClaimCategory is one of the expense policy's categories.
 type ClaimCategory struct {
-	ID             string `json:"id" format:"uuid" doc:"The category's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fc1"`
-	Name           string `json:"name" doc:"What its claims are for." example:"Meals & entertainment"`
-	AccountID      string `json:"account_id" format:"uuid" doc:"The account its claim lines cost." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"`
-	AccountCode    string `json:"account_code,omitempty" doc:"That account's code." example:"6530"`
-	Mileage        bool   `json:"mileage" doc:"true for the mileage category: trips in a member's own vehicle (FR-AP-16). It never changes." example:"false"`
-	Limit          *Money `json:"limit,omitempty" doc:"The most a line of it is, in the base currency; above it the line shows ⚠ and finance approves the claim too. Absent: no limit."`
-	ReceiptAbove   *Money `json:"receipt_above,omitempty" doc:"Above it, a line needs its receipt attached (✖ until it is). Absent: never required."`
-	AttendeesAbove *Money `json:"attendees_above,omitempty" doc:"Above it, a line names who attended (⚠ until it does). Absent: never asked."`
-	Active         bool   `json:"active" doc:"false once put out of use: kept, as claims name it." example:"true"`
-	Version        int    `json:"version" doc:"Its version, for If-Match." example:"1"`
+	ID          string `json:"id" format:"uuid" doc:"The category's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fc1"`
+	Name        string `json:"name" doc:"What its claims are for." example:"Meals & entertainment"`
+	AccountID   string `json:"account_id" format:"uuid" doc:"The account its claim lines cost." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d65"`
+	AccountCode string `json:"account_code,omitempty" doc:"That account's code." example:"6530"`
+	// RequiredDimensionIDs are what a claimant, who cannot read the chart, needs to know of its account (FR-DIM-01; rev 0.173).
+	RequiredDimensionIDs []DimensionRef `json:"required_dimension_ids,omitempty" doc:"The dimensions its account requires (listDimensions): a claim line in it names a value of each, or the claim does not post (DIM-05). Read-only: the account says, in the chart of accounts."`
+	Mileage              bool           `json:"mileage" doc:"true for the mileage category: trips in a member's own vehicle (FR-AP-16). It never changes." example:"false"`
+	Limit                *Money         `json:"limit,omitempty" doc:"The most a line of it is, in the base currency; above it the line shows ⚠ and finance approves the claim too. Absent: no limit."`
+	ReceiptAbove         *Money         `json:"receipt_above,omitempty" doc:"Above it, a line needs its receipt attached (✖ until it is). Absent: never required."`
+	AttendeesAbove       *Money         `json:"attendees_above,omitempty" doc:"Above it, a line names who attended (⚠ until it does). Absent: never asked."`
+	Active               bool           `json:"active" doc:"false once put out of use: kept, as claims name it." example:"true"`
+	Version              int            `json:"version" doc:"Its version, for If-Match." example:"1"`
 }
 
 // ClaimCategoryDraft is a category as entered.
@@ -117,7 +119,7 @@ func (a *API) categoryOf(ctx context.Context, u storage.UnitOfWork, c storage.Cl
 	if err != nil && !errors.Is(err, ports.ErrNotFound) {
 		return out, err
 	}
-	out.AccountCode = acc.Code
+	out.AccountCode, out.RequiredDimensionIDs = acc.Code, dimensionRefs(acc.RequiredDimensions)
 	return out, nil
 }
 

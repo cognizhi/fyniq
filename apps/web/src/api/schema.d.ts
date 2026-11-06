@@ -2689,7 +2689,7 @@ export interface paths {
         };
         /**
          * List the dimensions' values
-         * @description The values of one dimension, or of every dimension, those out of use included (FR-DIM-01): by dimension as listDimensions orders them, then by code, a page at a time. Read-only; no side effects.
+         * @description The values of one dimension, or of every dimension, those out of use included (FR-DIM-01): by dimension as listDimensions orders them, then by code, a page at a time. Every role that tags a line reads them, an Employee too, for their claims (Appendix D, rev 0.173). Read-only; no side effects.
          */
         get: operations["listDimensionValues"];
         put?: never;
@@ -2733,7 +2733,7 @@ export interface paths {
         };
         /**
          * List the dimensions
-         * @description The organisation's dimensions (FR-DIM-01): Department, Project, then the custom ones by place, those out of use included, a page at a time. Read-only; no side effects.
+         * @description The organisation's dimensions (FR-DIM-01): Department, Project, then the custom ones by place, those out of use included, a page at a time. Every role that tags a line reads them, an Employee too, for their claims (Appendix D, rev 0.173). Read-only; no side effects.
          */
         get: operations["listDimensions"];
         put?: never;
@@ -13351,6 +13351,8 @@ export interface components {
             name: string;
             /** @description Above it, a line needs its receipt attached (✖ until it is). Absent: never required. */
             receipt_above?: components["schemas"]["Money"];
+            /** @description The dimensions its account requires (listDimensions): a claim line in it names a value of each, or the claim does not post (DIM-05). Read-only: the account says, in the chart of accounts. */
+            required_dimension_ids?: string[] | null;
             /**
              * Format: int64
              * @description Its version, for If-Match.
@@ -17669,6 +17671,8 @@ export interface components {
              * @example Taxi to Acme
              */
             description?: string;
+            /** @description The line's dimension values (listDimensionValues), at most one of each dimension and each in use (DIM-06); its cost carries them. A line whose category's account requires a dimension names a value of it, or the claim does not post when it is approved (DIM-05). */
+            dimension_value_ids?: string[] | null;
             /**
              * @description A trip: the whole trip's distance in km, as driven.
              * @example 18.4

@@ -53,6 +53,13 @@ My claims and shows only your own items; you never see the company's figures.
 The **Mileage** tab of My claims is your log of a month's trips. Until the company sets its rate
 for your vehicle, a trip cannot be submitted.
 
+## Say which team or project it was for
+
+When the company tracks costs by department, project or something of its own, a category may need
+to know which: under the category, a choice such as **Department** says "needs one". Choose your
+team, such as ENG Engineering, for each receipt or trip in that category; the claim cannot be paid
+back until each has one. Other choices, for a category that does not need them, are in Expert mode.
+
 ## Attach the receipt
 
 1. On the saved claim, under **Evidence**, drop the file, or select the drop area and paste a
@@ -123,6 +130,7 @@ a claim settles no cash advance. To claim GST, the receipt must still be address
 | A line is above the category's limit | It can still be sent; finance approves it too |
 | The claim is past the deadline | Say why it is late; finance approves it too |
 | The claim came back as returned | Read the approver's note, fix the claim and submit it again |
+| A line needs a department or project (DIM-05) | Choose it under the line's category, then submit the claim again |
 | A card payment does not show | Finance has not imported the card's statement yet, or the card is not set up with you as its holder |
 
 ## Related

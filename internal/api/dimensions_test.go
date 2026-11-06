@@ -347,3 +347,28 @@ func TestBankLinePartsTakeDimensionValues(t *testing.T) {
 		t.Errorf("the rule's values: %d %v (%s)", r.Status, got, r.Raw)
 	}
 }
+
+// FR-DIM-02 on expense claims through the API (rev 0.171; slice 3d): an Employee reads the dimension values (rev 0.173)
+// and their claim's line takes dimension_value_ids, each an ID, and shows them.
+// req: FR-DIM-01
+// req: FR-DIM-02
+func TestClaimLinesTakeDimensionValues(t *testing.T) {
+	c := newClaimants(t)
+	e := c.e
+	travel, _ := e.claimSetup()
+	accountant := e.as(authz.Accountant)
+	dept := e.call(http.MethodPost, "/v1/dimensions", accountant, map[string]any{"kind": "department", "name": "Department"}).str("id")
+	eng := e.call(http.MethodPost, "/v1/dimension-values", accountant, map[string]any{"dimension_id": dept, "code": "ENG", "name": "Engineering"}).str("id")
+	ahkow := c.as(c.ahkow, authz.Employee)
+	line := taxi(travel)
+	line["dimension_value_ids"] = []string{"nope"}
+	e.problemIs(e.call(http.MethodPost, "/v1/expense-claims", ahkow, map[string]any{"date": "2026-10-15", "lines": []any{line}}), "createExpenseClaim", 422, CodeInvalid)
+	if r := e.call(http.MethodGet, "/v1/dimension-values", ahkow, nil); r.Status != 200 || !strings.Contains(r.Raw, eng) {
+		t.Errorf("an Employee reads the values, to tag their claims (rev 0.173): %d %s", r.Status, r.Raw)
+	}
+	line["dimension_value_ids"] = []string{eng}
+	r := e.call(http.MethodPost, "/v1/expense-claims", ahkow, map[string]any{"date": "2026-10-15", "lines": []any{line}})
+	if got := r.Body["lines"].([]any)[0].(map[string]any)["dimension_value_ids"]; r.Status != 201 || fmt.Sprint(got) != "["+eng+"]" {
+		t.Errorf("the saved line's values: %d %v (%s)", r.Status, got, r.Raw)
+	}
+}

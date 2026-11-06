@@ -327,3 +327,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | docs/user-guide/bills.md → purchases.bills (dimension values on a bill's lines)
 
 ## [2026-11-06] compile | docs/user-guide/banking.md → banking.categorise, banking.rules (dimension values on a bank line and a rule), the other banking pages re-hashed unchanged
+
+## [2026-11-06] compile | docs/user-guide/claims-my-claims.md → claims.make-a-claim (a claim line's department or project, rev 0.173)

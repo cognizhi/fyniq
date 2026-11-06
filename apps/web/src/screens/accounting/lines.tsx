@@ -262,7 +262,7 @@ export function DimensionFields({ ids, keyPrefix, n, prefix, account, set, descr
   keyPrefix: string;
   n: number;
   prefix?: string;
-  account?: Account;
+  account?: Pick<Account, "code" | "required_dimension_ids">; // what needs a value: an account, or a claim's category in its name
   set: (ids: string[]) => void;
   described?: (key: string) => string | undefined;
   className?: string;

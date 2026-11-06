@@ -31,6 +31,7 @@ const (
 	AccountingBasis     Capability = "Accounting framework and policies (rev 0.62)"
 	StatutoryParameters Capability = "Statutory parameters"
 	ChartOfAccounts     Capability = "Chart of accounts, dimensions"
+	DimensionValues     Capability = "Dimension values, to tag a line (rev 0.173)"
 	ContactsAndItems    Capability = "Contacts and items (rev 0.33)"
 	BankTransactions    Capability = "Bank transactions, categorise"
 	BankReconciliation  Capability = "Bank reconciliation sign-off"
@@ -69,7 +70,7 @@ const (
 )
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, ChecksHealth, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, ChecksHealth, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
 
 // The capabilities outside Appendix D.
 const (
@@ -137,6 +138,9 @@ var Grants = map[Capability]map[string]Cell{
 	},
 	ChartOfAccounts: {
 		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"V", ""}, "AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"V", ""},
+	},
+	DimensionValues: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {"V", ""}, "AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""}, "Employee": {"V", ""}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {}, "AI": {"V", ""},
 	},
 	ContactsAndItems: {
 		"Owner": {"V", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {}, "Releaser": {"V", ""}, "Approver": {"V", ""}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {"V", ""},
@@ -290,10 +294,10 @@ var (
 	UpdateAccount = Policy{Operation: "updateAccount", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 	// The dimensions and their values (FR-DIM-01) share the chart's row of Appendix D: "Chart of accounts, dimensions".
-	ListDimensions                = Policy{Operation: "listDimensions", Capability: ChartOfAccounts, Need: View}
+	ListDimensions                = Policy{Operation: "listDimensions", Capability: DimensionValues, Need: View}
 	CreateDimension               = Policy{Operation: "createDimension", Capability: ChartOfAccounts, Need: Create}
 	ReplaceDimension              = Policy{Operation: "replaceDimension", Capability: ChartOfAccounts, Need: Create}
-	ListDimensionValues           = Policy{Operation: "listDimensionValues", Capability: ChartOfAccounts, Need: View}
+	ListDimensionValues           = Policy{Operation: "listDimensionValues", Capability: DimensionValues, Need: View}
 	CreateDimensionValue          = Policy{Operation: "createDimensionValue", Capability: ChartOfAccounts, Need: Create}
 	ReplaceDimensionValue         = Policy{Operation: "replaceDimensionValue", Capability: ChartOfAccounts, Need: Create}
 	SendTestEmail                 = Policy{Operation: "sendTestEmail", Capability: Integrations, Need: Create}

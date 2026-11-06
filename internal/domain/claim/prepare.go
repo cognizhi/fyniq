@@ -193,7 +193,7 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 			}
 		}
 		c.Lines = append(c.Lines, ledger.ClaimLine{AccountID: cat.AccountID, Description: describe(l), Amount: l.Amount, GST: l.GST,
-			Claimable: dec.Condition == bill.Claimable && dec.Reason != bill.ReasonNoGST, Rate: rate, StatedBase: l.StatedGST, Paid: l.Paid})
+			Claimable: dec.Condition == bill.Claimable && dec.Reason != bill.ReasonNoGST, Rate: rate, StatedBase: l.StatedGST, Paid: l.Paid, Values: l.Values})
 	}
 	if d.AdvanceID != nil {
 		b, prob, err := OpenAdvance(ctx, u, *d.AdvanceID, d.ClaimantID, base)
@@ -309,7 +309,7 @@ func prepareTrip(ctx context.Context, u storage.UnitOfWork, d Draft, i int, l Li
 		}
 	}
 	out.Categories = append(out.Categories, cat)
-	line := ledger.ClaimLine{AccountID: cat.AccountID, Description: describeTrip(l), Amount: money.Zero(base), GST: money.Zero(base), Mileage: true}
+	line := ledger.ClaimLine{AccountID: cat.AccountID, Description: describeTrip(l), Amount: money.Zero(base), GST: money.Zero(base), Mileage: true, Values: l.Values}
 	key, ok := Vehicles[l.Vehicle]
 	if !ok || l.Date.IsZero() {
 		if !ok {

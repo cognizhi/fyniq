@@ -14,6 +14,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { EvidencePanel } from "../accounting/JournalEvidence";
+import { DimensionFields } from "../accounting/lines";
 import { ConfirmDecision } from "../approvals/Decide";
 import { money, StageChip, useCategories, useClaimGSTCodes, type Claim, type ClaimLine } from "./claims";
 
@@ -34,6 +35,7 @@ export interface ReceiptForm {
   attendees: string;
   receipt_id: string;
   duplicate_reason: string;
+  dimension_value_ids: string[]; // its dimension values (FR-DIM-02): at most one of each dimension
 }
 
 export interface ClaimForm {
@@ -47,8 +49,15 @@ export interface ClaimForm {
   trips: ClaimLine[]; // mileage lines, kept as they are (the mileage screen changes them)
 }
 
+// categoryNeeds is what a claim line's category needs a value of, as its account requires (FR-DIM-01; rev 0.173): a
+// claimant cannot read the chart, so the category says, under its own name.
+export function categoryNeeds(categories: readonly components["schemas"]["ClaimCategory"][], id: string) {
+  const c = categories.find((x) => x.id === id);
+  return c ? { code: c.name, required_dimension_ids: c.required_dimension_ids } : undefined;
+}
+
 export function newReceipt(currency: string, on: string): ReceiptForm {
-  return { key: newKey(), date: on, merchant: "", category_id: "", description: "", amount: "", currency, gst_code: "", gst: "", paid: "", attendees: "", receipt_id: "", duplicate_reason: "" };
+  return { key: newKey(), date: on, merchant: "", category_id: "", description: "", amount: "", currency, gst_code: "", gst: "", paid: "", attendees: "", receipt_id: "", duplicate_reason: "", dimension_value_ids: [] };
 }
 
 // formOf is a saved claim as the form shows it.
@@ -77,6 +86,7 @@ export function formOf(c: Claim, base: string): ClaimForm {
         attendees: l.attendees ?? "",
         receipt_id: l.receipt_id ?? "",
         duplicate_reason: l.duplicate_reason ?? "",
+        dimension_value_ids: [...(l.dimension_value_ids ?? [])],
       })),
   };
 }
@@ -109,6 +119,7 @@ export function checkClaim(f: ClaimForm, base: string): { draft?: Draft; errors:
       attendees: l.attendees.trim() || undefined,
       receipt_id: l.receipt_id || undefined,
       duplicate_reason: l.duplicate_reason.trim() || undefined,
+      dimension_value_ids: l.dimension_value_ids.length ? [...l.dimension_value_ids] : undefined,
     });
   });
   for (const { claimed_km: _km, rate: _rate, amount: _amount, ...trip } of f.trips) lines.push(trip); // what RND-MILEAGE made is the server's
@@ -397,6 +408,16 @@ export function ClaimEditor() {
                 <Field id={`${id}-${i}-description`} label="What it was for (optional)">
                   <input className="fy-input" value={l.description} maxLength={500} onChange={(e) => setLine(i, { description: e.target.value })} />
                 </Field>
+                <DimensionFields
+                  ids={l.dimension_value_ids}
+                  keyPrefix={`${id}-${i}`}
+                  n={i + 1}
+                  prefix={`Receipt ${i + 1}: `}
+                  account={categoryNeeds(categories.data ?? [], l.category_id)}
+                  set={(ids) => setLine(i, { dimension_value_ids: ids })}
+                  className="fy-field"
+                  expertOnly
+                />
                 <Field id={`${id}-${i}-amount`} label={`Amount on the receipt (${l.currency})`} error={errors[`lines.${i}.amount`]}>
                   <input className="fy-input fy-num" inputMode="decimal" value={l.amount} onChange={(e) => setLine(i, { amount: e.target.value })} />
                 </Field>

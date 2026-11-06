@@ -1862,9 +1862,9 @@ Loads the standard Singapore start-up chart into an organisation that has no acc
 
 **List the dimensions' values** (`listDimensionValues`)
 
-The values of one dimension, or of every dimension, those out of use included (FR-DIM-01): by dimension as listDimensions orders them, then by code, a page at a time. Read-only; no side effects.
+The values of one dimension, or of every dimension, those out of use included (FR-DIM-01): by dimension as listDimensions orders them, then by code, a page at a time. Every role that tags a line reads them, an Employee too, for their claims (Appendix D, rev 0.173). Read-only; no side effects.
 
-- **Permission:** View on Chart of accounts, dimensions
+- **Permission:** View on Dimension values, to tag a line (rev 0.173)
 - **Parameters:**
   - `page_size` (query): How many items per page, up to 500.
   - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
@@ -1937,9 +1937,9 @@ Changes a value's name, or puts it out of use or back in use; it is never delete
 
 **List the dimensions** (`listDimensions`)
 
-The organisation's dimensions (FR-DIM-01): Department, Project, then the custom ones by place, those out of use included, a page at a time. Read-only; no side effects.
+The organisation's dimensions (FR-DIM-01): Department, Project, then the custom ones by place, those out of use included, a page at a time. Every role that tags a line reads them, an Employee too, for their claims (Appendix D, rev 0.173). Read-only; no side effects.
 
-- **Permission:** View on Chart of accounts, dimensions
+- **Permission:** View on Dimension values, to tag a line (rev 0.173)
 - **Parameters:**
   - `page_size` (query): How many items per page, up to 500.
   - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.

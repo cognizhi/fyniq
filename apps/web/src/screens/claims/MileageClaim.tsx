@@ -10,6 +10,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { DimensionFields } from "../accounting/lines";
 import { useCategories, type Claim, type ClaimLine } from "./claims";
 
 type Draft = components["schemas"]["ExpenseClaimDraft"];
@@ -25,10 +26,11 @@ export interface TripForm {
   return: boolean;
   vehicle: "car" | "motorcycle";
   distance: string;
+  dimension_value_ids: string[]; // its dimension values (FR-DIM-02): at most one of each dimension
 }
 
 export function newTrip(on: string): TripForm {
-  return { key: newKey(), date: on, purpose: "", from: "", to: "", return: false, vehicle: "car", distance: "" };
+  return { key: newKey(), date: on, purpose: "", from: "", to: "", return: false, vehicle: "car", distance: "", dimension_value_ids: [] };
 }
 
 // checkTrips reads the trips into claim lines for the mileage category, or names each field that cannot be read, all at
@@ -52,6 +54,7 @@ export function checkTrips(trips: TripForm[], category: string): { lines?: Claim
       return: t.return || undefined,
       vehicle: t.vehicle,
       distance: t.distance.trim(),
+      dimension_value_ids: t.dimension_value_ids.length ? [...t.dimension_value_ids] : undefined,
     });
   });
   if (trips.length === 0) errors.trips = "Add a trip.";
@@ -61,7 +64,8 @@ export function checkTrips(trips: TripForm[], category: string): { lines?: Claim
 function tripsOf(c: Claim): TripForm[] {
   return c.lines
     .filter((l) => l.kind === "mileage")
-    .map((l) => ({ key: newKey(), date: l.date ?? "", purpose: l.description ?? "", from: l.from ?? "", to: l.to ?? "", return: Boolean(l.return), vehicle: l.vehicle ?? "car", distance: l.distance ?? "" }));
+    .map((l) => ({ key: newKey(), date: l.date ?? "", purpose: l.description ?? "", from: l.from ?? "", to: l.to ?? "", return: Boolean(l.return), vehicle: l.vehicle ?? "car", distance: l.distance ?? "",
+      dimension_value_ids: [...(l.dimension_value_ids ?? [])] }));
 }
 
 // MileageClaim is a claim's trips in the member's own car or motorcycle (docs/design/screens MileageClaim; FR-AP-16):
@@ -189,6 +193,16 @@ export function MileageClaim() {
                   <input type="checkbox" checked={t.return} onChange={(e) => setTrip(i, { return: e.target.checked })} />
                   A return trip
                 </label>
+                <DimensionFields
+                  ids={t.dimension_value_ids}
+                  keyPrefix={`${id}-${i}`}
+                  n={i + 1}
+                  prefix={`Trip ${i + 1}: `}
+                  account={mileage ? { code: mileage.name, required_dimension_ids: mileage.required_dimension_ids } : undefined}
+                  set={(ids) => setTrip(i, { dimension_value_ids: ids })}
+                  className="fy-field"
+                  expertOnly
+                />
               </div>
               <fieldset className="fy-stack fy-stack--2">
                 <legend className="fy-label">Vehicle</legend>

@@ -207,6 +207,44 @@ describe("the claim editor", () => {
     expect(sent?.body).toMatchObject({ title: "Acme visit", advance_id: "a1", lines: [{ kind: "receipt", merchant: "ComfortDelGro", category_id: "travel", amount: { amount: "27.30", currency: "SGD" }, gst_code: "NR" }] });
   });
 
+  // req: FR-DIM-01
+  // req: FR-DIM-02
+  it("asks the claimant for a dimension the category's account requires, in Basic too, and saves the value", async () => {
+    const tagged = { items: categories.items.map((c) => (c.id === "travel" ? { ...c, required_dimension_ids: ["d1"] } : c)) };
+    answer({
+      "GET /v1/claim-categories": { status: 200, body: tagged },
+      "GET /v1/expense-claims/gst-codes": { status: 200, body: codes },
+      "GET /v1/cash-advances": { status: 200, body: { items: [] } },
+      "GET /v1/dimensions": {
+        status: 200,
+        body: { items: [{ id: "d1", kind: "department", name: "Department", active: true, version: 1 }, { id: "d2", kind: "project", name: "Project", active: true, version: 1 }] },
+      },
+      "GET /v1/dimension-values": {
+        status: 200,
+        body: { items: [{ id: "v1", dimension_id: "d1", code: "ENG", name: "Engineering", active: true, version: 1 }, { id: "v2", dimension_id: "d2", code: "ATLAS", name: "Atlas", active: true, version: 1 }] },
+      },
+      "POST /v1/expense-claims": { status: 201, body: claim(), headers: { ETag: '"1-draft"' } },
+    });
+    renderPage(ClaimEditor, { path: "/me/claims/new", session: employee, organisation, mode: "basic" });
+    fireEvent.change(await screen.findByLabelText("What it is for"), { target: { value: "Acme visit" } });
+    fireEvent.change(screen.getByLabelText("Paid to"), { target: { value: "ComfortDelGro" } });
+    await screen.findByRole("option", { name: "Local travel" });
+    await screen.findByRole("option", { name: "ENG Engineering" });
+    fireEvent.change(screen.getByLabelText("Category"), { target: { value: "travel" } });
+    expect(screen.getByText("Local travel needs one")).toBeTruthy();
+    expect(screen.getByLabelText("Receipt 1: Department").closest(".fy-field")!.className).not.toContain("fy-expert-only");
+    expect(screen.getByLabelText("Receipt 1: Project").closest(".fy-field")!.className).toContain("fy-expert-only");
+    fireEvent.change(screen.getByLabelText("Receipt 1: Department"), { target: { value: "v1" } });
+    fireEvent.change(screen.getByLabelText("Amount on the receipt (SGD)"), { target: { value: "S$27.30" } });
+    await screen.findByRole("option", { name: /^NR:/ });
+    fireEvent.change(screen.getByLabelText("GST on the receipt"), { target: { value: "NR" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await waitFor(() => expect(seen.some((s) => s.method === "POST" && s.path === "/v1/expense-claims")).toBe(true));
+    expect(seen.find((s) => s.method === "POST" && s.path === "/v1/expense-claims")?.body).toMatchObject({
+      lines: [{ kind: "receipt", category_id: "travel", dimension_value_ids: ["v1"] }],
+    });
+  });
+
   // req: FR-EQ-02
   it("lets a director keep what they paid as a loan to the company, and offers it to no one else", async () => {
     const seen = answer({

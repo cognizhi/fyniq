@@ -631,6 +631,19 @@ Source: PRD-001 §D
 - **WHEN** a role acts on the chart of accounts and dimensions
 - **THEN** the Administrator, the Employee, the Board viewer and the Compliance officer / DPO have no right over it (—)
 
+### Requirement: Permission matrix: Dimension values, to tag a line
+In Standard mode, each role SHALL hold only the rights over the dimensions and their values, read to tag a line, that the permission matrix gives it (rev 0.173).
+
+Source: PRD-001 §D
+
+#### Scenario: View
+- **WHEN** a role reads the dimensions and their values to tag a line
+- **THEN** the Owner, the Finance controller, the Accountant, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Auditor, the Tax agent and the AI assistant can view (V)
+
+#### Scenario: No access
+- **WHEN** a role reads the dimensions and their values to tag a line
+- **THEN** the Administrator, the Board viewer and the Compliance officer / DPO have no right over them (—)
+
 ### Requirement: Permission matrix: Bank transactions, categorise
 In Standard mode, each role SHALL hold only the rights over bank transactions and their categorisation that the permission matrix gives it.
 

@@ -58,6 +58,21 @@
       "$ref": "Money.schema.json",
       "description": "Above it, a line needs its receipt attached (✖ until it is). Absent: never required."
     },
+    "required_dimension_ids": {
+      "description": "The dimensions its account requires (listDimensions): a claim line in it names a value of each, or the claim does not post (DIM-05). Read-only: the account says, in the chart of accounts.",
+      "items": {
+        "description": "A dimension's ID (listDimensions).",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "version": {
       "description": "Its version, for If-Match.",
       "examples": [
