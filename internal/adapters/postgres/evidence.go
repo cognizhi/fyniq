@@ -22,7 +22,7 @@ func toEvidence(r evidenceRow) storage.Evidence {
 	return storage.Evidence{ID: r.ID, NewEvidence: storage.NewEvidence{DocumentID: r.DocumentID, EvidenceType: r.EvidenceType,
 		Note: str(r.Note), RelatesOn: nullDate(r.RelatesOn), FileName: r.FileName, MediaType: r.MediaType, Size: r.SizeBytes,
 		SHA256: r.Sha256, OriginalSHA256: r.OriginalSha256, Source: storage.EvidenceSource(r.Source), DataClass: storage.DataClass(r.DataClass),
-		StagingKey: r.StagingKey, UploadedBy: r.UploadedBy},
+		StagingKey: r.StagingKey, UploadedBy: r.UploadedBy, NRICFlagged: r.NricFlagged},
 		UploadedAt: r.UploadedAt, State: storage.EvidenceState(r.State), RemovedAt: r.RemovedAt, LockedKey: str(r.LockedKey),
 		RetainUntil: r.RetainUntil, FinalisedAt: r.FinalisedAt, Version: int(r.Version)}
 }
@@ -58,6 +58,9 @@ func evidenceChanges(a, b storage.Evidence) map[string][2]any {
 		out["size_bytes"] = [2]any{nilIfZero(a.Size), nilIfZero(b.Size)}
 	}
 	diff("sha256", nilIfEmpty(a.SHA256), nilIfEmpty(b.SHA256))
+	if b.NRICFlagged && !a.NRICFlagged { // FR-DOC-09: its text shows an NRIC or FIN in full
+		out["nric_flagged"] = [2]any{nil, true}
+	}
 	diff("original_sha256", nilIfEmpty(a.OriginalSHA256), nilIfEmpty(b.OriginalSHA256))
 	diff("source", nilIfEmpty(string(a.Source)), nilIfEmpty(string(b.Source)))
 	diff("data_class", nilIfEmpty(string(a.DataClass)), nilIfEmpty(string(b.DataClass)))
@@ -86,7 +89,7 @@ func (r evidenceFiles) Attach(ctx context.Context, e storage.NewEvidence) (stora
 	row, err := r.u.q.InsertEvidence(ctx, sqlcdb.InsertEvidenceParams{DocumentID: e.DocumentID, EvidenceType: e.EvidenceType, Note: opt(e.Note),
 		RelatesOn: pgDate(e.RelatesOn), FileName: e.FileName, MediaType: e.MediaType, SizeBytes: e.Size, Sha256: e.SHA256,
 		OriginalSha256: e.OriginalSHA256, Source: string(e.Source), DataClass: string(e.DataClass), StagingKey: e.StagingKey,
-		UploadedBy: e.UploadedBy})
+		UploadedBy: e.UploadedBy, NricFlagged: e.NRICFlagged})
 	if err != nil {
 		return storage.Evidence{}, mapError(err)
 	}

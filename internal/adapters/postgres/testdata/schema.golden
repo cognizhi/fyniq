@@ -694,6 +694,7 @@ evidence | locked_key | text | null |
 evidence | retain_until | timestamp with time zone | null | 
 evidence | finalised_at | timestamp with time zone | null | 
 evidence | version | integer | not null | 1
+evidence | nric_flagged | boolean | not null | false
 fixed_asset_source | organisation_id | uuid | not null | current_org()
 fixed_asset_source | id | uuid | not null | uuidv7()
 fixed_asset_source | asset_id | uuid | not null | 
@@ -2598,6 +2599,7 @@ evidence | evidence_key_format | CHECK (((staging_key ~ '^staging/[0-9a-f-]{36}/
 evidence | evidence_lengths | CHECK ((((length(btrim(evidence_type)) >= 1) AND (length(btrim(evidence_type)) <= 100)) AND ((length(note) >= 1) AND (length(note) <= 1000)) AND ((length(file_name) >= 1) AND (length(file_name) <= 255)) AND ((length(uploaded_by) >= 1) AND (length(uploaded_by) <= 200))))
 evidence | evidence_media_type_known | CHECK ((media_type = ANY (ARRAY['application/pdf'::text, 'image/png'::text, 'image/jpeg'::text, 'image/webp'::text, 'text/plain'::text, 'text/csv'::text, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'::text, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'::text, 'message/rfc822'::text, 'application/vnd.ms-outlook'::text])))
 evidence | evidence_media_type_not_null | NOT NULL media_type
+evidence | evidence_nric_flagged_not_null | NOT NULL nric_flagged
 evidence | evidence_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 evidence | evidence_organisation_id_not_null | NOT NULL organisation_id
 evidence | evidence_original_sha256_not_null | NOT NULL original_sha256

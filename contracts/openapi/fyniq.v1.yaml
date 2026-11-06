@@ -4269,6 +4269,11 @@ components:
           examples:
             - attached
           type: string
+        unmasked_nric:
+          description: "true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file."
+          examples:
+            - false
+          type: boolean
         uploaded_at:
           description: When it was attached.
           examples:
@@ -5623,6 +5628,11 @@ components:
           examples:
             - final
           type: string
+        unmasked_nric:
+          description: "true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file."
+          examples:
+            - false
+          type: boolean
         uploaded_at:
           description: When it was attached.
           examples:
@@ -7163,6 +7173,11 @@ components:
           examples:
             - attached
           type: string
+        unmasked_nric:
+          description: "true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file."
+          examples:
+            - false
+          type: boolean
         uploaded_at:
           description: When it was attached.
           examples:
@@ -10507,6 +10522,11 @@ components:
           examples:
             - attached
           type: string
+        unmasked_nric:
+          description: "true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file."
+          examples:
+            - false
+          type: boolean
         uploaded_at:
           description: When it was attached.
           examples:
@@ -10867,6 +10887,11 @@ components:
           examples:
             - attached
           type: string
+        unmasked_nric:
+          description: "true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file."
+          examples:
+            - false
+          type: boolean
         uploaded_at:
           description: When it was attached.
           examples:
@@ -11352,6 +11377,11 @@ components:
           examples:
             - attached
           type: string
+        unmasked_nric:
+          description: "true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file."
+          examples:
+            - false
+          type: boolean
         uploaded_at:
           description: When it was attached.
           examples:
@@ -12569,6 +12599,11 @@ components:
           examples:
             - attached
           type: string
+        unmasked_nric:
+          description: "true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file."
+          examples:
+            - false
+          type: boolean
         uploaded_at:
           description: When it was attached.
           examples:
@@ -12738,6 +12773,11 @@ components:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fe1
           format: uuid
           type: string
+        unmasked_nric:
+          description: "true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file."
+          examples:
+            - false
+          type: boolean
         uploaded_at:
           description: When it was attached.
           examples:
@@ -15865,6 +15905,11 @@ components:
           examples:
             - attached
           type: string
+        unmasked_nric:
+          description: "true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file."
+          examples:
+            - false
+          type: boolean
         uploaded_at:
           description: When it was attached.
           examples:
@@ -19989,6 +20034,11 @@ components:
           examples:
             - attached
           type: string
+        unmasked_nric:
+          description: "true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file."
+          examples:
+            - false
+          type: boolean
         uploaded_at:
           description: When it was attached.
           examples:
@@ -21253,6 +21303,11 @@ components:
           examples:
             - attached
           type: string
+        unmasked_nric:
+          description: "true when its text shows a Singapore NRIC or FIN in full (FR-DOC-09): mask it before sharing the file."
+          examples:
+            - false
+          type: boolean
         uploaded_at:
           description: When it was attached.
           examples:

@@ -54,7 +54,8 @@ SGD** as the supplier's tax invoice states it: that is the input tax claimed.
 
 Under **Evidence** on a saved bill or credit note, choose the file, say what it is (such as the
 invoice or a receipt) and select **Attach**. PDF, image, CSV, text, XLSX, DOCX and email files of up
-to 25 MB are accepted; Fyniq scans each one and strips image metadata such as location.
+to 25 MB are accepted; Fyniq scans each one and strips image metadata such as location. A file whose
+text shows an NRIC or FIN in full is marked **Shows an NRIC**: mask the number before you share it.
 
 - A bill posts only with the supplier's invoice or receipt attached, unless your organisation's
   **Evidence for bills** setting says otherwise ([Organisation settings](organisation-settings.md#evidence-rules)).

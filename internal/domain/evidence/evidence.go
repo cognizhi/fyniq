@@ -54,6 +54,7 @@ type File struct {
 	Data           []byte // what is stored: the file with its image metadata stripped
 	SHA256         string // of Data
 	OriginalSHA256 string // of the file as received
+	NRIC           bool   // its text shows an NRIC or FIN in full (FR-DOC-09)
 }
 
 func hash(b []byte) string {
@@ -100,6 +101,7 @@ func Check(ctx context.Context, scanner ports.Scanner, name string, data []byte)
 			"Open it in an image editor, save it again as PNG or JPEG, and attach that."}}, nil
 	}
 	f.MediaType, f.Data, f.SHA256, f.OriginalSHA256 = mt, stored, hash(stored), hash(data)
+	f.NRIC = UnmaskedNRIC(mt, data)
 	return f, nil, nil
 }
 

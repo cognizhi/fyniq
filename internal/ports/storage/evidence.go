@@ -57,6 +57,7 @@ type NewEvidence struct {
 	DataClass      DataClass
 	StagingKey     string // where the staging store keeps it
 	UploadedBy     string // the uploader's actor ID
+	NRICFlagged    bool   // its text shows an NRIC or FIN in full (FR-DOC-09, rev 0.183)
 }
 
 // Evidence is a file on a record.
