@@ -28,7 +28,7 @@
 - [x] 3.2 Data classes per file, with unmasked NRIC flagged. Test `// req: FR-DOC-09` (P1 part) (20 Oct 2026, part: a data class per file; payroll and identity refused until FR-PAY-13, rev 0.38. **Left:** the NRIC flag)
   (6 Nov 2026, PRD-001 rev 0.183: the NRIC flag. `evidence.UnmaskedNRIC` reads the text of plain text, CSV, email,
   XLSX and DOCX files and a PDF's uncompressed text; an S, T, F or G number counts only with its right check letter,
-  an M number on its shape alone [verify]. The flag is kept on the file (migration 000236, `nric_flagged`), audited,
+  an M number on its shape alone [verify]. The flag is kept on the file (migration 000237, `nric_flagged`), audited,
   answered as `unmasked_nric` on every record's evidence, and shown as **Shows an NRIC** in the Evidence panel. Tests
   `TestUnmaskedNRICsAreFound`, `TestAnUnmaskedNRICIsFlagged`, `JournalEvidence.test.tsx`. The redaction tool is P2.)
 - [x] 3.3 Evidence search by activity, type, date and uploader, and the missing-evidence list, under the person's scope. Test `// req: FR-DOC-10` (P1 part) **Left**
