@@ -185,6 +185,14 @@
       ],
       "type": "string"
     },
+    "policy_rule": {
+      "description": "The rule of its policy whose conditions chose its steps, from 1; absent when the policy's default steps did (FR-APR-01, rev 0.178).",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
     "requested_at": {
       "description": "When it was asked for.",
       "examples": [

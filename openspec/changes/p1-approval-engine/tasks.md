@@ -35,7 +35,7 @@
 
 ## 2. Policies
 
-- [ ] 2.1 Policies per object type, with conditions and ordered steps with a quorum. Test `// req: FR-APR-01`
+- [x] 2.1 Policies per object type, with conditions and ordered steps with a quorum. Test `// req: FR-APR-01`
   (20 Oct 2026, provisional (PRD rev 0.36): policies are code, `approval.Policies`, one per object type with a version
   string each envelope records, ordered steps naming an Appendix D row and a quorum; the three built are one step,
   quorum 1, A on the row (the Owner). Rev 0.40: policies are each organisation's versioned data (migration 000039,
@@ -47,6 +47,16 @@
   `TestStepsAreSignedInOrderToTheirQuorum`, `TestAPolicysStepsCanBeSigned`, `TestAttackApprovalStepsAreSignedInOrder`,
   `TestStepsAreSignedInOrderAndRechecked`. **Left:** conditions (amount, entity, department, account, vendor, risk
   tier), with the first object types that carry them (wave 2's documents).)
+  (6 Nov 2026, conditions, on the owner's decision of PRD-001 rev 0.178: a policy is up to 10 ordered rules and its
+  default steps; the first rule whose conditions all hold decides a request's steps (`approval.Policy.StepsFor`), else
+  the default steps. A rule sets at least one of an amount at or above (base currency), departments (Department
+  dimension values on a line), accounts a line posts to, and vendors (APR-16 otherwise). Journals (debits and lines),
+  bills, invoices, purchase orders and payment batches (their vendors) carry their facts; a condition on what a change
+  does not carry never holds. The request records the rule (`policy_rule`), shown on the approval page. Migrations 000229
+  and 000230 (`approval_rules_valid`; FY105 compares the rules too). Screen: the rules editor in Change policy. Tests
+  `TestTheFirstMatchingRuleDecidesTheSteps`, `TestAPolicysRulesChooseARequestsSteps`, the `ruled` case of
+  `TestAttackApprovalPoliciesAreApprovedVersions`, `TeamMode.test.tsx`, `approvals.test.tsx`. **Left:** entity, with
+  several entities; risk tier, with AI proposals; pay runs, expense claims and credit notes as their approvals arrive.)
 - [x] 2.2 Policy changes are approval-gated (SOD-8) and versioned; a pending approval keeps its version, and a change restarts it. Test `// req: FR-APR-09` (G4-057)
   (20 Oct 2026, provisional (PRD rev 0.40): `PATCH /v1/approval-policies/{object_type}` always answers 202 with an
   `approval_policy.change` request; the Administrator (C on "Approval policies, AI catalogue") asks, the Owner or the

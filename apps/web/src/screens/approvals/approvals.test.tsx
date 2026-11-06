@@ -65,6 +65,14 @@ describe("an approval request", () => {
     await noViolations(document.body);
   });
 
+  // req: access/approvals Conditions decide the steps
+  it("says which of its policy's rules chose the steps", async () => {
+    detail({}, { ...request, policy_rule: 2, steps: [{ quorum: 2, roles: ["owner"], users: [], approvals: 0 }] });
+    renderPage(ApprovalPage, { path: "/approvals/a-1", route: "/approvals/$approvalId" });
+    expect(await screen.findByText(/Rule 2 of its policy chose these steps/)).toBeTruthy();
+    expect(screen.getByText(/2 approvals from Owner/)).toBeTruthy();
+  });
+
   // req: FR-APR-02
   // req: FM-2
   it("opens the journal a request posts, so the approver sees its lines", async () => {
