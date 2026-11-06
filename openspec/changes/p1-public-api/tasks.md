@@ -20,7 +20,7 @@
 
 ## 2. New conventions
 
-- [ ] 2.1 Long and bulk operations: an operation resource through the queue port, and per-item results. Test `// req: FR-INT-11`
+- [x] 2.1 Long and bulk operations: an operation resource through the queue port, and per-item results. Test `// req: FR-INT-11`
   (19 Oct 2026, the bulk half: `POST /v1/journals:bulk` saves up to 250 drafts, each in a unit of work of its own, and
   answers with a result per item in order; a refused item carries its problem with field paths into the request, and
   the Idempotency-Key and preview cover the whole request. FR-INT-11 allows 1,000, but 1,000 took 5.3 s locally and would
@@ -29,6 +29,12 @@
   in its own change (likely `p1-reports`' asynchronous exports). Which service and database role runs a long write a
   person asked for is an open design point: the worker's and the executor's grants do not cover it, and widening them
   needs an ADR)
+  (7 Nov 2026, PRD-001 rev 0.202, the rest: the operation resource. Accountant exports and Run now on the checks were the
+  first long work; each now records an operation (`fyniq.operation`, migration 000249, insert-only, FY284) naming its
+  job, the resource and who asked, and answers `Location: /v1/operations/{id}` and `operation_id`. `getOperation`
+  takes the status from the job in the outbox (running, succeeded, failed), so the worker records nothing more, and
+  only whoever asked reads it. The write-role question stays open for the first long write. Tests
+  `TestLongWorkIsPolledAsAnOperation`, `TestAttackAnOperationNeverChanges`, the matrix row.)
 - [x] 2.2 Preview before commit with `Prefer: return=preview`, run in a rolled-back transaction. Test `// req: FR-INT-14`: the database is unchanged and the impact equals that of the committed command
   (19 Oct 2026: `storage.WithPreview` makes the outermost unit of work run the command, flush its audit events and
   `SET CONSTRAINTS ALL IMMEDIATE`, then roll back with `storage.ErrPreviewed`, so the deferred balance check runs; a

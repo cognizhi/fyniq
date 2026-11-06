@@ -56,7 +56,8 @@ func TestAnAccountantExportIsPreparedInTheBackground(t *testing.T) {
 				RequestedAt: at}); err != nil {
 				return err
 			}
-			return reportexport.Queue(ctx, outbox.Dispatcher{Store: api, Queue: local.NewMemory(), Clock: clk}, u, b.Org, x)
+			_, err = reportexport.Queue(ctx, outbox.Dispatcher{Store: api, Queue: local.NewMemory(), Clock: clk}, u, b.Org, x)
+			return err
 		}); err != nil {
 			t.Fatal(err)
 		}
