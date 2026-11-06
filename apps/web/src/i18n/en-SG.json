@@ -384,6 +384,18 @@
       "label": "Statutory parameter packs",
       "tooltip": "GST rates and codes from official sources, with pinned tests; a version is used once activated."
     },
+    "gst.record": {
+      "label": "Record a registration",
+      "tooltip": "Record the GST registration number and the date on IRAS's notice of registration."
+    },
+    "gst.change": {
+      "label": "Change",
+      "tooltip": "Correct a registration, or record the day it ends."
+    },
+    "sequence.change": {
+      "label": "Change",
+      "tooltip": "Set the prefix, the next number and whether numbers have no gaps. Numbers already given never change."
+    },
     "setting.change": {
       "label": "Change",
       "tooltip": "Set a new value from a date, today or later. Preview checks it without saving."

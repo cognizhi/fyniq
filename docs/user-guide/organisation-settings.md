@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FM-8, FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03]
+requirements: [FM-8, FR-ORG-03, FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03]
 status: draft
 ---
 
@@ -34,6 +34,39 @@ the month the year starts in and the end of the first year no longer change.
 1. Select **Edit the profile**.
 2. Change the fields. A field left empty is cleared.
 3. Select **Save the profile**. If someone else saved it meanwhile, Fyniq asks you to reload first.
+
+## GST registration
+
+**GST registration** says whether the company is GST-registered today and, if it is, the return
+period today falls in. Below it is each registration Fyniq knows, with the dates it runs.
+
+- An invoice dated on or after the day a registration starts is a tax invoice with GST; before it,
+  or after the company deregisters, it carries no GST.
+- Returns are quarterly unless IRAS set them monthly. Quarters start in January, April, July and
+  October unless IRAS's notice gives other months.
+
+1. Select **Record a registration**.
+2. Enter the GST registration number and the date it starts, as IRAS's notice of registration
+   gives them, and how often returns are filed.
+3. Select **Record the registration**. Confirm it's you if Fyniq asks.
+
+To correct a registration, or to record the day the company is deregistered, select **Change**
+next to it. Two registrations cannot cover the same day.
+
+## Document numbering
+
+**Document numbering** lists each kind of document Fyniq numbers, with the number the next one
+takes, such as INV-0042.
+
+1. Select **Change** next to the kind of document.
+2. Set the prefix (up to 12 capital letters, digits, slashes or hyphens), the next number and how
+   many digits it is padded to.
+3. Choose when a document takes its number: **when it posts**, so there are no gaps, or **when it
+   is saved**, so an abandoned draft leaves a gap.
+4. Select **Save the numbering**.
+
+- Numbers already given never change.
+- The next number only moves forward, so no number is given twice.
 
 ## Change a setting
 

@@ -323,5 +323,12 @@
   meanwhile: `p1-templates-email` 4.1, FR-TPL-05) and logo-brand; balances and the year's figures on
   contacts and items, which come with the sales and purchase documents; on chart-of-accounts, merge, the Dimensions
   tab and balances, which have no operations yet; the organisation-settings sections whose operations do not exist
-  yet (brand, numbering, GST status on this page).)
+  yet (brand, numbering, GST status on this page))
+  (7 Nov 2026: organisation-settings' GST registration (today's status and return period, each registration with
+  its dates; Record a registration and Change, over its version) and Document numbering (each numbered document type
+  with its next number; Change sets the prefix, next number, digits and gap-free, over its version) sections, in
+  `screens/settings/GSTRegistrations.tsx` and `Sequences.tsx`; guide sections compiled into `settings.organisation`.
+  Tests `Organisation.test.tsx` (`// req: FR-ORG-03`, `// req: FR-ORG-04`). contact-record's documents, ageing,
+  timeline and bank details arrived with FR-CT-02 and FR-CT-03; logo-brand with FR-ORG-09 (rev 0.200, rev 0.201).
+  **Left:** the balances on chart-of-accounts, which have no operation yet.)
 - [ ] 5.3 Finish with `make check` and `make test`
