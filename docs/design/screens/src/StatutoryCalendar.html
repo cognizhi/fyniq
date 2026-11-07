@@ -11,7 +11,6 @@
         <button type="button" role="radio" aria-checked="true"><i data-icon="calendar-days"></i>Month</button>
         <button type="button" role="radio" aria-checked="false"><i data-icon="list"></i>List</button>
       </div>
-      <a class="fy-btn fy-btn--primary" href="#compliance/gst/2026-q3"><i data-icon="file-text"></i>Open GST return</a>
     </div>
   </div>
 
@@ -27,8 +26,7 @@
   <div class="fy-row fy-row--wrap fy-only-compact" role="group" aria-label="Summary">
     <span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>1 due in 30 days</span>
     <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>0 overdue</span>
-    <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>1 not assessed</span>
-    <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>7 done since 1 Jul</span>
+    <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>7 recorded</span>
   </div>
 
   <div class="fy-grid fy-grid--tiles fy-from-medium">
@@ -42,15 +40,10 @@
       <span class="fy-tile__value fy-num">0</span>
       <span class="fy-tile__meta">Overdue items also show on Checks</span>
     </a>
-    <a class="fy-tile" href="#compliance/calendar?status=not-assessed">
-      <span class="fy-tile__label"><i data-icon="circle-dashed"></i>Not assessed</span>
-      <span class="fy-tile__value fy-num">1</span>
-      <span class="fy-tile__meta">An input is missing: control rights</span>
-    </a>
     <a class="fy-tile" href="#compliance/calendar?status=done">
-      <span class="fy-tile__label"><i data-icon="circle-check"></i>Done since 1 Jul</span>
+      <span class="fy-tile__label"><i data-icon="circle-check"></i>Recorded</span>
       <span class="fy-tile__value fy-num">7</span>
-      <span class="fy-tile__meta">Each with its acknowledgement</span>
+      <span class="fy-tile__meta">Each with its acknowledgement or reason</span>
     </a>
   </div>
 
@@ -59,7 +52,6 @@
     <button class="fy-filter" type="button" aria-pressed="false"><i data-icon="receipt"></i>Tax</button>
     <button class="fy-filter" type="button" aria-pressed="false"><i data-icon="wallet"></i>Payroll</button>
     <button class="fy-filter" type="button" aria-pressed="false"><i data-icon="building"></i>Corporate</button>
-    <button class="fy-filter" type="button" aria-pressed="false"><i data-icon="user-round"></i>Owner: anyone<i data-icon="chevron-down"></i></button>
   </div>
 
   <div class="fy-split">
@@ -259,16 +251,17 @@
           <div class="fy-plain"><i data-icon="paperclip" class="fy-muted"></i><span class="fy-small">Evidence: the IRAS acknowledgement is required to mark it done. Working papers are recommended.</span></div>
           <div class="fy-plain"><i data-icon="triangle-alert" class="fy-muted"></i><span class="fy-small">6 InvoiceNow items have no acknowledgement yet, so filing waits. <a href="#compliance/invoicenow">See them</a></span></div>
           <div class="fy-row fy-row--wrap">
-            <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#inbox/task-1170"><i data-icon="inbox"></i>Inbox task</a>
+            <button class="fy-btn fy-btn--primary fy-btn--sm" type="button"><i data-icon="stamp"></i>Record as filed</button>
+            <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Not required</button>
             <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#compliance/checks">On Checks</a>
           </div>
         </div>
       </section>
-      <p class="fy-small fy-muted">Dates come from the <span class="fy-mono">sg-gst@2026.1</span>, <span class="fy-mono">sg-cpf@2026.1</span> and <span class="fy-mono">sg-acra@2026.2</span> packs. If an input is missing, such as a financial year end, the item shows Not assessed instead of a date.</p>
+      <p class="fy-small fy-muted">Dates come from the <span class="fy-mono">sg-deadlines@2026.1</span> pack, read from IRAS's, CPF Board's, ACRA's and MOM's pages. If an input is missing, such as a financial year end, the item shows Not assessed instead of a date.</p>
     </aside>
   </div>
 
   <div class="fy-actionbar fy-only-compact">
-    <a class="fy-btn fy-btn--primary" href="#compliance/gst/2026-q3"><i data-icon="file-text"></i>Open GST return</a>
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="stamp"></i>Record as filed</button>
   </div>
 </div>

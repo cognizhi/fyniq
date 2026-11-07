@@ -167,9 +167,13 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
 
 ## 6. As built (slice 5)
 
-- [ ] 6.1 The compliance canvas's StatutoryCalendar and GstReturns fragments, and the inventory and sample data, match
+- [x] 6.1 The compliance canvas's StatutoryCalendar and GstReturns fragments, and the inventory and sample data, match
   what was built. `build.py check`, then publish the canvas (fyniq-openspec `references/design.md`). The threat model
   and the security checklist are updated: personal data in evidence; no AI or MCP write.
+  (7 Nov 2026: StatutoryCalendar's fragment and inventory row as built (three tiles, the area filter, record as filed or
+  not required from the item, the sg-deadlines pack), compliance canvas version 9. GstReturns keeps the registered
+  company's design, since the sample company is GST-registered from 1 Jan 2026; the monitor is the not-registered state
+  of that screen and its F5 periods come with section 7. Threat model `docs/security/threat-models/statutory-calendar.md`.)
 - [ ] 6.2 `make test` (the authorisation matrix in full), `make check`, `make up` starts. `make roadmap` once the tasks
   above are ticked.
 
