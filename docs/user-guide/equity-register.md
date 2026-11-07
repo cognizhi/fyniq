@@ -77,6 +77,9 @@ A holder is a contact. To add one, open **Contacts**, open or add the contact an
 shareholder**, or **An investor** for someone who holds a SAFE, a note or options and no shares
 yet. **Add a holder** on the Holders page takes you there.
 
+A holder's page shows their **Investments**: each share issue with its date, class, shares, price
+and amount, and each SAFE or note they hold with its amount and the day it was signed.
+
 ## Record a holder's details
 
 Open a holder from the list. **Details in force** shows what is recorded: individual or entity,

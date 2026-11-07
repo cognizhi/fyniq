@@ -1,0 +1,69 @@
+<!-- fyniq-screen {"nav": "equity", "title": "Reconciliation", "mode": "expert", "heights": {"compact": 1200, "medium": 950, "expanded": 650}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Equity</span>
+      <h1 class="fy-h1">Reconciliation</h1>
+      <p class="fy-secondary">The register of members against the ledger and against ACRA's register, as the latest business profile shows it.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="clipboard-list"></i>Type in a business profile</button>
+    </div>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Equity views">
+    <a href="#equity">Cap table</a>
+    <a href="#equity/holders">Holders</a>
+    <a href="#equity/classes">Classes</a>
+    <a href="#equity/transactions">Transactions</a>
+    <a href="#equity/instruments">SAFEs and notes</a>
+    <a href="#equity/options">Option pool</a>
+    <a href="#equity/rounds">Round simulator</a>
+    <a href="#equity/reconciliation" aria-current="page">Reconciliation</a>
+  </nav>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="ar-acra-title">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="ar-acra-title">Against ACRA's register of members</h2>
+        <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Agrees</span>
+      </div>
+      <div class="fy-card__body fy-stack fy-stack--3">
+        <p class="fy-small">Business profile of 2 Oct 2026, recorded by Grace Ho on 2 Oct 2026, 10:15.</p>
+        <div class="fy-tablewrap">
+          <table class="fy-table fy-table--compact" aria-label="Holdings in the business profile">
+            <thead>
+              <tr><th scope="col">Holder</th><th scope="col">Class</th><th scope="col" class="fy-num">Shares</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Arjun Rao</td><td>3010</td><td class="fy-num">4,500,000</td></tr>
+              <tr><td>Mei Lin Tan</td><td>3010</td><td class="fy-num">4,500,000</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="fy-small fy-secondary">The register is compared with the business profile at its day, holder by holder and class by class. Where they differ, find which is right: where ACRA is right, correct the register by a reversal citing the extract; where the typing is wrong, type the profile in again.</p>
+      </div>
+    </section>
+
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="ar-paid-title">
+        <h2 class="fy-h3" id="ar-paid-title">Paid-up capital against the ledger</h2>
+        <span class="fy-chip fy-chip--good" style="align-self: flex-start"><i data-icon="circle-check"></i>OK</span>
+        <p class="fy-small fy-secondary">Share capital on 3010 Share capital, ordinary and 3020 Share capital, preference agrees with the register of share issues.</p>
+      </section>
+
+      <section class="fy-card" aria-labelledby="ar-earlier-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ar-earlier-title">Earlier business profiles</h2></div>
+        <ul class="fy-list" aria-labelledby="ar-earlier-title">
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title">Business profile of 6 Jan 2026</span><span class="fy-list__meta">2 holdings, superseded</span></span>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="clipboard-list"></i>Type in a business profile</button>
+  </div>
+</div>

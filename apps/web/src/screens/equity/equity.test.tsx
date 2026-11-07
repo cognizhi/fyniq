@@ -49,7 +49,8 @@ describe("a holder's record", () => {
     renderPage(HolderPage, { path: "/equity/holders/c-mei", route: "/equity/holders/$contactId", session: accountant });
     expect(await screen.findByRole("heading", { name: "Details in force" })).toBeTruthy();
     expect(screen.getByText("1 Example Road, Singapore 000001")).toBeTruthy();
-    expect(screen.getByText(/shares on 3010/)).toBeTruthy();
+    expect(screen.getByRole("cell", { name: /Shares for cash on 3010/ })).toBeTruthy();
+    expect(screen.getByRole("cell", { name: "10,000.00" })).toBeTruthy();
     await noViolations(document.body);
     fireEvent.click(screen.getByRole("button", { name: "Change the details" }));
     const dialog = await screen.findByRole("dialog");

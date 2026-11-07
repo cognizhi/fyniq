@@ -338,6 +338,7 @@ export const actions = [
   { kind: "action", id: "acra-extract.attach-evidence", mode: "expert", help: "acra-extract.attach-evidence", guide: "equity.register#reconcile-the-register-to-acra" },
   { kind: "action", id: "acra.differences", mode: "expert", help: "acra.differences", guide: "equity.register#reconcile-the-register-to-acra" },
   { kind: "action", id: "acra.paid-up", mode: "expert", help: "acra.paid-up", guide: "equity.register#reconcile-the-register-to-acra" },
+  { kind: "action", id: "holder.investments", mode: "expert", help: "holder.investments", guide: "equity.register#record-an-investors-rights" },
   { kind: "action", id: "holder.rights", mode: "expert", help: "holder.rights", guide: "equity.register#record-an-investors-rights" },
   { kind: "action", id: "holder.controller", mode: "expert", help: "holder.controller", guide: "equity.register#registrable-controllers-and-the-exempt-status" },
   { kind: "action", id: "investor-rights.draft", mode: "expert", help: "investor-rights.draft", guide: "equity.register#record-an-investors-rights" },
