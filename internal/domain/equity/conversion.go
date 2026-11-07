@@ -51,6 +51,9 @@ type Conversion struct {
 
 var exact = apd.BaseContext.WithPrecision(60)
 
+// priceExponents are the exponents a conversion price is cut to, by its decimals, 0 to MaxPriceDecimals.
+var priceExponents = []int32{0, -1, -2, -3, -4, -5, -6}
+
 func text(d *apd.Decimal) string {
 	var r apd.Decimal
 	r.Reduce(d)
@@ -181,10 +184,14 @@ func convertOne(r Round, s Converting, share *apd.Decimal, enabled func(string) 
 	// A post-money SAFE converting below its cap price no longer holds the part of the company its cap gave it, which the
 	// other SAFEs' cap prices counted: the accountant checks the capitalisation [verify with question 33's lawyer].
 	roundWins := i.Form == FormPostMoneySAFE && out.CapPrice != "" && chosen != prices[0]
+	if i.PriceDecimals < 0 || i.PriceDecimals >= len(priceExponents) {
+		return out, &Error{CodeInstrument, fmt.Sprintf("the price's precision of %d decimals is outside 0 to %d", i.PriceDecimals, MaxPriceDecimals),
+			"Correct the instrument's decimals"}
+	}
 	down := exact.WithPrecision(60)
 	down.Rounding = apd.RoundDown
 	var rounded apd.Decimal
-	if _, err := down.Quantize(&rounded, chosen, -int32(i.PriceDecimals)); err != nil {
+	if _, err := down.Quantize(&rounded, chosen, priceExponents[i.PriceDecimals]); err != nil {
 		return out, err
 	}
 	price, err := money.ParseUnitPrice(text(&rounded), i.Amount.Currency(), "price")
