@@ -482,12 +482,12 @@ func registerDirectors(a *API) {
 
 	register(a, authz.LinkContactMember, pendsApproval(a, huma.Operation{
 		OperationID: "linkContactMember", Method: http.MethodPut, Path: "/v1/contacts/{contact_id}/member", Tags: []string{"Founders"},
-		Summary: "Link a director or shareholder to the member who signs in as them", DefaultStatus: http.StatusAccepted,
-		Description: "Asks to link a director or shareholder to a member of the organisation, or with no member to unlink them (FR-EQ-01; " +
-			"PRD-001 rev 0.167). The link decides where repayments go and who never approves the person's settlement (FM-9), so it falls " +
+		Summary: "Link a director, shareholder or investor to the member who signs in as them", DefaultStatus: http.StatusAccepted,
+		Description: "Asks to link a director, shareholder or investor to a member of the organisation, or with no member to unlink them " +
+			"(FR-EQ-01; PRD-001 rev 0.167; an investor so an option holder reads their own grants, FR-EQ-19). The link decides where repayments go and who never approves the person's settlement (FM-9), so it falls " +
 			"under FM-1 in every team mode: the answer is 202 with an approval request, which another person who holds A on \"Director " +
 			"accounts, settlements, share issues\", not the member linked or unlinked, approves; the database refuses any other change of " +
-			"it (STORAGE-PARTY-01). A member signs in as one director or shareholder at most. Asking needs a person signed in who passed " +
+			"it (STORAGE-PARTY-01). A member signs in as one contact at most. Asking needs a person signed in who passed " +
 			"step-up in the last 5 minutes, and If-Match with the contact's ETag. Idempotent with Idempotency-Key; Prefer: return=preview " +
 			"checks it and asks nothing.",
 	}, reflect.TypeFor[Contact]()), append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy,
@@ -516,9 +516,9 @@ func registerDirectors(a *API) {
 				if err := checkIfMatch(in.IfMatch, etag(c.Version)); err != nil {
 					return Approval{}, err
 				}
-				if !c.Director && !c.Shareholder {
-					return Approval{}, problem(director.CodeNotPerson, c.LegalName+" is not a director or shareholder, so no member signs in as them.",
-						"Mark the contact director or shareholder first")
+				if !c.Director && !c.Shareholder && !c.Investor { // an investor signs in to see their own grants (FR-EQ-19)
+					return Approval{}, problem(director.CodeNotPerson, c.LegalName+" is not a director, shareholder or investor, so no member signs in as them.",
+						"Mark the contact director, shareholder or investor first")
 				}
 				if idOrEmpty(c.MemberUserID) == idOrEmpty(member) {
 					return Approval{}, problem(CodeInvalid, "The contact has that member already.", "Send another member, or none to unlink them")

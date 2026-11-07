@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "grants": {
+      "description": "Their recorded grants, the latest granted first.",
+      "items": {
+        "$ref": "OptionGrantView.schema.json"
+      },
+      "type": "array"
+    },
+    "linked": {
+      "description": "The caller signs in as a holder: a contact whose member is them.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "linked",
+    "grants"
+  ],
+  "title": "MyOptionGrants",
+  "type": "object"
+}

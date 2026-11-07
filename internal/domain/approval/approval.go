@@ -136,6 +136,12 @@ const (
 	// ObjectInstrumentTemplate is a form the engine may convert by itself, to enable on its lawyer's confirmation
 	// (FR-EQ-18, question 33): another person who holds A on the cap table approves; its key is the enablement's document ID.
 	ObjectInstrumentTemplate = "instrument_template"
+	// ObjectOptionPool is a resolution setting the option pool's size, to record (FR-EQ-19, FM-1): another person who holds
+	// A on the cap table approves; its key is the resolution's document ID.
+	ObjectOptionPool = "option_pool"
+	// ObjectOptionGrant is a grant of options, to record (FR-EQ-19, FM-1): another person who holds A on the cap table
+	// approves, never its holder; its key is the grant's document ID.
+	ObjectOptionGrant = "option_grant"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -227,6 +233,10 @@ const (
 	// OpInstrumentTemplateEnable enables a form the engine may convert by itself, on its lawyer's confirmation
 	// (FR-EQ-18, question 33).
 	OpInstrumentTemplateEnable = "instrument_template.enable"
+	// OpOptionPoolRecord records a pool resolution as drafted (FR-EQ-19).
+	OpOptionPoolRecord = "option_pool.record"
+	// OpOptionGrantRecord records a grant of options as drafted, within what the pool leaves (FR-EQ-19).
+	OpOptionGrantRecord = "option_grant.record"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -260,6 +270,8 @@ var Operations = map[string]string{
 	OpEquityTransactionApprove: ObjectEquityTransaction,
 	OpInstrumentRecord:         ObjectInstrument,
 	OpInstrumentTemplateEnable: ObjectInstrumentTemplate,
+	OpOptionPoolRecord:         ObjectOptionPool,
+	OpOptionGrantRecord:        ObjectOptionGrant,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -352,6 +364,10 @@ var Dependencies = map[string][]string{
 	ObjectInstrument: {"status", "holder"},
 	// the enablement's version and status, and its template: what is enabled
 	ObjectInstrumentTemplate: {"status", "template"},
+	// the resolution's version and status: what is recorded
+	ObjectOptionPool: {"status"},
+	// the grant's version and status, and its holder: what is recorded
+	ObjectOptionGrant: {"status", "holder"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -401,6 +417,8 @@ var Rows = map[string]string{
 	ObjectEquityTransaction:   "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectInstrument:          "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectInstrumentTemplate:  "Cap table, holders, investors, equity transactions (rev 0.3)",
+	ObjectOptionPool:          "Cap table, holders, investors, equity transactions (rev 0.3)",
+	ObjectOptionGrant:         "Cap table, holders, investors, equity transactions (rev 0.3)",
 }
 
 // The limits of a policy.
@@ -479,6 +497,8 @@ var Policies = map[string]Policy{
 	ObjectEquityTransaction:   {ObjectType: ObjectEquityTransaction, Version: "founder/equity_transaction@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectInstrument:          {ObjectType: ObjectInstrument, Version: "founder/instrument@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectInstrumentTemplate:  {ObjectType: ObjectInstrumentTemplate, Version: "founder/instrument_template@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
+	ObjectOptionPool:          {ObjectType: ObjectOptionPool, Version: "founder/option_pool@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
+	ObjectOptionGrant:         {ObjectType: ObjectOptionGrant, Version: "founder/option_grant@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

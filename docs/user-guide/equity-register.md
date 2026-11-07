@@ -3,7 +3,7 @@ key: equity.register
 title: Equity register
 mode: basic
 roles: [owner, controller, accountant, auditor, tax_agent, dpo, board_viewer, company_secretary]
-requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-20, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
+requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-19, FR-EQ-20, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
 ---
 
 # Equity register
@@ -234,6 +234,29 @@ and the class are the instrument's. Attach the resolutions and ask for approval 
 transaction; an instrument converts once while its conversion stands. It becomes effective on or
 after its round, while 2700 holds its money, and then posts Dr 2700 · Cr share capital.
 
+## The option pool and grants
+
+The **option pool** is the shares a resolution sets aside for options, such as an employee share
+option plan. Its size on a day is the latest recorded resolution passed on or before that day; a
+later resolution sets it again from the day it was passed. **Unallocated** is what the pool leaves
+to grant: its size less the options granted.
+
+A **grant** gives a person options from the pool: how many, the exercise price per share, the
+grant date, the vesting (a cliff, then evenly by month), its acceleration on a change of control
+and the day it lapses. Its holder is a contact marked An investor or A shareholder, of the pool's
+class. An Accountant drafts each resolution and grant and attaches its evidence (the signed
+resolution; the grant letter), then asks for approval; another Owner or the Controller records it,
+never the grant's own holder.
+
+- A grant fits only what the pool leaves on its grant date, and on every later day a grant was
+  made or a resolution passed: an earlier-dated grant cannot take options a later one already has.
+- A resolution that sets aside fewer shares than the options granted by then is refused.
+- **Vested** is worked out each day, never stored: none before the cliff, then the options × the
+  whole months since the grant ÷ the vesting months, rounded down to whole options; all of them
+  once the vesting months have passed. A month passes on the grant's day of the month, or on a
+  shorter month's last day [accountant to confirm].
+- A person whose contact is linked to their sign-in sees their own grants, and nobody else's.
+
 ## Correct a transaction
 
 An approved transaction never changes. To correct an effective one, select **Reverse it** and
@@ -265,7 +288,7 @@ a director's balance add their shares when they take effect.
 | The class's account is not an active share-capital account (EQUITY-04) | Choose 3010 Ordinary or 3020 Preference share capital |
 | Only a participating preference has a cap (EQUITY-04) | Mark it participating, or leave the cap empty |
 | It is recorded, so it changes no more (EQUITY-05) | Draft a new one; once recorded, it supersedes this one |
-| It has no evidence attached (EQUITY-06) | Attach the identity document, or the constitution and the shareholders' agreement, then ask again |
+| It has no evidence attached (EQUITY-06) | Attach the identity document, the constitution and the shareholders' agreement, the resolution or the grant letter, then ask again |
 | This is your own holder record, so another person approves it | Ask another Owner or the Controller |
 | Only an approved transaction becomes effective, or the effective date is before the approval (EQUITY-08) | Ask for its approval, then record the day ACRA's register shows it |
 | The subscriber's money is not all in share application monies (EQUITY-08) | Categorise the bank line of their payment to 2040, naming them, then record the effective date |
@@ -281,6 +304,11 @@ a director's balance add their shares when they take effect.
 | The chart has no share application monies account (EQUITY-09) | Add 2040 Share application monies to the chart of accounts |
 | A step its transaction does not take, or dated after today (EQUITY-10) | Choose one of the steps shown, on the day it happened |
 | The transaction moves your own shares, so another person approves it | Ask another Owner or the Controller |
+| The pool's resolution does not fit (EQUITY-16) | Enter a whole number of shares above zero, the share-capital class, the resolution and the day it was passed |
+| The options granted by a day are more than the shares the resolution sets aside (EQUITY-16) | Set aside at least the options granted, or date it after them |
+| No recorded resolution sets an option pool on the grant date (EQUITY-17) | Record the pool's resolution first |
+| The pool leaves fewer options than the grant, on its grant date or a later day (EQUITY-17) | Grant at most what the pool leaves, or record a resolution that enlarges it first |
+| This is your own grant of options, so another person approves it | Ask another Owner or the Controller |
 | The render service did not make the PDF (REPORT-08) | Try again in a moment, or export to Excel |
 
 ## Related

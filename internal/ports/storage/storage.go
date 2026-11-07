@@ -632,6 +632,12 @@ const (
 	// DocumentInstrumentTemplate enables a form the engine may convert by itself, recorded with its lawyer's
 	// confirmation on another person's approval (FR-EQ-18, question 33).
 	DocumentInstrumentTemplate DocumentType = "instrument_template"
+	// DocumentOptionPool is a resolution setting the option pool's size (FR-EQ-19), recorded on another person's approval
+	// with the resolution attached.
+	DocumentOptionPool DocumentType = "option_pool"
+	// DocumentOptionGrant is a grant of options from the pool (FR-EQ-19): its holder, number, exercise price, grant date,
+	// vesting and expiry, recorded on another person's approval with the grant letter attached; recorded, it never changes.
+	DocumentOptionGrant DocumentType = "option_grant"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -878,6 +884,9 @@ const (
 	// CodeInstrument: an instrument keeps its own keys, a known form, a holder marked shareholder or investor, an amount
 	// above zero and a share-capital class; a template names a known one; its holder stays marked (FR-EQ-18; FY291).
 	CodeInstrument = "STORAGE-SHARE-06"
+	// CodeOption: a pool resolution or grant keeps its own keys, a size or number of whole shares above zero, a class of an
+	// active share-capital account and a holder in the contacts, and no grant takes more than the pool leaves (FY293).
+	CodeOption = "STORAGE-SHARE-07"
 	// CodeEquityRecord: a holder record keeps an individual's identifier to its type and last 4 characters and no full
 	// NRIC or FIN, and a share class belongs to an active share-capital account (FR-EQ-15, FR-EQ-16; FY285, FY286).
 	CodeEquityRecord = "STORAGE-SHARE-03"
