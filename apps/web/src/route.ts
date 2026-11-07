@@ -23,6 +23,17 @@ export function signInURL(provider: string, returnTo: string): string {
   return `/api/auth/signin?${new URLSearchParams({ provider, return_to: safeReturn(returnTo) })}`;
 }
 
+// visit goes to path as a new page, so Back returns here.
+export function visit(path: string): void {
+  window.location.assign(path);
+}
+
+// linkURL is the address that links a sign-in with a provider to the signed-in person's account (FR-ADM-08); it comes
+// back to the profile.
+export function linkURL(provider: string): string {
+  return `/api/auth/signin?${new URLSearchParams({ provider, link: "1" })}`;
+}
+
 // here is the current page, as a return address.
 export function here(): string {
   return window.location.pathname + window.location.search;

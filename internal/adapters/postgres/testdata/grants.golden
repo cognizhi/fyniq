@@ -213,6 +213,7 @@ fyniq_api       SELECT    kpi_input
 fyniq_api       UPDATE    kpi_input (entered_at, entered_by, headcount, lost_customers, new_customers, paying_customers, version)
 fyniq_api       EXECUTE   latest_job_slot()
 fyniq_api       SELECT    ledger_revision
+fyniq_api       EXECUTE   link_identity()
 fyniq_api       EXECUTE   lock_ledger()
 fyniq_api       EXECUTE   member_emails()
 fyniq_api       INSERT    member_invitation (code_hash, created_at, display_name, expires_at, roles, roles_expire_at)
@@ -331,7 +332,9 @@ fyniq_api       EXECUTE   super_admin_for_identity()
 fyniq_api       INSERT    team_mode (created_at, created_by, mode, request_id, version)
 fyniq_api       SELECT    team_mode
 fyniq_api       SELECT    tenants
+fyniq_api       EXECUTE   unlink_identity()
 fyniq_api       EXECUTE   user_for_identity()
+fyniq_api       EXECUTE   user_identities()
 fyniq_api       INSERT    user_membership (user_id)
 fyniq_api       SELECT    user_membership
 fyniq_api       UPDATE    user_membership (status, version)

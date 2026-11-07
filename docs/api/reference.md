@@ -798,6 +798,45 @@ Ends one of your sessions, such as on a lost phone: its next request is signed o
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
 
+### `GET /v1/session/identities`
+
+**List your sign-ins** (`listIdentities`)
+
+The accounts at sign-in providers that sign you in to Fyniq, the one you joined or set up with first, then those you linked, in order, with the one this session used marked (FR-ADM-08). To link another, confirm it's you, then send the browser to /api/auth/signin?provider=<id>&link=1 from Fyniq: it signs in with that provider and adds the account to yours. An account is linked only that way, never by a matching email. Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-08). Read-only; no side effects.
+
+- **Permission:** View on (your session). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-08).
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`SignInIdentityPage`](../../contracts/schemas/SignInIdentityPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `DELETE /v1/session/identities/{identity_id}`
+
+**Remove a sign-in** (`unlinkIdentity`)
+
+Removes one of your sign-ins: that account at its provider signs you in no more (FR-ADM-08). Never the one this session used, nor your last. Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-08). The session passed a second factor in the last 5 minutes. Side effects: the removal and its event in the installation's audit trail, and a security notice to you.
+
+- **Permission:** Create on (your session). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-08). The session passed a second factor in the last 5 minutes.
+- **Parameters:**
+  - `identity_id` (path, required): The sign-in's ID.
+- **Responses:**
+  - `200` OK [`SignInIdentity`](../../contracts/schemas/SignInIdentity.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `STORAGE-IDENTITY-01` Confirm it's you first.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-IDENTITY-02` That sign-in cannot be removed.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-IDENTITY-01`, `STORAGE-IDENTITY-02`
+
 ### `GET /v1/session/passkeys`
 
 **List your passkeys** (`listPasskeys`)

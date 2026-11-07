@@ -1840,6 +1840,8 @@ type FyniqUserIdentity struct {
 	CreatedAt       time.Time
 	Email           *string
 	EmailVerifiedAt *time.Time
+	Provider        *string
+	LinkedAt        *time.Time
 }
 
 type FyniqUserMembership struct {

@@ -72,6 +72,14 @@
       "label": "Sign out everywhere else",
       "tooltip": "End every session but this one."
     },
+    "identity.link": {
+      "label": "Link",
+      "tooltip": "Sign in with another account at this provider and add it to yours, so either signs you in. Needs a second factor in the last 5 minutes."
+    },
+    "identity.unlink": {
+      "label": "Remove",
+      "tooltip": "Stop this account signing you in, and end its sessions. Never the one you are using, nor your last."
+    },
     "inbox.overview": {
       "label": "Inbox",
       "tooltip": "What waits for you: requests to approve, your own requests, and the weekly review of high-risk actions."

@@ -43,7 +43,10 @@ func (f *fakeSignIn) Finish(_ context.Context, provider string, cb *url.URL, s p
 type fakeSessions struct {
 	started []storage.NewSession
 	ended   [][]byte
-	emails  []string // "issuer subject email" of each email recorded
+	emails  []string                   // "issuer subject email" of each email recorded
+	live    map[string]storage.Session // the live sessions, by token hash
+	links   []storage.IdentityLink
+	linkErr error
 }
 
 func (f *fakeSessions) RecordIdentityEmail(_ context.Context, issuer, subject, email string, _ time.Time) error {
@@ -56,7 +59,10 @@ func (f *fakeSessions) StartSession(_ context.Context, s storage.NewSession) err
 	return nil
 }
 
-func (f *fakeSessions) Session(context.Context, []byte, time.Time, time.Duration) (storage.Session, error) {
+func (f *fakeSessions) Session(_ context.Context, h []byte, _ time.Time, _ time.Duration) (storage.Session, error) {
+	if s, ok := f.live[string(h)]; ok {
+		return s, nil
+	}
 	return storage.Session{}, ports.ErrNotFound
 }
 
@@ -75,6 +81,22 @@ func (f *fakeSessions) IdleTimeout(_ context.Context, _ uuid.UUID, _ time.Time, 
 
 func (f *fakeSessions) EndUserSession(context.Context, uuid.UUID, []byte, time.Time) error {
 	return ports.ErrNotFound
+}
+
+func (f *fakeSessions) LinkIdentity(_ context.Context, l storage.IdentityLink) (uuid.UUID, error) {
+	if f.linkErr != nil {
+		return uuid.Nil, f.linkErr
+	}
+	f.links = append(f.links, l)
+	return f.live[string(l.SessionHash)].UserID, nil
+}
+
+func (f *fakeSessions) UnlinkIdentity(context.Context, []byte, string, string, time.Time) (uuid.UUID, error) {
+	return uuid.Nil, ports.ErrNotFound
+}
+
+func (f *fakeSessions) Identities(context.Context, uuid.UUID) ([]storage.Identity, error) {
+	return nil, nil
 }
 
 type flowEnv struct {
@@ -192,6 +214,103 @@ func TestTheSignInFlowStartsASessionOnlyForTheBrowserThatBegan(t *testing.T) {
 	}
 	if len(e.sessions.emails) != 1 {
 		t.Error("an email the provider did not verify was recorded")
+	}
+}
+
+// Linking a sign-in starts only from Fyniq itself, in a session that confirmed it is the person in the last 5 minutes,
+// and sends the browser to the provider as signing in does; what comes back is added to the session's user, never a new
+// session, and the person is told. Refusals land on the profile with their code.
+// req: FR-ADM-08
+// asvs: V6.8.1, V7.5.1
+func TestLinkingASignInAddsItToTheSessionsUser(t *testing.T) {
+	e := newFlow("http://localhost:8080")
+	user := uuid.New()
+	e.sessions.live = map[string]storage.Session{
+		string(authn.HashToken("fresh")): {UserID: user, StepUpAt: now.Add(-time.Minute)},
+		string(authn.HashToken("stale")): {UserID: user, StepUpAt: now.Add(-6 * time.Minute)},
+		string(authn.HashToken("none")):  {UserID: user},
+	}
+	var told []string
+	e.flow.Linked = func(_ context.Context, u uuid.UUID, _ []byte, provider string, _ time.Time) error {
+		told = append(told, u.String()+" "+provider)
+		return nil
+	}
+	e.mux = http.NewServeMux() // the flow is a value: register the one with Linked
+	e.flow.Register(e.mux)
+	start := func(session, site string) *http.Response {
+		r := httptest.NewRequest(http.MethodGet, "/auth/signin?provider=google&link=1&return_to=/elsewhere", nil)
+		if session != "" {
+			r.AddCookie(&http.Cookie{Name: "fyniq_session", Value: session})
+		}
+		if site != "" {
+			r.Header.Set("Sec-Fetch-Site", site)
+		}
+		return e.do(r)
+	}
+	for name, c := range map[string]struct{ session, site, code string }{
+		"from another site":                   {"fresh", "cross-site", signin.CodeCrossSite},
+		"with no Sec-Fetch-Site":              {"fresh", "", signin.CodeCrossSite},
+		"signed out":                          {"", "same-origin", signin.CodeLinkStepUp},
+		"an unknown session":                  {"gone", "same-origin", signin.CodeLinkStepUp},
+		"a second factor 6 minutes ago":       {"stale", "same-origin", signin.CodeLinkStepUp},
+		"a session that passed no second one": {"none", "same-origin", signin.CodeLinkStepUp},
+	} {
+		resp := start(c.session, c.site)
+		if loc := resp.Header.Get("Location"); loc != "/settings/profile?link_error="+c.code || cookieNamed(resp, "fyniq_signin") != nil {
+			t.Errorf("%s: %q", name, loc)
+		}
+	}
+
+	resp := start("fresh", "same-origin")
+	cookie := cookieNamed(resp, "fyniq_signin")
+	if !strings.HasPrefix(resp.Header.Get("Location"), "https://provider.test/") || cookie == nil || !strings.HasSuffix(cookie.Value, ".link") {
+		t.Fatalf("start: %s %v", resp.Header.Get("Location"), resp.Cookies())
+	}
+	callback := func(session string) *http.Response {
+		r := httptest.NewRequest(http.MethodGet, "/auth/callback?code=c-1&state="+e.provider.started.State, nil)
+		r.AddCookie(cookie)
+		if session != "" {
+			r.AddCookie(&http.Cookie{Name: "fyniq_session", Value: session})
+		}
+		return e.do(r)
+	}
+	e.provider.who = ports.SignedIn{Provider: "google", Issuer: "https://accounts.google.com", Subject: "220", AuthTime: now, SecondFactor: true,
+		Email: "mei@example.com", EmailVerified: true}
+	e.provider.err = ports.ErrSignInRefused
+	if loc := callback("fresh").Header.Get("Location"); loc != "/settings/profile?link_error="+signin.CodeRefused {
+		t.Errorf("a refused sign-in: %q", loc)
+	}
+	e.provider.err = nil
+	if loc := callback("").Header.Get("Location"); loc != "/settings/profile?link_error="+signin.CodeLinkStepUp {
+		t.Errorf("a callback without the session: %q", loc)
+	}
+	e.sessions.linkErr = &storage.Error{Code: storage.CodeIdentity}
+	if loc := callback("fresh").Header.Get("Location"); loc != "/settings/profile?link_error="+signin.CodeLinked {
+		t.Errorf("a sign-in linked already: %q", loc)
+	}
+	e.sessions.linkErr = &storage.Error{Code: storage.CodeIdentityStepUp}
+	if loc := callback("fresh").Header.Get("Location"); loc != "/settings/profile?link_error="+signin.CodeLinkStepUp {
+		t.Errorf("a session the database finds without a recent second factor: %q", loc)
+	}
+	e.sessions.linkErr = nil
+
+	resp = callback("fresh")
+	if loc := resp.Header.Get("Location"); loc != "/settings/profile?linked=google" || cookieNamed(resp, "fyniq_session") != nil {
+		t.Fatalf("linking: %q %v", loc, resp.Cookies())
+	}
+	if len(e.sessions.links) != 1 || len(e.sessions.started) != 0 || len(e.sessions.ended) != 0 {
+		t.Fatalf("linking started or ended a session, or linked %d", len(e.sessions.links))
+	}
+	l := e.sessions.links[0]
+	if !bytes.Equal(l.SessionHash, authn.HashToken("fresh")) || l.Issuer != "https://accounts.google.com" || l.Subject != "220" || l.Provider != "google" ||
+		!l.Now.Equal(now) {
+		t.Errorf("the link: %+v", l)
+	}
+	if len(told) != 1 || told[0] != user.String()+" google" {
+		t.Errorf("told: %v", told)
+	}
+	if len(e.sessions.emails) != 1 {
+		t.Errorf("the linked sign-in's verified email was not recorded: %v", e.sessions.emails)
 	}
 }
 

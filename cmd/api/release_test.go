@@ -40,6 +40,13 @@ func (noSessions) IdleTimeout(_ context.Context, _ uuid.UUID, _ time.Time, fallb
 func (noSessions) EndUserSession(context.Context, uuid.UUID, []byte, time.Time) error {
 	return ports.ErrNotFound
 }
+func (noSessions) LinkIdentity(context.Context, storage.IdentityLink) (uuid.UUID, error) {
+	return uuid.Nil, ports.ErrNotFound
+}
+func (noSessions) UnlinkIdentity(context.Context, []byte, string, string, time.Time) (uuid.UUID, error) {
+	return uuid.Nil, ports.ErrNotFound
+}
+func (noSessions) Identities(context.Context, uuid.UUID) ([]storage.Identity, error) { return nil, nil }
 
 func configure(t *testing.T, origin string) {
 	t.Setenv("FYNIQ_SIGNIN", "identity-platform")
@@ -64,7 +71,7 @@ func TestTheReleaseBuildSignsInOnlyWhenConfigured(t *testing.T) {
 		t.Fatal("without sign-in configured the release build accepts a credential")
 	}
 	s := httpserver.New(version.Info{Service: "api"})
-	if registerSignIn(s, c, noSessions{}, nil) != nil {
+	if registerSignIn(s, c, noSessions{}, nil, nil) != nil {
 		t.Fatal("without sign-in configured the release build signs people in")
 	}
 
@@ -98,7 +105,7 @@ func TestTheReleaseBuildSignsInOnlyWhenConfigured(t *testing.T) {
 		t.Error("the release build took a dev token")
 	}
 	s = httpserver.New(version.Info{Service: "api"})
-	p := registerSignIn(s, c, noSessions{}, nil)
+	p := registerSignIn(s, c, noSessions{}, nil, nil)
 	if p == nil || len(p.Providers()) != 1 || p.Providers()[0].ID != "zoho" {
 		t.Fatalf("the configured providers: %v", p)
 	}

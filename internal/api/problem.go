@@ -613,6 +613,8 @@ var codeFacts = map[string]struct {
 	connector.CodeNotInstalled:  {404, "No such installed connector"},
 	connector.CodeChange:        {409, "The change cannot be decided or applied now"},
 	storage.CodeConnector:       {409, "A connector moves only along its lifecycle"},
+	storage.CodeIdentity:        {409, "That sign-in cannot be removed"},
+	storage.CodeIdentityStepUp:  {403, "Confirm it's you first"},
 	storage.CodeConnectorChange: {409, "The other Super admin's approval is needed"},
 
 	// Banking (FR-BNK-01…18).

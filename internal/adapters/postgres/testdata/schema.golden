@@ -1418,6 +1418,8 @@ user_identity | user_id | uuid | not null |
 user_identity | created_at | timestamp with time zone | not null | now()
 user_identity | email | text | null | 
 user_identity | email_verified_at | timestamp with time zone | null | 
+user_identity | provider | text | null | 
+user_identity | linked_at | timestamp with time zone | null | 
 user_membership | organisation_id | uuid | not null | current_org()
 user_membership | id | uuid | not null | uuidv7()
 user_membership | user_id | uuid | not null | 
@@ -3738,6 +3740,7 @@ user_identity | user_identity_email_form | CHECK ((((email IS NULL) AND (email_v
 user_identity | user_identity_issuer_length | CHECK (((length(issuer) >= 1) AND (length(issuer) <= 500)))
 user_identity | user_identity_issuer_not_null | NOT NULL issuer
 user_identity | user_identity_pkey | PRIMARY KEY (issuer, subject)
+user_identity | user_identity_provider_format | CHECK (((provider IS NULL) OR (provider ~ '^[a-z0-9][a-z0-9-]{0,62}$'::text))) NOT VALID
 user_identity | user_identity_subject_length | CHECK (((length(subject) >= 1) AND (length(subject) <= 500)))
 user_identity | user_identity_subject_not_null | NOT NULL subject
 user_identity | user_identity_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
@@ -4763,6 +4766,7 @@ kpi_input_guard() → trigger | security invoker | v | search_path=pg_catalog, f
 last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7f570bdc5ca8922f07860844550f5f69
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2
 ledger_revision_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 27d2b85d5d0e1b94326405d0ba9e737e
+link_identity(p_session bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d528d5eafea1c65183e88d46737587c1
 live_session_user(p_session bytea, p_now timestamp with time zone) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1e4b8368d23fd003bc4e7f03c591ed49
 lock_ledger() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 15857e366d7360fc986394bc521e4b89
 member_emails() → TABLE(user_id uuid, email text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | de5d5500c1abd3c22db2454f742d293e
@@ -4847,7 +4851,9 @@ super_admin_no_delete() → trigger | security invoker | v | search_path=pg_cata
 super_admin_users() → SETOF uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4ddf2dc2a0fe3a9cd3600725e7bf0f97
 team_mode_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fe7cdb44517d02103801c6dd386d11b9
 team_mode_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1e8ab28fa03705e0a02ec3819d22d067
+unlink_identity(p_session bytea, p_issuer text, p_subject text, p_now timestamp with time zone) → TABLE(unlinked_user uuid, unlinked_provider text) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 04c0e37b7eae3e0e00f09b568764bf44
 user_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2d20860879f5e546a6feda7d9fbefdfb
+user_identities(p_user uuid) → TABLE(issuer text, subject text, provider text, created_at timestamp with time zone, linked_at timestamp with time zone, last_used_at timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 479a2329cb13716ede2a43a4893da0f7
 user_sessions(p_user uuid, p_now timestamp with time zone, p_idle interval) → SETOF user_session | security definer | s | search_path=pg_catalog, fyniq, pg_temp | d713068278e40cd6ed6ba927ea5a0c69
 webauthn_approval_answer(p_challenge uuid, p_session bytea, p_credential uuid, p_sign_count bigint, p_backup_state boolean, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f481503b48994d66ccc92191380d8e36
 webauthn_approval_challenge_issue(p_session bytea, p_request uuid, p_envelope_hash bytea, p_nonce bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e140920fc5b676db4cb8e722e83c934a

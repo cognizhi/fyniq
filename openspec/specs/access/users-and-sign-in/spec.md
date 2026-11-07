@@ -257,10 +257,27 @@ Source: PRD-001 §8.24 · Priority M · Phase P0 (Zoho issuer check, §17.3) / P
 - **THEN** its allowed email domains can be set
 - **AND** joining by domain is off by default, so an invitation is required unless it is turned on
 
+#### Scenario: Providers set in the deployment's configuration (rev 0.196)
+- **WHEN** a provider is added or edited
+- **THEN** it is set in the deployment's configuration, its client secret in Secret Manager
+- **AND** Super admins enable or disable it, set its allowed domains and choose whether to end its sessions in the app
+- **AND** adding or editing a provider in the app comes in P2 or P3
+
+#### Scenario: Joining by domain awaits an Owner (rev 0.196)
+- **WHEN** a person whose verified email is on an allowed domain signs in through a provider with joining by domain on
+- **THEN** they get a pending membership with the Employee role
+- **AND** it grants nothing until an Owner approves it
+
 #### Scenario: Linking a new provider to an account
 - **WHEN** a user links a new provider to their account
-- **THEN** the link is made only on a verified email, in a session that has just passed step-up with the platform's MFA, after a successful sign-in with the new provider
+- **THEN** the link is made only in a session whose second factor is less than 5 minutes old, sent from Fyniq itself, after a successful sign-in with the new provider (rev 0.196: "only on a verified email" is superseded; the email plays no part)
 - **AND** a matching verified email alone never links or merges accounts
+- **AND** an account at a provider that signs someone in already is not linked
+
+#### Scenario: Removing a sign-in (rev 0.196)
+- **WHEN** a user removes one of their sign-ins, in a session whose second factor is less than 5 minutes old
+- **THEN** that account at its provider signs them in no more, and the sessions it signed in end
+- **AND** the sign-in the session used, or the user's last, cannot be removed
 
 #### Scenario: Linking and unlinking are notified and audited
 - **WHEN** a provider is linked to or unlinked from an account

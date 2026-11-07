@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -26,7 +28,9 @@ const (
 	CodeExpired         = "AUTH-SIGNIN-02" // the sign-in took longer than 10 minutes, or began in another browser
 	CodeRefused         = "AUTH-SIGNIN-03" // the provider's answer failed its checks (FR-ADM-08)
 	CodeFailure         = "AUTH-SIGNIN-04" // the provider or the database did not answer
-	CodeCrossSite       = "AUTH-SIGNIN-05" // a sign-out sent from another site
+	CodeCrossSite       = "AUTH-SIGNIN-05" // a sign-out or a link sent from another site
+	CodeLinkStepUp      = "AUTH-SIGNIN-06" // a link from a session that confirmed it is the person no more than 5 minutes ago (FR-ADM-08)
+	CodeLinked          = "AUTH-SIGNIN-07" // that account at the provider signs someone in already (FR-ADM-08)
 )
 
 // startLifetime is how long a sign-in may take at the provider.
@@ -38,6 +42,10 @@ var providerID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,62}$`)
 // /auth/callback checks what came back and starts a session, POST /auth/signout ends it. The session is
 // an opaque token in an HttpOnly cookie (SEC-05, SEC-08); the store keeps its SHA-256 only. Nothing the
 // flow logs holds a token, a code or a cookie (SEC-15).
+//
+// With link=1, GET /auth/signin links another sign-in instead (FR-ADM-08, rev 0.196): from a session that confirmed it
+// is the person in the last 5 minutes, the browser signs in with the provider, and the account it signed in with is
+// added to the session's user; the session stays as it was. Only that sign-in links an account, never a matching email.
 type Flow struct {
 	SignIn   ports.SignIn
 	Sessions storage.Sessions
@@ -48,7 +56,18 @@ type Flow struct {
 	// Alert tells a person they signed in (FR-ADM-03); nil sends none. A failed alert is logged and never stops the
 	// sign-in.
 	Alert Alert
+	// Linked tells a person a sign-in was linked to their account (FR-ADM-08); nil tells nobody. A failure is logged.
+	Linked LinkAlert
 }
+
+// LinkAlert tells user, whose session is session, that a sign-in with provider was linked to their account.
+type LinkAlert func(ctx context.Context, user uuid.UUID, session []byte, provider string, at time.Time) error
+
+// linkReturn is where the browser goes after linking a sign-in: the profile, which lists them.
+const linkReturn = "/settings/profile"
+
+// linkMode marks the start cookie of a link.
+const linkMode = "link"
 
 // Alert tells the person who signed in, with the browser they used, that they did; session is the new session's token
 // hash, which finds their user and organisation.
@@ -97,13 +116,23 @@ func (f Flow) start(w http.ResponseWriter, r *http.Request) {
 		f.fail(w, r, CodeUnknownProvider, "unknown provider", nil)
 		return
 	}
+	back, mode := SafeReturn(r.URL.Query().Get("return_to")), ""
+	if r.URL.Query().Get("link") == "1" {
+		if !f.mayLink(w, r) {
+			return
+		}
+		back, mode = linkReturn, linkMode
+	}
 	seed := rand.Text() + rand.Text() // 260 random bits
 	to, err := f.SignIn.Start(r.Context(), provider, f.callbackURL(), secrets(seed))
 	if err != nil {
 		f.fail(w, r, CodeFailure, "start", err)
 		return
 	}
-	value := seed + "." + provider + "." + base64.RawURLEncoding.EncodeToString([]byte(SafeReturn(r.URL.Query().Get("return_to"))))
+	value := seed + "." + provider + "." + base64.RawURLEncoding.EncodeToString([]byte(back))
+	if mode != "" {
+		value += "." + mode
+	}
 	http.SetCookie(w, f.cookie(f.startCookie(), value, startLifetime))
 	w.Header().Set("Cache-Control", "no-store")
 	http.Redirect(w, r, to, http.StatusSeeOther)
@@ -118,25 +147,34 @@ func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	seed, rest, _ := strings.Cut(c.Value, ".")
-	provider, encoded, _ := strings.Cut(rest, ".")
+	provider, rest, _ := strings.Cut(rest, ".")
+	encoded, mode, _ := strings.Cut(rest, ".")
 	back, err := base64.RawURLEncoding.DecodeString(encoded)
-	if seed == "" || err != nil || !f.known(provider) {
-		f.fail(w, r, CodeExpired, "the sign-in cookie is not ours", nil)
+	fail := f.fail
+	if mode == linkMode {
+		fail = f.failLink
+	}
+	if seed == "" || err != nil || !f.known(provider) || (mode != "" && mode != linkMode) {
+		fail(w, r, CodeExpired, "the sign-in cookie is not ours", nil)
 		return
 	}
 	cb, err := url.Parse(f.callbackURL())
 	if err != nil {
-		f.fail(w, r, CodeFailure, "callback", err)
+		fail(w, r, CodeFailure, "callback", err)
 		return
 	}
 	cb.RawQuery = r.URL.RawQuery
 	who, err := f.SignIn.Finish(r.Context(), provider, cb, secrets(seed))
 	if errors.Is(err, ports.ErrSignInRefused) {
-		f.fail(w, r, CodeRefused, "refused", err)
+		fail(w, r, CodeRefused, "refused", err)
 		return
 	}
 	if err != nil {
-		f.fail(w, r, CodeFailure, "finish", err)
+		fail(w, r, CodeFailure, "finish", err)
+		return
+	}
+	if mode == linkMode {
+		f.link(w, r, who)
 		return
 	}
 	now := f.Clock.Now()
@@ -149,7 +187,7 @@ func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 	hash := authn.HashToken(token)
 	if err := f.Sessions.StartSession(r.Context(), storage.NewSession{TokenHash: hash, Issuer: who.Issuer,
 		Subject: who.Subject, Provider: who.Provider, StepUpAt: stepUp, Now: now, Expires: now.Add(authn.SessionLifetime), UserAgent: agent}); err != nil {
-		f.fail(w, r, CodeFailure, "session", err)
+		fail(w, r, CodeFailure, "session", err)
 		return
 	}
 	if who.Email != "" && who.EmailVerified {
@@ -168,6 +206,68 @@ func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 	f.log().Info("auth.signed_in", "provider", who.Provider, "issuer", who.Issuer, "subject", who.Subject,
 		"second_factor", who.SecondFactor)
 	http.Redirect(w, r, SafeReturn(string(back)), http.StatusSeeOther)
+}
+
+// mayLink reports whether the request may start linking a sign-in: sent from Fyniq itself, by a session that confirmed
+// it is the person in the last 5 minutes; when not, it sends the browser back to the profile with the reason. The
+// database checks the session again when the sign-in comes back.
+func (f Flow) mayLink(w http.ResponseWriter, r *http.Request) bool {
+	if !authn.SameOrigin(r.Header) {
+		f.failLink(w, r, CodeCrossSite, "a link from another site", nil)
+		return false
+	}
+	token := authn.CookieValue(r.Header.Get("Cookie"), authn.SessionCookie(f.Secure()))
+	if token == "" {
+		f.failLink(w, r, CodeLinkStepUp, "no session", nil)
+		return false
+	}
+	now := f.Clock.Now()
+	s, err := f.Sessions.Session(r.Context(), authn.HashToken(token), now, authn.SessionIdle)
+	if errors.Is(err, ports.ErrNotFound) || err == nil && (s.StepUpAt.IsZero() || s.StepUpAt.After(now) || now.Sub(s.StepUpAt) > authn.StepUpWindow) {
+		f.failLink(w, r, CodeLinkStepUp, "no recent second factor", nil)
+		return false
+	}
+	if err != nil {
+		f.failLink(w, r, CodeFailure, "session", err)
+		return false
+	}
+	return true
+}
+
+// link adds the account who signed in with to the user of the browser's session, which stays as it was.
+func (f Flow) link(w http.ResponseWriter, r *http.Request, who ports.SignedIn) {
+	token := authn.CookieValue(r.Header.Get("Cookie"), authn.SessionCookie(f.Secure()))
+	if token == "" {
+		f.failLink(w, r, CodeLinkStepUp, "no session", nil)
+		return
+	}
+	hash, now := authn.HashToken(token), f.Clock.Now()
+	user, err := f.Sessions.LinkIdentity(r.Context(), storage.IdentityLink{SessionHash: hash, Issuer: who.Issuer, Subject: who.Subject,
+		Provider: who.Provider, Now: now})
+	switch storage.CodeOf(err) {
+	case "":
+	case storage.CodeIdentityStepUp:
+		f.failLink(w, r, CodeLinkStepUp, "no recent second factor", nil)
+		return
+	case storage.CodeIdentity:
+		f.failLink(w, r, CodeLinked, "linked already", nil)
+		return
+	default:
+		f.failLink(w, r, CodeFailure, "link", err)
+		return
+	}
+	if who.Email != "" && who.EmailVerified {
+		if err := f.Sessions.RecordIdentityEmail(r.Context(), who.Issuer, who.Subject, who.Email, now); err != nil {
+			f.log().Error("auth.link.email_not_recorded", "provider", who.Provider, "error", err.Error())
+		}
+	}
+	if f.Linked != nil {
+		if err := f.Linked(r.Context(), user, hash, who.Provider, now); err != nil {
+			f.log().Error("auth.link.alert_failed", "provider", who.Provider, "error", err.Error())
+		}
+	}
+	f.log().Info("auth.identity_linked", "provider", who.Provider, "issuer", who.Issuer, "subject", who.Subject)
+	http.Redirect(w, r, linkReturn+"?linked="+url.QueryEscape(who.Provider), http.StatusSeeOther)
 }
 
 func (f Flow) signOut(w http.ResponseWriter, r *http.Request) {
@@ -224,6 +324,16 @@ func (f Flow) fail(w http.ResponseWriter, r *http.Request, code, why string, err
 	}
 	f.log().Warn("auth.signin.refused", attrs...)
 	http.Redirect(w, r, "/?signin_error="+code, http.StatusSeeOther)
+}
+
+// failLink sends the browser back to the profile with the refusal's code, and logs why without secrets.
+func (f Flow) failLink(w http.ResponseWriter, r *http.Request, code, why string, err error) {
+	attrs := []any{"code", code, "why", why}
+	if err != nil {
+		attrs = append(attrs, "error", err.Error())
+	}
+	f.log().Warn("auth.link.refused", attrs...)
+	http.Redirect(w, r, linkReturn+"?link_error="+code, http.StatusSeeOther)
 }
 
 func (f Flow) log() *slog.Logger {

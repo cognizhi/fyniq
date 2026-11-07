@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "added_at": {
+      "description": "When it first signed you in, or was linked.",
+      "examples": [
+        "2026-10-20T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "current": {
+      "description": "true for the one this session signed in with: it cannot be removed from this session.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "id": {
+      "description": "The sign-in's ID: derived from the account at the provider, never the account itself.",
+      "examples": [
+        "9b2e4f6a8c0d1e3f5a7b9c1d3e5f7a9b"
+      ],
+      "pattern": "^[0-9a-f]{32}$",
+      "type": "string"
+    },
+    "last_used_at": {
+      "description": "When it last signed you in; absent when it never has.",
+      "examples": [
+        "2026-11-06T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "linked_at": {
+      "description": "When you linked it to your account; absent for the one you joined or set up Fyniq with.",
+      "examples": [
+        "2026-11-06T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "provider": {
+      "description": "The sign-in provider the account is at.",
+      "examples": [
+        "google"
+      ],
+      "type": "string"
+    },
+    "provider_name": {
+      "description": "The provider's name as the sign-in page shows it; its ID when it is no longer offered.",
+      "examples": [
+        "Google"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "provider",
+    "provider_name",
+    "added_at",
+    "current"
+  ],
+  "title": "SignInIdentity",
+  "type": "object"
+}

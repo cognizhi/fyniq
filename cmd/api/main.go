@@ -38,7 +38,7 @@ import (
 var (
 	startLocalTick   func(t outbox.Ticker)
 	newAuthenticator func(clock ports.Clock, sessions storage.Sessions) authn.Authenticator
-	registerSignIn   func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, alert signin.Alert) ports.SignIn
+	registerSignIn   func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, alert signin.Alert, linked signin.LinkAlert) ports.SignIn
 	// webOrigin is the web app's origin as the browser sees it, "" when the flavour has none configured: the passkey
 	// ceremonies are bound to it (FR-ADM-02).
 	webOrigin     func() string
@@ -62,11 +62,13 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	}
 	if registerSignIn != nil {
 		var alert signin.Alert // a sign-in alert needs the database and the outbox
+		var linked signin.LinkAlert
 		if err == nil {
 			out := outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}
 			alert = signin.Alerts(signin.EmailAlert(kit.Store, kit.Store, out), signin.NotifyAlert(kit.Store, kit.Store, out))
+			linked = signin.NotifyLink(kit.Store, kit.Store, out)
 		}
-		d.SignIn = registerSignIn(s, deps.Clock, sessions, alert)
+		d.SignIn = registerSignIn(s, deps.Clock, sessions, alert, linked)
 	}
 	if registerOAuth != nil {
 		registerOAuth(s, deps.Clock, sessions)

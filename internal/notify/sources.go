@@ -40,6 +40,20 @@ func SecondFactor(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork
 	return err
 }
 
+// SignInMethodType tells a person a sign-in with a provider was linked to their account, or removed (FR-ADM-08, rev 0.196).
+const SignInMethodType = "security.sign_in_methods"
+
+// SignInMethod tells user in org that a sign-in with provider was linked to their account (or removed).
+func SignInMethod(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org, user uuid.UUID, provider string, added bool, at time.Time) error {
+	title := "A sign-in with " + provider + " was linked to your account"
+	if !added {
+		title = "A sign-in with " + provider + " was removed from your account"
+	}
+	_, err := Emit(ctx, d, u, org, Event{Type: SignInMethodType, RecordType: "user", RecordID: &user, Title: title + ". If it was not you, " +
+		"sign out your other devices and tell your Owner.", Link: "/settings/profile", Audience: Audience{Users: []uuid.UUID{user}}, At: at})
+	return err
+}
+
 // Quarantined is the email-in fetcher's hook (email.Fetcher.Quarantined): mail at an address waits for a decision about
 // its sender, by the member at their own address, else by those who decide the organisation's.
 func Quarantined(d outbox.Dispatcher) func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, m storage.InboundMessage, addr storage.CaptureAddress, at time.Time) error {
