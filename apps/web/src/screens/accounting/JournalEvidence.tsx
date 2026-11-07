@@ -41,7 +41,7 @@ export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeepe
 // books start, a director's pay choice or fee, or the exempt-private-company status (FR-DOC-05, FR-AP-14, FR-AP-18,
 // FR-CT-03, FR-AP-22, FR-EQ-03, FR-EQ-04, FR-EQ-11), at its ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement" | "owner-succession" | "holder-record" | "share-class";
+  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement" | "owner-succession" | "holder-record" | "share-class" | "equity-transaction";
   id: string;
   etag: string;
 }
@@ -64,6 +64,7 @@ const kindsOf = {
   "exempt-status": ["ACRA business profile", "register of members"],
   "holder-record": ["Identity document", "Certificate of incorporation", "Passport"],
   "share-class": ["Constitution", "Shareholders' agreement", "Board resolution"],
+  "equity-transaction": ["Board resolution", "Shareholders' resolution", "Subscription agreement", "Instrument of transfer", "ACRA acknowledgement", "ACRA register extract"],
   "director-settlement": ["loan note", "board minute", "deed of waiver", "directors' resolution", "shareholders' approval", "board resolution", "conversion agreement", "balance confirmation"],
   "owner-succession": ["board resolution", "accountant's confirmation"],
 };
@@ -84,6 +85,7 @@ const nouns = {
   "exempt-status": "exempt status",
   "holder-record": "holder record",
   "share-class": "share class",
+  "equity-transaction": "equity transaction",
   "director-settlement": "settlement",
   "owner-succession": "succession",
 };
@@ -120,6 +122,8 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
                           ? await api.GET("/v1/holder-records/{record_id}/evidence", { params: { path: { record_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "share-class"
                           ? await api.GET("/v1/share-classes/{version_id}/evidence", { params: { path: { version_id: r.id }, query: { page_size: 100 } } })
+                        : r.kind === "equity-transaction"
+                          ? await api.GET("/v1/equity-transactions/{transaction_id}/evidence", { params: { path: { transaction_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "director-settlement"
                           ? await api.GET("/v1/director-settlements/{settlement_id}/evidence", { params: { path: { settlement_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "owner-succession"
@@ -271,6 +275,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                           ? api.POST("/v1/holder-records/{record_id}/evidence", { params: { path: { record_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "share-class"
                           ? api.POST("/v1/share-classes/{version_id}/evidence", { params: { path: { version_id: record.id }, header }, body, bodySerializer })
+                        : record.kind === "equity-transaction"
+                          ? api.POST("/v1/equity-transactions/{transaction_id}/evidence", { params: { path: { transaction_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "director-settlement"
                           ? api.POST("/v1/director-settlements/{settlement_id}/evidence", { params: { path: { settlement_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "owner-succession"
@@ -316,6 +322,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                         ? await api.GET("/v1/holder-records/{record_id}/evidence/{evidence_id}", { params: { path: { record_id: record.id, evidence_id: e.id } } })
                       : record.kind === "share-class"
                         ? await api.GET("/v1/share-classes/{version_id}/evidence/{evidence_id}", { params: { path: { version_id: record.id, evidence_id: e.id } } })
+                      : record.kind === "equity-transaction"
+                        ? await api.GET("/v1/equity-transactions/{transaction_id}/evidence/{evidence_id}", { params: { path: { transaction_id: record.id, evidence_id: e.id } } })
                       : record.kind === "director-settlement"
                         ? await api.GET("/v1/director-settlements/{settlement_id}/evidence/{evidence_id}", { params: { path: { settlement_id: record.id, evidence_id: e.id } } })
                   : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
@@ -343,6 +351,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                         ? api.DELETE("/v1/holder-records/{record_id}/evidence/{evidence_id}", { params: { path: { record_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "share-class"
                         ? api.DELETE("/v1/share-classes/{version_id}/evidence/{evidence_id}", { params: { path: { version_id: record.id, evidence_id: e.id }, header } })
+                      : record.kind === "equity-transaction"
+                        ? api.DELETE("/v1/equity-transactions/{transaction_id}/evidence/{evidence_id}", { params: { path: { transaction_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "director-settlement"
                         ? api.DELETE("/v1/director-settlements/{settlement_id}/evidence/{evidence_id}", { params: { path: { settlement_id: record.id, evidence_id: e.id }, header } })
                   : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
@@ -380,6 +390,10 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
           ? draft
             ? "The holder's identity document, or an entity's certificate of incorporation. It is kept as identity data and never opened in the app; it is needed before you ask for approval, and until then a file can come off again."
             : "The identity document the record rests on. Once recorded it is kept, and never deleted, for as long as the records are."
+          : record.kind === "equity-transaction"
+          ? draft
+            ? "What the transaction rests on: the board's and shareholders' resolutions and the subscription agreement of an issue, the instrument of transfer of a transfer, the ACRA register extract that shows a reversal is right. One is needed before you ask for approval; until then a file can come off again."
+            : "The documents the transaction rests on. Once approved they are kept, and never deleted, for as long as the records are."
           : record.kind === "share-class"
           ? draft
             ? "The constitution and the shareholders' agreement that set the class's rights. One is needed before you ask for approval; until then a file can come off again."
