@@ -106,7 +106,8 @@ func problemContentType(ct string) string {
 var LedgerCodes = []string{ledger.CodeNoDate, ledger.CodeTooFewLines, ledger.CodeZeroLine, ledger.CodeUnknownAccount,
 	ledger.CodeGroupAccount, ledger.CodeInactiveAccount, ledger.CodeMissingRate, ledger.CodeWrongRate, ledger.CodeUnbalancedBase,
 	ledger.CodeUnbalancedCur, ledger.CodeTooLong, ledger.CodeNotPosted, ledger.CodeRateOnBase, ledger.CodeBaseRange,
-	ledger.CodeShareCapital, ledger.CodeReversalDate, ledger.CodeForeignOpening, fx.CodeNoRate, ledger.CodeDimensionRequired, ledger.CodeDimensionValue}
+	ledger.CodeShareCapital, ledger.CodeReversalDate, ledger.CodeForeignOpening, fx.CodeNoRate, ledger.CodeDimensionRequired, ledger.CodeDimensionValue,
+	ledger.CodeInstrument}
 
 // The API's own codes. The domain's codes (JOURNAL-*, LEDGER-*, MONEY-*, STORAGE-*) pass through.
 const (
@@ -848,6 +849,7 @@ var codeFacts = map[string]struct {
 	ledger.CodeRepayment:             {422, "The repayment does not fit the rule"},
 	ledger.CodeConversion:            {422, "The conversion does not fit the rule"},
 	ledger.CodeEquity:                {422, "The equity entry does not fit the rule"},
+	ledger.CodeInstrument:            {422, "A line on 2700 needs its SAFE or note"},
 	director.CodeNotApproved:         {409, "Not an approved conversion waiting for ACRA"},
 	director.CodeEffective:           {422, "The effective date does not fit"},
 	director.CodeStep:                {422, "The ACRA step does not fit"},

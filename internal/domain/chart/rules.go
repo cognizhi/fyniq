@@ -72,6 +72,11 @@ func checkRevalue(t storage.AccountType, role storage.AccountRole, revalue bool,
 	case role == "prepayments" || role == "deferred-revenue" || role == "customer-deposits":
 		add(CodeRevalue, "revalue", fmt.Sprintf("the %s account is not settled in money, so it is not revalued", role),
 			"Leave it at the rate it was recorded at (FR-GL-04)")
+	case role == "convertible-instruments":
+		// FR-GL-04: 2700 is revalued only once the accountant has classified an instrument a liability, instrument by
+		// instrument, as each line on it names one (FR-EQ-18); until then it is not.
+		add(CodeRevalue, "revalue", "SAFEs and convertible notes are revalued only once each is classified a liability, instrument by instrument",
+			"Leave 2700 unflagged; its revaluation comes with the instruments' classification (FR-GL-04, FR-EQ-18)")
 	}
 }
 

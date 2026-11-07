@@ -7,10 +7,16 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -291,4 +297,99 @@ func draftBodyOf(r response) map[string]any {
 		}
 	}
 	return out
+}
+
+// The money of a SAFE on 2700, keyed by its instrument (FR-EQ-18, ENG-04; design D6): G4-044's S$125,000.00 comes in on
+// a bank line categorised to 2700 naming the recorded SAFE, and S$5,000.00 goes back out on another; a note's S$10.00
+// of interest accrues by a journal naming it. A line on 2700 naming no instrument, or a drafted one, never posts, and
+// neither does an instrument named with no part on 2700. What 2700 holds for the SAFE reads from its lines: S$120,000.00.
+// req: FR-EQ-18
+// req: ENG-04
+func TestSAFEMoneyIsKeyedByItsInstrument(t *testing.T) {
+	e := newEnv(t)
+	acc := e.as(authz.Accountant)
+	var holding string
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		a, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "2700", Name: "Convertible notes / SAFE", Type: storage.Liability, Role: "convertible-instruments"})
+		holding = a.ID.String()
+		return err
+	})
+	ordinary := e.shareCapitalIn(e.books.Org)
+	fund := e.call(http.MethodPost, "/v1/contacts", acc, map[string]any{"legal_name": "Lion Rock Ventures Pte. Ltd.", "investor": true}).str("id")
+	draft := func(form, amount string) string {
+		body := map[string]any{"form": form, "holder_id": fund, "amount": amount, "signed_on": "2026-06-18", "trigger": "priced_round",
+			"class_account_id": ordinary, "denominator": "post_money_capitalisation", "price_decimals": 4}
+		if form == "post_money_safe" {
+			body["valuation_cap"] = "2500000"
+		} else {
+			body["interest_rate"], body["maturity_on"] = "8", "2028-06-18"
+		}
+		r := e.call(http.MethodPost, "/v1/instruments", acc, body)
+		if r.Status != http.StatusCreated {
+			t.Fatalf("drafting a %s: %d %s", form, r.Status, r.Raw)
+		}
+		return r.str("id")
+	}
+	recorded := func(id string) {
+		e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+			return u.Documents().SetStatus(ctx, uuid.MustParse(id), storage.DocumentPosted)
+		})
+	}
+	safe, note, waiting := draft("post_money_safe", "125000.00"), draft("convertible_note", "20000.00"), draft("post_money_safe", "1000.00")
+	recorded(safe)
+	recorded(note)
+
+	_, in := e.bankLine("125000.00")
+	categorise := func(l storage.BankLine, account, instrument string) response {
+		body := map[string]any{"parts": []map[string]any{{"account_id": account, "gst_code": "NA"}}}
+		if instrument != "" {
+			body["instrument_id"] = instrument
+		}
+		return e.call(http.MethodPost, "/v1/bank-lines/"+l.ID.String()+"/categorise", acc, body, "If-Match", etag(l.Version))
+	}
+	for name, c := range map[string][2]string{
+		"2700 naming no instrument":       {holding, ""},
+		"2700 naming a drafted SAFE":      {holding, waiting},
+		"another account naming the SAFE": {e.books.Sales.ID.String(), safe},
+	} {
+		if r := categorise(in, c[0], c[1]); r.Status == http.StatusOK || !strings.Contains(r.Raw, ledger.CodeInstrument) {
+			t.Errorf("%s: %d %s", name, r.Status, r.Raw)
+		}
+	}
+	if r := categorise(in, holding, safe); r.Status != http.StatusOK {
+		t.Fatalf("the SAFE's money in: %d %s", r.Status, r.Raw)
+	}
+	m, _ := e.bankLine("-1.00")
+	if r := categorise(e.lineOn(m, "-5000.00", nil), holding, safe); r.Status != http.StatusOK {
+		t.Fatalf("part of it repaid: %d %s", r.Status, r.Raw)
+	}
+	interest := founderLine(e.books.Rent.ID.String(), "10.00", "", "")
+	accrued := founderLine(holding, "-10.00", "", "")
+	accrued["instrument_id"] = note
+	if r := e.postFounderJournal("2026-10-12", interest, accrued); r.Status != http.StatusOK {
+		t.Fatalf("the note's interest: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, "/v1/journals", acc, map[string]any{"date": "2026-10-12", "memo": "Interest",
+		"lines": []map[string]any{interest, founderLine(holding, "-10.00", "", "")}}); !strings.Contains(r.Raw, ledger.CodeInstrument) {
+		r = e.call(http.MethodPost, "/v1/journals/"+r.str("id")+"/post", acc, nil, "If-Match", r.Header.Get("ETag"))
+		if r.Status == http.StatusOK || !strings.Contains(r.Raw, ledger.CodeInstrument) {
+			t.Errorf("a journal on 2700 naming no instrument: %d %s", r.Status, r.Raw)
+		}
+	}
+	// The bank lines are dated 20 Oct, after the frozen today of 15 Oct: the API shows what 2700 holds today, so the SAFE's
+	// is read after them from the balance service, and the note's interest of 12 Oct from the API.
+	if got := e.call(http.MethodGet, "/v1/instruments/"+note, acc, nil); got.str("held", "amount") != "10.00" {
+		t.Errorf("held for the note: %s", got.Raw)
+	}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		base, _ := money.Lookup("SGD")
+		held, err := balance.Instrument(ctx, u, base, uuid.MustParse(holding), uuid.MustParse(safe), time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC))
+		if err == nil && held.String() != "120000.00" {
+			t.Errorf("2700 holds %s for the SAFE on 31 Dec", held)
+		}
+		return err
+	})
+	if got := e.call(http.MethodGet, "/v1/instruments/"+waiting, acc, nil); got.Body["held"] != nil {
+		t.Errorf("a drafted SAFE shows what is held: %s", got.Raw)
+	}
 }

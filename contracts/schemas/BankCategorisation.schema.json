@@ -10,6 +10,14 @@
       "format": "uuid",
       "type": "string"
     },
+    "instrument_id": {
+      "description": "The recorded SAFE or convertible note (listInstruments) a part on 2700 Convertible notes / SAFE is for: money in received under it, money out repaid. Required with such a part, refused without one.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "parts": {
       "description": "Its parts: together they make the line's amount.",
       "items": {

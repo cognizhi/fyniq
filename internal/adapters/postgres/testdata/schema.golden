@@ -976,6 +976,7 @@ journal_line | description | text | null |
 journal_line | recorded_at | timestamp with time zone | not null | now()
 journal_line | party_id | uuid | null | 
 journal_line | dimension_set_id | uuid | null | 
+journal_line | instrument_id | uuid | null | 
 kpi_input | organisation_id | uuid | not null | current_org()
 kpi_input | id | uuid | not null | uuidv7()
 kpi_input | month | date | not null | 
@@ -1608,7 +1609,7 @@ account | account_pkey | PRIMARY KEY (organisation_id, id)
 account | account_required_dimension_ids_not_null | NOT NULL required_dimension_ids
 account | account_revalue_monetary | CHECK (((NOT revalue) OR ((type = ANY (ARRAY['asset'::text, 'liability'::text])) AND (role IS DISTINCT FROM 'prepayments'::text) AND (role IS DISTINCT FROM 'deferred-revenue'::text) AND (role IS DISTINCT FROM 'customer-deposits'::text))))
 account | account_revalue_not_null | NOT NULL revalue
-account | account_role_known | CHECK ((role = ANY (ARRAY['accounts-receivable'::text, 'accounts-payable'::text, 'gst-control'::text, 'fx-rounding'::text, 'unrealised-fx'::text, 'deferred-revenue'::text, 'prepayments'::text, 'salaries-payable'::text, 'cpf-sdl-payable'::text, 'employer-cpf'::text, 'sdl'::text, 'depreciation'::text, 'accumulated-depreciation'::text, 'suspense'::text, 'retained-earnings'::text, 'expense-claims-payable'::text, 'income-tax-payable'::text, 'income-tax-expense'::text, 'director-loan'::text, 'deferred-remuneration'::text, 'share-capital'::text, 'capital-contribution'::text, 'withholding-tax-payable'::text, 'customer-deposits'::text, 'share-application-monies'::text])))
+account | account_role_known | CHECK ((role = ANY (ARRAY['accounts-receivable'::text, 'accounts-payable'::text, 'gst-control'::text, 'fx-rounding'::text, 'unrealised-fx'::text, 'deferred-revenue'::text, 'prepayments'::text, 'salaries-payable'::text, 'cpf-sdl-payable'::text, 'employer-cpf'::text, 'sdl'::text, 'depreciation'::text, 'accumulated-depreciation'::text, 'suspense'::text, 'retained-earnings'::text, 'expense-claims-payable'::text, 'income-tax-payable'::text, 'income-tax-expense'::text, 'director-loan'::text, 'deferred-remuneration'::text, 'share-capital'::text, 'capital-contribution'::text, 'withholding-tax-payable'::text, 'customer-deposits'::text, 'share-application-monies'::text, 'convertible-instruments'::text])))
 account | account_type_known | CHECK ((type = ANY (ARRAY['asset'::text, 'liability'::text, 'equity'::text, 'revenue'::text, 'expense'::text])))
 account | account_type_not_null | NOT NULL type
 account | account_useful_life_months | CHECK (((useful_life_months >= 1) AND (useful_life_months <= 600)))
@@ -3118,6 +3119,7 @@ journal_line | journal_line_fx_rate_positive | CHECK (((fx_rate <> 'NaN'::numeri
 journal_line | journal_line_fx_rate_source_length | CHECK (((length(fx_rate_source) >= 1) AND (length(fx_rate_source) <= 100)))
 journal_line | journal_line_fx_rate_source_not_null | NOT NULL fx_rate_source
 journal_line | journal_line_id_not_null | NOT NULL id
+journal_line | journal_line_instrument_fkey | FOREIGN KEY (organisation_id, instrument_id) REFERENCES document(organisation_id, id)
 journal_line | journal_line_line_no_not_null | NOT NULL line_no
 journal_line | journal_line_line_no_positive | CHECK ((line_no > 0))
 journal_line | journal_line_minor_units_not_null | NOT NULL minor_units
@@ -4123,6 +4125,7 @@ CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organi
 CREATE INDEX journal_entry_posting_date_idx ON fyniq.journal_entry USING btree (organisation_id, posting_date)
 CREATE INDEX journal_entry_source_idx ON fyniq.journal_entry USING btree (organisation_id, source_id)
 CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organisation_id, account_id, posting_date)
+CREATE INDEX journal_line_instrument_idx ON fyniq.journal_line USING btree (organisation_id, instrument_id, posting_date) WHERE (instrument_id IS NOT NULL)
 CREATE INDEX journal_line_party_idx ON fyniq.journal_line USING btree (organisation_id, party_id, posting_date) WHERE (party_id IS NOT NULL)
 CREATE INDEX notification_digest_due ON fyniq.notification USING btree (organisation_id, email, created_at) WHERE ((digest_id IS NULL) AND (email = ANY (ARRAY['daily'::text, 'weekly'::text])))
 CREATE INDEX notification_event_pending ON fyniq.notification_event USING btree (organisation_id, occurred_at) WHERE (fanned_out_at IS NULL)
@@ -5047,7 +5050,7 @@ journal_entry_not_statement() → trigger | security invoker | v | search_path=p
 journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0f5bd691e4430aa3432cee16293c5fe1
 journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 96a325d578df24994138905973efca70
-journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 72faa023f44c52e04ae717ada6a3ef38
+journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ecfb6e8013b002569037cdbbb8e351a8
 kpi_input_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9f9ba3f0de039e4e5e95975fec3d4493
 last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7f570bdc5ca8922f07860844550f5f69
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2

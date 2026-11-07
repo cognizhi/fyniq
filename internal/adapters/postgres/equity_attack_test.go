@@ -358,3 +358,57 @@ func TestAttackInstrumentsKeepTheirRules(t *testing.T) {
 		t.Errorf("unmarking the holder of a recorded SAFE: %v", err)
 	}
 }
+
+// A line on 2700 names its recorded SAFE or note, whoever writes it, and no other line names one (FR-EQ-18; FY292): a
+// line on 2700 naming nothing, a drafted instrument or a holder record is refused, as is the bank's line naming the
+// SAFE; a line naming the recorded SAFE posts.
+// req: FR-EQ-18
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackInstrumentLinesNameTheirInstrument(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack instrument lines Pte Ltd")
+	class := shareCapital(t, d)
+	api := store(t, "fyniq_api")
+	var holding uuid.UUID
+	var recorded, drafted storage.Document
+	if err := api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		a, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "2700", Name: "Convertible notes / SAFE", Type: storage.Liability, Role: "convertible-instruments"})
+		if err != nil {
+			return err
+		}
+		holding = a.ID
+		payload := fmt.Sprintf(`{"date":"2026-11-07","form":"post_money_safe","holder_id":%q,"amount":"125000.00","currency":"SGD",`+
+			`"signed_on":"2026-06-18","valuation_cap":"2500000","trigger":"priced_round","class_account_id":%q,"denominator":"post_money_capitalisation","price_decimals":4}`,
+			d.director.ID, class)
+		if recorded, err = u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentInstrument, Payload: []byte(payload)}); err != nil {
+			return err
+		}
+		if drafted, err = u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentInstrument, Payload: []byte(payload)}); err != nil {
+			return err
+		}
+		return u.Documents().SetStatus(ctx, recorded.ID, storage.DocumentPosted)
+	}); err != nil {
+		t.Fatalf("the books: %v", err)
+	}
+	line := func(bankInstrument, holdingInstrument *uuid.UUID) error {
+		return asOrg(ctx, conn(t, "fyniq_api"), d.org, func(tx pgx.Tx) error {
+			id, err := entry(ctx, tx, "SAFE money "+uuid.NewString(), "2026-11-02")
+			if err != nil {
+				return err
+			}
+			_, err = tx.Exec(ctx, `
+INSERT INTO fyniq.journal_line (entry_id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_amount, instrument_id)
+VALUES ($1, 1, $2, 'SGD', 125000, 1, 'attack', 125000, $3), ($1, 2, $4, 'SGD', -125000, 1, 'attack', -125000, $5)`,
+				id, d.bank, bankInstrument, holding, holdingInstrument)
+			return err
+		})
+	}
+	wantState(t, "a line on 2700 naming nothing", line(nil, nil), "FY292")
+	wantState(t, "a line on 2700 naming a drafted SAFE", line(nil, &drafted.ID), "FY292")
+	wantState(t, "a line on 2700 naming a contact", line(nil, &d.director.ID), "FY292")
+	wantState(t, "the bank's line naming the SAFE", line(&recorded.ID, &recorded.ID), "FY292")
+	if err := line(nil, &recorded.ID); err != nil {
+		t.Fatalf("the SAFE's money on 2700: %v", err)
+	}
+}

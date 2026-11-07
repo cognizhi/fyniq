@@ -148,3 +148,22 @@ func ApplicationMonies(ctx context.Context, u storage.UnitOfWork, base money.Cur
 	})
 	return held, err
 }
+
+// Instrument is what one SAFE or convertible note holds on account through a day (FR-EQ-18): the credit balance of its
+// lines on convertible instruments, money the company received under it and has not converted or repaid; zero when it
+// has none. The lines are read as ApplicationMonies reads a subscriber's.
+func Instrument(ctx context.Context, u storage.UnitOfWork, base money.Currency, account, instrument uuid.UUID, through time.Time) (money.Money, error) {
+	held := money.Zero(base)
+	err := controlLines(ctx, u, account, through, func(l storage.AccountLine) error {
+		if l.InstrumentID == nil || *l.InstrumentID != instrument {
+			return nil
+		}
+		b, err := money.ParseStored(string(l.BaseAmount), base)
+		if err != nil {
+			return err
+		}
+		held, err = held.Sub(b)
+		return err
+	})
+	return held, err
+}

@@ -15,7 +15,7 @@ import (
 const accountLines = `-- name: AccountLines :many
 SELECT e.id AS entry_id, e.ledger_revision, e.posting_date, e.source_type, e.source_id, e.source_version, e.memo,
        e.reverses_entry_id, l.line_no, l.currency, l.amount, l.base_amount, l.description, n.number, l.party_id,
-       coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids
+       coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids, l.instrument_id
 FROM fyniq.journal_line l
 JOIN fyniq.journal_entry e ON e.organisation_id = l.organisation_id AND e.id = l.entry_id
 LEFT JOIN fyniq.document_number n ON n.organisation_id = e.organisation_id AND n.id::text = e.source_id
@@ -49,6 +49,7 @@ type AccountLinesRow struct {
 	Number            *string
 	PartyID           *uuid.UUID
 	DimensionValueIds []uuid.UUID
+	InstrumentID      *uuid.UUID
 }
 
 // An account's lines dated from..to, in posting order: date, then revision, then line (FR-GL-11), with their entry's
@@ -84,6 +85,7 @@ func (q *Queries) AccountLines(ctx context.Context, arg AccountLinesParams) ([]A
 			&i.Number,
 			&i.PartyID,
 			&i.DimensionValueIds,
+			&i.InstrumentID,
 		); err != nil {
 			return nil, err
 		}
@@ -226,7 +228,7 @@ func (q *Queries) GetEntryIDByIdentity(ctx context.Context, postingIdentity stri
 
 const getEntryLines = `-- name: GetEntryLines :many
 SELECT l.id, l.line_no, l.account_id, l.currency, l.amount, l.fx_rate, l.fx_rate_source, l.base_currency, l.base_amount,
-       l.description, l.party_id, coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids
+       l.description, l.party_id, coalesce(d.value_ids, '{}')::uuid[] AS dimension_value_ids, l.instrument_id
 FROM fyniq.journal_line l
 LEFT JOIN fyniq.dimension_set d ON d.organisation_id = l.organisation_id AND d.id = l.dimension_set_id
 WHERE l.entry_id = $1 ORDER BY l.line_no
@@ -245,6 +247,7 @@ type GetEntryLinesRow struct {
 	Description       *string
 	PartyID           *uuid.UUID
 	DimensionValueIds []uuid.UUID
+	InstrumentID      *uuid.UUID
 }
 
 // A line's dimension values are its set's, in ascending order; none for a line with no set (FR-DIM-02).
@@ -270,6 +273,7 @@ func (q *Queries) GetEntryLines(ctx context.Context, entryID uuid.UUID) ([]GetEn
 			&i.Description,
 			&i.PartyID,
 			&i.DimensionValueIds,
+			&i.InstrumentID,
 		); err != nil {
 			return nil, err
 		}
@@ -358,7 +362,8 @@ func (q *Queries) InsertEntry(ctx context.Context, arg InsertEntryParams) (Inser
 
 const insertLines = `-- name: InsertLines :exec
 INSERT INTO fyniq.journal_line
-  (entry_id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_amount, description, party_id, dimension_set_id)
+  (entry_id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_amount, description, party_id, dimension_set_id,
+   instrument_id)
 SELECT $1::uuid,
        unnest($2::int[]),
        unnest($3::uuid[]),
@@ -369,7 +374,8 @@ SELECT $1::uuid,
        unnest($8::numeric[]),
        nullif(unnest($9::text[]), ''),
        nullif(unnest($10::text[]), '')::uuid,
-       nullif(unnest($11::text[]), '')::uuid
+       nullif(unnest($11::text[]), '')::uuid,
+       nullif(unnest($12::text[]), '')::uuid
 `
 
 type InsertLinesParams struct {
@@ -384,6 +390,7 @@ type InsertLinesParams struct {
 	Descriptions    []string
 	PartyIds        []string
 	DimensionSetIds []string
+	InstrumentIds   []string
 }
 
 // One statement for all of an entry's lines, so the balances cache updates once (INV-08).
@@ -400,6 +407,7 @@ func (q *Queries) InsertLines(ctx context.Context, arg InsertLinesParams) error 
 		arg.Descriptions,
 		arg.PartyIds,
 		arg.DimensionSetIds,
+		arg.InstrumentIds,
 	)
 	return err
 }
