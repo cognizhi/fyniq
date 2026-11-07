@@ -419,3 +419,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (Equity › Option pool and My shares and options; slice 5c)
 
 ## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (the round simulator: model a round, save it, send it for approval)
+
+## [2026-11-07] compile | docs/user-guide/equity-register.md → equity.register (investor rights, registrable controllers and the exempt status re-test)

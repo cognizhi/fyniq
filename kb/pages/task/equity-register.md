@@ -4,7 +4,7 @@ type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
 summary: The cap table at any day, holders (last 4 only), share classes, equity transactions with ACRA, SAFE conversions, the option pool and round modelling
 sources:
-  - docs/user-guide/equity-register.md sha256:086f27e43d18ab0ceb2c95eeff2e128f15c69e3a2fdad9e3bb60aca721644725
+  - docs/user-guide/equity-register.md sha256:71017bc10476f416d9d9aef8fa07c7c10434397f38a0412975f8622c0f16e8d4
 data_class: general
 taint: trusted
 status: published
@@ -95,6 +95,19 @@ aliases:
   - pool top-up
   - pro-forma cap table
   - side by side scenarios
+  - investor rights
+  - board seat
+  - observer
+  - consent matters
+  - reserved matters
+  - information rights
+  - registrable controller
+  - register of controllers
+  - register of registrable controllers
+  - more than 25%
+  - controller notice
+  - exempt private company
+  - exempt status
 ---
 
 # The equity register: who owns the company, holders, share classes and transactions
@@ -180,6 +193,41 @@ aliases:
   reads them masked and opens no file. Identity documents are never opened in the app.
 
 (src: docs/user-guide/equity-register.md#record-a-holders-details)
+
+## Record an investor's rights
+
+- **Rights from the agreements** on a holder's page: directors they may appoint, a board observer
+  seat, whether they appoint or remove a majority of the board, information rights, a pro-rata
+  right and the matters that need their consent. Recorded, never computed.
+- An Accountant selects **Record rights**, names the agreements and the day they apply from,
+  attaches the agreements and asks for approval; another Owner or the Controller records them,
+  never the holder. Later rights supersede them.
+- A board majority, or any consent matter, **could confer control**: the controller test names the
+  holder for the company secretary to weigh.
+
+(src: docs/user-guide/equity-register.md#record-an-investors-rights)
+
+## Registrable controllers and the exempt status
+
+- More than 25% of the shares or of the votes makes a holder a **registrable controller**: the
+  company's register within 7 days, ACRA's central register within 2 business days after
+  [verify against ACRA's guidance in force]; a notice at least once a year, the reply due within
+  30 days, the register updated within 7 days of it.
+- **Registrable controller** on a holder's page shows the test and what is due (**Enter in the
+  register by**, **Update ACRA's register by**, **In both registers**); the 2 business days leave out
+  weekends only [verify a public-holiday calendar].
+- Rights that could confer control leave the holder **Not assessed** until the company secretary's
+  conclusion is recorded; the check is never all clear.
+- An Accountant selects **Record the conclusion** (a controller on their grounds with both register
+  days and the notices, or not a controller with the reason), attaches the company secretary's
+  confirmation and asks for approval; **Update the entry** adds a day, a notice or the day they
+  ceased.
+- Each change to the register re-tests the **exempt-private-company status**: more than 20 members,
+  or a company or other entity as a member, ends it [accountant to confirm the Act's exceptions].
+  When it disagrees with the status recorded, record the new status from the ACRA business profile
+  and re-check the directors' accounts in debit.
+
+(src: docs/user-guide/equity-register.md#registrable-controllers-and-the-exempt-status)
 
 ## Share classes
 

@@ -13,6 +13,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { EvidencePanel } from "../accounting/JournalEvidence";
+import { ControllerCard, RightsCard, statutoryTests } from "./HolderRights";
 import { EquityTabs, holdsText, kindText } from "./Holders";
 
 type Detail = components["schemas"]["HolderDetail"];
@@ -225,14 +226,17 @@ function RecordForm({ contactId, draft, start, onClose, onDone }: { contactId: s
   );
 }
 
-// HolderPage is Equity › Holders › a holder (docs/design/screens HolderRecord; FR-EQ-15): the record in force, a draft
-// with its identity document and its approval, every record before, and the holder's share issues.
+// HolderPage is Equity › Holders › a holder (docs/design/screens HolderRecord; FR-EQ-15, FR-EQ-22, FR-EQ-25): the record
+// in force, a draft with its identity document and its approval, every record before, the rights from the agreements,
+// whether they are a registrable controller, and the holder's share issues.
 export function HolderPage() {
   const { contactId } = useParams({ strict: false }) as { contactId: string };
   const { session } = useSignedIn();
   const confirm = useConfirm();
   const queries = useQueryClient();
   const q = useQuery({ queryKey: ["holder", contactId], queryFn: () => holderOf(contactId) });
+  // The cap table's statutory tests read the whole register: a reader of their own holding only gets none (FR-EQ-25).
+  const tests = useQuery({ queryKey: ["statutory-tests"], queryFn: statutoryTests, retry: false });
   const [editing, setEditing] = useState<"new" | "draft" | null>(null);
   const [status, setStatus] = useState("");
   const [problem, setProblem] = useState<ApiProblem | null>(null);
@@ -371,6 +375,8 @@ export function HolderPage() {
               </ul>
             </section>
           )}
+          <RightsCard h={h} mayDraft={mayDraft} onStatus={setStatus} />
+          <ControllerCard h={h} tests={tests.data} mayDraft={mayDraft} onStatus={setStatus} />
           <section className="fy-card" aria-labelledby="holder-issues-title">
             <div className="fy-card__head">
               <h2 className="fy-h3" id="holder-issues-title">
