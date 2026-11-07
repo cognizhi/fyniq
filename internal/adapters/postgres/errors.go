@@ -154,6 +154,8 @@ var fyCodes = map[string]string{
 	"FY269": storage.CodeVersion,        // an invitation's registry entry never changes (000236)
 	"FY270": storage.CodeIdentityStepUp, // a sign-in linked or removed without a recent second factor (000239)
 	"FY271": storage.CodeIdentity,       // a sign-in linked already, or the last or current one removed (000239)
+	"FY272": storage.CodeSignInMethod,   // a provider's switch that leaves a Super admin no way in, or a bad domain (000240)
+	"FY273": storage.CodeVersion,        // a provider's switches changed since they were read (000240)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

@@ -4,14 +4,14 @@ type: task
 title: Your profile and security: Basic or Expert mode, your bank account, passkeys, sign-ins and devices
 summary: Basic or Expert mode, your bank account for reimbursements, confirming it's you, passkeys, linking or removing a sign-in, and signing out devices
 sources:
-  - docs/user-guide/profile-and-security.md sha256:f8f6a7c6539f10c2e355943bdbb681a6cb4782ed7fa81c53a946ecec6bf96497
+  - docs/user-guide/profile-and-security.md sha256:887d990202014b8221216a559b823041533eefba775d81793a4e0b90530e04ad
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-06
+compiled_at: 2026-11-07
 aliases:
   - profile
   - security settings
@@ -121,6 +121,7 @@ aliases:
 - "An account for reimbursements is a Singapore bank's account.": use a bank in Singapore's code, such as DBSSSGSG, OCBCSGSG or UOVBSGSG.
 - "That account signs someone in to Fyniq already.": at the provider, sign in with the account meant to be added, then **Link** again.
 - "Linking needs you to have confirmed it's you in the last 5 minutes.": select **Link** again, confirm when asked, and sign in at the provider within a few minutes.
+- "That provider accepts only accounts on some email domains.": link the account whose email is on the organisation's domain, such as the work account.
 - "The sign-in you are using, or your last one, cannot be removed.": sign in with another sign-in first, or link another.
 - Related: how Fyniq looks ([[preferences.appearance]]); claiming expenses ([[claims.make-a-claim]]); paying claims in a batch ([[purchases.payment-batches]]).
 

@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -142,8 +144,68 @@ type Sessions interface {
 	// session did not; ports.ErrNotFound for an identity not theirs; CodeIdentity for the one the session signed in with,
 	// or their last.
 	UnlinkIdentity(ctx context.Context, sessionHash []byte, issuer, subject string, now time.Time) (uuid.UUID, error)
+	// SignInMethods are the providers' switches a Super admin set, by provider; a provider with none is on and accepts any
+	// domain (FR-ADM-08, rev 0.197).
+	SignInMethods(ctx context.Context) ([]SignInMethod, error)
+	// SignInEssential are the providers some active Super admin signs in with alone: turning one off is refused.
+	SignInEssential(ctx context.Context) ([]string, error)
+	// SignInCounts are how many sessions each provider started since since, by provider.
+	SignInCounts(ctx context.Context, since time.Time) (map[string]int, error)
 	// Identities are a user's sign-in identities: the one they joined or set up with first, then those linked, in order.
 	Identities(ctx context.Context, userID uuid.UUID) ([]Identity, error)
+}
+
+// SignInMethod is a provider's switches: whether it signs people in, and the email domains it accepts (none: any).
+type SignInMethod struct {
+	Provider       string
+	Enabled        bool
+	AllowedDomains []string
+	Version        int // 0: never set
+	ChangedBy      uuid.UUID
+	ChangedAt      time.Time
+}
+
+// Accepts reports whether the switches let an account with email (verified or not) sign in.
+func (m SignInMethod) Accepts(email string, verified bool) bool {
+	if !m.Enabled {
+		return false
+	}
+	if len(m.AllowedDomains) == 0 {
+		return true
+	}
+	_, domain, ok := strings.Cut(strings.ToLower(email), "@")
+	return ok && verified && slices.Contains(m.AllowedDomains, domain)
+}
+
+// MethodOf is provider's switches among all: on, accepting any domain, when none were set.
+func MethodOf(all []SignInMethod, provider string) SignInMethod {
+	for _, m := range all {
+		if m.Provider == provider {
+			return m
+		}
+	}
+	return SignInMethod{Provider: provider, Enabled: true}
+}
+
+// SignInMethodChange is a Super admin's change of a provider's switches, at the version they read (0: never set).
+type SignInMethodChange struct {
+	Provider       string   `json:"provider"`
+	Version        int      `json:"version"`
+	Enabled        bool     `json:"enabled"`
+	AllowedDomains []string `json:"allowed_domains"`
+	EndSessions    bool     `json:"end_sessions,omitempty"`
+}
+
+// SignInMethods changes the providers' switches, in a unit of work of the installation organisation, whose trail records
+// each change (FR-ADM-08, FR-ADM-07).
+type SignInMethodWriter interface {
+	// List is Sessions.SignInMethods as the unit of work sees it.
+	List(ctx context.Context) ([]SignInMethod, error)
+	// Essential is Sessions.SignInEssential as the unit of work sees it.
+	Essential(ctx context.Context) ([]string, error)
+	// Set applies c by by, as approved by change (nil: none needed, with one Super admin): CodeVersion at another version;
+	// CodeSignInMethod for a domain that is not one, or when it leaves a Super admin no way to sign in.
+	Set(ctx context.Context, by uuid.UUID, change *uuid.UUID, c SignInMethodChange, at time.Time) (SignInMethod, error)
 }
 
 // IdentityLink is what Sessions.LinkIdentity needs.

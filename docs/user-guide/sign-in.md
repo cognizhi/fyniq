@@ -81,6 +81,7 @@ An invitation works once, within 7 days.
 | Sign-in failed (AUTH-SIGNIN-02): the sign-in took longer than 10 minutes, or began in another browser | Sign in again, from start to finish in the same browser |
 | Sign-in failed (AUTH-SIGNIN-03): the provider's answer did not pass Fyniq's checks | Sign in again. If it keeps happening, tell the Super admin |
 | Sign-in failed (AUTH-SIGNIN-04): the sign-in service did not answer | Try again in a moment |
+| Sign-in failed (AUTH-SIGNIN-08): that provider accepts only accounts on some email domains | Sign in with your work account at that provider, or choose another way to sign in |
 | That invitation code is not valid, was used already or has expired | Ask whoever invited you for a new invitation |
 | A second factor is required (API-AUTHZ-07) | Sign in again with your authenticator app, or confirm it's you with a passkey |
 | You have no passkey (API-PASSKEY-02) | Sign in again with your authenticator app, then add a passkey |

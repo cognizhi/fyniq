@@ -1183,6 +1183,14 @@ var (
 	SignOutOtherDevices = Policy{Operation: "signOutOtherDevices", Capability: Session, Need: Create, NoOrganisation: true, Note: deviceNote}
 )
 
+// The sign-in providers' switches (FR-ADM-08, rev 0.197): a Super admin's, the other one approving a change once there
+// are two (approveInstallationChange).
+var (
+	ListSignInMethods  = Policy{Operation: "listSignInMethods", Capability: SuperAdmins, Need: View, NoOrganisation: true, Note: superAdminNote}
+	ChangeSignInMethod = Policy{Operation: "changeSignInMethod", Capability: SuperAdmins, Need: Create, NoOrganisation: true,
+		Note: superAdminNote + " With two Super admins a change waits for the other's approval."}
+)
+
 // A person's sign-ins (FR-ADM-08, rev 0.196): linked from the sign-in flow, listed and removed here.
 const identityNote = "Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-08)."
 
@@ -1317,7 +1325,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,
 	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp,
-	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity)
+	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

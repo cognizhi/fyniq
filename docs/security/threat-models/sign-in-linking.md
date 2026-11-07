@@ -1,8 +1,8 @@
-# Threat model: linking and removing sign-ins
+# Threat model: linking sign-ins and switching sign-in providers
 
 | | |
 |---|---|
-| Feature and requirement IDs | A person links an account at another sign-in provider to their Fyniq user, lists their sign-ins and removes one: FR-ADM-08, SEC-35 (PRD-001 rev 0.8, rev 0.196); `p1-users-roles` task 2.4 |
+| Feature and requirement IDs | A person links an account at another sign-in provider to their Fyniq user, lists their sign-ins and removes one; a Super admin turns each provider on or off and sets the email domains it accepts: FR-ADM-08, FR-ADM-07, SEC-35 (PRD-001 rev 0.8, rev 0.196, rev 0.197); `p1-users-roles` task 2.4 |
 | Author, reviewer, date | Claude Code for the founders, 6 Nov 2026; reviewer: a founder at sign-off (second human review waived before production, AGENTS.md) |
 | Data and its class | Sign-in identities: the provider's issuer and subject, the provider's ID, when linked and last used (internal; personal data by association with a user); session token hashes |
 | Who acts | A person in a browser session with a recent second factor (every role); never the AI, an MCP client or an OAuth client |
@@ -34,6 +34,9 @@ only write path to `user_identity`).
 | T7 | removal | Elevation: a session signed in with a removed account keeps working | A removed way in still works | Low |
 | T8 | any change | Repudiation: a sign-in linked or removed with no record and no notice | A takeover goes unnoticed | Low |
 | T9 | listing and logs | Information disclosure: the provider's subject or a token shown or logged | Correlation across services, replay material | Low |
+| T10 | Super admin → API, switches | Denial of service: a Super admin (or a hijacked Super admin session) turns off, or narrows the domains of, the only way a Super admin signs in | The installation loses its administrators | Medium |
+| T11 | Super admin → API, switches | Elevation / repudiation: one Super admin widens a provider's domains or turns one on alone, with a second Super admin present | A provider the other did not agree to signs people in | Low |
+| T12 | provider → API, domains | Spoofing: an account with an unverified email, or on another domain, signs in through a provider limited to the organisation's domain | Outsiders sign in through the company's provider | Medium |
 
 ## 3. What we do about it
 
@@ -48,11 +51,17 @@ only write path to `user_identity`).
 | T7 | `unlink_identity` ends every session the removed pair signed in, in the same transaction | `TestYourSignIns` |
 | T8 | Each link and removal writes `identity.linked` / `identity.unlinked` to the installation's trail in the same transaction, and sends the locked security notice, in the app and by email at once | `TestYourSignIns` |
 | T9 | The API shows an identity by a hash of its issuer and subject and its provider only; the trail records the provider and issuer, never the subject; the flow logs no token, code or cookie (SEC-15) | `TestYourSignIns` |
+| T10 | `set_sign_in_method` refuses a change that leaves an active Super admin with no identity on a provider that is on and accepts their verified email (FY272); the list marks such a provider | `TestSignInProviders` (FR-ADM-08; V8.2.1) |
+| T11 | With two active Super admins `set_sign_in_method` applies only an approved, unapplied installation change of step `sign_in` for that provider (`apply_installation_change`, FY213), decided by the other over the envelope's hash; every change is audited and sent to every Super admin | `TestSignInProviders` (FR-ADM-07) |
+| T12 | The flow checks the switches when a sign-in starts and when it comes back: a provider turned off is refused, and with domains set only a verified email on one of them signs in or links (AUTH-SIGNIN-08) | `TestTheFlowFollowsTheProvidersSwitches`, `TestSignInProviders` (V6.8.1) |
 
 ## 4. What remains
 
-- Super admins enabling and disabling providers, allowed domains, joining by domain (a pending Employee membership an
-  Owner approves) and the last-method guard arrive with the rest of task 2.4 (rev 0.196).
+- Joining by domain (a pending Employee membership an Owner approves) arrives with the rest of task 2.4 (rev 0.196);
+  adding providers in the app in P2 or P3.
+- The last-method guard knows the providers from each identity's recorded provider or last session; a provider
+  removed from the deployment's configuration is not seen by the database, so an operator who removes one first checks
+  that each Super admin signs in with another [live-verify].
 - The security notice goes to the person's organisation's centre; a person in no organisation is told nothing in the
   app (the sign-in alert's email still reaches them for each sign-in).
 - Account recovery when every linked provider is lost is SEC-35's (task 2.5).

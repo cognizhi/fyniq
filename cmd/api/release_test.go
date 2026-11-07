@@ -47,6 +47,9 @@ func (noSessions) UnlinkIdentity(context.Context, []byte, string, string, time.T
 	return uuid.Nil, ports.ErrNotFound
 }
 func (noSessions) Identities(context.Context, uuid.UUID) ([]storage.Identity, error) { return nil, nil }
+func (noSessions) SignInMethods(context.Context) ([]storage.SignInMethod, error)     { return nil, nil }
+func (noSessions) SignInEssential(context.Context) ([]string, error)                 { return nil, nil }
+func (noSessions) SignInCounts(context.Context, time.Time) (map[string]int, error)   { return nil, nil }
 
 func configure(t *testing.T, origin string) {
 	t.Setenv("FYNIQ_SIGNIN", "identity-platform")

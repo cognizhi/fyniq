@@ -1,7 +1,7 @@
 import { BookOpen, House, Inbox, Landmark, Receipt, ReceiptText, Wallet } from "lucide-react";
 import { describe, expect, it } from "vitest";
 import type { Session } from "../api/client";
-import { nav, routes, type NavFeature } from "../registry";
+import { nav, routes, settingsNav, type NavFeature } from "../registry";
 import { bottomBar, navFor } from "./navigation";
 
 // req: FR-UX-40
@@ -50,6 +50,12 @@ describe("navigation cut to the person", () => {
   it("hides Expert-only areas in Basic mode, and only those", () => {
     expect(ids(navFor(items, as(["owner"]), "basic"))).toEqual(["my-claims", "home", "inbox", "sales", "banking"]);
     expect(ids(navFor(items, as(["owner"]), "expert"))).toContain("accounting");
+  });
+
+  // req: FR-ADM-08
+  it("shows the installation's pages to a Super admin only", () => {
+    expect(ids(navFor(settingsNav, { ...as(["owner"]), super_admin: true }, "expert"))).toContain("settings.sign-in-providers");
+    expect(ids(navFor(settingsNav, as(["owner", "administrator"]), "expert"))).not.toContain("settings.sign-in-providers");
   });
 
   it("puts at most four of the person's items in the compact bottom bar, then More", () => {

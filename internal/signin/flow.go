@@ -31,6 +31,7 @@ const (
 	CodeCrossSite       = "AUTH-SIGNIN-05" // a sign-out or a link sent from another site
 	CodeLinkStepUp      = "AUTH-SIGNIN-06" // a link from a session that confirmed it is the person no more than 5 minutes ago (FR-ADM-08)
 	CodeLinked          = "AUTH-SIGNIN-07" // that account at the provider signs someone in already (FR-ADM-08)
+	CodeDomain          = "AUTH-SIGNIN-08" // the provider accepts only some email domains, and the account's verified email is on none (FR-ADM-08)
 )
 
 // startLifetime is how long a sign-in may take at the provider.
@@ -116,6 +117,13 @@ func (f Flow) start(w http.ResponseWriter, r *http.Request) {
 		f.fail(w, r, CodeUnknownProvider, "unknown provider", nil)
 		return
 	}
+	if m, err := f.method(r.Context(), provider); err != nil {
+		f.fail(w, r, CodeFailure, "switches", err)
+		return
+	} else if !m.Enabled {
+		f.fail(w, r, CodeUnknownProvider, "turned off", nil)
+		return
+	}
 	back, mode := SafeReturn(r.URL.Query().Get("return_to")), ""
 	if r.URL.Query().Get("link") == "1" {
 		if !f.mayLink(w, r) {
@@ -171,6 +179,17 @@ func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		fail(w, r, CodeFailure, "finish", err)
+		return
+	}
+	// A Super admin may have turned the provider off, or narrowed its domains, while the browser was away (FR-ADM-08).
+	if m, err := f.method(r.Context(), provider); err != nil {
+		fail(w, r, CodeFailure, "switches", err)
+		return
+	} else if !m.Enabled {
+		fail(w, r, CodeUnknownProvider, "turned off", nil)
+		return
+	} else if !m.Accepts(who.Email, who.EmailVerified) {
+		fail(w, r, CodeDomain, "email domain not accepted", nil)
 		return
 	}
 	if mode == linkMode {
@@ -291,6 +310,15 @@ func (f Flow) endCurrent(r *http.Request) {
 	if err := f.Sessions.EndSession(r.Context(), authn.HashToken(token), f.Clock.Now()); err != nil {
 		f.log().Error("auth.signout.failure", "error", err.Error())
 	}
+}
+
+// method is provider's switches as the Super admins set them (on, any domain, when never set).
+func (f Flow) method(ctx context.Context, provider string) (storage.SignInMethod, error) {
+	all, err := f.Sessions.SignInMethods(ctx)
+	if err != nil {
+		return storage.SignInMethod{}, err
+	}
+	return storage.MethodOf(all, provider), nil
 }
 
 func (f Flow) known(provider string) bool {

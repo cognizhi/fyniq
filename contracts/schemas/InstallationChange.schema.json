@@ -87,6 +87,7 @@
       "type": "string"
     },
     "step": {
+      "description": "The step; sign_in is a sign-in provider's switches, whose connector is sign-in:\u003cprovider\u003e (FR-ADM-08).",
       "enum": [
         "install",
         "configure",
@@ -96,7 +97,8 @@
         "disable",
         "uninstall",
         "order",
-        "consent"
+        "consent",
+        "sign_in"
       ],
       "examples": [
         "resume"

@@ -88,14 +88,23 @@ func registerSession(a *API) {
 		OperationID: "listSignInProviders", Method: http.MethodGet, Path: "/v1/sign-in-providers", Tags: []string{"Session"},
 		Summary: "List the sign-in providers",
 		Description: "The providers people may sign in to the web app with (FR-ADM-08): Google and Zoho through Identity Platform, or the " +
-			"local sign-in page in local mode, a page at a time (cursor pagination). Public: the sign-in page needs it before anyone is signed " +
+			"local sign-in page in local mode, but those a Super admin turned off, a page at a time (cursor pagination). Public: the sign-in page needs it before anyone is signed " +
 			"in. Read-only; no side effects.",
 		Security: []map[string][]string{{}}, // no credential: an empty requirement
-	}, []string{CodeCursor}, func(_ context.Context, in *signInProvidersInput) (*signInProvidersOutput, error) {
+	}, []string{CodeCursor}, func(ctx context.Context, in *signInProvidersInput) (*signInProvidersOutput, error) {
 		all := []SignInProvider{}
 		if a.deps.SignIn != nil {
+			var methods []storage.SignInMethod
+			if s, ok := a.deps.Installation.(storage.Sessions); ok {
+				var err error
+				if methods, err = s.SignInMethods(ctx); err != nil {
+					return nil, err
+				}
+			}
 			for _, p := range a.deps.SignIn.Providers() {
-				all = append(all, SignInProvider{ID: p.ID, Name: p.Name})
+				if storage.MethodOf(methods, p.ID).Enabled { // one a Super admin turned off is not offered (FR-ADM-08)
+					all = append(all, SignInProvider{ID: p.ID, Name: p.Name})
+				}
 			}
 		}
 		items, next, err := pageOf(all, func(p SignInProvider) string { return p.ID }, in.PageQuery)

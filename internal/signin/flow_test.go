@@ -47,6 +47,7 @@ type fakeSessions struct {
 	live    map[string]storage.Session // the live sessions, by token hash
 	links   []storage.IdentityLink
 	linkErr error
+	methods []storage.SignInMethod
 }
 
 func (f *fakeSessions) RecordIdentityEmail(_ context.Context, issuer, subject, email string, _ time.Time) error {
@@ -96,6 +97,16 @@ func (f *fakeSessions) UnlinkIdentity(context.Context, []byte, string, string, t
 }
 
 func (f *fakeSessions) Identities(context.Context, uuid.UUID) ([]storage.Identity, error) {
+	return nil, nil
+}
+
+func (f *fakeSessions) SignInMethods(context.Context) ([]storage.SignInMethod, error) {
+	return f.methods, nil
+}
+
+func (f *fakeSessions) SignInEssential(context.Context) ([]string, error) { return nil, nil }
+
+func (f *fakeSessions) SignInCounts(context.Context, time.Time) (map[string]int, error) {
 	return nil, nil
 }
 
@@ -311,6 +322,46 @@ func TestLinkingASignInAddsItToTheSessionsUser(t *testing.T) {
 	}
 	if len(e.sessions.emails) != 1 {
 		t.Errorf("the linked sign-in's verified email was not recorded: %v", e.sessions.emails)
+	}
+}
+
+// A provider a Super admin turned off is refused when a sign-in starts and when it comes back; one that accepts only
+// some domains refuses an account whose verified email is on none of them.
+// req: FR-ADM-08
+// asvs: V6.8.1
+func TestTheFlowFollowsTheProvidersSwitches(t *testing.T) {
+	e := newFlow("http://localhost:8080")
+	e.sessions.methods = []storage.SignInMethod{{Provider: "google", Enabled: false, Version: 1}}
+	if loc := e.do(httptest.NewRequest(http.MethodGet, "/auth/signin?provider=google", nil)).Header.Get("Location"); loc != "/?signin_error="+signin.CodeUnknownProvider {
+		t.Errorf("a sign-in with a provider turned off: %q", loc)
+	}
+
+	e.sessions.methods = []storage.SignInMethod{{Provider: "google", Enabled: true, AllowedDomains: []string{"cognizhi.com"}, Version: 2}}
+	start := cookieNamed(e.do(httptest.NewRequest(http.MethodGet, "/auth/signin?provider=google", nil)), "fyniq_signin")
+	callback := func() string {
+		r := httptest.NewRequest(http.MethodGet, "/auth/callback?code=c-1&state="+e.provider.started.State, nil)
+		r.AddCookie(start)
+		return e.do(r).Header.Get("Location")
+	}
+	for name, who := range map[string]ports.SignedIn{
+		"another domain":                       {Email: "mei@example.com", EmailVerified: true},
+		"an email the provider did not verify": {Email: "mei@cognizhi.com"},
+		"no email":                             {},
+	} {
+		who.Provider, who.Issuer, who.Subject, who.AuthTime, who.SecondFactor = "google", "https://accounts.google.com", "110", now, true
+		e.provider.who = who
+		if loc := callback(); loc != "/?signin_error="+signin.CodeDomain {
+			t.Errorf("%s: %q", name, loc)
+		}
+	}
+	e.provider.who = ports.SignedIn{Provider: "google", Issuer: "https://accounts.google.com", Subject: "110", AuthTime: now, SecondFactor: true,
+		Email: "Mei@Cognizhi.com", EmailVerified: true}
+	if loc := callback(); loc != "/" || len(e.sessions.started) != 1 {
+		t.Errorf("an account on the domain: %q, %d sessions", loc, len(e.sessions.started))
+	}
+	e.sessions.methods[0].Enabled = false // turned off while the browser was at the provider
+	if loc := callback(); loc != "/?signin_error="+signin.CodeUnknownProvider || len(e.sessions.started) != 1 {
+		t.Errorf("a provider turned off during the sign-in: %q", loc)
 	}
 }
 

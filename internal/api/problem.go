@@ -615,6 +615,7 @@ var codeFacts = map[string]struct {
 	storage.CodeConnector:       {409, "A connector moves only along its lifecycle"},
 	storage.CodeIdentity:        {409, "That sign-in cannot be removed"},
 	storage.CodeIdentityStepUp:  {403, "Confirm it's you first"},
+	storage.CodeSignInMethod:    {409, "That would leave a Super admin no way to sign in"},
 	storage.CodeConnectorChange: {409, "The other Super admin's approval is needed"},
 
 	// Banking (FR-BNK-01…18).

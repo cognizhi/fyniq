@@ -68,6 +68,7 @@ export const linkErrors: Record<string, string> = {
   "AUTH-SIGNIN-05": "The link did not start from Fyniq, so nothing was linked. Select Link on this page.",
   "AUTH-SIGNIN-06": "Linking needs you to have confirmed it's you in the last 5 minutes, so nothing was linked. Select Link again: Fyniq asks you to confirm first.",
   "AUTH-SIGNIN-07": "That account signs someone in to Fyniq already, so it was not linked. At the provider, sign in with another account, then select Link.",
+  "AUTH-SIGNIN-08": "That provider accepts only accounts on some email domains, and this account's email is on none of them, so it was not linked. Link your work account.",
 };
 
 // ModeChoice is the experience mode, also in the header (FR-UX-23; experience/modes).

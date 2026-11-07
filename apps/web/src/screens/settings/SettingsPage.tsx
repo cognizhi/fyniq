@@ -13,6 +13,7 @@ import { Icon } from "../../ui";
 const groups = [
   ["you", "Your settings"],
   ["organisation", "Organisation"],
+  ["installation", "Installation"],
 ] as const;
 
 // useSettingsNav is the Settings pages the person may open in their mode, and how many more Expert

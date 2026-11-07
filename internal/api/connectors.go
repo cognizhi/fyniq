@@ -222,7 +222,7 @@ type InstallationChange struct {
 	ID           uuid.UUID  `json:"id" example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e42"`
 	ConnectorID  *uuid.UUID `json:"connector_id,omitempty" doc:"The installed connector; absent for an install." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"`
 	Connector    string     `json:"connector" example:"zeptomail"`
-	Step         string     `json:"step" enum:"install,configure,secret,enable,resume,disable,uninstall,order,consent" example:"resume"`
+	Step         string     `json:"step" enum:"install,configure,secret,enable,resume,disable,uninstall,order,consent,sign_in" doc:"The step; sign_in is a sign-in provider's switches, whose connector is sign-in:<provider> (FR-ADM-08)." example:"resume"`
 	Summary      string     `json:"summary" example:"Resume Zoho ZeptoMail"`
 	Status       string     `json:"status" enum:"pending,approved,rejected,expired" example:"pending"`
 	Envelope     string     `json:"envelope" doc:"The RFC 8785 envelope the other Super admin signs." example:"{\"change\":{\"step\":\"resume\"}}"`
@@ -481,6 +481,15 @@ func (a *API) installations() connector.Installations {
 
 func (a *API) organisations() connector.Organisations {
 	return connector.Organisations{Catalogue: a.deps.Connectors.Catalogue, Secrets: a.deps.Connectors.Secrets, Clock: a.deps.Clock}
+}
+
+// changesReady checks the installation's changes can be read and decided: those of sign-in providers need only the
+// database.
+func (a *API) changesReady() error {
+	if a.deps.Installation == nil {
+		return problem(CodeUnavailable, "The installation's database is not configured.", "Configure the database, then try again.")
+	}
+	return nil
 }
 
 func (a *API) connectorsReady() error {
@@ -802,7 +811,7 @@ func registerConnectors(a *API) {
 		Description: "Every change to an installation connector, newest first: pending ones wait for the other Super admin, who reads the " +
 			"envelope and signs its SHA-256 (FR-ADM-07, FR-INT-26). " + authz.ListInstallationChanges.Note + " Read-only; no side effects.",
 	}, append([]string{CodeCursor}, admin...), func(ctx context.Context, in *changeListInput) (*changeListOutput, error) {
-		if err := a.connectorsReady(); err != nil {
+		if err := a.changesReady(); err != nil {
 			return nil, err
 		}
 		by, err := a.superAdmin(ctx, "Listing the installation's changes")
@@ -826,7 +835,7 @@ func registerConnectors(a *API) {
 	})
 
 	decide := func(ctx context.Context, in *decideChangeInput, approve bool) (*changeOutput, error) {
-		if err := a.connectorsReady(); err != nil {
+		if err := a.changesReady(); err != nil { // a connector's change also needs the catalogue, checked when it applies
 			return nil, err
 		}
 		what := "Approving a change"
@@ -854,11 +863,29 @@ func registerConnectors(a *API) {
 				}
 				return installationChangeOf(c), a.tellOfDecision(ctx, u, c)
 			}
+			changes, err := u.Connectors().InstallationChanges(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if i := slices.IndexFunc(changes, func(c storage.InstallationChange) bool { return c.ID == id && c.Step == stepSignIn }); i >= 0 {
+				if changes[i].Status != "pending" {
+					return nil, &connector.Error{Code: connector.CodeChange, Message: "the change is " + changes[i].Status + " and cannot be approved"}
+				}
+				out, err := a.approveSignInChange(ctx, u, by, p.StepUpAt, changes[i], hash)
+				if err != nil {
+					return nil, err
+				}
+				changes[i].Status = "approved"
+				return out, a.tellOfDecision(ctx, u, changes[i])
+			}
+			if err := a.connectorsReady(); err != nil {
+				return nil, err
+			}
 			r, err := a.installations().Approve(ctx, u, by, p.StepUpAt, id, hash)
 			if err != nil {
 				return nil, err
 			}
-			changes, err := u.Connectors().InstallationChanges(ctx)
+			changes, err = u.Connectors().InstallationChanges(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -1326,7 +1353,11 @@ func (a *API) tellOfDecision(ctx context.Context, u storage.UnitOfWork, c storag
 	if c.Status == "rejected" {
 		title = c.Summary + ": rejected by another Super admin: " + c.Reason
 	}
-	return a.relay(ctx, u, notify.Event{Type: "approval.decided", RecordType: "installation_change", RecordID: &c.ID, Link: "/settings/integrations",
+	link := "/settings/integrations"
+	if c.Step == stepSignIn {
+		link = "/settings/sign-in-providers"
+	}
+	return a.relay(ctx, u, notify.Event{Type: "approval.decided", RecordType: "installation_change", RecordID: &c.ID, Link: link,
 		Title: title, Audience: notify.Audience{Users: []uuid.UUID{c.RequestedBy}}})
 }
 
