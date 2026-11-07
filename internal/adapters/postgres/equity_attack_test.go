@@ -23,6 +23,7 @@ import (
 // req: FR-EQ-16
 // req: CMP-PD-07
 // req: QA-ENG-05
+// req: CMP-PD-07
 // asvs: V8.2.2
 func TestAttackEquityRecordsKeepTheirRules(t *testing.T) {
 	ctx := context.Background()
@@ -48,6 +49,11 @@ func TestAttackEquityRecordsKeepTheirRules(t *testing.T) {
 	}
 	if err := create(storage.DocumentHolderRecord, holder+`,"id_type":"nric","id_last4":"567D"}`); err != nil {
 		t.Fatalf("a record with the last 4 characters: %v", err)
+	}
+	// The same letters and digits inside a longer word, as in a contact's ID (…-f1234567ab…), are no NRIC: only a number in
+	// full as a word of its own is (FY285, migration 000276).
+	if err := create(storage.DocumentHolderRecord, holder+`,"id_type":"nric","id_last4":"567D","note":"Ref 01928f6e-f1234567ab-c"}`); err != nil {
+		t.Errorf("a record with an NRIC's shape inside a longer word: %v", err)
 	}
 	classOf := func(account fmt.Stringer) string {
 		return fmt.Sprintf(`{"date":"2026-11-07","name":"Ordinary","kind":"ordinary","account_id":%q,"votes_per_share":"1","liquidation":{},"dividend":{"kind":"none"},"anti_dilution":"none"}`, account)

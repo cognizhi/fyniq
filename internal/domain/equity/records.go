@@ -53,7 +53,7 @@ var (
 var (
 	last4       = regexp.MustCompile(`^[A-Za-z0-9]{1,4}$`)
 	uenFormat   = regexp.MustCompile(`^[0-9A-Z]{9,10}$`)
-	fullNRIC    = regexp.MustCompile(`[STFGMstfgm][0-9]{7}[A-Za-z]`)
+	fullNRIC    = regexp.MustCompile(`\b[STFGMstfgm][0-9]{7}[A-Za-z]\b`) // a word of its own, as the database's guard reads it (FY285)
 	decimalText = regexp.MustCompile(`^[0-9]{1,12}(\.[0-9]{1,8})?$`)
 )
 
