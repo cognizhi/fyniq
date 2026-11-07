@@ -65,6 +65,7 @@ function Change({ m, turning, onClose, onDone }: { m: Method | null; turning: "o
   const id = useId();
   const [domains, setDomains] = useState((m?.allowed_domains ?? []).join(", "));
   const [endSessions, setEndSessions] = useState(true);
+  const [join, setJoin] = useState(Boolean(m?.join_by_domain));
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const h = helpText("sign-in-provider.change");
@@ -77,7 +78,8 @@ function Change({ m, turning, onClose, onDone }: { m: Method | null; turning: "o
     setBusy(true);
     setProblem(null);
     const key = newKey();
-    const body = { enabled, allowed_domains: turning === "domains" ? domainsOf(domains) : (m.allowed_domains ?? []), end_sessions: turning === "off" && endSessions };
+    const allowed = turning === "domains" ? domainsOf(domains) : (m.allowed_domains ?? []);
+    const body = { enabled, allowed_domains: allowed, join_by_domain: turning === "domains" ? join && allowed.length > 0 : m.join_by_domain, end_sessions: turning === "off" && endSessions };
     const out = await guarded(confirm, () =>
       api.PATCH("/v1/installation/sign-in-methods/{provider}", {
         params: { path: { provider: m.provider }, header: { "If-Match": `"${m.version}"`, "Idempotency-Key": key } },
@@ -131,6 +133,15 @@ function Change({ m, turning, onClose, onDone }: { m: Method | null; turning: "o
               Such as cognizhi.com, separated by commas. Up to 20.
             </span>
           </div>
+        )}
+        {turning === "domains" && (
+          <label className="fy-row fy-row--top gap-2">
+            <input type="checkbox" checked={join} onChange={(e) => setJoin(e.target.checked)} />
+            <span className="fy-stack fy-stack--2" style={{ gap: 2 }}>
+              <span className="fy-strong">Let people with these domains ask to join</span>
+              <span className="fy-small fy-secondary">Only for a domain an organisation claimed; an Owner approves each. Off by default: an invitation is needed.</span>
+            </span>
+          </label>
         )}
         {turning === "off" && (
           <label className="fy-row fy-row--top gap-2">
@@ -195,6 +206,7 @@ export function SignInProviders() {
                     <span className="fy-list__meta whitespace-normal">
                       <span className="fy-num">{m.sign_ins}</span> sign-ins ·{" "}
                       {(m.allowed_domains ?? []).length ? `only ${(m.allowed_domains ?? []).join(", ")}` : "any email domain"}
+                      {m.join_by_domain ? " · people may ask to join by domain" : ""}
                       {m.changed_at ? ` · changed ${dateTime(m.changed_at)}` : ""}
                     </span>
                   </span>

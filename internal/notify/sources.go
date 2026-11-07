@@ -40,6 +40,9 @@ func SecondFactor(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork
 	return err
 }
 
+// JoinRequestType tells an organisation's Owners that someone asks to join by their email domain (FR-ADM-08, rev 0.199).
+const JoinRequestType = "security.join_request"
+
 // RecoveryType tells a person, and every Owner of their organisations, that their account was recovered or a recovery of
 // it confirmed (SEC-35, rev 0.198).
 const RecoveryType = "security.recovery"

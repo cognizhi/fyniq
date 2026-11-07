@@ -4,7 +4,7 @@ type: task
 title: Turn sign-in providers on or off, and accept only some email domains
 summary: A Super admin's page of the ways people sign in: turn each on or off, end its sessions, set allowed email domains; the last way in; two Super admins
 sources:
-  - docs/user-guide/sign-in-providers.md sha256:8da57fceaee454d8403666173f037b5888be678ab958718338aa5ee5fd46d2fe
+  - docs/user-guide/sign-in-providers.md sha256:fe0540471c0b57c0eafa97877e046971bdbcc6a61ea404d5e7df977ae5814c11
 data_class: general
 taint: trusted
 status: draft
@@ -46,6 +46,13 @@ aliases:
 - Only an account whose verified email ends with one of them can then sign in, or be linked, with that provider ([[preferences.security]]).
 
 (src: docs/user-guide/sign-in-providers.md#accept-only-some-email-domains)
+
+## Let people join by their domain
+
+- In **Domains**, **Let people with these domains ask to join**: a person signing in through the provider with a verified email on one of them, without a Fyniq account, may ask to join the organisation that claimed the domain; an Owner approves each ([[members.invite]]).
+- Off by default (an invitation is needed), and it needs the domains set.
+
+(src: docs/user-guide/sign-in-providers.md#let-people-join-by-their-domain)
 
 ## The last way in, and two Super admins
 

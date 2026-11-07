@@ -4,7 +4,7 @@ type: task
 title: Sign in to Fyniq, confirm it's you with a passkey, or join with an invitation
 summary: Signing in with a second factor, passkeys, your devices, when a session ends, joining a company or as the second Super admin by invitation, and errors
 sources:
-  - docs/user-guide/sign-in.md sha256:ccbef63dc8438dc813742459954ea56a025cacd4656cf52a033264b08b90b0bc
+  - docs/user-guide/sign-in.md sha256:e631c4ea397fa71a8d84bfdbdeb6ee658dbcb9d1d881e89445e5b97a838e9d75
 data_class: general
 taint: trusted
 status: published
@@ -84,6 +84,14 @@ aliases:
 - An invitation works once, within 7 days. Setting up the installation and creating the invitation: [[installation.setup]].
 
 (src: docs/user-guide/sign-in.md#join-as-the-second-super-admin) (src: docs/user-guide/sign-in.md#before-you-start)
+
+## Ask to join by your email domain
+
+- If a company lets people join by their work email, an account whose verified email is on its domain sees **Ask to join** with the company's name on the sign-in page.
+- Type the name others will see and **Ask to join**; an Owner approves or rejects it, and nothing of the company shows before.
+- Once approved, sign in again: the person starts as an Employee ([[members.invite]]).
+
+(src: docs/user-guide/sign-in.md#ask-to-join-by-your-email-domain)
 
 ## Recover your account
 

@@ -48,6 +48,7 @@ type SignInMethod struct {
 	Name              string              `json:"name" doc:"Its name on the sign-in page." example:"Zoho"`
 	Enabled           bool                `json:"enabled" doc:"Whether it signs people in; turned off, new sign-ins through it are refused." example:"true"`
 	AllowedDomains    []EmailDomain       `json:"allowed_domains" doc:"The email domains it accepts, an account's verified email on one of them; empty: any."`
+	JoinByDomain      bool                `json:"join_by_domain" doc:"Whether a person with a verified email on one of its domains, which an organisation claimed, may ask to join it; an Owner approves each (rev 0.199)." example:"false"`
 	SignIns           int                 `json:"sign_ins" doc:"Sessions it started in the last 30 days." example:"96"`
 	LastForSuperAdmin bool                `json:"last_for_super_admin" doc:"true when a Super admin signs in with it alone: turning it off, or narrowing its domains past their email, is refused." example:"false"`
 	Version           int                 `json:"version" doc:"Its switches' version, for If-Match: 0 until a Super admin first changes them." example:"2"`
@@ -65,6 +66,7 @@ type SignInMethodPage struct {
 type SignInMethodRequest struct {
 	Enabled        bool          `json:"enabled" doc:"Whether it signs people in." example:"false"`
 	AllowedDomains []EmailDomain `json:"allowed_domains" maxItems:"20" doc:"The email domains it accepts, such as example.com; empty: any."`
+	JoinByDomain   bool          `json:"join_by_domain,omitempty" doc:"Let people with a verified email on one of these domains ask to join the organisation that claimed it; needs domains." example:"true"`
 	EndSessions    bool          `json:"end_sessions,omitempty" doc:"With enabled false: also sign out every session it started, at once." example:"true"`
 }
 
@@ -115,7 +117,7 @@ func (a *API) signInMethods(ctx context.Context, u storage.UnitOfWork) ([]SignIn
 	out := []SignInMethod{}
 	for _, p := range a.deps.SignIn.Providers() {
 		m := storage.MethodOf(all, p.ID)
-		s := SignInMethod{Provider: p.ID, Name: p.Name, Enabled: m.Enabled, AllowedDomains: []EmailDomain{}, SignIns: counts[p.ID],
+		s := SignInMethod{Provider: p.ID, Name: p.Name, Enabled: m.Enabled, AllowedDomains: []EmailDomain{}, JoinByDomain: m.JoinByDomain, SignIns: counts[p.ID],
 			LastForSuperAdmin: slices.Contains(essential, p.ID), Version: m.Version}
 		for _, d := range m.AllowedDomains {
 			s.AllowedDomains = append(s.AllowedDomains, EmailDomain(d))
@@ -151,6 +153,13 @@ func signInSummary(name string, before storage.SignInMethod, c storage.SignInMet
 			parts = append(parts, "accept any email domain with "+name)
 		} else {
 			parts = append(parts, "accept only "+strings.Join(c.AllowedDomains, ", ")+" with "+name)
+		}
+	}
+	if before.JoinByDomain != c.JoinByDomain {
+		if c.JoinByDomain {
+			parts = append(parts, "let people join by their domain with "+name)
+		} else {
+			parts = append(parts, "stop people joining by their domain with "+name)
 		}
 	}
 	if len(parts) == 0 {
@@ -303,8 +312,12 @@ func registerSignInMethods(a *API) {
 			if err := checkIfMatch(in.IfMatch, etag(before.Version)); err != nil {
 				return nil, err
 			}
+			if in.Body.JoinByDomain && len(domains) == 0 {
+				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.join_by_domain", Message: "needs the domains it is for",
+					Fix: "Set the email domains the provider accepts, then let people join by them"}})
+			}
 			c := storage.SignInMethodChange{Provider: in.Provider, Version: before.Version, Enabled: in.Body.Enabled, AllowedDomains: domains,
-				EndSessions: in.Body.EndSessions && !in.Body.Enabled}
+				JoinByDomain: in.Body.JoinByDomain, EndSessions: in.Body.EndSessions && !in.Body.Enabled}
 			p, _ := authn.From(ctx)
 			w, err := inInstallationWrite(ctx, a, by, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (any, error) {
 				n, err := a.deps.Installation.CountSuperAdmins(ctx)

@@ -353,6 +353,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/members/invitations` (listMemberInvitations): List the pending invitations
 - `POST /v1/members/invitations` (createMemberInvitation): Invite someone to the organisation
 - `DELETE /v1/members/invitations/{invitation_id}` (withdrawMemberInvitation): Withdraw an invitation
+- `GET /v1/members/join-requests` (listJoinRequests): List the requests to join by email domain
+- `POST /v1/members/join-requests/{request_id}/approve` (approveJoinRequest): Approve a request to join
+- `POST /v1/members/join-requests/{request_id}/reject` (rejectJoinRequest): Reject a request to join
 - `DELETE /v1/members/{member_id}` (removeMember): Remove a member from the organisation
 - `POST /v1/members/{member_id}/recovery-confirmations` (confirmAccountRecovery): Confirm a member's account recovery
 - `POST /v1/members/{member_id}/roles` (assignRole): Give a member a role
@@ -417,6 +420,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/organisation/gst-registrations/{registration_id}` (getGSTRegistration): Get a GST registration
 - `PATCH /v1/organisation/gst-registrations/{registration_id}` (updateGSTRegistration): Change a GST registration
 - `GET /v1/organisation/gst-status` (getGSTStatus): Get the GST status on a date
+- `GET /v1/organisation/join-domains` (listJoinDomains): List the email domains claimed for joining
+- `PUT /v1/organisation/join-domains/{domain}` (claimJoinDomain): Claim an email domain for joining
+- `DELETE /v1/organisation/join-domains/{domain}` (releaseJoinDomain): Release an email domain for joining
 - `GET /v1/organisation/profile` (getOrganisationProfile): Get the organisation's profile
 - `PATCH /v1/organisation/profile` (updateOrganisationProfile): Change the organisation's profile
 - `GET /v1/organisation/sequences` (listSequences): List the document number sequences
@@ -537,6 +543,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/session/devices/{device_id}` (signOutDevice): Sign a device out
 - `GET /v1/session/identities` (listIdentities): List your sign-ins
 - `DELETE /v1/session/identities/{identity_id}` (unlinkIdentity): Remove a sign-in
+- `GET /v1/session/join-offer` (getJoinOffer): Find the organisation you may ask to join
+- `POST /v1/session/join-requests` (requestToJoin): Ask to join by your email domain
 - `GET /v1/session/passkeys` (listPasskeys): List your passkeys
 - `POST /v1/session/passkeys` (registerPasskey): Register a passkey
 - `POST /v1/session/passkeys/challenge` (startPasskeyRegistration): Start registering a passkey

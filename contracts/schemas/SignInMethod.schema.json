@@ -32,6 +32,13 @@
       ],
       "type": "boolean"
     },
+    "join_by_domain": {
+      "description": "Whether a person with a verified email on one of its domains, which an organisation claimed, may ask to join it; an Owner approves each (rev 0.199).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "last_for_super_admin": {
       "description": "true when a Super admin signs in with it alone: turning it off, or narrowing its domains past their email, is refused.",
       "examples": [
@@ -80,6 +87,7 @@
     "name",
     "enabled",
     "allowed_domains",
+    "join_by_domain",
     "sign_ins",
     "last_for_super_admin",
     "version"

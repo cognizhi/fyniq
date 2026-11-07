@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "claimed_at": {
+      "examples": [
+        "2026-11-07T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "domain": {
+      "examples": [
+        "cognizhi.com"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "domain",
+    "claimed_at"
+  ],
+  "title": "JoinDomainView",
+  "type": "object"
+}

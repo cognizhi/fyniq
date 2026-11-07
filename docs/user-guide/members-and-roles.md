@@ -116,3 +116,24 @@ email or a support request instead.
 - The member and every Owner are told of each confirmation, in Fyniq and by email.
 - After recovering, the member cools off for 24 hours: approving, releasing payments, changing bank
   details, roles or sign-ins, break-glass and confirming others' recoveries wait.
+
+## Email domains for joining
+
+An Owner can let people with a work email join without an invitation:
+
+1. Under **Email domains for joining**, type the company's email domain, such as cognizhi.com,
+   select **Claim** and confirm it's you. A domain belongs to one organisation only.
+2. A Super admin also lets the sign-in provider accept that domain and take requests to join
+   ([Sign-in providers](sign-in-providers.md)). Both are needed.
+
+**Release** next to a domain stops new requests by it. Requests already waiting stay for an Owner
+to decide.
+
+## Requests to join
+
+A person who signed in with a verified email on a claimed domain, and asked to join, shows under
+**Requests to join**. The request gives them nothing until an Owner decides it.
+
+- **Approve** makes them a member with the Employee role; they are told. Confirm it's you first.
+- **Reject** turns the request down: they stay without an account.
+- Every Owner is told of each new request, in Fyniq and by email.

@@ -16,8 +16,8 @@ import (
 // records each change.
 
 func toSignInMethod(r sqlcdb.FyniqSignInMethod) storage.SignInMethod {
-	return storage.SignInMethod{Provider: r.Provider, Enabled: r.Enabled, AllowedDomains: r.AllowedDomains, Version: int(r.Version),
-		ChangedBy: r.ChangedBy, ChangedAt: r.ChangedAt}
+	return storage.SignInMethod{Provider: r.Provider, Enabled: r.Enabled, AllowedDomains: r.AllowedDomains, JoinByDomain: r.JoinByDomain,
+		Version: int(r.Version), ChangedBy: r.ChangedBy, ChangedAt: r.ChangedAt}
 }
 
 // SignInMethods implements storage.Sessions.
@@ -101,13 +101,13 @@ func (r signInMethods) Set(ctx context.Context, by uuid.UUID, change *uuid.UUID,
 		domains = []string{}
 	}
 	row, err := r.u.q.SetSignInMethod(ctx, sqlcdb.SetSignInMethodParams{ByUser: by, ChangeID: change, Provider: c.Provider,
-		Version: int32(c.Version), Enabled: c.Enabled, Domains: domains, EndSessions: c.EndSessions, At: at}) // #nosec G115 -- a version number, checked below
+		Version: int32(c.Version), Enabled: c.Enabled, Domains: domains, JoinByDomain: c.JoinByDomain, EndSessions: c.EndSessions, At: at}) // #nosec G115 -- a version number, checked above
 	if err != nil {
 		return storage.SignInMethod{}, mapError(err)
 	}
 	m := toSignInMethod(row)
 	changes := map[string][2]any{"provider": {before.Provider, m.Provider}, "enabled": {before.Enabled, m.Enabled},
-		"allowed_domains": {before.AllowedDomains, m.AllowedDomains}}
+		"allowed_domains": {before.AllowedDomains, m.AllowedDomains}, "join_by_domain": {before.JoinByDomain, m.JoinByDomain}}
 	if !m.Enabled && c.EndSessions {
 		changes["sessions_ended"] = [2]any{false, true}
 	}
