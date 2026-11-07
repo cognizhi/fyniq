@@ -10579,6 +10579,48 @@ The P&L's expense accounts over the run, largest first: the top ten, and the res
 
 The equity register (§8.23): its holders, contacts marked shareholder or investor, with their records; the share classes with their rights, each recorded on another person's approval (FR-EQ-15, FR-EQ-16); and the equity transactions that move every share, approved by another person and made effective with ACRA's date (FR-EQ-17).
 
+### `GET /v1/cap-table`
+
+**Get the cap table** (`getCapTable`)
+
+The cap table at the end of a day, computed from the register's holding movements (FR-EQ-20). For each holder and class it gives the shares issued, their votes and the shares fully diluted, each with its percentage of the day's total. Percentages are exact and shown to 2 decimals half-up (RND-DISPLAY), never forced to sum to 100.00. Each holder's figures are taken from their exact sums. Each line lists the movements behind it: the equity transaction, whose page has its evidence, or the share issue. compare adds the cap table at a second day, to show beside it. The table is never written, so no operation edits it: shares move only through equity transactions. Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `at` (query): The day the cap table is at the end of; left out, the organisation's today.
+  - `compare` (query): A second day, whose cap table is shown beside it in compared.
+- **Responses:**
+  - `200` OK [`CapTableView`](../../contracts/schemas/CapTableView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/cap-table/export`
+
+**Export the cap table** (`exportCapTable`)
+
+The cap table getCapTable gives at the same day, as a file (FR-EQ-20). CSV gives a row per holding, with plain decimals. XLSX gives a workbook of the holdings and the holders with their totals, figures as number cells. PDF gives the cap table to print from the render service, archival and accessible. No text in any becomes a formula. The file is returned in base64 with its SHA-256 and the ledger revision at the time. A PDF the render service cannot make now is REPORT-08. Side effects: an audit event of the export, with the day, the format, the rows and the hash. Never cached.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `at` (query): The day the cap table is at the end of; left out, the organisation's today.
+  - `format` (query): csv: a row per holding, plain decimals; xlsx: a workbook of the holdings and the holders, figures as number cells; pdf: the cap table to print, archival (PDF/A-2a) and accessible (PDF/UA-1).
+- **Responses:**
+  - `200` OK [`ReportFile`](../../contracts/schemas/ReportFile.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-08`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/equity-transactions`
 
 **List equity transactions** (`listEquityTransactions`)
@@ -10917,6 +10959,26 @@ A holder with the record in force, every record (drafts and superseded ones incl
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/me/holding`
+
+**Get my holding** (`getMyHolding`)
+
+The caller's own holding at the end of a day: the shares of the holder they sign in as (linkContactMember), by class, with their votes and their percentages of the company's totals, as getCapTable gives them (FR-EQ-20). The Board reads its own holding this way (Appendix D). A caller who signs in as no holder gets linked false, with nothing held. Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `at` (query): The day, at its end; left out, the organisation's today.
+- **Responses:**
+  - `200` OK [`MyHolding`](../../contracts/schemas/MyHolding.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/share-classes`
 

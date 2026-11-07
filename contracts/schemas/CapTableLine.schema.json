@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "The class's share-capital account.",
+      "examples": [
+        "3010"
+      ],
+      "type": "string"
+    },
+    "class_id": {
+      "description": "The share class the shares count in (getShareClass); none while their account has no recorded class.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "class_name": {
+      "description": "The class's name.",
+      "examples": [
+        "Ordinary shares"
+      ],
+      "type": "string"
+    },
+    "diluted": {
+      "description": "The percentage of every share fully diluted; left out when none is.",
+      "examples": [
+        "79.87"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$",
+      "type": "string"
+    },
+    "fully_diluted": {
+      "description": "Shares fully diluted. They equal the shares issued until the SAFEs, notes and option pool are recorded (FR-EQ-18, FR-EQ-19), which will add to them.",
+      "examples": [
+        "1000000"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "The holder (getHolder).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "holder_name": {
+      "description": "Their name.",
+      "examples": [
+        "Seedling Ventures Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "issued": {
+      "description": "Shares issued and held, a whole number.",
+      "examples": [
+        "1000000"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "type": "string"
+    },
+    "movements": {
+      "description": "The movements up to the day, oldest first.",
+      "items": {
+        "$ref": "CapTableMovement.schema.json"
+      },
+      "type": "array"
+    },
+    "ownership": {
+      "description": "The percentage of every share issued; left out when none is.",
+      "examples": [
+        "79.87"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$",
+      "type": "string"
+    },
+    "votes": {
+      "description": "Their votes: the shares times their class's votes per share, exact.",
+      "examples": [
+        "1000000"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+      "type": "string"
+    },
+    "votes_assumed": {
+      "description": "The votes count one a share because the account has no recorded class yet: record the class and its rights (FR-EQ-16).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "voting": {
+      "description": "The percentage of every vote; left out when no share votes.",
+      "examples": [
+        "79.87"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "holder_id",
+    "holder_name",
+    "class_name",
+    "account_code",
+    "movements",
+    "issued",
+    "votes",
+    "fully_diluted"
+  ],
+  "title": "CapTableLine",
+  "type": "object"
+}

@@ -1262,6 +1262,16 @@ var (
 	RemoveEquityTransactionEvidence = Policy{Operation: "removeEquityTransactionEvidence", Capability: CapTable, Need: Create}
 )
 
+// The cap table (FR-EQ-20; p1-equity-register slice 3): computed from the register, never written. The Board reads its
+// own holding (Appendix D, "own holding"); the whole table if granted, and an Employee's own grants, arrive with the
+// option pool (FR-EQ-19).
+var (
+	GetCapTable    = Policy{Operation: "getCapTable", Capability: CapTable, Need: View, Unqualified: true}
+	ExportCapTable = Policy{Operation: "exportCapTable", Capability: CapTable, Need: View, Unqualified: true}
+	GetMyHolding   = Policy{Operation: "getMyHolding", Capability: CapTable, Need: View, Unqualified: true,
+		Qualified: []string{"own holding; all if granted"}}
+)
+
 // GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
 // only the operations they asked for, so an operation is decided past this policy by its own record.
 var GetOperation = Policy{Operation: "getOperation", Capability: Membership, Need: View, ByRecord: true,
@@ -1433,7 +1443,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ReplaceShareClass, RequestShareClassApproval, AddShareClassEvidence, ListShareClassEvidence, GetShareClassEvidence, RemoveShareClassEvidence,
 	RemoveBrandFile, SetBrandAccent, ListEquityTransactions, GetEquityTransaction, CreateEquityTransaction, ReplaceEquityTransaction,
 	RequestEquityTransactionApproval, RecordEquityStep, RecordEquityTransactionEffective, AddEquityTransactionEvidence, ListEquityTransactionEvidence,
-	GetEquityTransactionEvidence, RemoveEquityTransactionEvidence)
+	GetEquityTransactionEvidence, RemoveEquityTransactionEvidence, GetCapTable, ExportCapTable, GetMyHolding)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

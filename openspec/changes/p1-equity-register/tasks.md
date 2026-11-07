@@ -91,9 +91,11 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   (Slice 3a: `equity.TableAt` and `TableIn`, each line keeping its movements for the drill-down; two dates are two
   calls, which the API compares in 4.2. The differential gains `share_transfer`, `votes_per_share` and `cap_tables`,
   the golden case `cap-table.json` and the generator's `equity` source.)
-- [ ] 4.2 API: `GET` the cap table with `at` and `compare`; the `cap_table` export kind (XLSX, 202 with its operation)
+- [x] 4.2 API: `GET` the cap table with `at` and `compare`; the `cap_table` export kind (XLSX, 202 with its operation)
   and the PDF through the render service; no write path to holdings but D4. Matrix rows; the Board and Employee scopes.
   `// req: FR-EQ-20`
+  (Slice 3b: `getCapTable`, `exportCapTable` (CSV, XLSX, PDF; synchronous and audited, as D7 now says) and
+  `getMyHolding` for the Board viewer's own holding. An Employee's own grants come with 6.1.)
 - [ ] 4.3 Screen CapTable: Basic "Who owns the company" (an ownership chart with its table view, my holding, the latest
   round) and Expert's fully diluted columns, compare and drill-down (dataviz checks, `fyniq-design-system`). Help keys
   and guide sections. Vitest and axe. `// req: FR-EQ-20`, `// req: FR-EQ-27`

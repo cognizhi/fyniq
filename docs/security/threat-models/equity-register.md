@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | The equity register's holders and share classes: FR-EQ-15, FR-EQ-16, CMP-PD-07 (PRD-001 rev 0.203, rev 0.204); `p1-equity-register` slice 1. Equity transactions: FR-EQ-17, INV-13, FM-9 (rev 0.205), slice 2a; their ACRA steps and money from the bank (rev 0.206), slice 2b. Later slices (the ACRA steps and bank matching, the cap table, instruments, options, rounds, controllers, the ACRA reconciliation) extend this model. |
+| Feature and requirement IDs | The equity register's holders and share classes: FR-EQ-15, FR-EQ-16, CMP-PD-07 (PRD-001 rev 0.203, rev 0.204); `p1-equity-register` slice 1. Equity transactions: FR-EQ-17, INV-13, FM-9 (rev 0.205), slice 2a; their ACRA steps and money from the bank (rev 0.206), slice 2b. The cap table: FR-EQ-20, slice 3. Later slices (the ACRA steps and bank matching, the cap table, instruments, options, rounds, controllers, the ACRA reconciliation) extend this model. |
 | Author, reviewer, date | Claude Code for the founders, 7 Nov 2026; reviewer: a founder at sign-off (second human review waived before production, AGENTS.md) |
 | Data and its class | Holders' identity: an individual's identifier type and last 4 characters, nationality, address and contact people (personal data); identity documents (data class identity); share classes and their rights (confidential); the register of share issues |
 | Who acts | The Accountant drafts (C/P); an Owner or the Controller approves (A); the Auditor and Tax agent read; the DPO reads masked; Employees and the Board viewer list no holders until their own holding and grants arrive with the cap table |
@@ -33,6 +33,8 @@ recorded the same way. Trust boundaries:
 | E10 | approvals | Elevation: the Accountant's new reach into the approvals lets them approve what they should only review | The review becomes a second approval by the wrong person | Low |
 | E11 | ACRA steps | Repudiation: a lodgement date is changed after the fact, or recorded for a transaction it does not belong to | A missed statutory deadline is hidden | Low |
 | E12 | bank → 2040 | Tampering: money in or a refund out is put on 2040 against no one, or against a customer, so a cash issue looks paid | Shares allotted against another person's money | Medium |
+| E13 | cap table | Information disclosure: the Board viewer or an Employee reads every holder's holding, or another member's | Investors' holdings exposed | Medium |
+| E14 | cap table export | Repudiation: the cap table leaves the company as a file with no record of who took it, when, or what it held | An unexplained copy of the register circulates | Low |
 
 ## 3. What we do about it
 
@@ -49,9 +51,11 @@ recorded the same way. Trust boundaries:
 | E9 | A cash issue waits until its subscriber's share application monies cover it; share capital takes postings from the register, the opening balances or a conversion's movements only (FY007, FY289); 2040 names its subscriber on every line (FY250) | `TestEquityTransactions`, `TestAttackHoldingsMoveOnlyWithTheirTransactions` |
 | E11 | A step is of its transaction's kind, names an approved transaction not yet effective, and never changes (FY290); a later one supersedes it and both stay | `TestAttackEquityStepsKeepTheirRules`, `TestEquityTransactions` |
 | E12 | A bank line on 2040 names its subscriber, a shareholder or investor (LEDGER-41, FY250); a cash issue counts only its own subscriber's monies on its day | `TestShareApplicationMoniesFromTheBank`, `TestEquityTransactions` |
+| E13 | The cap table and its export are Unqualified reads: Employees and the Board viewer get 403. The Board viewer reads only its own holding (getMyHolding, Appendix D "own holding"): the lines of the holder its member signs in as, approved by another person (FR-EQ-01), with the company's totals and no one else's name. A member who signs in as no holder holds nothing | `TestCapTable`, the authorisation matrix (V8.2.1) |
+| E14 | Every export is audited with its day, format, rows and SHA-256 (`report.exported`, report `cap_table`); the file is returned to the caller only, never stored | `TestCapTable` |
 | E10 | The Accountant signs a step only when it names the accountant's review; a policy cannot name a role without A on the object's row (CheckSteps), so only the engine's FM-9 step does; FR-APR-10's recheck holds them to it | `TestEquityTransactions`, `TestTwoPersonRuleForASetting` (APR-05 for any other step), the authorisation matrix |
 
 ## 4. What remains
 
-- Each holder's own view of their holding and grants arrives with the cap table (slice 3) and the option pool (slice 5).
+- An Employee's own grants, and the Board's whole cap table "if granted", arrive with the option pool (slice 5).
 - The `fyniq.read.equity` scope arrives with `p1-mcp-first-party`. Until then, no AI tool reads equity data.
