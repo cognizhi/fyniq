@@ -86,7 +86,7 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
 
 ## 4. The statutory calendar (slice 3)
 
-- [ ] 4.1 `deadlines.Calendar` (D5, D7) and the settings `calendar.pays_staff`, `corporate.agm_route` and
+- [x] 4.1 `deadlines.Calendar` (D5, D7) and the settings `calendar.pays_staff`, `corporate.agm_route` and
   `corporate.overseas_branch_register`. Tests:
   - a December and a March year end;
   - quarterly and monthly GST;
@@ -125,15 +125,19 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
   `// req: FR-TAX-07`, `// req: QA-SEC-03`
   (7 Nov 2026, PRD-001 rev 0.211: also `createStatutoryFiling`, `replaceStatutoryFiling`, `getStatutoryFiling` and
   `listStatutoryFilings`; matrix rows for the 11 operations.)
-- [ ] 4.4 C.2 #13 `gst.return-due` and C.2 #15 `compliance.deadlines` (D9), each with fixtures for OK, ⏰ due soon,
+- [x] 4.4 C.2 #13 `gst.return-due` and C.2 #15 `compliance.deadlines` (D9), each with fixtures for OK, ⏰ due soon,
   ⏰ overdue and Not assessed. `// req: C.2 #13`, `// req: C.2 #15`, `// req: CMP-02`, `// req: QA-RPT-02`
-- [ ] 4.5 The daily `notify.deadlines` job (D10):
+- [x] 4.5 The daily `notify.deadlines` job (D10):
   - PlatformSchedules at 07:35 SGT;
   - `deadline.reminder` at 30, 14, 7 and 1 days, and `deadline.overdue` once;
   - keyed so a rerun adds nothing;
   - the audience by the row.
 
   The C.2 #12 schedule check includes it. `// req: FR-TAX-07`, `// req: CMP-02`, `// req: FR-NTF-01`
+  (7 Nov 2026, PRD-001 rev 0.212: the registers' items, C.2 #13, C.2 #15 and the job in `TestTheCalendarsChecksAndReminders`:
+  monthly GST with IRAS's December extension, CPF due in 14 days, October's return due in 7 days and then overdue, each
+  told once however often the job runs as the worker role, and a controller to enter listed from the register. A March
+  year end is left to the pinned cases of slice 1.)
 
 ## 5. The screens (slice 4)
 

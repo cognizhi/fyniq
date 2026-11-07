@@ -34293,16 +34293,26 @@ export interface components {
              */
             key: string;
             /**
-             * @description What is due.
+             * @description Where in the web app a register's deadline is done.
+             * @example /equity/holders/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+             */
+            link?: string;
+            /**
+             * @description What is due: the register_ ones are a register's own, done and checked on their record.
              * @example eci
              * @enum {string}
              */
-            obligation: "gst_f5" | "cpf" | "ir8a_ais" | "eci" | "form_cs" | "annual_return" | "agm" | "statements_to_members" | "gst_register_retrospective" | "gst_register_prospective" | "financial_year" | "sg-deadlines";
+            obligation: "gst_f5" | "cpf" | "ir8a_ais" | "eci" | "form_cs" | "annual_return" | "agm" | "statements_to_members" | "gst_register_retrospective" | "gst_register_prospective" | "register_controller_entry" | "register_controller_central" | "register_controller_notice" | "register_share_lodgement" | "financial_year" | "sg-deadlines";
             /**
              * @description Why it is not assessed.
              * @example The books start and the first financial year's end are not set: set them in Settings › Organisation
              */
             reason?: string;
+            /**
+             * @description true for a register's own deadline (a controller, a share lodgement): done on its record, which link opens, and never recorded here.
+             * @example false
+             */
+            register?: boolean;
             /**
              * @description true when its day moved to the next working day.
              * @example false

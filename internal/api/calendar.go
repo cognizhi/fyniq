@@ -32,7 +32,7 @@ var CalendarCodes = []string{deadlines.CodeFiling, deadlines.CodeRecorded, deadl
 // StatutoryItem is one deadline of the calendar.
 type StatutoryItem struct {
 	Key        string               `json:"key" doc:"The item: its obligation and its anchor day. Record it with this key." example:"eci:2026-12-31"`
-	Obligation string               `json:"obligation" enum:"gst_f5,cpf,ir8a_ais,eci,form_cs,annual_return,agm,statements_to_members,gst_register_retrospective,gst_register_prospective,financial_year,sg-deadlines" doc:"What is due." example:"eci"`
+	Obligation string               `json:"obligation" enum:"gst_f5,cpf,ir8a_ais,eci,form_cs,annual_return,agm,statements_to_members,gst_register_retrospective,gst_register_prospective,register_controller_entry,register_controller_central,register_controller_notice,register_share_lodgement,financial_year,sg-deadlines" doc:"What is due: the register_ ones are a register's own, done and checked on their record." example:"eci"`
 	Area       string               `json:"area,omitempty" enum:"tax,payroll,corporate" doc:"Its area, to filter by." example:"tax"`
 	Title      string               `json:"title" doc:"What is due, in plain words." example:"Estimated chargeable income for the year ended 31 Dec 2026"`
 	Anchor     string               `json:"anchor,omitempty" format:"date" doc:"The day it counts from: a period's or a year's end, or a forecast's day." example:"2026-12-31"`
@@ -44,6 +44,8 @@ type StatutoryItem struct {
 	Status     string               `json:"status" enum:"open,due_soon,overdue,filed,not_required,not_assessed" doc:"open; due_soon: within 14 days; overdue; filed or not_required: recorded; not_assessed: an input is missing, which reason names." example:"open"`
 	Reason     string               `json:"reason,omitempty" doc:"Why it is not assessed." example:"The books start and the first financial year's end are not set: set them in Settings › Organisation"`
 	Filing     *StatutoryFilingView `json:"filing,omitempty" doc:"The live record, once the item is recorded."`
+	Register   bool                 `json:"register,omitempty" doc:"true for a register's own deadline (a controller, a share lodgement): done on its record, which link opens, and never recorded here." example:"false"`
+	Link       string               `json:"link,omitempty" doc:"Where in the web app a register's deadline is done." example:"/equity/holders/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"`
 }
 
 // StatutoryCalendarView is the calendar from one day to another.
@@ -254,7 +256,7 @@ func filingAnswer(w written[StatutoryFilingView]) *filingWriteOutput {
 // itemOut is an item as the API shows it.
 func (a *API) itemOut(ctx context.Context, u storage.UnitOfWork, it deadlines.Item) (StatutoryItem, error) {
 	out := StatutoryItem{Key: it.Key, Obligation: it.Obligation, Area: it.Area, Title: it.Title, Why: it.Why, Source: it.Source,
-		Extended: it.Extended, Rolled: it.Rolled, Status: string(it.Status), Reason: it.Reason}
+		Extended: it.Extended, Rolled: it.Rolled, Status: string(it.Status), Reason: it.Reason, Register: it.Register, Link: it.Link}
 	if !it.Anchor.IsZero() {
 		out.Anchor = it.Anchor.Format(time.DateOnly)
 	}

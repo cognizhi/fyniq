@@ -76,6 +76,8 @@ var Catalogue = []Type{
 	{Key: "period.reopened", Label: "A closed month was reopened", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
 	{Key: "recurring.made", Label: "A recurring journal or bill made a draft", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: "bills.due", Label: "Bills to pay soon", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
+	{Key: "deadline.reminder", Label: "A statutory deadline is near", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
+	{Key: "deadline.overdue", Label: "A statutory deadline passed with nothing recorded", Category: Operations, Severity: "warning", Actionable: true, Email: storage.EmailDaily},
 	{Key: "jobs.failed", Label: "A background job failed", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
 	{Key: ExportReadyType, Label: "Your export is ready", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: TestType, Label: "A test notification you sent", Category: Operations, Severity: "info", Email: storage.EmailImmediate},

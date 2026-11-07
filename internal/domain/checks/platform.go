@@ -50,6 +50,7 @@ var ScheduledJobs = map[string]string{
 	"fx.revalue":            "Month-end revaluation",
 	"fx.reversals":          "Revaluation reversals",
 	"notify.bills_due":      "Bills-due reminders",
+	"notify.deadlines":      "Statutory deadline reminders",
 }
 
 // The checks of the payments out: p1-checks slice 4 (task 4.3).
