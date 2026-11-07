@@ -18,6 +18,8 @@ Source: PRD-001 §8.23 · Priority M · Phase P1
 #### Scenario: Identifiers are protected
 - **WHEN** a holder's identifiers are stored or shown
 - **THEN** they are protected like employee identifiers (CMP-PD-07)
+- **AND** an individual's identifier is kept as its type (NRIC, FIN or passport) and its last 4 characters only, the full number staying in ACRA's register and the identity document kept as evidence, since Fyniq files nothing that needs it (the owner's decision of 7 Nov 2026)
+- **AND** an entity keeps its UEN or foreign registration number
 
 #### Scenario: Changes are versioned, audited and approved
 - **WHEN** a holder record is changed
@@ -153,6 +155,12 @@ Source: PRD-001 §8.23 · Priority S · Phase P1 (register) / P2 (expense, IR8A)
 #### Scenario: Employees see their own grants
 - **WHEN** an employee opens their equity view
 - **THEN** they see their own grants
+
+#### Scenario: The register comes before go-live
+- **GIVEN** the owner's decision of 7 Nov 2026
+- **WHEN** the equity register is built for go-live
+- **THEN** the pool, grants, exercises, forfeitures and expiries and each employee's own grants are in it
+- **AND** the fully diluted cap table and a round's pool top-up include them
 
 #### Scenario: Expense and IR8A data in P2
 - **GIVEN** phase P2
@@ -329,6 +337,7 @@ Source: PRD-001 §8.23 · Priority M · Phase P1
 - **GIVEN** an uploaded ACRA register-of-members extract (business profile)
 - **WHEN** the register is reconciled to it
 - **THEN** any differences show on Checks
+- **AND** the extract's holdings are typed in, holder by holder and class by class, with the PDF attached as evidence, and compared with the register at the extract's date (the owner's decision of 7 Nov 2026)
 
 #### Scenario: Equity data is restricted
 - **WHEN** an AI or MCP client requests equity data
