@@ -430,16 +430,9 @@ func (r *p1) shareTransfer(d Document, date time.Time) (ledger.Entry, bool) {
 // class's votes per share the attribute of its account (one when left out): by holder, then class, in code-point order
 // of the scenario's names for them (README, "Cap tables").
 func (r *p1) capTables() ([]CapTable, error) {
-	votes := map[uuid.UUID]apd.Decimal{}
-	for _, a := range r.s.Accounts {
-		var v apd.Decimal
-		v.SetInt64(1)
-		if a.VotesPerShare != "" {
-			if _, _, err := v.SetString(a.VotesPerShare); err != nil {
-				return nil, err
-			}
-		}
-		votes[account(a.Code)] = v
+	votes, err := r.classVotes()
+	if err != nil {
+		return nil, err
 	}
 	plain := func(d apd.Decimal) string {
 		var x apd.Decimal
@@ -458,15 +451,7 @@ func (r *p1) capTables() ([]CapTable, error) {
 		if err != nil {
 			return nil, err
 		}
-		dilution := equity.Dilution{Options: r.options}
-		if len(r.optionBook.Pools) > 0 {
-			dilution.Pool = func(day time.Time) (apd.Decimal, error) {
-				p, _, err := r.optionBook.At(day)
-				return p.Unallocated, err
-			}
-		}
-		t, err := equity.DilutedAt(day, r.moves, func(k equity.HoldingKey) (apd.Decimal, bool, error) { return votes[k.Account], false, nil },
-			dilution)
+		t, err := r.tableAt(day, votes)
 		if err != nil {
 			return nil, err
 		}
@@ -485,6 +470,134 @@ func (r *p1) capTables() ([]CapTable, error) {
 		slices.SortFunc(c.Lines, func(a, b CapLine) int { return cmp.Or(cmp.Compare(a.Holder, b.Holder), cmp.Compare(a.Class, b.Class)) })
 		slices.SortFunc(c.Holders, func(a, b CapHolder) int { return cmp.Compare(a.Holder, b.Holder) })
 		out = append(out, c)
+	}
+	return out, nil
+}
+
+// classVotes are each share-capital account's votes per share, one when left out.
+func (r *p1) classVotes() (map[uuid.UUID]apd.Decimal, error) {
+	votes := map[uuid.UUID]apd.Decimal{}
+	for _, a := range r.s.Accounts {
+		var v apd.Decimal
+		v.SetInt64(1)
+		if a.VotesPerShare != "" {
+			if _, _, err := v.SetString(a.VotesPerShare); err != nil {
+				return nil, err
+			}
+		}
+		votes[account(a.Code)] = v
+	}
+	return votes, nil
+}
+
+// tableAt is the cap table fully diluted at the end of day, over the movements, the options and the pool so far.
+func (r *p1) tableAt(day time.Time, votes map[uuid.UUID]apd.Decimal) (equity.CapTable, error) {
+	dilution := equity.Dilution{Options: r.options}
+	if len(r.optionBook.Pools) > 0 {
+		dilution.Pool = func(day time.Time) (apd.Decimal, error) {
+			p, _, err := r.optionBook.At(day)
+			return p.Unallocated, err
+		}
+	}
+	return equity.DilutedAt(day, r.moves, func(k equity.HoldingKey) (apd.Decimal, bool, error) { return votes[k.Account], false, nil }, dilution)
+}
+
+// modelled are each of the scenario's rounds modelled against the books once every document is posted, as a round
+// scenario's outcome is (equity.ModelRound, design D8): null where it cannot be worked out (README, "Rounds").
+func (r *p1) modelled() ([]*RoundResult, error) {
+	votes, err := r.classVotes()
+	if err != nil {
+		return nil, err
+	}
+	plain := func(d *apd.Decimal) string {
+		var x apd.Decimal
+		x.Reduce(d)
+		return x.Text('f')
+	}
+	pct := func(s string) *string {
+		if s == "" {
+			return nil
+		}
+		return &s
+	}
+	out := []*RoundResult{}
+	for _, spec := range r.s.Rounds {
+		on, err := time.Parse(time.DateOnly, spec.On)
+		if err != nil {
+			return nil, err
+		}
+		before, err := r.tableAt(on.AddDate(0, 0, -1), votes)
+		if err != nil {
+			return nil, err
+		}
+		m := equity.RoundModel{On: on, PriceDecimals: spec.PriceDecimals}
+		ok := true
+		if spec.Price != "" {
+			p, err := money.ParseUnitPrice(spec.Price, r.base, "price")
+			ok = err == nil && p.Sign() > 0
+			m.Price = &p
+		} else {
+			v, err := money.ParseField(spec.PreMoney, r.base, "pre_money")
+			ok = err == nil && v.Sign() > 0
+			m.PreMoney = &v
+		}
+		seen := map[string]bool{}
+		for _, inv := range spec.Investors {
+			a, err := money.ParseField(inv.Amount, r.base, "amount")
+			if err != nil || a.Sign() <= 0 || seen[inv.Person] || !r.settings.Subscribers[stableID("party", inv.Person)] {
+				ok = false
+				break
+			}
+			seen[inv.Person] = true
+			m.Investors = append(m.Investors, equity.RoundInvestor{HolderID: stableID("party", inv.Person), Amount: a})
+		}
+		if spec.TopUp != nil {
+			m.TopUp = &equity.TopUp{Before: spec.TopUp.Before}
+			if !wholeShares.MatchString(spec.TopUp.Shares) {
+				ok = false
+			} else if _, _, err := m.TopUp.Shares.SetString(spec.TopUp.Shares); err != nil {
+				return nil, err
+			}
+		}
+		var safes []equity.Converting
+		named := map[string]bool{}
+		for _, id := range spec.Instruments {
+			k := slices.IndexFunc(r.safes, func(s recordedSAFE) bool { return s.doc == id })
+			if named[id] || k < 0 || r.converted[r.safes[k].id] {
+				ok = false
+				break
+			}
+			named[id] = true
+			safes = append(safes, equity.Converting{ID: r.safes[k].id, Instrument: r.safes[k].terms})
+		}
+		if !ok {
+			out = append(out, nil)
+			continue
+		}
+		o, err := equity.ModelRound(m, before, safes, func(string) bool { return false })
+		if err != nil {
+			out = append(out, nil) // README, "Rounds": a round that cannot be worked out
+			continue
+		}
+		res := RoundResult{Price: plain(o.Price.Decimal()), PreMoney: o.PreMoney.String(), PostMoney: o.PostMoney.String(), Issues: []RoundIssueResult{},
+			Conversions: []RoundConversionResult{}, Holders: []RoundHolderResult{}, IssuedBefore: plain(&o.IssuedBefore), IssuedAfter: plain(&o.IssuedAfter),
+			DilutedBefore: plain(&o.DilutedBefore), DilutedAfter: plain(&o.DilutedAfter), UnallocatedBefore: plain(&o.UnallocatedBefore),
+			UnallocatedAfter: plain(&o.UnallocatedAfter), NewShares: plain(&o.NewShares)}
+		for _, x := range o.Issues {
+			res.Issues = append(res.Issues, RoundIssueResult{Person: r.personOf[x.HolderID], Shares: plain(&x.Shares), Amount: x.Amount.String(), Left: x.Left.String()})
+		}
+		for _, c := range o.Conversions {
+			res.Conversions = append(res.Conversions, RoundConversionResult{Instrument: r.personOf[c.ID], Price: plain(c.Price.Decimal()), Shares: plain(&c.Shares),
+				Converted: c.Converted.String(), Left: c.Left.String()})
+		}
+		for _, h := range o.Holders {
+			res.Holders = append(res.Holders, RoundHolderResult{Holder: r.personOf[h.HolderID], IssuedBefore: plain(&h.IssuedBefore), IssuedAfter: plain(&h.IssuedAfter),
+				DilutedBefore: plain(&h.DilutedBefore), DilutedAfter: plain(&h.DilutedAfter), OwnershipBefore: pct(h.OwnershipBefore),
+				OwnershipAfter: pct(h.OwnershipAfter), DilutedShareBefore: pct(h.DilutedShareBefore), DilutedShareAfter: pct(h.DilutedShareAfter),
+				Dilution: pct(h.Drop), ProRata: plain(&h.ProRata)})
+		}
+		slices.SortFunc(res.Holders, func(a, b RoundHolderResult) int { return cmp.Compare(a.Holder, b.Holder) })
+		out = append(out, &res)
 	}
 	return out, nil
 }

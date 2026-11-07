@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "conversions": {
+      "description": "Each instrument's conversion.",
+      "items": {
+        "$ref": "RoundConversionView.schema.json"
+      },
+      "type": "array"
+    },
+    "currency": {
+      "description": "The base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "fully_diluted_after": {
+      "examples": [
+        "1252083"
+      ],
+      "type": "string"
+    },
+    "fully_diluted_before": {
+      "examples": [
+        "1000000"
+      ],
+      "type": "string"
+    },
+    "holders": {
+      "description": "Each holder before and after, by name.",
+      "items": {
+        "$ref": "RoundHolderView.schema.json"
+      },
+      "type": "array"
+    },
+    "issued_after": {
+      "examples": [
+        "1252083"
+      ],
+      "type": "string"
+    },
+    "issued_before": {
+      "examples": [
+        "1000000"
+      ],
+      "type": "string"
+    },
+    "issues": {
+      "description": "Each investor's allotment.",
+      "items": {
+        "$ref": "RoundIssueView.schema.json"
+      },
+      "type": "array"
+    },
+    "new_shares": {
+      "description": "Every share the round issues: the investors' and the conversions'.",
+      "examples": [
+        "252083"
+      ],
+      "type": "string"
+    },
+    "post_money": {
+      "$ref": "Money.schema.json",
+      "description": "The price × the shares fully diluted after it."
+    },
+    "pre_money": {
+      "$ref": "Money.schema.json",
+      "description": "The price × the shares fully diluted before the round (with a top-up before the money)."
+    },
+    "price": {
+      "description": "The price per share.",
+      "examples": [
+        "3.00"
+      ],
+      "type": "string"
+    },
+    "unallocated_after": {
+      "description": "And after, with the top-up.",
+      "examples": [
+        "0"
+      ],
+      "type": "string"
+    },
+    "unallocated_before": {
+      "description": "What the option pool leaves to grant before.",
+      "examples": [
+        "0"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "price",
+    "currency",
+    "pre_money",
+    "post_money",
+    "issues",
+    "conversions",
+    "holders",
+    "issued_before",
+    "issued_after",
+    "fully_diluted_before",
+    "fully_diluted_after",
+    "unallocated_before",
+    "unallocated_after",
+    "new_shares"
+  ],
+  "title": "RoundOutcomeView",
+  "type": "object"
+}
