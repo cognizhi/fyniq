@@ -377,3 +377,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | docs/user-guide/evidence-search.md, journals.md → compliance.evidence, accounting.journals (open or save an evidence file, FR-DOC-01, rev 0.188)
 
 ## [2026-11-06] compile | docs/user-guide/journals.md → accounting.journals (a manual journal to a control account shows a warning, INV-07, question 55, rev 0.189)
+
+## [2026-11-06] compile | docs/user-guide/search.md, home.md → shell.search (new), home.overview (the global search, FR-UX-02, rev 0.190)
+
+## [2026-11-06] compile | docs/user-guide/search.md, home.md → shell.search (new), home.overview (the global search, FR-UX-02, rev 0.190)

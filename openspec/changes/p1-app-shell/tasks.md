@@ -54,6 +54,15 @@
   (20 Oct 2026, in part: the Inbox lists the approval requests and the weekly review; a request opens on its own page,
   and only its confirmation decides (FR-UX-03). The command palette leaves out pages of one record. **Left:** global
   search, the Inbox's other groups as their modules arrive, and keyboard triage.)
+  (6 Nov 2026, PRD-001 rev 0.190: the global search. `GET /v1/search` (`searchRecords`, any member) reads the query
+  (`internal/domain/search`: an amount exact or bounded, with k and m, or text; a bare whole number as both), finds
+  documents by number, reference, memo, notes, title, lines and party and by an amount on a live posted line
+  (`Documents.Search`), contacts (`Contacts.Search`), accounts and items, each kind by its own row (SEC-34), an
+  Employee's own claims; up to 20 each with counts and "more", each result with its link. The Search page at `/search`
+  (filters by kind, arrow keys between results) and the palette's "Search the records for …". Guide `search.md`, compiled
+  into `shell.search`. Tests `TestTheGlobalSearchFindsWhatThePersonMaySee`, `TestAQueryReadsAsAnAmountOrText`,
+  `search.test.tsx`, `AppFrame.test.tsx`, the matrix's row. **Left:** bank lines and help pages in the results, the
+  Inbox's other groups and keyboard triage.)
 - [ ] 2.3 Drill-down to the Trace panel, side peeks and split view, keyboard-first entry and the shortcut sheet. Tests `// req: FR-UX-04`, `// req: FR-UX-05` and `// req: FR-UX-06`
 
 ## 3. Grids, records and correctness

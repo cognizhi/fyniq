@@ -71,6 +71,9 @@ from the workbook join the list as they arrive.
 
 Results marked **Expert** belong to Expert mode.
 
+To find a record, such as an invoice by its number or a document by its amount, choose **Search the
+records for …** at the end of the list: see [Search the records](search.md).
+
 ### Change how Fyniq looks
 
 Select **Appearance** in the header to change the theme, high contrast, density and motion. See

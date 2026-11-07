@@ -527,6 +527,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/sales-reminders/{document_id}/send` (sendSalesReminder): Send a reminder due
 - `POST /v1/sales-reminders/{document_id}/skip` (skipSalesReminder): Skip a reminder due
 - `GET /v1/sales/gst-codes` (getSalesGSTCodes): Get the GST codes for sales
+- `GET /v1/search` (searchRecords): Search the records
 - `GET /v1/session` (getSession): Get your session
 - `GET /v1/session/devices` (listDevices): List your devices
 - `POST /v1/session/devices/sign-out-others` (signOutOtherDevices): Sign out everywhere else

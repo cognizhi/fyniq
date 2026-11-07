@@ -4,14 +4,14 @@ type: task
 title: The Home page, search and commands, Settings, and signing out
 summary: What Home shows (pulse card, tiles, charts, what waits, set-up steps), Search and commands (Ctrl+K), Settings, and signing out
 sources:
-  - docs/user-guide/home.md sha256:18173a135687c66cc9e59611da15e0d11779236fb69c4c8c09ab806f2123c556
+  - docs/user-guide/home.md sha256:1a76cf4fcdee10b7cc0abf077ec0e20a588d20dd6973c06c41887a16e8328f45
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-01
+compiled_at: 2026-11-06
 aliases:
   - command palette
   - quick search
@@ -65,6 +65,7 @@ aliases:
 - Select **Search and commands** in the header, or press **Ctrl+K** (**⌘K** on a Mac).
 - Type part of a page's name or a command, pick a result with the arrow keys and press **Enter**; **Esc** closes it.
 - Results marked **Expert** belong to Expert mode.
+- **Search the records for …**, at the end of the list, finds a record such as an invoice by its number or a document by its amount: [[shell.search]].
 - **Appearance** in the header changes theme, high contrast, density and motion: [[preferences.appearance]].
 
 (src: docs/user-guide/home.md#find-anything-with-search) (src: docs/user-guide/home.md#change-how-fyniq-looks)

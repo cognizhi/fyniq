@@ -76,6 +76,19 @@ describe("the app frame", () => {
     await waitFor(() => expect(html().classList.contains("dark")).toBe(true));
   });
 
+  // req: FR-UX-01
+  // req: FR-UX-02
+  it("offers to search the records for what is typed in the command palette", async () => {
+    renderFrame();
+    await screen.findByRole("banner");
+    act(() => {
+      fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    });
+    const input = await screen.findByRole("combobox");
+    fireEvent.change(input, { target: { value: "INV-0138" } });
+    expect(await screen.findByRole("option", { name: /Search the records for “INV-0138”/ })).toBeTruthy();
+  });
+
   // req: FR-UX-23
   // req: FR-UX-24
   it("shows the mode in the header and switches it, by click or arrow key", async () => {

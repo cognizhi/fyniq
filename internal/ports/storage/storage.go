@@ -188,6 +188,8 @@ type Documents interface {
 	// OfContact lists at most limit documents of any type that name contact as their customer or supplier, at their
 	// current version, newest date first (FR-CT-02).
 	OfContact(ctx context.Context, contact uuid.UUID, limit int) ([]Document, error)
+	// Search finds documents for the global search (FR-UX-02, rev 0.190): see DocumentSearch.
+	Search(ctx context.Context, f DocumentSearch) ([]DocumentHit, error)
 	// ScheduledRevaluation saves a period's month-end revaluation as the scheduler does (FR-GL-04, FR-AUT-02; the
 	// database's create_scheduled_revaluation): a posted fx_revaluation document whose version 1 is payload, saved and
 	// posted by "scheduler:fx.revalue" at the clock's now. CodeFXRevaluation when the period is not open, or the payload
@@ -229,6 +231,28 @@ type DocumentFilter struct {
 	AfterDate string
 	AfterID   *uuid.UUID
 	Limit     int
+}
+
+// DocumentSearch is a global search of documents (FR-UX-02, rev 0.190): documents of Types whose number, memo, reference,
+// notes, title, lines or party's name hold Text, case aside, and whose live posted lines (neither reversed nor a
+// reversal) hold an amount from Min to Max, absolute and in the line's currency; with Either, one of the two will do.
+// An expense claim is only Claimant's when Claimant is set. Newest date first, at most Limit.
+type DocumentSearch struct {
+	Types                      []DocumentType
+	Claimant                   *uuid.UUID
+	Text                       string // empty: any
+	Either                     bool
+	Min, Max                   *string // decimal strings; nil: no bound
+	MinInclusive, MaxInclusive bool
+	Limit                      int
+}
+
+// DocumentHit is a document a search found: its party's name (its customer's or supplier's) and its largest live posted
+// line, its amount, which is empty for a document never posted.
+type DocumentHit struct {
+	Document
+	Party            string
+	Amount, Currency string
 }
 
 // Periods are the accounting periods.

@@ -174,6 +174,21 @@ func (r contacts) Update(ctx context.Context, id uuid.UUID, version int, d stora
 	return after, nil
 }
 
+func (r contacts) Search(ctx context.Context, text string, limit int) ([]storage.Contact, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.SearchContacts(ctx, sqlcdb.SearchContactsParams{Needle: text, PageSize: int32(min(max(limit, 1), 1000))}) // 1 to 1,000
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Contact, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, toContact(contactRow(row)))
+	}
+	return out, nil
+}
+
 func (r contacts) Page(ctx context.Context, after uuid.UUID, role string, limit int) ([]storage.Contact, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err

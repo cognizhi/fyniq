@@ -106,11 +106,11 @@ type searchEvidenceOutput struct {
 	}
 }
 
-// searchable are the activities p may search: those whose Appendix D row they view without a qualifier.
+// searchable are the activities p may search: those whose Appendix D row's records they view, all of them (views).
 func searchable(p authn.Principal) []EvidenceActivity {
 	var out []EvidenceActivity
 	for _, a := range EvidenceActivities {
-		if authz.Decide(authz.Policy{Operation: "view", Capability: a.Row, Need: authz.View, Unqualified: true}, p.Roles, p.AI()).Allowed {
+		if views(p, a.Row) {
 			out = append(out, a)
 		}
 	}

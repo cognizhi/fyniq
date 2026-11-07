@@ -58,3 +58,10 @@ RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, bill
 -- name: ContactOfMember :one
 -- The director or shareholder a member signs in as (FR-EQ-01, FR-EQ-14).
 SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, member_user_id, is_active, version FROM fyniq.contact WHERE member_user_id = sqlc.arg(member_user_id);
+
+-- name: SearchContacts :many
+-- Global search (FR-UX-02, rev 0.190): contacts whose legal name, UEN or tax ID, or emails hold the text, by name.
+SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_director, is_shareholder, member_user_id, is_active, version FROM fyniq.contact
+WHERE strpos(lower(concat_ws(' ', legal_name, uen_or_tax_id, billing_email, remittance_email)), lower(sqlc.arg(needle)::text)) > 0
+ORDER BY lower(legal_name), id
+LIMIT sqlc.arg(page_size);

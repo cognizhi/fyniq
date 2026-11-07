@@ -608,6 +608,38 @@ func (r documents) Page(ctx context.Context, f storage.DocumentFilter) ([]storag
 	return out, nil
 }
 
+func (r documents) Search(ctx context.Context, f storage.DocumentSearch) ([]storage.DocumentHit, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	types := make([]string, len(f.Types))
+	for i, t := range f.Types {
+		types[i] = string(t)
+	}
+	var claimant *string
+	if f.Claimant != nil {
+		c := f.Claimant.String()
+		claimant = &c
+	}
+	var needle *string
+	if f.Text != "" {
+		needle = &f.Text
+	}
+	rows, err := r.u.q.SearchDocuments(ctx, sqlcdb.SearchDocumentsParams{Types: types, Claimant: claimant, Either: f.Either, Needle: needle,
+		AmountMin: f.Min, AmountMax: f.Max, MinInclusive: f.MinInclusive, MaxInclusive: f.MaxInclusive,
+		PageSize: int32(min(max(f.Limit, 1), 1000))}) // 1 to 1,000
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.DocumentHit, len(rows))
+	for i, row := range rows {
+		out[i] = storage.DocumentHit{Document: storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
+			Version: int(row.CurrentVersion), Payload: row.Payload, Number: str(row.Number), SavedBy: str(row.CreatedBy), PostedBy: str(row.PostedBy),
+			PostedAt: row.PostedAt, Date: row.Date}, Party: row.Party, Amount: row.Amount, Currency: row.Currency}
+	}
+	return out, nil
+}
+
 func (r documents) OfContact(ctx context.Context, contact uuid.UUID, limit int) ([]storage.Document, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err

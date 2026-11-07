@@ -46,9 +46,11 @@ type ContactSummary struct {
 
 type contactSummaryOutput struct{ Body ContactSummary }
 
-// views reports whether p views row, a right without a qualifier.
+// views reports whether p views row's records, all of them: a right without a qualifier, or with one that limits only
+// what they do there, such as the Accountant's posting limit on journals (authz.WholeRow).
 func views(p authn.Principal, row authz.Capability) bool {
-	return authz.Decide(authz.Policy{Operation: "view", Capability: row, Need: authz.View, Unqualified: true}, p.Roles, p.AI()).Allowed
+	return authz.Decide(authz.Policy{Operation: "view", Capability: row, Need: authz.View, Unqualified: true, Qualified: authz.WholeRow},
+		p.Roles, p.AI()).Allowed
 }
 
 func registerContactSummary(a *API) {

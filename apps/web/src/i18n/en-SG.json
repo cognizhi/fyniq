@@ -412,6 +412,10 @@
       "label": "Merge into another account",
       "tooltip": "Move this account's balance into another account of the same type by one approved entry; it then stays inactive, and earlier postings stay where they are."
     },
+    "shell.search": {
+      "label": "Search",
+      "tooltip": "Find invoices, bills, journals, claims, contacts, accounts and items by a reference, a name, words of a note or an amount, in what your role lets you see."
+    },
     "contacts.overview": {
       "label": "Contacts",
       "tooltip": "The customers and vendors the company deals with."

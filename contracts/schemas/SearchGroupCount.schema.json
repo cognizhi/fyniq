@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "count": {
+      "description": "How many it found, up to the limit.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "key": {
+      "description": "The kind.",
+      "enum": [
+        "invoices",
+        "bills",
+        "journals",
+        "claims",
+        "quotes",
+        "purchase_orders",
+        "contacts",
+        "accounts",
+        "items"
+      ],
+      "examples": [
+        "invoices"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "Its name, for a filter.",
+      "examples": [
+        "Invoices and credit notes"
+      ],
+      "type": "string"
+    },
+    "more": {
+      "description": "true when it found more than the limit: refine the query.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "key",
+    "label",
+    "count",
+    "more"
+  ],
+  "title": "SearchGroupCount",
+  "type": "object"
+}
