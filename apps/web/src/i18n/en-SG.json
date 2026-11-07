@@ -312,6 +312,10 @@
       "label": "Reverse it",
       "tooltip": "Draft a reversal that undoes this transaction whole, citing why, such as the ACRA register extract."
     },
+    "equity-transaction.convert-safes": {
+      "label": "Draft the SAFE conversions",
+      "tooltip": "At this priced round, draft one conversion for each recorded SAFE or note it converts, at the lower of its cap price and its discounted round price, for approval."
+    },
     "equity.holders": {
       "label": "Shareholders and investors",
       "tooltip": "The equity register's holders: contacts marked shareholder or investor, with their recorded details and shares."

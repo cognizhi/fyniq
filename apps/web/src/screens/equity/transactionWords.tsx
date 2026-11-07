@@ -16,16 +16,20 @@ export const kindWords: Record<TransactionKind, string> = {
   transfer: "Transfer",
   class_conversion: "Conversion between classes",
   reversal: "Reversal",
+  instrument_conversion: "SAFE or note conversion",
 };
 
-// The ACRA steps each kind records, in order, and what each is called (FR-EQ-09).
+// The ACRA steps each kind records, in order, and what each is called (FR-EQ-09). A SAFE's or note's conversion is an
+// allotment, so it records an issue's steps.
+const issueSteps = [
+  { kind: "resolved", label: "Shareholders' approval to issue the shares" },
+  { kind: "approval_lodged", label: "Approval lodged with ACRA" },
+  { kind: "agm_due", label: "The next AGM, when the approval lapses" },
+  { kind: "allotment_lodged", label: "Return of allotment lodged" },
+];
+
 export const stepsOf: Record<TransactionKind, { kind: string; label: string }[]> = {
-  issue_cash: [
-    { kind: "resolved", label: "Shareholders' approval to issue the shares" },
-    { kind: "approval_lodged", label: "Approval lodged with ACRA" },
-    { kind: "agm_due", label: "The next AGM, when the approval lapses" },
-    { kind: "allotment_lodged", label: "Return of allotment lodged" },
-  ],
+  issue_cash: issueSteps,
   transfer: [
     { kind: "instrument_signed", label: "Instrument of transfer signed" },
     { kind: "transfer_lodged", label: "Notice of transfer lodged with ACRA" },
@@ -35,6 +39,7 @@ export const stepsOf: Record<TransactionKind, { kind: string; label: string }[]>
     { kind: "conversion_lodged", label: "Conversion lodged with ACRA" },
   ],
   reversal: [],
+  instrument_conversion: issueSteps,
 };
 
 export async function listTransactions(): Promise<EquityTransaction[]> {

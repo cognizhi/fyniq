@@ -342,6 +342,9 @@ func replayConversion(ctx context.Context, u storage.UnitOfWork, s ledger.Settin
 		if x.ID != id {
 			continue
 		}
+		if x.SettlementID == nil && x.Consideration == storage.ConsiderationSAFE { // a SAFE's or note's conversion (instrument_conversion@1)
+			return replayInstrumentConversion(s, e, x)
+		}
 		if x.SettlementID == nil { // a cash issue: Dr share application monies · Cr the class (share_issue_cash@1)
 			return replayCashIssue(s, e, x)
 		}

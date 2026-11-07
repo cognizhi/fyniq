@@ -2,9 +2,9 @@
 key: equity.register
 type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
-summary: The cap table at any day (compare, drill down, export), holders (last 4 characters only), share classes, and equity transactions made effective with ACRA
+summary: The cap table at any day, holders (last 4 characters only), share classes, equity transactions made effective with ACRA, and SAFE conversions at a round
 sources:
-  - docs/user-guide/equity-register.md sha256:635ea237ac67d0d76148d9262f037f1d0801ab3ffee598c5b3467d921d0a907b
+  - docs/user-guide/equity-register.md sha256:b473111c8593534177e70d57edd45175a91fec2a5b90b1617052f5975aaa6013
 data_class: general
 taint: trusted
 status: published
@@ -56,6 +56,12 @@ aliases:
   - effective date
   - share application monies
   - refund a subscription
+  - convert a SAFE
+  - SAFE conversion
+  - convertible note conversion
+  - priced round
+  - conversion price
+  - valuation cap
 ---
 
 # The equity register: who owns the company, holders, share classes and transactions
@@ -160,8 +166,8 @@ aliases:
 
 ## Equity transactions
 
-- **Equity › Transactions** lists issues for cash, transfers, conversions between classes and
-  reversals, the latest first: reference (EQ-, on approval), effective date, holders, class, shares
+- **Equity › Transactions** lists issues for cash, transfers, conversions between classes, SAFE
+  or note conversions and reversals, the latest first: reference (EQ-, on approval), effective date, holders, class, shares
   and status (**Draft**, **Waiting for ACRA**, **Effective**, **Reversed**); **Due** means an ACRA
   lodgement is due, **Review** that it has waited too long.
 
@@ -195,6 +201,25 @@ aliases:
 
 (src: docs/user-guide/equity-register.md#make-it-effective)
 
+## Convert SAFEs and notes
+
+- At a priced round, on the round's approved issue for cash, an Accountant selects **Draft the SAFE
+  conversions**: one **SAFE or note conversion** per instrument the round converts, with its shares
+  and conversion price.
+- The price is the lower of the cap price and the round's price less its discount, cut down to the
+  decimals its terms give; a post-money SAFE's cap price counts the shares every converting
+  post-money SAFE takes, a pre-money SAFE's is its cap divided by the shares before the round.
+- The shares are its money divided by that price, rounded down to whole shares; what is left stays
+  on **2700 Convertible notes / SAFE** until settled under its terms.
+- One an enabled template covers in every term is ready for approval; any other shows **The
+  accountant completes it** (a discount, an MFN clause, a round below its cap price): check the
+  shares and price against the terms first. The holder and class are the instrument's.
+- Attach the resolutions and ask for approval; an instrument converts once while its conversion
+  stands. It becomes effective on or after its round while 2700 holds its money, posting Dr 2700 ·
+  Cr share capital.
+
+(src: docs/user-guide/equity-register.md#convert-safes-and-notes)
+
 ## Correct a transaction
 
 - An approved transaction never changes: **Reverse it** drafts a reversal citing why (the ACRA
@@ -224,9 +249,13 @@ aliases:
 - EQUITY-05: recorded, so it changes no more; draft a new one. EQUITY-06: no evidence attached;
   attach the identity document, or the constitution and the shareholders' agreement.
 - Your own holder record is approved by another Owner or the Controller.
+- EQUITY-07: a conversion of the instrument stands already (change it, or reverse it first); the
+  round is not an approved issue for cash.
 - EQUITY-08: only an approved transaction becomes effective, never before its approval; the
   subscriber's money is not all in share application monies; the holder holds fewer shares on the
-  day. EQUITY-09: no share application monies account, add 2040. EQUITY-10: a step its transaction
+  day; a conversion's round is not effective on or before the day, or was reversed (draft the
+  conversions again from the round that replaces it); 2700 holds less for the instrument than it
+  converts (categorise the SAFE's money to 2700, naming the instrument). EQUITY-09: no share application monies account, add 2040. EQUITY-10: a step its transaction
   does not take, or dated after today.
 - A transaction that moves your own shares is approved by another Owner or the Controller.
 - REPORT-08: the render service did not make the PDF; try again, or export to Excel.

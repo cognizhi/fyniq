@@ -406,6 +406,12 @@ var matrixEquityTransactions = map[string]func(e *env, tok string) (response, fu
 			"If-Match", "*", "Prefer", "return=preview")
 		return r, func() bool { return matrixEquityTxState(e, f) == was }
 	},
+	"draftInstrumentConversions": func(e *env, tok string) (response, func() bool) {
+		f := matrixEquityTx(e)
+		was := matrixEquityTxState(e, f)
+		r := e.call(http.MethodPost, "/v1/equity-transactions/"+f.approved+"/conversions", tok, nil, "If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixEquityTxState(e, f) == was }
+	},
 	"addEquityTransactionEvidence": func(e *env, tok string) (response, func() bool) {
 		f := matrixEquityTx(e)
 		was := matrixEquityTxState(e, f)

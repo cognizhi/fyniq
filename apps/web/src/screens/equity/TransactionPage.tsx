@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { Check, CircleDashed, Hourglass, PencilLine, Send, Undo2 } from "lucide-react";
+import { Check, CircleDashed, FileSymlink, Hourglass, PencilLine, Send, TriangleAlert, Undo2 } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
@@ -52,6 +52,18 @@ export function TransactionPage() {
   if (q.isError) return <Refusal problem={problemOf(q.error)} title="The equity transaction could not be shown" />;
   if (!q.data) return null;
   const { t, etag } = q.data;
+  const convertH = helpText("equity-transaction.convert-safes");
+  const convert = async () => {
+    setBusy(true);
+    setProblem(null);
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/equity-transactions/{transaction_id}/conversions", { params: { path: { transaction_id: t.id }, header: { "If-Match": etag, "Idempotency-Key": newKey() } } }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    const n = out.data.items.length;
+    await refresh(n === 0 ? "No SAFE or note waits to convert at this round." : `Drafted ${n} conversion${n === 1 ? "" : "s"}: open each in Transactions, attach the resolutions and ask for approval.`);
+  };
   const ask = () =>
     act((m) => api.POST("/v1/equity-transactions/{transaction_id}/approval", { params: { path: { transaction_id: t.id }, header: { "If-Match": m, "Idempotency-Key": newKey() } } }),
       "Asked for approval. Another Owner or the Controller approves it.");
@@ -89,6 +101,12 @@ export function TransactionPage() {
               Waiting for approval
             </Link>
           )}
+          {t.details.kind === "issue_cash" && (t.status === "approved" || t.status === "effective") && mayDraft && (
+            <Button variant="secondary" onClick={() => void convert()} disabled={busy} title={convertH.tooltip}>
+              <Icon of={FileSymlink} />
+              {convertH.label}
+            </Button>
+          )}
           {t.status === "effective" && mayDraft && t.details.kind !== "reversal" && (
             <Link className="fy-btn fy-btn--secondary" to="/equity/transactions/new" search={{ reverses: t.id }} title={helpText("equity-transaction.reverse").tooltip}>
               <Icon of={Undo2} />
@@ -105,6 +123,11 @@ export function TransactionPage() {
       <div className="fy-split">
         <div className="fy-stack fy-stack--4">
           <Details t={t} />
+          {t.details.review && (
+            <p className="fy-card fy-card--pad fy-small" role="note">
+              <Icon of={TriangleAlert} /> The accountant completes it: {t.details.review}. Check the shares and the conversion price against the terms before asking.
+            </p>
+          )}
           {t.checks.length > 0 && (
             <section className="fy-card fy-card--pad fy-stack fy-stack--2" aria-label="What stops it">
               {t.checks.map((c) => (
@@ -135,8 +158,10 @@ function Details({ t }: { t: EquityTransaction }) {
     ["Class", t.class_code || "–"],
     ["Shares", d.kind === "class_conversion" ? `${sharesText(d.shares)} out, ${sharesText(d.to_shares)} in` : sharesText(d.shares)],
   ];
-  if (d.price) rows.push(["Price per share", d.price]);
-  if (t.amount) rows.push([d.kind === "class_conversion" ? "Carrying amount" : "Amount", `${formatAmount(t.amount.amount)} ${t.amount.currency}`]);
+  const converting = d.kind === "instrument_conversion";
+  if (d.price) rows.push([converting ? "Conversion price per share" : "Price per share", d.price]);
+  if (t.amount)
+    rows.push([d.kind === "class_conversion" ? "Carrying amount" : converting ? "Converted from 2700" : "Amount", `${formatAmount(t.amount.amount)} ${t.amount.currency}`]);
   if (d.resolution_refs) rows.push(["Resolutions", d.resolution_refs]);
   if (d.reason) rows.push(["Why", d.reason]);
   if (d.note) rows.push(["Note", d.note]);

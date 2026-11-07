@@ -26,10 +26,11 @@ const (
 	ConversionLodgeWithin = 14
 )
 
-// StepsFor are the steps a transaction of a kind records, in their order: a cash issue takes a founder's conversion's.
+// StepsFor are the steps a transaction of a kind records, in their order: a cash issue takes a founder's conversion's,
+// and so does a SAFE's or note's conversion, an allotment too.
 func StepsFor(kind string) []string {
 	switch kind {
-	case KindIssueCash:
+	case KindIssueCash, KindInstrumentConversion:
 		return director.StepKinds
 	case KindTransfer:
 		return []string{storage.StepInstrumentSigned, storage.StepTransferLodged}
@@ -70,7 +71,7 @@ func CheckStep(kind, step string, on time.Time, reference string, today time.Tim
 
 func kindWords(kind string) string {
 	return map[string]string{KindIssueCash: "cash issue", KindTransfer: "transfer", KindClassConversion: "conversion between classes",
-		KindReversal: "reversal"}[kind]
+		KindReversal: "reversal", KindInstrumentConversion: "conversion of a SAFE or note"}[kind]
 }
 
 // Flag is what a transaction's steps raise: ⏰ due, or ⚠ warning.
@@ -83,7 +84,7 @@ type Flag = director.Flag
 // days (FR-EQ-09) [verify the lodgement periods].
 func Flags(kind string, steps Steps, approvedOn, lapsesOn, today time.Time, registrationDays int) []Flag {
 	day := func(t time.Time) string { return t.Format("2 Jan 2006") }
-	if kind == KindIssueCash {
+	if kind == KindIssueCash || kind == KindInstrumentConversion {
 		conv := director.Steps{}
 		for k, s := range steps {
 			conv[k] = storage.ConversionStep{ID: s.ID, Kind: s.Kind, On: s.On, Reference: s.Reference, RecordedBy: s.RecordedBy, RecordedAt: s.RecordedAt}

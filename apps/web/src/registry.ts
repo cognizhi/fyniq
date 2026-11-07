@@ -312,6 +312,7 @@ export const actions = [
   { kind: "action", id: "equity-transaction.step", mode: "expert", help: "equity-transaction.step", guide: "equity.register#make-it-effective" },
   { kind: "action", id: "equity-transaction.effective", mode: "expert", help: "equity-transaction.effective", guide: "equity.register#make-it-effective" },
   { kind: "action", id: "equity-transaction.reverse", mode: "expert", help: "equity-transaction.reverse", guide: "equity.register#correct-a-transaction" },
+  { kind: "action", id: "equity-transaction.convert-safes", mode: "expert", help: "equity-transaction.convert-safes", guide: "equity.register#convert-safes-and-notes" },
   { kind: "action", id: "equity.add-holder", mode: "expert", help: "equity.add-holder", guide: "equity.register#holders" },
   { kind: "action", id: "holder-record.draft", mode: "expert", help: "holder-record.draft", guide: "equity.register#record-a-holders-details" },
   { kind: "action", id: "holder-record.ask", mode: "expert", help: "holder-record.ask", guide: "equity.register#record-a-holders-details" },
