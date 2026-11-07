@@ -4,7 +4,7 @@ type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
 summary: The cap table at any day, holders (last 4 only), share classes, equity transactions made effective with ACRA, SAFE conversions and the option pool
 sources:
-  - docs/user-guide/equity-register.md sha256:d59800e3df0613fe437c68444ac2ff06b0b53d8a82be08a8659b1cb0597098d6
+  - docs/user-guide/equity-register.md sha256:843c313e1a446f2712d37650df152cd7347eb8550bb7b0266d09fa40170582cf
 data_class: general
 taint: trusted
 status: published
@@ -81,6 +81,8 @@ aliases:
   - forfeit options
   - options lapse
   - leaver options
+  - exercise options
+  - exercise price
 ---
 
 # The equity register: who owns the company, holders, share classes and transactions
@@ -309,8 +311,14 @@ aliases:
   **Expiry** on the grant with the notice; another Owner or the Controller records it, never the
   holder. A forfeiture takes at most what is not vested on its day, an expiry at most what is left;
   from its day the options leave the holder's fully diluted shares and return to the pool
-  [accountant to confirm]. **Outstanding** is the grant less those forfeited and expired;
-  **Vested** never counts more than is outstanding.
+  [accountant to confirm]. **Outstanding** is the grant less those forfeited, expired and exercised;
+  **Vested** never counts more than the grant keeps.
+- To **exercise**, an Accountant drafts an equity transaction **Exercise of options**: the grant,
+  the number and the board resolution; the holder, class and price are the grant's, at most what
+  is **Exercisable**. Approved like any issue, never by the holder, and effective once the holder's
+  money is in share application monies: Dr 2040 · Cr share capital, shares × the exercise price.
+  Exercised options never return to the pool; a reversal makes them outstanding again. A grant at
+  an exercise price of 0 is not exercised this way yet [accountant to confirm].
 
 (src: docs/user-guide/equity-register.md#the-option-pool-and-grants)
 
@@ -360,7 +368,8 @@ aliases:
   leaves fewer options than the grant on its grant date or a later day. Your own grant of options
   is approved by another Owner or the Controller. EQUITY-18: a forfeiture or expiry of a grant not
   recorded, of options vested, or of more than the grant has left; your own options' forfeiture or
-  expiry is approved by another Owner or the Controller.
+  expiry is approved by another Owner or the Controller. EQUITY-07 on an exercise: more than is
+  vested and not exercised, or a grant at an exercise price of 0.
 - REPORT-08: the render service did not make the PDF; try again, or export to Excel.
 
 (src: docs/user-guide/equity-register.md#common-problems)

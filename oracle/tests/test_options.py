@@ -110,3 +110,32 @@ def test_a_month_passes_on_the_grants_day_or_a_short_months_last(granted, day, m
     assert captable._months(date.fromisoformat(granted), date.fromisoformat(day)) == months
     g = captable.Grant("P0003", "3010", 4800, date.fromisoformat(granted), cliff=1, months=24)
     assert captable.vested(g, date.fromisoformat(day)) == (0 if months < 1 else 4800 * months // 24)
+
+
+EXERCISES = GOLDEN.parent / "option-exercise.json"
+
+
+# req: FR-EQ-19
+# req: QA-ENG-02
+def test_an_exercise_is_an_issue_for_cash_within_what_is_vested():
+    r = Ledger(load_scenario(EXERCISES)).result()
+    # EQ-0003 once P0004's S$2,000.00 paid for EQ-0002's 4,000 at S$0.50; EQ-0004 before OG-0001's 12-month cliff;
+    # EQ-0005 of OG-0003, at no price; EQ-0006 of no grant; EQ-0007 of 1.5 options; EQ-0008 of 12,001 when 12,000 are
+    # vested on 20 Jan 2028 (12 whole months from 15 Jan 2027, × 48,000 ÷ 48); OE-0001 forfeits 36,001 when 36,000 are
+    # not vested; OE-0003 lets lapse one of a grant with nothing left.
+    assert r["rejected"] == ["EQ-0003", "EQ-0004", "EQ-0005", "EQ-0006", "EQ-0007", "EQ-0008", "OE-0001", "OE-0003"]
+    lines = {e["document"]: [(ln["account"], ln["amount"], ln.get("party")) for ln in e["lines"]] for e in r["entries"]}
+    # Each exercise posts as a cash issue: Dr 2040 naming the holder · Cr 3010, shares × the exercise price.
+    assert lines["EQ-0002"] == [("2040", "2000.00", "P0004"), ("3010", "-2000.00", None)]
+    assert lines["EQ-0009"] == [("2040", "1200.00", "P0003"), ("3010", "-1200.00", None)]
+    first, last = r["cap_tables"]
+    # 2 Feb 2027: P0004 holds 4,000 shares and 6,000 + 1,000 options: 11,000 ÷ 1,100,000 = 1.00%; the pool leaves
+    # 100,000 − 59,000 = 41,000.
+    assert (first["issued"], first["options"], first["unallocated"], first["fully_diluted"]) == ("1004000", "55000", "41000", "1100000")
+    assert [(ln["holder"], ln["issued"], ln["fully_diluted"], ln["diluted"]) for ln in first["lines"]] == [
+        ("P0001", "1000000", "1000000", "90.91"), ("P0003", "0", "48000", "4.36"), ("P0004", "4000", "11000", "1.00")]
+    # 22 Jan 2028: P0003's 12,000 exercised, 36,000 forfeited; P0004's 6,000 left of OG-0002 lapse; the pool has the
+    # 42,000 back, 83,000 unallocated; the exercised options never return.
+    assert (last["issued"], last["options"], last["unallocated"], last["fully_diluted"]) == ("1016000", "1000", "83000", "1100000")
+    assert [(ln["holder"], ln["issued"], ln["fully_diluted"], ln["diluted"]) for ln in last["lines"]] == [
+        ("P0001", "1000000", "1000000", "90.91"), ("P0003", "12000", "12000", "1.09"), ("P0004", "4000", "5000", "0.45")]

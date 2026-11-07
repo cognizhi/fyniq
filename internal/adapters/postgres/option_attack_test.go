@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -222,5 +223,98 @@ func TestAttackGrantEventsKeepTheirRules(t *testing.T) {
 	}
 	if err := record(drafted(storage.DocumentOptionGrant, grant("60", "2026-07-01"))); err != nil {
 		t.Errorf("a grant of the 60 given back, from their day: %v", err)
+	}
+}
+
+// An exercise's shares come from its grant whoever writes them (FR-EQ-19; FY293): its issue movement names a recorded
+// grant of the same holder and class at the grant's exercise price, and the grant's exercises not reversed, with its
+// events, never take more options than it gave; an event recorded after an exercise counts it too.
+// req: FR-EQ-19
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackAnExerciseTakesFromItsGrant(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack exercises Pte Ltd")
+	class := shareCapital(t, d)
+	api := store(t, "fyniq_api")
+	var kow storage.Contact
+	created := func(typ storage.DocumentType, payload string, posted bool) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		if err := api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: typ, Payload: []byte(payload)})
+			if err != nil {
+				return err
+			}
+			id = doc.ID
+			if !posted {
+				return nil
+			}
+			return u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted)
+		}); err != nil {
+			t.Fatalf("%s %s: %v", typ, payload, err)
+		}
+		return id
+	}
+	if err := api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		kow, err = u.Contacts().Create(ctx, storage.ContactDetails{LegalName: "Tan Ah Kow", Shareholder: true})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	created(storage.DocumentOptionPool, fmt.Sprintf(`{"date":"2026-11-07","size":"100","class_account_id":%q,"resolution_ref":"R","resolved_on":"2026-01-02"}`, class), true)
+	grant := created(storage.DocumentOptionGrant, fmt.Sprintf(`{"date":"2026-11-07","holder_id":%q,"number":"100","exercise_price":"1","currency":"SGD",`+
+		`"granted_on":"2026-02-01","cliff_months":0,"vesting_months":0,"acceleration":"none","expires_on":"2036-01-01","class_account_id":%q}`, d.director.ID, class), true)
+	exercise := func(price string) uuid.UUID {
+		return created(storage.DocumentEquityTransaction, fmt.Sprintf(`{"kind":"exercise","grant_id":%q,"price":%q}`, grant, price), true)
+	}
+	issued := func(tx, holder uuid.UUID, shares string) error { // an exercise made effective: its entry, share issue and movement
+		return asOrg(ctx, conn(t, "fyniq_api"), d.org, func(pg pgx.Tx) error {
+			issue := uuid.Must(uuid.NewV7())
+			var entryID uuid.UUID
+			if err := pg.QueryRow(ctx, `
+INSERT INTO fyniq.journal_entry (posting_date, posting_identity, source_type, source_id, source_version, rule_version)
+VALUES ('2026-10-14', $1, 'share_issue', $1, 1, 'share_issue_cash@1') RETURNING id`, issue.String()).Scan(&entryID); err != nil {
+				return err
+			}
+			if err := auditRaw(ctx, pg, "journal_entry.posted", "journal_entry", entryID); err != nil {
+				return err
+			}
+			if _, err := pg.Exec(ctx, `
+INSERT INTO fyniq.journal_line (entry_id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_amount)
+VALUES ($1, 1, $2, 'SGD', $4::numeric, 1, 'attack', $4::numeric), ($1, 2, $3, 'SGD', -$4::numeric, 1, 'attack', -$4::numeric)`, entryID, d.bank, class, shares); err != nil {
+				return err
+			}
+			if _, err := pg.Exec(ctx, `
+INSERT INTO fyniq.share_issue (id, holder_id, class_account_id, shares, price, currency, minor_units, amount, consideration, resolution_refs,
+                               effective_on, entry_id, recorded_by, recorded_at)
+VALUES ($1, $2, $3, $4::numeric, 1, 'SGD', 2, $4::numeric, 'cash', 'Board resolution 14 Oct 2026', '2026-10-14', $5, $6, now())`,
+				issue, holder, class, shares, entryID, d.member); err != nil {
+				return err
+			}
+			if err := auditRaw(ctx, pg, "share_issue.recorded", "share_issue", issue); err != nil {
+				return err
+			}
+			id := uuid.Must(uuid.NewV7())
+			if _, err := pg.Exec(ctx, `
+INSERT INTO fyniq.holding_movement (id, kind, transaction_id, share_issue_id, holder_id, class_account_id, shares, effective_on, recorded_by, recorded_at)
+VALUES ($1, 'issue', $2, $3, $4, $5, $6::numeric, '2026-10-14', $7, now())`, id, tx, issue, holder, class, shares, d.member); err != nil {
+				return err
+			}
+			return auditRaw(ctx, pg, "holding.moved", "holding_movement", id)
+		})
+	}
+	wantState(t, "shares to another holder than the grant's", issued(exercise("1"), kow.ID, "10"), "FY293")
+	wantState(t, "an exercise at another price than the grant's", issued(exercise("2"), d.director.ID, "10"), "FY293")
+	if err := issued(exercise("1"), d.director.ID, "60"); err != nil {
+		t.Fatalf("an exercise of 60 of the 100: %v", err)
+	}
+	wantState(t, "50 more of the 40 left", issued(exercise("1"), d.director.ID, "50"), "FY293")
+	event := created(storage.DocumentOptionEvent, fmt.Sprintf(`{"date":"2026-11-07","grant_id":%q,"kind":"expiry","number":"41","on":"2026-10-20"}`, grant), false)
+	if err := api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		return u.Documents().SetStatus(ctx, event, storage.DocumentPosted)
+	}); storage.CodeOf(err) != storage.CodeOption {
+		t.Errorf("an expiry of 41 once 60 are exercised: %v", err)
 	}
 }

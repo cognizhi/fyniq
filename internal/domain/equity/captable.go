@@ -263,6 +263,10 @@ func DilutionIn(ctx context.Context, u storage.UnitOfWork) (Dilution, error) {
 	if err != nil {
 		return d, err
 	}
+	exercises, err := ExercisesIn(ctx, u)
+	if err != nil {
+		return d, err
+	}
 	defaults := map[uuid.UUID]uuid.UUID{}
 	for _, doc := range grants {
 		if doc.Status != storage.DocumentPosted {
@@ -295,6 +299,20 @@ func DilutionIn(ctx context.Context, u storage.UnitOfWork) (Dilution, error) {
 				return d, err
 			}
 			d.Options = append(d.Options, gone)
+		}
+		for _, x := range exercises[doc.ID] { // shares from its effective day, options again from a reversal's
+			gone := Option{Key: key, On: x.On}
+			if _, _, err := gone.Number.SetString("-" + x.Number); err != nil {
+				return d, err
+			}
+			d.Options = append(d.Options, gone)
+			if x.Until != nil {
+				back := Option{Key: key, On: *x.Until}
+				if _, _, err := back.Number.SetString(x.Number); err != nil {
+					return d, err
+				}
+				d.Options = append(d.Options, back)
+			}
 		}
 	}
 	if len(b.Pools) > 0 {

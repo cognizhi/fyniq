@@ -37,10 +37,14 @@ const (
 	// KindInstrumentConversion is a SAFE's or note's conversion into shares at a priced round (FR-EQ-18, design D6),
 	// drafted from its round: an issue to the instrument's holder, Dr 2700 · Cr the class with what it converts.
 	KindInstrumentConversion = "instrument_conversion"
+	// KindExercise is an exercise of a recorded grant's options (FR-EQ-19, design D9): an issue to the grant's holder of
+	// its class at its exercise price, from share application monies like a cash issue, at most what is vested and not
+	// exercised on the day it is effective.
+	KindExercise = "exercise"
 )
 
 // TransactionKinds are the kinds a transaction may be.
-var TransactionKinds = []string{KindIssueCash, KindTransfer, KindClassConversion, KindReversal, KindInstrumentConversion}
+var TransactionKinds = []string{KindIssueCash, KindTransfer, KindClassConversion, KindReversal, KindInstrumentConversion, KindExercise}
 
 // The codes of equity transactions (ENG-23).
 const (
@@ -61,7 +65,9 @@ const MaxReason = 500
 //     carrying amount moved between the classes' accounts when they differ [accountant to confirm the basis];
 //   - reversal: the transaction it reverses and why;
 //   - instrument_conversion: the instrument (its holder and class), the round it converts at, the shares and the
-//     conversion price; its amount is shares × price under RND-LINE, which RND-SHARE kept within the instrument's amount.
+//     conversion price; its amount is shares × price under RND-LINE, which RND-SHARE kept within the instrument's amount;
+//   - exercise: the grant (its holder, class and exercise price), the shares and the resolutions; its amount is shares
+//     × the exercise price under RND-LINE.
 type Transaction struct {
 	Kind           string
 	HolderID       uuid.UUID
@@ -81,6 +87,7 @@ type Transaction struct {
 	Note           string
 	InstrumentID   uuid.UUID  // an instrument conversion's SAFE or note
 	RoundID        uuid.UUID  // and the cash issue, the priced round, it converts at
+	GrantID        uuid.UUID  // an exercise's grant of options
 	Review         string     // what the accountant completes in a conversion no enabled template covers (⚠), as drafted
 	Date           time.Time  // the day it was drafted
 	ApprovedOn     *time.Time // the day it was approved; it is never effective earlier
@@ -104,6 +111,7 @@ type transactionPayload struct {
 	ReversesID     string `json:"reverses_id,omitempty"`
 	InstrumentID   string `json:"instrument_id,omitempty"`
 	RoundID        string `json:"round_id,omitempty"`
+	GrantID        string `json:"grant_id,omitempty"`
 	Review         string `json:"review,omitempty"`
 	Reason         string `json:"reason,omitempty"`
 	Note           string `json:"note,omitempty"`
@@ -130,7 +138,7 @@ func EncodeTransaction(t Transaction) ([]byte, error) {
 		BuyerID: idText(t.BuyerID), ClassAccountID: idText(t.ClassAccountID), ClassID: optText(t.ClassID), ToAccountID: idText(t.ToAccountID),
 		ToClassID: optText(t.ToClassID), Shares: t.Shares, ToShares: t.ToShares, Price: t.Price, Amount: t.Amount, ResolutionRefs: t.ResolutionRefs,
 		ReversesID: idText(t.ReversesID), Reason: t.Reason, Note: t.Note, InstrumentID: idText(t.InstrumentID), RoundID: idText(t.RoundID),
-		Review: t.Review}
+		GrantID: idText(t.GrantID), Review: t.Review}
 	if t.ApprovedOn != nil {
 		p.ApprovedOn = t.ApprovedOn.Format(time.DateOnly)
 	}
@@ -159,7 +167,7 @@ func ReadTransaction(doc storage.Document) (Transaction, error) {
 	t := Transaction{Kind: p.Kind, HolderID: id(p.HolderID), SellerID: id(p.SellerID), BuyerID: id(p.BuyerID), ClassAccountID: id(p.ClassAccountID),
 		ClassID: opt(p.ClassID), ToAccountID: id(p.ToAccountID), ToClassID: opt(p.ToClassID), Shares: p.Shares, ToShares: p.ToShares, Price: p.Price,
 		Amount: p.Amount, ResolutionRefs: p.ResolutionRefs, ReversesID: id(p.ReversesID), Reason: p.Reason, Note: p.Note,
-		InstrumentID: id(p.InstrumentID), RoundID: id(p.RoundID), Review: p.Review}
+		InstrumentID: id(p.InstrumentID), RoundID: id(p.RoundID), GrantID: id(p.GrantID), Review: p.Review}
 	t.Date, _ = time.Parse(time.DateOnly, p.Date)
 	if on, err := time.Parse(time.DateOnly, p.ApprovedOn); err == nil {
 		t.ApprovedOn = &on
@@ -330,6 +338,17 @@ func CheckTransaction(ctx context.Context, u storage.UnitOfWork, t Transaction, 
 			{"price", t.Price != ""}, {"amount", t.Amount != ""}} {
 			unused(f.field, f.set)
 		}
+	case KindExercise:
+		if err := checkExercise(ctx, u, &t, s, add); err != nil {
+			return t, err
+		}
+		t.ClassID = class("class_account_id", "class_id", t.ClassAccountID, t.ClassID)
+		shares("shares", t.Shares)
+		refs(true)
+		unused("seller_id", t.SellerID != uuid.Nil)
+		unused("buyer_id", t.BuyerID != uuid.Nil)
+		unused("to_class_account_id", t.ToAccountID != uuid.Nil)
+		unused("reverses_id", t.ReversesID != uuid.Nil)
 	case KindInstrumentConversion:
 		if err := checkConversion(ctx, u, &t, s, add); err != nil {
 			return t, err
@@ -340,7 +359,10 @@ func CheckTransaction(ctx context.Context, u storage.UnitOfWork, t Transaction, 
 		unused("to_class_account_id", t.ToAccountID != uuid.Nil)
 		unused("reverses_id", t.ReversesID != uuid.Nil)
 	default:
-		add("kind", fmt.Sprintf("%q is not a kind of equity transaction Fyniq records", t.Kind), "Choose issue_cash, transfer, class_conversion or reversal")
+		add("kind", fmt.Sprintf("%q is not a kind of equity transaction Fyniq records", t.Kind), "Choose issue_cash, transfer, class_conversion, exercise or reversal")
+	}
+	if t.Kind != KindExercise {
+		unused("grant_id", t.GrantID != uuid.Nil)
 	}
 	if t.Kind != KindInstrumentConversion {
 		unused("instrument_id", t.InstrumentID != uuid.Nil)

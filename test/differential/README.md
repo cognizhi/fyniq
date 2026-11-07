@@ -742,6 +742,20 @@ From FR-EQ-19 and the equity register's design D9 (`p1-equity-register`).
  "number": "9000"}
 ```
 
+```json
+{"type": "option_grant", "id": "OG-0002", "version": 1, "date": "2026-06-10", "person": "P0002", "number": "1000",
+ "class": "3010", "exercise_price": "0.50"}
+```
+
+```json
+{"type": "bank_transaction", "id": "BT-0104", "version": 1, "date": "2026-06-11", "account": "1010", "currency": "SGD",
+ "amount": "300.00", "person": "P0002", "parts": [{"account": "2040", "amount": "300.00", "gst_code": "NA"}]}
+```
+
+```json
+{"type": "option_exercise", "id": "EQ-0106", "version": 1, "date": "2026-06-12", "grant": "OG-0002", "shares": "600"}
+```
+
 A pool resolution records that `size` shares of `class` are set aside for options from `date`, the day it was passed;
 a grant gives `person`, one of `people` or `subscribers`, `number` options over `class` on `date`, the grant date.
 Neither posts an entry: the result has no entry for either, and one that is not rejected is not in `rejected` either.
@@ -766,18 +780,29 @@ whole options. None vest before the grant date.
 An event takes `number` options of `grant`, an earlier grant not rejected, on `date`, on or after the grant's date:
 `kind` `forfeiture` gives up options not vested, `expiry` lets options lapse. It posts no entry. It is rejected when
 `kind` is neither, `number` is not a whole number above zero, `grant` is no such grant, `date` is before the grant's,
-`number` is more than the grant's `number` less every earlier event of it (whatever their days), or, for a forfeiture,
-more than that less what is vested on `date`. From its `date` its options leave the grant's holder's line in the cap
+`number` is more than the grant's `number` less every earlier event and exercise of it (whatever their days), or, for a
+forfeiture, more than the grant's `number` less every earlier event of it and less what is vested on `date`.
+
+An exercise (`option_exercise`) issues `shares` of the grant's `class` to its `person` on `date` at the grant's
+`exercise_price` (a plain decimal from zero with at most 6 decimals, 0 when left out), as a cash issue does (section "Cash
+share issues"): `share_issue_cash@1`, Dr the share application monies account with `RND-LINE` of shares × price, the line
+naming the person, Cr `class` with the same, and the shares into the person's holding. It is rejected when `grant` is no
+such grant, its `exercise_price` is 0 (an issue for no cash, which the format leaves out), `shares` is not a whole number
+above zero, the person's monies do not cover the amount at the end of `date` (or the chart has no such account), or,
+on `date` or any later day an earlier event or exercise of the grant is dated, the options exercised by then (with these)
+are more than those vested then, or than the grant's `number` less what its events took by then. From `date` its shares
+are no longer the grant's options; they never return to the pool. From its `date` its options leave the grant's holder's line in the cap
 table and are back in the pool: the pool on a day leaves its `size` less the options granted by then, plus those the
 events dated by then took. A grant or resolution that the rule above checks on a later day counts them the same way.
 
-The format leaves out what nothing it computes reads: a grant's exercise price, acceleration and expiry date, and the
-resolution's reference. Exercises are not in the format yet. The cap table counts each grant's options in its holder's
+The format leaves out what nothing it computes reads: a grant's acceleration and expiry date, and the resolution's
+reference. The cap table counts each grant's options in its holder's
 line fully diluted, and the pool's unallocated options in the day's total (section "Cap tables").
 
 In the examples above, the pool of 20,000 sets aside shares of 3010 from 20 Apr 2026, and P0002's grant of 12,000 on 4
 May leaves 8,000 unallocated; a month later, with nothing vested before the cliff, 9,000 of them are forfeited, so
-17,000 are unallocated.
+17,000 are unallocated. P0002's second grant, of 1,000 at S$0.50 vesting at once, takes 1,000 of them; 600 are exercised
+for S$300.00 from their monies, so P0002 holds 600 more shares and 400 options of it.
 
 ### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
 
@@ -1425,15 +1450,16 @@ order of their IDs):
 - `issued`: the shares held, a whole number;
 - `votes`: `issued` × the class's `votes_per_share` (an attribute of the share-capital account, one when left out),
   exact, as a plain decimal with no trailing zeros ("1.5", "0");
-- `fully_diluted`: the shares held and the options the holder's grants over the class gave by then; an instrument
-  counts only once it converts (FR-EQ-18);
+- `fully_diluted`: the shares held and the options the holder's grants over the class gave by then, less those their
+  events took and those exercised into shares by then; an instrument counts only once it converts (FR-EQ-18);
 - `ownership`, `voting` and `diluted`: the line's `issued`, `votes` and `fully_diluted` as a percentage of the day's
   totals, round(part ÷ total × 100, 2 decimals) half-up from the exact quotient, once (FR-EQ-20, which names
   `RND-DISPLAY` for it); `null` when that total is zero. They are never forced to sum to 100.00.
 
 `holders` sums each holder's lines (`issued`, `votes`, `fully_diluted`) and takes the percentages of those exact sums,
 not the sum of the rounded ones. The day's `issued` and `votes` are the totals of every line; its `options` are the
-options granted by then and its `unallocated` the pool's `size` then less them ("0" with no pool); its
+options granted by then less those events took and those exercised, and its `unallocated` the pool's `size` then less
+the options granted by then, plus those the events took ("0" with no pool); its
 `fully_diluted` is the lines' total and `unallocated`.
 
 G.3's round (`golden/cap-table.json`): 1,000,000 founder shares, the investor's 200,000 and 52,083 more, of 1,252,083,
