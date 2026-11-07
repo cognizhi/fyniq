@@ -1672,6 +1672,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cap-table": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the cap table
+         * @description The cap table at the end of a day, computed from the register's holding movements (FR-EQ-20). For each holder and class it gives the shares issued, their votes and the shares fully diluted, each with its percentage of the day's total. Percentages are exact and shown to 2 decimals half-up (RND-DISPLAY), never forced to sum to 100.00. Each holder's figures are taken from their exact sums. Each line lists the movements behind it: the equity transaction, whose page has its evidence, or the share issue. compare adds the cap table at a second day, to show beside it. The table is never written, so no operation edits it: shares move only through equity transactions. Read-only; no side effects.
+         */
+        get: operations["getCapTable"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cap-table/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export the cap table
+         * @description The cap table getCapTable gives at the same day, as a file (FR-EQ-20). CSV gives a row per holding, with plain decimals. XLSX gives a workbook of the holdings and the holders with their totals, figures as number cells. PDF gives the cap table to print from the render service, archival and accessible. No text in any becomes a formula. The file is returned in base64 with its SHA-256 and the ledger revision at the time. A PDF the render service cannot make now is REPORT-08. Side effects: an audit event of the export, with the day, the format, the rows and the hash. Never cached.
+         */
+        get: operations["exportCapTable"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/card-lines": {
         parameters: {
             query?: never;
@@ -5870,6 +5910,26 @@ export interface paths {
          * @description Confirms, as the director or shareholder you sign in as, your balances on the director's accounts at a financial year's end (FR-EQ-12): the balances the ledger holds at that end now are kept with the confirmation, which is append-only. Only a member linked to a director or shareholder confirms (FOUNDER-03), stepped up with a passkey in the last 5 minutes (FOUNDER-26), for a year that has ended (FOUNDER-24). An entry dated in the year posted after it shows the confirmation as changed since. Side effects: the confirmation, its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["confirmMyDirectorAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/holding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my holding
+         * @description The caller's own holding at the end of a day: the shares of the holder they sign in as (linkContactMember), by class, with their votes and their percentages of the company's totals, as getCapTable gives them (FR-EQ-20). The Board reads its own holding this way (Appendix D). A caller who signs in as no holder gets linked false, with nothing held. Read-only; no side effects.
+         */
+        get: operations["getMyHolding"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -13973,6 +14033,218 @@ export interface components {
              * @example 3
              */
             version: number;
+        };
+        CapTableAt: {
+            /**
+             * Format: date
+             * @description The day, at its end.
+             * @example 2027-03-12
+             */
+            at: string;
+            /**
+             * @description Every share fully diluted.
+             * @example 1252083
+             */
+            fully_diluted: string;
+            /** @description Every holder with shares, by name. */
+            holders: components["schemas"]["CapTableHolder"][];
+            /**
+             * @description Every share issued and held.
+             * @example 1252083
+             */
+            issued: string;
+            /** @description Every holding with shares, by holder's name, then class. */
+            lines: components["schemas"]["CapTableLine"][];
+            /**
+             * @description Every vote.
+             * @example 1252083
+             */
+            votes: string;
+        };
+        CapTableHolder: {
+            /**
+             * @description The percentage of every share fully diluted; left out when none is.
+             * @example 79.87
+             */
+            diluted?: string;
+            /**
+             * @description Shares fully diluted. They equal the shares issued until the SAFEs, notes and option pool are recorded (FR-EQ-18, FR-EQ-19), which will add to them.
+             * @example 1000000
+             */
+            fully_diluted: string;
+            /**
+             * Format: uuid
+             * @description The holder.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+             */
+            holder_id: string;
+            /**
+             * @description Their name.
+             * @example Seedling Ventures Pte. Ltd.
+             */
+            holder_name: string;
+            /**
+             * @description Shares issued and held, a whole number.
+             * @example 1000000
+             */
+            issued: string;
+            /**
+             * @description The caller's own holding: the holder they sign in as (linkContactMember).
+             * @example false
+             */
+            mine?: boolean;
+            /**
+             * @description The percentage of every share issued; left out when none is.
+             * @example 79.87
+             */
+            ownership?: string;
+            /**
+             * @description Their votes: the shares times their class's votes per share, exact.
+             * @example 1000000
+             */
+            votes: string;
+            /**
+             * @description The percentage of every vote; left out when no share votes.
+             * @example 79.87
+             */
+            voting?: string;
+        };
+        CapTableLine: {
+            /**
+             * @description The class's share-capital account.
+             * @example 3010
+             */
+            account_code: string;
+            /**
+             * Format: uuid
+             * @description The share class the shares count in (getShareClass); none while their account has no recorded class.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e01
+             */
+            class_id?: string;
+            /**
+             * @description The class's name.
+             * @example Ordinary shares
+             */
+            class_name: string;
+            /**
+             * @description The percentage of every share fully diluted; left out when none is.
+             * @example 79.87
+             */
+            diluted?: string;
+            /**
+             * @description Shares fully diluted. They equal the shares issued until the SAFEs, notes and option pool are recorded (FR-EQ-18, FR-EQ-19), which will add to them.
+             * @example 1000000
+             */
+            fully_diluted: string;
+            /**
+             * Format: uuid
+             * @description The holder (getHolder).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+             */
+            holder_id: string;
+            /**
+             * @description Their name.
+             * @example Seedling Ventures Pte. Ltd.
+             */
+            holder_name: string;
+            /**
+             * @description Shares issued and held, a whole number.
+             * @example 1000000
+             */
+            issued: string;
+            /** @description The movements up to the day, oldest first. */
+            movements: components["schemas"]["CapTableMovement"][];
+            /**
+             * @description The percentage of every share issued; left out when none is.
+             * @example 79.87
+             */
+            ownership?: string;
+            /**
+             * @description Their votes: the shares times their class's votes per share, exact.
+             * @example 1000000
+             */
+            votes: string;
+            /**
+             * @description The votes count one a share because the account has no recorded class yet: record the class and its rights (FR-EQ-16).
+             * @example false
+             */
+            votes_assumed?: boolean;
+            /**
+             * @description The percentage of every vote; left out when no share votes.
+             * @example 79.87
+             */
+            voting?: string;
+        };
+        CapTableMovement: {
+            /**
+             * Format: date
+             * @description The day ACRA's register of members shows it.
+             * @example 2027-03-12
+             */
+            effective_on: string;
+            /**
+             * Format: uuid
+             * @description The movement.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6b01
+             */
+            id: string;
+            /**
+             * @description What moved the shares.
+             * @example issue
+             * @enum {string}
+             */
+            kind: "issue" | "transfer" | "class_conversion" | "reversal";
+            /**
+             * Format: uuid
+             * @description The share issue an issue records, in the register of share issues (listShareIssues).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21
+             */
+            share_issue_id?: string;
+            /**
+             * @description Shares in (positive) or out (negative).
+             * @example 200000
+             */
+            shares: string;
+            /**
+             * Format: uuid
+             * @description The equity transaction it made effective, whose page has its evidence (getEquityTransaction); none for shares recorded before the books start or from founders' money.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d01
+             */
+            transaction_id?: string;
+            /**
+             * @description That transaction's number.
+             * @example EQ-0002
+             */
+            transaction_number?: string;
+        };
+        CapTableView: {
+            /**
+             * Format: date
+             * @description The day, at its end.
+             * @example 2027-03-12
+             */
+            at: string;
+            /** @description The cap table at compare, to show beside it. */
+            compared?: components["schemas"]["CapTableAt"];
+            /**
+             * @description Every share fully diluted.
+             * @example 1252083
+             */
+            fully_diluted: string;
+            /** @description Every holder with shares, by name. */
+            holders: components["schemas"]["CapTableHolder"][];
+            /**
+             * @description Every share issued and held.
+             * @example 1252083
+             */
+            issued: string;
+            /** @description Every holding with shares, by holder's name, then class. */
+            lines: components["schemas"]["CapTableLine"][];
+            /**
+             * @description Every vote.
+             * @example 1252083
+             */
+            votes: string;
         };
         CaptureAddress: {
             /**
@@ -24048,6 +24320,38 @@ export interface components {
              * @example true
              */
             linked: boolean;
+        };
+        MyHolding: {
+            /**
+             * Format: date
+             * @description The day, at its end.
+             * @example 2027-03-12
+             */
+            at: string;
+            /**
+             * @description Every share fully diluted.
+             * @example 1252083
+             */
+            fully_diluted: string;
+            /** @description Their holding, when they hold shares. */
+            holder?: components["schemas"]["CapTableHolder"];
+            /**
+             * @description Every share the company has issued, which the percentages are of.
+             * @example 1252083
+             */
+            issued: string;
+            /** @description Their holdings by class. */
+            lines: components["schemas"]["CapTableLine"][];
+            /**
+             * @description Whether the caller signs in as a holder (linkContactMember). When false, nothing is held.
+             * @example true
+             */
+            linked: boolean;
+            /**
+             * @description Every vote.
+             * @example 1252083
+             */
+            votes: string;
         };
         MyRecoveryCodes: {
             /** @description Ten recovery codes, each usable once. They are shown once: print them or keep them in a password manager. With an Owner's or Administrator's confirmation, one gives your account back if you lose every authenticator (SEC-35). Your earlier unused codes no longer work. */
@@ -44436,6 +44740,202 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCapTable: {
+        parameters: {
+            query?: {
+                /** @description The day the cap table is at the end of; left out, the organisation's today. */
+                at?: string;
+                /** @description A second day, whose cap table is shown beside it in compared. */
+                compare?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapTableView"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    exportCapTable: {
+        parameters: {
+            query?: {
+                /** @description The day the cap table is at the end of; left out, the organisation's today. */
+                at?: string;
+                /** @description csv: a row per holding, plain decimals; xlsx: a workbook of the holdings and the holders, figures as number cells; pdf: the cap table to print, archival (PDF/A-2a) and accessible (PDF/UA-1). */
+                format?: "csv" | "xlsx" | "pdf";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportFile"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -78322,6 +78822,102 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FOUNDER-01` Not a director or shareholder; `FOUNDER-24` The year-end confirmation does not fit. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyHolding: {
+        parameters: {
+            query?: {
+                /** @description The day, at its end; left out, the organisation's today. */
+                at?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyHolding"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

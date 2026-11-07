@@ -20,6 +20,8 @@ type Move struct {
 	Shares      apd.Decimal
 	On          time.Time
 	Transaction *uuid.UUID // the equity transaction it made effective; nil for an issue recorded outside one
+	Kind        string     // issue, transfer, class_conversion or reversal (storage.Movement*)
+	ShareIssue  *uuid.UUID // the share issue an issue's movement records
 }
 
 // VotesOf is the votes per share of a holding's class on the cap table's day, and whether they are assumed: the shares
@@ -178,7 +180,7 @@ func Moves(ctx context.Context, u storage.UnitOfWork) ([]Move, error) {
 			}
 			k.Class = def
 		}
-		x := Move{ID: m.ID, Key: k, On: m.EffectiveOn, Transaction: m.TransactionID}
+		x := Move{ID: m.ID, Key: k, On: m.EffectiveOn, Transaction: m.TransactionID, Kind: m.Kind, ShareIssue: m.ShareIssueID}
 		if _, _, err := x.Shares.SetString(string(m.Shares)); err != nil {
 			return nil, err
 		}

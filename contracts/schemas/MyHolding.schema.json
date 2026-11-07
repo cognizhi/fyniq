@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at": {
+      "description": "The day, at its end.",
+      "examples": [
+        "2027-03-12"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "fully_diluted": {
+      "description": "Every share fully diluted.",
+      "examples": [
+        "1252083"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "type": "string"
+    },
+    "holder": {
+      "$ref": "CapTableHolder.schema.json",
+      "description": "Their holding, when they hold shares."
+    },
+    "issued": {
+      "description": "Every share the company has issued, which the percentages are of.",
+      "examples": [
+        "1252083"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "type": "string"
+    },
+    "lines": {
+      "description": "Their holdings by class.",
+      "items": {
+        "$ref": "CapTableLine.schema.json"
+      },
+      "type": "array"
+    },
+    "linked": {
+      "description": "Whether the caller signs in as a holder (linkContactMember). When false, nothing is held.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "votes": {
+      "description": "Every vote.",
+      "examples": [
+        "1252083"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "at",
+    "linked",
+    "lines",
+    "issued",
+    "votes",
+    "fully_diluted"
+  ],
+  "title": "MyHolding",
+  "type": "object"
+}

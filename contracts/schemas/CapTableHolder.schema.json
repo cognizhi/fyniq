@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "diluted": {
+      "description": "The percentage of every share fully diluted; left out when none is.",
+      "examples": [
+        "79.87"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$",
+      "type": "string"
+    },
+    "fully_diluted": {
+      "description": "Shares fully diluted. They equal the shares issued until the SAFEs, notes and option pool are recorded (FR-EQ-18, FR-EQ-19), which will add to them.",
+      "examples": [
+        "1000000"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "The holder.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "holder_name": {
+      "description": "Their name.",
+      "examples": [
+        "Seedling Ventures Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "issued": {
+      "description": "Shares issued and held, a whole number.",
+      "examples": [
+        "1000000"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "type": "string"
+    },
+    "mine": {
+      "description": "The caller's own holding: the holder they sign in as (linkContactMember).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "ownership": {
+      "description": "The percentage of every share issued; left out when none is.",
+      "examples": [
+        "79.87"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$",
+      "type": "string"
+    },
+    "votes": {
+      "description": "Their votes: the shares times their class's votes per share, exact.",
+      "examples": [
+        "1000000"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+      "type": "string"
+    },
+    "voting": {
+      "description": "The percentage of every vote; left out when no share votes.",
+      "examples": [
+        "79.87"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "holder_id",
+    "holder_name",
+    "issued",
+    "votes",
+    "fully_diluted"
+  ],
+  "title": "CapTableHolder",
+  "type": "object"
+}
