@@ -644,6 +644,14 @@ const (
 	// DocumentRoundScenario is a round modelled (FR-EQ-21, design D8): its inputs, versioned while a draft; its outcome
 	// is computed on read, and approving it drafts the round's issues. It never posts.
 	DocumentRoundScenario DocumentType = "round_scenario"
+	// DocumentInvestorRights is a holder's rights from the agreements (FR-EQ-22, design D10): board seats, an observer,
+	// a board majority, information rights, pro-rata and consent matters, recorded on another person's approval with the
+	// agreements attached; the last one recorded is in force.
+	DocumentInvestorRights DocumentType = "investor_right"
+	// DocumentControllerEntry is the company's conclusion about whether a holder is a registrable controller (FR-EQ-25,
+	// design D10): the grounds, the register days and the yearly notices, or the reason they are not one, recorded on
+	// another person's approval with the company secretary's confirmation attached.
+	DocumentControllerEntry DocumentType = "controller_entry"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -896,6 +904,12 @@ const (
 	// CodeRoundScenario: a round scenario keeps its own inputs, a price or a pre-money valuation, and an active
 	// share-capital class (FY294).
 	CodeRoundScenario = "STORAGE-SHARE-08"
+	// CodeInvestorRights: investor rights keep their own keys, a holder marked shareholder or investor, board seats from 0
+	// to 20 and a list of consent matters (FY295).
+	CodeInvestorRights = "STORAGE-SHARE-09"
+	// CodeControllerEntry: a controller entry keeps its own keys, a holder marked shareholder or investor, grounds for a
+	// controller and a reason for one who is not, and its days in order (FY296).
+	CodeControllerEntry = "STORAGE-SHARE-10"
 	// CodeEquityRecord: a holder record keeps an individual's identifier to its type and last 4 characters and no full
 	// NRIC or FIN, and a share class belongs to an active share-capital account (FR-EQ-15, FR-EQ-16; FY285, FY286).
 	CodeEquityRecord = "STORAGE-SHARE-03"

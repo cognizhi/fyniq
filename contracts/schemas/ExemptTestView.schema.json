@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "decided": {
+      "description": "Whether the register decides it: more than 20 members or an entity does; otherwise every member's record must say individual.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "differs": {
+      "description": "The register decides otherwise than the status recorded: record the new status, and re-check the directors' accounts in debit (C.2 #28).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "entities": {
+      "description": "Members whose holder record says entity: any ends exempt status.",
+      "items": {
+        "description": "A holder's legal name.",
+        "examples": [
+          "Lion Rock Ventures Pte. Ltd."
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "exempt": {
+      "description": "When decided: the register keeps the company exempt (at most 20 members, none an entity) [accountant to confirm the Act's exceptions].",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "members": {
+      "description": "Holders of shares issued.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "recorded": {
+      "description": "The exempt status recorded in force today, from the ACRA business profile (FR-EQ-11); absent when none is recorded.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "unknown": {
+      "description": "Members with no holder record recorded: the test cannot tell until each has one.",
+      "items": {
+        "description": "A holder's legal name.",
+        "examples": [
+          "Lion Rock Ventures Pte. Ltd."
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "members",
+    "entities",
+    "unknown",
+    "decided",
+    "exempt",
+    "differs"
+  ],
+  "title": "ExemptTestView",
+  "type": "object"
+}

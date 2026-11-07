@@ -10621,6 +10621,132 @@ The cap table getCapTable gives at the same day, as a file (FR-EQ-20). CSV gives
   - `503` Service Unavailable: `REPORT-08` The PDF could not be made now; `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `REPORT-08`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/cap-table/statutory-tests`
+
+**Get the cap table's statutory tests** (`getStatutoryTests`)
+
+The cap table's statutory tests today (FR-EQ-25, design D10). The controller test: each holder over 25% of the shares issued or of the votes, from the first day of their latest run over it, with the company's register due 7 days after and ACRA's central register 2 business days after that; and each holder whose recorded rights could confer control, not assessed until a person's conclusion is recorded (G4-101). The exempt-private-company test: more than 20 members or a member recorded as an entity ends exempt status, against the status recorded (FR-EQ-11). Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Responses:**
+  - `200` OK [`StatutoryTests`](../../contracts/schemas/StatutoryTests.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/controller-entries`
+
+**Draft a registrable controller entry** (`createControllerEntry`)
+
+Drafts the company's conclusion about a holder (FR-EQ-25, design D10), as its register of registrable controllers records it: a controller since a day, on their grounds (more than 25% of the shares or votes, a board majority, significant influence or control), entered in the company's register within 7 days and lodged in ACRA's central register within 2 business days after, with the yearly notices sent and answered; or not a controller, with the reason. Attach the company secretary's confirmation with addControllerEntryEvidence, then ask another person to approve it with requestControllerEntryApproval. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ControllerEntryNew`](../../contracts/schemas/ControllerEntryNew.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ControllerEntryView`](../../contracts/schemas/ControllerEntryView.schema.json)
+  - `201` Created [`ControllerEntryView`](../../contracts/schemas/ControllerEntryView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-03` The holder record does not fit; `EQUITY-20` The investor rights do not fit; `EQUITY-21` The registrable controller entry does not fit; `STORAGE-SHARE-09` The investor rights do not keep that; `STORAGE-SHARE-10` The controller entry does not keep that.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-03`, `EQUITY-05`, `EQUITY-20`, `EQUITY-21`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-09`, `STORAGE-SHARE-10`
+
+### `GET /v1/controller-entries/{entry_id}`
+
+**Get a registrable controller entry** (`getControllerEntry`)
+
+Returns a controller entry with its ETag: the conclusion, the register days and notices, its status, files and the approval waiting (FR-EQ-25). Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `entry_id` (path, required): The controller entry.
+- **Responses:**
+  - `200` OK [`ControllerEntryView`](../../contracts/schemas/ControllerEntryView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PUT /v1/controller-entries/{entry_id}`
+
+**Change a drafted registrable controller entry** (`replaceControllerEntry`)
+
+Saves a new version of a controller entry not recorded yet (FR-EQ-25); its holder stays. A recorded one changes no more (EQUITY-05): draft a new entry to add a register day, a notice or the day they ceased. Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `entry_id` (path, required): The controller entry.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ControllerEntryDraft`](../../contracts/schemas/ControllerEntryDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ControllerEntryView`](../../contracts/schemas/ControllerEntryView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-03` The holder record does not fit; `EQUITY-20` The investor rights do not fit; `EQUITY-21` The registrable controller entry does not fit; `STORAGE-SHARE-09` The investor rights do not keep that; `STORAGE-SHARE-10` The controller entry does not keep that.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-03`, `EQUITY-05`, `EQUITY-20`, `EQUITY-21`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-09`, `STORAGE-SHARE-10`
+
+### `POST /v1/controller-entries/{entry_id}/approval`
+
+**Ask for approval to record a registrable controller entry** (`requestControllerEntryApproval`)
+
+Asks another person to approve a drafted controller entry at the version read (FR-EQ-25, FM-1). It needs the company secretary's confirmation attached (EQUITY-06). The answer is 202 with an approval request, which a person who holds A on "Cap table, holders, investors, equity transactions" approves, stepped up, never the holder nor the one who asked. Needs a person signed in who passed step-up, and If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3). Another person approves it, stepped up, never the holder.
+- **Parameters:**
+  - `entry_id` (path, required): The controller entry.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-03` The holder record does not fit; `EQUITY-06` No evidence attached; `EQUITY-20` The investor rights do not fit; `EQUITY-21` The registrable controller entry does not fit; `STORAGE-SHARE-09` The investor rights do not keep that; `STORAGE-SHARE-10` The controller entry does not keep that.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-03`, `EQUITY-05`, `EQUITY-06`, `EQUITY-20`, `EQUITY-21`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-09`, `STORAGE-SHARE-10`
+
 ### `GET /v1/equity-transactions`
 
 **List equity transactions** (`listEquityTransactions`)
@@ -10973,7 +11099,7 @@ The equity register's holders, by name: contacts marked shareholder or investor 
 
 **Get a holder** (`getHolder`)
 
-A holder with the record in force, every record (drafts and superseded ones included, the latest first) and their share issues (FR-EQ-15). Read-only; no side effects.
+A holder with the record in force, every record (drafts and superseded ones included, the latest first), their share issues (FR-EQ-15), their rights from the agreements (FR-EQ-22) and their registrable controller entries (FR-EQ-25), each in force and with its history. Read-only; no side effects.
 
 - **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
 - **Parameters:**
@@ -11218,6 +11344,114 @@ Asks another person to approve a drafted instrument at the version read (FR-EQ-1
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-05`, `EQUITY-06`, `EQUITY-14`, `EQUITY-15`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-06`
+
+### `POST /v1/investor-rights`
+
+**Draft a holder's rights from the agreements** (`createInvestorRights`)
+
+Drafts a holder's rights from the agreements (FR-EQ-22, design D10), recorded and never computed: the directors they may appoint, an observer, whether they appoint or remove a board majority, information rights, pro-rata and the matters that need their consent. Attach the agreements with addInvestorRightsEvidence, then ask another person to approve them with requestInvestorRightsApproval: recorded, they supersede the rights before. A board majority or consent matters make the holder one the controller test names for a person to weigh (FR-EQ-25). Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`InvestorRightsNew`](../../contracts/schemas/InvestorRightsNew.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`InvestorRightsView`](../../contracts/schemas/InvestorRightsView.schema.json)
+  - `201` Created [`InvestorRightsView`](../../contracts/schemas/InvestorRightsView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-03` The holder record does not fit; `EQUITY-20` The investor rights do not fit; `EQUITY-21` The registrable controller entry does not fit; `STORAGE-SHARE-09` The investor rights do not keep that; `STORAGE-SHARE-10` The controller entry does not keep that.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-03`, `EQUITY-05`, `EQUITY-20`, `EQUITY-21`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-09`, `STORAGE-SHARE-10`
+
+### `GET /v1/investor-rights/{rights_id}`
+
+**Get a holder's rights from the agreements** (`getInvestorRights`)
+
+Returns investor rights with their ETag: the rights, whether they could confer control, their status, files and the approval waiting (FR-EQ-22). Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `rights_id` (path, required): The investor rights.
+- **Responses:**
+  - `200` OK [`InvestorRightsView`](../../contracts/schemas/InvestorRightsView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PUT /v1/investor-rights/{rights_id}`
+
+**Change a holder's drafted rights** (`replaceInvestorRights`)
+
+Saves a new version of investor rights not recorded yet (FR-EQ-22); their holder stays. Recorded ones change no more (EQUITY-05): draft new rights to supersede them. Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `rights_id` (path, required): The investor rights.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`InvestorRightsDraft`](../../contracts/schemas/InvestorRightsDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`InvestorRightsView`](../../contracts/schemas/InvestorRightsView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-03` The holder record does not fit; `EQUITY-20` The investor rights do not fit; `EQUITY-21` The registrable controller entry does not fit; `STORAGE-SHARE-09` The investor rights do not keep that; `STORAGE-SHARE-10` The controller entry does not keep that.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-03`, `EQUITY-05`, `EQUITY-20`, `EQUITY-21`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-09`, `STORAGE-SHARE-10`
+
+### `POST /v1/investor-rights/{rights_id}/approval`
+
+**Ask for approval to record a holder's rights** (`requestInvestorRightsApproval`)
+
+Asks another person to approve drafted investor rights at the version read (FR-EQ-22, FM-1). It needs the agreements attached (EQUITY-06). The answer is 202 with an approval request, which a person who holds A on "Cap table, holders, investors, equity transactions" approves, stepped up, never the holder nor the one who asked. Needs a person signed in who passed step-up, and If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3). Another person approves it, stepped up, never the holder.
+- **Parameters:**
+  - `rights_id` (path, required): The investor rights.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-03` The holder record does not fit; `EQUITY-06` No evidence attached; `EQUITY-20` The investor rights do not fit; `EQUITY-21` The registrable controller entry does not fit; `STORAGE-SHARE-09` The investor rights do not keep that; `STORAGE-SHARE-10` The controller entry does not keep that.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-03`, `EQUITY-05`, `EQUITY-06`, `EQUITY-20`, `EQUITY-21`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-09`, `STORAGE-SHARE-10`
 
 ### `GET /v1/me/holding`
 
@@ -13874,6 +14108,103 @@ Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PAYEE-01`
 
+### `GET /v1/controller-entries/{entry_id}/evidence`
+
+**List a controller entry's files** (`listControllerEntryEvidence`)
+
+The files attached to a controller entry, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `entry_id` (path, required): The controller entry.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`EquityEvidencePage`](../../contracts/schemas/EquityEvidencePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `POST /v1/controller-entries/{entry_id}/evidence`
+
+**Attach the company secretary's confirmation of a controller entry** (`addControllerEntryEvidence`)
+
+Attaches a file to a drafted controller entry (FR-EQ-25, FR-DOC-05), as multipart/form-data: the company secretary's confirmation, with the register's extract, ACRA's acknowledgement or a notice and its reply. Asking for approval needs one. The file's type is decided from its content; it is scanned for malware and its image metadata, such as location, is stripped before it is stored (FR-DOC-08). Side effects: the file in the staging store, its evidence row and its audit event with the SHA-256 of the file as received and as stored (FR-DOC-07); once the record is recorded its files are committed to the retention-locked store (FR-DOC-13). Needs If-Match with the record's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `entry_id` (path, required): The controller entry.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`EquityEvidence`](../../contracts/schemas/EquityEvidence.schema.json)
+  - `201` Created [`EquityEvidence`](../../contracts/schemas/EquityEvidence.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `DOC-01`, `DOC-02`, `DOC-03`, `DOC-04`, `DOC-05`, `DOC-06`, `DOC-07`, `DOC-08`, `DOC-09`, `EQUITY-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/controller-entries/{entry_id}/evidence/{evidence_id}`
+
+**Get a controller entry's file** (`getControllerEntryEvidence`)
+
+Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `entry_id` (path, required): The controller entry.
+  - `evidence_id` (path, required): The file's ID.
+- **Responses:**
+  - `200` OK [`EquityEvidence`](../../contracts/schemas/EquityEvidence.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `DELETE /v1/controller-entries/{entry_id}/evidence/{evidence_id}`
+
+**Remove a file from a drafted controller entry** (`removeControllerEntryEvidence`)
+
+Takes a file off a controller entry not recorded yet (FR-DOC-07). Once recorded its evidence is append-only, and the database refuses. The row stays, marked removed, for the audit trail; the staged file is deleted by the next sweep. Side effects: the removal and its audit event. Needs If-Match with the file's ETag. Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `entry_id` (path, required): The controller entry.
+  - `evidence_id` (path, required): The file's ID.
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`EquityEvidence`](../../contracts/schemas/EquityEvidence.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `EQUITY-05` It is recorded; `STORAGE-EVIDENCE-01` Evidence is append-only once its record is final; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-05`, `STORAGE-EVIDENCE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
 ### `GET /v1/director-fees/{fee_id}/evidence`
 
 **List a director's fee's files** (`listDirectorFeeEvidence`)
@@ -14774,6 +15105,103 @@ Takes a file off an instrument not recorded yet (FR-DOC-07). Once recorded its e
 - **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
 - **Parameters:**
   - `instrument_id` (path, required): The instrument.
+  - `evidence_id` (path, required): The file's ID.
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`EquityEvidence`](../../contracts/schemas/EquityEvidence.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `EQUITY-05` It is recorded; `STORAGE-EVIDENCE-01` Evidence is append-only once its record is final; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-05`, `STORAGE-EVIDENCE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/investor-rights/{rights_id}/evidence`
+
+**List the files of a holder's rights** (`listInvestorRightsEvidence`)
+
+The files attached to investor rights, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `rights_id` (path, required): The investor rights.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`EquityEvidencePage`](../../contracts/schemas/EquityEvidencePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `POST /v1/investor-rights/{rights_id}/evidence`
+
+**Attach the agreements a holder's rights come from** (`addInvestorRightsEvidence`)
+
+Attaches a file to drafted investor rights (FR-EQ-22, FR-DOC-05), as multipart/form-data: the subscription agreement, the shareholders' agreement or a side letter. Asking for approval needs one. The file's type is decided from its content; it is scanned for malware and its image metadata, such as location, is stripped before it is stored (FR-DOC-08). Side effects: the file in the staging store, its evidence row and its audit event with the SHA-256 of the file as received and as stored (FR-DOC-07); once the record is recorded its files are committed to the retention-locked store (FR-DOC-13). Needs If-Match with the record's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `rights_id` (path, required): The investor rights.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`EquityEvidence`](../../contracts/schemas/EquityEvidence.schema.json)
+  - `201` Created [`EquityEvidence`](../../contracts/schemas/EquityEvidence.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DOC-01` Not a file type Fyniq accepts; `DOC-02` The file is empty or larger than 25 MB; `DOC-03` The malware scan flagged the file; `DOC-04` The evidence type is blank, or a text is too long; `DOC-05` Not a data class this record can hold; `DOC-06` Not how a file arrives here; `DOC-07` The picture cannot be read; `DOC-08` Office files with macros are refused; `DOC-09` The office file's archive is not safe to open.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `DOC-01`, `DOC-02`, `DOC-03`, `DOC-04`, `DOC-05`, `DOC-06`, `DOC-07`, `DOC-08`, `DOC-09`, `EQUITY-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/investor-rights/{rights_id}/evidence/{evidence_id}`
+
+**Get a file of a holder's rights** (`getInvestorRightsEvidence`)
+
+Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `rights_id` (path, required): The investor rights.
+  - `evidence_id` (path, required): The file's ID.
+- **Responses:**
+  - `200` OK [`EquityEvidence`](../../contracts/schemas/EquityEvidence.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `DELETE /v1/investor-rights/{rights_id}/evidence/{evidence_id}`
+
+**Remove a file from a holder's drafted rights** (`removeInvestorRightsEvidence`)
+
+Takes a file off investor rights not recorded yet (FR-DOC-07). Once recorded its evidence is append-only, and the database refuses. The row stays, marked removed, for the audit trail; the staged file is deleted by the next sweep. Side effects: the removal and its audit event. Needs If-Match with the file's ETag. Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `rights_id` (path, required): The investor rights.
   - `evidence_id` (path, required): The file's ID.
   - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
   - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.

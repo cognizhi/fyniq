@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "agreements": {
+      "description": "The agreements the rights come from.",
+      "examples": [
+        "Side letter of 18 Jun 2026"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "board_majority": {
+      "description": "The right to appoint or remove directors holding a majority of the board's votes: a ground for being a registrable controller (FR-EQ-25).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "board_seats": {
+      "description": "The directors the holder may appoint.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "maximum": 20,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "consents": {
+      "description": "The matters that need the holder's consent; any could amount to significant influence, so a person weighs them (FR-EQ-25).",
+      "items": {
+        "description": "A matter that needs the holder's consent, such as a reserved matter.",
+        "examples": [
+          "Issuing new shares"
+        ],
+        "maxLength": 200,
+        "type": "string"
+      },
+      "maxItems": 20,
+      "type": "array"
+    },
+    "from": {
+      "description": "The day the agreements give the rights from.",
+      "examples": [
+        "2026-06-18"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "The holder: a contact marked shareholder or investor.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "information": {
+      "description": "The information rights: what and when.",
+      "examples": [
+        "Quarterly management accounts within 45 days; annual accounts within 120 days"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "note": {
+      "description": "A note.",
+      "examples": [
+        "The pro-rata right lapses on a listing"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "observer": {
+      "description": "A board observer seat.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "pro_rata": {
+      "description": "A pro-rata right in later rounds.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "holder_id",
+    "from",
+    "board_seats",
+    "observer",
+    "board_majority",
+    "pro_rata",
+    "consents",
+    "agreements"
+  ],
+  "title": "InvestorRightsNew",
+  "type": "object"
+}

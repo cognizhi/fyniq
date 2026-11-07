@@ -73,7 +73,9 @@
         "option_pool",
         "option_grant",
         "option_event",
-        "round_scenario"
+        "round_scenario",
+        "investor_right",
+        "controller_entry"
       ],
       "examples": [
         "organisation_setting"

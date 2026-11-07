@@ -148,6 +148,12 @@ const (
 	// ObjectRoundScenario is a round scenario, to approve (FR-EQ-21, design D8, FM-1): another person who holds A on the
 	// cap table approves, and approving drafts the round's issues; its key is the scenario's document ID.
 	ObjectRoundScenario = "round_scenario"
+	// ObjectInvestorRights is a holder's rights from the agreements, to record (FR-EQ-22, design D10, FM-1): another
+	// person who holds A on the cap table approves, never the holder; its key is the rights' document ID.
+	ObjectInvestorRights = "investor_right"
+	// ObjectControllerEntry is the company's conclusion about a registrable controller, to record (FR-EQ-25, design
+	// D10, FM-1): another person who holds A on the cap table approves, never the holder; its key is the entry's ID.
+	ObjectControllerEntry = "controller_entry"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -247,6 +253,10 @@ const (
 	OpOptionEventRecord = "option_event.record"
 	// OpRoundScenarioApprove approves a round scenario as modelled, drafting its issues and a top-up (FR-EQ-21).
 	OpRoundScenarioApprove = "round_scenario.approve"
+	// OpInvestorRightsRecord records a holder's rights as drafted, with the agreements attached (FR-EQ-22).
+	OpInvestorRightsRecord = "investor_right.record"
+	// OpControllerEntryRecord records a controller entry as drafted, with the company secretary's confirmation (FR-EQ-25).
+	OpControllerEntryRecord = "controller_entry.record"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -284,6 +294,8 @@ var Operations = map[string]string{
 	OpOptionGrantRecord:        ObjectOptionGrant,
 	OpOptionEventRecord:        ObjectOptionEvent,
 	OpRoundScenarioApprove:     ObjectRoundScenario,
+	OpInvestorRightsRecord:     ObjectInvestorRights,
+	OpControllerEntryRecord:    ObjectControllerEntry,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -384,6 +396,10 @@ var Dependencies = map[string][]string{
 	ObjectOptionEvent: {"status", "grant", "holder"},
 	// the scenario's version and status: what is approved
 	ObjectRoundScenario: {"status"},
+	// the rights' version and status, and their holder: what is recorded
+	ObjectInvestorRights: {"status", "holder"},
+	// the entry's version and status, and its holder: what is recorded
+	ObjectControllerEntry: {"status", "holder"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -437,6 +453,8 @@ var Rows = map[string]string{
 	ObjectOptionGrant:         "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectOptionEvent:         "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectRoundScenario:       "Cap table, holders, investors, equity transactions (rev 0.3)",
+	ObjectInvestorRights:      "Cap table, holders, investors, equity transactions (rev 0.3)",
+	ObjectControllerEntry:     "Cap table, holders, investors, equity transactions (rev 0.3)",
 }
 
 // The limits of a policy.
@@ -519,6 +537,8 @@ var Policies = map[string]Policy{
 	ObjectOptionGrant:         {ObjectType: ObjectOptionGrant, Version: "founder/option_grant@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectOptionEvent:         {ObjectType: ObjectOptionEvent, Version: "founder/option_event@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectRoundScenario:       {ObjectType: ObjectRoundScenario, Version: "founder/round_scenario@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
+	ObjectInvestorRights:      {ObjectType: ObjectInvestorRights, Version: "founder/investor_right@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
+	ObjectControllerEntry:     {ObjectType: ObjectControllerEntry, Version: "founder/controller_entry@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).
