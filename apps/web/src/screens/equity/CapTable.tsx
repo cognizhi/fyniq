@@ -60,8 +60,10 @@ function Ownership({ t, level }: { t: CapTableAt; level: 2 | 3 }) {
   const id = useId();
   const [view, setView] = useState<"chart" | "table">("chart");
   const Heading = level === 2 ? "h2" : "h3";
-  const shown = t.holders.length > 8 ? t.holders.slice(0, 7) : t.holders;
-  const rest = t.holders.length > 8 ? t.holders.slice(7) : [];
+  // Ownership is of the shares issued: a holder with options and no shares shows fully diluted only (FR-EQ-19).
+  const owners = t.holders.filter((h) => h.issued !== "0");
+  const shown = owners.length > 8 ? owners.slice(0, 7) : owners;
+  const rest = owners.length > 8 ? owners.slice(7) : [];
   // Each part's width is the percentage the server computed, drawn only (RND-DISPLAY: every figure a person reads is its
   // string), with a gap of 3 thousandths between parts; the holders after the seventh share Other's width.
   let x = 0;
@@ -74,9 +76,9 @@ function Ownership({ t, level }: { t: CapTableAt; level: 2 | 3 }) {
     return out;
   });
   const summary =
-    t.holders.length === 0
+    owners.length === 0
       ? "No shares are issued on this day."
-      : `${shares(t.issued)} shares issued. ` + t.holders.map((h) => `${h.holder_name} ${pct(h.ownership)}`).join(", ") + ".";
+      : `${shares(t.issued)} shares issued. ` + owners.map((h) => `${h.holder_name} ${pct(h.ownership)}`).join(", ") + ".";
   return (
     <section className="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby={`${id}-title`}>
       <div className="fy-card__head">
@@ -91,7 +93,7 @@ function Ownership({ t, level }: { t: CapTableAt; level: 2 | 3 }) {
           ))}
         </div>
       </div>
-      {view === "chart" && t.holders.length > 0 && (
+      {view === "chart" && owners.length > 0 && (
         <div className="fy-stack fy-stack--2">
           <p className="fy-small fy-muted">Issued · {shares(t.issued)} shares</p>
           <svg className="fy-chart" viewBox="0 0 1000 10" preserveAspectRatio="none" style={{ height: 28, borderRadius: 4 }} role="img" aria-label={summary}>
@@ -115,7 +117,7 @@ function Ownership({ t, level }: { t: CapTableAt; level: 2 | 3 }) {
           </div>
         </div>
       )}
-      {view === "chart" && t.holders.length === 0 && <p className="fy-small fy-muted">{summary}</p>}
+      {view === "chart" && owners.length === 0 && <p className="fy-small fy-muted">{summary}</p>}
       {view === "table" && (
         <table className="fy-table" aria-label="Ownership">
           <thead>
@@ -130,7 +132,7 @@ function Ownership({ t, level }: { t: CapTableAt; level: 2 | 3 }) {
             </tr>
           </thead>
           <tbody>
-            {t.holders.map((h) => (
+            {owners.map((h) => (
               <tr key={h.holder_id}>
                 <td>{h.holder_name}</td>
                 <td className="fy-num">{shares(h.issued)}</td>
@@ -141,9 +143,12 @@ function Ownership({ t, level }: { t: CapTableAt; level: 2 | 3 }) {
         </table>
       )}
       {t.fully_diluted === t.issued ? (
-        <p className="fy-small fy-muted">Fully diluted is the same as issued until SAFEs, notes or an option pool are recorded.</p>
+        <p className="fy-small fy-muted">Fully diluted is the same as issued: no options are granted and no option pool is recorded.</p>
       ) : (
-        <p className="fy-small fy-secondary">Fully diluted · {shares(t.fully_diluted)} shares</p>
+        <p className="fy-small fy-secondary">
+          Fully diluted · {shares(t.fully_diluted)} shares, with {shares(t.options)} options granted and {shares(t.unallocated_pool)} left in the
+          option pool
+        </p>
       )}
     </section>
   );
@@ -243,10 +248,26 @@ function ByClass({ t }: { t: CapTableAt }) {
                 </td>
                 <td className="fy-num">{l.ownership ?? "–"}</td>
                 <td className="fy-num">{l.voting ?? "–"}</td>
-                <td className="fy-num">{shares(l.fully_diluted)}</td>
+                <td className="fy-num">
+                  {shares(l.fully_diluted)}
+                  {l.options && <div className="fy-small fy-muted">incl. {shares(l.options)} options</div>}
+                </td>
                 <td className="fy-num">{l.diluted ?? "–"}</td>
               </tr>
             ))}
+            {t.pool_diluted && (
+              <tr>
+                <td data-card="title">Unallocated option pool</td>
+                <td data-card="meta">Options not granted yet</td>
+                <td data-card="amount" className="fy-num">
+                  –
+                </td>
+                <td className="fy-num">–</td>
+                <td className="fy-num">–</td>
+                <td className="fy-num">{shares(t.unallocated_pool)}</td>
+                <td className="fy-num">{t.pool_diluted}</td>
+              </tr>
+            )}
           </tbody>
           {t.lines.length > 0 && (
             <tfoot>
@@ -255,7 +276,7 @@ function ByClass({ t }: { t: CapTableAt }) {
                   Total
                 </th>
                 <td className="fy-num">{shares(t.issued)}</td>
-                <td className="fy-num">100.00</td>
+                <td className="fy-num">{t.issued === "0" ? "–" : "100.00"}</td>
                 <td className="fy-num">{t.votes === "0" ? "–" : "100.00"}</td>
                 <td className="fy-num">{shares(t.fully_diluted)}</td>
                 <td className="fy-num">100.00</td>
@@ -404,7 +425,7 @@ export function CapTable() {
       </div>
       {t && (
         <>
-          {t.holders.length === 0 && (
+          {t.issued === "0" && (
             <p className="fy-small fy-muted">No shares are on the register on this day. Record the shares issued before the books start, or draft a transaction.</p>
           )}
           <Ownership t={t} level={2} />

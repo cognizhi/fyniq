@@ -176,7 +176,9 @@ EQUITY_REASONS = {"equity-issue-unpaid": "unpaid", "equity-transfer-too-many": "
                   # a SAFE refused for the one rule it breaks (README, "SAFEs and their conversion")
                   "equity-safe-bad": frozenset({"no-cap", "bad-term", "not-share-capital", "bad-precision",
                                                 "not-a-holder"}),
-                  "equity-safe-money-unnamed": "not-a-recorded-safe", "equity-safe-conversion-unfunded": "money-not-held"}
+                  "equity-safe-money-unnamed": "not-a-recorded-safe", "equity-safe-conversion-unfunded": "money-not-held",
+                  # the option pool (README, "The option pool and grants")
+                  "equity-grant-beyond": "pool-short", "equity-grant-no-pool": "no-pool", "equity-pool-short": "pool-short"}
 
 
 # req: QA-ENG-02, FR-EQ-17, FR-EQ-18, FR-EQ-20
@@ -199,12 +201,17 @@ def test_the_equity_source_draws_each_of_its_kinds_as_meant(kind):
 @given(p1_scenarios(("equity", "founders")))
 @settings(max_examples=60, deadline=None, suppress_health_check=list(HealthCheck))
 def test_a_cap_table_adds_up(data):
-    # Every line holds shares; each holder's figures are the sums of their lines', and the day's those of every line.
+    # Every line holds shares or options; each holder's figures are the sums of their lines', and the day's those of
+    # every line, its fully diluted total with what the pool leaves, never below zero (README, "Cap tables").
     for table in Ledger(scenario_from_json(data)).result()["cap_tables"]:
         lines = table["lines"]
-        assert all(Decimal(ln["issued"]) > 0 and ln["fully_diluted"] == ln["issued"] for ln in lines)
+        assert all(Decimal(ln["fully_diluted"]) >= Decimal(ln["issued"]) >= 0 and Decimal(ln["fully_diluted"]) > 0
+                   for ln in lines)
+        assert sum((Decimal(ln["fully_diluted"]) - Decimal(ln["issued"]) for ln in lines), Decimal(0)) == Decimal(table["options"])
+        assert Decimal(table["unallocated"]) >= 0
         for key in ("issued", "votes", "fully_diluted"):
-            assert sum((Decimal(ln[key]) for ln in lines), Decimal(0)) == Decimal(table[key])
+            pool = Decimal(table["unallocated"]) if key == "fully_diluted" else Decimal(0)
+            assert sum((Decimal(ln[key]) for ln in lines), pool) == Decimal(table[key])
             for h in table["holders"]:
                 assert sum((Decimal(ln[key]) for ln in lines if ln["holder"] == h["holder"]), Decimal(0)) == Decimal(h[key])
         assert [h["holder"] for h in table["holders"]] == sorted({ln["holder"] for ln in lines})

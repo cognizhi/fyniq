@@ -11,7 +11,7 @@
       "type": "string"
     },
     "fully_diluted": {
-      "description": "Shares fully diluted. They equal the shares issued until the SAFEs, notes and option pool are recorded (FR-EQ-18, FR-EQ-19), which will add to them.",
+      "description": "Shares fully diluted: the shares issued and the options granted over them (FR-EQ-19). SAFEs and notes count once they convert (FR-EQ-18).",
       "examples": [
         "1000000"
       ],
@@ -47,6 +47,14 @@
         false
       ],
       "type": "boolean"
+    },
+    "options": {
+      "description": "The options recorded grants gave over the class by the day, not shares yet (FR-EQ-19); left out when none.",
+      "examples": [
+        "48000"
+      ],
+      "pattern": "^[1-9][0-9]*$",
+      "type": "string"
     },
     "ownership": {
       "description": "The percentage of every share issued; left out when none is.",

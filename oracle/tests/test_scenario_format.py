@@ -73,7 +73,8 @@ def test_the_p1_examples_in_the_readme_are_documents_that_post_in_order():
     # holds nothing, so it posts no entry (README, "Account merges"); it reads the financial year, so first_year_end.
     # The share transfer moves 50,000 of the cash issue's 250,000 shares to a second holder and posts no entry (README,
     # "Share transfers"). The SAFE is recorded with no entry, its money comes in on 2700, and it converts at a later
-    # round (README, "SAFEs and their conversion").
+    # round (README, "SAFEs and their conversion"). The pool and P0002's grant post no entry either (README, "The
+    # option pool and grants").
     merged = [{"code": code, "type": "expense", "group": False, "active": True} for code in ("6100", "6120")]
     instruments = [{"code": "2700", "type": "liability", "group": False, "active": True, "role": "convertible-instruments"}]
     data = p1_scenario(*P1_EXAMPLES, settings={**P1_SETTINGS, "books_start": "2026-01-01",
@@ -83,7 +84,8 @@ def test_the_p1_examples_in_the_readme_are_documents_that_post_in_order():
     result = Ledger(scenario_from_json(data)).result()
     assert result["rejected"] == []
     assert [e["document"] for e in result["entries"] if e["kind"] == "post"] == [
-        d["id"] for d in P1_EXAMPLES if d["type"] not in ("fixed_asset", "account_merge", "share_transfer", "instrument")]
+        d["id"] for d in P1_EXAMPLES
+        if d["type"] not in ("fixed_asset", "account_merge", "share_transfer", "instrument", "option_pool", "option_grant")]
     # The SAFE converts at the round's S$3.00, below its cap price of 2,375,000 ÷ 250,083 = 9.4968… over the earlier
     # examples' 250,083 shares: 41,666 × 3 = 124,998.00 (41,667 would be 125,001.00).
     converted = next(e for e in result["entries"] if e["document"] == "EQ-0105")

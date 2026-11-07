@@ -134,3 +134,54 @@ func TestTheCapTableComesFromTheMovements(t *testing.T) {
 		t.Errorf("before any shares: %+v, %v", empty, err)
 	}
 }
+
+// The cap table fully diluted with the option pool (FR-EQ-19, FR-EQ-20, design D9), worked by hand: 1,000,000 founder
+// shares, a pool of 100,000 from 2 Jan 2025 and Priya's grant of 48,000 options on 15 Oct 2025. On 15 Oct 2025 Priya
+// has a line of her own with no shares; the pool leaves 52,000, and fully diluted the company is 1,100,000: the founder
+// 90.91%, Priya 4.36%. A day before the grant counts the whole pool as unallocated.
+// req: FR-EQ-19
+// req: FR-EQ-20
+func TestTheCapTableCountsThePool(t *testing.T) {
+	founder, priya := uuid.MustParse("00000000-0000-7000-8000-00000000000f"), uuid.MustParse("00000000-0000-7000-8000-00000000003c")
+	account, class := uuid.MustParse("00000000-0000-7000-8000-000000003010"), uuid.MustParse("00000000-0000-7000-8000-0000000000c1")
+	day := func(s string) time.Time { d, _ := time.Parse(time.DateOnly, s); return d }
+	shares := Move{ID: uuid.New(), Key: HoldingKey{Holder: founder, Account: account, Class: class}, On: day("2025-01-02")}
+	shares.Shares.SetInt64(1000000)
+	book := OptionBook{
+		Pools:  []PoolResolution{{Size: "100000", ClassAccountID: account, ResolvedOn: day("2025-01-02")}},
+		Grants: []Grant{{HolderID: priya, Number: "48000", GrantedOn: day("2025-10-15"), ClassAccountID: account}},
+	}
+	grant := Option{Key: HoldingKey{Holder: priya, Account: account, Class: class}, On: day("2025-10-15")}
+	grant.Number.SetInt64(48000)
+	d := Dilution{Options: []Option{grant}, Pool: func(on time.Time) (apd.Decimal, error) {
+		p, _, err := book.At(on)
+		return p.Unallocated, err
+	}}
+	one := func(HoldingKey) (apd.Decimal, bool, error) { return *apd.New(1, 0), false, nil }
+
+	got, err := DilutedAt(day("2025-10-15"), []Move{shares}, one, d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Issued.Text('f') != "1000000" || got.Options.Text('f') != "48000" || got.Unallocated.Text('f') != "52000" ||
+		got.FullyDiluted.Text('f') != "1100000" || len(got.Lines) != 2 || len(got.Holders) != 2 {
+		t.Fatalf("on the grant date: %+v", got)
+	}
+	for _, l := range got.Lines {
+		want := map[uuid.UUID][4]string{founder: {"1000000", "1000000", "100.00", "90.91"}, priya: {"0", "48000", "0.00", "4.36"}}[l.Key.Holder]
+		if g := [4]string{l.Issued.Text('f'), l.FullyDiluted.Text('f'), l.Ownership, l.Diluted}; g != want {
+			t.Errorf("line of %v: %v, want %v", l.Key.Holder, g, want)
+		}
+	}
+	before, err := DilutedAt(day("2025-10-14"), []Move{shares}, one, d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before.Unallocated.Text('f') != "100000" || before.FullyDiluted.Text('f') != "1100000" || len(before.Lines) != 1 || before.Lines[0].Diluted != "90.91" {
+		t.Errorf("the day before the grant: %+v", before)
+	}
+	short, err := (OptionBook{Pools: book.Pools, Grants: append(book.Grants, Grant{Number: "60000", GrantedOn: day("2025-06-01")})}).ShortFrom(day("2025-06-01"))
+	if err != nil || short == nil || !short.Day.Equal(day("2025-10-15")) || short.Granted.Text('f') != "108000" {
+		t.Errorf("an earlier grant of 60,000 shorts 15 Oct: %+v %v", short, err)
+	}
+}

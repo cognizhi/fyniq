@@ -190,6 +190,8 @@ type CapTable struct {
 	At           string      `json:"at"`
 	Issued       string      `json:"issued"`
 	Votes        string      `json:"votes"`
+	Options      string      `json:"options"`
+	Unallocated  string      `json:"unallocated"`
 	FullyDiluted string      `json:"fully_diluted"`
 	Lines        []CapLine   `json:"lines"`
 	Holders      []CapHolder `json:"holders"`

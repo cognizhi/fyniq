@@ -35,12 +35,75 @@ func (r *p1) commit() {
 	if r.stagedRound != nil {
 		r.rounds[r.stagedRound.doc] = r.stagedRound.round
 	}
+	if r.stagedPool != nil {
+		r.optionBook.Pools = append(r.optionBook.Pools, *r.stagedPool)
+	}
+	if g := r.stagedGrant; g != nil {
+		r.optionBook.Grants = append(r.optionBook.Grants, *g)
+		o := equity.Option{Key: equity.HoldingKey{Holder: g.HolderID, Account: g.ClassAccountID}, On: g.GrantedOn}
+		if _, _, err := o.Number.SetString(g.Number); err == nil {
+			r.options = append(r.options, o)
+		}
+	}
 	r.unstage()
 }
 
 // unstage forgets what the document being posted staged.
 func (r *p1) unstage() {
-	r.staged, r.stagedSAFE, r.stagedConverted, r.stagedRound = nil, nil, nil, nil
+	r.staged, r.stagedSAFE, r.stagedConverted, r.stagedRound, r.stagedPool, r.stagedGrant = nil, nil, nil, nil, nil, nil
+}
+
+// optionPool records a resolution setting the option pool's size from its date, as recording one does (FR-EQ-19): the
+// product's checks on its terms (equity.CheckPool), then the pool covering the grants on every day from its date
+// (equity.OptionBook.ShortFrom, FY293). It posts nothing.
+func (r *p1) optionPool(d Document, date time.Time) bool {
+	var x struct {
+		Size  string `json:"size"`
+		Class string `json:"class"`
+	}
+	if json.Unmarshal(d.Raw, &x) != nil {
+		return false
+	}
+	p := equity.PoolResolution{Date: date, Size: x.Size, ClassAccountID: account(x.Class), ResolutionRef: d.ID, ResolvedOn: date}
+	if len(equity.CheckPool(p, r.settings, time.Time{})) > 0 {
+		return false
+	}
+	book := equity.OptionBook{Pools: append(slices.Clip(r.optionBook.Pools), p), Grants: r.optionBook.Grants}
+	if short, err := book.ShortFrom(date); err != nil || short != nil {
+		return false
+	}
+	r.stagedPool = &p
+	return true
+}
+
+// optionGrant records a grant of options, as recording one does (FR-EQ-19): its holder one of the people or subscribers,
+// the product's checks on its terms (equity.CheckGrant; the format has no exercise price, vesting or expiry, so they are
+// ones that pass), a pool of its class in force on its date, and the pool covering the grants on every day from it
+// (equity.OptionBook.ShortFrom, FY293). It posts nothing.
+func (r *p1) optionGrant(d Document, date time.Time) bool {
+	var x struct {
+		Person string `json:"person"`
+		Number string `json:"number"`
+		Class  string `json:"class"`
+	}
+	if json.Unmarshal(d.Raw, &x) != nil || !r.settings.Subscribers[stableID("party", x.Person)] {
+		return false
+	}
+	g := equity.Grant{Date: date, HolderID: stableID("party", x.Person), Number: x.Number, ExercisePrice: "0", GrantedOn: date,
+		Vesting: equity.Vesting{Acceleration: "none"}, ExpiresOn: date.AddDate(0, 0, 1), ClassAccountID: account(x.Class)}
+	if len(equity.CheckGrant(g, r.settings, time.Time{})) > 0 {
+		return false
+	}
+	pool, in, err := r.optionBook.At(date)
+	if err != nil || in < 0 || pool.ClassID != g.ClassAccountID {
+		return false
+	}
+	book := equity.OptionBook{Pools: r.optionBook.Pools, Grants: append(slices.Clip(r.optionBook.Grants), g)}
+	if short, err := book.ShortFrom(date); err != nil || short != nil {
+		return false
+	}
+	r.stagedGrant = &g
+	return true
 }
 
 // recordedSAFE is a SAFE an instrument document recorded: its document's ID, its holder's and class's names in the
@@ -260,12 +323,20 @@ func (r *p1) capTables() ([]CapTable, error) {
 		if err != nil {
 			return nil, err
 		}
-		t, err := equity.TableAt(day, r.moves, func(k equity.HoldingKey) (apd.Decimal, bool, error) { return votes[k.Account], false, nil })
+		dilution := equity.Dilution{Options: r.options}
+		if len(r.optionBook.Pools) > 0 {
+			dilution.Pool = func(day time.Time) (apd.Decimal, error) {
+				p, _, err := r.optionBook.At(day)
+				return p.Unallocated, err
+			}
+		}
+		t, err := equity.DilutedAt(day, r.moves, func(k equity.HoldingKey) (apd.Decimal, bool, error) { return votes[k.Account], false, nil },
+			dilution)
 		if err != nil {
 			return nil, err
 		}
-		c := CapTable{At: at, Issued: plain(t.Issued), Votes: plain(t.Votes), FullyDiluted: plain(t.FullyDiluted),
-			Lines: []CapLine{}, Holders: []CapHolder{}}
+		c := CapTable{At: at, Issued: plain(t.Issued), Votes: plain(t.Votes), Options: plain(t.Options), Unallocated: plain(t.Unallocated),
+			FullyDiluted: plain(t.FullyDiluted), Lines: []CapLine{}, Holders: []CapHolder{}}
 		for _, l := range t.Lines {
 			c.Lines = append(c.Lines, CapLine{Holder: r.personOf[l.Key.Holder], Class: r.codeOf[l.Key.Account], CapFigures: CapFigures{
 				Issued: plain(l.Issued), Votes: plain(l.Votes), FullyDiluted: plain(l.FullyDiluted),
