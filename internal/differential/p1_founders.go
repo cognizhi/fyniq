@@ -219,6 +219,7 @@ func (r *p1) shareIssueCash(d Document, date time.Time) (ledger.Entry, bool) {
 		var n apd.Decimal
 		n.Set(q.Decimal())
 		r.stage(x.Person, x.Class, n, date)
+		r.stagedRound = &namedRound{doc: d.ID, round: round{price: price, day: date}} // a round SAFEs may convert at
 	}
 	return e, err == nil
 }

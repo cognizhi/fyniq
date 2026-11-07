@@ -34,6 +34,7 @@
                 "amount": {"description": "At the line currency's minor units.", "$ref": "#/$defs/decimal"},
                 "base_amount": {"description": "At the base currency's minor units.", "$ref": "#/$defs/decimal"},
                 "party": {"description": "Only on a line on a director's account: its person (FR-EQ-01, B.7). A reversal's line keeps it.", "type": "string"},
+                "instrument": {"description": "Only on a line on the instruments account: the instrument document it names (FR-EQ-18).", "type": "string"},
                 "dimensions": {"description": "Only on a line with dimension values (FR-DIM-02): a dimension's name to its value's code. A reversal's line keeps its line's.", "type": "object", "additionalProperties": {"type": "string"}}
               }
             }

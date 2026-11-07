@@ -172,10 +172,14 @@ def test_every_source_has_generator_kinds():
 
 # What refuses each rejected kind of the equity source (README, "Cash share issues" and "Share transfers").
 EQUITY_REASONS = {"equity-issue-unpaid": "unpaid", "equity-transfer-too-many": "more-than-held",
-                  "equity-transfer-to-self": "same-holder", "equity-transfer-not-share-capital": "not-share-capital"}
+                  "equity-transfer-to-self": "same-holder", "equity-transfer-not-share-capital": "not-share-capital",
+                  # a SAFE refused for the one rule it breaks (README, "SAFEs and their conversion")
+                  "equity-safe-bad": frozenset({"no-cap", "bad-term", "not-share-capital", "bad-precision",
+                                                "not-a-holder"}),
+                  "equity-safe-money-unnamed": "not-a-recorded-safe", "equity-safe-conversion-unfunded": "money-not-held"}
 
 
-# req: QA-ENG-02, FR-EQ-17, FR-EQ-20
+# req: QA-ENG-02, FR-EQ-17, FR-EQ-18, FR-EQ-20
 @pytest.mark.parametrize("kind", sorted(set(KINDS["equity"])))
 def test_the_equity_source_draws_each_of_its_kinds_as_meant(kind):
     # Each kind is drawn, posts or is refused as the generator meant, and a refused one for its own rule.
@@ -187,7 +191,8 @@ def test_the_equity_source_draws_each_of_its_kinds_as_meant(kind):
         if built == kind:
             assert (doc_id in ledger.rejected) == (intent.documents[doc_id] == REJECT), reasons
             assert (intent.documents[doc_id] == REJECT) == (kind in EQUITY_REJECTED)
-            assert reasons.get(doc_id) == EQUITY_REASONS.get(kind), (doc_id, reasons)
+            expected = EQUITY_REASONS.get(kind)
+            assert reasons.get(doc_id) in (expected if isinstance(expected, frozenset) else {expected}), (doc_id, reasons)
 
 
 # req: QA-ENG-02, FR-EQ-20

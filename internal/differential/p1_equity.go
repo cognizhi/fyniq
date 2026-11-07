@@ -11,6 +11,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 )
 
 // stage keeps a movement of a document being posted; the runner commits a document's movements only once it is
@@ -20,10 +21,156 @@ func (r *p1) stage(person, class string, shares apd.Decimal, date time.Time) {
 		Key: equity.HoldingKey{Holder: stableID("party", person), Account: account(class)}})
 }
 
-// commit records the staged movements of the document just accepted.
+// commit records what the document just accepted staged: its movements, the SAFE it records, the SAFEs it converts and
+// the round it sets.
 func (r *p1) commit() {
 	r.moves = append(r.moves, r.staged...)
-	r.staged = nil
+	if r.stagedSAFE != nil {
+		r.safes = append(r.safes, *r.stagedSAFE)
+		r.settings.Instruments[r.stagedSAFE.id] = true // a line on the instruments account may name it from now on
+	}
+	for _, id := range r.stagedConverted {
+		r.converted[id] = true
+	}
+	if r.stagedRound != nil {
+		r.rounds[r.stagedRound.doc] = r.stagedRound.round
+	}
+	r.unstage()
+}
+
+// unstage forgets what the document being posted staged.
+func (r *p1) unstage() {
+	r.staged, r.stagedSAFE, r.stagedConverted, r.stagedRound = nil, nil, nil, nil
+}
+
+// recordedSAFE is a SAFE an instrument document recorded: its document's ID, its holder's and class's names in the
+// scenario, and its terms as the product records them.
+type recordedSAFE struct {
+	doc, holder, class string
+	id                 uuid.UUID
+	terms              equity.Instrument
+}
+
+// round is the priced round a cash issue sets: its price per share and the day it took effect.
+type round struct {
+	price money.UnitPrice
+	day   time.Time
+}
+
+type namedRound struct {
+	doc   string
+	round round
+}
+
+// safeForms are the format's forms of SAFE (README, "SAFEs and their conversion"): a convertible note is not in it yet.
+var safeForms = []string{equity.FormPostMoneySAFE, equity.FormPreMoneySAFE, equity.FormDiscountSAFE, equity.FormMFNSAFE}
+
+// instrument records a SAFE on its date, as recording an instrument does (FR-EQ-18): the product's checks
+// (equity.CheckInstrument) on its terms, its holder one of the people or subscribers. It posts nothing.
+func (r *p1) instrument(d Document, date time.Time) bool {
+	var x struct {
+		Person        string `json:"person"`
+		Form          string `json:"form"`
+		Amount        string `json:"amount"`
+		ValuationCap  string `json:"valuation_cap"`
+		Discount      string `json:"discount"`
+		Class         string `json:"class"`
+		PriceDecimals int    `json:"price_decimals"`
+	}
+	if json.Unmarshal(d.Raw, &x) != nil || !r.settings.Subscribers[stableID("party", x.Person)] || !slices.Contains(safeForms, x.Form) {
+		return false
+	}
+	amount, ok := r.amount(x.Amount, r.base.Code)
+	if !ok {
+		return false
+	}
+	i := equity.Instrument{Form: x.Form, HolderID: stableID("party", x.Person), Amount: amount, SignedOn: date, ValuationCap: x.ValuationCap,
+		Discount: x.Discount, MFN: x.Form == equity.FormMFNSAFE, Trigger: "priced_round", ClassAccountID: account(x.Class),
+		Denominator: "pre_money_shares", PriceDecimals: x.PriceDecimals}
+	if x.Form == equity.FormPostMoneySAFE {
+		i.Denominator = "post_money_capitalisation"
+	}
+	if len(equity.CheckInstrument(i, r.settings)) > 0 {
+		return false
+	}
+	r.stagedSAFE = &recordedSAFE{doc: d.ID, holder: x.Person, class: x.Class, id: stableID("instrument", d.ID), terms: i}
+	return true
+}
+
+// heldFor is what the instruments account holds for a SAFE at the end of day: the credit of the lines naming it there in
+// the entries posted before, dated on or before day (README, "SAFEs and their conversion").
+func (r *p1) heldFor(holding, safe uuid.UUID, day time.Time) money.Money {
+	sum := money.Zero(r.base)
+	for _, p := range r.posted {
+		if p.line.AccountID == holding && p.line.Instrument == safe && !p.day.After(day) {
+			sum, _ = sum.Sub(p.line.Base)
+		}
+	}
+	return sum
+}
+
+// safeConversion converts every SAFE recorded and not converted yet at a priced round, as the drafts of
+// draftInstrumentConversions do once each is effective (FR-EQ-18, design D6): equity.Convert at the round's price over
+// the shares issued the day before the round, then instrument_conversion@1 for each, their lines in one entry.
+func (r *p1) safeConversion(d Document, date time.Time) (ledger.Entry, bool) {
+	var x struct {
+		Round string `json:"round"`
+	}
+	if json.Unmarshal(d.Raw, &x) != nil {
+		return ledger.Entry{}, false
+	}
+	rd, ok := r.rounds[x.Round]
+	if !ok || rd.day.After(date) {
+		return ledger.Entry{}, false
+	}
+	var holding uuid.UUID
+	accounts := 0
+	for id, a := range r.settings.Accounts {
+		if a.InstrumentAccount() && a.Active && !a.Group {
+			holding, accounts = id, accounts+1
+		}
+	}
+	if accounts != 1 {
+		return ledger.Entry{}, false
+	}
+	var safes []recordedSAFE
+	var converting []equity.Converting
+	for _, s := range r.safes {
+		if !r.converted[s.id] {
+			safes, converting = append(safes, s), append(converting, equity.Converting{ID: s.id, Instrument: s.terms})
+		}
+	}
+	if len(converting) == 0 {
+		return ledger.Entry{}, false
+	}
+	one := func(equity.HoldingKey) (apd.Decimal, bool, error) { return *apd.New(1, 0), false, nil }
+	before, err := equity.TableAt(rd.day.AddDate(0, 0, -1), r.moves, one)
+	if err != nil {
+		return ledger.Entry{}, false
+	}
+	conversions, err := equity.Convert(equity.Round{Price: rd.price, Before: before.Issued}, converting, func(string) bool { return false })
+	if err != nil {
+		return ledger.Entry{}, false
+	}
+	e := ledger.Entry{PostingDate: date, RuleVersion: ledger.RuleInstrumentConversion,
+		Source: ledger.Source{Type: ledger.SourceShareIssue, ID: stableID("document", d.ID).String(), Version: max(d.Version, 1)}}
+	for k, c := range conversions {
+		if c.Shares.Sign() <= 0 || c.Converted.Sign() <= 0 {
+			return ledger.Entry{}, false
+		}
+		if held, err := r.heldFor(holding, c.ID, date).Cmp(c.Converted); err != nil || held < 0 {
+			return ledger.Entry{}, false
+		}
+		posted, err := ledger.PostInstrumentConversion(ledger.InstrumentConversion{ID: stableID("issue", d.ID+"/"+safes[k].doc), PostOn: date,
+			Instrument: c.ID, Holding: holding, Class: safes[k].terms.ClassAccountID, Amount: c.Converted}, r.settings)
+		if err != nil {
+			return ledger.Entry{}, false
+		}
+		e.Lines = append(e.Lines, posted.Lines...)
+		r.stage(safes[k].holder, safes[k].class, c.Shares, date)
+		r.stagedConverted = append(r.stagedConverted, c.ID)
+	}
+	return e, true
 }
 
 // holding is what person holds of class at the end of day, from the movements committed so far.

@@ -129,8 +129,11 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   (Slice 4b-i built the conversion: `equity.Convert` with the generalised post-money price (D6), the
   `instrument_conversion` transaction drafted from an approved round by `draftInstrumentConversions` and approved like any
   other, `instrument_conversion@1` posting Dr 2700 naming the instrument · Cr the class, FY288 converting each instrument
-  once, and the cap table after G4-044's conversion at 79.83%, 15.97% and 4.20%. Slice 4b-ii brings the oracle's
-  `safe_conversion` and the golden cases; C.2 #29 and the founder's route to a SAFE follow.)
+  once, and the cap table after G4-044's conversion at 79.83%, 15.97% and 4.20%. Slice 4b-ii brought the oracle's
+  `safe_conversion`, written from the differential contract's section "SAFEs and their conversion": the `instrument`
+  and `safe_conversion` documents, bank lines naming a SAFE on 2700, the golden cases `safe-conversion.json` (G4-044,
+  then a discount, an MFN and a pre-money SAFE at a later round) and `safe-conversion-caps.json` (two caps and G.3's
+  pre-money SAFE), and the generator's SAFE kinds. C.2 #29 and the founder's route to a SAFE follow.)
 - [ ] 5.3 Screen Instruments as designed, with help keys and guide sections. Vitest and axe. `// req: FR-EQ-18`
 
 ## 6. The option pool and grants (slice 5)

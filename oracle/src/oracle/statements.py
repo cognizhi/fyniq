@@ -115,8 +115,10 @@ FUNCTIONS = ("R&D", "S&M", "G&A", "Other")
 DIRECTOR_ROLES = frozenset({"director-loan", "deferred-remuneration"})
 # The non-cash entries that say what they were, by their document's type (FR-EQ-10).
 NON_CASH_LABELS = {"director_conversion": "Converted to shares", "director_waiver": "Waived",
-                   "share_issue_cash": "Allotted from share application monies"}
-NON_CASH_SHARES = frozenset({"director_conversion"})
+                   "share_issue_cash": "Allotted from share application monies",
+                   "safe_conversion": "Converted to shares"}
+# The shares issued for non-cash consideration: a founder's balance, or a SAFE's money (FR-EQ-10, FR-EQ-18).
+NON_CASH_SHARES = frozenset({"director_conversion", "safe_conversion"})
 
 
 def _month(day: date) -> str:

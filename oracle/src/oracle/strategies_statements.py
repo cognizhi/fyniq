@@ -237,7 +237,7 @@ def _kpi_settings(draw: st.DrawFn, months: list[str]) -> dict[str, Any]:
 
 
 # The roles whose lines name a person (README, rule 9), which the added journals, naming no one, stay off.
-_NAMED = frozenset({"director-loan", "deferred-remuneration", "share-application-monies"})
+_NAMED = frozenset({"director-loan", "deferred-remuneration", "share-application-monies", "convertible-instruments"})
 
 
 def _postable(accounts: list[dict[str, Any]], test) -> list[str]:

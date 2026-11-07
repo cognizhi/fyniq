@@ -116,8 +116,11 @@ func newMemStore(s Scenario, settings ledger.Settings, base money.Currency, book
 		if b.entry.Source.Type == ledger.SourceShareIssue && b.kind == "post" { // a conversion's shares are for debt; a cash issue's for cash
 			if id, err := uuid.Parse(b.entry.Source.ID); err == nil {
 				consideration := storage.ConsiderationDebtCapitalised
-				if b.entry.RuleVersion == ledger.RuleCashIssue {
+				switch b.entry.RuleVersion {
+				case ledger.RuleCashIssue:
 					consideration = storage.ConsiderationCash
+				case ledger.RuleInstrumentConversion:
+					consideration = storage.ConsiderationSAFE // a SAFE's money: non-cash, as a conversion is (FR-EQ-10)
 				}
 				m.issues = append(m.issues, storage.ShareIssue{ID: id, Consideration: consideration})
 			}
