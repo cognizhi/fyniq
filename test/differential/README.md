@@ -1328,7 +1328,8 @@ accounts (assets on Cash & cash equivalents).
 - `non_cash`: the investing and financing entries with no line on a cash account (FR-RPT-01: "a
   transaction that moved no money ... is left out of investing and financing and listed apart"). A
   `director_conversion`'s and a `safe_conversion`'s have the `label` "Converted to shares", a `director_waiver`'s
-  "Waived" (FR-EQ-10) and a `share_issue_cash`'s "Allotted from share application monies" (rev 0.207).
+  "Waived" (FR-EQ-10), and a `share_issue_cash`'s and an `option_exercise`'s "Allotted from share application
+  monies" (rev 0.207): an exercise allots its shares from the holder's share application monies as a cash issue does.
 - `net_change` = operating + investing + financing; `opening_cash` and `closing_cash` are the cash
   accounts' balances at the month before's end and the month's.
 
