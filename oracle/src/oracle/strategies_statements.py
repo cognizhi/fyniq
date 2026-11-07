@@ -44,13 +44,13 @@ from hypothesis import strategies as st
 
 from oracle import money
 from oracle.strategies import BOUNDED, Dimensions, tag
-from oracle.statements import CAPITAL_EXPENDITURE, CASH, DEPRECIATION, SHARE_CAPITAL
+from oracle.statements import CAPITAL_EXPENDITURE, CASH, DEPRECIATION, SHARE_APPLICATION, SHARE_CAPITAL
 
 RETAINED = "9100"  # generated codes are 1000 to 8999, and the P1 chart has none from 9000
 _GROUPS = ["Group A", "Group B", "Group C", "Group D"]
 _LINES = {
     "asset": [CASH, CASH, "Receivables", "Other current assets", CAPITAL_EXPENDITURE, DEPRECIATION],
-    "liability": ["Payables & accruals", "Payroll liabilities", "Tax liabilities", "Deferred revenue", "Borrowings"],
+    "liability": ["Payables & accruals", "Payroll liabilities", "Tax liabilities", "Deferred revenue", "Borrowings", SHARE_APPLICATION],
     "equity": [SHARE_CAPITAL, "Dividends & other equity"],
 }
 _FUNCTIONS = [None, None, "COGS", "R&D", "S&M", "G&A", "Other"]

@@ -1,0 +1,47 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "equity-cash-issue",
+ "base_currency": "SGD",
+ "currencies": {"SGD": 2},
+ "as_of": "2027-03-31",
+ "statements": true,
+ "settings": {
+  "accounts": {"gst": "2200"},
+  "money_accounts": {"1010": "SGD"},
+  "books_start": "2027-01-01",
+  "gst": {"registered_from": "2027-01-01", "rates": [{"from": "2024-01-01", "percent": "9"}]}
+ },
+ "accounts": [
+  {"code": "1010", "type": "asset", "group": false, "active": true, "report_group": "Cash and bank", "cash_flow_line": "Cash & cash equivalents"},
+  {"code": "2040", "type": "liability", "group": false, "active": true, "role": "share-application-monies", "report_group": "Share application monies",
+   "cash_flow_line": "Share application monies"},
+  {"code": "2200", "type": "liability", "group": false, "active": true, "report_group": "GST", "cash_flow_line": "Tax liabilities"},
+  {"code": "3010", "type": "equity", "group": false, "active": true, "role": "share-capital", "report_group": "Share capital", "cash_flow_line": "Share capital"},
+  {"code": "3100", "type": "equity", "group": false, "active": true, "role": "retained-earnings", "report_group": "Retained earnings",
+   "cash_flow_line": "Dividends & other equity"},
+  {"code": "6400", "type": "expense", "group": false, "active": true, "report_group": "Office", "function": "G&A"}
+ ],
+ "people": ["P0001"],
+ "subscribers": ["P0003", "P0004"],
+ "documents": [
+  {"type": "bank_transaction", "id": "BT-0001", "version": 1, "date": "2027-02-26", "account": "1010", "currency": "SGD", "amount": "600000.00",
+   "person": "P0003", "parts": [{"account": "2040", "amount": "600000.00", "gst_code": "NA"}]},
+  {"type": "bank_transaction", "id": "BT-0002", "version": 1, "date": "2027-03-03", "account": "1010", "currency": "SGD", "amount": "1000.00",
+   "person": "P0004", "parts": [{"account": "2040", "amount": "1000.00", "gst_code": "NA"}]},
+  {"type": "bank_transaction", "id": "BT-0003", "version": 1, "date": "2027-03-10", "account": "1010", "currency": "SGD", "amount": "-1000.00",
+   "person": "P0004", "parts": [{"account": "2040", "amount": "-1000.00", "gst_code": "NA"}]},
+  {"type": "share_issue_cash", "id": "EQ-0002", "version": 1, "date": "2027-03-11", "person": "P0004", "class": "3010", "shares": "400",
+   "price": "2.40"},
+  {"type": "share_issue_cash", "id": "EQ-0001", "version": 1, "date": "2027-03-12", "person": "P0003", "class": "3010", "shares": "250000",
+   "price": "2.40"},
+  {"type": "bank_transaction", "id": "BT-0004", "version": 1, "date": "2027-03-15", "account": "1010", "currency": "SGD", "amount": "-10.00",
+   "person": "P0003", "parts": [{"account": "6400", "amount": "-10.00", "gst_code": "NA"}]},
+  {"type": "bank_transaction", "id": "BT-0005", "version": 1, "date": "2027-03-16", "account": "1010", "currency": "SGD", "amount": "50.00",
+   "parts": [{"account": "2040", "amount": "50.00", "gst_code": "NA"}]},
+  {"type": "bank_transaction", "id": "BT-0006", "version": 1, "date": "2027-03-17", "account": "1010", "currency": "SGD", "amount": "50.00",
+   "person": "P0009", "parts": [{"account": "2040", "amount": "50.00", "gst_code": "NA"}]},
+  {"type": "share_issue_cash", "id": "EQ-0003", "version": 1, "date": "2027-03-18", "person": "P0003", "class": "6400", "shares": "1",
+   "price": "1.00"}
+ ],
+ "reversals": []
+}
