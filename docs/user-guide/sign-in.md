@@ -75,6 +75,16 @@ your passkeys, recover your account:
   and confirming others' recoveries wait.
 - Email alone or a support request never recovers an account.
 
+## Ask to join by your email domain
+
+If your company lets people join by their work email, and you sign in with an account whose
+verified email is on its domain, the sign-in page offers **Ask to join** with the company's name.
+
+1. Type your name as others will see it, then select **Ask to join**.
+2. An Owner of the company approves or rejects it. Until they approve it you see nothing of the
+   company.
+3. Once approved, sign in again: you start as an Employee, and an Owner can give you other roles.
+
 ## Join a company with an invitation
 
 1. Sign in as above. Fyniq shows **Joining by invitation**, because you have no account yet.

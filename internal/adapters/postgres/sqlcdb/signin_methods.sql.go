@@ -13,20 +13,21 @@ import (
 )
 
 const setSignInMethod = `-- name: SetSignInMethod :one
-SELECT provider, enabled, allowed_domains, version, changed_by, changed_at, change_id FROM fyniq.set_sign_in_method($1::uuid, $2::uuid, $3::text,
+SELECT provider, enabled, allowed_domains, version, changed_by, changed_at, change_id, join_by_domain FROM fyniq.set_sign_in_method($1::uuid, $2::uuid, $3::text,
   $4::integer, $5::boolean, $6::text[], $7::boolean,
-  $8::timestamptz)
+  $8::boolean, $9::timestamptz)
 `
 
 type SetSignInMethodParams struct {
-	ByUser      uuid.UUID
-	ChangeID    *uuid.UUID
-	Provider    string
-	Version     int32
-	Enabled     bool
-	Domains     []string
-	EndSessions bool
-	At          time.Time
+	ByUser       uuid.UUID
+	ChangeID     *uuid.UUID
+	Provider     string
+	Version      int32
+	Enabled      bool
+	Domains      []string
+	JoinByDomain bool
+	EndSessions  bool
+	At           time.Time
 }
 
 func (q *Queries) SetSignInMethod(ctx context.Context, arg SetSignInMethodParams) (FyniqSignInMethod, error) {
@@ -37,6 +38,7 @@ func (q *Queries) SetSignInMethod(ctx context.Context, arg SetSignInMethodParams
 		arg.Version,
 		arg.Enabled,
 		arg.Domains,
+		arg.JoinByDomain,
 		arg.EndSessions,
 		arg.At,
 	)
@@ -49,6 +51,7 @@ func (q *Queries) SetSignInMethod(ctx context.Context, arg SetSignInMethodParams
 		&i.ChangedBy,
 		&i.ChangedAt,
 		&i.ChangeID,
+		&i.JoinByDomain,
 	)
 	return i, err
 }
@@ -107,7 +110,7 @@ func (q *Queries) SignInEssential(ctx context.Context) ([]string, error) {
 }
 
 const signInMethods = `-- name: SignInMethods :many
-SELECT provider, enabled, allowed_domains, version, changed_by, changed_at, change_id FROM fyniq.sign_in_methods()
+SELECT provider, enabled, allowed_domains, version, changed_by, changed_at, change_id, join_by_domain FROM fyniq.sign_in_methods()
 `
 
 func (q *Queries) SignInMethods(ctx context.Context) ([]FyniqSignInMethod, error) {
@@ -127,6 +130,7 @@ func (q *Queries) SignInMethods(ctx context.Context) ([]FyniqSignInMethod, error
 			&i.ChangedBy,
 			&i.ChangedAt,
 			&i.ChangeID,
+			&i.JoinByDomain,
 		); err != nil {
 			return nil, err
 		}

@@ -60,7 +60,7 @@
   `docs/security/threat-models/passkeys.md`. **Left:** the browser ceremonies' screens (4.1, with `p1-app-shell`), so
   founders cannot add a passkey from the web app yet; the sign-in half of NFR-A11Y-05. Rev 0.44: approvals signed with a
   passkey assertion over the envelope hash (`p1-approval-engine` 1.2, G4-056) are built.)
-- [ ] 2.3 Sessions: idle and absolute timeouts, the device list, revocation and sign-in alerts through the outbox. Tests `// req: FR-ADM-03`, `// req: SEC-05` and `// req: SEC-08` extend P0's
+- [x] 2.3 Sessions: idle and absolute timeouts, the device list, revocation and sign-in alerts through the outbox. Tests `// req: FR-ADM-03`, `// req: SEC-05` and `// req: SEC-08` extend P0's
   (20 Oct 2026, provisional (PRD rev 0.45): migration 000049: `user_session.user_agent`, `start_session_from`,
   `user_sessions` and `end_user_session`; `GET /v1/session/devices`, `DELETE /v1/session/devices/{device_id}` and `POST
   /v1/session/devices/sign-out-others`, a device's ID derived from its session's hash; `signin.EmailAlert` emails each
@@ -72,7 +72,9 @@
   setting kind `minutes`). Migration 000233: `fyniq.idle_timeout` reads the value in force on the organisation's date,
   and `session_for` finds the session's organisation before applying it; the devices list uses the same
   (`Sessions.IdleTimeout`). Test: `TestBrowserSessions` (10 and 60 minutes). **Left:** the devices screen (4.1).)
-- [ ] 2.4 Sign-in providers by configuration, allowed domains and identity linking; the Super admin's scope; Owner succession with dual control. Tests `// req: FR-ADM-07`, `// req: FR-ADM-08` and `// req: FR-ADM-09` extend P0's
+  (7 Nov 2026: the devices screen is Settings › Profile and security › Your devices (`Profile.test.tsx`), so the task
+  is done.)
+- [x] 2.4 Sign-in providers by configuration, allowed domains and identity linking; the Super admin's scope; Owner succession with dual control. Tests `// req: FR-ADM-07`, `// req: FR-ADM-08` and `// req: FR-ADM-09` extend P0's
   (6 Nov 2026, PRD-001 rev 0.181, on the owner's decisions of the same day: Owner succession. An Owner starts one for
   another Owner who is permanently unavailable (`POST /v1/members/{member_id}/succession`), with a reason and the kind
   of evidence, naming a member to become an Owner if wanted; the outgoing Owner and every Owner are told
@@ -101,6 +103,12 @@
   (migrations 000240 and 000241, FY272, FY273). Tests `TestSignInProviders`, `TestTheFlowFollowsTheProvidersSwitches`,
   `SignInProviders.test.tsx`. **Left:** joining by domain as a pending Employee membership an Owner approves; adding
   providers in the app (P2 or P3).)
+  (7 Nov 2026, PRD-001 rev 0.199, on the owner's decision of the same day: joining by domain. An Owner claims the
+  organisation's email domains (one organisation per domain); a Super admin lets a provider take requests for the
+  domains it accepts. A person without an account, signed in with a verified email on a claimed domain, asks to join;
+  an Owner approves (a member with the Employee role) or rejects. Migrations 000244 and 000245. Tests
+  `TestJoinByDomain`, `join.test.tsx`. Every P1 part is built; adding providers in the app (P2 or P3) and the Super
+  admin console for organisations a Super admin is not a member of (P3) belong to later phases.)
 - [ ] 2.5 Account recovery as an audited state machine with two independent proofs, cooling-off, notices and revocation. Test `// req: SEC-35` with G4-060
   (7 Nov 2026, PRD-001 rev 0.198, on the owner's decisions of 6 Nov 2026: ten recovery codes per person on the profile,
   keyed hashes; a confirmation from an Owner or Administrator after speaking to the person (one-time, 24 hours); the

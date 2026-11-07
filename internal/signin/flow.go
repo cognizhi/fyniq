@@ -211,9 +211,13 @@ func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if who.Email != "" && who.EmailVerified {
-		// The person's verified email, so mail they send to an email-in address is known as theirs (FR-INT-22).
+		// The person's verified email, so mail they send to an email-in address is known as theirs (FR-INT-22), and, on
+		// the session, so a person without an account may ask to join by its domain (FR-ADM-08).
 		if err := f.Sessions.RecordIdentityEmail(r.Context(), who.Issuer, who.Subject, who.Email, now); err != nil {
 			f.log().Error("auth.signin.email_not_recorded", "provider", who.Provider, "error", err.Error())
+		}
+		if err := f.Sessions.RecordSessionEmail(r.Context(), hash, who.Email); err != nil {
+			f.log().Error("auth.signin.session_email_not_recorded", "provider", who.Provider, "error", err.Error())
 		}
 	}
 	if f.Alert != nil {

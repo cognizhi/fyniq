@@ -268,6 +268,11 @@ Source: PRD-001 §8.24 · Priority M · Phase P0 (Zoho issuer check, §17.3) / P
 - **AND** Super admins enable or disable it, set its allowed domains and choose whether to end its sessions in the app
 - **AND** adding or editing a provider in the app comes in P2 or P3
 
+#### Scenario: Who opens a domain to joining (rev 0.199)
+- **WHEN** a domain is opened to joining
+- **THEN** an Owner claimed it for their organisation, and a domain belongs to one organisation only
+- **AND** a Super admin lets the provider accept it and take requests to join; both are needed
+
 #### Scenario: Joining by domain awaits an Owner (rev 0.196)
 - **WHEN** a person whose verified email is on an allowed domain signs in through a provider with joining by domain on
 - **THEN** they get a pending membership with the Employee role

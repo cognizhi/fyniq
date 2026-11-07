@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "decided_at": {
+      "examples": [
+        "2026-11-07T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "display_name": {
+      "examples": [
+        "Wei Jie Lim"
+      ],
+      "type": "string"
+    },
+    "email": {
+      "description": "Their verified email.",
+      "examples": [
+        "wei.jie@cognizhi.com"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f90"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "provider": {
+      "description": "The sign-in provider they asked from.",
+      "examples": [
+        "google"
+      ],
+      "type": "string"
+    },
+    "requested_at": {
+      "examples": [
+        "2026-11-07T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "status": {
+      "description": "pending until an Owner decides it; approved made them a member with the Employee role.",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "examples": [
+        "pending"
+      ],
+      "type": "string"
+    },
+    "user_id": {
+      "description": "Their user, once approved.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f91"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "display_name",
+    "email",
+    "provider",
+    "requested_at",
+    "status"
+  ],
+  "title": "JoinRequestView",
+  "type": "object"
+}

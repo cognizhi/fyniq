@@ -84,6 +84,22 @@
       "label": "Domains",
       "tooltip": "Accept only accounts whose verified email ends with one of these domains."
     },
+    "join.ask": {
+      "label": "Ask to join",
+      "tooltip": "Send your request to the organisation's Owners; it grants nothing until one approves it."
+    },
+    "join.approve": {
+      "label": "Approve",
+      "tooltip": "Make them a member with the Employee role. You confirm it's you first."
+    },
+    "join.reject": {
+      "label": "Reject",
+      "tooltip": "Turn the request down: they stay without an account."
+    },
+    "join.claim-domain": {
+      "label": "Claim",
+      "tooltip": "Let people with a verified email on this domain ask to join, once a Super admin lets their provider. One organisation per domain."
+    },
     "recovery.make": {
       "label": "Make recovery codes",
       "tooltip": "Get ten codes, shown once. With an Owner's or Administrator's confirmation, one gives your account back if you lose every authenticator."

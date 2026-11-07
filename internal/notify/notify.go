@@ -58,6 +58,7 @@ var Catalogue = []Type{
 		Note: "Every sign-in is emailed at once by the sign-in alert, so it is not emailed again here"},
 	{Key: "security.second_factor", Label: "A passkey was added or removed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: SignInMethodType, Label: "A sign-in was linked or removed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
+	{Key: JoinRequestType, Label: "Someone asks to join by their email domain", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: RecoveryType, Label: "An account was recovered, or a recovery confirmed", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
 	{Key: SignInProviderType, Label: "A sign-in provider was turned on or off, or its domains changed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: "security.roles", Label: "Your roles changed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},

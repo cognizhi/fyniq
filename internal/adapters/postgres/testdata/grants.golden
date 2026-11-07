@@ -97,6 +97,7 @@ fyniq_api       INSERT    claim_category (account_id, attendees_above, changed_a
 fyniq_api       SELECT    claim_category
 fyniq_api       UPDATE    claim_category (account_id, active, attendees_above, changed_at, changed_by, line_limit, name, receipt_above, version)
 fyniq_api       EXECUTE   claim_job_slot()
+fyniq_api       EXECUTE   claim_join_domain()
 fyniq_api       INSERT    claim_place (address, changed_at, changed_by, created_at, created_by, name, user_id)
 fyniq_api       SELECT    claim_place
 fyniq_api       UPDATE    claim_place (active, address, changed_at, changed_by, name, version)
@@ -121,6 +122,7 @@ fyniq_api       INSERT    customer_group (name, reminder_days)
 fyniq_api       SELECT    customer_group
 fyniq_api       UPDATE    customer_group (active, name, reminder_days, version)
 fyniq_api       EXECUTE   decide_installation_change()
+fyniq_api       EXECUTE   decide_join_request()
 fyniq_api       INSERT    dimension (kind, name, position)
 fyniq_api       SELECT    dimension
 fyniq_api       UPDATE    dimension (is_active, name, version)
@@ -205,6 +207,10 @@ fyniq_api       DELETE    item_price
 fyniq_api       INSERT    item_price (currency, item_id, unit_price)
 fyniq_api       SELECT    item_price
 fyniq_api       SELECT    job_slots
+fyniq_api       EXECUTE   join_domains()
+fyniq_api       EXECUTE   join_offer()
+fyniq_api       EXECUTE   join_offer_name()
+fyniq_api       SELECT    join_request
 fyniq_api       INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_api       SELECT    journal_entry
 fyniq_api       INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, line_no, party_id)
@@ -296,9 +302,11 @@ fyniq_api       SELECT    recurring_journal
 fyniq_api       UPDATE    recurring_journal (content_version, day_of_month, ends_on, every_months, name, next_on, starts_on, status, version)
 fyniq_api       INSERT    recurring_journal_version (content, edited_by, recurring_journal_id, version)
 fyniq_api       SELECT    recurring_journal_version
+fyniq_api       EXECUTE   release_join_domain()
 fyniq_api       INSERT    report_export (format, parameters, report, requested_at, requested_by)
 fyniq_api       SELECT    report_export
 fyniq_api       EXECUTE   request_installation_change()
+fyniq_api       EXECUTE   request_to_join()
 fyniq_api       INSERT    review_log_entry (actor, approval_id, kind, logged_at, object_key, object_type, summary)
 fyniq_api       SELECT    review_log_entry
 fyniq_api       INSERT    review_log_review (entry_id, note, reviewed_at, reviewed_by)
@@ -314,6 +322,7 @@ fyniq_api       EXECUTE   session_step_up()
 fyniq_api       EXECUTE   session_step_up_method()
 fyniq_api       EXECUTE   set_installation_connector_secret()
 fyniq_api       EXECUTE   set_recovery_codes()
+fyniq_api       EXECUTE   set_session_email()
 fyniq_api       EXECUTE   set_sign_in_method()
 fyniq_api       EXECUTE   set_user_recovery_codes()
 fyniq_api       EXECUTE   setup_done()
@@ -513,6 +522,7 @@ fyniq_readonly  SELECT    inbound_message
 fyniq_readonly  SELECT    item
 fyniq_readonly  SELECT    item_price
 fyniq_readonly  SELECT    job_slots
+fyniq_readonly  SELECT    join_request
 fyniq_readonly  SELECT    journal_entry
 fyniq_readonly  SELECT    journal_line
 fyniq_readonly  SELECT    kpi_input
@@ -679,6 +689,7 @@ fyniq_worker    EXECUTE   installation_org()
 fyniq_worker    SELECT    item
 fyniq_worker    SELECT    item_price
 fyniq_worker    SELECT    job_slots
+fyniq_worker    SELECT    join_request
 fyniq_worker    INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_worker    SELECT    journal_entry
 fyniq_worker    INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, line_no, party_id)
