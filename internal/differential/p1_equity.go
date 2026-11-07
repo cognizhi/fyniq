@@ -282,3 +282,51 @@ func (r *p1) capTables() ([]CapTable, error) {
 	}
 	return out, nil
 }
+
+// directorSAFE posts a founder's balance turned into a SAFE they hold (director_safe@1, FR-EQ-05), as approving the
+// settlement's safe route does: at most what is owed on the account, into a recorded SAFE the person holds, never past
+// its amount with what 2700 holds for it already.
+func (r *p1) directorSAFE(d Document, date time.Time) (ledger.Entry, bool) {
+	var x struct {
+		Person     string `json:"person"`
+		Account    string `json:"account"`
+		Instrument string `json:"instrument"`
+		Amount     string `json:"amount"`
+	}
+	if json.Unmarshal(d.Raw, &x) != nil {
+		return ledger.Entry{}, false
+	}
+	amount, ok := r.amount(x.Amount, r.base.Code)
+	if !ok || !r.within(amount, x.Person, account(x.Account), date) { // at most what is owed (FR-EQ-05)
+		return ledger.Entry{}, false
+	}
+	var safe *recordedSAFE
+	for k := range r.safes {
+		if r.safes[k].doc == x.Instrument {
+			safe = &r.safes[k]
+		}
+	}
+	if safe == nil || safe.holder != x.Person {
+		return ledger.Entry{}, false
+	}
+	var holding uuid.UUID
+	accounts := 0
+	for id, a := range r.settings.Accounts {
+		if a.InstrumentAccount() && a.Active && !a.Group {
+			holding, accounts = id, accounts+1
+		}
+	}
+	if accounts != 1 {
+		return ledger.Entry{}, false
+	}
+	total, err := r.heldFor(holding, safe.id, date).Add(amount)
+	if err != nil {
+		return ledger.Entry{}, false
+	}
+	if c, err := total.Cmp(safe.terms.Amount); err != nil || c > 0 {
+		return ledger.Entry{}, false
+	}
+	e, err := ledger.PostDirectorSAFE(ledger.DirectorSAFE{ID: stableID("document", d.ID), Version: max(d.Version, 1), PostOn: date,
+		Party: stableID("party", x.Person), Account: account(x.Account), Holding: holding, Instrument: safe.id, Amount: amount}, r.settings)
+	return e, err == nil
+}

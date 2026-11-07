@@ -2,15 +2,18 @@ package journal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -32,11 +35,71 @@ func checkSettlement(ctx context.Context, u storage.UnitOfWork, s director.Settl
 	if err != nil {
 		return nil, settings, err
 	}
+	if s.Route == director.RouteSAFE && s.SAFE != nil && s.SAFE.InstrumentID != uuid.Nil {
+		more, err := checkSAFERoute(ctx, u, s, settings, today)
+		if err != nil {
+			return nil, settings, err
+		}
+		probs = append(probs, more...)
+	}
 	if len(probs) > 0 {
 		return nil, settings, probs
 	}
 	b, err := director.EncodeSettlement(s)
 	return b, settings, err
+}
+
+// checkSAFERoute is what is wrong with the SAFE or note a settlement turns a balance into (FR-EQ-05, FR-EQ-18): it is a
+// recorded instrument; the person settling holds it; the chart has 2700; and its money, with what 2700 holds for it
+// already, is no more than its amount.
+func checkSAFERoute(ctx context.Context, u storage.UnitOfWork, s director.Settlement, settings ledger.Settings, today time.Time) (ledger.Problems, error) {
+	bad := func(msg, fix string) ledger.Problems {
+		return ledger.Problems{{Code: director.CodeSettlement, Field: "safe.instrument_id", Message: msg, Fix: fix}}
+	}
+	doc, err := u.Documents().Get(ctx, s.SAFE.InstrumentID)
+	switch {
+	case errors.Is(err, ports.ErrNotFound) || err == nil && (doc.Type != storage.DocumentInstrument || doc.Status != storage.DocumentPosted):
+		return bad("is not a recorded SAFE or convertible note", "Record the SAFE or note first: another person approves it"), nil
+	case err != nil:
+		return nil, err
+	}
+	i, err := equity.ReadInstrument(doc)
+	if err != nil {
+		return nil, err
+	}
+	if i.HolderID != s.ContactID {
+		return bad("the SAFE or note is held by someone else", "Choose one the person settling holds"), nil
+	}
+	holding, ok := instrumentsAccount(settings)
+	if !ok {
+		return ledger.Problems{{Code: director.CodeSettlement, Field: "route", Message: "the chart has no convertible instruments account",
+			Fix: "Give 2700 Convertible notes / SAFE the role convertible-instruments"}}, nil
+	}
+	held, err := balance.Instrument(ctx, u, settings.Base, holding, doc.ID, today)
+	if err != nil {
+		return nil, err
+	}
+	total, err := held.Add(s.Amount)
+	if err != nil {
+		return nil, err
+	}
+	if c, err := total.Cmp(i.Amount); err != nil {
+		return nil, err
+	} else if c > 0 {
+		return bad(fmt.Sprintf("2700 holds %s for it already, and %s more is above its amount of %s", held, s.Amount, i.Amount),
+			"Settle at most what the SAFE or note has still to be paid"), nil
+	}
+	return nil, nil
+}
+
+// instrumentsAccount is the active account of role convertible-instruments, 2700.
+func instrumentsAccount(s ledger.Settings) (uuid.UUID, bool) {
+	for id, a := range s.Accounts {
+		if a.InstrumentAccount() && a.Active && !a.Group {
+			return id, true
+		}
+	}
+	return uuid.Nil, false
 }
 
 // CreateIn saves a settlement as a draft in u, the caller's unit of work, dated today. One that does not fit writes
@@ -100,6 +163,13 @@ func (DirectorSettlements) Impact(ctx context.Context, u storage.UnitOfWork, doc
 	switch s.Route {
 	case director.RouteWaive:
 		e, err := ledger.PostDirectorWaiver(s.Rule(doc, today), settings)
+		if err != nil {
+			return CheckedSettlement{}, err
+		}
+		out.Entry = &e
+	case director.RouteSAFE:
+		holding, _ := instrumentsAccount(settings)
+		e, err := ledger.PostDirectorSAFE(s.SAFERule(doc, today, holding), settings)
 		if err != nil {
 			return CheckedSettlement{}, err
 		}
@@ -175,6 +245,22 @@ func (s DirectorSettlements) ApproveIn(ctx context.Context, u storage.UnitOfWork
 		}
 		doc.Number = number
 	}
+	if st.Route == director.RouteSAFE { // its money is on 2700 from the day it is approved
+		settings, err := loadSettings(ctx, u)
+		if err != nil {
+			return doc, nil, err
+		}
+		holding, _ := instrumentsAccount(settings)
+		entry, err := ledger.PostDirectorSAFE(st.SAFERule(doc, today, holding), settings)
+		if err != nil {
+			return doc, nil, err
+		}
+		e, err := u.Ledger().Append(ctx, toStorage(entry, nil))
+		if err != nil {
+			return doc, nil, err
+		}
+		stored = &e
+	}
 	if st.Route == director.RouteWaive {
 		settings, err := loadSettings(ctx, u)
 		if err != nil {
@@ -210,11 +296,21 @@ func (s DirectorSettlements) ApproveIn(ctx context.Context, u storage.UnitOfWork
 	return doc, stored, s.AfterPosting(ctx, u, doc, *stored)
 }
 
-// replayDirectorWaiver posts a waiver's version again as its entry posted it (ENG-06), on the day it posted.
+// replayDirectorWaiver posts a waiver's version again as its entry posted it (ENG-06), on the day it posted; and a
+// settlement into a SAFE or note the same way, on the 2700 its entry posted to.
 func replayDirectorWaiver(doc storage.Document, s ledger.Settings, e storage.Entry) (ledger.Entry, error) {
 	st, err := director.ReadSettlement(doc)
 	if err != nil {
 		return ledger.Entry{}, err
+	}
+	if st.Route == director.RouteSAFE {
+		var holding uuid.UUID
+		for _, l := range e.Lines {
+			if l.InstrumentID != nil {
+				holding = l.AccountID
+			}
+		}
+		return ledger.ReplayDirectorSAFE(e.RuleVersion, st.SAFERule(doc, e.PostingDate, holding), s)
 	}
 	return ledger.ReplayDirectorWaiver(e.RuleVersion, st.Rule(doc, e.PostingDate), s)
 }

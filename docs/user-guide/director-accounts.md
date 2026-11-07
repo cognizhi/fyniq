@@ -94,19 +94,22 @@ never changes: correct it with a journal to the director's account.
 What the company owes a director or shareholder is settled from their card:
 
 1. Select **Settle**, then choose how: **Repay in cash**, **Keep as a loan**, **Convert to
-   shares** or **Waive**. Converting to a SAFE or note comes later.
+   shares**, **Waive** or **Convert to a SAFE or note**.
 2. Choose the account it is owed on and the amount, at most what the company owes them, then
-   the details: a loan's interest and repayment day, or the account a waiver credits, the
-   capacity they waive it in and why. Select **Save the draft**.
-3. Check what it posts, then attach the agreement: the loan note or board minute, or the deed of
-   waiver.
+   the details: a loan's interest and repayment day; the account a waiver credits, the capacity
+   they waive it in and why; or the SAFE or note they hold, recorded first under Equity › SAFEs and
+   notes. Select **Save the draft**.
+3. Check what it posts, then attach the agreement: the loan note or board minute, the deed of
+   waiver, or the signed SAFE or note.
 4. Select **Ask for approval**.
 
 An Owner or the Controller settles a balance. Another person who holds the approval right approves
 it, never the person settled. If every other person who could approve also benefits from a
 settlement of their own, the accountant reviews it as well. A loan kept posts nothing. A
 repayment is paid by the next payment batch into the person's approved bank account. A waiver
-posts on the day it is approved.
+posts on the day it is approved. So does a balance turned into a SAFE or note: it moves from their
+account to **2700 Convertible notes / SAFE**, naming the instrument, and becomes its money; with
+what 2700 holds for it already, it is at most the instrument's amount.
 
 ## Convert a balance to shares
 
@@ -179,7 +182,7 @@ Select **PDF for confirmation** to download the statement as a PDF to send to th
 Select **Related parties** to list each director and shareholder with something to
 disclose as at the day chosen: what the company owes them on their loan and in deferred pay, a
 minus when they owe it, and in the financial year to that day the directors' fees owed to them,
-what was converted to shares and what they waived. **CSV** downloads it, with a total, for the
+what was converted to shares or into a SAFE or note, and what they waived. **CSV** downloads it, with a total, for the
 accountant and the notes to the financial statements; each download is recorded in the audit
 trail. On the balance sheet, a person who owes the company shows under staff and director
 advances, not under the loan, with no entry posted.
@@ -198,6 +201,8 @@ advances, not under the loan, with no entry posted.
 | The fee has no shareholders' resolution attached | Attach the resolution or the minutes, then ask for approval |
 | The status has no evidence attached | Attach the ACRA business profile, then record it |
 | The status is recorded, so it changes no more | Record a new status from the day it changes |
+| The SAFE or note is held by someone else (FOUNDER-28) | Choose one the person settling holds, or record theirs first |
+| 2700 holds the instrument's money already, and this is above its amount (FOUNDER-28) | Settle at most what the SAFE or note has still to be paid |
 | The fee is paid to you, so another person approves it | Ask another Owner or the Controller to approve it |
 
 ## Related

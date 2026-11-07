@@ -188,7 +188,13 @@ ones, the drafts and those converting or converted.
 
 Its money comes in on a bank line: in Banking, categorise the line to **2700 Convertible notes /
 SAFE** and choose the recorded SAFE or note under **SAFE or note**. A repayment out is categorised
-the same way. A line to 2700 that names no recorded instrument is refused.
+the same way. A line to 2700 that names no recorded instrument is refused. A founder's balance can
+become its money too: settle the balance on Director accounts and choose **Convert to a SAFE or
+note**.
+
+**Checks** warns when a recorded note is past its maturity, or when shares were allotted for cash
+after a SAFE was signed and it has not converted: draft its conversion from the round, or settle
+the note.
 
 ## The forms Fyniq converts by itself
 

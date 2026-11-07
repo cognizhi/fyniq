@@ -234,7 +234,7 @@
                                          "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost",
                                          "director_fee", "director_waiver", "director_repayment",
                                          "director_conversion", "account_merge", "share_issue_cash",
-                                         "share_transfer", "instrument", "safe_conversion"]}},
+                                         "share_transfer", "instrument", "safe_conversion", "director_safe"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "opening_balances"}}}, "then": {"$ref": "#/$defs/openingBalances"}},
@@ -260,7 +260,8 @@
         {"if": {"properties": {"type": {"const": "share_issue_cash"}}}, "then": {"$ref": "#/$defs/shareIssueCash"}},
         {"if": {"properties": {"type": {"const": "share_transfer"}}}, "then": {"$ref": "#/$defs/shareTransfer"}},
         {"if": {"properties": {"type": {"const": "instrument"}}}, "then": {"$ref": "#/$defs/instrument"}},
-        {"if": {"properties": {"type": {"const": "safe_conversion"}}}, "then": {"$ref": "#/$defs/safeConversion"}}
+        {"if": {"properties": {"type": {"const": "safe_conversion"}}}, "then": {"$ref": "#/$defs/safeConversion"}},
+        {"if": {"properties": {"type": {"const": "director_safe"}}}, "then": {"$ref": "#/$defs/directorSafe"}}
       ]
     },
     "settings": {
@@ -688,6 +689,22 @@
         "version": {"$ref": "#/$defs/version"},
         "date": {"description": "The day ACRA's register of members shows the allotments, which it posts on.", "$ref": "#/$defs/date"},
         "round": {"description": "The priced round: an earlier share_issue_cash document, not rejected, dated on or before date.", "$ref": "#/$defs/documentId"}
+      }
+    },
+    "directorSafe": {
+      "description": "A founder's balance turned into a SAFE they hold (director_safe@1, FR-EQ-05, FR-EQ-18; README, \"SAFEs and their conversion\").",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "person", "account", "instrument", "amount"],
+      "properties": {
+        "type": {"const": "director_safe"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day it was approved, which it posts on.", "$ref": "#/$defs/date"},
+        "person": {"description": "The director or shareholder, one of people, who holds the SAFE.", "$ref": "#/$defs/documentId"},
+        "account": {"description": "The director's account it is owed on (2500 or 2120).", "type": "string"},
+        "instrument": {"description": "The SAFE an earlier instrument document recorded.", "$ref": "#/$defs/documentId"},
+        "amount": {"description": "What turns into the SAFE's money, in the base currency.", "$ref": "#/$defs/money"}
       }
     },
     "accountMerge": {

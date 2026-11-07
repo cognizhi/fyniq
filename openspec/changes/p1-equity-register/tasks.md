@@ -116,7 +116,7 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   Slice 4a-ii keyed 2700 by instrument: its role `convertible-instruments`, `journal_line.instrument_id` with FY292, bank
   lines in and out and journals naming the instrument, and each instrument's balance read from the ledger. The founder's
   route to a SAFE (FR-EQ-05) comes with the conversions.)
-- [ ] 5.2 Engine and API:
+- [x] 5.2 Engine and API:
   - recording an instrument (approved), its cash matched Dr Bank · Cr 2700;
   - conversion at a priced round, under both conventions with `RND-SHARE`;
   - drafts for approval, or a draft for the accountant with ⚠ when the template is not enabled or a term is not
@@ -133,7 +133,11 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   `safe_conversion`, written from the differential contract's section "SAFEs and their conversion": the `instrument`
   and `safe_conversion` documents, bank lines naming a SAFE on 2700, the golden cases `safe-conversion.json` (G4-044,
   then a discount, an MFN and a pre-money SAFE at a later round) and `safe-conversion-caps.json` (two caps and G.3's
-  pre-money SAFE), and the generator's SAFE kinds. C.2 #29 and the founder's route to a SAFE follow.)
+  pre-money SAFE), and the generator's SAFE kinds. Slice 4d brought C.2 #29 (`equity.instruments-converted`: a note past
+  its maturity, or a SAFE that shares allotted for cash after it was signed have not converted, ⚠) and the founder's
+  route to a SAFE (FR-EQ-05: the settlement's `safe` route, `director_safe@1` Dr 2500 · Cr 2700 on approval, its
+  `director_safe` document in the differential and `golden/safe-from-a-founder.json`). Fully diluted with outstanding
+  SAFEs as converted comes with the rounds (D7, D8).)
 - [x] 5.3 Screen Instruments as designed, with help keys and guide sections. Vitest and axe. `// req: FR-EQ-18`
   (Slice 4c: Equity › SAFEs and notes with each instrument's terms, what 2700 holds and its status; the record page with
   the signed copy, its approval and its conversion; the templates and their enablement with the lawyer's confirmation;

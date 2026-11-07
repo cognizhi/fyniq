@@ -79,7 +79,7 @@ func RelatedParties(ctx context.Context, u storage.UnitOfWork, base money.Curren
 			switch origin {
 			case ledger.OriginFee: // credited to them
 				r.Fees, err = r.Fees.Sub(amount)
-			case ledger.OriginConverted: // debited off what they were owed
+			case ledger.OriginConverted, ledger.OriginSAFE: // debited off what they were owed, into shares or a SAFE or note
 				r.Converted, err = r.Converted.Add(amount)
 			case ledger.OriginWaived:
 				r.Waived, err = r.Waived.Add(amount)

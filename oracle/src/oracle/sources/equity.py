@@ -167,6 +167,34 @@ def instrument(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     return Posting([], effects=[lambda: recorded(books).__setitem__(doc.id, safe)])
 
 
+def director_safe(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
+    """A founder's balance turned into a SAFE they hold, posted on ``date``, the day it was approved (FR-EQ-05, FR-EQ-18):
+    Dr ``account`` (a director's account) with ``amount``, at most what is owed there, naming ``person``; Cr the
+    instruments account with ``amount``, naming ``instrument``, whose money it becomes, never past the SAFE's amount
+    (README, "SAFEs and their conversion")."""
+    d = doc.data
+    person = d["person"]
+    if person not in r.scenario.people:
+        raise Rejected("not-a-director")
+    if r.account(d["account"]).role not in ("director-loan", "deferred-remuneration"):
+        raise Rejected("not-a-directors-account")
+    safe = recorded(books).get(d["instrument"])
+    if safe is None or safe.holder != person:
+        raise Rejected("not-their-safe")
+    accounts = [code for code, a in r.scenario.accounts.items() if a.role == INSTRUMENTS and a.active and not a.group]
+    if len(accounts) != 1:
+        raise Rejected("no-instruments-account")
+    amount = r.amount(d["amount"], r.base, sign=1)
+    if owed(r, person, d["account"], doc.date) < amount:
+        raise Rejected("more-than-owed")
+    if money.EXACT.add(held(r, accounts[0], d["instrument"], doc.date), amount) > safe.amount:
+        raise Rejected("more-than-the-safe")
+    return Posting([
+        r.line(d["account"], r.base, amount, amount, party=person),
+        r.line(accounts[0], r.base, money.negate(amount), money.negate(amount), instrument=d["instrument"]),
+    ])
+
+
 def held(r: Rules, account: str, instrument_id: str, day: date) -> Decimal:
     """What the instruments ``account`` holds for a SAFE at the end of ``day``: the credit of the lines naming it there
     in the earlier documents' entries dated on or before ``day``, as :func:`oracle.sources.founders.owed` reads what

@@ -12,7 +12,9 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/director"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -229,5 +231,165 @@ func TestASAFEConvertsAtTheRound(t *testing.T) {
 	}
 	if r := e.call(http.MethodGet, "/v1/equity-transactions?kind=instrument_conversion", e.as(authz.Auditor), nil); r.Status != http.StatusOK || len(r.Body["items"].([]any)) != 1 {
 		t.Errorf("the conversions, as the Auditor reads them: %d %s", r.Status, r.Raw)
+	}
+}
+
+// C.2 #29 (FR-EQ-18): a recorded SAFE or note no conversion stands for is ⚠ once its maturity has passed, or once shares
+// were allotted for cash on or after the day it was signed. Today is 15 Oct 2026. The founder's 1,000,000 shares of
+// 2 Jan 2025 came before the SAFE signed on 1 Mar 2025, so only the note, which matured on 30 Sep 2026, is for review;
+// shares allotted for cash on 1 Jun 2025 put the SAFE up too; a conversion drafted for it takes it off again.
+// req: C.2 #29
+// req: FR-EQ-18
+func TestTheSAFEChecks(t *testing.T) {
+	c := newClaimants(t)
+	e := c.e
+	weiling := c.as(c.weiling, authz.Owner, authz.Controller)
+	prep := c.as(c.weiling, authz.Accountant)
+	start, end := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		o, err := u.Organisation(ctx)
+		if err != nil {
+			return err
+		}
+		pr := o.Profile
+		pr.FYStartMonth, pr.BooksStart, pr.FirstYearEnd = 1, &start, &end
+		_, err = u.UpdateOrganisation(ctx, o.Version, pr)
+		return err
+	})
+	ordinary := e.shareCapitalIn(e.books.Org)
+	founder := e.call(http.MethodPost, "/v1/contacts", weiling, map[string]any{"legal_name": "Tan Wei Ling", "shareholder": true}).str("id")
+	hatch := e.call(http.MethodPost, "/v1/contacts", weiling, map[string]any{"legal_name": "Hatch Capital Pte. Ltd.", "investor": true}).str("id")
+	issue := func(holder, shares, on string) {
+		t.Helper()
+		if r := e.call(http.MethodPost, "/v1/share-issues", weiling, map[string]any{"holder_id": holder, "class_account_id": ordinary, "shares": shares,
+			"price": "0.01", "consideration": "cash", "resolution_refs": "Allotment resolution", "effective_on": on}); r.Status != http.StatusCreated {
+			t.Fatalf("issuing %s on %s: %d %s", shares, on, r.Status, r.Raw)
+		}
+	}
+	issue(founder, "1000000", "2025-01-02")
+	record := func(body map[string]any) string {
+		t.Helper()
+		body["holder_id"], body["class_account_id"], body["price_decimals"] = hatch, ordinary, 4
+		r := e.call(http.MethodPost, "/v1/instruments", prep, body)
+		if r.Status != http.StatusCreated {
+			t.Fatalf("drafting %v: %d %s", body["form"], r.Status, r.Raw)
+		}
+		e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+			return u.Documents().SetStatus(ctx, uuid.MustParse(r.str("id")), storage.DocumentPosted)
+		})
+		return r.str("id")
+	}
+	wantStatus(t, e.checked("equity.instruments-converted"), "ok")
+	safe := record(map[string]any{"form": "post_money_safe", "amount": "125000.00", "signed_on": "2025-03-01", "valuation_cap": "2500000",
+		"trigger": "priced_round", "denominator": "post_money_capitalisation"})
+	note := record(map[string]any{"form": "convertible_note", "amount": "20000.00", "signed_on": "2025-03-01", "interest_rate": "8",
+		"maturity_on": "2026-09-30", "trigger": "maturity", "denominator": "pre_money_shares"})
+	r := e.checked("equity.instruments-converted")
+	wantStatus(t, r, "warning")
+	if it := itemNamed(r, note+"/maturity"); it == nil || it["label"] != "Hatch Capital Pte. Ltd., convertible note" || !strings.Contains(it["detail"].(string), "Past its maturity on 30 Sep 2026") ||
+		len(itemsOf(r)) != 1 {
+		t.Errorf("C.2 #29 for the matured note: %s", r.Raw)
+	}
+	issue(founder, "200000", "2025-06-01")
+	r = e.checked("equity.instruments-converted")
+	if it := itemNamed(r, safe+"/round"); it == nil || !strings.Contains(it["detail"].(string), "Shares were allotted for cash on 1 Jun 2025, after it was signed on 1 Mar 2025") ||
+		len(itemsOf(r)) != 2 {
+		t.Errorf("C.2 #29 for the SAFE a round did not convert: %s", r.Raw)
+	}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error { // its conversion drafted
+		_, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentEquityTransaction,
+			Payload: []byte(`{"kind":"instrument_conversion","instrument_id":"` + safe + `"}`)})
+		return err
+	})
+	if r := e.checked("equity.instruments-converted"); itemNamed(r, safe+"/round") != nil || len(itemsOf(r)) != 1 {
+		t.Errorf("C.2 #29 once the SAFE's conversion is drafted: %s", r.Raw)
+	}
+}
+
+// A founder's balance turned into a SAFE they hold (FR-EQ-05, FR-EQ-18), worked by hand: Ah Kow lent S$1,000.00 on 5 Oct
+// 2026 and holds a recorded SAFE of S$1,000.00. S$600.00 of his loan becomes its money: the request shows Dr 2500 · Cr
+// 2700; approved by Mei, it posts on 15 Oct naming him on 2500 and the SAFE on 2700, his statement says "safe", and 2700
+// holds S$600.00 for it. A SAFE someone else holds, one not recorded, or more than its amount still to pay, is refused.
+// req: FR-EQ-05
+// req: FR-EQ-18
+func TestAFoundersBalanceBecomesASAFE(t *testing.T) {
+	c := newClaimants(t)
+	e := c.e
+	loan, _ := e.directorChart()
+	var holding string
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		a, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "2700", Name: "Convertible notes / SAFE", Type: storage.Liability, Role: "convertible-instruments"})
+		holding = a.ID.String()
+		return err
+	})
+	kow := e.directorContact("Ah Kow")
+	if r := e.postFounderJournal("2026-10-05", founderLine(e.books.Bank.ID.String(), "1000.00", "", ""), founderLine(loan, "-1000.00", kow, ledger.OriginLent)); r.Status != http.StatusOK {
+		t.Fatalf("Ah Kow lending: %d %s", r.Status, r.Raw)
+	}
+	weiling := c.as(c.weiling, authz.Owner, authz.Controller)
+	prep := c.as(c.weiling, authz.Accountant)
+	ordinary := e.shareCapitalIn(e.books.Org)
+	fund := e.call(http.MethodPost, "/v1/contacts", weiling, map[string]any{"legal_name": "Lion Rock Ventures Pte. Ltd.", "investor": true}).str("id")
+	instrument := func(holder string, recorded bool) string {
+		t.Helper()
+		r := e.call(http.MethodPost, "/v1/instruments", prep, map[string]any{"form": "post_money_safe", "holder_id": holder, "amount": "1000.00", "signed_on": "2026-10-10",
+			"valuation_cap": "2500000", "trigger": "priced_round", "class_account_id": ordinary, "denominator": "post_money_capitalisation", "price_decimals": 4})
+		if r.Status != http.StatusCreated {
+			t.Fatalf("drafting a SAFE: %d %s", r.Status, r.Raw)
+		}
+		if recorded {
+			e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+				return u.Documents().SetStatus(ctx, uuid.MustParse(r.str("id")), storage.DocumentPosted)
+			})
+		}
+		return r.str("id")
+	}
+	his, theirs, drafted := instrument(kow, true), instrument(fund, true), instrument(kow, false)
+	sgd := func(a string) map[string]any { return map[string]any{"amount": a, "currency": "SGD"} }
+	draft := func(amount, safe string) response {
+		body := map[string]any{"contact_id": kow, "account_id": loan, "amount": sgd(amount), "route": "safe"}
+		if safe != "" {
+			body["safe"] = map[string]any{"instrument_id": safe}
+		}
+		return e.call(http.MethodPost, "/v1/director-settlements", weiling, body)
+	}
+	for name, x := range map[string]response{"no SAFE": draft("600.00", ""), "someone else's SAFE": draft("600.00", theirs),
+		"a SAFE not recorded": draft("600.00", drafted), "more than its amount": draft("1000.01", his)} {
+		if x.Status != http.StatusUnprocessableEntity || !strings.Contains(x.Raw, director.CodeSettlement) {
+			t.Errorf("a settlement into %s: %d %s", name, x.Status, x.Raw)
+		}
+	}
+	s := draft("600.00", his)
+	if s.Status != http.StatusCreated || s.str("route") != director.RouteSAFE || s.str("safe", "instrument_id") != his ||
+		!strings.Contains(s.Raw, `"account_id":"`+holding+`","amount":{"amount":"-600.00"`) {
+		t.Fatalf("drafting the settlement into his SAFE, with its dry run: %d %s", s.Status, s.Raw)
+	}
+	path := "/v1/director-settlements/" + s.str("id")
+	if f := e.upload(path+"/evidence", weiling, map[string]string{"evidence_type": "Signed SAFE"}, "safe.pdf", []byte("%PDF-1.7 safe"), "If-Match", s.Header.Get("ETag")); f.Status != http.StatusCreated {
+		t.Fatalf("attaching the SAFE: %d %s", f.Status, f.Raw)
+	}
+	req := e.call(http.MethodPost, path+"/approval", weiling, nil, "If-Match", s.Header.Get("ETag"))
+	if req.Status != http.StatusAccepted || !strings.Contains(req.Raw, `"debit 2500"`) || !strings.Contains(req.Raw, `"credit 2700"`) {
+		t.Fatalf("asking, its legs in the envelope: %d %s", req.Status, req.Raw)
+	}
+	if a := e.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/approve", c.as(c.mei, authz.Owner), hashOf(req), "If-Match", `"1"`); a.Status != http.StatusOK {
+		t.Fatalf("Mei approving it: %d %s", a.Status, a.Raw)
+	}
+	done := e.call(http.MethodGet, path, weiling, nil)
+	for _, want := range []string{`"status":"decided"`, `"account_id":"` + loan + `","amount":{"amount":"600.00"`, `"party_id":"` + kow + `"`,
+		`"account_id":"` + holding + `","amount":{"amount":"-600.00"`} {
+		if !strings.Contains(done.Raw, want) {
+			t.Errorf("the decided settlement lacks %s: %s", want, done.Raw)
+		}
+	}
+	if got := e.call(http.MethodGet, "/v1/instruments/"+his, weiling, nil); got.str("held", "amount") != "600.00" {
+		t.Errorf("2700 holds for his SAFE: %s", got.Raw)
+	}
+	st := e.call(http.MethodGet, "/v1/director-accounts/"+kow+"/statement?from=2026-10-01&to=2026-10-31", weiling, nil)
+	if !strings.Contains(st.Raw, `"origin":"`+ledger.OriginSAFE+`"`) || !strings.Contains(st.Raw, `"closing":{"amount":"-400.00"`) {
+		t.Errorf("his statement: %s", st.Raw)
+	}
+	if again := draft("400.01", his); again.Status != http.StatusUnprocessableEntity || !strings.Contains(again.Raw, "2700 holds 600.00 for it already") {
+		t.Errorf("more than the SAFE has still to be paid: %d %s", again.Status, again.Raw)
 	}
 }

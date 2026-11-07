@@ -119,10 +119,16 @@ type DirectorSettlementDraft struct {
 	ContactID  string                `json:"contact_id" format:"uuid" doc:"The director or shareholder the company owes." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"`
 	AccountID  string                `json:"account_id" format:"uuid" doc:"The director's account it is owed on: 2500 or 2120." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"`
 	Amount     Money                 `json:"amount" doc:"The amount, in the base currency: at most what is owed on the account today."`
-	Route      string                `json:"route,omitempty" enum:"keep,repay,convert,waive" doc:"keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); convert to shares, approved now and effective once ACRA registers the allotment (FR-EQ-06); or waive (FR-EQ-07). Left out, the organisation's default route (founders.default_route), keep." example:"keep"`
+	Route      string                `json:"route,omitempty" enum:"keep,repay,convert,waive,safe" doc:"keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); convert to shares, approved now and effective once ACRA registers the allotment (FR-EQ-06); waive (FR-EQ-07); or safe: turn it into a recorded SAFE or convertible note the person holds, Dr the director's account · Cr 2700 on approval (FR-EQ-18). Left out, the organisation's default route (founders.default_route), keep." example:"keep"`
 	Terms      *SettlementTerms      `json:"terms,omitempty" doc:"A loan kept's terms."`
 	Waiver     *SettlementWaiver     `json:"waiver,omitempty" doc:"A waiver's account, capacity and reason."`
 	Conversion *SettlementConversion `json:"conversion,omitempty" doc:"A conversion's class, price and basis, capacity and measurement basis."`
+	SAFE       *SettlementSAFE       `json:"safe,omitempty" doc:"The safe route's instrument."`
+}
+
+// SettlementSAFE is the recorded SAFE or note a balance becomes.
+type SettlementSAFE struct {
+	InstrumentID string `json:"instrument_id" format:"uuid" doc:"The recorded SAFE or convertible note (listInstruments) the person holds; its money, with what 2700 holds for it already, is at most its amount." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01"`
 }
 
 // DirectorSettlement is a settlement, drafted, waiting for approval, or decided.
@@ -138,13 +144,14 @@ type DirectorSettlement struct {
 	AccountCode      string                `json:"account_code,omitempty" doc:"Its code." example:"2500"`
 	Amount           Money                 `json:"amount" doc:"The amount settled."`
 	Owed             Money                 `json:"owed" doc:"What the company owes the person on the account today."`
-	Route            string                `json:"route" enum:"keep,repay,convert,waive" doc:"The route." example:"keep"`
+	Route            string                `json:"route" enum:"keep,repay,convert,waive,safe" doc:"The route." example:"keep"`
 	Terms            *SettlementTerms      `json:"terms,omitempty" doc:"A loan kept's terms."`
 	Waiver           *SettlementWaiver     `json:"waiver,omitempty" doc:"A waiver's account, capacity and reason."`
 	DeductedEarlier  bool                  `json:"deducted_earlier" doc:"A decided waiver of amounts the company deducted earlier as costs (pay or fees on 2120): tagged for the tax computation [verify]." example:"false"`
 	RepayTo          *PayeeAccount         `json:"repay_to,omitempty" doc:"A repayment: the account in force it is paid into, the linked member's own (FR-AP-22) or else the contact's (FR-CT-03), by its last four characters; absent while there is none."`
 	Repaid           *Money                `json:"repaid,omitempty" doc:"A decided repayment: what payment batches have repaid of it, net of voids; the rest is open for the next batch."`
 	Conversion       *SettlementConversion `json:"conversion,omitempty" doc:"A conversion's class, price and basis, capacity and measurement basis."`
+	SAFE             *SettlementSAFE       `json:"safe,omitempty" doc:"The safe route's instrument."`
 	Shares           *SettlementShares     `json:"shares,omitempty" doc:"A conversion: the whole shares RND-SHARE allots, what they convert and what stays owed."`
 	LapsesOn         string                `json:"lapses_on,omitempty" format:"date" doc:"An approved conversion not yet effective: the day the shareholders' approval lapses, the date by which the next AGM must be held [verify]; after it a new approval is needed." example:"2027-06-30"`
 	ShareIssue       *ShareIssue           `json:"share_issue,omitempty" doc:"An effective conversion: its share issue in the register."`
@@ -293,6 +300,13 @@ func settlementIn(ctx context.Context, u storage.UnitOfWork, d DirectorSettlemen
 			}
 		}
 	}
+	if x := d.SAFE; x != nil {
+		id, err := uuid.Parse(x.InstrumentID)
+		if err != nil {
+			fields = append(fields, FieldProblem{Code: CodeInvalid, Field: "body.safe.instrument_id", Message: "is not an ID", Fix: "Send the instrument's ID"})
+		}
+		s.SAFE = &director.SAFE{InstrumentID: id}
+	}
 	if len(fields) > 0 {
 		return s, invalid(fields)
 	}
@@ -369,6 +383,9 @@ func (a *API) settlementOf(ctx context.Context, u storage.UnitOfWork, v settleme
 	if w := s.Waiver; w != nil {
 		out.Waiver = &SettlementWaiver{CreditAccountID: w.CreditAccountID.String(), Capacity: w.Capacity, Reason: w.Reason}
 	}
+	if x := s.SAFE; x != nil {
+		out.SAFE = &SettlementSAFE{InstrumentID: x.InstrumentID.String()}
+	}
 	if out.Agreements, err = director.Attached(ctx, u, doc.ID); err != nil {
 		return DirectorSettlement{}, err
 	}
@@ -431,6 +448,12 @@ func (a *API) settlementOf(ctx context.Context, u storage.UnitOfWork, v settleme
 		switch {
 		case s.Route == director.RouteWaive:
 			e, err := u.Ledger().ByIdentity(ctx, ledger.DirectorWaiverIdentity(doc.ID, doc.Version, ledger.RuleDirectorWaiver))
+			if err != nil {
+				return DirectorSettlement{}, err
+			}
+			out.LedgerImpact = entryOf(e).Lines
+		case s.Route == director.RouteSAFE:
+			e, err := u.Ledger().ByIdentity(ctx, ledger.DirectorWaiverIdentity(doc.ID, doc.Version, ledger.RuleDirectorSAFE))
 			if err != nil {
 				return DirectorSettlement{}, err
 			}

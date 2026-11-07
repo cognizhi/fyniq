@@ -61,6 +61,7 @@
         "paid_out",
         "converted",
         "waived",
+        "safe",
         "other"
       ],
       "examples": [

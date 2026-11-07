@@ -156,3 +156,19 @@ def test_the_shapes_a_conversion_refuses():
     plain = Ledger(_company(*_round(), accounts=[_HOLDING])).result()
     assert plain["rejected"] == [] and _lines(plain, "EQ-0003") == [("2700", "124998.63", "SAFE-0001"),
                                                                       ("3010", "-124998.63", None)]
+
+
+# req: FR-EQ-05
+# req: FR-EQ-18
+def test_a_founders_balance_becomes_their_safe():
+    r = _run("safe-from-a-founder")
+    # DS-0090 names a SAFE P0003 holds; DS-0091 would take SAFE-0001 to S$1,000.01 (600.00 held + 400.01); P0002 is owed
+    # nothing and holds no SAFE; SAFE-0009 was never recorded; 3010 is not a director's account; and once 2500 is settled
+    # in full, nothing is owed for DS-0095's S$0.01.
+    assert r["rejected"] == ["DS-0090", "DS-0091", "DS-0092", "DS-0093", "DS-0094", "DS-0095"]
+    assert _lines(r, "DS-0001") == [("2500", "600.00", None), ("2700", "-600.00", "SAFE-0001")]
+    assert _lines(r, "DS-0002") == [("2500", "400.00", None), ("2700", "-400.00", "SAFE-0001")]
+    # 2500 nets to nothing (-1,000.00 lent, +600.00 and +400.00 settled); 2700 holds the SAFE's S$1,000.00.
+    tb = r["trial_balance"]
+    assert sum((Decimal(m.get("2500", "0")) for m in tb.values()), Decimal(0)) == Decimal("0.00")
+    assert sum((Decimal(m.get("2700", "0")) for m in tb.values()), Decimal(0)) == Decimal("-1000.00")

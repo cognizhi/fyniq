@@ -239,7 +239,28 @@ func (r originReader) of(l balance.PersonLine, amount money.Money) (string, erro
 		return ledger.OriginPaidPersonally, nil
 	case ledger.SourceDirectorFee: // a director's fee the shareholders voted (FR-EQ-04)
 		return ledger.OriginFee, nil
-	case ledger.SourceDirectorSettlement: // a waiver (FR-EQ-07)
+	case ledger.SourceDirectorSettlement: // a waiver (FR-EQ-07), or a balance turned into a SAFE or note (FR-EQ-05)
+		key := "settlement:" + l.Source.ID
+		route, ok := r.saved[key]
+		if !ok {
+			id, err := uuid.Parse(l.Source.ID)
+			if err != nil {
+				return ledger.OriginWaived, nil
+			}
+			doc, err := r.u.Documents().Version(r.ctx, id, l.Source.Version)
+			if err != nil {
+				return "", err
+			}
+			s, err := ReadSettlement(doc)
+			if err != nil {
+				return "", err
+			}
+			route = []string{s.Route}
+			r.saved[key] = route
+		}
+		if route[0] == RouteSAFE {
+			return ledger.OriginSAFE, nil
+		}
 		return ledger.OriginWaived, nil
 	case ledger.SourceDirectorRepayment: // repaid through a payment batch (FR-EQ-05), or its void
 		return ledger.OriginPaidOut, nil

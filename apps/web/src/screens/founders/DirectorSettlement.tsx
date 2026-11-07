@@ -18,6 +18,7 @@ import { listAccounts, type Account } from "../accounting/data";
 import { EvidencePanel } from "../accounting/JournalEvidence";
 import { accounts, owed } from "./DirectorAccounts";
 import { directorRoles } from "./data";
+import { formWords, listInstruments } from "../equity/instrumentWords";
 
 // Settle a director's balance (FR-EQ-05, FR-EQ-07, FM-9; p1-founders-money task 4.4, design D10): an Owner or the
 // Controller chooses how what the company owes a director or shareholder on 2500 or 2120 is settled, drafts it with its
@@ -31,12 +32,12 @@ type Route = Settlement["route"];
 const drafters = ["owner", "controller"];
 
 // The routes, in the PRD's order, with their plain consequences: general information, not advice.
-const routes: { route: Route | "safe"; title: string; words: string; later?: string }[] = [
+const routes: { route: Route; title: string; words: string; later?: string }[] = [
   { route: "repay", title: "Repay in cash", words: "The next payment batch pays it into their approved bank account, and the balance goes down. Not income for them." },
   { route: "keep", title: "Keep as a loan", words: "Nothing posts. The terms go in a loan note or board minute, and the balance is confirmed at each year end." },
   { route: "convert", title: "Convert to shares", words: "The balance becomes share capital on the date ACRA records the allotment. Needs the shareholders' approval, a board resolution, a conversion agreement and their balance confirmation." },
   { route: "waive", title: "Waive", words: "They give up the amount. It posts to capital contribution or other income, with a reason." },
-  { route: "safe", title: "Convert to a SAFE or note", words: "The amount turns into shares at the next priced round.", later: "Comes with the equity register" },
+  { route: "safe", title: "Convert to a SAFE or note", words: "The amount becomes the money of a SAFE or note they hold, recorded first under Equity. It posts to 2700 when approved, and turns into shares at the next priced round." },
 ];
 
 const routeTitle = (r: Route) => routes.find((x) => x.route === r)?.title ?? r;
@@ -59,11 +60,12 @@ type Form = {
   capacity: "shareholder" | "other";
   reason: string;
   conversion: { class_account_id: string; price: string; price_basis: NonNullable<Conversion["price_basis"]> | ""; capacity: Conversion["capacity"]; measurement: NonNullable<Conversion["measurement"]>; fair_value_price: string; difference_account_id: string; note: string };
+  instrument_id: string;
 };
 
 const blankConversion: Form["conversion"] = { class_account_id: "", price: "", price_basis: "", capacity: "lender", measurement: "carrying", fair_value_price: "", difference_account_id: "", note: "" };
 
-const blank = (route: Route, account: string): Form => ({ route, account_id: account, amount: "", interest_rate: "0", repay_on: "", subordinated: false, credit_account_id: "", capacity: "shareholder", reason: "", conversion: blankConversion });
+const blank = (route: Route, account: string): Form => ({ route, account_id: account, amount: "", interest_rate: "0", repay_on: "", subordinated: false, credit_account_id: "", capacity: "shareholder", reason: "", conversion: blankConversion, instrument_id: "" });
 
 // The price bases and capacities of a conversion, in the PRD's words (FR-EQ-06).
 const priceBases: Record<NonNullable<Conversion["price_basis"]>, string> = { latest_priced_round: "The latest priced round", valuation: "An independent valuation", unanimous: "A price every shareholder approves" };
@@ -83,6 +85,7 @@ function formOf(s: Settlement): Form {
     conversion: s.conversion
       ? { ...blankConversion, ...s.conversion, price_basis: s.conversion.price_basis ?? "", measurement: s.conversion.measurement ?? "carrying", fair_value_price: s.conversion.fair_value_price ?? "", difference_account_id: s.conversion.difference_account_id ?? "", note: s.conversion.note ?? "" }
       : blankConversion,
+    instrument_id: s.safe?.instrument_id ?? "",
   };
 }
 
@@ -133,14 +136,16 @@ function Impact({ s, codes, name }: { s: Settlement; codes: Map<string, Account>
         ? `Once approved, the next payment batch pays ${amount} to ${name}, and what the company owes them goes down by it.`
         : s.route === "convert"
           ? `When ACRA records the allotment, ${s.shares ? `${formatAmount(s.shares.converted.amount)} ${s.shares.converted.currency}` : amount} moves from what the company owes ${name} to their shareholding${s.shares && !isZero(s.shares.remainder.amount) ? `, and ${formatAmount(s.shares.remainder.amount)} ${s.shares.remainder.currency} stays owed` : ""}.`
-          : `${amount} stops being owed to ${name} and goes to ${codes.get(s.waiver?.credit_account_id ?? "")?.name ?? "the account chosen"}.`;
+          : s.route === "safe"
+            ? `${amount} stops being owed to ${name} and becomes the money of their SAFE or note, on 2700 until it converts into shares.`
+            : `${amount} stops being owed to ${name} and goes to ${codes.get(s.waiver?.credit_account_id ?? "")?.name ?? "the account chosen"}.`;
   return (
     <section className="fy-card" aria-labelledby="ds-impact">
       <div className="fy-card__head">
         <h2 className="fy-h3" id="ds-impact">
           {s.status === "decided" ? "What it posted" : "What it posts"}
         </h2>
-        {s.route === "waive" && <span className="fy-small fy-muted">On the day it is approved</span>}
+        {(s.route === "waive" || s.route === "safe") && <span className="fy-small fy-muted">On the day it is approved</span>}
         {s.route === "convert" && s.status !== "effective" && <span className="fy-small fy-muted">On the day ACRA registers it, never backdated</span>}
       </div>
       <div className="fy-card__body fy-stack fy-stack--2">
@@ -348,6 +353,7 @@ export function DirectorSettlement() {
   const mayDraft = (session.roles ?? []).some((r) => drafters.includes(r));
   const people = useQuery({ queryKey: ["director-accounts", ""], queryFn: () => accounts("") });
   const chart = useQuery({ queryKey: ["accounts", "all"], queryFn: listAccounts });
+  const safes = useQuery({ queryKey: ["instruments"], queryFn: listInstruments });
   const list = useQuery({
     queryKey: ["director-settlements", contactId],
     queryFn: async () => {
@@ -399,6 +405,7 @@ export function DirectorSettlement() {
     if (f.route === "waive" && !f.credit_account_id) errs.credit = "Choose the account the waiver credits.";
     if (f.route === "waive" && !f.reason.trim()) errs.reason = "Say why they waive it.";
     if (f.route === "convert" && !f.conversion.class_account_id) errs.class = "Choose the class of shares allotted.";
+    if (f.route === "safe" && !f.instrument_id) errs.instrument = "Choose the SAFE or note they hold.";
     if (f.route === "convert" && (!typed(f.conversion.price) || isZero(typed(f.conversion.price) ?? "0"))) errs.price = "Enter the price per share, such as 1.20.";
     setErrors(errs);
     if (Object.keys(errs).length > 0 || !amount) return;
@@ -409,6 +416,7 @@ export function DirectorSettlement() {
       route: f.route,
       ...(f.route === "keep" ? { terms: { interest_rate: typed(f.interest_rate) ?? "0", ...(f.repay_on ? { repay_on: f.repay_on } : {}), subordinated: f.subordinated } } : {}),
       ...(f.route === "waive" ? { waiver: { credit_account_id: f.credit_account_id, capacity: f.capacity, reason: f.reason.trim() } } : {}),
+      ...(f.route === "safe" ? { safe: { instrument_id: f.instrument_id } } : {}),
       ...(f.route === "convert"
         ? {
             conversion: {
@@ -533,7 +541,7 @@ export function DirectorSettlement() {
                       aria-checked={f.route === r.route}
                       aria-disabled={disabled || undefined}
                       disabled={disabled}
-                      onClick={() => r.route !== "safe" && set("route", r.route)}
+                      onClick={() => set("route", r.route)}
                     >
                       <span className="fy-radio" />
                       <span className="fy-stack fy-grow gap-1">
@@ -610,6 +618,25 @@ export function DirectorSettlement() {
                       ? `Paid into ${open.s.repay_to.bic} ••••${open.s.repay_to.account_number_last4} (${open.s.repay_to.account_name}) by the next payment batch.`
                       : `Paid by the next payment batch into ${name}'s approved bank account: their own if a member is linked to them, else their contact's bank details.`}
                   </p>
+                )}
+                {f.route === "safe" && (
+                  <div className="fy-field fy-span-2">
+                    <label className="fy-label" htmlFor={`${id}-instrument`}>
+                      The SAFE or note
+                    </label>
+                    <select className="fy-input" id={`${id}-instrument`} value={f.instrument_id} onChange={(e) => set("instrument_id", e.target.value)} {...field("instrument")}>
+                      <option value="">Choose</option>
+                      {(safes.data ?? [])
+                        .filter((i) => i.holder_id === contactId && i.status === "recorded" && !i.conversion)
+                        .map((i) => (
+                          <option key={i.id} value={i.id}>
+                            {formWords[i.form]} · {formatAmount(i.amount)} {i.currency} · signed {date(i.signed_on)}
+                          </option>
+                        ))}
+                    </select>
+                    {error("instrument")}
+                    <span className="fy-help">Record it first under Equity › SAFEs and notes, with the signed copy; its amount is at most what they still have to pay under it.</span>
+                  </div>
                 )}
                 {f.route === "waive" && (
                   <>
