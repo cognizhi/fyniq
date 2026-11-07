@@ -1,0 +1,28 @@
+case,obligation,anchor,condition,want,why,source
+DL-01,gst_f5,2027-03-31,,2027-04-30,"the Jan to Mar quarter is due on 30 Apr",iras-gst-due
+DL-02,gst_f5,2027-06-30,,2027-07-31,"the Apr to Jun quarter is due on 31 Jul: a month's last day gives the next month's last day",iras-gst-due
+DL-03,gst_f5,2027-09-30,,2027-10-31,"the Jul to Sep quarter is due on 31 Oct",iras-gst-due
+DL-04,gst_f5,2026-12-31,,2027-01-31,"the Oct to Dec quarter is due on 31 Jan",iras-gst-due
+DL-05,gst_f5,2027-07-05,,2027-08-05,"a special period ending on 5 Jul is due on 5 Aug, as IRAS's example of 5 Apr to 5 Jul 2026",iras-gst-due
+DL-06,gst_f5,2026-11-30,,2027-01-09,"a monthly period ending 30 Nov 2026 is due on 31 Dec 2026, within 22 Dec 2026 to 3 Jan 2027, so on 9 Jan 2027",iras-gst-due iras-mytax-downtime
+DL-07,gst_f5,2026-10-05,,none,"a special period due on 5 Nov 2026, before the rules were read on 7 Nov 2026: the rule in force then is not recorded",iras-gst-due
+DL-08,cpf,2026-10-31,,2026-11-16,"October 2026's contributions: 14 Nov 2026 is a Saturday, so the next working day, Monday 16 Nov",cpf-due mom-holidays
+DL-09,cpf,2026-11-30,,2026-12-14,"November 2026's contributions: 14 Dec 2026 is a Monday",cpf-due mom-holidays
+DL-10,cpf,2027-01-31,,2027-02-15,"January 2027's contributions: 14 Feb 2027 is a Sunday, so Monday 15 Feb",cpf-due mom-holidays
+DL-11,cpf,2027-12-31,,none,"December 2027's contributions fall on 14 Jan 2028, a year whose public holidays the pack does not hold",cpf-due mom-holidays
+DL-12,ir8a_ais,2026-12-31,,2027-03-01,"2026's employment income is submitted by 1 Mar 2027",iras-ais
+DL-13,eci,2027-03-31,,2027-06-30,"a financial year ending 31 Mar is due 30 Jun, as IRAS's example of 31 Mar 2025 and 30 Jun 2025",iras-eci
+DL-14,eci,2026-12-31,,2027-03-31,"a financial year ending 31 Dec is due 31 Mar, as IRAS's example of 31 Dec 2024 and 31 Mar 2025",iras-eci
+DL-15,form_cs,2026-12-31,,2027-11-30,"a financial year ending in 2026 is the basis period of YA 2027, filed by 30 Nov 2027",iras-cit-basics
+DL-16,form_cs,2027-03-31,,2028-11-30,"a financial year ending 31 Mar 2027 is the basis period of YA 2028, filed by 30 Nov 2028",iras-cit-basics
+DL-17,annual_return,2026-12-31,overseas_branch_register=false,2027-07-31,"seven months after a 31 Dec 2026 year end",acra-annual-return
+DL-18,annual_return,2026-12-31,overseas_branch_register=true,2027-08-31,"eight months with an overseas branch register",acra-annual-return
+DL-19,annual_return,2027-06-30,overseas_branch_register=false,2028-01-31,"seven months after a 30 Jun 2027 year end: a month's last day",acra-annual-return
+DL-20,agm,2026-12-31,agm_route=hold,2027-06-30,"six months after a 31 Dec 2026 year end",acra-agm
+DL-21,agm,2026-12-31,agm_route=dispensed,none,"all members resolved to dispense with the AGM: no AGM is due",acra-agm
+DL-22,statements_to_members,2026-12-31,agm_route=send_statements,2027-05-31,"the financial statements sent within five months, so no AGM is held",acra-agm
+DL-23,gst_register_retrospective,2026-12-31,,2027-01-30,"a calendar year 2026 above the threshold: apply between 1 Jan and 30 Jan 2027",iras-register
+DL-24,gst_starts_retrospective,2026-12-31,,2027-03-01,"registered on 1 Mar of the following year",iras-register
+DL-25,gst_register_prospective,2026-11-15,,2026-12-15,"apply within 30 days after the date of the forecast",iras-register
+DL-26,gst_starts_prospective,2026-11-15,,2027-01-15,"registered 2 months from the date of the forecast",iras-register
+DL-27,gst_starts_prospective,2026-09-06,,none,"registered from 6 Nov 2026, before the rules were read: the rule in force then is not recorded",iras-register

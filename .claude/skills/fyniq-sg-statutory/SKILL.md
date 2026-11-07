@@ -11,10 +11,13 @@ Fyniq stores every statutory value as **data in an effective-dated, versioned pa
 engine picks the version in force at each document's tax point or pay month (ENG-30/31).
 Changing a future rate never changes the past.
 
-> **Status (20 Oct 2026):** the pack format, its loader and validator (`internal/domain/pack`), the
-> global pack tables (migrations 000033–000034, loaded by `migrate up`) and `sg-gst@2026.1` exist
-> (`p1-statutory-packs`). Activation waits for the approval engine; `sg-deadlines`, `sg-cpf`,
-> `sg-sdl` and `sg-shg` are still to write. Keep this skill in step as they land.
+> **Status (7 Nov 2026):** the pack format, its loader and validator (`internal/domain/pack`), the
+> global pack tables (migrations 000033–000034, loaded by `migrate up`), `sg-gst` (2026.3 adds the
+> registration threshold) and `sg-deadlines@2026.1` (the statutory calendar's due-date rules, Singapore's
+> public holidays for 2026 and 2027, one-off extensions; `p1-gst`) exist. Activation waits for the
+> approval engine; `sg-cpf`, `sg-sdl` and `sg-shg` are still to write. Keep this skill in step as they land.
+> **Every January**, add the new year's public holidays from MOM's page to a new `sg-deadlines` version:
+> a working day in a year without them is Not assessed, so CPF items stop at the year's end.
 
 ## Principle: official sources only
 
@@ -46,7 +49,7 @@ payslip.
 | `sg-shg` | Tables per fund by wage band; opt-out rules | Pay month |
 | `sg-levy` | Foreign worker levy rates by pass type and tier | Month |
 | `sg-cit` | Rate, SUTE/PTE tiers and conditions, rebate and cap per YA, Form C-S / C-S Lite thresholds | Year of Assessment |
-| `sg-calendar` | Rules that generate deadlines from the FY, GST periods and payroll (CMP-02) | Organisation settings |
+| `sg-deadlines` | Rules that give each obligation's date from its anchor (FY end, GST period end, month end, calendar year end, a GST forecast): months forward with month ends kept, a day of the month, days; one-off extensions; Singapore's public holidays for the next-working-day roll (CMP-02, `pack.DueOn`) | The date the rule gives, and the organisation's settings (AGM route, overseas branch register) |
 
 **Layout** (PRD-001 ENG-30, rev 0.37): `packs/<pack>/<year>.<n>/`, as `packs/sg-gst/2026.1/` shows:
 

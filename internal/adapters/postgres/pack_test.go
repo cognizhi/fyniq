@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"slices"
 	"testing"
 
 	"github.com/google/uuid"
@@ -28,21 +29,38 @@ func TestTheMigratorLoadsTheShippedPacksOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var gst1, deadlines pack.Version
+	for _, v := range versions {
+		switch v.ID {
+		case "sg-gst@2026.1":
+			gst1 = v
+		case "sg-deadlines@2026.1":
+			deadlines = v
+		}
+	}
 	var id, digest string
-	var rates, pinned int
+	var rates, pinned, holidays int
 	c := conn(t, "fyniq_api")
 	if err := c.QueryRow(ctx, "SELECT id, digest FROM fyniq.statutory_pack_versions WHERE id = 'sg-gst@2026.1'").Scan(&id, &digest); err != nil {
 		t.Fatal(err)
 	}
-	if digest != versions[0].Digest {
-		t.Errorf("loaded digest %s; the shipped version's is %s", digest, versions[0].Digest)
+	if digest != gst1.Digest {
+		t.Errorf("loaded digest %s; the shipped version's is %s", digest, gst1.Digest)
 	}
 	if err := c.QueryRow(ctx, `SELECT count(*) FILTER (WHERE table_name = 'rates' AND NOT pinned), count(*) FILTER (WHERE pinned)
   FROM fyniq.statutory_pack_rows WHERE version_id = 'sg-gst@2026.1'`).Scan(&rates, &pinned); err != nil {
 		t.Fatal(err)
 	}
-	if rates != len(versions[0].Tables["rates"].Rows) || pinned == 0 {
+	if rates != len(gst1.Tables["rates"].Rows) || pinned == 0 {
 		t.Errorf("loaded %d rates and %d pinned cases", rates, pinned)
+	}
+	// The statutory calendar's pack loads too (FR-TAX-07): its public holidays, one row each.
+	if err := c.QueryRow(ctx, `SELECT count(*) FROM fyniq.statutory_pack_rows
+  WHERE version_id = 'sg-deadlines@2026.1' AND table_name = 'holidays' AND NOT pinned`).Scan(&holidays); err != nil {
+		t.Fatal(err)
+	}
+	if holidays != len(deadlines.Tables["holidays"].Rows) || holidays == 0 {
+		t.Errorf("loaded %d public holidays; the shipped version has %d", holidays, len(deadlines.Tables["holidays"].Rows))
 	}
 	var rate string
 	if err := c.QueryRow(ctx, `SELECT cells->>'rate' FROM fyniq.statutory_pack_rows
@@ -57,7 +75,8 @@ func TestTheMigratorLoadsTheShippedPacksOnce(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if len(vs) == 0 || vs[0].ID != "sg-gst@2026.1" || vs[0].Digest != versions[0].Digest || vs[0].EffectiveFrom.Format("2006-01-02") != "1994-04-01" {
+		i := slices.IndexFunc(vs, func(x storage.PackVersion) bool { return x.ID == "sg-gst@2026.1" })
+		if len(vs) != len(versions) || i < 0 || vs[i].Digest != gst1.Digest || vs[i].EffectiveFrom.Format("2006-01-02") != "1994-04-01" {
 			t.Errorf("the port reads %+v", vs)
 		}
 		as, err := uow.Packs().Activations(ctx)
@@ -73,7 +92,7 @@ func TestTheMigratorLoadsTheShippedPacksOnce(t *testing.T) {
 	if err := postgres.LoadShippedPacks(ctx, db.URL("fyniq_migrator"), io.Discard); err != nil {
 		t.Fatalf("loading the same packs again: %v", err)
 	}
-	changed := versions[0]
+	changed := gst1
 	changed.Digest = "0000000000000000000000000000000000000000000000000000000000000000"
 	err = postgres.LoadPacks(ctx, db.URL("fyniq_migrator"), []pack.Version{changed}, io.Discard)
 	var se *storage.Error

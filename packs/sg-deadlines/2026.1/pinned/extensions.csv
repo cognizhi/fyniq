@@ -1,0 +1,6 @@
+case,obligation,due,want,why,source
+EX-01,gst_f5,2026-12-21,2026-12-21,the day before the window,iras-mytax-downtime
+EX-02,gst_f5,2026-12-22,2027-01-09,the window's first day,iras-mytax-downtime
+EX-03,gst_f5,2027-01-03,2027-01-09,the window's last day,iras-mytax-downtime
+EX-04,gst_f5,2027-01-04,2027-01-04,the day after the window,iras-mytax-downtime
+EX-05,eci,2026-12-31,2026-12-31,the extension is for GST F5 and F8 only,iras-mytax-downtime

@@ -123,6 +123,20 @@ var Schemas = map[string]Schema{
 		},
 		Since: map[string][2]int{"limits": {2026, 2}}, // the simplified-invoice limit (FR-AP-20; rev 0.89)
 	},
+	// The statutory calendar's dates (FR-TAX-07, CMP-02; rev 0.208).
+	"sg-deadlines": {
+		Tables: map[string][]string{
+			"rules": {"obligation", "area", "kind", "anchor", "months", "day", "days", "roll", "condition", "effective_from", "effective_to",
+				"description", "source"},
+			"holidays":   {"date", "name", "observed", "source"},
+			"extensions": {"obligation", "due_from", "due_to", "due_on", "source"},
+		},
+		Pinned: map[string][]string{
+			"due_dates":    {"case", "obligation", "anchor", "condition", "want", "why", "source"},
+			"working_days": {"case", "date", "want", "why", "source"},
+			"extensions":   {"case", "obligation", "due", "want", "why", "source"},
+		},
+	},
 }
 
 // holds reports whether version v of a pack holds the table name of s.
@@ -374,8 +388,11 @@ func Load(fsys fs.FS, dir string) (Version, error) {
 		readTables(m.Tables, schema.Tables, v.Tables, "tables")
 		readTables(m.Pinned, schema.Pinned, v.Pinned, "pinned")
 	}
-	if v.Pack == "sg-gst" {
+	switch v.Pack {
+	case "sg-gst":
 		out = append(out, checkGST(dir, v)...)
+	case "sg-deadlines":
+		out = append(out, checkDeadlines(dir, v)...)
 	}
 	if len(out) > 0 {
 		return Version{}, out

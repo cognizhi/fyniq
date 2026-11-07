@@ -1,0 +1,14 @@
+obligation,area,kind,anchor,months,day,days,roll,condition,effective_from,effective_to,description,source
+gst_f5,tax,deadline,gst_period_end,1,,0,none,,2026-11-07,,GST F5 return and payment: one month after the end of the accounting period,iras-gst-due
+cpf,payroll,deadline,month_end,1,14,0,next_working_day,,2026-11-07,,"CPF contributions for the month, due on its last day: paid by the 14th of the next month, or the next working day, before enforcement and late-payment interest",cpf-due mom-holidays
+ir8a_ais,payroll,deadline,calendar_year_end,3,1,0,none,,2026-11-07,,The calendar year's employment income submitted to IRAS under the Auto-Inclusion Scheme: by 1 March,iras-ais
+eci,tax,deadline,fy_end,3,,0,none,,2026-11-07,,"Estimated chargeable income: within 3 months from the end of the financial year, unless waived (revenue of $5 million or below and ECI nil)",iras-eci
+form_cs,tax,deadline,fy_end_year_end,11,30,0,none,,2026-11-07,,"Form C-S, C-S (Lite) or C for the year of assessment after the year the financial year ends in: by 30 November",iras-cit-basics
+annual_return,corporate,deadline,fy_end,7,,0,none,overseas_branch_register=false,2026-11-07,,The annual return to ACRA: within seven months after the financial year end,acra-annual-return
+annual_return,corporate,deadline,fy_end,8,,0,none,overseas_branch_register=true,2026-11-07,,The annual return to ACRA with an overseas branch register: within eight months after the financial year end,acra-annual-return
+agm,corporate,deadline,fy_end,6,,0,none,agm_route=hold,2026-11-07,,The annual general meeting: within six months after the financial year end,acra-agm
+statements_to_members,corporate,deadline,fy_end,5,,0,none,agm_route=send_statements,2026-11-07,,"The financial statements sent to all members within five months after the financial year end, so no AGM is held",acra-agm
+gst_register_retrospective,tax,deadline,calendar_year_end,1,30,0,none,,2026-11-07,,"Apply for GST registration after a calendar year above the threshold: by 30 January of the next year",iras-register
+gst_starts_retrospective,tax,starts,calendar_year_end,3,1,0,none,,2026-11-07,,"Registered for GST after a calendar year above the threshold: from 1 March of the next year",iras-register
+gst_register_prospective,tax,deadline,forecast_on,0,,30,none,,2026-11-07,,Apply for GST registration after a forecast above the threshold: within 30 days after the date of the forecast,iras-register
+gst_starts_prospective,tax,starts,forecast_on,2,,0,none,,2026-11-07,,"Registered for GST after a forecast above the threshold made on or after 1 Jul 2025: 2 months from the date of the forecast",iras-register
