@@ -185,6 +185,10 @@ it over; the founder pay choice is recorded from go-live, the pay run's part and
 `RND-SHARE` moves to it from `p1-equity-register`, since a conversion needs it first. It was built the same day, in
 #363 to #380 (PRD-001 rev 0.168), except what waits for `p1-equity-register` (the SAFE or note route, cash issues),
 `p1-payroll-link` (deferred pay in the pay run, C.2 #24) and `p1-gst` (the "before GST registration" flag).
+`p1-gst` is proposed (7 Nov 2026) for its launch part: the registration monitor and the statutory calendar, with two
+packs (`sg-gst@2026.3`, `sg-deadlines@2026.1`). By the owner's decisions of the same day (PRD-001 rev 0.208): ⚠ at 80% of
+the threshold; filings recorded under a new Appendix D row, Statutory calendar; CPF and IR8A/AIS from the setting Pays
+staff until `p1-payroll-link`. The F5 return and its corrections stay in its tasks until registration (question 2).
 
 **Wave 5 · Reports, planning, checks and compliance.**
 
