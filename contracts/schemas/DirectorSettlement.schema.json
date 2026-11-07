@@ -137,12 +137,17 @@
         "keep",
         "repay",
         "convert",
-        "waive"
+        "waive",
+        "safe"
       ],
       "examples": [
         "keep"
       ],
       "type": "string"
+    },
+    "safe": {
+      "$ref": "SettlementSAFE.schema.json",
+      "description": "The safe route's instrument."
     },
     "share_issue": {
       "$ref": "ShareIssue.schema.json",

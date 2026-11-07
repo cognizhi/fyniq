@@ -1,0 +1,31 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "equity-safe-from-a-founder",
+ "base_currency": "SGD",
+ "currencies": {"SGD": 2},
+ "as_of": "2027-03-31",
+ "settings": {"accounts": {"gst": "2200", "director_loan": "2500"}, "money_accounts": {"1010": "SGD"}, "books_start": "2027-01-01"},
+ "people": ["P0001", "P0002"],
+ "subscribers": ["P0003"],
+ "accounts": [
+  {"code": "1010", "type": "asset", "group": false, "active": true},
+  {"code": "2200", "type": "liability", "group": false, "active": true},
+  {"code": "2500", "type": "liability", "group": false, "active": true, "role": "director-loan"},
+  {"code": "2700", "type": "liability", "group": false, "active": true, "role": "convertible-instruments"},
+  {"code": "3010", "type": "equity", "group": false, "active": true, "role": "share-capital"}
+ ],
+ "documents": [
+  {"type": "manual_journal", "id": "JNL-0001", "version": 1, "date": "2027-01-05", "memo": "", "lines": [{"account": "1010", "currency": "SGD", "amount": "1000.00"}, {"account": "2500", "currency": "SGD", "amount": "-1000.00", "party": "P0001", "origin": "lent"}]},
+  {"type": "instrument", "id": "SAFE-0001", "version": 1, "date": "2027-01-10", "person": "P0001", "form": "post_money_safe", "amount": "1000.00", "valuation_cap": "2500000", "class": "3010", "price_decimals": 4},
+  {"type": "instrument", "id": "SAFE-0002", "version": 1, "date": "2027-01-10", "person": "P0003", "form": "mfn_safe", "amount": "500.00", "class": "3010", "price_decimals": 2},
+  {"type": "director_safe", "id": "DS-0001", "version": 1, "date": "2027-01-15", "person": "P0001", "account": "2500", "instrument": "SAFE-0001", "amount": "600.00"},
+  {"type": "director_safe", "id": "DS-0090", "version": 1, "date": "2027-01-16", "person": "P0001", "account": "2500", "instrument": "SAFE-0002", "amount": "100.00"},
+  {"type": "director_safe", "id": "DS-0091", "version": 1, "date": "2027-01-16", "person": "P0001", "account": "2500", "instrument": "SAFE-0001", "amount": "400.01"},
+  {"type": "director_safe", "id": "DS-0092", "version": 1, "date": "2027-01-16", "person": "P0002", "account": "2500", "instrument": "SAFE-0001", "amount": "100.00"},
+  {"type": "director_safe", "id": "DS-0093", "version": 1, "date": "2027-01-16", "person": "P0001", "account": "2500", "instrument": "SAFE-0009", "amount": "100.00"},
+  {"type": "director_safe", "id": "DS-0094", "version": 1, "date": "2027-01-16", "person": "P0001", "account": "3010", "instrument": "SAFE-0001", "amount": "100.00"},
+  {"type": "director_safe", "id": "DS-0002", "version": 1, "date": "2027-02-01", "person": "P0001", "account": "2500", "instrument": "SAFE-0001", "amount": "400.00"},
+  {"type": "director_safe", "id": "DS-0095", "version": 1, "date": "2027-02-02", "person": "P0001", "account": "2500", "instrument": "SAFE-0001", "amount": "0.01"}
+ ],
+ "reversals": []
+}

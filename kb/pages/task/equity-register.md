@@ -4,7 +4,7 @@ type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
 summary: The cap table at any day, holders (last 4 characters only), share classes, equity transactions made effective with ACRA, and SAFE conversions at a round
 sources:
-  - docs/user-guide/equity-register.md sha256:29e00ac43625e3c5909ea1618bf1cc07ac5ad6bfc6b67f28c73261b26a36fd06
+  - docs/user-guide/equity-register.md sha256:e0c27add28ada0b9f68049db072a95855c3f1fe2099be84d0a984d2b7c0bc154
 data_class: general
 taint: trusted
 status: published
@@ -226,7 +226,10 @@ aliases:
   Owner or the Controller records it, never the holder.
 - Its money comes in on a bank line categorised to 2700, choosing the recorded instrument under
   **SAFE or note** ([[banking.categorise]]); a repayment out the same way. A line to 2700 naming no
-  recorded instrument is refused.
+  recorded instrument is refused. A founder's balance can become its money: settle it on Director
+  accounts with **Convert to a SAFE or note** ([[founders.director-accounts]]).
+- **Checks** warns when a recorded note is past its maturity, or shares were allotted for cash
+  after a SAFE was signed and it has not converted: draft its conversion, or settle the note.
 
 (src: docs/user-guide/equity-register.md#record-a-safe-or-note)
 

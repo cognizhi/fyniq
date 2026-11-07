@@ -620,7 +620,7 @@ From FR-EQ-18, Appendix B.7 ("SAFE or note received; converted"), `RND-SHARE`, A
 register's design D6 (`p1-equity-register`).
 
 ```json
-{"type": "instrument", "id": "SAFE-0001", "version": 1, "date": "2026-02-01", "person": "P0002",
+{"type": "instrument", "id": "SAFE-0001", "version": 1, "date": "2026-02-01", "person": "P0001",
  "form": "post_money_safe", "amount": "125000.00", "valuation_cap": "2500000", "class": "3010", "price_decimals": 4}
 ```
 
@@ -647,10 +647,23 @@ own:
 
 ```json
 {"type": "bank_transaction", "id": "BT-0103", "version": 1, "date": "2026-04-10", "account": "1010", "currency": "SGD",
- "amount": "155000.00", "person": "P0002", "instrument": "SAFE-0001",
+ "amount": "154900.00", "person": "P0002", "instrument": "SAFE-0001",
  "parts": [{"account": "2040", "amount": "30000.00", "gst_code": "NA"},
-           {"account": "2700", "amount": "125000.00", "gst_code": "NA"}]}
+           {"account": "2700", "amount": "124900.00", "gst_code": "NA"}]}
 ```
+
+A founder's balance may become a SAFE's money too (`director_safe`, `director_safe@1`; FR-EQ-05, FR-EQ-18):
+
+```json
+{"type": "director_safe", "id": "DS-0102", "version": 1, "date": "2026-04-10", "person": "P0001", "account": "2500",
+ "instrument": "SAFE-0001", "amount": "100.00"}
+```
+
+It posts on `date`, the day it was approved: Dr `account` (2500 or 2120, a director's account) with `amount`, at most
+what is owed there ("P1 readings"), the line naming `person`, one of `people`; Cr the instruments account with `amount`,
+the line naming `instrument`, a SAFE an earlier document recorded that `person` holds. It is rejected when the chart has
+no active instruments account or more than one, or when what the instruments account holds for the SAFE at the end of
+`date` (the credit of the lines naming it in the earlier documents), with `amount`, is more than the SAFE's `amount`.
 
 ```json
 {"type": "share_issue_cash", "id": "EQ-0104", "version": 1, "date": "2026-04-15", "person": "P0002", "class": "3010",
@@ -697,9 +710,10 @@ G4-044 ([`golden/safe-conversion.json`](golden/README.md)) pins it:
 - Two post-money SAFEs, S$125,000.00 at a S$2,500,000 cap and S$250,000.00 at S$5,000,000, at a round of S$5.00: f =
   0.1, cap prices 2.25 and 4.50, 55,555 shares each (S$124,998.75 and S$249,997.50).
 
-In the examples above, the round of 10,000 shares at S$3.00 follows the earlier examples' 250,083 shares (C₀), so the
-SAFE's cap price is 2,500,000 × 0.95 ÷ 250,083 = 9.4968…; the round's S$3.00 is lower, so it converts 41,666 shares
-for S$124,998.00, and S$2.00 stays on 2700.
+In the examples above, the SAFE's S$125,000.00 comes S$124,900.00 from the bank and S$100.00 from its holder's loan.
+The round of 10,000 shares at S$3.00 follows the earlier examples' 250,083 shares (C₀), so the SAFE's cap price is
+2,500,000 × 0.95 ÷ 250,083 = 9.4968…; the round's S$3.00 is lower, so it converts 41,666 shares for S$124,998.00, and
+S$2.00 stays on 2700.
 
 Readings the PRD leaves open, each [accountant to confirm]:
 

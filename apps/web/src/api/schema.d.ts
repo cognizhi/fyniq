@@ -18369,7 +18369,7 @@ export interface components {
              * @example lent
              * @enum {string}
              */
-            origin: "lent" | "paid_personally" | "pay" | "fee" | "paid_out" | "converted" | "waived" | "other";
+            origin: "lent" | "paid_personally" | "pay" | "fee" | "paid_out" | "converted" | "waived" | "safe" | "other";
             /**
              * @description The line reverses an earlier one.
              * @example false
@@ -18785,7 +18785,9 @@ export interface components {
              * @example keep
              * @enum {string}
              */
-            route: "keep" | "repay" | "convert" | "waive";
+            route: "keep" | "repay" | "convert" | "waive" | "safe";
+            /** @description The safe route's instrument. */
+            safe?: components["schemas"]["SettlementSAFE"];
             /** @description An effective conversion: its share issue in the register. */
             share_issue?: components["schemas"]["ShareIssue"];
             /** @description A conversion: the whole shares RND-SHARE allots, what they convert and what stays owed. */
@@ -18825,11 +18827,13 @@ export interface components {
             /** @description A conversion's class, price and basis, capacity and measurement basis. */
             conversion?: components["schemas"]["SettlementConversion"];
             /**
-             * @description keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); convert to shares, approved now and effective once ACRA registers the allotment (FR-EQ-06); or waive (FR-EQ-07). Left out, the organisation's default route (founders.default_route), keep.
+             * @description keep as a loan on terms; repay through a payment batch, into the person's approved SGD account at a Singapore bank (FOUNDER-32 while they have none); convert to shares, approved now and effective once ACRA registers the allotment (FR-EQ-06); waive (FR-EQ-07); or safe: turn it into a recorded SAFE or convertible note the person holds, Dr the director's account · Cr 2700 on approval (FR-EQ-18). Left out, the organisation's default route (founders.default_route), keep.
              * @example keep
              * @enum {string}
              */
-            route?: "keep" | "repay" | "convert" | "waive";
+            route?: "keep" | "repay" | "convert" | "waive" | "safe";
+            /** @description The safe route's instrument. */
+            safe?: components["schemas"]["SettlementSAFE"];
             /** @description A loan kept's terms. */
             terms?: components["schemas"]["SettlementTerms"];
             /** @description A waiver's account, capacity and reason. */
@@ -25694,7 +25698,7 @@ export interface components {
              * @example lent
              * @enum {string}
              */
-            origin: "lent" | "paid_personally" | "pay" | "fee" | "paid_out" | "converted" | "waived" | "other";
+            origin: "lent" | "paid_personally" | "pay" | "fee" | "paid_out" | "converted" | "waived" | "safe" | "other";
         };
         OwnerSuccession: {
             /**
@@ -30313,6 +30317,14 @@ export interface components {
              * @example Written resolution of 6 Oct 2026; board resolution of 8 Oct 2026
              */
             resolution_refs: string;
+        };
+        SettlementSAFE: {
+            /**
+             * Format: uuid
+             * @description The recorded SAFE or convertible note (listInstruments) the person holds; its money, with what 2700 holds for it already, is at most its amount.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a01
+             */
+            instrument_id: string;
         };
         SettlementShares: {
             /** @description What they convert: round(shares × price). */

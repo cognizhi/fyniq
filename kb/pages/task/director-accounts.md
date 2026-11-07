@@ -4,7 +4,7 @@ type: task
 title: Director accounts, each founder's statement, and naming the person on 2500 and 2120
 summary: 2500 and 2120 by person; marking directors, linking their member, naming the person on journal lines; statements and their PDF; the related-party schedule
 sources:
-  - docs/user-guide/director-accounts.md sha256:e4e63aa2f9bf7d3fdb768378e86091f5a734113b07b49b348a3f0cc7997239ba
+  - docs/user-guide/director-accounts.md sha256:a7e4ca1ff825f79d72cdd4c6009d2fbffb34880e4ac70e70014614e8bf765df9
 data_class: general
 taint: trusted
 status: published
@@ -96,16 +96,18 @@ aliases:
 ## Settle a balance
 
 - **Settle** on a person's card: choose **Repay in cash**, **Keep as a loan**, **Convert to
-  shares** or **Waive** (a SAFE or note comes later), the account it is owed on and the
-  amount, at most what is owed, then the details: a loan's interest and repayment day, or the
-  account a waiver credits, the capacity and why; **Save the draft**.
-  (src: docs/user-guide/director-accounts.md#settle-a-balance)
-- Check what it posts, attach the loan note, board minute or deed of waiver, then **Ask for
-  approval**. (src: docs/user-guide/director-accounts.md#settle-a-balance)
+  shares**, **Waive** or **Convert to a SAFE or note**, the account it is owed on and the amount,
+  at most what is owed, then the details: a loan's interest and repayment day; the account a
+  waiver credits, the capacity and why; or the SAFE or note they hold, recorded first under Equity
+  ([[equity.register]]); **Save the draft**. (src: docs/user-guide/director-accounts.md#settle-a-balance)
+- Check what it posts, attach the loan note, board minute, deed of waiver or signed SAFE or note,
+  then **Ask for approval**. (src: docs/user-guide/director-accounts.md#settle-a-balance)
 - An Owner or the Controller settles; another person who holds the approval right approves, never
   the person settled, and the accountant too when every other approver benefits. A loan kept posts
   nothing; a repayment goes in the next payment batch ([[founders.settle-balance]]); a waiver posts
-  on the day approved. (src: docs/user-guide/director-accounts.md#settle-a-balance)
+  on the day approved, and so does a balance into a SAFE or note: it moves to 2700 Convertible
+  notes / SAFE naming the instrument, at most the instrument's amount with what 2700 holds for it.
+  (src: docs/user-guide/director-accounts.md#settle-a-balance)
 
 ## Convert a balance to shares
 
@@ -167,7 +169,7 @@ aliases:
 - **Related parties** lists each director and shareholder with something to disclose as at the
   day chosen: what the company owes them on their loan and in deferred pay (a minus when they owe
   it), and in the financial year to that day the directors' fees owed to them, what was converted
-  to shares and what they waived. (src: docs/user-guide/director-accounts.md#the-related-party-schedule)
+  to shares or into a SAFE or note, and what they waived. (src: docs/user-guide/director-accounts.md#the-related-party-schedule)
 - **CSV** downloads it with a total, for the accountant and the notes to the financial statements;
   each download is in the audit trail. On the balance sheet a person who owes the company shows
   under staff and director advances, not under the loan, with no entry posted.
@@ -185,5 +187,7 @@ aliases:
 | The fee has no shareholders' resolution attached | Attach the resolution or minutes, then ask for approval |
 | The status has no evidence attached | Attach the ACRA business profile, then record it |
 | The fee is paid to you, so another person approves it | Ask another Owner or the Controller |
+| The SAFE or note is held by someone else (FOUNDER-28) | Choose one the person settling holds, or record theirs first |
+| 2700 holds the instrument's money already, and this is above its amount (FOUNDER-28) | Settle at most what it has still to be paid |
 
 (src: docs/user-guide/director-accounts.md#common-problems)
