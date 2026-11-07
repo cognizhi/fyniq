@@ -1,10 +1,10 @@
 ---
 key: equity.register
 type: task
-title: The equity register: holders, share classes and the equity transactions that move every share
-summary: Holders and their details (last 4 characters only), share classes, and equity transactions: drafted, approved, made effective with ACRA
+title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
+summary: The cap table at any day (compare, drill down, export), holders (last 4 characters only), share classes, and equity transactions made effective with ACRA
 sources:
-  - docs/user-guide/equity-register.md sha256:a06193665f7a05d05dfa599bbc28c290f0460b256e4ed3c29b58434d0663bee2
+  - docs/user-guide/equity-register.md sha256:635ea237ac67d0d76148d9262f037f1d0801ab3ffee598c5b3467d921d0a907b
 data_class: general
 taint: trusted
 status: published
@@ -13,6 +13,15 @@ compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
 compiled_at: 2026-11-07
 aliases:
+  - cap table
+  - who owns the company
+  - ownership percentage
+  - my holding
+  - shareholding
+  - fully diluted
+  - voting percentage
+  - compare cap table
+  - export cap table
   - equity register
   - register of members
   - shareholders
@@ -49,19 +58,61 @@ aliases:
   - refund a subscription
 ---
 
-# The equity register: holders, their recorded details and share classes
+# The equity register: who owns the company, holders, share classes and transactions
 
 ## What it is
 
 - **Equity** is the company's register of who owns it: shareholders and investors, share classes
-  with their rights, and the equity transactions that move every share. It is an Expert feature.
-- Tabs move between **Holders**, **Classes** and **Transactions** (with the register of share
-  issues); the cap table, SAFEs and notes, the option pool and rounds join them later.
+  with their rights, and the equity transactions that move every share. Its first page, **Who owns
+  the company**, is the cap table, in Basic and Expert mode.
+- Tabs move between **Cap table**, **Holders**, **Classes** and **Transactions** (with the
+  register of share issues), the last three Expert pages; SAFEs and notes, the option pool and
+  rounds join them later.
 - Holders and classes post no entry; share capital changes only through the register of share
   issues, the opening balances and a conversion between classes on different accounts
   ([[founders.director-accounts]]).
 
 (src: docs/user-guide/equity-register.md#what-it-is)
+
+## The cap table
+
+- **Equity › Cap table**, **Who owns the company**, shows who owns what on a day, computed from the
+  register: shares issued before the books start, and each equity transaction from the day ACRA's
+  register shows it. It cannot be edited; to change a holding, draft an equity transaction.
+- **As at** picks the day (empty is today). **Ownership** is a bar with a legend, or a table with
+  **Table**: each percentage is exact and shown to 2 decimals, so they do not always add up to
+  100.00.
+- **My holding** is the shareholder you sign in as, linked on Directors' accounts
+  ([[founders.director-accounts]]); **Latest round** the most recent issue for cash; a note lists
+  transactions approved and waiting for ACRA, whose shares count only once registered.
+- Basic lists each shareholder, type of share, shares and what they own. Expert's **By holder and
+  class** shows issued, the percentage of shares and of votes, and fully diluted (the same as issued
+  until SAFEs, notes or an option pool are recorded). **Votes assumed**: the class is not recorded
+  yet, so its shares count one vote each.
+- A Board viewer sees only their own holding.
+
+(src: docs/user-guide/equity-register.md#the-cap-table)
+
+## Compare two days
+
+- Expert: **Compare with** takes a second day; **Since** shows the shares issued on each day and
+  each holder's percentage then and now (0.00% for someone who held nothing).
+
+(src: docs/user-guide/equity-register.md#compare-two-days)
+
+## See where a figure comes from
+
+- Expert: select a holding's shares in **By holder and class** to list its movements, oldest
+  first: each equity transaction, opened to see its evidence, or the register of share issues.
+
+(src: docs/user-guide/equity-register.md#see-where-a-figure-comes-from)
+
+## Export the cap table
+
+- **Excel** (a sheet of holdings and a sheet of holders, each with a total) or **PDF** (to print),
+  at the day shown; each export is recorded in the audit trail with its day, format and hash.
+
+(src: docs/user-guide/equity-register.md#export-the-cap-table)
 
 ## Holders
 
@@ -178,5 +229,6 @@ aliases:
   day. EQUITY-09: no share application monies account, add 2040. EQUITY-10: a step its transaction
   does not take, or dated after today.
 - A transaction that moves your own shares is approved by another Owner or the Controller.
+- REPORT-08: the render service did not make the PDF; try again, or export to Excel.
 
 (src: docs/user-guide/equity-register.md#common-problems)
