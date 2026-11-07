@@ -261,6 +261,58 @@ describe("the Inbox", () => {
   });
 });
 
+describe("the Inbox's keys", () => {
+  // req: FR-UX-03
+  // req: NFR-A11Y-02
+  // req: experience/navigation Triage shortcuts
+  // req: experience/navigation A opens the approval confirmation
+  // req: experience/navigation Keys only where they belong (rev 0.192)
+  it("moves with J and K, opens a request's approval to confirm with A, and never decides one that is not yours", async () => {
+    const second = { ...request, id: "a-3", summary: "Change the retention to 7 years" };
+    const theirs = { ...request, id: "a-4", summary: "Pay bill B-7", you_may_approve: false };
+    answer({
+      "GET /v1/approvals": { status: 200, body: { items: [request, second, theirs] } },
+      "GET /v1/review-log": { status: 200, body: { items: [], unreviewed: 0, overdue: 0 } },
+    });
+    const { router } = renderPage(Inbox, { path: "/inbox" });
+    const toApprove = await screen.findByRole("list", { name: "To approve" });
+    const [first, next] = within(toApprove).getAllByRole("link");
+    first?.focus();
+    fireEvent.keyDown(first as HTMLElement, { key: "j" });
+    expect(document.activeElement).toBe(next);
+    fireEvent.keyDown(next as HTMLElement, { key: "k" });
+    expect(document.activeElement).toBe(first);
+    fireEvent.click(screen.getByRole("button", { name: /Keyboard: J and K move/ }));
+    expect(within(screen.getByLabelText("Inbox keys")).getByText("Open its approval to confirm")).toBeTruthy();
+    const other = within(screen.getByRole("list", { name: "Waiting for others" })).getByRole("link");
+    other.focus();
+    fireEvent.keyDown(other, { key: "a" });
+    expect(screen.getByRole("status").textContent).toBe("This request is not yours to decide: E opens it.");
+    expect(router.state.location.pathname).toBe("/inbox");
+    first?.focus();
+    fireEvent.keyDown(first as HTMLElement, { key: "a" });
+    await waitFor(() => expect(router.state.location.pathname).toBe("/approvals/a-1"));
+    expect(router.state.location.search).toEqual({ decide: "approve" });
+    await noViolations(document.body);
+  });
+
+  // req: FR-UX-03
+  it("opens the approval's confirmation when the Inbox's A brought it, only for a person who may decide", async () => {
+    detail();
+    renderPage(ApprovalPage, { path: "/approvals/a-1?decide=approve", route: "/approvals/$approvalId" });
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(hash)).toBeTruthy();
+    expect(calls()).not.toContain("POST /v1/approvals/a-1/approve");
+  });
+
+  it("does not open it for a request that is not theirs to decide", async () => {
+    detail({}, { ...request, you_may_approve: false });
+    renderPage(ApprovalPage, { path: "/approvals/a-1?decide=approve", route: "/approvals/$approvalId" });
+    expect(await screen.findByRole("heading", { level: 1, name: request.summary })).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
 // req: FR-AP-13
 describe("the Inbox's bills to pay", () => {
   it("lists the bills to pay soon for whoever records payments; axe finds nothing", async () => {

@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useParams, useSearch } from "@tanstack/react-router";
 import { Check, ChevronLeft, CircleCheck, CircleX, Fingerprint, Undo2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
 import { Button } from "../../components/ui/button";
@@ -125,6 +125,18 @@ export function ApprovalPage() {
   const { session } = useSignedIn();
   const q = useQuery({ queryKey: ["approval", approvalId], queryFn: () => getApproval(approvalId) });
   const [decision, setDecision] = useState<"approve" | "reject" | null>(null);
+  // The Inbox's A and R open a request with its confirmation showing (FR-UX-03): the confirmation still decides, with
+  // step-up where it is needed, and only for a person this request lets decide.
+  const { decide } = useSearch({ strict: false }) as { decide?: string };
+  const asked = useRef(false);
+  useEffect(() => {
+    const a = q.data?.approval;
+    if (asked.current || !a || a.status !== "pending" || !a.you_may_approve) return;
+    if (decide === "approve" || decide === "reject") {
+      asked.current = true;
+      setDecision(decide);
+    }
+  }, [q.data, decide]);
   const [withdrawing, setWithdrawing] = useState(false);
   const [done, setDone] = useState("");
   const approve = helpText("approval.approve");

@@ -39,6 +39,22 @@ Only one request waits for each setting or person at a time.
 
 The Inbox never approves anything by itself: every decision goes through the confirmation.
 
+### From the keyboard
+
+While a request in the Inbox has the focus, these keys work (they never fire while you type in a
+field):
+
+| Key | Does |
+|---|---|
+| J or ↓, K or ↑ | Moves to the next or the previous request |
+| E or Enter | Opens it |
+| A | Opens it with its approval's confirmation showing |
+| R | Opens it with its rejection's confirmation showing |
+| ? | Shows or hides these keys |
+
+A and R only open the confirmation: you still confirm, with your passkey or by confirming it's you.
+On a request that is not yours to decide, they do nothing but say so.
+
 Your approval signs exactly what you were shown. Fyniq records who approved, when, and how they
 confirmed it was them, in the audit trail.
 

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { ChevronRight, ClipboardCheck, ClockAlert, Inbox as InboxIcon, Stamp } from "lucide-react";
-import { useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ChevronRight, ClipboardCheck, ClockAlert, Inbox as InboxIcon, Keyboard, Stamp } from "lucide-react";
+import { useState, type KeyboardEvent } from "react";
 import { api } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
 import { date, dateTime } from "../../format/date";
@@ -29,7 +29,7 @@ async function reviewSummary() {
 function Row({ a, mine }: { a: Approval; mine: boolean }) {
   return (
     <li>
-      <Link className="fy-list__item" to="/approvals/$approvalId" params={{ approvalId: a.id }}>
+      <Link className="fy-list__item" to="/approvals/$approvalId" params={{ approvalId: a.id }} data-approval={a.id} data-decides={a.status === "pending" && a.you_may_approve}>
         <span className={a.you_may_approve ? "fy-list__icon fy-list__icon--brand" : "fy-list__icon"}>
           <Icon of={Stamp} size={20} />
         </span>
@@ -69,6 +69,18 @@ function Group({ id, title, items, empty, mine }: { id: string; title: string; i
   );
 }
 
+// The triage keys (FR-UX-03), active only while a request in the list has focus, so they never fire in a text field and
+// need no switch to turn them off (WCAG 2.2 SC 2.1.4): J or ↓ and K or ↑ move, E opens, A and R open the request with its
+// approve or reject confirmation showing, which alone decides; ? shows them.
+const triageKeys = [
+  ["J or ↓", "Next request"],
+  ["K or ↑", "Previous request"],
+  ["E or Enter", "Open it"],
+  ["A", "Open its approval to confirm"],
+  ["R", "Open its rejection to confirm"],
+  ["?", "Show or hide these keys"],
+] as const;
+
 // Inbox (docs/design/screens Inbox; FR-UX-03, FR-APR-01, FM-3): what waits for you. Today its
 // groups are the approval requests (yours to decide, yours waiting, others') and the weekly review
 // of high-risk actions; AI proposals, checks, mentions and deadlines join with their modules. A
@@ -86,6 +98,44 @@ export function Inbox() {
   const others = pending.filter((a) => !a.you_may_approve && !mine(a));
   const decided = items.filter((a) => a.status !== "pending");
   const toReview = (review.data?.items ?? []).filter((e) => e.you_may_review).length;
+  const navigate = useNavigate();
+  const [keys, setKeys] = useState(false);
+  const [said, setSaid] = useState("");
+  const triage = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const links = Array.from(e.currentTarget.querySelectorAll<HTMLAnchorElement>("a[data-approval]"));
+    const at = links.indexOf(document.activeElement as HTMLAnchorElement);
+    if (at < 0) return;
+    const here = links[at];
+    const move = (to: number) => links[Math.max(0, Math.min(links.length - 1, to))]?.focus();
+    switch (e.key) {
+      case "j":
+      case "ArrowDown":
+        move(at + 1);
+        break;
+      case "k":
+      case "ArrowUp":
+        move(at - 1);
+        break;
+      case "e":
+        here?.click();
+        break;
+      case "a":
+      case "r":
+        if (here?.dataset.decides !== "true") {
+          setSaid("This request is not yours to decide: E opens it.");
+          break;
+        }
+        void navigate({ to: "/approvals/$approvalId", params: { approvalId: here.dataset.approval ?? "" }, search: { decide: e.key === "a" ? "approve" : "reject" } });
+        break;
+      case "?":
+        setKeys(!keys);
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+  };
 
   return (
     <div className="fy-page fy-page--narrow fy-enter">
@@ -96,16 +146,35 @@ export function Inbox() {
         </div>
       </div>
       <p className="fy-sr" role="status" aria-live="polite">
-        {approvals.data ? `${toYou.length} ${toYou.length === 1 ? "approval waits" : "approvals wait"} for you` : ""}
+        {said || (approvals.data ? `${toYou.length} ${toYou.length === 1 ? "approval waits" : "approvals wait"} for you` : "")}
       </p>
       {approvals.isError && <Refusal problem={problemOf(approvals.error)} title="The requests could not be listed" />}
       {approvals.isPending && <p className="fy-secondary">Loading the requests…</p>}
       {approvals.data && (
-        <>
+        <div className="fy-stack fy-stack--4" onKeyDown={triage}>
           <Group id="to-approve" title="To approve" items={toYou} mine={mine} empty="Nothing waits for your approval." />
           <Group id="your-requests" title="Your requests, waiting" items={yours} mine={mine} empty="None of your requests is waiting." />
           {others.length > 0 && <Group id="others" title="Waiting for others" items={others} mine={mine} empty="" />}
-        </>
+        </div>
+      )}
+      {approvals.data && pending.length > 0 && (
+        <div className="fy-stack fy-stack--2">
+          <button type="button" className="fy-btn fy-btn--ghost fy-btn--sm self-start" aria-expanded={keys} onClick={() => setKeys(!keys)}>
+            <Icon of={Keyboard} />
+            Keyboard: J and K move, E opens, A and R confirm
+          </button>
+          {keys && (
+            <dl className="fy-small fy-grid fy-grid--2 gap-1" aria-label="Inbox keys">
+              {triageKeys.map(([key, what]) => (
+                <div key={key} className="fy-row gap-2">
+                  <dt className="fy-mono">{key}</dt>
+                  <dd>{what}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {said && <p className="fy-small fy-secondary">{said}</p>}
+        </div>
       )}
       {(session.roles ?? []).some((r) => payers.includes(r)) && <BillsToPay />}
       {review.data && (

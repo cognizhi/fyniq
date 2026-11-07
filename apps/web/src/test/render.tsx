@@ -35,5 +35,5 @@ export function renderPage(Page: ComponentType, { path = "/", session = ownerSes
     ),
   });
   const router = createRouter({ routeTree: root.addChildren([page]), history: createMemoryHistory({ initialEntries: [path] }) });
-  return { queries, ...render(<RouterProvider router={router} />) };
+  return { queries, router, ...render(<RouterProvider router={router} />) };
 }

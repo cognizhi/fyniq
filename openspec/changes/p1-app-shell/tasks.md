@@ -63,6 +63,11 @@
   into `shell.search`. Tests `TestTheGlobalSearchFindsWhatThePersonMaySee`, `TestAQueryReadsAsAnAmountOrText`,
   `search.test.tsx`, `AppFrame.test.tsx`, the matrix's row. **Left:** bank lines and help pages in the results, the
   Inbox's other groups and keyboard triage.)
+  (6 Nov 2026, PRD-001 rev 0.192: the Inbox's keys. J or ↓, K or ↑, E or Enter, A, R and ?, only while a request has
+  the focus (WCAG 2.2 SC 2.1.4); A and R open the approval page with its confirmation showing (`?decide=`), only for a
+  person the request lets decide. Guide `approvals.md` (From the keyboard), compiled into `approvals.decide`. Tests
+  `approvals.test.tsx` "the Inbox's keys". **Left:** bank lines and help pages in the search, the Inbox's other groups as
+  their modules arrive, grouping by due date, and bulk actions where safe.)
 - [ ] 2.3 Drill-down to the Trace panel, side peeks and split view, keyboard-first entry and the shortcut sheet. Tests `// req: FR-UX-04`, `// req: FR-UX-05` and `// req: FR-UX-06`
 
 ## 3. Grids, records and correctness
