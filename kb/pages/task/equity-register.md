@@ -1,10 +1,10 @@
 ---
 key: equity.register
 type: task
-title: The equity register: holders, their recorded details and share classes
-summary: Shareholders and investors, recording their details (last 4 characters only) on approval, and share classes with their rights
+title: The equity register: holders, share classes and the equity transactions that move every share
+summary: Holders and their details (last 4 characters only), share classes, and equity transactions: drafted, approved, made effective with ACRA
 sources:
-  - docs/user-guide/equity-register.md sha256:c2a8c0d48ebea17e453dfa29315323ec4547f688c35db4bbe93d79b9fb9f9ef2
+  - docs/user-guide/equity-register.md sha256:a06193665f7a05d05dfa599bbc28c290f0460b256e4ed3c29b58434d0663bee2
 data_class: general
 taint: trusted
 status: published
@@ -35,6 +35,18 @@ aliases:
   - register of share issues
   - allotment
   - shares issued before the books start
+  - equity transaction
+  - issue shares for cash
+  - share transfer
+  - transfer shares
+  - convert shares between classes
+  - reverse a share issue
+  - ACRA steps
+  - return of allotment
+  - notice of transfer
+  - effective date
+  - share application monies
+  - refund a subscription
 ---
 
 # The equity register: holders, their recorded details and share classes
@@ -42,11 +54,12 @@ aliases:
 ## What it is
 
 - **Equity** is the company's register of who owns it: shareholders and investors, share classes
-  with their rights, and the register of share issues. It is an Expert feature.
-- Tabs move between **Holders**, **Classes** and **Transactions** (the register of share issues);
-  the cap table, SAFEs and notes, the option pool and rounds join them later.
-- Nothing here posts an entry; share capital changes only through the register of share issues and
-  the opening balances ([[founders.director-accounts]]).
+  with their rights, and the equity transactions that move every share. It is an Expert feature.
+- Tabs move between **Holders**, **Classes** and **Transactions** (with the register of share
+  issues); the cap table, SAFEs and notes, the option pool and rounds join them later.
+- Holders and classes post no entry; share capital changes only through the register of share
+  issues, the opening balances and a conversion between classes on different accounts
+  ([[founders.director-accounts]]).
 
 (src: docs/user-guide/equity-register.md#what-it-is)
 
@@ -94,15 +107,59 @@ aliases:
 
 (src: docs/user-guide/equity-register.md#share-classes)
 
+## Equity transactions
+
+- **Equity › Transactions** lists issues for cash, transfers, conversions between classes and
+  reversals, the latest first: reference (EQ-, on approval), effective date, holders, class, shares
+  and status (**Draft**, **Waiting for ACRA**, **Effective**, **Reversed**); **Due** means an ACRA
+  lodgement is due, **Review** that it has waited too long.
+
+(src: docs/user-guide/equity-register.md#equity-transactions)
+
+## Draft a transaction
+
+- **New transaction** (an Accountant): an **issue for cash** (one subscriber, the class, shares,
+  price per share, resolutions; a round with several investors is several issues); a **transfer**
+  (from, to, class, shares; no entry, share duty is the parties' matter); a **conversion between
+  classes** (the carrying amount moves between 3010 and 3020 when the accounts differ); a
+  **reversal** (what it undoes and why).
+- **Draft the transaction**, attach what it rests on, then **Ask for approval**: another Owner or
+  the Controller approves, never a holder it is for; the Accountant reviews too when every other
+  approver has a transaction of their own waiting or approved in the last 30 days
+  ([[approvals.decide]]).
+
+(src: docs/user-guide/equity-register.md#draft-a-transaction)
+
+## Make it effective
+
+- Record the **ACRA steps** as they happen: an issue's shareholders' approval (lodged within 14
+  days), AGM date and return of allotment; a transfer's instrument and notice of transfer; a
+  conversion's resolution and lodgement. **Due** shows while a lodgement is due.
+- **Record the effective date** (an Owner or the Controller) when ACRA's register shows it: never
+  after today or before the approval, in an open period. Shares move only then.
+- A cash issue takes effect once the subscriber's money is in **2040 Share application monies**:
+  categorise their payment's bank line to 2040, naming them ([[banking.categorise]]); it then posts
+  Dr 2040 · Cr share capital. A refund is paid from the bank and its line categorised to 2040 the
+  same way.
+
+(src: docs/user-guide/equity-register.md#make-it-effective)
+
+## Correct a transaction
+
+- An approved transaction never changes: **Reverse it** drafts a reversal citing why (the ACRA
+  extract when ACRA is right); once effective it undoes the shares and entries whole, and a holder
+  must still hold what it takes back. A buy-back is a new transaction, never a reversal.
+
+(src: docs/user-guide/equity-register.md#correct-a-transaction)
+
 ## The register of share issues
 
-- **Equity › Transactions** (also **Register of share issues** on Director accounts): every
-  allotment with its holder, class, number, price, what paid for it, the resolutions and ACRA's
-  reference; share capital changes only with it or the opening balances.
+- Below the transactions (also on Director accounts): every allotment with its holder, class,
+  number, price, what paid for it, the resolutions and ACRA's reference; share capital changes only
+  with it or the opening balances.
 - **Record shares issued before the books start** (Owner or Controller), such as the
-  incorporation subscription: no entry posts, the opening balances hold their share capital.
-  Conversions of a director's balance add theirs when ACRA registers them
-  ([[founders.director-accounts]]); transfers and issues for cash come next.
+  incorporation subscription: no entry posts, the opening balances hold their share capital. Cash
+  issues and conversions of a director's balance add theirs when they take effect.
 
 (src: docs/user-guide/equity-register.md#the-register-of-share-issues)
 
@@ -116,5 +173,10 @@ aliases:
 - EQUITY-05: recorded, so it changes no more; draft a new one. EQUITY-06: no evidence attached;
   attach the identity document, or the constitution and the shareholders' agreement.
 - Your own holder record is approved by another Owner or the Controller.
+- EQUITY-08: only an approved transaction becomes effective, never before its approval; the
+  subscriber's money is not all in share application monies; the holder holds fewer shares on the
+  day. EQUITY-09: no share application monies account, add 2040. EQUITY-10: a step its transaction
+  does not take, or dated after today.
+- A transaction that moves your own shares is approved by another Owner or the Controller.
 
 (src: docs/user-guide/equity-register.md#common-problems)

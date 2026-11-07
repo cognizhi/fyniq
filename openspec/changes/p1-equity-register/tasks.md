@@ -72,8 +72,11 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   Tests: G4-043 end to end, with the February balance sheet and the cap table on 12 Mar only; a transfer makes no
   entry; a reversal citing the ACRA extract; and the oracle's G4-043 golden case.
   `// req: FR-EQ-17`, `// req: FR-EQ-09`, `// req: INV-13`, `// req: QA-ENG-02`
-- [ ] 3.3 Screens EquityRegister and EquityTransaction as designed, replacing the founders' register page. Steps,
+- [x] 3.3 Screens EquityRegister and EquityTransaction as designed, replacing the founders' register page. Steps,
   evidence, the subscription's payment and the reversal; help keys and guide sections. Vitest and axe.
+  (Slice 2c: Equity › Transactions lists every transaction with its ACRA flags above the register of share issues, at
+  the founders' old address; a transaction's page drafts, changes, asks for approval, records the ACRA steps and the
+  effective date, and starts a reversal; its evidence goes through the journal-evidence panel.)
   `// req: FR-EQ-17`
 
 ## 4. The cap table (slice 3)
