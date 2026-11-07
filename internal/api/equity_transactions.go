@@ -79,6 +79,29 @@ type EquityMovement struct {
 	EffectiveOn string `json:"effective_on" format:"date" doc:"The day ACRA's register of members shows it." example:"2027-03-12"`
 }
 
+// EquityStepView is one ACRA step of an equity transaction, as recorded.
+type EquityStepView struct {
+	ID         string `json:"id" format:"uuid" doc:"The step's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f41"`
+	Kind       string `json:"kind" enum:"resolved,approval_lodged,agm_due,allotment_lodged,instrument_signed,transfer_lodged,conversion_lodged" doc:"Which step: a cash issue's resolved, approval_lodged, agm_due and allotment_lodged; a transfer's instrument_signed and transfer_lodged; a conversion's resolved and conversion_lodged." example:"approval_lodged"`
+	On         string `json:"on" format:"date" doc:"Its day." example:"2027-03-08"`
+	Reference  string `json:"reference,omitempty" doc:"ACRA's transaction number, or what it rests on." example:"T27ACRA00456"`
+	RecordedAt string `json:"recorded_at" format:"date-time" doc:"When it was recorded." example:"2027-03-08T09:30:00Z"`
+}
+
+// EquityACRA is an equity transaction's ACRA steps and what they raise (FR-EQ-09).
+type EquityACRA struct {
+	AGMDueOn string           `json:"agm_due_on,omitempty" format:"date" doc:"A cash issue: the date by which the next AGM must be held, when its shareholders' approval lapses: as recorded, or worked out from the financial years [verify]." example:"2027-06-30"`
+	Steps    []EquityStepView `json:"steps" nullable:"false" doc:"Every step recorded, earliest first: a later one of a kind supersedes the earlier."`
+	Flags    []ConversionFlag `json:"flags" nullable:"false" doc:"What the steps raise today: ⏰ due, or ⚠ warning. Empty once effective."`
+}
+
+// EquityStepRequest is an ACRA step as recorded.
+type EquityStepRequest struct {
+	Kind      string `json:"kind" enum:"resolved,approval_lodged,agm_due,allotment_lodged,instrument_signed,transfer_lodged,conversion_lodged" doc:"Which step, of those the transaction's kind takes." example:"approval_lodged"`
+	On        string `json:"on" format:"date" doc:"Its day: no later than today, except the AGM date." example:"2027-03-08"`
+	Reference string `json:"reference,omitempty" maxLength:"200" doc:"ACRA's transaction number, or what it rests on." example:"T27ACRA00456"`
+}
+
 // EquityEntry is an entry an equity transaction posted.
 type EquityEntry struct {
 	ID string `json:"id" format:"uuid" doc:"The entry's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f20"`
@@ -104,6 +127,7 @@ type EquityTransaction struct {
 	Movements   []EquityMovement       `json:"movements" nullable:"false" doc:"The holding movements it wrote once effective."`
 	ShareIssue  string                 `json:"share_issue_id,omitempty" format:"uuid" doc:"A cash issue's row in the register of share issues." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f10"`
 	Entries     []EquityEntry          `json:"entries" nullable:"false" doc:"The entries it posted: a cash issue's or a conversion's, or the reversals of them."`
+	ACRA        *EquityACRA            `json:"acra,omitempty" doc:"Its ACRA steps and what they raise, once approved; a reversal has none (FR-EQ-09)."`
 }
 
 // EquityTransactionPage is a page of equity transactions, the latest first.
@@ -148,6 +172,13 @@ type (
 		IfMatchHeader
 		PreferHeader
 		Body EquityEffectiveRequest
+	}
+	equityStepInput struct {
+		EquityTransactionPath
+		KeyHeader
+		IfMatchHeader
+		PreferHeader
+		Body EquityStepRequest
 	}
 	equityTransactionReadOutput struct {
 		ETag string `header:"ETag" doc:"Its version and status, for If-Match."`
@@ -344,6 +375,11 @@ func (a *API) equityTransactionOf(ctx context.Context, u storage.UnitOfWork, doc
 	if out.Entries, err = a.equityEntries(ctx, u, doc, t, v); err != nil {
 		return out, err
 	}
+	if doc.Status == storage.DocumentPosted && t.Kind != equity.KindReversal && t.ApprovedOn != nil {
+		if out.ACRA, err = a.equityACRA(ctx, u, doc, t, v, out.Status == "approved"); err != nil {
+			return out, err
+		}
+	}
 	switch out.Status {
 	case "draft":
 		if out.Evidence == 0 {
@@ -385,6 +421,50 @@ func (a *API) equityTransactionOf(ctx context.Context, u storage.UnitOfWork, doc
 					Fix:     "Match the subscriber's payment to share application monies, then record the effective date"})
 			}
 		}
+	}
+	return out, nil
+}
+
+// equityACRA is an approved transaction's ACRA steps, and while it waits for its effective date what they raise.
+func (a *API) equityACRA(ctx context.Context, u storage.UnitOfWork, doc storage.Document, t equity.Transaction, v equityView, waiting bool) (*EquityACRA, error) {
+	all, err := u.EquitySteps().Of(ctx, doc.ID)
+	if err != nil {
+		return nil, err
+	}
+	out := &EquityACRA{Steps: []EquityStepView{}, Flags: []ConversionFlag{}}
+	for _, x := range all {
+		out.Steps = append(out.Steps, EquityStepView{ID: x.ID.String(), Kind: x.Kind, On: dateOf(x.On), Reference: x.Reference,
+			RecordedAt: x.RecordedAt.UTC().Format(time.RFC3339)})
+	}
+	steps := equity.StepsOf(all)
+	var lapses time.Time
+	if t.Kind == equity.KindIssueCash {
+		o, err := u.Organisation(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if s, ok := steps[storage.StepAGMDue]; ok {
+			lapses = s.On
+		} else if on, ok := director.LapsesOn(o.Profile, *t.ApprovedOn); ok {
+			lapses = on
+		}
+		if !lapses.IsZero() {
+			out.AGMDueOn = dateOf(lapses)
+		}
+	}
+	if !waiting {
+		return out, nil
+	}
+	days, err := director.RegistrationDays(ctx, u, v.today)
+	if err != nil {
+		return nil, err
+	}
+	for _, f := range equity.Flags(t.Kind, steps, *t.ApprovedOn, lapses, v.today, days) {
+		x := ConversionFlag{Code: f.Code, Kind: f.Kind, Message: f.Message, Fix: f.Fix}
+		if f.DueOn != nil {
+			x.DueOn = dateOf(*f.DueOn)
+		}
+		out.Flags = append(out.Flags, x)
 	}
 	return out, nil
 }
@@ -816,6 +896,82 @@ func registerEquityTransactions(a *API) {
 				return nil, err
 			}
 			return &equityAskOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
+		})
+
+	register(a, authz.RecordEquityStep, huma.Operation{
+		OperationID: "recordEquityStep", Method: http.MethodPost, Path: "/v1/equity-transactions/{transaction_id}/acra-steps", Tags: []string{"Equity"},
+		DefaultStatus: http.StatusCreated, Summary: "Record an ACRA step of an equity transaction",
+		Description: "Records one ACRA step of an approved equity transaction not yet effective (FR-EQ-09, FR-EQ-17): a cash issue's day the " +
+			"shareholders resolved, the day their approval was lodged (due within 14 days of the resolution, s161(5), s186; ⏰ until it " +
+			"is), the date by which the next AGM must be held when it differs from the one worked out [verify], and the day the return of " +
+			"allotment was lodged; a transfer's day the instrument of transfer was signed and the day the notice of transfer was lodged " +
+			"(s126; ACRA's guidance expects it within 14 days [verify]); a conversion between classes' day the shareholders resolved and the " +
+			"day it was lodged. Attach ACRA's acknowledgement as evidence. A later step of a kind supersedes the earlier, which stays. " +
+			"Needs a person signed in who passed step-up, and If-Match with the transaction's ETag. Side effects: the step, append-only, " +
+			"and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
+	}, []string{equity.CodeStep, equity.CodeEffective, storage.CodeEquityStep, CodeNotFound, CodeStale, CodeIfMatchRequired, CodeSessionRequired,
+		CodeStepUpRequired, CodeInvalid, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
+		storage.CodeRetry, storage.CodeLockTimeout},
+		func(ctx context.Context, in *equityStepInput) (*equityTransactionWriteOutput, error) {
+			id, err := parseID("transaction_id", in.TransactionID)
+			if err != nil {
+				return nil, err
+			}
+			if strings.TrimSpace(in.IfMatch) == "" {
+				return nil, checkIfMatch(in.IfMatch, "")
+			}
+			on, err := time.Parse(time.DateOnly, in.Body.On)
+			if err != nil {
+				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.on", Message: "is not a date", Fix: "Send the date as YYYY-MM-DD"}})
+			}
+			p, err := a.steppedUpPerson(ctx, "Recording an equity transaction's ACRA step")
+			if err != nil {
+				return nil, err
+			}
+			var doc storage.Document
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (EquityTransaction, error) {
+				cur, err := u.Documents().Lock(ctx, id)
+				if err != nil {
+					return EquityTransaction{}, err
+				}
+				if cur.Type != storage.DocumentEquityTransaction {
+					return EquityTransaction{}, problem(CodeNotFound, "There is no such equity transaction.", "List the equity transactions to find it.")
+				}
+				if err := checkIfMatch(in.IfMatch, equityTransactionETag(cur)); err != nil {
+					return EquityTransaction{}, err
+				}
+				t, err := equity.ReadTransaction(cur)
+				if err != nil {
+					return EquityTransaction{}, err
+				}
+				moved, err := u.Holdings().OfTransaction(ctx, id)
+				if err != nil {
+					return EquityTransaction{}, err
+				}
+				if cur.Status != storage.DocumentPosted || len(moved) > 0 {
+					return EquityTransaction{}, &equity.Error{Code: equity.CodeEffective, Message: "only an approved transaction waiting for ACRA records its steps",
+						Fix: "Record the steps between the transaction's approval and its effective date"}
+				}
+				today, err := orgToday(ctx, a, u)
+				if err != nil {
+					return EquityTransaction{}, err
+				}
+				ref := strings.TrimSpace(in.Body.Reference)
+				if err := equity.CheckStep(t.Kind, in.Body.Kind, on, ref, today); err != nil {
+					return EquityTransaction{}, err
+				}
+				if _, err := u.EquitySteps().Record(ctx, storage.EquityStep{TransactionID: id, Kind: in.Body.Kind, On: on, Reference: ref,
+					RecordedBy: p.UserID, RecordedAt: a.deps.Clock.Now()}); err != nil {
+					return EquityTransaction{}, err
+				}
+				out, d, err := a.shownEquityTransaction(ctx, u, id)
+				doc = d
+				return out, err
+			})
+			if err != nil {
+				return nil, err
+			}
+			return answer(w, doc), nil
 		})
 
 	register(a, authz.RecordEquityTransactionEffective, huma.Operation{

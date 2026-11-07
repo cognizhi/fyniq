@@ -58,7 +58,8 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
 
   Attack tests for each FY257 rule and for a key-less 2040 line. `// req: FR-EQ-17`, `// req: INV-13`
 - [ ] 3.2 Engine and API (slice 2a built the kinds, draft, approval, effective, reversal and the holdings; slice 2b the
-  ACRA steps, the bank match, the refund and the oracle's golden case):
+  ACRA steps and money from the bank, in and refunded (the owner's decision of 7 Nov 2026: a refund is recorded from
+  the bank line, not through a payment batch); the oracle's golden case follows):
   - the kinds issue_cash, transfer, class_conversion and reversal (issue_noncash keeps founders' money's route):
     draft, approval (FM-1, FM-9), and effective with ACRA's date and reference, never backdated and never in a closed
     period, writing the issue, its movements and its entry in one unit of work;

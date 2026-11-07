@@ -91,6 +91,17 @@ Source: PRD-001 §8.23 · Priority M · Phase P1
 - **WHEN** shares are issued, transferred, converted or given back by a reversal
 - **THEN** each holding moves by a holding movement, and the database refuses one outside an effective transaction or share issue, a transfer that does not net to zero, and a holding below zero on any day
 
+#### Scenario: ACRA steps and what they raise (rev 0.206)
+- **GIVEN** an approved transaction that is not effective
+- **WHEN** its ACRA steps are recorded, each of its kind (an issue's resolution, approval lodged, AGM date and return of allotment; a transfer's instrument signed and notice lodged; a conversion's resolution and lodgement)
+- **THEN** it raises ⏰ while a lodgement is due (EQUITY-11), and ⚠ when it is not effective after the set days (EQUITY-12) or an issue's approval lapses within 30 days (EQUITY-13)
+- **AND** a step of another kind, a step after today or a step once it is effective is refused
+
+#### Scenario: Money for shares from the bank line (rev 0.206)
+- **WHEN** money for shares arrives, or a refund of it is paid from the bank
+- **THEN** the bank line is categorised to share application monies naming its subscriber (the owner's decision of 7 Nov 2026)
+- **AND** no refund goes through a payment batch
+
 #### Scenario: A conversion between accounts moves its carrying amount (rev 0.205)
 - **GIVEN** a conversion between classes whose accounts differ
 - **WHEN** it is made effective

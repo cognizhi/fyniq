@@ -12,7 +12,8 @@
 # - source "prd-b5": 2120, 3300 and 7040, which PRD-001 B.5 adds, and (rev 0.90) 2330, withholding tax payable
 #   (FR-AP-19) [accountant to confirm the code]; (rev 0.126) the role customer-deposits on 2410 (FR-AR-09), whose help
 #   text now says the final invoice deducts a deposit [accountant to confirm the classification];
-# - source "prd-203" (rev 0.203): 2040 Share application monies, a liability per subscriber (B.7, FR-EQ-17)
+# - source "prd-203" (rev 0.203): 2040 Share application monies, a liability per subscriber (B.7, FR-EQ-17), whose
+#   cash-flow line is Share capital, money received for shares being a financing flow (IAS 7 para 17(a); rev 0.206)
 #   [accountant to confirm the code and classification];
 # - source "prd-151" (rev 0.151): 1160 Asset disposal clearing, the recommended disposal clearing account
 #   (FR-FA-03) [accountant to confirm the code]; 7050's guidance names the asset register, which now records disposals;
@@ -45,7 +46,7 @@ code,name,type,report_group,cash_flow_line,function,money_account,default_gst_co
 2010,Accounts payable,liability,Payables & accruals,Payables & accruals,,no,NA,yes,no,accounts-payable,workbook,SYSTEM. Choose this when you pay a supplier bill recorded in Bills (put the bill # in Reference).,yes,
 2020,Accrued expenses,liability,Payables & accruals,Payables & accruals,,no,NA,no,no,,workbook,Costs already incurred but not yet billed (usually used by your accountant in the Journal).,no,
 2030,Company credit card,liability,Payables & accruals,Payables & accruals,,yes,NA,no,no,,workbook,Company credit card. Record card spending as Money Out from this account; paying the card bill is a transfer from the bank.,yes,
-2040,Share application monies,liability,Payables & accruals,Payables & accruals,,no,NA,yes,no,share-application-monies,prd-203,"Money a subscriber paid for shares not yet allotted, held until the issue takes effect or is refunded (PRD-001 B.7); a sub-ledger per subscriber.",no,
+2040,Share application monies,liability,Payables & accruals,Share capital,,no,NA,yes,no,share-application-monies,prd-203,"Money a subscriber paid for shares not yet allotted, held until the issue takes effect or is refunded (PRD-001 B.7); a sub-ledger per subscriber.",no,
 2100,Salaries payable,liability,Payroll liabilities,Payroll liabilities,,no,NA,no,no,salaries-payable,workbook,SYSTEM. Choose this when you pay staff their net salary (after the pay run).,no,
 2110,CPF & SDL payable,liability,Payroll liabilities,Payroll liabilities,,no,NA,no,no,cpf-sdl-payable,workbook,"SYSTEM. Choose this when you pay CPF Board (CPF, SDL and self-help group funds).",no,
 2120,Deferred remuneration payable,liability,Payroll liabilities,Payroll liabilities,,no,NA,yes,no,deferred-remuneration,prd-b5,"Pay a founder or director has agreed to defer, owed to them until paid (PRD-001 B.7); a sub-ledger per person.",yes,

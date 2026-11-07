@@ -13,8 +13,10 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -134,6 +136,25 @@ func TestEquityTransactions(t *testing.T) {
 		t.Fatalf("the approved issue, unpaid: %s", issue.Raw)
 	}
 	e.problemIs(effective(issue, weiling, "2026-10-15"), "recordEquityTransactionEffective", 409, equity.CodeEffective)
+
+	// Its ACRA steps (FR-EQ-09): ⏰ the shareholders' approval to lodge within 14 days of the resolution, until it is.
+	step := func(tx response, kind, on string) response {
+		return e.call(http.MethodPost, "/v1/equity-transactions/"+tx.str("id")+"/acra-steps", weiling, map[string]any{"kind": kind, "on": on, "reference": "T26ACRA00123"},
+			"If-Match", tx.Header.Get("ETag"))
+	}
+	if f := issue.Body["acra"].(map[string]any)["flags"].([]any); len(f) != 1 || f[0].(map[string]any)["code"] != equity.CodeLodgementDue ||
+		f[0].(map[string]any)["due_on"] != "2026-10-29" {
+		t.Errorf("the issue's flags before its steps: %v", f)
+	}
+	e.problemIs(step(issue, "instrument_signed", "2026-10-15"), "recordEquityStep", 422, equity.CodeStep)
+	e.problemIs(step(issue, "resolved", "2026-10-16"), "recordEquityStep", 422, equity.CodeStep) // after today
+	if r := step(issue, "resolved", "2026-10-15"); r.Status != http.StatusCreated {
+		t.Fatalf("the resolution: %d %s", r.Status, r.Raw)
+	}
+	if r := step(issue, "approval_lodged", "2026-10-15"); r.Status != http.StatusCreated || len(r.Body["acra"].(map[string]any)["flags"].([]any)) != 0 ||
+		len(r.Body["acra"].(map[string]any)["steps"].([]any)) != 2 {
+		t.Fatalf("the approval lodged: %d %s", r.Status, r.Raw)
+	}
 	if r := e.postFounderJournal("2026-10-01", founderLine(e.books.Bank.ID.String(), "600000.00", "", ""), founderLine(monies, "-600000.00", "", "")); r.Status == http.StatusOK {
 		t.Errorf("a line on 2040 naming no subscriber posted: %s", r.Raw)
 	}
@@ -186,6 +207,7 @@ func TestEquityTransactions(t *testing.T) {
 		t.Errorf("the investor is not marked shareholder: %s", c.Raw)
 	}
 	e.problemIs(effective(done, weiling, "2026-10-15"), "recordEquityTransactionEffective", 409, equity.CodeEffective) // once only
+	e.problemIs(step(done, "allotment_lodged", "2026-10-15"), "recordEquityStep", 409, equity.CodeEffective)                // steps end with it
 
 	// A conversion of 100,000 ordinary into preference shares, moving their carrying amount from 3010 to 3020.
 	conv := draft(map[string]any{"kind": "class_conversion", "holder_id": fund, "class_account_id": ordinary, "to_class_account_id": preference,
@@ -200,6 +222,10 @@ func TestEquityTransactions(t *testing.T) {
 	// A transfer of 50,000 ordinary shares to Ah Kow: no entry, never recorded by Ah Kow.
 	transfer := draft(map[string]any{"kind": "transfer", "seller_id": fund, "buyer_id": ahKow, "class_account_id": ordinary, "shares": "50000",
 		"price": "2.40"}, false)
+	if r := step(transfer, "instrument_signed", "2026-10-14"); r.Status != http.StatusCreated ||
+		!strings.Contains(r.Raw, `"code":"`+equity.CodeLodgementDue+`"`) || !strings.Contains(r.Raw, `"due_on":"2026-10-28"`) {
+		t.Errorf("the instrument of transfer signed: %d %s", r.Status, r.Raw)
+	}
 	e.problemIs(effective(transfer, kow, "2026-10-15"), "recordEquityTransactionEffective", 403, approval.CodeBeneficiary)
 	if r := effective(transfer, weiling, "2026-10-15"); r.Status != http.StatusOK || len(r.Body["entries"].([]any)) != 0 || len(r.Body["movements"].([]any)) != 2 {
 		t.Fatalf("the transfer: %d %s", r.Status, r.Raw)
@@ -366,6 +392,13 @@ var matrixEquityTransactions = map[string]func(e *env, tok string) (response, fu
 		r := e.call(http.MethodPost, "/v1/equity-transactions/"+f.draft+"/approval", steppedUp(e, tok), nil, "If-Match", "*", "Prefer", "return=preview")
 		return r, func() bool { return matrixEquityTxState(e, f) == was }
 	},
+	"recordEquityStep": func(e *env, tok string) (response, func() bool) {
+		f := matrixEquityTx(e)
+		was := matrixEquityTxState(e, f)
+		r := e.call(http.MethodPost, "/v1/equity-transactions/"+f.approved+"/acra-steps", steppedUp(e, tok), map[string]any{"kind": "resolved", "on": "2026-10-15"},
+			"If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixEquityTxState(e, f) == was }
+	},
 	"recordEquityTransactionEffective": func(e *env, tok string) (response, func() bool) {
 		f := matrixEquityTx(e)
 		was := matrixEquityTxState(e, f)
@@ -393,4 +426,56 @@ var matrixEquityTransactions = map[string]func(e *env, tok string) (response, fu
 		r := e.call(http.MethodDelete, "/v1/equity-transactions/"+f.draft+"/evidence/"+f.draftFile, tok, nil, "If-Match", "*", "Prefer", "return=preview")
 		return r, func() bool { return matrixEquityTxState(e, f) == was }
 	},
+}
+
+// Share application monies from the bank (B.7, rev 0.206, the owner's decision of 7 Nov 2026): a line of money in is
+// categorised to 2040 naming its subscriber, Dr Bank · Cr 2040; a refund paid from the bank is the line out, Dr 2040 ·
+// Cr Bank; a line on 2040 naming no one, or a customer, is refused.
+// req: FR-EQ-17
+// req: ledger/invariants Share application monies name their subscriber (rev 0.205)
+func TestShareApplicationMoniesFromTheBank(t *testing.T) {
+	e := newEnv(t)
+	acc := e.as(authz.Accountant)
+	_, in := e.bankLine("600000.00")
+	var monies string
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		m, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "2040", Name: "Share application monies", Type: storage.Liability, Role: "share-application-monies"})
+		monies = m.ID.String()
+		return err
+	})
+	fund := e.call(http.MethodPost, "/v1/contacts", acc, map[string]any{"legal_name": "Seedling Ventures Pte. Ltd.", "investor": true}).str("id")
+	customer := e.call(http.MethodPost, "/v1/contacts", acc, map[string]any{"legal_name": "Northwind Analytics", "customer": true}).str("id")
+	categorise := func(l storage.BankLine, contact string) response {
+		body := map[string]any{"parts": []map[string]any{{"account_id": monies, "gst_code": "NA"}}}
+		if contact != "" {
+			body["contact_id"] = contact
+		}
+		return e.call(http.MethodPost, "/v1/bank-lines/"+l.ID.String()+"/categorise", acc, body, "If-Match", etag(l.Version))
+	}
+	for name, who := range map[string]string{"no one": "", "a customer": customer} {
+		if r := categorise(in, who); r.Status == http.StatusOK || !strings.Contains(r.Raw, "LEDGER-41") {
+			t.Errorf("a line on 2040 naming %s: %d %s", name, r.Status, r.Raw)
+		}
+	}
+	if r := categorise(in, fund); r.Status != http.StatusOK {
+		t.Fatalf("the subscription in: %d %s", r.Status, r.Raw)
+	}
+	m, _ := e.bankLine("-1.00")
+	out := e.lineOn(m, "-600000.00", nil)
+	if r := categorise(out, fund); r.Status != http.StatusOK {
+		t.Fatalf("the refund out: %d %s", r.Status, r.Raw)
+	}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		base, _ := money.Lookup("SGD")
+		for _, day := range []time.Time{time.Date(2026, 10, 20, 0, 0, 0, 0, time.UTC), time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)} {
+			held, err := balance.ApplicationMonies(ctx, u, base, uuid.MustParse(monies), uuid.MustParse(fund), day)
+			if err != nil {
+				return err
+			}
+			if held.String() != "0.00" { // in and out on 20 Oct
+				t.Errorf("on %s the investor's monies hold %s", day.Format(time.DateOnly), held)
+			}
+		}
+		return nil
+	})
 }

@@ -45,6 +45,39 @@ func (q *Queries) ConversionStepsOf(ctx context.Context, settlementID uuid.UUID)
 	return items, nil
 }
 
+const equityStepsOf = `-- name: EquityStepsOf :many
+SELECT organisation_id, id, transaction_id, kind, on_date, reference, recorded_by, recorded_at FROM fyniq.equity_step WHERE transaction_id = $1 ORDER BY recorded_at, id
+`
+
+func (q *Queries) EquityStepsOf(ctx context.Context, transactionID uuid.UUID) ([]FyniqEquityStep, error) {
+	rows, err := q.db.Query(ctx, equityStepsOf, transactionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqEquityStep
+	for rows.Next() {
+		var i FyniqEquityStep
+		if err := rows.Scan(
+			&i.OrganisationID,
+			&i.ID,
+			&i.TransactionID,
+			&i.Kind,
+			&i.OnDate,
+			&i.Reference,
+			&i.RecordedBy,
+			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertConversionStep = `-- name: InsertConversionStep :one
 INSERT INTO fyniq.conversion_step (settlement_id, kind, on_date, reference, recorded_by, recorded_at)
 VALUES ($1, $2, $3, $4, $5, $6)
@@ -74,6 +107,44 @@ func (q *Queries) InsertConversionStep(ctx context.Context, arg InsertConversion
 		&i.OrganisationID,
 		&i.ID,
 		&i.SettlementID,
+		&i.Kind,
+		&i.OnDate,
+		&i.Reference,
+		&i.RecordedBy,
+		&i.RecordedAt,
+	)
+	return i, err
+}
+
+const insertEquityStep = `-- name: InsertEquityStep :one
+INSERT INTO fyniq.equity_step (transaction_id, kind, on_date, reference, recorded_by, recorded_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING organisation_id, id, transaction_id, kind, on_date, reference, recorded_by, recorded_at
+`
+
+type InsertEquityStepParams struct {
+	TransactionID uuid.UUID
+	Kind          string
+	OnDate        time.Time
+	Reference     *string
+	RecordedBy    uuid.UUID
+	RecordedAt    time.Time
+}
+
+func (q *Queries) InsertEquityStep(ctx context.Context, arg InsertEquityStepParams) (FyniqEquityStep, error) {
+	row := q.db.QueryRow(ctx, insertEquityStep,
+		arg.TransactionID,
+		arg.Kind,
+		arg.OnDate,
+		arg.Reference,
+		arg.RecordedBy,
+		arg.RecordedAt,
+	)
+	var i FyniqEquityStep
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.TransactionID,
 		&i.Kind,
 		&i.OnDate,
 		&i.Reference,

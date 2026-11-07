@@ -3876,6 +3876,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/equity-transactions/{transaction_id}/acra-steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record an ACRA step of an equity transaction
+         * @description Records one ACRA step of an approved equity transaction not yet effective (FR-EQ-09, FR-EQ-17): a cash issue's day the shareholders resolved, the day their approval was lodged (due within 14 days of the resolution, s161(5), s186; ⏰ until it is), the date by which the next AGM must be held when it differs from the one worked out [verify], and the day the return of allotment was lodged; a transfer's day the instrument of transfer was signed and the day the notice of transfer was lodged (s126; ACRA's guidance expects it within 14 days [verify]); a conversion between classes' day the shareholders resolved and the day it was lodged. Attach ACRA's acknowledgement as evidence. A later step of a kind supersedes the earlier, which stays. Needs a person signed in who passed step-up, and If-Match with the transaction's ETag. Side effects: the step, append-only, and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["recordEquityStep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/equity-transactions/{transaction_id}/approval": {
         parameters: {
             query?: never;
@@ -18990,6 +19010,18 @@ export interface components {
              */
             party_id?: string;
         };
+        EquityACRA: {
+            /**
+             * Format: date
+             * @description A cash issue: the date by which the next AGM must be held, when its shareholders' approval lapses: as recorded, or worked out from the financial years [verify].
+             * @example 2027-06-30
+             */
+            agm_due_on?: string;
+            /** @description What the steps raise today: ⏰ due, or ⚠ warning. Empty once effective. */
+            flags: components["schemas"]["ConversionFlag"][];
+            /** @description Every step recorded, earliest first: a later one of a kind supersedes the earlier. */
+            steps: components["schemas"]["EquityStepView"][];
+        };
         EquityEffectiveRequest: {
             /**
              * Format: date
@@ -19188,7 +19220,59 @@ export interface components {
              */
             role: "subscriber" | "seller" | "buyer" | "holder";
         };
+        EquityStepRequest: {
+            /**
+             * @description Which step, of those the transaction's kind takes.
+             * @example approval_lodged
+             * @enum {string}
+             */
+            kind: "resolved" | "approval_lodged" | "agm_due" | "allotment_lodged" | "instrument_signed" | "transfer_lodged" | "conversion_lodged";
+            /**
+             * Format: date
+             * @description Its day: no later than today, except the AGM date.
+             * @example 2027-03-08
+             */
+            on: string;
+            /**
+             * @description ACRA's transaction number, or what it rests on.
+             * @example T27ACRA00456
+             */
+            reference?: string;
+        };
+        EquityStepView: {
+            /**
+             * Format: uuid
+             * @description The step's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f41
+             */
+            id: string;
+            /**
+             * @description Which step: a cash issue's resolved, approval_lodged, agm_due and allotment_lodged; a transfer's instrument_signed and transfer_lodged; a conversion's resolved and conversion_lodged.
+             * @example approval_lodged
+             * @enum {string}
+             */
+            kind: "resolved" | "approval_lodged" | "agm_due" | "allotment_lodged" | "instrument_signed" | "transfer_lodged" | "conversion_lodged";
+            /**
+             * Format: date
+             * @description Its day.
+             * @example 2027-03-08
+             */
+            on: string;
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2027-03-08T09:30:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description ACRA's transaction number, or what it rests on.
+             * @example T27ACRA00456
+             */
+            reference?: string;
+        };
         EquityTransaction: {
+            /** @description Its ACRA steps and what they raise, once approved; a reversal has none (FR-EQ-09). */
+            acra?: components["schemas"]["EquityACRA"];
             /** @description A cash issue's amount, or a conversion's carrying amount. */
             amount?: components["schemas"]["Money"];
             /**
@@ -61895,6 +61979,185 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-02` Not the holder record or share class asked for; `EQUITY-06` No evidence attached; `EQUITY-07` The equity transaction does not fit; `EQUITY-09` No share application monies account; `LEDGER-01` The journal has no date; `LEDGER-16` The reversal is dated before its entry; `LEDGER-41` A director's account line needs its person; `LEDGER-48` The equity entry does not fit the rule. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordEquityStep: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The equity transaction's ID. */
+                transaction_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquityStepRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquityTransaction"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquityTransaction"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-08` The transaction cannot be effective then; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SHARE-05` The equity transaction's ACRA steps do not change that way. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-10` The ACRA step does not fit. */
             422: {
                 headers: {
                     [name: string]: unknown;
