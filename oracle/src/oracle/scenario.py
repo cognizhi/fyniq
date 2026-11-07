@@ -88,6 +88,7 @@ class Account:
     cash_flow_line: str | None = None
     revalue: bool = False  # a monetary item, revalued at each month end (FR-COA-02, FR-GL-04 rev 0.72)
     requires: tuple[str, ...] = ()  # the dimensions a line a person enters on it names a value of (FR-DIM-01)
+    votes_per_share: Decimal = Decimal(1)  # a share-capital account's: the votes a share of its class carries (FR-EQ-16)
 
 
 @dataclass(frozen=True)
@@ -222,6 +223,8 @@ class Scenario:
     dimensions: MappingProxyType[str, Dimension] = MappingProxyType({})
     # The investors not among ``people``: with them, whom share application monies may name (B.7, FR-EQ-17).
     subscribers: frozenset[str] = frozenset()
+    # The days to compute the cap table at the end of, in the scenario's order (FR-EQ-20; README, "Cap tables").
+    cap_tables: tuple[date, ...] = ()
 
 
 # A role the statements read belongs to at most one account, of this type (README, "Statements").
@@ -407,7 +410,10 @@ def scenario_from_json(data: Any) -> Scenario:
             raise ScenarioError(f"accounts/{i}: the code {raw['code']!r} appears twice")
         accounts[raw["code"]] = Account(raw["code"], raw["type"], raw["group"], raw["active"], raw.get("role"),
                                         raw.get("report_group"), raw.get("function"), raw.get("cash_flow_line"),
-                                        raw.get("revalue", False), tuple(raw.get("requires", ())))
+                                        raw.get("revalue", False), tuple(raw.get("requires", ())),
+                                        Decimal(raw.get("votes_per_share", "1")))
+        if "votes_per_share" in raw and raw.get("role") != "share-capital":
+            raise ScenarioError(f"accounts/{i}: {raw['code']} has votes_per_share, which only a share-capital account takes")
     dimensions = _dimensions(data.get("dimensions", []), accounts)
     for role, kind in _SINGLE_ROLES.items():
         holders = [a for a in accounts.values() if a.role == role]
@@ -516,8 +522,9 @@ def scenario_from_json(data: Any) -> Scenario:
     subscribers = frozenset(data.get("subscribers", ()))
     for i, person in enumerate(data.get("subscribers", ())):
         _shape(_DOCUMENT_ID, person, f"subscribers/{i}")
+    cap_tables = tuple(_date(day, f"cap_tables/{i}") for i, day in enumerate(data.get("cap_tables", ())))
     return Scenario(data["name"], base, currencies, accounts, tuple(documents), tuple(reversals), as_of, settings,
-                    statements, kpis, people, dimensions, subscribers)
+                    statements, kpis, people, dimensions, subscribers, cap_tables)
 
 
 def _dimensions(raw: list[Any], accounts: dict[str, Account]) -> MappingProxyType[str, Dimension]:

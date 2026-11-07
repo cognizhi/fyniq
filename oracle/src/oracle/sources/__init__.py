@@ -41,4 +41,5 @@ RULE_SETS: dict[str, RuleSet] = {
     "director_conversion": founders.director_conversion,
     "account_merge": merge.account_merge,
     "share_issue_cash": equity.share_issue_cash,
+    "share_transfer": equity.share_transfer,
 }

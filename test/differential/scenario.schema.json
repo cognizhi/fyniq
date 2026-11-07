@@ -39,6 +39,11 @@
             "description": "Optional. \"share-capital\" marks an account a manual journal may not post to (INV-13, PRD-001 rev 0.24), such as 3010 and 3020 in the default chart. The statements read three more (FR-RPT-01 rev 0.159): \"retained-earnings\" (an equity account, 3100), \"depreciation\" (an expense account, 6610) and \"income-tax-expense\" (an expense account, 8010); a chart has at most one account with each of these three. \"director-loan\" (2500) and \"deferred-remuneration\" (2120) mark the director's accounts, each of whose lines names its person and origin, while no other line names either (FR-EQ-01, B.7; PRD-001 rev 0.167).",
             "enum": ["share-capital", "retained-earnings", "depreciation", "income-tax-expense", "director-loan", "deferred-remuneration", "share-application-monies"]
           },
+          "votes_per_share": {
+            "description": "Optional, on a share-capital account only (README, \"Cap tables\"): the votes each share of its class carries, a plain number of zero or more with at most 8 decimals, as a share class records it (FR-EQ-16). Left out, one.",
+            "type": "string",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,8})?$"
+          },
           "requires": {
             "description": "Optional (FR-DIM-01): the dimensions, by name, each one of dimensions, that a line a person enters on the account names a value of (README, \"Dimensions\").",
             "type": "array",
@@ -79,6 +84,13 @@
       "type": "array",
       "uniqueItems": true,
       "items": {"$ref": "#/$defs/documentId"}
+    },
+    "cap_tables": {
+      "description": "Optional (FR-EQ-20; README, \"Cap tables\"). The days to compute the cap table at the end of, each once: the result's cap_tables lists them in this order.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/date"}
     },
     "dimensions": {
       "description": "Optional (FR-DIM-01; README, \"Dimensions\"). The organisation's dimensions, such as Department, each with its values: the only ones a line may name. Names are unique, and a value's code is unique within its dimension. Left out, there are none.",
@@ -221,7 +233,8 @@
                                          "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
                                          "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost",
                                          "director_fee", "director_waiver", "director_repayment",
-                                         "director_conversion", "account_merge", "share_issue_cash"]}},
+                                         "director_conversion", "account_merge", "share_issue_cash",
+                                         "share_transfer"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "opening_balances"}}}, "then": {"$ref": "#/$defs/openingBalances"}},
@@ -244,7 +257,8 @@
         {"if": {"properties": {"type": {"const": "director_repayment"}}}, "then": {"$ref": "#/$defs/directorRepayment"}},
         {"if": {"properties": {"type": {"const": "director_conversion"}}}, "then": {"$ref": "#/$defs/directorConversion"}},
         {"if": {"properties": {"type": {"const": "account_merge"}}}, "then": {"$ref": "#/$defs/accountMerge"}},
-        {"if": {"properties": {"type": {"const": "share_issue_cash"}}}, "then": {"$ref": "#/$defs/shareIssueCash"}}
+        {"if": {"properties": {"type": {"const": "share_issue_cash"}}}, "then": {"$ref": "#/$defs/shareIssueCash"}},
+        {"if": {"properties": {"type": {"const": "share_transfer"}}}, "then": {"$ref": "#/$defs/shareTransfer"}}
       ]
     },
     "settings": {
@@ -624,6 +638,22 @@
         "class": {"description": "The share-capital account of the class allotted (3010 or 3020).", "type": "string"},
         "shares": {"description": "The number of shares, a whole number above zero.", "type": "string"},
         "price": {"description": "The price per share in the base currency, at most 6 decimals.", "type": "string"}
+      }
+    },
+    "shareTransfer": {
+      "description": "A transfer of shares between holders, made effective from the register (FR-EQ-17; README, \"Cap tables\"): it moves holdings and posts no entry.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "seller", "buyer", "class", "shares"],
+      "properties": {
+        "type": {"const": "share_transfer"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day ACRA's register of members shows the transfer.", "$ref": "#/$defs/date"},
+        "seller": {"description": "The holder the shares move from, one of people or subscribers.", "$ref": "#/$defs/documentId"},
+        "buyer": {"description": "The holder the shares move to, one of people or subscribers, not the seller.", "$ref": "#/$defs/documentId"},
+        "class": {"description": "The share-capital account of the class transferred (3010 or 3020).", "type": "string"},
+        "shares": {"description": "The number of shares, a whole number above zero.", "type": "string"}
       }
     },
     "accountMerge": {

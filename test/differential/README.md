@@ -93,7 +93,8 @@ runner should fail the same way). The input is not a `fyniq-scenario@1` document
   valid rate (a quote's stored rate included);
 - a rule of dimensions is broken (section "Dimensions"): two dimensions share a name or a dimension two values a code,
   an account `requires` a name not in `dimensions`, or a line's `dimensions` names a dimension not in `dimensions` or
-  a code not among its values.
+  a code not among its values;
+- `votes_per_share` is on an account without the role `share-capital` (section "Cap tables").
 
 **A document is rejected** (it is listed in `rejected`, and none of its lines posts). A journal posts
 only when it meets every rule:
@@ -115,8 +116,10 @@ only when it meets every rule:
    half away from zero), sum to zero. A base-currency line's base amount is its amount.
 8. When every line shares one currency, the amounts also sum to zero in that currency.
 9. (PRD-001 rev 0.167) Every line on a director's account has a `party` that is one of `people` and an
-   `origin` that is one of `lent`, `paid_personally`, `pay`, `fee`, `paid_out` and `other`; no other line
-   has either (FR-EQ-01, Appendix B.7). A scenario with no `people` has none, so any `party` is refused.
+   `origin` that is one of `lent`, `paid_personally`, `pay`, `fee`, `paid_out` and `other`; (rev 0.207) every line
+   on share application monies has a `party` that is one of `people` or `subscribers`, its subscriber, and no
+   `origin`; no other line has either (FR-EQ-01, Appendix B.7). A scenario with no `people` has none, so any `party`
+   on a director's account is refused.
 10. (PRD-001 rev 0.55) A `reverse_on`, when there is one, is after the journal's date (FR-GL-02, JOURNAL-11:
     "a reversal date on or before the journal's date is refused when it posts").
 11. (PRD-001 rev 0.171, 0.172) A line's dimension values are each a value in use of a dimension in use (DIM-06), and
@@ -586,6 +589,22 @@ director's account) is less than the amount. It is rejected too when `shares` is
 `price` not above zero with at most 6 decimals, `class` not share capital, `person` neither of `people` nor
 `subscribers`, or the chart has no share application monies.
 
+### Share transfers (`share_transfer`)
+
+From FR-EQ-17 and the equity register's design D3 and D4 (`p1-equity-register`).
+
+```json
+{"type": "share_transfer", "id": "EQ-0102", "version": 1, "date": "2026-04-01", "seller": "P0001", "buyer": "P0002",
+ "class": "3010", "shares": "50000"}
+```
+
+A transfer moves `shares` of `class` from `seller` to `buyer` on `date`, the day ACRA's register of members shows it,
+and posts no entry: the result has no entry for it, and a transfer that is not rejected is not in `rejected` either.
+It is rejected when `shares` is not a whole number above zero, `class` is not an active share-capital account that is
+not a group, `seller` or `buyer` is neither of `people` nor `subscribers`, the two are the same, or the seller's
+holding of `class` would fall below zero at the end of any day from `date` on (the database's FY288: "no holding
+below zero on any day"), reading the holdings the earlier documents moved ("Cap tables").
+
 ### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
 
 From Appendix B.4, §10.2, FR-FA-01, FR-FA-02, FR-FA-03 and the rows of rev 0.149, 0.150 and 0.151.
@@ -656,8 +675,9 @@ They post one entry, kind `post`, on the books' start, when they meet a manual j
 
 So they are rejected whole when they do not net to zero (the balance check, Appendix C.1 #6, LEDGER-09), have fewer
 than two lines or a zero line, reach an unknown, inactive or group account, or put a line on a director's account
-without its person and origin, or a person on another account (rule 9: "every journal line on 2500 or 2120 carries
-that contact as its sub-ledger key", FR-EQ-01 rev 0.167). Their entry is in the canonical form of a P1 entry (one
+without its person and origin, a line on share application monies without its subscriber, or a person on another
+account (rule 9: "every journal line on 2500 or 2120 carries that contact as its sub-ledger key", FR-EQ-01 rev 0.167).
+Their entry is in the canonical form of a P1 entry (one
 line per account, currency, person and dimension set; the opening balances' guide: "each account's balance"), which must keep two
 lines and fit NUMERIC(20,4).
 A director's balance credited here is what the company owes the person from the books' start, so a waiver,
@@ -1204,6 +1224,49 @@ Readings the PRD and the workbook leave open, each [accountant to confirm] with 
 | A subscription-named account whose function is Other | Not subscription revenue: with it the only one, `booked_mrr`, `arr` and `arpa` are `null` | The owner's decision (rev 0.161): booked MRR is revenue, never other income [accountant to confirm] |
 | CAC payback against a margin per account not above zero | `null` when ARPA × gross margin is not above zero, as DSO and DPO. *Superseded:* `null` only at exactly zero (a CAC of 0.00 against −100% gave 0.0) | The owner's decision (rev 0.161): a payback against a negative margin means nothing [accountant to confirm] |
 | A subscription-named group heading | Not subscription revenue: a heading carries no figures, so with it the only one, `booked_mrr`, `arr` and `arpa` are `null` | The owner's decision (rev 0.161): only postable accounts are streams [accountant to confirm] |
+
+## Cap tables
+
+From FR-EQ-20, the equity register's design D7 and Appendix G.3, a scenario may have `cap_tables`, the days to compute
+the cap table at the end of; the result's `cap_tables` gives each in that order (`result.schema.json`).
+`oracle/src/oracle/captable.py` is the oracle's side, the engine's `equity.TableAt` the engine's, and
+`golden/cap-table.json` pins G.3's round.
+
+```text
+"cap_tables": ["2026-03-11", "2026-03-12"]
+```
+
+Holdings come only from documents that move shares, each on its date once it is not rejected: a conversion of a
+founder's balance (`director_conversion`) moves the n whole shares `RND-SHARE` allots into `person`'s holding of
+`class`; a cash issue (`share_issue_cash`) moves `shares` into `person`'s holding of `class`; a transfer
+(`share_transfer`) moves `shares` out of the seller's holding and into the buyer's. Opening balances on share capital
+name no holder, so they move no holding. A class is its share-capital account.
+
+At the end of a day, each holding with shares above zero is a line, by holder, then class (in code-point order of
+their IDs):
+
+- `issued`: the shares held, a whole number;
+- `votes`: `issued` × the class's `votes_per_share` (an attribute of the share-capital account, one when left out),
+  exact, as a plain decimal with no trailing zeros ("1.5", "0");
+- `fully_diluted`: the shares held as the format has them: the same as `issued`, since it has no instruments
+  (FR-EQ-18) or option pool (FR-EQ-19) yet;
+- `ownership`, `voting` and `diluted`: the line's `issued`, `votes` and `fully_diluted` as a percentage of the day's
+  totals, round(part ÷ total × 100, 2 decimals) half-up from the exact quotient, once (FR-EQ-20, which names
+  `RND-DISPLAY` for it); `null` when that total is zero. They are never forced to sum to 100.00.
+
+`holders` sums each holder's lines (`issued`, `votes`, `fully_diluted`) and takes the percentages of those exact sums,
+not the sum of the rounded ones. The day's `issued`, `votes` and `fully_diluted` are the totals of every line.
+
+G.3's round (`golden/cap-table.json`): 1,000,000 founder shares, the investor's 200,000 and 52,083 more, of 1,252,083,
+are 79.87%, 15.97% and 4.16% (sum 100.00). The format has no SAFE yet, so its 52,083 shares come from a third
+subscriber's cash issue at S$2.40 there; the conversion itself joins with the instruments.
+
+Readings the PRD leaves open, each [accountant to confirm]:
+
+| Shape | Oracle | Why |
+|---|---|---|
+| Votes of shares in an account with no recorded class | One vote a share (`votes_per_share` left out) | The format names classes by account; in the product such shares count under their account's first recorded class, and one vote a share while it has none (design D7) |
+| Voting percentages when no share votes | `null`, as any percentage of a zero total | A percentage of nothing is undefined, never 0.00 |
 
 ## Commands
 

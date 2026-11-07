@@ -1,0 +1,414 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "shrunk-51b79d5bdc",
+ "base_currency": "SGD",
+ "currencies": {
+  "SGD": 2,
+  "USD": 2,
+  "JPY": 0,
+  "KWD": 3
+ },
+ "as_of": "2025-06-01",
+ "settings": {
+  "accounts": {
+   "receivable": "1100",
+   "payable": "2010",
+   "gst": "2200",
+   "prepayments": "1210",
+   "deferred_revenue": "2400",
+   "fx": "7030",
+   "bank_charges": "6460",
+   "withholding_tax": "2330",
+   "customer_deposits": "2410",
+   "claims_payable": "2150",
+   "advances": "1250",
+   "depreciation": "6610",
+   "accumulated_depreciation": "1590",
+   "disposal": "7050",
+   "disposal_clearing": "1160",
+   "director_loan": "2500",
+   "deferred_remuneration": "2120",
+   "unrealised_fx": "7040"
+  },
+  "money_accounts": {
+   "1010": "SGD",
+   "1011": "SGD",
+   "1021": "USD",
+   "1022": "JPY",
+   "1023": "KWD"
+  },
+  "gst": {
+   "rates": [
+    {
+     "from": "2023-01-01",
+     "percent": "8"
+    },
+    {
+     "from": "2024-01-01",
+     "percent": "9"
+    }
+   ],
+   "registered_from": "2020-01-01"
+  },
+  "mileage_rates": [
+   {
+    "vehicle": "car",
+    "from": "2020-01-01",
+    "rate": "0.60"
+   },
+   {
+    "vehicle": "motorcycle",
+    "from": "2020-01-01",
+    "rate": "0.25"
+   }
+  ],
+  "books_start": "2025-06-01"
+ },
+ "accounts": [
+  {
+   "code": "1010",
+   "type": "asset",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "1011",
+   "type": "asset",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "1021",
+   "type": "asset",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "1022",
+   "type": "asset",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "1023",
+   "type": "asset",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "1100",
+   "type": "asset",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "1160",
+   "type": "asset",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "1210",
+   "type": "asset",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "1250",
+   "type": "asset",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "1500",
+   "type": "asset",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "1510",
+   "type": "asset",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "1590",
+   "type": "asset",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "2010",
+   "type": "liability",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "2050",
+   "type": "liability",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "2150",
+   "type": "liability",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "2200",
+   "type": "liability",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "2330",
+   "type": "liability",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "2400",
+   "type": "liability",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "2410",
+   "type": "liability",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "2999",
+   "type": "liability",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "4010",
+   "type": "revenue",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "4020",
+   "type": "revenue",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "4030",
+   "type": "revenue",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "6010",
+   "type": "expense",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "6020",
+   "type": "expense",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "6110",
+   "type": "expense",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "6460",
+   "type": "expense",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "7030",
+   "type": "expense",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "6610",
+   "type": "expense",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "7050",
+   "type": "expense",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "2500",
+   "type": "liability",
+   "group": false,
+   "active": true,
+   "role": "director-loan",
+   "report_group": "Group A"
+  },
+  {
+   "code": "2120",
+   "type": "liability",
+   "group": false,
+   "active": true,
+   "role": "deferred-remuneration",
+   "report_group": "Group A"
+  },
+  {
+   "code": "3010",
+   "type": "equity",
+   "group": false,
+   "active": true,
+   "role": "share-capital",
+   "report_group": "Group A",
+   "cash_flow_line": "Share capital"
+  },
+  {
+   "code": "3020",
+   "type": "equity",
+   "group": false,
+   "active": true,
+   "role": "share-capital",
+   "report_group": "Group A",
+   "cash_flow_line": "Share capital"
+  },
+  {
+   "code": "3300",
+   "type": "equity",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "6050",
+   "type": "expense",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "7040",
+   "type": "expense",
+   "group": false,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "2040",
+   "type": "liability",
+   "group": false,
+   "active": true,
+   "role": "share-application-monies",
+   "report_group": "Group A",
+   "cash_flow_line": "Borrowings"
+  },
+  {
+   "code": "8990",
+   "type": "expense",
+   "group": false,
+   "active": false,
+   "report_group": "Group A"
+  },
+  {
+   "code": "8900",
+   "type": "expense",
+   "group": true,
+   "active": true,
+   "report_group": "Group A"
+  },
+  {
+   "code": "9100",
+   "type": "equity",
+   "group": false,
+   "active": true,
+   "role": "retained-earnings"
+  }
+ ],
+ "documents": [
+  {
+   "type": "bank_transaction",
+   "id": "P1-0001",
+   "version": 1,
+   "date": "2025-06-01",
+   "account": "1010",
+   "currency": "SGD",
+   "amount": "0.01",
+   "parts": [
+    {
+     "account": "4010",
+     "amount": "0.01",
+     "gst_code": "SR"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "STM-0001",
+   "version": 1,
+   "date": "2025-06-01",
+   "memo": "cost a director paid",
+   "lines": [
+    {
+     "account": "6010",
+     "currency": "SGD",
+     "amount": "0.01"
+    },
+    {
+     "account": "2040",
+     "currency": "SGD",
+     "amount": "-0.01"
+    }
+   ]
+  }
+ ],
+ "reversals": [],
+ "people": [
+  "P0001",
+  "P0002"
+ ],
+ "subscribers": [
+  "P0003",
+  "P0004"
+ ],
+ "cap_tables": [
+  "2025-06-01"
+ ],
+ "statements": true
+}

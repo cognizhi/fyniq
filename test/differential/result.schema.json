@@ -88,9 +88,65 @@
       "patternProperties": {
         "^[0-9]{4}-(0[1-9]|1[0-2])$": {"$ref": "#/$defs/monthKpis"}
       }
+    },
+    "cap_tables": {
+      "description": "Present only when the scenario has cap_tables: the cap table at the end of each of its days, in their order (FR-EQ-20; README, \"Cap tables\").",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["at", "issued", "votes", "fully_diluted", "lines", "holders"],
+        "properties": {
+          "at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+          "issued": {"$ref": "#/$defs/decimal"},
+          "votes": {"$ref": "#/$defs/decimal"},
+          "fully_diluted": {"$ref": "#/$defs/decimal"},
+          "lines": {
+            "description": "Every holding with shares, by holder, then class.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["holder", "class", "issued", "votes", "fully_diluted", "ownership", "voting", "diluted"],
+              "properties": {
+                "holder": {"type": "string"},
+                "class": {"type": "string"},
+                "issued": {"$ref": "#/$defs/decimal"},
+                "votes": {"$ref": "#/$defs/decimal"},
+                "fully_diluted": {"$ref": "#/$defs/decimal"},
+                "ownership": {"$ref": "#/$defs/share"},
+                "voting": {"$ref": "#/$defs/share"},
+                "diluted": {"$ref": "#/$defs/share"}
+              }
+            }
+          },
+          "holders": {
+            "description": "Each holder's lines together, by holder; the percentages come from the exact sums.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["holder", "issued", "votes", "fully_diluted", "ownership", "voting", "diluted"],
+              "properties": {
+                "holder": {"type": "string"},
+                "issued": {"$ref": "#/$defs/decimal"},
+                "votes": {"$ref": "#/$defs/decimal"},
+                "fully_diluted": {"$ref": "#/$defs/decimal"},
+                "ownership": {"$ref": "#/$defs/share"},
+                "voting": {"$ref": "#/$defs/share"},
+                "diluted": {"$ref": "#/$defs/share"}
+              }
+            }
+          }
+        }
+      }
     }
   },
   "$defs": {
+    "share": {
+      "description": "A percentage of the cap table's total to 2 decimals, half-up, such as \"79.87\"; null when the total is zero.",
+      "anyOf": [{"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$"}, {"type": "null"}]
+    },
     "decimal": {
       "description": "A plain decimal string: no exponent, no '+', no grouping.",
       "type": "string",

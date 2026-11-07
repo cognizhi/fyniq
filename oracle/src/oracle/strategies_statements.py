@@ -154,7 +154,7 @@ def _size(node: Any, mileage: Decimal) -> tuple[Decimal, Decimal]:
     """A P1 document's figures summed as absolute values, and the largest rate it names (at least 1).
 
     Every plain decimal counts except account codes, rates and percentages; a quantity also counts times
-    its unit price, and a distance times the largest mileage rate. A rate that is not a plain decimal is
+    its unit price, shares times their price, and a distance times the largest mileage rate. A rate that is not a plain decimal is
     refused by both sides (ENG-11), so it scales nothing.
     """
     total, rate = Decimal(0), Decimal(1)
@@ -178,6 +178,9 @@ def _size(node: Any, mileage: Decimal) -> tuple[Decimal, Decimal]:
         distance = _plain(node.get("distance"))
         if distance is not None:
             total += distance * mileage
+        shares, per_share = _plain(node.get("shares")), _plain(node.get("price"))
+        if shares is not None and per_share is not None:  # a cash issue's amount (README, "Cash share issues")
+            total += shares * per_share
     return total, rate
 
 
@@ -233,9 +236,14 @@ def _kpi_settings(draw: st.DrawFn, months: list[str]) -> dict[str, Any]:
     return {"year_start_month": draw(st.sampled_from([1, 1, 4, 7, 10, 12])), "counts": counts}
 
 
+# The roles whose lines name a person (README, rule 9), which the added journals, naming no one, stay off.
+_NAMED = frozenset({"director-loan", "deferred-remuneration", "share-application-monies"})
+
+
 def _postable(accounts: list[dict[str, Any]], test) -> list[str]:
     return [a["code"] for a in accounts
-            if a["active"] and not a["group"] and a.get("role") != "share-capital" and test(a)]
+            if a["active"] and not a["group"] and a.get("role") != "share-capital" and a.get("role") not in _NAMED
+            and test(a)]
 
 
 @st.composite
