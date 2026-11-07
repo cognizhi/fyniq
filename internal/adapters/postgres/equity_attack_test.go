@@ -228,3 +228,56 @@ VALUES ($1, 1, $2, 'SGD', 600000, 1, 'attack', 600000, NULL), ($1, 2, $3, 'SGD',
 		return err
 	}), storage.CodeParty)
 }
+
+// An equity transaction's ACRA steps are of its kind, recorded between its approval and its effective date, and never
+// change (FR-EQ-09, FR-EQ-17; FY290): a step of a draft, a step its kind does not take, a step once it is effective and
+// a change are refused; a step of an approved transfer is recorded.
+// req: FR-EQ-17
+// req: FR-EQ-09
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackEquityStepsKeepTheirRules(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack equity steps Pte Ltd")
+	api := store(t, "fyniq_api")
+	transaction := func(kind string, posted bool) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		if err := api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentEquityTransaction, Payload: []byte(fmt.Sprintf(`{"kind":%q}`, kind))})
+			id = doc.ID
+			if err != nil || !posted {
+				return err
+			}
+			return u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted)
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	record := func(tx uuid.UUID, kind string) error {
+		return api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.EquitySteps().Record(ctx, storage.EquityStep{TransactionID: tx, Kind: kind, On: time.Date(2026, 11, 2, 0, 0, 0, 0, time.UTC),
+				RecordedBy: d.member, RecordedAt: time.Date(2026, 11, 2, 0, 0, 0, 0, time.UTC)})
+			return err
+		})
+	}
+	for name, err := range map[string]error{
+		"a step of a draft":            record(transaction("transfer", false), storage.StepInstrumentSigned),
+		"a transfer's resolution":      record(transaction("transfer", true), storage.StepAllotmentLodged),
+		"an issue's instrument signed": record(transaction("issue_cash", true), storage.StepInstrumentSigned),
+		"a step of a reversal":         record(transaction("reversal", true), storage.StepResolved),
+	} {
+		if storage.CodeOf(err) != storage.CodeEquityStep {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	transfer := transaction("transfer", true)
+	if err := record(transfer, storage.StepInstrumentSigned); err != nil {
+		t.Fatalf("the instrument of an approved transfer signed: %v", err)
+	}
+	wantState(t, "changing a step", asOrg(ctx, conn(t, "fyniq_api"), d.org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `UPDATE fyniq.equity_step SET on_date = '2026-11-03'`)
+		return err
+	}), "FY290", "42501")
+}

@@ -135,6 +135,8 @@ type UnitOfWork interface {
 	// Holdings are the movements behind every holding of shares (FR-EQ-17).
 	Holdings() Holdings
 	ConversionSteps() ConversionSteps
+	// EquitySteps are the ACRA steps of equity transactions (FR-EQ-17, FR-EQ-09).
+	EquitySteps() EquitySteps
 	// ReportExports are the exports that run in the background (FR-RPT-09).
 	ReportExports() ReportExports
 	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).
@@ -858,6 +860,9 @@ const (
 	// never changed, in an open period; share capital moves between classes only with a conversion's movements (FR-EQ-17,
 	// INV-13; FY288, FY289).
 	CodeHolding = "STORAGE-SHARE-04"
+	// CodeEquityStep: an equity transaction's ACRA steps are of its kind, recorded between its approval and its effective
+	// date, and never changed (FR-EQ-09; FY290).
+	CodeEquityStep = "STORAGE-SHARE-05"
 	// CodeEquityRecord: a holder record keeps an individual's identifier to its type and last 4 characters and no full
 	// NRIC or FIN, and a share class belongs to an active share-capital account (FR-EQ-15, FR-EQ-16; FY285, FY286).
 	CodeEquityRecord = "STORAGE-SHARE-03"

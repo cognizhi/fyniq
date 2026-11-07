@@ -55,7 +55,8 @@ type BankTransaction struct {
 	Rate    *money.Rate
 	Parts   []BankPart
 	// Party is the line's contact when it is a director or shareholder: a part on a director's account is theirs
-	// (FR-EQ-01, B.7), money in lent and money out paid to them. uuid.Nil otherwise.
+	// (FR-EQ-01, B.7), money in lent and money out paid to them; or a subscriber's, on share application monies: money in
+	// for shares not yet allotted, money out refunded (B.7, rev 0.206). uuid.Nil otherwise.
 	Party uuid.UUID
 	// Automatic is a categorisation a bank rule applied by itself (FR-BNK-14): a posting the system makes, so a part on
 	// an account that requires a dimension posts without a value of it, and Appendix C.2 #60 flags the amount
@@ -163,7 +164,7 @@ func PostBankTransaction(t BankTransaction, s Settings) (Entry, error) {
 			add(CodeSpread, f("account"), fmt.Sprintf("account %s holds the line's spread parts", a.Code), "Choose the account the money is for, and spread that part")
 		case a.Currency != "" && a.Currency != s.Base.Code:
 			add(CodeLineCurrency, f("account"), fmt.Sprintf("account %s is held in %s", a.Code, a.Currency), fmt.Sprintf("Choose an account kept in %s", s.Base))
-		case a.DirectorAccount():
+		case a.DirectorAccount() || a.SubscriberAccount(): // the director, or the subscriber whose application monies these are (B.7)
 			if pr := partyProblem(s, a, t.Party, "contact_id"); pr != nil {
 				probs = append(probs, *pr)
 			}
@@ -242,7 +243,7 @@ func PostBankTransaction(t BankTransaction, s Settings) (Entry, error) {
 		}
 		if !net.IsZero() {
 			line := Line{AccountID: to, Amount: net.Neg(), Rate: id, Base: net.Neg(), Description: p.Description, Values: canonical(p.Values)}
-			if s.Accounts[to].DirectorAccount() {
+			if s.Accounts[to].DirectorAccount() || s.Accounts[to].SubscriberAccount() {
 				line.Party = t.Party
 			}
 			lines = append(lines, line)

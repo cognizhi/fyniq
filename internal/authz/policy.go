@@ -1252,6 +1252,8 @@ var (
 	ReplaceEquityTransaction         = Policy{Operation: "replaceEquityTransaction", Capability: CapTable, Need: Create}
 	RequestEquityTransactionApproval = Policy{Operation: "requestEquityTransactionApproval", Capability: CapTable, Need: Create,
 		Note: "Another person approves it, never a holder it moves shares of or for; the Accountant too when every available approver benefits."}
+	RecordEquityStep = Policy{Operation: "recordEquityStep", Capability: CapTable, Need: Approve,
+		Note: "The caller must have stepped up in the last 5 minutes."}
 	RecordEquityTransactionEffective = Policy{Operation: "recordEquityTransactionEffective", Capability: CapTable, Need: Approve,
 		Note: "The caller must have stepped up in the last 5 minutes, and is never a holder the transaction moves shares of or for."}
 	AddEquityTransactionEvidence    = Policy{Operation: "addEquityTransactionEvidence", Capability: CapTable, Need: Create}
@@ -1430,7 +1432,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListHolderRecordEvidence, GetHolderRecordEvidence, RemoveHolderRecordEvidence, ListShareClasses, GetShareClass, CreateShareClass,
 	ReplaceShareClass, RequestShareClassApproval, AddShareClassEvidence, ListShareClassEvidence, GetShareClassEvidence, RemoveShareClassEvidence,
 	RemoveBrandFile, SetBrandAccent, ListEquityTransactions, GetEquityTransaction, CreateEquityTransaction, ReplaceEquityTransaction,
-	RequestEquityTransactionApproval, RecordEquityTransactionEffective, AddEquityTransactionEvidence, ListEquityTransactionEvidence,
+	RequestEquityTransactionApproval, RecordEquityStep, RecordEquityTransactionEffective, AddEquityTransactionEvidence, ListEquityTransactionEvidence,
 	GetEquityTransactionEvidence, RemoveEquityTransactionEvidence)
 
 func index(ps ...Policy) map[string]Policy {

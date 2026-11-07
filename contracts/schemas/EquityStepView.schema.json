@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The step's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5f41"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "Which step: a cash issue's resolved, approval_lodged, agm_due and allotment_lodged; a transfer's instrument_signed and transfer_lodged; a conversion's resolved and conversion_lodged.",
+      "enum": [
+        "resolved",
+        "approval_lodged",
+        "agm_due",
+        "allotment_lodged",
+        "instrument_signed",
+        "transfer_lodged",
+        "conversion_lodged"
+      ],
+      "examples": [
+        "approval_lodged"
+      ],
+      "type": "string"
+    },
+    "on": {
+      "description": "Its day.",
+      "examples": [
+        "2027-03-08"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2027-03-08T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "reference": {
+      "description": "ACRA's transaction number, or what it rests on.",
+      "examples": [
+        "T27ACRA00456"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "on",
+    "recorded_at"
+  ],
+  "title": "EquityStepView",
+  "type": "object"
+}

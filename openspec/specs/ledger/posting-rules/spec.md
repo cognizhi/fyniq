@@ -883,6 +883,10 @@ Source: PRD-001 §B.7
 - **WHEN** the issue does not proceed
 - **THEN** the cash is refunded from the same account
 
+#### Scenario: From the bank line, in and out (rev 0.206)
+- **WHEN** a bank line of money in for shares, or of a refund paid out, is categorised to share application monies
+- **THEN** it names its subscriber and posts Dr Bank · Cr share application monies in, or Dr share application monies · Cr Bank out
+
 ### Requirement: SAFE or note received and converted
 A SAFE or note (FR-EQ-18) SHALL post to 2700 when received and move the converted amount to 3010 or 3020 when converted, the remainder staying on 2700 until settled under the terms.
 

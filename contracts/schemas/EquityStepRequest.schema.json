@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "description": "Which step, of those the transaction's kind takes.",
+      "enum": [
+        "resolved",
+        "approval_lodged",
+        "agm_due",
+        "allotment_lodged",
+        "instrument_signed",
+        "transfer_lodged",
+        "conversion_lodged"
+      ],
+      "examples": [
+        "approval_lodged"
+      ],
+      "type": "string"
+    },
+    "on": {
+      "description": "Its day: no later than today, except the AGM date.",
+      "examples": [
+        "2027-03-08"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reference": {
+      "description": "ACRA's transaction number, or what it rests on.",
+      "examples": [
+        "T27ACRA00456"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "on"
+  ],
+  "title": "EquityStepRequest",
+  "type": "object"
+}
