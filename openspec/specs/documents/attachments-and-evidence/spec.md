@@ -19,6 +19,12 @@ Source: PRD-001 §8.16 · Priority M · Phase P1
 - **WHEN** a file is uploaded
 - **THEN** it is virus-scanned
 
+#### Scenario: Open a file from its record (rev 0.188)
+- **WHEN** a person opens a file in a record's Evidence panel
+- **THEN** its content is sent only if they view the record's row without a qualifier, or it is on their own claim or bank account change
+- **AND** it is checked against the hash recorded when it was stored, and the opening is audited
+- **AND** a picture shows inline while any other file is saved under a safe name
+
 ### Requirement: FR-DOC-02 Retention-locked storage
 Files SHALL be stored encrypted in Cloud Storage with retention locks matching the statutory retention period (§14), and SHALL be deleted only by retention expiry, never by users.
 

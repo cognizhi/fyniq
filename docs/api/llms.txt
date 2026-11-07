@@ -242,6 +242,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/document-templates/{template_id}/versions` (listDocumentTemplateVersions): List a template's versions
 - `GET /v1/document-templates/{template_id}/versions/{number}` (getDocumentTemplateVersion): Read a template version
 - `GET /v1/evidence` (searchEvidence): Search the evidence
+- `GET /v1/evidence/{evidence_id}/file` (getEvidenceFile): Open an evidence file
 - `GET /v1/exempt-statuses` (listExemptStatuses): List the exempt-private-company statuses
 - `POST /v1/exempt-statuses` (createExemptStatus): Draft an exempt-private-company status
 - `GET /v1/exempt-statuses/{status_id}` (getExemptStatus): Get an exempt-private-company status

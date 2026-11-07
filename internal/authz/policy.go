@@ -283,6 +283,9 @@ type Policy struct {
 	// of the books: Reports' "V sales" reads the sales reports (p1-reports design D9). It never widens an operation
 	// that is not Unqualified.
 	Qualified []string
+	// ByRecord operations reach records of several kinds, whose own Appendix D rows decide past the policy: a record the
+	// caller may not see is not found, as a search leaves it out (an evidence file, rev 0.188).
+	ByRecord bool
 }
 
 // The policies of the P0 endpoints. A cell's qualifier is carried, not enforced: the amount limit
@@ -355,6 +358,9 @@ var (
 	// Evidence search (FR-DOC-10, rev 0.184): whoever views evidence without a qualifier, on the records whose rows they view.
 	SearchEvidence = Policy{Operation: "searchEvidence", Capability: Evidence, Need: View, Unqualified: true,
 		Note: "Lists only files on the records whose Appendix D rows the person views."}
+	// GetEvidenceFile opens a file: the record's row decides it, as a search lists it, or the person's own claim (rev 0.188).
+	GetEvidenceFile = Policy{Operation: "getEvidenceFile", Capability: Evidence, Need: View, ByRecord: true,
+		Note: "Needs a view of the file's record's row without a qualifier as well, or its own Employee's expense claim or bank account change."}
 	// Owner succession (FR-ADM-09, rev 0.181): Owners start, evidence, object and withdraw (A); a Super admin completes it.
 	ListOwnerSuccessions        = Policy{Operation: "listOwnerSuccessions", Capability: UsersAndRoles, Need: View}
 	StartOwnerSuccession        = Policy{Operation: "startOwnerSuccession", Capability: UsersAndRoles, Need: Approve, Note: "A person stepped up in the last 5 minutes, an Owner, for another Owner."}
@@ -1222,7 +1228,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, RequestAccountMerge,
 	ListDimensions, CreateDimension, ReplaceDimension, ListDimensionValues, CreateDimensionValue, ReplaceDimensionValue, ListContacts, GetContact, GetContactSummary,
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
-	RevokeRole, RemoveMember, SearchEvidence, ListOwnerSuccessions, StartOwnerSuccession, AddOwnerSuccessionEvidence, ListOwnerSuccessionEvidence,
+	RevokeRole, RemoveMember, SearchEvidence, GetEvidenceFile, ListOwnerSuccessions, StartOwnerSuccession, AddOwnerSuccessionEvidence, ListOwnerSuccessionEvidence,
 	ObjectToOwnerSuccession, WithdrawOwnerSuccession, CompleteOwnerSuccession, GetAccessReview, ExportAccessReview, AttestAccessReview, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetKpis, ListKpiInputs, SetKpiInput, ListChecks, GetCheck, RunChecks, SetCheckOwner, ReviewCheckItem, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,

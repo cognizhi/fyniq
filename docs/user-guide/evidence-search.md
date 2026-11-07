@@ -3,7 +3,7 @@ key: compliance.evidence
 title: Find evidence, and what is missing
 mode: expert
 roles: [owner, controller, accountant, bookkeeper, ar_specialist, ap_specialist, payment_releaser, approver, auditor, tax_agent, dpo]
-requirements: [FR-DOC-10, FR-DOC-06]
+requirements: [FR-DOC-10, FR-DOC-06, FR-DOC-01]
 ---
 
 # Find evidence, and what is missing
@@ -24,6 +24,19 @@ founders' money and Owner successions. You see only the files on the records you
 - The newest records come first. Each file shows its record, the record's date, the file's name,
   what it is and when it was attached; a record's number opens it.
 - A file whose text shows an NRIC or FIN in full is marked **Shows an NRIC**.
+
+## Open a file
+
+In a record's **Evidence** panel, each file has a button to open it:
+
+- **Show** (the eye) shows a picture, such as a photo of a receipt or a screenshot, below the list.
+  Select **Hide** to close it.
+- **Save** (the arrow) saves any other file, such as a PDF or a spreadsheet, to your device. Fyniq
+  keeps only the letters, digits, spaces, dots, dashes and underscores of its name for the saved copy.
+
+You open a file only on a record your role lets you see; an Employee opens the receipts of their own
+claims. Fyniq checks the file against the fingerprint recorded when it was attached before it sends
+it, and records each opening in the audit trail. A file taken off a draft cannot be opened.
 
 ## Missing evidence
 

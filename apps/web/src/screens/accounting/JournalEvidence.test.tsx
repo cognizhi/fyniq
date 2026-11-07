@@ -1,11 +1,12 @@
 import { fireEvent, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Organisation, Session } from "../../api/client";
 import type { components } from "../../api/schema";
 import { SignedInProvider } from "../../session";
 import { answer, ownerSession, problem, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
+import { safeName } from "./JournalEvidence";
 import { JournalPage } from "./JournalPage";
 
 type Journal = components["schemas"]["Journal"];
@@ -58,6 +59,46 @@ const at = { path: "/accounting/journals/j1", route: "/accounting/journals/$jour
 // req: FR-DOC-05
 // req: FR-DOC-07
 describe("a journal's evidence", () => {
+  // req: FR-DOC-01
+  it("shows a picture below the list and saves any other file under a safe name; a removed file has neither", async () => {
+    const png = btoa("\x89PNG fake picture");
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } },
+      "GET /v1/journals/j1/evidence": {
+        status: 200,
+        body: { items: [file({ id: "ev1", file_name: "receipt.png", media_type: "image/png" }), file({ id: "ev2" }), file({ id: "ev3", file_name: "gone.pdf", state: "removed" })] },
+      },
+      "GET /v1/evidence/ev1/file": { status: 200, body: { id: "ev1", file_name: "receipt.png", media_type: "image/png", size_bytes: 18, sha256: "a".repeat(64), content_base64: png } },
+      "GET /v1/evidence/ev2/file": { status: 200, body: { id: "ev2", file_name: "../rent: accrual?.xlsx", media_type: file().media_type, size_bytes: 4, sha256: "a".repeat(64), content_base64: btoa("PK..") } },
+    });
+    const made = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:fyniq/picture");
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+    const saved: string[] = [];
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      saved.push(this.download);
+    });
+    renderPage(page(auditor), at);
+    fireEvent.click(await screen.findByRole("button", { name: "Show receipt.png" }));
+    const picture = await screen.findByRole("img", { name: "receipt.png, as attached" });
+    expect(picture.getAttribute("src")).toBe("blob:fyniq/picture");
+    fireEvent.click(screen.getByRole("button", { name: "Save rent-accrual.xlsx" }));
+    await vi.waitFor(() => expect(saved).toEqual(["rent_ accrual_.xlsx"]));
+    expect(made).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("button", { name: /gone\.pdf/ })).toBeNull();
+    expect(seen.filter((x) => x.path.endsWith("/file")).map((x) => x.path)).toEqual(["/v1/evidence/ev1/file", "/v1/evidence/ev2/file"]);
+    await noViolations(document.body);
+    vi.restoreAllMocks();
+  });
+
+  it("names a saved file safely", () => {
+    expect(safeName("AU-100.pdf", "x")).toBe("AU-100.pdf");
+    expect(safeName("..\\..\\windows\\evil.exe", "x")).toBe("evil.exe");
+    expect(safeName(".hidden", "x")).toBe("hidden");
+    expect(safeName("../", "e1")).toBe("evidence-e1");
+    expect(safeName("收据.pdf", "e2")).toBe("__.pdf");
+  });
+
   // req: FR-DOC-09
   it("marks a file whose text shows an NRIC in full", async () => {
     answer({

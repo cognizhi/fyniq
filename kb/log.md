@@ -373,3 +373,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | docs/user-guide/notifications.md → settings.notifications (a notification by row follows the role; SEC-34)
 
 ## [2026-11-06] compile | docs/user-guide/contacts-and-items.md → contacts.manage (each item's sales this financial year, FR-ITM-01, rev 0.187)
+
+## [2026-11-06] compile | docs/user-guide/evidence-search.md, journals.md → compliance.evidence, accounting.journals (open or save an evidence file, FR-DOC-01, rev 0.188)

@@ -12376,6 +12376,26 @@ Every file attached across the organisation's records, removed ones aside, newes
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
 
+### `GET /v1/evidence/{evidence_id}/file`
+
+**Open an evidence file** (`getEvidenceFile`)
+
+The file itself, in base64 with its name, type and SHA-256 (FR-DOC-01; PRD-001 rev 0.188): from the staging store while its record is a draft, from the retention-locked store once it is final, and checked against the SHA-256 recorded when it was stored before it is sent. Only for whoever views its record's row without a qualifier, as an evidence search lists it, or for the person whose own expense claim or bank account change it is on; any other file, and a removed one, is not found. Show a picture inline only from this answer, never by its name; a PDF is for saving until previews render (FR-DOC-08). Side effects: an audit event of the opening, with the file's hash. Never cached.
+
+- **Permission:** View on Evidence: add, supersede (rev 0.3). Needs a view of the file's record's row without a qualifier as well, or its own Employee's expense claim or bank account change.
+- **Parameters:**
+  - `evidence_id` (path, required): The file.
+- **Responses:**
+  - `200` OK [`EvidenceFileContent`](../../contracts/schemas/EvidenceFileContent.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`
+
 ### `GET /v1/exempt-statuses/{status_id}/evidence`
 
 **List an exempt status's files** (`listExemptStatusEvidence`)
