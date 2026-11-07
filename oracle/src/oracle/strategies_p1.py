@@ -55,9 +55,11 @@ For the equity register (README, "Cash share issues", "Share transfers" and "Cap
 application monies (2040) and the share classes, each class's votes per share drawn; the subscribers ``P0003`` and
 ``P0004``, whose money comes in and is refunded (within what they paid) on bank lines naming them; cash issues within
 what each has paid; transfers of what a subscriber holds to another holder, the founders' people among them when their
-source is drawn too (only the subscribers sell, so what each holds is exact); and one to three days to state the cap
-table at, a document's day or ``as_of`` as often as any from a month before the first document. Three scenarios in four start with money in and issues,
-so the documents after them find shares to transfer.
+source is drawn too (only the subscribers sell, so what each holds is exact); SAFEs recorded, their money on 2700
+naming them, and their conversion at a posted round, whose shares the generator works out as README "SAFEs and their
+conversion" states them; and one to three days to state the cap table at, a document's day or ``as_of`` as often as
+any from a month before the first document. Three scenarios in four start with money in and issues, so the documents
+after them find shares to transfer, and one in four of those records a SAFE, pays it in and converts it at a round.
 
 The generator keeps what it built so far in a :class:`_Book` (the bills and invoices a settlement may
 settle and what each has open, the deposits and what is left of each), so a document built to post
@@ -68,6 +70,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 from decimal import Decimal
+from fractions import Fraction
 from typing import Any
 
 from hypothesis import strategies as st
@@ -149,12 +152,14 @@ FX_REJECTED = ["pay-more-than-open", "receipt-more-than-open", "transfer-missing
 FX_OWN = frozenset({"fx-journal", "fx-journal-unbalanced", "fx-pay-from-base-unapplied", "fx-wallet-in", "fx-wallet-out"})
 # The equity register (README, "Cash share issues", "Share transfers" and "Cap tables"): money for shares in, and
 # refunded, on bank lines naming a subscriber; cash issues within what each subscriber has paid; transfers of what a
-# subscriber holds to another holder. Refused: an issue above what is paid, a transfer of more than the seller holds,
-# to themselves, or of an account that is not share capital.
+# subscriber holds to another holder; SAFEs, their money and their conversion. Refused: an issue above what is paid, a
+# transfer of more than the seller holds, to themselves, or of an account that is not share capital; a SAFE that breaks
+# a rule, money on 2700 naming no recorded SAFE, and a conversion of a SAFE whose money never came.
 EQUITY_POSTING = ["equity-money-in", "equity-money-in", "equity-refund", "equity-issue", "equity-issue",
-                  "equity-transfer", "equity-transfer"]
+                  "equity-transfer", "equity-transfer", "equity-safe", "equity-safe-money", "equity-safe-conversion"]
 EQUITY_REJECTED = ["equity-issue-unpaid", "equity-transfer-too-many", "equity-transfer-to-self",
-                   "equity-transfer-not-share-capital"]
+                   "equity-transfer-not-share-capital", "equity-safe-bad", "equity-safe-money-unnamed",
+                   "equity-safe-conversion-unfunded"]
 REVALUED = ["1021", "1022", "1023", "1100", "2010"]  # README, "Month-end revaluation": the standard chart's flags
 UNREALISED_FX = "7040"
 RATE_FORMS = ["fx_rate", "fx_rate", "base-per-unit", "base-per-100", "foreign-per-base"]
@@ -178,6 +183,9 @@ SHARE_CLASSES = ["3010", "3020"]
 # The investors who are not among PEOPLE (README, "Cash share issues"), and share application monies.
 SUBSCRIBERS = ["P0003", "P0004"]
 MONIES = "2040"
+# The SAFEs (README, "SAFEs and their conversion"): the account of their money, and their forms.
+HOLDING = "2700"
+SAFE_FORMS = ["post_money_safe", "pre_money_safe", "discount_safe", "mfn_safe"]
 
 
 class _Book:
@@ -201,6 +209,11 @@ class _Book:
         self.monies: dict[str, Decimal] = {}  # subscriber -> what their share application monies hold
         self.shares: dict[tuple[str, str], int] = {}  # (subscriber, class) -> the shares they hold, exactly
         self.holders: list[str] = list(SUBSCRIBERS)  # whom a transfer may move shares to
+        self.issued: list[tuple[date, int]] = []  # every allotment of shares posted: its day and its shares
+        self.rounds: list[tuple[str, date, Decimal]] = []  # the cash issues posted: a SAFE's priced rounds
+        self.safes: dict[str, dict[str, Any]] = {}  # SAFE -> its terms, in the order recorded
+        self.funded: set[str] = set()  # the SAFEs whose whole amount is on 2700
+        self.converted: set[str] = set()
 
     def credit(self, key: tuple[str, str], amount: Decimal) -> None:
         """A posted credit to the person on the account: owed, at least and at most."""
@@ -990,6 +1003,7 @@ def _founders_document(
         doc["class"] = draw(st.sampled_from(["3300", "3300", "4010"]))
     if meant == POST:  # what is left owed is at least the amount's remainder, at most what was owed
         book.debit((person, account), amount, exact=False)
+        book.issued.append((date.fromisoformat(base["date"]), money.rnd_share(amount, price, 2)[0]))  # its shares
     return doc, meant, kind
 
 
@@ -997,6 +1011,8 @@ def _equity_accounts(draw: st.DrawFn, accounts: list[dict[str, Any]]) -> None:
     """Share application monies and the share classes (README, "Cap tables"), each class's votes per share drawn."""
     accounts.append({"code": MONIES, "type": "liability", "group": False, "active": True,
                      "role": "share-application-monies"})
+    accounts.append({"code": HOLDING, "type": "liability", "group": False, "active": True,
+                     "role": "convertible-instruments"})
     have = {a["code"]: a for a in accounts}
     for code in SHARE_CLASSES:
         if code not in have:
@@ -1015,11 +1031,51 @@ def _equity_document(
     or a transfer with nothing held, becomes money in). Only the subscribers sell, so what each holds is exact."""
     paid = sorted(p for p, left in book.monies.items() if left > 0)
     held = sorted(k for k, n in book.shares.items() if n > 0)
+    converting = [sid for sid in book.safes if sid not in book.converted]
+    never_funded = [sid for sid in converting if sid not in book.funded]
+    if kind == "equity-safe-money" and not never_funded:
+        kind = "equity-safe"
+    if kind == "equity-safe-conversion-unfunded":  # a round at which every price works, so only the money is short
+        outcome = _conversion(draw, book, day, converting) if never_funded else None
+        if outcome is None:
+            kind = "equity-safe"
+    if kind == "equity-safe-conversion":
+        if not converting:
+            kind = "equity-safe"
+        elif never_funded:
+            kind = "equity-safe-money"
+        else:
+            outcome = _conversion(draw, book, day, converting)
+            if outcome is None:  # no round with shares before it, or one that would refuse it: money in instead
+                kind = "equity-money-in"
     if (kind in ("equity-refund", "equity-issue") and not paid) or \
             (kind in ("equity-transfer", "equity-transfer-to-self") and not held):
         kind = "equity-money-in"
     meant = REJECT if kind in REJECTED_KINDS else POST
     base = {"id": doc_id, "version": 1, "date": day.isoformat()}
+    if kind in ("equity-safe", "equity-safe-bad"):
+        return _safe(draw, base, kind, book), meant, kind
+    if kind in ("equity-safe-money", "equity-safe-money-unnamed"):
+        safe = draw(st.sampled_from(never_funded)) if kind == "equity-safe-money" else None
+        amount = book.safes[safe]["amount"] if safe else Decimal("10.00")
+        doc = {"type": "bank_transaction", **base, "account": "1010", "currency": "SGD", "amount": _text(amount, 2),
+               "parts": [{"account": HOLDING, "amount": _text(amount, 2), "gst_code": "NA"}]}
+        if safe:
+            doc["instrument"] = safe
+            book.funded.add(safe)
+        elif draw(st.booleans()):
+            doc["instrument"] = "SAFE-9999"  # never recorded
+        return doc, meant, kind
+    if kind == "equity-safe-conversion-unfunded":  # a SAFE whose money never came: refused for it
+        return {"type": "safe_conversion", **base, "round": outcome[0]}, meant, kind
+    if kind == "equity-safe-conversion":
+        round_id, allotted = outcome
+        for sid, shares in allotted:
+            terms = book.safes[sid]
+            book.shares[(terms["holder"], terms["class"])] = book.shares.get((terms["holder"], terms["class"]), 0) + shares
+            book.issued.append((day, shares))
+            book.converted.add(sid)
+        return {"type": "safe_conversion", **base, "round": round_id}, meant, kind
     if kind in ("equity-money-in", "equity-refund"):
         person = draw(st.sampled_from(SUBSCRIBERS if kind == "equity-money-in" else paid))
         amount = draw(_cents(2, 6)) if kind == "equity-money-in" else money.negate(draw(_part_of(book.monies[person])))
@@ -1037,6 +1093,8 @@ def _equity_document(
             shares = draw(st.integers(1, min(int(money.EXACT.divide_int(left, price)), 10**7)))
             book.monies[person] = money.EXACT.subtract(left, money.rnd_line(Decimal(shares), price, 2))
             book.shares[(person, share_class)] = book.shares.get((person, share_class), 0) + shares
+            book.issued.append((day, shares))
+            book.rounds.append((doc_id, day, price))
         return {"type": "share_issue_cash", **base, "person": person, "class": share_class, "shares": str(shares),
                 "price": format(price, "f")}, meant, kind
     if kind == "equity-transfer-too-many":
@@ -1055,6 +1113,73 @@ def _equity_document(
         if buyer in SUBSCRIBERS:
             book.shares[(buyer, share_class)] = book.shares.get((buyer, share_class), 0) + shares
     return doc, meant, kind
+
+
+def _safe(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book) -> dict[str, Any]:
+    """A SAFE recorded (README, "SAFEs and their conversion"): a form, whole dollars, a cap at least 20 times its amount
+    (so the post-money SAFEs never take the company), a discount on some, and 2 to 6 decimals; or, refused, a capped
+    form with no cap, a discount of 100, a class that is not share capital, 7 decimals or a stranger."""
+    form = draw(st.sampled_from(SAFE_FORMS))
+    amount = Decimal(draw(st.integers(1000, 500000)))
+    terms: dict[str, Any] = {"holder": draw(st.sampled_from(SUBSCRIBERS)), "form": form, "amount": amount, "cap": None,
+                             "discount": None, "class": draw(st.sampled_from(SHARE_CLASSES)),
+                             "decimals": draw(st.integers(2, 6))}
+    if form in ("post_money_safe", "pre_money_safe"):
+        terms["cap"] = Decimal(draw(st.integers(int(amount) * 20, 10**11)))
+    if form == "discount_safe" or (form != "mfn_safe" and draw(st.booleans())):
+        terms["discount"] = Decimal(draw(st.sampled_from(["10", "15", "20", "12.5", "33.33"])))
+    doc = {"type": "instrument", **base, "person": terms["holder"], "form": form, "amount": _text(amount, 2),
+           "class": terms["class"], "price_decimals": terms["decimals"]}
+    if terms["cap"] is not None:
+        doc["valuation_cap"] = format(terms["cap"], "f")
+    if terms["discount"] is not None:
+        doc["discount"] = format(terms["discount"], "f")
+    if kind == "equity-safe-bad":
+        broken = draw(st.sampled_from(["no-cap", "discount", "class", "decimals", "stranger"]))
+        if broken == "no-cap":
+            doc["form"] = draw(st.sampled_from(["post_money_safe", "pre_money_safe"]))
+            doc.pop("valuation_cap", None)
+        elif broken == "discount":
+            doc["discount"] = "100"
+        elif broken == "class":
+            doc["class"] = draw(st.sampled_from([MONIES, "1010", "4010"]))
+        elif broken == "decimals":
+            doc["price_decimals"] = 7
+        else:
+            doc["person"] = "P0009"
+        return doc
+    book.safes[base["id"]] = terms
+    return doc
+
+
+def _conversion(draw: st.DrawFn, book: _Book, day: date,
+                converting: list[str]) -> tuple[str, list[tuple[str, int]]] | None:
+    """A round to convert every funded SAFE at, and the shares each takes (README, "SAFEs and their conversion"): None
+    when no posted cash issue has shares issued before its day, or when the conversion would be refused (a price cut to
+    nothing, or no whole share). The prices are worked as the README states them, so the generator knows the shares."""
+    rounds = [(rid, d, p) for rid, d, p in book.rounds if d <= day and sum(n for when, n in book.issued if when < d) > 0]
+    if not rounds:
+        return None
+    round_id, when, price = draw(st.sampled_from(rounds))
+    before = sum(n for d, n in book.issued if d < when)
+    terms = [book.safes[sid] for sid in converting]
+    part = sum((Fraction(t["amount"]) / Fraction(t["cap"]) for t in terms if t["form"] == "post_money_safe"), Fraction(0))
+    allotted = []
+    for sid, t in zip(converting, terms, strict=True):
+        prices = [Fraction(price) * (100 - Fraction(t["discount"] or 0)) / 100]
+        if t["form"] == "post_money_safe":
+            prices.append(Fraction(t["cap"]) * (1 - part) / before)
+        elif t["form"] == "pre_money_safe":
+            prices.append(Fraction(t["cap"]) / before)
+        lowest, scale = min(prices), 10 ** t["decimals"]
+        cut = Decimal(lowest.numerator * scale // lowest.denominator).scaleb(-t["decimals"], context=money.EXACT)
+        if cut <= 0:
+            return None
+        shares = money.rnd_share(t["amount"], cut, 2)[0]
+        if shares == 0:
+            return None
+        allotted.append((sid, shares))
+    return round_id, allotted
 
 
 def _revalue(draw: st.DrawFn, accounts: list[dict[str, Any]], settings: dict[str, Any]) -> None:
@@ -1185,7 +1310,11 @@ def p1_scenarios_with_intent(
         _equity_accounts(draw, accounts)
         if "founders" in sources or "general-ledger" in sources:
             book.holders += PEOPLE  # the directors and shareholders may buy shares too
-        if draw(st.integers(0, 3)) > 0:
+        start = draw(st.integers(0, 3))
+        if start == 3:  # a SAFE recorded and paid in, then a round it converts at (README, "SAFEs and their conversion")
+            seeded = ["equity-money-in", "equity-issue", "equity-safe", "equity-safe-money", "equity-money-in",
+                      "equity-issue", "equity-safe-conversion"][:len(days) - 1]
+        elif start > 0:
             seeded = ["equity-money-in", "equity-issue", "equity-money-in", "equity-issue"][:len(days) - 1]
     tracked: list[strategies_gl.Tracked] = []  # the general ledger's journals and opening balances
     dims = None  # the dimensions declared (FR-DIM-01), in a third of the general ledger's scenarios

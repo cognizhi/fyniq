@@ -98,11 +98,13 @@ from oracle.revaluation import revaluations
 from oracle.rules import Rules
 from oracle.scenario import RESULT_SCHEMA, Document, Edit, Line, Reversal, Scenario, Source, check_result
 from oracle.sources import RULE_SETS
+from oracle.sources.equity import recorded
 from oracle.kpis import kpis
 from oracle.statements import statements
 
 # The director's accounts' roles (B.7) and the origins a line on one may give (FR-EQ-01, PRD-001 rev 0.167).
 DIRECTOR_ACCOUNTS = frozenset({"director-loan", "deferred-remuneration"})
+INSTRUMENTS = "convertible-instruments"  # the account of each SAFE's money, keyed by its instrument (FR-EQ-18)
 ORIGINS = frozenset({"lent", "paid_personally", "pay", "fee", "paid_out", "other"})
 
 __all__ = ["Entry", "Ledger", "PostedLine", "Rejected", "period", "run"]
@@ -124,7 +126,7 @@ def _negated(entry: Entry, kind: str, day: date) -> Entry:
     person and its dimension values (README, "Dimensions")."""
     return Entry(entry.document, kind, day, tuple(
         PostedLine(ln.account, ln.currency, money.negate(ln.amount), money.negate(ln.base_amount), ln.party,
-                   ln.dimensions)
+                   ln.dimensions, ln.instrument)
         for ln in entry.lines
     ))
 
@@ -249,7 +251,8 @@ class Ledger:
                 raise Rejected("share-capital-account")
 
         # Rule 9 (FR-EQ-01, B.7): the person and origin on a director's account, the subscriber alone on share
-        # application monies (rev 0.207), and neither anywhere else.
+        # application monies (rev 0.207), and neither anywhere else. A journal's line names no instrument in the format,
+        # so none may be on the instruments account, whose every line names its SAFE (FR-EQ-18).
         for line in lines:
             role = s.accounts[line.account].role
             if role in DIRECTOR_ACCOUNTS:
@@ -258,6 +261,8 @@ class Ledger:
             elif role == "share-application-monies":
                 if line.party not in s.people | s.subscribers or line.origin is not None:
                     raise Rejected("monies-line-without-subscriber")
+            elif role == INSTRUMENTS:
+                raise Rejected("instrument-line-without-its-safe")
             elif line.party is not None or line.origin is not None:
                 raise Rejected("person-on-another-account")
 
@@ -314,6 +319,12 @@ class Ledger:
         try:
             posting = RULE_SETS[document.type](self.rules, document, self.books)
             lines = canonical(posting.lines)
+            # P1 rule 3 (FR-EQ-18; the database's FY292): a line on the instruments account names a recorded SAFE, and
+            # no other line names one.
+            for ln in lines:
+                on = self.scenario.accounts[ln.account].role == INSTRUMENTS
+                if on != (ln.instrument is not None) or (on and ln.instrument not in recorded(self.books)):
+                    raise Rejected("instrument-line")
             if any(ln.base_amount.copy_abs() >= money.AMOUNT_LIMIT for ln in lines):
                 raise Rejected("base-out-of-range")  # §11.3: NUMERIC(20,4)
             if posting.lines and len(lines) < 2:  # every other leg rounded to nothing (README, "P1 readings")
@@ -489,6 +500,8 @@ class Ledger:
             }
             if ln.party is not None:
                 out["party"] = ln.party
+            if ln.instrument is not None:
+                out["instrument"] = ln.instrument
             if ln.dimensions:
                 out["dimensions"] = dict(ln.dimensions)
             return out

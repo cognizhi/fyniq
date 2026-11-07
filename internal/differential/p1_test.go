@@ -737,3 +737,65 @@ func TestP1AccountMergesMoveWhatTheAccountHolds(t *testing.T) {
 		t.Errorf("rejected %v, want %v", r.Rejected, want)
 	}
 }
+
+// The SAFEs of golden/safe-conversion.json and golden/safe-conversion-caps.json through the engine, worked out by hand
+// with exact fractions (README, "SAFEs and their conversion"; G4-044, Appendix G.3):
+//   - G4-044 on 12 Mar: f = 0.05 over C₀ = 1,000,000, so 2,500,000 × 0.95 ÷ 1,000,000 = 2.375; 52,631 shares for
+//     S$124,998.63 (52,631 × 2.375 = 124,998.625), and 1,000,000, 200,000 and 52,631 of 1,252,631 are 79.83%, 15.97%
+//     and 4.20%;
+//   - on 1 Jun at S$4.00 over 1,252,631: 15% off is 3.40, so 14,705 shares for S$49,997.00; the MFN SAFE 7,500 at
+//     4.00; the pre-money SAFE's 3,000,000 ÷ 1,252,631 = 2.394959… cut to 2.3949, so 8,351 for S$19,999.81;
+//   - two caps at S$3.00 over 1,000,000: f = 0.1, so 2.25 (55,555 for S$124,998.75) and 4.50, above the round's, so
+//     3.00 (83,333 for S$249,999.00); G.3's pre-money SAFE the lower of 2.50 and 2.40: 52,083 for S$124,999.20.
+//
+// req: FR-EQ-18
+// req: RND-SHARE
+// req: QA-ENG-02
+func TestP1SAFEConversion(t *testing.T) {
+	lines := func(r Result, doc string) string {
+		for _, e := range r.Entries {
+			if e.Document == doc {
+				var out []string
+				for _, l := range e.Lines {
+					out = append(out, strings.TrimSpace(l.Account+" "+l.Amount+" "+l.Instrument))
+				}
+				return strings.Join(out, "; ")
+			}
+		}
+		return ""
+	}
+	owners := func(c CapTable) string {
+		var out []string
+		for _, h := range c.Holders {
+			out = append(out, h.Holder+" "+h.Issued+" "+*h.Ownership)
+		}
+		return strings.Join(out, ", ")
+	}
+	r := run(t, load(t, "safe-conversion.json"))
+	if want := []string{"BT-0090", "BT-0091", "BT-0092", "JNL-0001", "SAFE-0090", "SAFE-0091", "SAFE-0092", "SAFE-0093", "SAFE-0094", "SAFE-0095",
+		"EQ-0099", "EQ-0098", "EQ-0097", "EQ-0096", "EQ-0095"}; !reflect.DeepEqual(r.Rejected, want) {
+		t.Errorf("rejected %v, want %v", r.Rejected, want)
+	}
+	for doc, want := range map[string]string{
+		"BT-0002": "1010 125000.00; 2700 -125000.00 SAFE-0001",
+		"EQ-0003": "2700 124998.63 SAFE-0001; 3010 -124998.63",
+		"EQ-0005": "2700 49997.00 SAFE-0002; 2700 30000.00 SAFE-0003; 2700 19999.81 SAFE-0004; 3010 -99996.81",
+		"BT-0009": "1010 -3.00; 2700 3.00 SAFE-0002",
+	} {
+		if got := lines(r, doc); got != want {
+			t.Errorf("%s: %s, want %s", doc, got, want)
+		}
+	}
+	if len(r.CapTables) != 3 || owners(r.CapTables[1]) != "P0001 1000000 79.83, P0002 200000 15.97, P0003 52631 4.20" ||
+		owners(r.CapTables[2]) != "P0001 1000000 72.30, P0002 300000 21.69, P0003 52631 3.81, P0004 14705 1.06, P0005 7500 0.54, P0006 8351 0.60" {
+		t.Errorf("the cap tables: %+v", r.CapTables)
+	}
+	caps := run(t, load(t, "safe-conversion-caps.json"))
+	if got, want := lines(caps, "EQ-0003"), "2700 124998.75 SAFE-0001; 2700 249999.00 SAFE-0002; 2700 124999.20 SAFE-0003; 3010 -499996.95"; got != want {
+		t.Errorf("two caps and G.3's pre-money SAFE: %s, want %s", got, want)
+	}
+	if len(caps.Rejected) != 0 || len(caps.CapTables) != 2 ||
+		owners(caps.CapTables[1]) != "P0001 1000000 77.40, P0002 101000 7.82, P0003 55555 4.30, P0004 83333 6.45, P0005 52083 4.03" {
+		t.Errorf("the conversion of 15 Mar: %v %+v", caps.Rejected, caps.CapTables)
+	}
+}

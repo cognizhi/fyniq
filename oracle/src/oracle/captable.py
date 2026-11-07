@@ -38,6 +38,11 @@ def move(books: dict[str, Any], holder: str, share_class: str, shares: int, day:
     return lambda: movements(books).append(Movement(holder, share_class, shares, day))
 
 
+def issued(books: dict[str, Any], day: date) -> int:
+    """The shares issued and held at the end of ``day``: every holding's movements to then."""
+    return sum(m.shares for m in movements(books) if m.day <= day)
+
+
 def lowest_from(books: dict[str, Any], holder: str, share_class: str, day: date, change: int) -> int:
     """The least the holding holds at the end of any day from ``day`` on, with ``change`` moved on ``day``."""
     theirs = [m for m in movements(books) if m.holder == holder and m.share_class == share_class]

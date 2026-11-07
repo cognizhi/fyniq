@@ -53,6 +53,8 @@ from `cmd/seed` (2.4) and the merge gate (3.1).
   generator gives half of its charts one, with the people `P0001` and `P0002`. (PRD-001 rev 0.207)
   `share-application-monies` (2040) marks the account holding money received for shares not yet allotted: each line
   on it names its subscriber, one of `people` or `subscribers`, the investors not among the people (B.7, FR-EQ-17).
+  `convertible-instruments` (2700) marks the account holding each SAFE's money under its instrument: each line on it
+  names a recorded instrument, and no other line names one (FR-EQ-18; section "SAFEs and their conversion").
 - Documents post in array order; then each reversal reverses the posted entry of its document on
   its date. Every date falls in a calendar-month period, and all periods are open.
 - (PRD-001 rev 0.49 to 0.66) `reversals` holds the corrections of posted journals in the order they are made: a
@@ -119,7 +121,8 @@ only when it meets every rule:
    `origin` that is one of `lent`, `paid_personally`, `pay`, `fee`, `paid_out` and `other`; (rev 0.207) every line
    on share application monies has a `party` that is one of `people` or `subscribers`, its subscriber, and no
    `origin`; no other line has either (FR-EQ-01, Appendix B.7). A scenario with no `people` has none, so any `party`
-   on a director's account is refused.
+   on a director's account is refused. A journal's line names no instrument in the format, so a line on the account
+   of role `convertible-instruments` is refused (FR-EQ-18: each line there names its SAFE; the engine's LEDGER-49).
 10. (PRD-001 rev 0.55) A `reverse_on`, when there is one, is after the journal's date (FR-GL-02, JOURNAL-11:
     "a reversal date on or before the journal's date is refused when it posts").
 11. (PRD-001 rev 0.171, 0.172) A line's dimension values are each a value in use of a dimension in use (DIM-06), and
@@ -172,6 +175,8 @@ rejected for the reasons in section "Edits of a posted journal".
   a person, maps each person to each account to the base-currency total of every posted line naming
   them there: the sub-ledgers of 2500 and 2120 (FR-EQ-01) and of share application monies (rev 0.207). Totals of zero are left out, and
   a comparator reads a missing person or account as zero.
+- A posted line on the instruments account carries its `instrument`, the ID of the `instrument` document it names;
+  the comparator compares it with the line (FR-EQ-18).
 
 ## Decided in PRD-001 rev 0.24
 
@@ -255,7 +260,10 @@ A P1 document is rejected whole (it posts nothing) when any of these fails, besi
 2. An amount not in the base currency has `fx_rate` and its source (the rate cascade's result,
    ENG-40); a base-currency amount has neither.
 3. Every account a line posts to exists, is active, is not a group account (INV-04) and is not a
-   share-capital account (INV-13: only the register of share issues posts there, rev 0.49).
+   share-capital account (INV-13: only the register of share issues posts there, rev 0.49). A line on the account of
+   role `convertible-instruments` names a recorded instrument and no other line names one (FR-EQ-18; the database's
+   FY292): only a bank line's parts and a SAFE conversion name one in the format, so any other source's line there is
+   rejected.
 4. A GST code is one of Appendix B.6's twelve, of the direction its document takes: a bill's, a vendor
    credit's and a claim's receipt line take a purchase code (TX, IM, ZP, BL, NR, EP, OP; FR-AP-02's "GST
    input tax codes"); an invoice's and a credit note's lines, a part-payment deposit and a disposal's
@@ -275,11 +283,12 @@ A P1 document is rejected whole (it posts nothing) when any of these fails, besi
 A P1 document posts at most one entry, `kind` `post`, on its date (the opening balances too, on theirs, the books'
 start; an edit adds a `reversal` and a `replacement`). To keep the comparison independent of
 how each side splits a leg into lines, a P1 entry is written in its **canonical form**: one line per
-(account, currency, person, dimension set), whose amount and base amount are the sums of that account's lines in that
-currency naming that person and exactly those dimension values (a director's account's lines stay apart by person,
-FR-EQ-01, and every account's by dimension set, FR-DIM-02 rev 0.171), lines whose sums are both zero left out, sorted
-by account, then currency, then person (a line naming none first), then dimension set as section "Dimensions" writes
-it (`""`, the lines with none, first). A manual journal's entries keep their lines in the journal's order, as before.
+(account, currency, person, instrument, dimension set), whose amount and base amount are the sums of that account's
+lines in that currency naming that person, that instrument and exactly those dimension values (a director's account's
+lines stay apart by person, FR-EQ-01, the instruments account's by instrument, FR-EQ-18, and every account's by
+dimension set, FR-DIM-02 rev 0.171), lines whose sums are both zero left out, sorted by account, then currency, then
+person (a line naming none first), then instrument (none first), then dimension set as section "Dimensions" writes it
+(`""`, the lines with none, first). A manual journal's entries keep their lines in the journal's order, as before.
 
 Scheduled entries come after every document, reversal and edit, `kind` `release` (a spread's),
 `depreciation` (an asset's) or `auto_reversal` (a journal's): one entry per document, kind and date, ordered by
@@ -604,6 +613,102 @@ It is rejected when `shares` is not a whole number above zero, `class` is not an
 not a group, `seller` or `buyer` is neither of `people` nor `subscribers`, the two are the same, or the seller's
 holding of `class` would fall below zero at the end of any day from `date` on (the database's FY288: "no holding
 below zero on any day"), reading the holdings the earlier documents moved ("Cap tables").
+
+### SAFEs and their conversion (`instrument`; `safe_conversion`, `instrument_conversion@1`)
+
+From FR-EQ-18, Appendix B.7 ("SAFE or note received; converted"), `RND-SHARE`, Appendix G.3 (G4-044) and the equity
+register's design D6 (`p1-equity-register`).
+
+```json
+{"type": "instrument", "id": "SAFE-0001", "version": 1, "date": "2026-02-01", "person": "P0002",
+ "form": "post_money_safe", "amount": "125000.00", "valuation_cap": "2500000", "class": "3010", "price_decimals": 4}
+```
+
+An instrument records a SAFE on `date`, the day it was signed, and posts no entry: the result has no entry for it, and
+one that is not rejected is not in `rejected` either. Its holder `person` is one of `people` or `subscribers`. `form`
+is one of:
+
+- `post_money_safe` or `pre_money_safe`, each with a `valuation_cap`;
+- `discount_safe`, with a `discount`;
+- `mfn_safe`, a most-favoured-nation clause, with neither.
+
+A capped form may have a `discount` too. A `valuation_cap` on another form is kept and does not price it, as the
+product keeps it. `amount` is in the base currency, above zero; `class` is the share-capital account it converts into
+(active, not a group); `price_decimals`, 0 to 6, is the conversion price's precision. `valuation_cap` is a plain
+decimal above zero with at most 12 integer digits and 8 decimals, and `discount` a plain decimal above 0 and below 100
+with at most 8 decimals. It is rejected when any of these fails. A convertible note's interest and maturity are not in
+the format yet.
+
+Its money comes in on a bank line (`bank_transaction@1`), as a subscriber's does: each part on the instruments account
+(the account of role `convertible-instruments`) names the line's `instrument`, an instrument an earlier document
+recorded. A line with such a part and no `instrument`, an `instrument` no earlier document recorded, or an `instrument`
+on a line with no such part, is rejected. One line may carry a subscriber's money and a SAFE's, each part naming its
+own:
+
+```json
+{"type": "bank_transaction", "id": "BT-0103", "version": 1, "date": "2026-04-10", "account": "1010", "currency": "SGD",
+ "amount": "155000.00", "person": "P0002", "instrument": "SAFE-0001",
+ "parts": [{"account": "2040", "amount": "30000.00", "gst_code": "NA"},
+           {"account": "2700", "amount": "125000.00", "gst_code": "NA"}]}
+```
+
+```json
+{"type": "share_issue_cash", "id": "EQ-0104", "version": 1, "date": "2026-04-15", "person": "P0002", "class": "3010",
+ "shares": "10000", "price": "3.00"}
+```
+
+```json
+{"type": "safe_conversion", "id": "EQ-0105", "version": 1, "date": "2026-04-15", "round": "EQ-0104"}
+```
+
+A conversion converts on `date`, the day ACRA's register of members shows the allotments, every instrument recorded
+before it that no earlier conversion converted, at the priced round `round`: an earlier cash issue
+(`share_issue_cash`) that was not rejected, dated on or before `date`. With the round's `price` P, and C₀ the shares
+issued at the end of the day before the round's date (the cap table's `issued` then; section "Cap tables"), each
+instrument's conversion price is worked exactly:
+
+- f is the sum of `amount` ÷ `valuation_cap` over the post-money SAFEs converting: the part of the company they convert
+  into;
+- a post-money SAFE's cap price is `valuation_cap` × (1 − f) ÷ C₀: its cap divided by the company's capitalisation once
+  the SAFEs have converted, C₀ ÷ (1 − f), which counts their own shares. With one SAFE, or caps alike, this is
+  (cap − Σ amount) ÷ C₀;
+- a pre-money SAFE's cap price is `valuation_cap` ÷ C₀;
+- the discounted round price is P × (100 − `discount`) ÷ 100, or P with no discount;
+- the conversion price is the lower of the cap price (for a capped form) and the discounted round price, cut down
+  (toward zero) to `price_decimals` decimals.
+
+`RND-SHARE` then allots n whole shares for `amount` at that price, and round(n × price) converts; the rest stays on the
+instruments account until it is settled under the terms. The conversion is rejected when no instrument converts, f is
+1 or more, C₀ is zero, a price is zero once cut, an n is zero, the chart has no active instruments account or more
+than one, or what the instruments account holds for an instrument at the end of `date` (the credit of the lines naming
+it in the earlier documents) is less than what it converts.
+
+It posts one entry on `date`, in canonical form: for each instrument, Dr the instruments account with what it
+converts, the line naming the instrument, and Cr its `class` with the same. Each instrument's n shares move into its
+holder's holding of its class on `date` (section "Cap tables").
+
+G4-044 ([`golden/safe-conversion.json`](golden/README.md)) pins it:
+
+- 1,000,000 founder shares, the post-money SAFE of S$125,000.00 with a S$2,500,000 cap, and the round of 200,000
+  shares at S$3.00. f = 0.05 and the cap price is 2,500,000 × 0.95 ÷ 1,000,000 = 2.375: 52,631 shares, S$124,998.63
+  converted (52,631 × 2.375 = 124,998.625), S$1.37 left. The cap table reads 79.83%, 15.97% and 4.20%.
+- G.3's pre-money SAFE with a 20% discount: 2.50 against 3.00 × 0.80 = 2.40, so 52,083 shares, S$124,999.20, S$0.80
+  left.
+- Two post-money SAFEs, S$125,000.00 at a S$2,500,000 cap and S$250,000.00 at S$5,000,000, at a round of S$5.00: f =
+  0.1, cap prices 2.25 and 4.50, 55,555 shares each (S$124,998.75 and S$249,997.50).
+
+In the examples above, the round of 10,000 shares at S$3.00 follows the earlier examples' 250,083 shares (C₀), so the
+SAFE's cap price is 2,500,000 × 0.95 ÷ 250,083 = 9.4968…; the round's S$3.00 is lower, so it converts 41,666 shares
+for S$124,998.00, and S$2.00 stays on 2700.
+
+Readings the PRD leaves open, each [accountant to confirm]:
+
+| Shape | Oracle | Why |
+|---|---|---|
+| The shares the terms count before the round (C₀) | The shares issued at the end of the day before the round's date | D6's C₀ counts "shares, options and the pool, as the template says"; the format has no option pool yet [verify the terms with question 33's lawyer] |
+| A capped SAFE whose cap price is above the round's | It converts at the round's price, the lower | FR-EQ-18: "the lower of the cap price and the discounted round price"; the product asks the accountant to check a post-money SAFE's capitalisation then |
+| The conversion price's precision | Cut down, never rounded up | So the shares never cost more than the terms allow (D6) |
+| One entry for the round's conversions | One entry per `safe_conversion`, a line pair per instrument | The product posts one entry per instrument (`instrument_conversion@1`); in canonical form their sums are the same |
 
 ### Fixed assets (`fixed_asset`, `asset_depreciation@1`) and disposals (`asset_disposal`, `asset_disposal@1`)
 
@@ -1128,15 +1233,15 @@ accounts (assets on Cash & cash equivalents).
   and `total`, their sum, which always equals the operating entries' cash, so net burn is the true cash.
 - `non_cash`: the investing and financing entries with no line on a cash account (FR-RPT-01: "a
   transaction that moved no money ... is left out of investing and financing and listed apart"). A
-  `director_conversion`'s has the `label` "Converted to shares", a `director_waiver`'s "Waived" (FR-EQ-10) and a
-  `share_issue_cash`'s "Allotted from share application monies" (rev 0.207).
+  `director_conversion`'s and a `safe_conversion`'s have the `label` "Converted to shares", a `director_waiver`'s
+  "Waived" (FR-EQ-10) and a `share_issue_cash`'s "Allotted from share application monies" (rev 0.207).
 - `net_change` = operating + investing + financing; `opening_cash` and `closing_cash` are the cash
   accounts' balances at the month before's end and the month's.
 
 **Movement in equity**: `opening` (the month before's closing; nothing before the first month),
 `profit` (the month's net profit), `share_capital` (shares issued for cash: the change in accounts on the
-Share capital line from every entry but a conversion), `share_capital_non_cash` (a `director_conversion`'s
-change on that line: shares issued for non-cash consideration, FR-EQ-10), `other` (the change in every other equity-section account, retained earnings' own lines included) and
+Share capital line from every entry but a conversion), `share_capital_non_cash` (a `director_conversion`'s or a
+`safe_conversion`'s change on that line: shares issued for non-cash consideration, FR-EQ-10, FR-EQ-18), `other` (the change in every other equity-section account, retained earnings' own lines included) and
 `closing`, the balance sheet's equity.
 
 **Checks**: `balances`, total assets equal total liabilities and equity (INV-10, BS_Chk); `ties`,
@@ -1239,8 +1344,9 @@ the cap table at the end of; the result's `cap_tables` gives each in that order 
 Holdings come only from documents that move shares, each on its date once it is not rejected: a conversion of a
 founder's balance (`director_conversion`) moves the n whole shares `RND-SHARE` allots into `person`'s holding of
 `class`; a cash issue (`share_issue_cash`) moves `shares` into `person`'s holding of `class`; a transfer
-(`share_transfer`) moves `shares` out of the seller's holding and into the buyer's. Opening balances on share capital
-name no holder, so they move no holding. A class is its share-capital account.
+(`share_transfer`) moves `shares` out of the seller's holding and into the buyer's; a SAFE conversion
+(`safe_conversion`) moves each instrument's n shares into its holder's holding of its class. Opening balances on share
+capital name no holder, so they move no holding. A class is its share-capital account.
 
 At the end of a day, each holding with shares above zero is a line, by holder, then class (in code-point order of
 their IDs):
@@ -1248,8 +1354,8 @@ their IDs):
 - `issued`: the shares held, a whole number;
 - `votes`: `issued` × the class's `votes_per_share` (an attribute of the share-capital account, one when left out),
   exact, as a plain decimal with no trailing zeros ("1.5", "0");
-- `fully_diluted`: the shares held as the format has them: the same as `issued`, since it has no instruments
-  (FR-EQ-18) or option pool (FR-EQ-19) yet;
+- `fully_diluted`: the shares held as the format has them: the same as `issued`, since it counts no instrument
+  before it converts (FR-EQ-18) and has no option pool (FR-EQ-19) yet;
 - `ownership`, `voting` and `diluted`: the line's `issued`, `votes` and `fully_diluted` as a percentage of the day's
   totals, round(part ÷ total × 100, 2 decimals) half-up from the exact quotient, once (FR-EQ-20, which names
   `RND-DISPLAY` for it); `null` when that total is zero. They are never forced to sum to 100.00.
@@ -1258,8 +1364,8 @@ their IDs):
 not the sum of the rounded ones. The day's `issued`, `votes` and `fully_diluted` are the totals of every line.
 
 G.3's round (`golden/cap-table.json`): 1,000,000 founder shares, the investor's 200,000 and 52,083 more, of 1,252,083,
-are 79.87%, 15.97% and 4.16% (sum 100.00). The format has no SAFE yet, so its 52,083 shares come from a third
-subscriber's cash issue at S$2.40 there; the conversion itself joins with the instruments.
+are 79.87%, 15.97% and 4.16% (sum 100.00). Its 52,083 shares come from a third subscriber's cash issue at S$2.40
+there; `golden/safe-conversion.json` converts the SAFEs themselves (section "SAFEs and their conversion").
 
 Readings the PRD leaves open, each [accountant to confirm]:
 

@@ -89,7 +89,8 @@ def difference(e: dict, o: dict) -> str | None:
         if len(x["lines"]) != len(y["lines"]):
             return f"entry {i}: engine {len(x['lines'])} lines, oracle {len(y['lines'])}"
         for k, (a, b) in enumerate(zip(x["lines"], y["lines"]), 1):
-            if (a["account"], a["currency"], a.get("party")) != (b["account"], b["currency"], b.get("party")) \
+            if (a["account"], a["currency"], a.get("party"), a.get("instrument")) != \
+                    (b["account"], b["currency"], b.get("party"), b.get("instrument")) \
                     or not same(a["amount"], b["amount"]) or not same(a["base_amount"], b["base_amount"]):
                 return f"entry {i} line {k}: engine {a}, oracle {b}"
     for month in sorted(set(e["trial_balance"]) | set(o["trial_balance"])):
@@ -103,6 +104,8 @@ def difference(e: dict, o: dict) -> str | None:
         for account in sorted(set(ea) | set(oa)):
             if not same(ea.get(account), oa.get(account)):
                 return f"person {person} account {account}: engine {ea.get(account, '0')}, oracle {oa.get(account, '0')}"
+    if e.get("cap_tables") != o.get("cap_tables"):  # README, "Cap tables": every figure a plain string, compared exactly
+        return f"cap tables: engine {e.get('cap_tables')}, oracle {o.get('cap_tables')}"
     found = tree_difference(e.get("statements"), o.get("statements"), "statements")
     if found is not None:
         return found

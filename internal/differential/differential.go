@@ -234,6 +234,7 @@ type EntryLine struct {
 	Amount     string            `json:"amount"`
 	BaseAmount string            `json:"base_amount"`
 	Party      string            `json:"party,omitempty"`
+	Instrument string            `json:"instrument,omitempty"` // a line on the instruments account's SAFE (FR-EQ-18)
 	Dimensions map[string]string `json:"dimensions,omitempty"`
 }
 
@@ -331,6 +332,14 @@ func RunEngine(s Scenario) (Result, error) {
 		id := stableID("party", p)
 		settings.Subscribers[id], personOf[id] = true, p
 	}
+	// The SAFEs recorded so far, which a line on the instruments account may name (FR-EQ-18); personOf also names each
+	// instrument by its document's ID, as the result writes it (README, "SAFEs and their conversion").
+	settings.Instruments = map[uuid.UUID]bool{}
+	for _, d := range s.Documents {
+		if d.Type == "instrument" {
+			personOf[stableID("instrument", d.ID)] = d.ID
+		}
+	}
 	applySettings(s, settings)
 	sources, err := newP1(s, base, settings)
 	if err != nil {
@@ -372,6 +381,9 @@ func RunEngine(s Scenario) (Result, error) {
 					sum = money.Zero(base)
 				}
 				bySet[month][code][set], _ = sum.Add(l.Base)
+			}
+			if l.Instrument != uuid.Nil {
+				line.Instrument = personOf[l.Instrument]
 			}
 			if l.Party != uuid.Nil {
 				line.Party = personOf[l.Party]
@@ -646,8 +658,9 @@ func Compare(engine, oracle Result) error {
 		}
 		for k, l := range e.Lines {
 			if ol := o.Lines[k]; !sameLine(l, ol) {
-				return fmt.Errorf("%s line %d: engine %s %s %s base %s person %q dimensions %v, oracle %s %s %s base %s person %q dimensions %v",
-					at, k+1, l.Account, l.Currency, l.Amount, l.BaseAmount, l.Party, l.Dimensions, ol.Account, ol.Currency, ol.Amount, ol.BaseAmount, ol.Party, ol.Dimensions)
+				return fmt.Errorf("%s line %d: engine %s %s %s base %s person %q instrument %q dimensions %v, oracle %s %s %s base %s person %q instrument %q dimensions %v",
+					at, k+1, l.Account, l.Currency, l.Amount, l.BaseAmount, l.Party, l.Instrument, l.Dimensions, ol.Account, ol.Currency, ol.Amount, ol.BaseAmount,
+					ol.Party, ol.Instrument, ol.Dimensions)
 			}
 		}
 	}
@@ -850,7 +863,7 @@ func sameTree(a, b any, path string, kpis bool) error {
 
 func sameLine(a, b EntryLine) bool {
 	return a.Account == b.Account && a.Currency == b.Currency && sameAmount(a.Amount, b.Amount) && sameAmount(a.BaseAmount, b.BaseAmount) &&
-		a.Party == b.Party && maps.Equal(a.Dimensions, b.Dimensions)
+		a.Party == b.Party && a.Instrument == b.Instrument && maps.Equal(a.Dimensions, b.Dimensions)
 }
 
 // sameAmount compares two decimal strings exactly, so "1.50" equals "1.5" and "" equals "0".
