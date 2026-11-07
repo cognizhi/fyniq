@@ -11,6 +11,8 @@ folder holds the contract between them (OpenSpec change `p0-python-oracle-differ
 | this README | The rules a JSON Schema cannot state, and how to compare two results |
 | `golden/` | The golden scenarios the Go gate posts through both sides |
 | `pending/` | Golden scenarios of P1 sources, waiting for `cmd/scenario-run` to read them |
+| `forecast.schema.json` | `fyniq-forecast@1`: a driver-based forecast both sides run ("Forecasts") |
+| `forecasts/` | The golden forecasts the Go gate runs through both sides |
 
 Both schemas are JSON Schema draft 2020-12 with RE2- and ECMA-262-compatible patterns, so a Go
 validator and Python's `jsonschema` accept the same documents. The oracle checks its input against
@@ -1528,6 +1530,42 @@ Readings the PRD leaves open, each [accountant to confirm]:
 |---|---|---|
 | What a pre-money valuation is of | The shares fully diluted before (issued, options outstanding, the pool unallocated), with a top-up before the money | D8 names a top-up "before or after the money"; a post-money SAFE's own shares are not counted in it |
 | A pro-rata entitlement | The round's new shares × the holder's part fully diluted before, rounded down | FR-EQ-21 names "pro-rata take-up"; the side letter decides its terms |
+
+## Forecasts
+
+A **forecast** (FR-PLN-02, FR-PLN-03, `RND-PLAN`; `p1-planning` design D3, D4 and D9) is a document of its own,
+`fyniq-forecast@1` (`forecast.schema.json`). It is not a ledger scenario: it holds the drivers and plans, the books'
+figures at the start, the scenarios with their levers, and the statutory figures, all given directly, so both sides
+work the model itself. The packs are tested by their own pinned cases. `cmd/scenario-run` runs one through the Go
+forecast engine (`internal/domain/planning`), and `python -m oracle forecast` through the oracle's own model
+(`oracle/src/oracle/planning.py`), each writing `fyniq-forecast-result@1`.
+
+- **Runs.** Every scenario, in order, first with its funding plan and then without it (`"funding": false`): no
+  equity, SAFE, loan or grant.
+- **A run** holds:
+  - `opening_cash` and `collections_ok` (the collection pattern totals exactly 100%);
+  - `months`: one object per month from 1 to the horizon;
+  - `taxes`: one per 12-month forecast year;
+  - `years`: five, each sums or ends a forecast year, `null` past the horizon;
+  - `key`: the key results.
+- **Numbers** are decimal strings, compared exactly as decimals:
+  - amounts at the currency's minor units;
+  - customers, ARPA and the tax computation's exact parts (`chargeable`, `exempt`, `taxable`, `gross_tax`,
+    `rebate`, the losses) in full;
+  - `gross_margin` as `RND-PERCENT` (1 decimal);
+  - `cac`, `ltv`, `ltv_to_cac` and `burn_multiple` at 2 decimals, `null` when they cannot be worked out.
+- **Everything else** (months as `YYYY-MM`, counts, booleans, `null`) is compared as written.
+- **The model** is design D3, word for word:
+  - a driver line is rounded once, half away from zero, from its drivers, the exact customers and the lines it is a
+    percentage of as shown;
+  - totals, cash flows and balances add the rounded lines;
+  - every division is exact until its one rounding.
+- **The statutory figures** are one employer CPF rate and Ordinary Wage ceiling, one SDL rate, minimum and maximum,
+  one tax rate with the start-up (`sute`) and partial (`pte`) tiers, and rebates by YA as a percentage of the tax up
+  to a cap (no cash grant). A YA without a rebate has none.
+- **The gate.** `TestTheForecastEngineAgreesWithTheOracle` runs `forecasts/` and 40 generated forecasts in
+  `make test`. `make differential` draws them with Hypothesis (`forecast` in `DIFFERENTIAL_SOURCES`) and saves a
+  shrunk disagreement in `forecasts/`.
 
 ## Commands
 

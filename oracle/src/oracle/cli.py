@@ -5,6 +5,10 @@
         --explain writes why each document or reversal was rejected to stderr (never to the result).
     python -m oracle generate --seed <n> --count <n> --out <dir>
         Write <count> generated scenarios to <dir>/<name>.json (task 2.4).
+    python -m oracle forecast <forecast.json>
+        Run every scenario of a fyniq-forecast@1 document and write its fyniq-forecast-result@1 JSON to stdout.
+    python -m oracle generate-forecasts --seed <n> --count <n> --out <dir>
+        Write <count> generated forecast documents to <dir>/<name>.json (p1-planning task 2.3).
 
 Exit status: 0 on success, 2 when the scenario is not valid input (the reason is on stderr).
 """
@@ -50,6 +54,33 @@ def _generate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _forecast(args: argparse.Namespace) -> int:
+    from oracle.planning import ForecastError, forecast
+    from oracle.scenario import parse_json
+
+    try:
+        doc = parse_json(Path(args.forecast).read_text(encoding="utf-8"))
+        result = forecast(doc)
+    except (ForecastError, ScenarioError, OSError) as exc:
+        print(f"oracle: {args.forecast}: {exc}", file=sys.stderr)
+        return 2
+    sys.stdout.write(_dump(result))
+    return 0
+
+
+def _generate_forecasts(args: argparse.Namespace) -> int:
+    from oracle.planning import forecast
+    from oracle.strategies_planning import generate  # Hypothesis is needed only here
+
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    for doc in generate(args.seed, args.count):
+        forecast(doc)  # every generated forecast is valid input
+        (out / f"{doc['name']}.json").write_text(_dump(doc), encoding="utf-8")
+    print(f"oracle: wrote {args.count} forecasts to {out}", file=sys.stderr)
+    return 0
+
+
 def _positive(text: str) -> int:
     value = int(text)
     if value < 1:
@@ -71,6 +102,16 @@ def main(argv: list[str] | None = None) -> int:
     gen.add_argument("--count", type=_positive, required=True)
     gen.add_argument("--out", required=True, help="the directory to write <name>.json files to")
     gen.set_defaults(handler=_generate)
+
+    fc = commands.add_parser("forecast", help="run a forecast document and write its result JSON to stdout")
+    fc.add_argument("forecast", help="a fyniq-forecast@1 JSON file")
+    fc.set_defaults(handler=_forecast)
+
+    genf = commands.add_parser("generate-forecasts", help="write generated forecast documents to a directory")
+    genf.add_argument("--seed", type=int, required=True)
+    genf.add_argument("--count", type=_positive, required=True)
+    genf.add_argument("--out", required=True, help="the directory to write <name>.json files to")
+    genf.set_defaults(handler=_generate_forecasts)
 
     args = parser.parse_args(argv)
     return args.handler(args)

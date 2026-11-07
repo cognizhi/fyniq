@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "fyniq-forecast@1",
+  "description": "A driver-based forecast that the Go forecast engine (cmd/scenario-run) and the Python oracle (oracle/src/oracle/planning.py) both run (FR-PLN-02, FR-PLN-03, QA-ENG-02; p1-planning design D9): the drivers and plans, the books' figures at the start, the scenarios and the statutory figures, given directly. README.md beside this file, \"Forecasts\", states the model and the result. Patterns are RE2- and ECMA-262-compatible.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "name", "currency", "minor_units", "start", "horizon", "cash_adjustment", "buffer_months", "books",
+               "revenue", "costs", "opex", "headcount", "capex", "funding", "tax", "scenarios", "statutory"],
+  "properties": {
+    "schema": {"const": "fyniq-forecast@1"},
+    "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"},
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "minor_units": {"type": "integer", "minimum": 0, "maximum": 4},
+    "start": {"$ref": "#/$defs/month"},
+    "horizon": {"type": "integer", "minimum": 12, "maximum": 60},
+    "cash_adjustment": {"$ref": "#/$defs/amount"},
+    "buffer_months": {"$ref": "#/$defs/months"},
+    "books": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cash", "receivables", "payables", "depreciation"],
+      "properties": {
+        "cash": {"$ref": "#/$defs/amount"},
+        "receivables": {"$ref": "#/$defs/positive"},
+        "payables": {"$ref": "#/$defs/positive"},
+        "depreciation": {"description": "Each forecast month's planned depreciation of the assets already held, month 1 first.", "type": "array", "maxItems": 60, "items": {"$ref": "#/$defs/positive"}}
+      }
+    },
+    "revenue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["customers", "new_customers", "new_growth", "churn", "arpa", "price_increase", "services", "services_growth", "other", "collection"],
+      "properties": {
+        "customers": {"$ref": "#/$defs/count"},
+        "new_customers": {"$ref": "#/$defs/count"},
+        "new_growth": {"$ref": "#/$defs/rate"},
+        "churn": {"$ref": "#/$defs/fraction"},
+        "arpa": {"$ref": "#/$defs/positive"},
+        "price_increase": {"$ref": "#/$defs/rate"},
+        "services": {"$ref": "#/$defs/positive"},
+        "services_growth": {"$ref": "#/$defs/rate"},
+        "other": {"$ref": "#/$defs/positive"},
+        "collection": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"$ref": "#/$defs/fraction"}}
+      }
+    },
+    "costs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hosting", "ai", "contractors", "fees", "salary_increase"],
+      "properties": {
+        "hosting": {"$ref": "#/$defs/fraction"},
+        "ai": {"$ref": "#/$defs/fraction"},
+        "contractors": {"$ref": "#/$defs/fraction"},
+        "fees": {"$ref": "#/$defs/fraction"},
+        "salary_increase": {"$ref": "#/$defs/rate"}
+      }
+    },
+    "opex": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "group", "base", "growth", "percent"],
+        "properties": {
+          "label": {"type": "string", "minLength": 1, "maxLength": 80},
+          "group": {"description": "The report group the line plans; sales_marketing adds it to S&M for CAC.", "type": "string", "pattern": "^([a-z][a-z0-9_]{0,40})?$"},
+          "base": {"$ref": "#/$defs/positive"},
+          "growth": {"$ref": "#/$defs/rate"},
+          "percent": {"$ref": "#/$defs/fraction"}
+        }
+      }
+    },
+    "headcount": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "function", "start", "end", "salary", "cpf"],
+        "properties": {
+          "role": {"type": "string", "maxLength": 80},
+          "function": {"enum": ["COGS", "R&D", "S&M", "G&A"]},
+          "start": {"$ref": "#/$defs/month"},
+          "end": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/month"}]},
+          "salary": {"$ref": "#/$defs/positive"},
+          "cpf": {"type": "boolean"}
+        }
+      }
+    },
+    "capex": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["amount", "month", "life"],
+        "properties": {
+          "amount": {"$ref": "#/$defs/positive"},
+          "month": {"$ref": "#/$defs/month"},
+          "life": {"type": "integer", "minimum": 1, "maximum": 600}
+        }
+      }
+    },
+    "funding": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "month", "amount", "rate", "tenor"],
+        "properties": {
+          "type": {"enum": ["Equity", "SAFE", "Loan", "Grant"]},
+          "month": {"$ref": "#/$defs/month"},
+          "amount": {"$ref": "#/$defs/positive"},
+          "rate": {"description": "A loan's yearly interest rate; blank for the others.", "oneOf": [{"const": ""}, {"$ref": "#/$defs/fraction"}]},
+          "tenor": {"description": "A loan's months of equal repayments; 0 for the others.", "type": "integer", "minimum": 0, "maximum": 360}
+        }
+      }
+    },
+    "tax": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_up_years", "losses_brought_forward", "payment_lag"],
+      "properties": {
+        "start_up_years": {"type": "integer", "minimum": 0, "maximum": 5},
+        "losses_brought_forward": {"$ref": "#/$defs/positive"},
+        "payment_lag": {"type": "integer", "minimum": 0, "maximum": 24}
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "levers", "buffer_months"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1, "maxLength": 40},
+          "levers": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["new_customers", "churn", "price", "services", "opex", "direct_costs", "fund_amount", "hire_delay", "fund_delay"],
+            "properties": {
+              "new_customers": {"$ref": "#/$defs/lever"},
+              "churn": {"$ref": "#/$defs/lever"},
+              "price": {"$ref": "#/$defs/lever"},
+              "services": {"$ref": "#/$defs/lever"},
+              "opex": {"$ref": "#/$defs/lever"},
+              "direct_costs": {"$ref": "#/$defs/lever"},
+              "fund_amount": {"$ref": "#/$defs/lever"},
+              "hire_delay": {"type": "integer", "minimum": 0, "maximum": 24},
+              "fund_delay": {"type": "integer", "minimum": 0, "maximum": 24}
+            }
+          },
+          "buffer_months": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/months"}]}
+        }
+      }
+    },
+    "statutory": {
+      "description": "The pack figures, the same for every month and Year of Assessment the forecast names: what the engine reads from sg-cpf, sg-sdl and sg-cit.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["employer_cpf", "ow_ceiling", "sdl", "tax_rate", "exemptions", "rebates"],
+      "properties": {
+        "employer_cpf": {"$ref": "#/$defs/fraction"},
+        "ow_ceiling": {"$ref": "#/$defs/positive"},
+        "sdl": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rate", "minimum", "maximum"],
+          "properties": {"rate": {"$ref": "#/$defs/fraction"}, "minimum": {"$ref": "#/$defs/positive"}, "maximum": {"$ref": "#/$defs/positive"}}
+        },
+        "tax_rate": {"$ref": "#/$defs/fraction"},
+        "exemptions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sute", "pte"],
+          "properties": {
+            "sute": {"$ref": "#/$defs/tiers"},
+            "pte": {"$ref": "#/$defs/tiers"}
+          }
+        },
+        "rebates": {
+          "description": "YA -> the rebate's percentage of the tax and its cap; a YA not listed has none.",
+          "type": "object",
+          "propertyNames": {"pattern": "^20[0-9]{2}$"},
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["percent", "cap"],
+            "properties": {"percent": {"$ref": "#/$defs/fraction"}, "cap": {"$ref": "#/$defs/positive"}}
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "month": {"type": "string", "pattern": "^20[0-9]{2}-(0[1-9]|1[0-2])$"},
+    "amount": {"description": "A signed decimal with at most 4 decimals.", "type": "string", "pattern": "^-?(0|[1-9][0-9]{0,14})(\\.[0-9]{1,4})?$"},
+    "positive": {"description": "A decimal of zero or more with at most 4 decimals.", "type": "string", "pattern": "^(0|[1-9][0-9]{0,14})(\\.[0-9]{1,4})?$"},
+    "count": {"description": "A count of customers, at most 1 decimal.", "type": "string", "pattern": "^(0|[1-9][0-9]{0,8})(\\.[0-9])?$"},
+    "fraction": {"description": "A fraction from 0 to 1 with at most 6 decimals.", "type": "string", "pattern": "^(0(\\.[0-9]{1,6})?|1(\\.0{1,6})?)$"},
+    "rate": {"description": "A growth rate from 0 to 9.999999 with at most 6 decimals.", "type": "string", "pattern": "^[0-9](\\.[0-9]{1,6})?$"},
+    "lever": {"description": "A multiplier from 0 to 9.99, at most 2 decimals.", "type": "string", "pattern": "^[0-9](\\.[0-9]{1,2})?$"},
+    "months": {"description": "Whole months of burn from 0 to 36.", "type": "string", "pattern": "^([0-9]|[12][0-9]|3[0-6])$"},
+    "tiers": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {"type": "array", "minItems": 2, "maxItems": 2, "prefixItems": [{"$ref": "#/$defs/positive"}, {"$ref": "#/$defs/fraction"}]}
+    }
+  }
+}

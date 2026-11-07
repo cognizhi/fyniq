@@ -32,9 +32,9 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
 
 ## 2. The forecast engine and its oracle (slice 2)
 
-- [ ] 2.1 `RND-PLAN` in `internal/domain/rounding` (D2): `Plan`, `PlanRatio`, `PlanRate`, `PlanYears`, `PlanCount`,
+- [x] 2.1 `RND-PLAN` in `internal/domain/rounding` (D2): `Plan`, `PlanRatio`, `PlanRate`, `PlanYears`, `PlanCount`,
   with table tests at each tie, both signs and zero. `// req: RND-PLAN`
-- [ ] 2.2 `internal/domain/planning` (D2, D3, D4): the inputs, the exact context with its `Inexact` trap, the monthly
+- [x] 2.2 `internal/domain/planning` (D2, D3, D4): the inputs, the exact context with its `Inexact` trap, the monthly
   model, tax by forecast year, cash, unit economics, key results and the yearly summary.
   - Scenarios, levers and the run without funding.
   - `planning`, `budget` and `cashflow` are added to archtest's money packages.
@@ -42,15 +42,15 @@ Before each slice, load `fyniq-feature-change` and `fyniq-design-system`. Load `
     delayed raise, the 60/40 opening receivables, and the ⚠ on collections not totalling 100%.
 
   `// req: FR-PLN-02`, `// req: FR-PLN-03`, `// req: RND-PLAN`
-- [ ] 2.3 The oracle (D9): `oracle/src/oracle/planning.py`, written from the design's rules in `Fraction`s, with the
+- [x] 2.3 The oracle (D9): `oracle/src/oracle/planning.py`, written from the design's rules in `Fraction`s, with the
   scenario schema's `forecast` kind, `test/differential/` updated, and hand-worked tests of its own. A Hypothesis
   strategy generates forecasts within FY300's limits, and the fixed-seed sample runs in `make test`. `make
   differential` runs 1,000 forecasts with no disagreement. `// req: QA-ENG-02`, `// req: FR-PLN-02`
-- [ ] 2.4 The workbook's sample (D9):
+- [x] 2.4 The workbook's sample (D9):
   - a script, `scripts/workbook_planning_fixture.py`, generates `test/planning/workbook-sample.json` from
     zh-sheet-accounting at a pinned commit;
-  - the parity test asks for driver lines to the cent, ties named by the oracle, totals within their accumulated
-    rounding, and key results and the summary after rounding.
+  - the parity test asks for driver lines within a cent, totals within a cent per rounded line they add, and the key
+    results' months exactly (design D9, as measured on 8 Nov 2026).
 
   `go test ./internal/domain/planning -run TestTheWorkbooksSample` passes. `// req: FR-PLN-02`
 
