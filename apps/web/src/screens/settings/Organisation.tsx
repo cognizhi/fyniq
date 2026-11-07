@@ -14,6 +14,8 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import type { Approval } from "../approvals/words";
+import { GSTRegistrations } from "./GSTRegistrations";
+import { Sequences } from "./Sequences";
 import { SettingsPage } from "./SettingsPage";
 
 type Setting = components["schemas"]["Setting"];
@@ -384,8 +386,8 @@ function EditProfile({ open, data, onClose, onDone }: { open: boolean; data: { p
 }
 
 // Organisation is Settings › Organisation (docs/design/screens OrganisationSettings; FR-ORG-01,
-// FR-ORG-04…08): the profile documents print, and every setting with its recommended value, why, and
-// whether it needs a second approver. A change takes effect from a day, today or later; a preview
+// FR-ORG-03…08): the profile documents print, the GST registrations with their dates, the numbering of each
+// document type, and every setting with its recommended value, why, and whether it needs a second approver. A change takes effect from a day, today or later; a preview
 // checks it without saving (FR-INT-14); one under dual control waits for another Owner (FM-1).
 export function Organisation() {
   const { session } = useSignedIn();
@@ -447,6 +449,8 @@ export function Organisation() {
           </dl>
         )}
       </section>
+      <GSTRegistrations mayChange={mayChange} onDone={setStatus} />
+      <Sequences mayChange={mayChange} onDone={setStatus} />
       {settings.isError && <Refusal problem={problemOf(settings.error)} title="The settings could not be shown" />}
       {settings.isPending && <p className="fy-secondary">Loading the settings…</p>}
       {groups.map((g) => {
