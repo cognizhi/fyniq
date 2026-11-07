@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:b6f3cbca84b14f82686e3ffce3ed991fe136bb92dc011bb2cfce4a91a1918757
+  - docs/user-guide/invoices.md sha256:a93dc0631d11daeb4d3040a2da0f66211ea260991512f65c1ba924e831749183
 data_class: general
 taint: trusted
 status: draft
@@ -87,6 +87,7 @@ aliases:
 ## Email it
 
 - **Email** on an issued invoice sends it from the invoices sender to the customer's billing email, or an address given, with its PDF and a secure link the customer opens without signing in; the PDF is kept with the invoice and **Emails** lists each send and its delivery.
+- Sending it again sends the very copy kept when it was first sent, the same PDF with the same fingerprint, even if a template has changed since; an edited invoice's new version is made afresh.
 - A tax invoice missing a particular IRAS requires, such as the customer's address, is not sent until the detail is added ([[settings.templates]]).
 
 (src: docs/user-guide/invoices.md#email-an-invoice)

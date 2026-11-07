@@ -98,8 +98,9 @@ const (
 // Prepare reads document id of org for emailing to to (empty: the customer's billing email): an issued invoice, a sent
 // quote or order, or a statement, as what says, at its current version; the email's subject and body from the email
 // template that applies to the customer, with the online link (none for a statement); and, when rendering, its PDF from
-// the document template that applies, which a tax invoice must show every particular in. inUnit, when set, runs in the
-// read's unit of work with the document, such as for an ETag.
+// the document template that applies, which a tax invoice must show every particular in, unless that version was sent
+// before: then the copy kept as issued goes again (FR-DOC-04). inUnit, when set, runs in the read's unit of work with the
+// document, such as for an ETag.
 func (s Sender) Prepare(ctx context.Context, org, id uuid.UUID, what What, to string, rendering bool,
 	inUnit func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) error) (Sending, error) {
 	return s.prepare(ctx, org, id, what, to, rendering, inUnit, nil)
@@ -217,9 +218,11 @@ func (s Sender) prepare(ctx context.Context, org, id uuid.UUID, what What, to st
 		}
 		if reminder != nil {
 			reminderFields(emailed.Fields, *reminder)
-			if out.Evidence, err = sentPDF(ctx, u, &out, doc); err != nil {
-				return err
-			}
+		}
+		// A version already sent goes again as the copy kept as issued, with the template it was issued with, never
+		// rendered anew, so every copy of it is the same file (FR-DOC-04, rev 0.191).
+		if out.Evidence, err = sentPDF(ctx, u, &out, doc); err != nil {
+			return err
 		}
 		if out.Subject, out.Body, err = render.Email(mail.Content, emailed); err != nil {
 			return err
@@ -331,7 +334,7 @@ func reminderFields(f map[string]render.Value, r salesreminder.Reminder) {
 }
 
 // sentPDF is the evidence of the PDF last sent of doc's current version, with the template that rendered it, written
-// into x: what a reminder sends again. uuid.Nil when no send carried that version.
+// into x: what any sending of that version sends again (FR-DOC-04). uuid.Nil when no send carried that version.
 func sentPDF(ctx context.Context, u storage.UnitOfWork, x *Sending, doc storage.Document) (uuid.UUID, error) {
 	sends, err := u.DocumentSends().OfDocument(ctx, doc.ID)
 	if err != nil {

@@ -10,7 +10,12 @@
 
 - [x] 2.1 Two-phase upload: the staging prefix, attaching to a draft, finalising through the outbox into the locked store, and the sweeper. Test `// req: FR-DOC-13` (G4-069) (20 Oct 2026: uploads staged under `staging/<org>/<uuidv7>`; the commit queued in the posting's transaction (`evidence.commit` on the worker) and hourly as a platform job, verified by hash, idempotent; the hourly `evidence.sweep` deletes day-old staging files no attached row uses and reports locked orphans. **Left:** the object generation in the row, which the port does not return yet)
 - [x] 2.2 Write the evidence hash, uploader, source and parent to the audit trail in the same transaction; removal only from drafts; append-only once final; nightly re-verification. Test `// req: FR-DOC-07` (20 Oct 2026: migration 000035, FY120–FY124; the audit event carries both hashes, uploader, source and parent; removal only from a draft, append-only after, never deleted, retain-until only later; `evidence.verify` at 03:30; CTL-AUD-06's checks running. **Left:** supersede with a reason, and C.2 #31 as a check once the checks engine exists)
-- [ ] 2.3 Issued documents stored with their hash, and proof that a re-issued copy is identical. Test `// req: FR-DOC-04` **Left:** with the issued documents of `p1-sales`
+- [x] 2.3 Issued documents stored with their hash, and proof that a re-issued copy is identical. Test `// req: FR-DOC-04` **Left:** with the issued documents of `p1-sales`
+  (6 Nov 2026, PRD-001 rev 0.191: an invoice's, quote's, order's or statement's PDF is its evidence with its SHA-256 from
+  its first sending (`salesmail`); every later sending of that version, not only a reminder, sends that file with its
+  template (`sentPDF`), never a new rendering. Test `TestInvoicesAndQuotesAreEmailed`: sent twice, both sends name the
+  same evidence and hash, and the file opened hashes to it. Report exports record their hash (FR-RPT-09); Nemura's
+  payslips come with Nemura.)
 
 ## 3. Rules, classes and search
 
