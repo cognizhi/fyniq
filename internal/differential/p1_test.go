@@ -604,3 +604,46 @@ func TestRevaluationFormatRules(t *testing.T) {
 		}
 	}
 }
+
+// The account merges of golden/account-merge.json, worked out by hand in oracle/tests/test_merge.py (README, "Account
+// merges"; FR-COA-04, Appendix B.8): 1600's JPY 300,000,000 carried at S$2,710,000.00 moves at RND-RATE 0.0090333333
+// (S$2,709,999.99) and its S$0.01 left over in SGD beside the S$1,000.00 it holds; its OPS dollars carried at −1.00 move
+// at a rate of 1 as the signs differ, S$11.00 left over; its ENG dollars at 1.3366666667. 6120's second year alone
+// moves into 6100. 6130 holds nothing, so posts nothing; the refused merges (AM-0014 of a revalued account), the later lines on merged accounts and the
+// void and edits of journals on them are rejected.
+// req: FR-COA-04
+// req: QA-ENG-02
+// req: ledger/chart-of-accounts A merge moves the balance by one entry (rev 0.174)
+// req: ledger/chart-of-accounts Accounts a merge refuses
+// req: ledger/chart-of-accounts A merge waits for what is scheduled
+func TestP1AccountMergesMoveWhatTheAccountHolds(t *testing.T) {
+	r := run(t, load(t, "account-merge.json"))
+	byDoc := map[string][]EntryLine{}
+	for _, e := range r.Entries {
+		if e.Kind == "post" {
+			byDoc[e.Document] = e.Lines
+		}
+	}
+	dim := func(l EntryLine, d string) EntryLine { l.Dimensions = map[string]string{"Department": d}; return l }
+	for doc, lines := range map[string][]EntryLine{
+		"AM-0001": {el("1600", "JPY", "-300000000", "-2709999.99"), el("1600", "SGD", "-1000.01", "-1000.01"), dim(el("1600", "SGD", "11.00", "11.00"), "OPS"),
+			dim(el("1600", "USD", "-150.00", "-200.50"), "ENG"), dim(el("1600", "USD", "-10.00", "-10.00"), "OPS"),
+			el("1610", "JPY", "300000000", "2709999.99"), el("1610", "SGD", "1000.01", "1000.01"), dim(el("1610", "SGD", "-11.00", "-11.00"), "OPS"),
+			dim(el("1610", "USD", "150.00", "200.50"), "ENG"), dim(el("1610", "USD", "10.00", "10.00"), "OPS")},
+		"AM-0002": {el("6100", "SGD", "300.00", "300.00"), dim(el("6100", "SGD", "450.00", "450.00"), "ENG"), el("6120", "SGD", "-300.00", "-300.00"),
+			dim(el("6120", "SGD", "-450.00", "-450.00"), "ENG")},
+	} {
+		if got := byDoc[doc]; !reflect.DeepEqual(got, lines) {
+			t.Errorf("%s: %v, want %v", doc, got, lines)
+		}
+	}
+	if _, posted := byDoc["AM-0003"]; posted {
+		t.Error("a merge of an account holding nothing posted an entry")
+	}
+	want := []string{"AM-0004", "AM-0005", "AM-0006", "AM-0007", "AM-0008", "AM-0009", "AM-0010", "AM-0011", "AM-0012", "AM-0013", "AM-0014", "JNL-0014",
+		"BT-0003",
+		"JNL-0001/reversal", "JNL-0008/edit", "JNL-0015/edit"}
+	if !reflect.DeepEqual(r.Rejected, want) {
+		t.Errorf("rejected %v, want %v", r.Rejected, want)
+	}
+}

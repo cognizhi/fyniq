@@ -193,7 +193,8 @@ From P1 a scenario may hold documents of other sources beside manual journals, e
 rule set (PRD-001 §10.2, Appendix B; the oracle's `oracle/src/oracle/sources/`). The format grows
 additively, still `fyniq-scenario@1`: a scenario of manual journals only is unchanged, and so is its
 result. **The engine's `cmd/scenario-run` reads every P1 source**, each in `internal/differential/` (`p1.go` with
-the bank, `p1_purchases.go`, `p1_sales.go`, `p1_claims.go`, `p1_assets.go` and `p1_founders.go`; the engine-session
+the bank, `p1_purchases.go`, `p1_sales.go`, `p1_claims.go`, `p1_assets.go`, `p1_founders.go` and `p1_merge.go`, the
+account merges of rev 0.195; the engine-session
 tasks of `p1-bank-import-reconcile`, `p1-purchases`, `p1-sales`, `p1-expense-claims` and `p1-fixed-assets`), so the
 Go gate posts their golden cases in [`golden/`](golden/README.md) through both sides, and `make differential` draws
 the sources the generator has, and the statements and KPIs over them
@@ -220,6 +221,8 @@ A scenario with a P1 document must have `settings` and `as_of`, or it is invalid
   needs a key the organisation has not set is rejected.
 - `settings.books_start` is the first day of the books: an asset's depreciation posts from the later of
   its start and this day's month (FR-FA-02), and the opening balances are dated on it (FR-GL-06).
+- `settings.first_year_end` is the last day of the first financial year (FR-ORG-02; rev 0.195): with `books_start` it
+  sets the financial years an income or expense account's merge reads (section "Account merges").
 - `settings.mileage_rates` lists the rate per km for each vehicle type from each date (FR-AP-16; a
   policy setting under dual control, not a statutory rate): `{"vehicle": "car", "from": "2026-01-01",
   "rate": "0.60"}`.
@@ -695,6 +698,59 @@ still post, when:
 3. its `version` is not the document's current version plus one ("it saves the next version"; FR-GL-01 rev 0.48:
    "at the version read"): a document's version is the one it is written with, then each posted edit's;
 4. its content breaks its document's rules: a journal's rules 1 to 10, or the opening balances' rules above.
+
+### Account merges (`account_merge`, `account_merge@1`)
+
+From FR-COA-04 and Appendix B.8 (PRD-001 rev 0.174).
+
+```json
+{"type": "account_merge", "id": "AM-0001", "version": 1, "date": "2026-10-31", "account": "6120", "into": "6100"}
+```
+
+The merge of `account` into `into`, posted on `date`, the day the balance moves. It moves what `account` holds into
+`into`, each currency and dimension set apart, at its recorded base value (ENG-14: never converted again):
+
+- A balance-sheet account (asset, liability or equity) holds the sum of its lines dated on or before `date`; an income
+  or expense account the sum of its lines dated from the first day of the financial year that holds `date` to `date`,
+  since earlier years are in retained earnings. The financial years are those of `settings.books_start` and
+  `settings.first_year_end`: the first runs from the one to the other, each later one from the day after the last ends
+  to one year later less a day (the first may be short or long, FR-ORG-02). A merge of an income or expense account in
+  a scenario without both is invalid.
+- What it holds is read from the entries posted before the merge: those of the documents before it in the scenario
+  (reversals and edits come after every document, so none counts), and their scheduled entries dated on or before
+  `date` (rule 5 below keeps any later one from reaching `account`).
+- For each currency and dimension set, with amount A and base amount B:
+
+  | Holding | Line on `account` | Line on `into` |
+  |---|---|---|
+  | In the base currency, A | −A | +A |
+  | In another currency, A ≠ 0 | −A at rate r, base −`RND-FX`(A × r) | +A at rate r, base +`RND-FX`(A × r) |
+  | The base left, d = B − `RND-FX`(A × r), when not zero; all of B when A = 0 | −d in the base currency | +d in the base currency |
+
+  r is `RND-RATE` of B ÷ A (base per one unit, the quotient rounded once, half away from zero, to 10 decimals); it is 1
+  when A and B differ in sign, or when that rate is not one a stored rate can hold (0 once rounded, or 10^10 or more).
+  Each line keeps the holding's dimension values; a holding whose amount and base are both 0 moves nothing.
+- `account` holds nothing in any currency or dimension set after the entry, and `into` gains exactly what it held. A
+  merge of an account that holds nothing posts no entry. Either way `account` is inactive from then on: a later document
+  of the scenario with a line on it is rejected (rule 3 of "The rules every P1 source shares"), and so is a void or an
+  edit, whatever its date, of a journal whose current entry has a line on it, or an edit whose new version has one.
+
+The entry is in canonical form ("P1 entries"), `kind` `post`, on `date`. A merge is the system's posting: an account
+that requires a dimension takes its lines without values as they come.
+
+A merge is rejected whole when:
+
+1. `account` and `into` are the same account, or either is not in `accounts`, is a group account, is inactive (an
+   account merged before it in the scenario is), has a `role`, is named in `settings.accounts`, is a money account
+   (in `settings.money_accounts`), or is marked `revalue`. The product merges a revalued account into another revalued
+   one only (FR-COA-04), moving what its month-end revaluations left on it too; the format leaves such merges out for
+   now, since neither side reads a month's revaluation before the scheduler runs;
+2. their types differ;
+3. `date` is after `as_of`, or before `settings.books_start` when it is set;
+4. an entry posted before the merge (as above) has a line on `account` dated after `date`;
+5. something still posts to `account` after `date` by itself: a release of a spread of a document before it in the
+   scenario, an automatic reversal of a manual journal before it, or a fixed asset before it whose cost is on `account`
+   and that is not disposed of on or before `date`.
 
 ### Month-end revaluation (FR-GL-04), `RND-RATE` and GST in another currency (ENG-42)
 

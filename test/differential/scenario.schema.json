@@ -215,7 +215,7 @@
                                          "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
                                          "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost",
                                          "director_fee", "director_waiver", "director_repayment",
-                                         "director_conversion"]}},
+                                         "director_conversion", "account_merge"]}},
       "allOf": [
         {"if": {"properties": {"type": {"const": "manual_journal"}}}, "then": {"$ref": "#/$defs/manualJournal"}},
         {"if": {"properties": {"type": {"const": "opening_balances"}}}, "then": {"$ref": "#/$defs/openingBalances"}},
@@ -236,7 +236,8 @@
         {"if": {"properties": {"type": {"const": "director_fee"}}}, "then": {"$ref": "#/$defs/directorFee"}},
         {"if": {"properties": {"type": {"const": "director_waiver"}}}, "then": {"$ref": "#/$defs/directorWaiver"}},
         {"if": {"properties": {"type": {"const": "director_repayment"}}}, "then": {"$ref": "#/$defs/directorRepayment"}},
-        {"if": {"properties": {"type": {"const": "director_conversion"}}}, "then": {"$ref": "#/$defs/directorConversion"}}
+        {"if": {"properties": {"type": {"const": "director_conversion"}}}, "then": {"$ref": "#/$defs/directorConversion"}},
+        {"if": {"properties": {"type": {"const": "account_merge"}}}, "then": {"$ref": "#/$defs/accountMerge"}}
       ]
     },
     "settings": {
@@ -245,6 +246,10 @@
       "additionalProperties": false,
       "properties": {
         "books_start": {"description": "The first day of the books (FR-FA-02).", "$ref": "#/$defs/date"},
+        "first_year_end": {
+          "description": "The last day of the first financial year (FR-ORG-02): with books_start it sets the financial years an income or expense account's merge reads (README, Account merges).",
+          "$ref": "#/$defs/date"
+        },
         "accounts": {
           "description": "System accounts by key (Appendix B.5). Each must be in accounts.",
           "type": "object",
@@ -596,6 +601,20 @@
         "price": {"description": "The price per share, at most 6 decimals.", "type": "string"},
         "fair_value_price": {"description": "Under the fair-value basis: the shares' fair value per share.", "type": "string"},
         "difference": {"description": "Under the fair-value basis: the income or expense account the difference goes to.", "type": "string"}
+      }
+    },
+    "accountMerge": {
+      "description": "The merge of an account into another (account_merge@1, FR-COA-04, Appendix B.8; README, Account merges).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "account", "into"],
+      "properties": {
+        "type": {"const": "account_merge"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day the balance moves: on or before as_of, and on or after its last line.", "$ref": "#/$defs/date"},
+        "account": {"description": "The account merged: not a group, system, share-capital or money account, and active.", "type": "string"},
+        "into": {"description": "The account it is merged into, of the same type, under the same limits.", "type": "string"}
       }
     },
     "directorFee": {

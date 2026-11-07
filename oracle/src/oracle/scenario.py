@@ -24,6 +24,9 @@ enters on it names a value of, and a journal's or the opening balances' line may
 code. Two dimensions with one name, two values of a dimension with one code, a ``requires`` naming a dimension not
 declared, or a line naming a dimension or a code not declared make the scenario invalid; whether each is in use, and
 what an account requires, are posting rules (:mod:`oracle.ledger`, rule 11).
+
+A merge of an income or expense account (``account_merge``; README, "Account merges") reads the financial year that
+holds its date, so a scenario with one needs ``settings.books_start`` and ``settings.first_year_end``, or it is invalid.
 """
 
 from __future__ import annotations
@@ -66,7 +69,7 @@ _DIMENSION_CODE = re.compile(r"[0-9A-Za-z][0-9A-Za-z._-]{0,29}")
 
 # The keys whose string values are dates, wherever they appear in a P1 document or the settings.
 _DATE_KEYS = frozenset({"date", "from", "to", "service_start", "depreciate_from", "registered_from",
-                        "registered_to", "books_start"})
+                        "registered_to", "books_start", "first_year_end"})
 
 
 class ScenarioError(ValueError):
@@ -188,6 +191,9 @@ class Settings:
     books_start: date | None
     data: MappingProxyType[str, Any]
     period_end_rates: tuple[PeriodEndRate, ...] = ()
+    # The last day of the first financial year (FR-ORG-02): with books_start it sets the financial years an income or
+    # expense account's merge reads (README, "Account merges").
+    first_year_end: date | None = None
 
 
 @dataclass(frozen=True)
@@ -371,9 +377,10 @@ def _settings(raw: dict[str, Any], accounts: dict[str, Account], currencies: dic
         rates=tuple(sorted(rates, key=lambda r: r.start)),
     )
     books_start = date.fromisoformat(raw["books_start"]) if "books_start" in raw else None
+    first_year_end = date.fromisoformat(raw["first_year_end"]) if "first_year_end" in raw else None
     return Settings(
         MappingProxyType(named), MappingProxyType(money_accounts), gst, books_start, _frozen(raw),
-        _period_end_rates(raw.get("period_end_rates", []), currencies, base),
+        _period_end_rates(raw.get("period_end_rates", []), currencies, base), first_year_end,
     )
 
 
@@ -491,6 +498,16 @@ def scenario_from_json(data: Any) -> Scenario:
             if day != settings.books_start:
                 raise ScenarioError(f"{where}/date: the opening balances are dated the books' start, "
                                     f"{settings.books_start.isoformat()}, not {day.isoformat()}")
+    # README, "Account merges": an income or expense account's merge reads the financial year that holds its date, which
+    # books_start and first_year_end set.
+    for i, d in enumerate(documents):
+        if isinstance(d, Source) and d.type == "account_merge":
+            merged = accounts.get(d.data["account"])
+            if merged is not None and merged.type in ("revenue", "expense"):
+                assert settings is not None
+                if settings.books_start is None or settings.first_year_end is None:
+                    raise ScenarioError(f"documents/{i}: {d.id} merges the {merged.type} account {merged.code}, which "
+                                        "needs settings/books_start and settings/first_year_end")
     people = frozenset(data.get("people", ()))
     for i, person in enumerate(data.get("people", ())):
         _shape(_DOCUMENT_ID, person, f"people/{i}")
