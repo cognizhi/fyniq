@@ -355,7 +355,7 @@ export interface paths {
         head?: never;
         /**
          * Ask to change an approval policy
-         * @description Asks for the policy's next version: its ordered steps, each a quorum of 1 to 5 people who hold the approval right (A) on the object's Appendix D row, narrowed to roles or to named members, never both (FR-APR-01). A policy never adds anyone Appendix D does not, and its steps must be ones the members can sign (APR-08). The change is never made at once: the answer is 202 with an approval request, which a member who holds A on "Approval policies, AI catalogue" (the Owner or the Controller) and is not the requester approves (FR-APR-09, SOD-8). On its approval the version is added, and every pending request of that kind restarts: the database voids them (FR-APR-10). The policy for approval policies is fixed (APR-09). Asking needs a person signed in who passed step-up in the last 5 minutes and If-Match with the policy's ETag. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Asks for the policy's next version: its ordered default steps, each a quorum of 1 to 5 people who hold the approval right (A) on the object's Appendix D row, narrowed to roles or to named members, never both (FR-APR-01); and up to 10 rules, in order, each with conditions (an amount at or above, in the base currency; departments; accounts; vendors) and its own steps: the first rule whose conditions all hold decides a request's steps, else the default steps apply (rev 0.178). A policy never adds anyone Appendix D does not, and its steps must be ones the members can sign (APR-08). The change is never made at once: the answer is 202 with an approval request, which a member who holds A on "Approval policies, AI catalogue" (the Owner or the Controller) and is not the requester approves (FR-APR-09, SOD-8). On its approval the version is added, and every pending request of that kind restarts: the database voids them (FR-APR-10). The policy for approval policies is fixed (APR-09). Asking needs a person signed in who passed step-up in the last 5 minutes and If-Match with the policy's ETag. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         patch: operations["changeApprovalPolicy"];
         trace?: never;
@@ -389,7 +389,7 @@ export interface paths {
         };
         /**
          * Get an approval request
-         * @description One approval request with exactly what an approver signs: the envelope (RFC 8785 canonical JSON) and its SHA-256, what it changes before and after, and its signatures (FR-APR-02, FR-APR-03, FR-APR-10). Shown to its requester and to whoever holds a right on its object. Read-only; no side effects.
+         * @description One approval request with exactly what an approver signs: the envelope (RFC 8785 canonical JSON) and its SHA-256, what it changes before and after, and its signatures (FR-APR-02, FR-APR-03, FR-APR-10). While it waits, also what approving it would post now, with the balances of the accounts it moves before and after, or what would refuse it: the change is carried out in a transaction that is rolled back, so nothing is kept (rev 0.177). Shown to its requester and to whoever holds a right on its object. Read-only; no side effects.
          */
         get: operations["getApproval"];
         put?: never;
@@ -10492,6 +10492,8 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
              */
             id: string;
+            /** @description getApproval only, while it waits: what approving it would post now, worked out by carrying the change out and rolling it back, with the balances it moves, or what would refuse it (FR-APR-02, rev 0.177). Absent for a change that posts nothing. */
+            impact?: components["schemas"]["ApprovalImpact"];
             /**
              * @description Only in the 202 answer to an invitation: its one-time code, shown once, which works once the invitation is approved.
              * @example ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z
@@ -10519,6 +10521,12 @@ export interface components {
              * @example founder/organisation_setting@2026-10-20.1
              */
             policy: string;
+            /**
+             * Format: int64
+             * @description The rule of its policy whose conditions chose its steps, from 1; absent when the policy's default steps did (FR-APR-01, rev 0.178).
+             * @example 1
+             */
+            policy_rule?: number;
             /**
              * Format: date-time
              * @description When it was asked for.
@@ -10599,6 +10607,14 @@ export interface components {
              */
             field: string;
         };
+        ApprovalImpact: {
+            /** @description Each account and currency those entries post to, with its balance through their latest date before and after. */
+            balances: components["schemas"]["ImpactBalance"][];
+            /** @description The entries approving it would post now, debits positive: its ledger impact. */
+            entries: components["schemas"]["Entry"][];
+            /** @description What would refuse it if it were approved now, such as a check that fails or a month closed since it was asked for; absent when nothing would. */
+            refused?: components["schemas"]["ImpactRefusal"];
+        };
         ApprovalPage: {
             /** @description The requests on this page. */
             items: components["schemas"]["Approval"][] | null;
@@ -10656,7 +10672,9 @@ export interface components {
              * @example Organisation profile, financial year, defaults (rev 0.29)
              */
             row: string;
-            /** @description Its ordered steps: each needs its quorum before the next is signed (FR-APR-01). */
+            /** @description Its rules, in order: the first whose conditions all hold decides a request's steps instead of the default steps (rev 0.178). Empty for none. */
+            rules: components["schemas"]["ApprovalRule"][] | null;
+            /** @description Its ordered default steps: each needs its quorum before the next is signed (FR-APR-01). */
             steps: components["schemas"]["ApprovalStep"][] | null;
             /**
              * @description The version string each request records (G4-057).
@@ -10665,7 +10683,9 @@ export interface components {
             version: string;
         };
         ApprovalPolicyChange: {
-            /** @description The ordered steps: 1 to 5. */
+            /** @description The rules, in order, up to 10: the first whose conditions all hold decides a request's steps; when none does, the default steps apply (rev 0.178). Leave it out for none. */
+            rules?: components["schemas"]["ApprovalRuleChange"][] | null;
+            /** @description The ordered default steps: 1 to 5. */
             steps: components["schemas"]["ApprovalStepChange"][] | null;
         };
         ApprovalPolicyDetail: {
@@ -10698,7 +10718,9 @@ export interface components {
              * @example Organisation profile, financial year, defaults (rev 0.29)
              */
             row: string;
-            /** @description Its ordered steps: each needs its quorum before the next is signed (FR-APR-01). */
+            /** @description Its rules, in order: the first whose conditions all hold decides a request's steps instead of the default steps (rev 0.178). Empty for none. */
+            rules: components["schemas"]["ApprovalRule"][] | null;
+            /** @description Its ordered default steps: each needs its quorum before the next is signed (FR-APR-01). */
             steps: components["schemas"]["ApprovalStep"][] | null;
             /**
              * @description The version string each request records (G4-057).
@@ -10740,7 +10762,9 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
              */
             request_id: string;
-            /** @description Its ordered steps. */
+            /** @description Its rules, in order: the first whose conditions hold decided a request's steps (rev 0.178). */
+            rules: components["schemas"]["ApprovalRule"][] | null;
+            /** @description Its ordered default steps. */
             steps: components["schemas"]["ApprovalStep"][] | null;
             /**
              * @description The version string the requests made under it record.
@@ -10765,6 +10789,18 @@ export interface components {
             roles: string[] | null;
             /** @description Only these members sign it; empty, with roles empty, for anyone who holds the approval right. */
             users: string[] | null;
+        };
+        ApprovalRule: {
+            /** @description What the rule matches: every condition set must hold. */
+            conditions: components["schemas"]["RuleConditions"];
+            /** @description The ordered steps a request that matches it takes, instead of the policy's default steps. */
+            steps: components["schemas"]["ApprovalStep"][] | null;
+        };
+        ApprovalRuleChange: {
+            /** @description What the rule matches: set at least one; every one set must hold. */
+            conditions: components["schemas"]["RuleConditionsChange"];
+            /** @description The ordered steps a request that matches it takes: 1 to 5. */
+            steps: components["schemas"]["ApprovalStepChange"][] | null;
         };
         ApprovalSignature: {
             /**
@@ -19904,6 +19940,55 @@ export interface components {
              */
             to: string;
         };
+        ImpactBalance: {
+            /**
+             * Format: uuid
+             * @description The account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+             */
+            account_id: string;
+            /** @description After the entries. */
+            after: components["schemas"]["Money"];
+            /** @description After the entries. */
+            base_after: components["schemas"]["Money"];
+            /** @description Its value in the base currency before. */
+            base_before: components["schemas"]["Money"];
+            /** @description Its balance in the currency before, debit positive. */
+            before: components["schemas"]["Money"];
+            /**
+             * @description Its code.
+             * @example 6010
+             */
+            code: string;
+            /**
+             * @description Its name.
+             * @example Rent
+             */
+            name: string;
+            /**
+             * Format: date
+             * @description The day the balances are through: the entries' latest date.
+             * @example 2026-10-31
+             */
+            through: string;
+        };
+        ImpactRefusal: {
+            /**
+             * @description The rule.
+             * @example STORAGE-INV-03
+             */
+            code: string;
+            /**
+             * @description What to do.
+             * @example Ask for the period to be reopened first.
+             */
+            fix?: string;
+            /**
+             * @description What would stop it, in plain words.
+             * @example The posting date is in a closed period.
+             */
+            message: string;
+        };
         ImportedLine: {
             /** @description Signed: money in positive. */
             amount: components["schemas"]["Money"];
@@ -26567,6 +26652,29 @@ export interface components {
              */
             sod_override_reason?: string;
         };
+        RuleConditions: {
+            /** @description Holds when a line posts to one of these accounts; empty for none. */
+            accounts: string[] | null;
+            /** @description Holds when the change's amount is at or above it, in the base currency; absent for none. */
+            amount_at_least?: components["schemas"]["Money"];
+            /** @description Holds when a line carries one of these dimension values (Department's); empty for none. */
+            departments: string[] | null;
+            /** @description Holds when the change's vendor is one of these contacts; empty for none. */
+            vendors: string[] | null;
+        };
+        RuleConditionsChange: {
+            /** @description Holds when a line posts to one of these accounts. */
+            accounts?: string[] | null;
+            /**
+             * @description Holds when the change's amount is at or above it: a decimal in the base currency.
+             * @example 5000.00
+             */
+            amount_at_least?: string;
+            /** @description Holds when a line carries one of these values of the Department dimension. */
+            departments?: string[] | null;
+            /** @description Holds when the change's vendor is one of these vendor contacts. */
+            vendors?: string[] | null;
+        };
         RulesOutputBody: {
             /** @description The rules in their order. */
             items: components["schemas"]["BankRule"][];
@@ -32014,7 +32122,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APR-08` The policy's steps cannot be signed. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APR-08` The policy's steps cannot be signed; `APR-16` The policy's rules cannot be applied. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -32348,7 +32456,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APPLY-02` The saved application cannot be read; `APPLY-07` The void is dated before the application; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `CLAIM-16` The void is dated before the reimbursement; `CLAIM-18` A trip is incomplete; `CLAIM-19` No rate per km is set for the vehicle; `CLAIM-24` The line needs its receipt; `CLAIM-25` The claim does not say why it is late; `CLAIM-26` The receipt is on another record; `CLAIM-27` The receipt file is not on the claim; `CLAIM-32` The claim cannot settle that advance; `CLAIM-36` The claim cannot be kept as a loan; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `DEPOSIT-02` The saved deposit cannot be read; `DEPOSIT-07` The void is dated before the deposit; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `FOUNDER-15` Not a director's fee; `FOUNDER-16` The director's fee does not fit; `FOUNDER-17` The fee has no shareholders' resolution; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `FOUNDER-30` The settlement has no agreement; `FX-01` No exchange rate for this currency; `FX-08` An average rate never sets a GST amount; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit; `LEDGER-41` A director's account line needs its person; `LEDGER-43` The director's fee does not fit the rule; `LEDGER-44` The waiver does not fit the rule; `LEDGER-45` The repayment does not fit the rule; `LEDGER-46` The conversion does not fit the rule; `LEDGER-47` The merge does not fit the rule; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `MERGE-01` The accounts do not merge; `MERGE-02` The merge's date does not fit; `PAYEE-02` The saved change cannot be read; `PAYEE-03` Not an active vendor; `PAYEE-04` The currency does not fit; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-09` The call-back note is too long; `PAYEE-11` The account's evidence is not attached; `PAYEE-14` That is the account in force already; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APPLY-02` The saved application cannot be read; `APPLY-07` The void is dated before the application; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `APR-16` The policy's rules cannot be applied; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CLAIM-03` The saved claim cannot be read; `CLAIM-04` The claimant is not a member; `CLAIM-05` The line's category cannot be claimed; `CLAIM-06` A text of the claim is too long; `CLAIM-07` A receipt line is incomplete; `CLAIM-08` Not a GST code for purchases; `CLAIM-16` The void is dated before the reimbursement; `CLAIM-18` A trip is incomplete; `CLAIM-19` No rate per km is set for the vehicle; `CLAIM-24` The line needs its receipt; `CLAIM-25` The claim does not say why it is late; `CLAIM-26` The receipt is on another record; `CLAIM-27` The receipt file is not on the claim; `CLAIM-32` The claim cannot settle that advance; `CLAIM-36` The claim cannot be kept as a loan; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `DEPOSIT-02` The saved deposit cannot be read; `DEPOSIT-07` The void is dated before the deposit; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `FOUNDER-15` Not a director's fee; `FOUNDER-16` The director's fee does not fit; `FOUNDER-17` The fee has no shareholders' resolution; `FOUNDER-27` Not a settlement; `FOUNDER-28` The settlement does not fit; `FOUNDER-30` The settlement has no agreement; `FX-01` No exchange rate for this currency; `FX-08` An average rate never sets a GST amount; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `LEDGER-36` A claim line's amounts do not fit; `LEDGER-37` What was paid or settled does not fit; `LEDGER-41` A director's account line needs its person; `LEDGER-43` The director's fee does not fit the rule; `LEDGER-44` The waiver does not fit the rule; `LEDGER-45` The repayment does not fit the rule; `LEDGER-46` The conversion does not fit the rule; `LEDGER-47` The merge does not fit the rule; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `MERGE-01` The accounts do not merge; `MERGE-02` The merge's date does not fit; `PAYEE-02` The saved change cannot be read; `PAYEE-03` Not an active vendor; `PAYEE-04` The currency does not fit; `PAYEE-05` Not a SWIFT/BIC code; `PAYEE-06` The bank's country does not fit; `PAYEE-07` Not an account number the bank takes; `PAYEE-08` The account name does not fit; `PAYEE-09` The call-back note is too long; `PAYEE-11` The account's evidence is not attached; `PAYEE-14` That is the account in force already; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long. */
             422: {
                 headers: {
                     [name: string]: unknown;

@@ -131,6 +131,7 @@ approval_policy | steps | jsonb | not null |
 approval_policy | request_id | uuid | not null | 
 approval_policy | created_by | uuid | not null | 
 approval_policy | created_at | timestamp with time zone | not null | 
+approval_policy | rules | jsonb | not null | '[]'::jsonb
 approval_request | organisation_id | uuid | not null | current_org()
 approval_request | id | uuid | not null | uuidv7()
 approval_request | object_type | text | not null | 
@@ -846,6 +847,8 @@ installation_connector_secret | set_by | text | not null |
 installation_connector_secret | set_at | timestamp with time zone | not null | 
 installation_connector_secret | valid_until | timestamp with time zone | null | 
 installation_connector_secret | destroyed_at | timestamp with time zone | null | 
+invitation_code | code_hash | bytea | not null | 
+invitation_code | owner | uuid | not null | 
 item | organisation_id | uuid | not null | current_org()
 item | id | uuid | not null | uuidv7()
 item | code | text | not null | 
@@ -1686,6 +1689,8 @@ approval_policy | approval_policy_pkey | PRIMARY KEY (organisation_id, id)
 approval_policy | approval_policy_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES approval_request(organisation_id, id)
 approval_policy | approval_policy_request_id_not_null | NOT NULL request_id
 approval_policy | approval_policy_request_once | UNIQUE (organisation_id, request_id)
+approval_policy | approval_policy_rules_not_null | NOT NULL rules
+approval_policy | approval_policy_rules_valid | CHECK (approval_rules_valid(rules))
 approval_policy | approval_policy_steps_not_null | NOT NULL steps
 approval_policy | approval_policy_steps_valid | CHECK (approval_steps_valid(steps))
 approval_policy | approval_policy_version_not_null | NOT NULL version
@@ -2837,6 +2842,10 @@ installation_connector_secret | installation_connector_secret_ref_form | CHECK (
 installation_connector_secret | installation_connector_secret_ref_not_null | NOT NULL ref
 installation_connector_secret | installation_connector_secret_set_at_not_null | NOT NULL set_at
 installation_connector_secret | installation_connector_secret_set_by_not_null | NOT NULL set_by
+invitation_code | invitation_code_code_hash_not_null | NOT NULL code_hash
+invitation_code | invitation_code_hash_length | CHECK ((octet_length(code_hash) = 32))
+invitation_code | invitation_code_owner_not_null | NOT NULL owner
+invitation_code | invitation_code_pkey | PRIMARY KEY (code_hash, owner)
 item | item_code_format | CHECK ((code ~ '^[0-9A-Za-z][0-9A-Za-z._/-]{0,29}$'::text))
 item | item_code_key | UNIQUE (organisation_id, code)
 item | item_code_not_null | NOT NULL code
@@ -4038,6 +4047,7 @@ CREATE UNIQUE INDEX installation_connector_secret_current ON fyniq.installation_
 CREATE UNIQUE INDEX installation_connector_secret_once ON fyniq.installation_connector_secret USING btree (ref)
 CREATE UNIQUE INDEX installation_connector_secret_pkey ON fyniq.installation_connector_secret USING btree (id)
 CREATE UNIQUE INDEX installation_pkey ON fyniq.installation USING btree (singleton)
+CREATE UNIQUE INDEX invitation_code_pkey ON fyniq.invitation_code USING btree (code_hash, owner)
 CREATE UNIQUE INDEX item_code_key ON fyniq.item USING btree (organisation_id, code)
 CREATE UNIQUE INDEX item_pkey ON fyniq.item USING btree (organisation_id, id)
 CREATE UNIQUE INDEX item_price_currency_key ON fyniq.item_price USING btree (organisation_id, item_id, currency)
@@ -4386,6 +4396,9 @@ CREATE TRIGGER installation_connector_no_truncate BEFORE TRUNCATE ON fyniq.insta
 CREATE TRIGGER installation_connector_secret_guard BEFORE DELETE OR UPDATE ON fyniq.installation_connector_secret FOR EACH ROW EXECUTE FUNCTION connector_secret_guard()
 CREATE TRIGGER installation_connector_secret_named BEFORE INSERT ON fyniq.installation_connector_secret FOR EACH ROW EXECUTE FUNCTION connector_secret_named()
 CREATE TRIGGER installation_connector_secret_no_truncate BEFORE TRUNCATE ON fyniq.installation_connector_secret FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER invitation_code_guard BEFORE DELETE OR UPDATE ON fyniq.invitation_code FOR EACH ROW EXECUTE FUNCTION invitation_code_guard()
+CREATE TRIGGER invitation_code_no_truncate BEFORE TRUNCATE ON fyniq.invitation_code FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER invitation_code_registered AFTER INSERT ON fyniq.member_invitation FOR EACH ROW EXECUTE FUNCTION invitation_code_registered()
 CREATE TRIGGER journal_entry_asset_depreciation BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = 'asset_depreciation'::text) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_asset_depreciation()
 CREATE TRIGGER journal_entry_assign BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_assign()
 CREATE TRIGGER journal_entry_bank_release BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = ANY (ARRAY['bank_out_release'::text, 'bank_in_release'::text])) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_bank_release()
@@ -4604,7 +4617,7 @@ user_membership | tenant_isolation | * | (organisation_id = current_org()) | (or
 withholding_decision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 
 ## functions
-accept_member_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone, OUT organisation_id uuid, OUT invitation_id uuid, OUT user_id uuid, OUT new_user boolean, OUT membership_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 33e69b36bc9ef4a690c16a78600d8c13
+accept_member_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone, OUT organisation_id uuid, OUT invitation_id uuid, OUT user_id uuid, OUT new_user boolean, OUT membership_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0a7ef4066d7183445a4c9e1fb7bd9ff0
 accept_super_admin_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 4faeccc286a9ab13de1e09c0b43816ef
 access_review_attestation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bc80e0cced0dce827dfb83c2589ec831
 account_changed_at() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 212c9a1cb1a190c3ac8fa234e62aa816
@@ -4621,10 +4634,11 @@ announcement_dismissal_guard() → trigger | security invoker | v | search_path=
 announcement_dismissible() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c4dc44e3777faec4069ed0a9f0f172bd
 announcement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aef10077836a4f9111749cb3181c5788
 apply_installation_change(p_change uuid, p_connector text, p_id uuid, p_step text, p_at timestamp with time zone) → void | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8e8cf04d98279cfd8fcd5307219c31ac
-approval_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 54bfd8bf483ebb04da99069f2b6836cf
+approval_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cf2f3a845eb3f3f37b28ac86827d4dd0
 approval_policy_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5c96f4771b1eddd81ec69ad86520e32a
 approval_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c3359e1c6e373efc4111560e22c9c455
 approval_request_voided() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8a52518e632c789b205db97d82662924
+approval_rules_valid(p_rules jsonb) → boolean | security invoker | i | search_path=pg_catalog, fyniq, pg_temp | 2f1658d0c494b984aaf4d99dd4b8e89d
 approval_signature_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c3066369c1ca0874532b08f05dd6e258
 approval_steps_met(p_org uuid, p_request uuid, p_hash bytea, p_steps jsonb, p_upto integer) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 87283a918dece8cd6ce8b836a822f76d
 approval_steps_valid(p_steps jsonb) → boolean | security invoker | i | search_path=pg_catalog, pg_temp | d50ae4849ebdf5e7511ee70dc98ccfd3
@@ -4730,6 +4744,8 @@ installation_connector_secrets() → SETOF installation_connector_secret | secur
 installation_connectors() → SETOF installation_connector | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2d213ce73f338601f22e68944f00a45f
 installation_dual_control() → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | a3a29b8dc4a420477e6b9ff6948499d8
 installation_org() → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9731da83e60ff6283071958a473dc801
+invitation_code_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 25e66eda35f692c46e109756f9386ae1
+invitation_code_registered() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 493cbaf52e2913b053d4354c418ba404
 invite_super_admin(p_by uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a982d2e3cd5f5da8d5c1851b7fe08001
 is_owner(p_org uuid, p_membership uuid, p_now timestamp with time zone) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 97b45f40b83ee4da8c083c1ed8bd9b3b
 is_super_admin(p_user uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 74b765a558e7f7fc6d37b5f2a3be3c11
