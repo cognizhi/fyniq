@@ -3,6 +3,7 @@ package journal
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,7 +27,46 @@ const (
 	StatusPosted  = "JOURNAL-POSTED"  // a posted journal in an open period: ✔ OK
 	StatusLocked  = "JOURNAL-LOCKED"  // a posted journal in a closed month: ✔ Locked (closed month)
 	StatusWaiting = "JOURNAL-WAITING" // a posted journal whose automatic reversal waits for a period: ⚠ (rev 0.58)
+	StatusControl = "JOURNAL-CONTROL" // a line on a control account, which its sub-ledger does not see: ⚠ (question 55, rev 0.189)
 )
+
+// subledgers are what each control account's role reconciles with (INV-07), in a person's words.
+var subledgers = map[storage.AccountRole]string{
+	ledger.RoleAccountsReceivable:      "the open invoices and customer credits",
+	ledger.RoleAccountsPayable:         "the open bills and supplier credits",
+	ledger.RoleGSTControl:              "the GST returns' roll-forward",
+	ledger.RolePrepayments:             "the open prepayment schedules",
+	ledger.RoleDeferredRevenue:         "the open deferred-revenue schedules",
+	ledger.RoleExpenseClaimsPayable:    "the open expense claims",
+	ledger.RoleAccumulatedDepreciation: "the fixed asset register",
+	ledger.RoleCustomerDeposits:        "the customers' deposits",
+	ledger.RoleWithholdingTax:          "the tax withheld from suppliers' payments",
+	ledger.RoleDirectorLoan:            "the directors' and shareholders' accounts",
+	ledger.RoleDeferredRemuneration:    "the directors' deferred remuneration",
+}
+
+// controls are the warnings of a journal's lines on control accounts (question 55; INV-07): each line names its account
+// and the sub-ledger that does not see it. A control account with no role of the list is named by its own sub-ledger.
+func controls(lines []uuid.UUID, accounts map[uuid.UUID]storage.Account) []Status {
+	var out []Status
+	for i, id := range lines {
+		a, ok := accounts[id]
+		if !ok {
+			continue
+		}
+		what, known := subledgers[a.Role]
+		if !known && !a.Control {
+			continue
+		}
+		if !known {
+			what = "its sub-ledger"
+		}
+		out = append(out, status(SeverityWarning, StatusControl, fmt.Sprintf("lines[%d].account_id", i),
+			fmt.Sprintf("Line %d posts to %s %s, a control account: %s will not show it, so the two differ by it (INV-07).", i+1, a.Code, a.Name, what),
+			"Enter it through the document that owns the account, such as an invoice, a bill or a claim, unless it is an approved adjustment; then explain the difference where the account is reconciled"))
+	}
+	return out
+}
 
 // Status is one status of a journal, as the workbook's Journal sheet showed it (ENG-20): its severity, the stable code
 // of the rule, its title (the workbook's words, adapted where the platform removes the cause), what is wrong in detail,
@@ -69,6 +109,7 @@ var titles = map[string]string{
 	StatusPosted:               "OK",
 	StatusLocked:               "Locked (closed month)",
 	StatusWaiting:              "Its automatic reversal is waiting",
+	StatusControl:              "Posts to a control account",
 	StatusRecurringReady:       "OK",
 	StatusRecurringDue:         "Due but not created",
 	StatusRecurringPaused:      "Paused",
@@ -101,6 +142,14 @@ func Statuses(ctx context.Context, u storage.UnitOfWork, docs []storage.Document
 	if err != nil {
 		return nil, err
 	}
+	list, err := u.Accounts().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	accounts := make(map[uuid.UUID]storage.Account, len(list))
+	for _, a := range list {
+		accounts[a.ID] = a
+	}
 	periodOf := func(day time.Time) *storage.Period {
 		for i := range periods {
 			if !day.Before(periods[i].StartsOn) && !day.After(periods[i].EndsOn) {
@@ -115,7 +164,7 @@ func Statuses(ctx context.Context, u storage.UnitOfWork, docs []storage.Document
 		}
 		switch doc.Status {
 		case storage.DocumentDraft:
-			if out[doc.ID], err = draftStatuses(doc, settings, periodOf, func(j *ledger.Journal) (ledger.Problems, error) {
+			if out[doc.ID], err = draftStatuses(doc, settings, periodOf, accounts, func(j *ledger.Journal) (ledger.Problems, error) {
 				return rated(ctx, u, j, settings.Base)
 			}); err != nil {
 				return nil, err
@@ -125,7 +174,11 @@ func Statuses(ctx context.Context, u storage.UnitOfWork, docs []storage.Document
 			if err != nil {
 				return nil, err
 			}
-			var st []Status
+			lines := make([]uuid.UUID, len(saved.Lines))
+			for i, l := range saved.Lines {
+				lines[i] = l.AccountID
+			}
+			st := controls(lines, accounts)
 			if saved.ReverseOn != "" {
 				on, _ := time.Parse(time.DateOnly, saved.ReverseOn)
 				switch p := periodOf(on); {
@@ -152,7 +205,7 @@ func Statuses(ctx context.Context, u storage.UnitOfWork, docs []storage.Document
 // draftStatuses are a draft's statuses. rate gives its foreign-currency lines the cascade's rates and returns FX-01 for
 // each it found none for (ENG-40).
 func draftStatuses(doc storage.Document, settings ledger.Settings, periodOf func(time.Time) *storage.Period,
-	rate func(j *ledger.Journal) (ledger.Problems, error)) ([]Status, error) {
+	accounts map[uuid.UUID]storage.Account, rate func(j *ledger.Journal) (ledger.Problems, error)) ([]Status, error) {
 	j, err := decode(doc, settings.Base)
 	var je *Error
 	if errors.As(err, &je) {
@@ -190,8 +243,15 @@ func draftStatuses(doc storage.Document, settings ledger.Settings, periodOf func
 				"Date the journal in an open month, or ask for the month to be reopened"))
 		}
 	}
+	lines := make([]uuid.UUID, len(j.Lines))
+	for i, l := range j.Lines {
+		lines[i] = l.AccountID
+	}
+	warnings := controls(lines, accounts)
 	if len(out) == 0 {
-		out = append(out, status(SeverityOK, StatusReady, "", "It balances and its month is open: it can post.", ""))
+		out = append(warnings, status(SeverityOK, StatusReady, "", "It balances and its month is open: it can post.", ""))
+	} else {
+		out = append(out, warnings...)
 	}
 	return out, nil
 }

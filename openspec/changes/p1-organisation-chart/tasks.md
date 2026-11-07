@@ -104,6 +104,11 @@
   `TestAMergeMovesTheYearsMovementOrTheWholeBalance`, `TestAttackAMergedAccountStaysMerged`, `ChartOfAccounts.test.tsx`.
   **Left:** the ⚠ on a manual journal to a control account (question 55), with the checks; the oracle's half of
   `account_merge@1`.)
+  (6 Nov 2026, PRD-001 rev 0.189: question 55's ⚠. `journal.Statuses` gives each line of a manual journal on a control
+  account, draft or posted, the warning `JOURNAL-CONTROL` naming the account and the sub-ledger that will not show it
+  (the roles INV-07 lists, and any account marked as a control account); it posts all the same. Guide `journals.md`
+  (Check and post a journal), compiled into `accounting.journals`. Test `TestJournalsCarryTheWorkbooksStatuses`.
+  **Left:** the oracle's half of `account_merge@1`.)
 - [x] 3.3 Dimensions and dimension sets on journal lines. The balances cache is keyed by dimension set, and the INV-08 rebuild and the oracle's half are extended. Tests `// req: FR-DIM-01` and `// req: FR-DIM-02`; the differential gate is green
   (4 Nov 2026, slice 1, the database: migrations 000218 to 000220 add `dimension` (Department, Project and custom
   places 1 to 8), `dimension_value` and `dimension_set` (one row per combination, its values in ascending order, at

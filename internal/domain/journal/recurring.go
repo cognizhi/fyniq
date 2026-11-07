@@ -308,7 +308,7 @@ func RecurringStatuses(ctx context.Context, u storage.UnitOfWork, rs []storage.R
 			return nil, err
 		}
 		// The draft takes its rates when it posts, from the cascade as it then is: a rate not in it yet is no problem now.
-		all, err := draftStatuses(doc, settings, open, func(j *ledger.Journal) (ledger.Problems, error) {
+		all, err := draftStatuses(doc, settings, open, nil, func(j *ledger.Journal) (ledger.Problems, error) { // its errors alone
 			_, err := rated(ctx, u, j, settings.Base)
 			return nil, err
 		})
