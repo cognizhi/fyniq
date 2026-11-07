@@ -12,7 +12,7 @@ type Holder = components["schemas"]["Holder"];
 
 // EquityTabs are the equity register's views (docs/design/screens Holders): the cap table, the holders, the share
 // classes, the register of share issues, and the SAFEs and notes. The option pool joins them as it is built.
-export function EquityTabs({ current }: { current: "cap-table" | "holders" | "classes" | "transactions" | "instruments" | "options" }) {
+export function EquityTabs({ current }: { current: "cap-table" | "holders" | "classes" | "transactions" | "instruments" | "options" | "rounds" }) {
   const tabs = [
     { key: "cap-table", to: "/equity", label: "Cap table" },
     { key: "holders", to: "/equity/holders", label: "Holders" },
@@ -20,6 +20,7 @@ export function EquityTabs({ current }: { current: "cap-table" | "holders" | "cl
     { key: "transactions", to: "/equity/transactions", label: "Transactions" },
     { key: "instruments", to: "/equity/instruments", label: "SAFEs and notes" },
     { key: "options", to: "/equity/options", label: "Option pool" },
+    { key: "rounds", to: "/equity/rounds", label: "Round simulator" },
   ] as const;
   return (
     <nav className="fy-tabs" aria-label="Equity views">

@@ -9820,6 +9820,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/round-models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Try a round
+         * @description The round simulator's sandbox (FR-EQ-21, design D8): models a round scenario's inputs against today's books and answers with its outcome, as createRoundScenario would, and saves nothing: no scenario, no audit event, nothing posted. Anyone who reads the whole cap table may try one; saving a scenario and asking for its approval need the right to draft. The holder the caller signs in as is marked you. Every problem comes back together. Read-only; no side effects.
+         */
+        post: operations["modelRound"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/round-scenarios": {
         parameters: {
             query?: never;
@@ -30591,6 +30611,11 @@ export interface components {
              * @example 252083
              */
             pro_rata: string;
+            /**
+             * @description The holder is the contact the caller signs in as (linkContactMember), so a founder sees what they would own.
+             * @example true
+             */
+            you?: boolean;
         };
         RoundInvestorDraft: {
             /**
@@ -30652,6 +30677,21 @@ export interface components {
              * @example 252083
              */
             new_shares: string;
+            /**
+             * @description And after, with the top-up.
+             * @example 13.89
+             */
+            pool_diluted_after?: string;
+            /**
+             * @description What the option pool leaves to grant as a percentage of every share fully diluted before (RND-DISPLAY); left out when it leaves nothing.
+             * @example 4.15
+             */
+            pool_diluted_before?: string;
+            /**
+             * @description The points fully diluted the pool loses, as a holder's dilution; negative when a top-up enlarges it; left out with no pool on either side.
+             * @example -13.89
+             */
+            pool_dilution?: string;
             /** @description The price × the shares fully diluted after it. */
             post_money: components["schemas"]["Money"];
             /** @description The price × the shares fully diluted before the round (with a top-up before the money). */
@@ -30661,6 +30701,8 @@ export interface components {
              * @example 3.00
              */
             price: string;
+            /** @description The money the round takes for its shares: each investor's allotment as it costs (RND-LINE), added; what buys no whole share is not taken. */
+            raised: components["schemas"]["Money"];
             /**
              * @description And after, with the top-up.
              * @example 0
@@ -110408,6 +110450,130 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    modelRound: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoundScenarioDraft"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoundOutcomeView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `EQUITY-14` The SAFE or note does not fit; `EQUITY-19` The round does not fit; `STORAGE-SHARE-08` The round scenario does not keep that. */
             422: {
                 headers: {
                     [name: string]: unknown;

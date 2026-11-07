@@ -192,8 +192,14 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   drafts each investor's issue for cash and a top-up's pool resolution, while the conversions are drafted from the
   round's issue once it is approved (D6). The oracle's side is `oracle/src/oracle/rounds.py`, agreeing on
   `golden/rounds.json`.)
-- [ ] 7.2 Screen RoundSimulator: Basic with a few inputs, Expert with the pool top-up, conversions and pro-rata. Help
+- [x] 7.2 Screen RoundSimulator: Basic with a few inputs, Expert with the pool top-up, conversions and pro-rata. Help
   keys and guide sections. Vitest and axe. `// req: FR-EQ-21`, `// req: FR-EQ-27`
+  (Slice 6b: `/equity/rounds`. The sandbox is its own read-only operation, `modelRound` (`POST /v1/round-models`), for
+  anyone who reads the whole cap table: Appendix D gives the Owner and the Controller A, not C, on the cap table, so
+  they could not use `createRoundScenario`'s preview. Saving and asking stay with the Accountant. The outcome adds the
+  money raised, the pool's part fully diluted before and after, and `you` on the caller's own linked holder. Basic edits
+  one investor and shows the rest under "Has advanced details". Not built from the design: an investor "not yet named"
+  (an investor is a contact) and the assistant card (the AI's lane waits for `p1-ai-assistant`).)
 
 ## 8. Investor rights, controllers and exempt status (slice 7)
 

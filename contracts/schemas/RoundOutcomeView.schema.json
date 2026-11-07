@@ -61,6 +61,29 @@
       ],
       "type": "string"
     },
+    "pool_diluted_after": {
+      "description": "And after, with the top-up.",
+      "examples": [
+        "13.89"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$",
+      "type": "string"
+    },
+    "pool_diluted_before": {
+      "description": "What the option pool leaves to grant as a percentage of every share fully diluted before (RND-DISPLAY); left out when it leaves nothing.",
+      "examples": [
+        "4.15"
+      ],
+      "pattern": "^(0|[1-9][0-9]*)\\.[0-9]{2}$",
+      "type": "string"
+    },
+    "pool_dilution": {
+      "description": "The points fully diluted the pool loses, as a holder's dilution; negative when a top-up enlarges it; left out with no pool on either side.",
+      "examples": [
+        "-13.89"
+      ],
+      "type": "string"
+    },
     "post_money": {
       "$ref": "Money.schema.json",
       "description": "The price × the shares fully diluted after it."
@@ -75,6 +98,10 @@
         "3.00"
       ],
       "type": "string"
+    },
+    "raised": {
+      "$ref": "Money.schema.json",
+      "description": "The money the round takes for its shares: each investor's allotment as it costs (RND-LINE), added; what buys no whole share is not taken."
     },
     "unallocated_after": {
       "description": "And after, with the top-up.",
@@ -105,7 +132,8 @@
     "fully_diluted_after",
     "unallocated_before",
     "unallocated_after",
-    "new_shares"
+    "new_shares",
+    "raised"
   ],
   "title": "RoundOutcomeView",
   "type": "object"

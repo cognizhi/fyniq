@@ -607,6 +607,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/reports/top-expenses` (getTopExpenses): Get the top expenses
 - `GET /v1/review-log` (listReviewLog): List the review log
 - `POST /v1/review-log/reviews` (reviewLogEntries): Review high-risk actions
+- `POST /v1/round-models` (modelRound): Try a round
 - `GET /v1/round-scenarios` (listRoundScenarios): List the round scenarios, side by side
 - `POST /v1/round-scenarios` (createRoundScenario): Model a round
 - `GET /v1/round-scenarios/{scenario_id}` (getRoundScenario): Get a round scenario

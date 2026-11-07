@@ -2,9 +2,9 @@
 key: equity.register
 type: task
 title: The equity register: who owns the company, holders, share classes and the equity transactions that move every share
-summary: The cap table at any day, holders (last 4 only), share classes, equity transactions made effective with ACRA, SAFE conversions and the option pool
+summary: The cap table at any day, holders (last 4 only), share classes, equity transactions with ACRA, SAFE conversions, the option pool and round modelling
 sources:
-  - docs/user-guide/equity-register.md sha256:4574d09e37dfaba9f92713ac08871f9d30062b9cb1c9074613134a854d78dfc5
+  - docs/user-guide/equity-register.md sha256:086f27e43d18ab0ceb2c95eeff2e128f15c69e3a2fdad9e3bb60aca721644725
 data_class: general
 taint: trusted
 status: published
@@ -85,6 +85,16 @@ aliases:
   - exercise price
   - my shares and options
   - my options vesting
+  - round simulator
+  - model a round
+  - funding round
+  - dilution
+  - pre-money valuation
+  - post-money valuation
+  - price per share
+  - pool top-up
+  - pro-forma cap table
+  - side by side scenarios
 ---
 
 # The equity register: who owns the company, holders, share classes and transactions
@@ -343,6 +353,28 @@ aliases:
   exercised. Nobody else's, and no cash value; to exercise, they ask the finance team.
 
 (src: docs/user-guide/equity-register.md#my-shares-and-options)
+
+## Model a round
+
+- **Equity › Round simulator** is a sandbox: it tries a priced round against the cap table at the
+  end of the day before the round and shows who would own what before and after, fully diluted.
+  Nothing is posted or recorded. Anyone who may read the whole cap table can try rounds; an
+  Employee and the Board viewer cannot.
+- Basic: **how much you raise**, **from** which investor, the **value of the company before the
+  money** and **more options for employees**; two bars, now and after, and the part **you would
+  own** when your sign-in is linked to your contact.
+- Expert: the price from a **pre-money valuation** (divided by the shares fully diluted before, with
+  a top-up before the money, cut down to the decimals chosen) or a **price per share**; a **top-up**
+  before or after the money; each investor's money, an existing holder's **pro-rata right** shown;
+  the recorded SAFEs and notes converting at their own terms. Each investor gets whole shares only
+  (RND-SHARE). The **pro-forma cap table** gives each holder's shares, part and **points** lost or
+  gained, the new money and the pool not granted; **side by side** compares saved scenarios.
+- An Accountant selects **Save scenario**, names the resolutions and selects **Send for approval**
+  (with a top-up, on or after the round's day). Once another Owner or the Controller approves it,
+  Fyniq drafts an issue for cash per investor and a top-up's pool resolution, each with its own
+  approval and ACRA steps; an approved scenario changes no more.
+
+(src: docs/user-guide/equity-register.md#model-a-round)
 
 ## Correct a transaction
 

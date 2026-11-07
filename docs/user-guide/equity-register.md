@@ -3,7 +3,7 @@ key: equity.register
 title: Equity register
 mode: basic
 roles: [owner, controller, accountant, auditor, tax_agent, dpo, board_viewer, company_secretary, employee]
-requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-19, FR-EQ-20, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
+requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-19, FR-EQ-20, FR-EQ-21, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
 ---
 
 # Equity register
@@ -305,6 +305,41 @@ Under **My shares and options**, a person whose sign-in is linked to their conta
 grants: the options vested, what vests next and when, the exercise price, the vesting and what is
 exercised. Nobody else's grants, and no cash value: an option's worth depends on a future sale or
 funding round. To exercise vested options, they ask the company's finance team.
+
+## Model a round
+
+**Equity › Round simulator** is a sandbox. It tries a priced funding round against the cap table
+as it stands at the end of the day before the round, and shows what everyone would own before and
+after it, fully diluted. Nothing is posted or recorded. Anyone who may read the whole cap table,
+such as an Owner, the Controller or the Accountant, can try rounds; an Employee and the Board viewer
+cannot.
+
+- In Basic mode, enter **how much you raise** and **from** which investor (a contact marked An
+  investor), the **value of the company before the money** (the pre-money valuation) and any **more
+  options for employees**. The page shows who would own what as two bars, now and after the round,
+  and the part **you would own** when your sign-in is linked to your contact.
+- In Expert mode, set the price from a **pre-money valuation** or a **price per share**. A price
+  from a valuation is the valuation divided by the shares fully diluted before the round, with a
+  top-up before the money, cut down to the decimals you choose [accountant to confirm what the
+  terms count]. A pool **top-up** is before the money, so the existing holders bear it, or after,
+  so the new investors share it.
+- Add each investor's money. An existing holder taking up their **pro-rata right** is an investor
+  too, and the page shows what their right entitles them to of the new shares [accountant to
+  confirm against the side letter]. Turn on each recorded SAFE or note that converts at the round:
+  it converts at its own terms over the shares issued before the round.
+- Each investor gets the whole shares their money buys at the round's price (RND-SHARE); what buys
+  no whole share is not taken. The **pro-forma cap table** shows each holder's shares and part fully
+  diluted, now and after, the **points** each loses or gains, the new money, and the option pool not
+  granted. **Side by side** compares the saved scenarios, each worked out again against today's
+  books whenever the page opens.
+
+An Accountant selects **Save scenario** to keep a scenario. To make it real, they name the
+resolutions its share issues will name and select **Send for approval** (Expert); a scenario with a
+top-up is sent on or after its round's day. Once another Owner or the Controller approves it, Fyniq
+drafts an issue for cash for each investor at the round's price and, for a top-up, a resolution
+enlarging the pool; each then follows its own approval and ACRA steps, and the SAFEs and notes are
+converted from the round's issue once it is approved. An approved scenario changes no more: to try
+other numbers, start a new one.
 
 ## Correct a transaction
 

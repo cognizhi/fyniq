@@ -1342,6 +1342,7 @@ var (
 var (
 	ListRoundScenarios           = Policy{Operation: "listRoundScenarios", Capability: CapTable, Need: View, Unqualified: true}
 	CreateRoundScenario          = Policy{Operation: "createRoundScenario", Capability: CapTable, Need: Create}
+	ModelRound                   = Policy{Operation: "modelRound", Capability: CapTable, Need: View, Unqualified: true, Note: "The sandbox: it saves nothing."}
 	GetRoundScenario             = Policy{Operation: "getRoundScenario", Capability: CapTable, Need: View, Unqualified: true}
 	ReplaceRoundScenario         = Policy{Operation: "replaceRoundScenario", Capability: CapTable, Need: Create}
 	RequestRoundScenarioApproval = Policy{Operation: "requestRoundScenarioApproval", Capability: CapTable, Need: Create, Note: "Another person approves it, stepped up."}
@@ -1527,7 +1528,7 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	RemovePoolResolutionEvidence, ListOptionGrants, CreateOptionGrant, GetOptionGrant, ReplaceOptionGrant, RequestOptionGrantApproval,
 	AddOptionGrantEvidence, ListOptionGrantEvidence, GetOptionGrantEvidence, RemoveOptionGrantEvidence, GetMyOptionGrants,
 	CreateOptionEvent, GetOptionEvent, ReplaceOptionEvent, RequestOptionEventApproval, AddOptionEventEvidence, ListOptionEventEvidence,
-	GetOptionEventEvidence, RemoveOptionEventEvidence, ListRoundScenarios, CreateRoundScenario, GetRoundScenario, ReplaceRoundScenario,
+	GetOptionEventEvidence, RemoveOptionEventEvidence, ListRoundScenarios, CreateRoundScenario, ModelRound, GetRoundScenario, ReplaceRoundScenario,
 	RequestRoundScenarioApproval)
 
 func index(ps ...Policy) map[string]Policy {
