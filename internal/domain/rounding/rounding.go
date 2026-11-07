@@ -35,6 +35,7 @@ const (
 	MileageName      = "RND-MILEAGE"
 	ShareName        = "RND-SHARE"
 	OwnershipName    = "RND-DISPLAY"
+	PlanName         = "RND-PLAN"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -49,6 +50,52 @@ func halfAwayFromZero(d *apd.Decimal, places int) *apd.Decimal {
 	if _, err := c.Quantize(out, d, -int32(places)); err != nil {
 		panic(fmt.Sprintf("rounding: quantize %s to %d places: %v", d, places, err))
 	}
+	return out
+}
+
+// Plan is RND-PLAN's amount (rev 0.214): a forecast's or a feasibility study's driver line, an average or another amount
+// from a division = round(its exact value, cur's minor units), half away from zero, once; -0 shows as 0. The value may
+// hold any number of digits: a forecast compounds customers exactly.
+func Plan(x *apd.Decimal, cur money.Currency) *apd.Decimal { return plan(x, cur.MinorUnits) }
+
+// PlanRatio is RND-PLAN's ratio or multiple (LTV ÷ CAC, the burn multiple, the profitability index): 2 decimals.
+func PlanRatio(x *apd.Decimal) string { return plan(x, 2).Text('f') }
+
+// PlanRate is RND-PLAN's IRR: 4 decimals of a fraction (0.1234 is 12.34%).
+func PlanRate(x *apd.Decimal) string { return plan(x, 4).Text('f') }
+
+// PlanYears is RND-PLAN's payback in years, and PlanCount its customers and units: each to 1 decimal.
+func PlanYears(x *apd.Decimal) string { return plan(x, 1).Text('f') }
+
+// PlanCount is RND-PLAN's customers and units, shown to 1 decimal; the forecast keeps them exact.
+func PlanCount(x *apd.Decimal) string { return plan(x, 1).Text('f') }
+
+// PlanQuotient is num ÷ den under RND-PLAN at places decimals: the exact quotient, rounded once. It is worked to 60
+// digits past the units of its magnitude, which no tie of a quotient of two stored decimals falls within: a quotient
+// that ends within them is exact, and one that does not end is never half a unit. A zero den has no quotient.
+func PlanQuotient(num, den *apd.Decimal, places int) (*apd.Decimal, error) {
+	if den.IsZero() {
+		return nil, fmt.Errorf("%s: a quotient of zero", PlanName)
+	}
+	digits := uint32(num.NumDigits()) + uint32(max(0, num.Exponent)) + uint32(den.NumDigits()) + uint32(places) + 60
+	c := apd.BaseContext.WithPrecision(digits)
+	var q apd.Decimal
+	if _, err := c.Quo(&q, num, den); err != nil {
+		return nil, err
+	}
+	return plan(&q, places), nil
+}
+
+// plan rounds x to places decimals, half away from zero, at whatever precision x needs.
+func plan(x *apd.Decimal, places int) *apd.Decimal {
+	digits := uint32(x.NumDigits()) + uint32(max(0, x.Exponent)) + uint32(places) + 2
+	c := apd.BaseContext.WithPrecision(max(digits, 60))
+	c.Rounding = apd.RoundHalfUp
+	out := new(apd.Decimal)
+	if _, err := c.Quantize(out, x, -int32(places)); err != nil {
+		panic(fmt.Sprintf("rounding: %s %s to %d places: %v", PlanName, x.Text('f'), places, err))
+	}
+	out.Negative = out.Negative && !out.IsZero()
 	return out
 }
 
