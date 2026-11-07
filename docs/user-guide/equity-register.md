@@ -3,7 +3,7 @@ key: equity.register
 title: Equity register
 mode: basic
 roles: [owner, controller, accountant, auditor, tax_agent, dpo, board_viewer, company_secretary, employee]
-requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-19, FR-EQ-20, FR-EQ-21, FR-EQ-22, FR-EQ-25, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
+requirements: [FR-EQ-15, FR-EQ-16, FR-EQ-17, FR-EQ-18, FR-EQ-19, FR-EQ-20, FR-EQ-21, FR-EQ-22, FR-EQ-25, FR-EQ-26, FR-EQ-08, FR-EQ-09, FR-EQ-27, CMP-PD-07]
 ---
 
 # Equity register
@@ -383,6 +383,23 @@ drafts an issue for cash for each investor at the round's price and, for a top-u
 enlarging the pool; each then follows its own approval and ACRA steps, and the SAFEs and notes are
 converted from the round's issue once it is approved. An approved scenario changes no more: to try
 other numbers, start a new one.
+
+## Reconcile the register to ACRA
+
+**Equity › Reconciliation** compares the register of members with ACRA's, as the latest business
+profile shows it, and paid-up capital with share capital in the ledger.
+
+- Buy the business profile from ACRA's Bizfile. An Accountant selects **Type in a business
+  profile**, enters the day printed on it and each holder's shares of each class as it lists them,
+  saves the extract and attaches the profile's PDF. A new extract starts with a row for each
+  holding the register has, the shares left empty to type from the PDF.
+- They select **Record**: from then on the extract changes no more, and the register is compared
+  with it at its day, holder by holder and class by class. A newer business profile, recorded
+  later, takes its place.
+- Each difference shows on the page and on the checks, with the register's shares and ACRA's. Where
+  ACRA is right, correct the register by a reversal citing the extract; where the typing is wrong,
+  type the profile in again.
+- While the register holds shares and no business profile is recorded, the check is not assessed.
 
 ## Correct a transaction
 

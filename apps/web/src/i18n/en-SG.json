@@ -340,6 +340,30 @@
       "label": "Round simulator",
       "tooltip": "Try a funding round in a sandbox and see what everyone would own before and after it. Nothing is posted."
     },
+    "equity.reconciliation": {
+      "label": "Reconciliation",
+      "tooltip": "The register of members against the ledger and against ACRA's register, as the latest business profile shows it."
+    },
+    "acra-extract.draft": {
+      "label": "Type in a business profile",
+      "tooltip": "Type in each holder's shares of each class as ACRA's business profile lists them, then attach its PDF."
+    },
+    "acra-extract.record": {
+      "label": "Record",
+      "tooltip": "Record the business profile with its PDF. From then on it changes no more, and the register is compared with it."
+    },
+    "acra-extract.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the business profile's PDF the holdings were typed from."
+    },
+    "acra.differences": {
+      "label": "Against ACRA's register",
+      "tooltip": "Each holding where the register's shares differ from the business profile's, on the profile's day."
+    },
+    "acra.paid-up": {
+      "label": "Paid-up capital",
+      "tooltip": "Whether share capital on 3010 and 3020 in the ledger agrees with the register of share issues."
+    },
     "round-scenario.save": {
       "label": "Save scenario",
       "tooltip": "Keep this scenario to compare it side by side. It stays a sandbox: nothing is posted or recorded."

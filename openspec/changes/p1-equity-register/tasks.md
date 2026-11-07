@@ -238,8 +238,12 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
   ACRA's register and posts nothing. The extract in force is the recorded one of the latest business profile;
   `getAcraReconciliation` lists each holding that differs at its day. C.2 #26 is ⚠ for each difference and not assessed
   while shares exist and no extract is recorded.)
-- [ ] 9.2 The reconciliation page (Expert), with help keys and guide sections. Vitest and axe. `// req: FR-EQ-26`,
+- [x] 9.2 The reconciliation page (Expert), with help keys and guide sections. Vitest and axe. `// req: FR-EQ-26`,
   `// req: FR-EQ-27`
+  (Slice 8b: Equity › Reconciliation, its own tab rather than one inside the cap table: the register against the
+  business profile in force with each difference, paid-up capital against the ledger from C.2 #25, a draft extract with
+  its PDF and Record, and the profiles before. A new extract starts with a row for each holding the register has and
+  the shares empty, so the register is never copied into it.)
 
 ## 10. Finish
 
