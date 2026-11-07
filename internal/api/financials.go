@@ -176,8 +176,9 @@ type run struct {
 }
 
 // monthsOf is the run of months from to to (YYYY-MM) read as at revision (FR-RPT-02, FR-RPT-08): to left out is the
-// month of the organisation's today; from left out, or "-", is to's month; revision 0 is the ledger as it stands. A
-// month the books have no period for is REPORT-03, and a revision later than the ledger's REPORT-04.
+// month of the organisation's today; from left out, or "-", is to's month, and "year" the first month of the financial
+// year holding it (to's month when the years are not set); revision 0 is the ledger as it stands. A month the books
+// have no period for is REPORT-03, and a revision later than the ledger's REPORT-04.
 func (a *API) monthsOf(ctx context.Context, u storage.UnitOfWork, from, to string, revision int64) (run, error) {
 	if to == "" {
 		today, err := orgToday(ctx, a, u)
@@ -185,6 +186,12 @@ func (a *API) monthsOf(ctx context.Context, u storage.UnitOfWork, from, to strin
 			return run{}, err
 		}
 		to = today.Format(statementMonthForm)
+	}
+	if from == "year" {
+		var err error
+		if from, err = yearStart(ctx, u, to); err != nil {
+			return run{}, err
+		}
 	}
 	if from == "" || from == "-" {
 		from = to
@@ -230,6 +237,28 @@ func (a *API) monthsOf(ctx context.Context, u storage.UnitOfWork, from, to strin
 		return run{}, invalid(bad)
 	}
 	return out, nil
+}
+
+// yearStart is the first month (YYYY-MM) of the financial year holding the month to, or "" when the years are not set
+// or to is not a month of them.
+func yearStart(ctx context.Context, u storage.UnitOfWork, to string) (string, error) {
+	o, err := u.Organisation(ctx)
+	if err != nil {
+		return "", err
+	}
+	cal, err := period.CalendarOf(o.Profile)
+	if err != nil {
+		return "", nil // no years yet
+	}
+	month, err := time.Parse(statementMonthForm, to)
+	if err != nil {
+		return "", nil // REPORT-03 names it
+	}
+	n := cal.Number(month.AddDate(0, 1, -1)) // its last day: the books may start within it
+	if n == 0 {
+		return "", nil
+	}
+	return cal.Year(n).StartsOn.Format(statementMonthForm), nil
 }
 
 // financialStatement reads and lays out a statement in u (FR-RPT-01, FR-RPT-02, FR-RPT-08): the run of months, the

@@ -140,3 +140,62 @@ func TestManagementReportsThroughTheAPI(t *testing.T) {
 		}
 	}
 }
+
+// A management report runs from the start of the financial year with from=year (FR-ITM-01's year on Items; PRD-001 rev
+// 0.187): until the years are set it is to's month alone; with a year that starts in October, the run to November holds
+// both months, so the item's two invoices count, 2 + 1 sold for 1,000.00 + 500.00.
+// req: FR-ITM-01
+// req: FR-RPT-03
+// req: master-data/items The year's figures are the ledger's (rev 0.187)
+func TestAReportRunsFromTheYearsStart(t *testing.T) {
+	e := newEnv(t)
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
+	var item string
+	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		it, err := u.Items().Create(ctx, "PLATFORM", storage.ItemDetails{Name: "Platform", Type: storage.ItemService, Unit: "month",
+			RevenueAccountID: &e.books.Sales.ID, GSTCode: "SR"})
+		item = it.ID.String()
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	acc := e.as(authz.Accountant)
+	for _, x := range []struct{ date, quantity string }{{"2026-10-14", "2"}, {"2026-11-03", "1"}} {
+		r := e.call(http.MethodPost, "/v1/invoices", acc, map[string]any{"customer_id": e.customer(), "date": x.date, "currency": "SGD",
+			"lines": []map[string]any{{"item_id": item, "account_id": e.books.Sales.ID.String(), "description": "Platform", "gst_code": "SR",
+				"quantity": x.quantity, "unit_price": "500.00"}}})
+		if r.Status != http.StatusCreated {
+			t.Fatalf("a draft of %s: %d %s", x.date, r.Status, r.Raw)
+		}
+		if p := e.call(http.MethodPost, "/v1/invoices/"+r.str("id")+"/issue", acc, nil, "If-Match", r.Header.Get("ETag")); p.Status != http.StatusOK {
+			t.Fatalf("issuing it: %d %s", p.Status, p.Raw)
+		}
+	}
+	report := func(query string) response {
+		t.Helper()
+		r := e.call(http.MethodGet, "/v1/reports/sales-by-item?"+query, acc, nil)
+		if r.Status != http.StatusOK {
+			t.Fatalf("%s: %d %s", query, r.Status, r.Raw)
+		}
+		return r
+	}
+	if r := report("from=year&to=2026-11"); r.str("from") != "2026-11-01" || r.str("to") != "2026-11-30" {
+		t.Fatalf("before the years are set, to's month alone: %s", r.Raw)
+	}
+	tag := e.call(http.MethodGet, "/v1/organisation/profile", e.as(authz.Controller), nil).Header.Get("ETag")
+	if p := e.call(http.MethodPatch, "/v1/organisation/profile", e.as(authz.Controller),
+		map[string]any{"fy_start_month": 10, "books_start": "2026-10-01", "first_year_end": "2027-09-30"}, "If-Match", tag); p.Status != 200 {
+		t.Fatalf("the years: %d %s", p.Status, p.Raw)
+	}
+	r := report("from=year&to=2026-11")
+	rows := r.Body["rows"].([]any)
+	row := rows[0].(map[string]any)
+	if r.str("from") != "2026-10-01" || len(rows) != 1 || row["id"] != item || row["quantity"] != "3" ||
+		row["amount"].(map[string]any)["amount"] != "1500.00" || row["documents"] != float64(2) {
+		t.Fatalf("the year to November: %s", r.Raw)
+	}
+	if r := report("from=2026-11&to=2026-11"); r.Body["rows"].([]any)[0].(map[string]any)["quantity"] != "1" {
+		t.Fatalf("November alone: %s", r.Raw)
+	}
+	e.problemIs(e.call(http.MethodGet, "/v1/reports/sales-by-item?from=years", acc, nil), "getSalesByItem", 422, CodeInvalid)
+}

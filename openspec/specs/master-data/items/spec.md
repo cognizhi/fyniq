@@ -22,6 +22,11 @@ Source: PRD-001 §8.3 · Priority S · Phase P1
 - **WHEN** a user opens an item
 - **THEN** the item's quantity and sales for the financial year are shown
 
+#### Scenario: The year's figures are the ledger's (rev 0.187)
+- **WHEN** the items list shows an item's quantity and sales for the financial year
+- **THEN** they are the sales-by-item report's for the months from the year's first to the current one: invoices less credit notes, before GST, in the base currency
+- **AND** a person who does not read the sales reports does not see them
+
 ### Requirement: FR-ITM-02 Price lists
 The system SHALL support price lists per customer group or per currency.
 

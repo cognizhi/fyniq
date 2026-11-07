@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Session } from "../../api/client";
-import { answer, calls, ownerSession } from "../../test/api";
+import { answer, calls, ownerSession, problem } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { Contacts } from "./Contacts";
@@ -173,6 +173,42 @@ describe("a contact's own templates", () => {
 });
 
 describe("Items and prices", () => {
+  it("shows what each item sold this financial year, from the sales report run from the year's start", async () => {
+    const seen = answer({
+      "GET /v1/items": { status: 200, body: { items: [consult, { ...consult, id: "i2", code: "SETUP", name: "Set-up" }] } },
+      "GET /v1/reports/sales-by-item": {
+        status: 200,
+        body: {
+          report: "sales_by_item", currency: "SGD", from: "2026-10-01", to: "2026-11-30", ledger_revision: 4, platform_version: "0.1.0",
+          rows: [
+            { id: "i1", code: "CONSULT", name: "Consulting", amount: { amount: "1500.00", currency: "SGD" }, share: "88.2", quantity: "3", documents: 2 },
+            { name: "Lines without an item", amount: { amount: "200.00", currency: "SGD" }, share: "11.8", documents: 1 },
+          ],
+          total: { amount: "1700.00", currency: "SGD" },
+        },
+      },
+    });
+    renderPage(Items, { path: "/items", session: bookkeeper });
+    expect(await screen.findByRole("columnheader", { name: "This year (SGD)" })).toBeTruthy();
+    const consulting = screen.getByRole("row", { name: /CONSULT/ });
+    expect(within(consulting).getByText("1,500.00")).toBeTruthy();
+    expect(within(consulting).getByText("3 hour")).toBeTruthy();
+    expect(within(screen.getByRole("row", { name: /SETUP/ })).getByText("None sold")).toBeTruthy();
+    expect(screen.getByText(/invoices less credit notes, before GST, from the posted ledger/)).toBeTruthy();
+    expect(seen.find((x) => x.path === "/v1/reports/sales-by-item")?.query).toBe("?from=year");
+    await noViolations(document.body);
+  });
+
+  it("leaves the year out for a role that does not read the sales reports", async () => {
+    answer({
+      "GET /v1/items": { status: 200, body: { items: [consult] } },
+      "GET /v1/reports/sales-by-item": problem(403, "API-AUTHZ-01"),
+    });
+    renderPage(Items, { path: "/items", session: bookkeeper });
+    expect(await screen.findByText("SGD 180.00")).toBeTruthy();
+    expect(screen.queryByRole("columnheader", { name: /This year/ })).toBeNull();
+  });
+
   it("lists items with their prices as decimals, and adds one, checking each price", async () => {
     const seen = answer({
       "GET /v1/items": { status: 200, body: { items: [consult] } },

@@ -40,7 +40,7 @@ type ManagementReport struct {
 }
 
 type managementInput struct {
-	From     string `query:"from" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's first month, YYYY-MM; left out, the last month's." example:"2026-10"`
+	From     string `query:"from" pattern:"^([0-9]{4}-[0-9]{2}|year)$" doc:"The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's." example:"2026-10"`
 	To       string `query:"to" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The run's last month, YYYY-MM; left out, the month of the organisation's today." example:"2026-10"`
 	Revision int64  `query:"as_at_revision" minimum:"1" doc:"Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands." example:"42"`
 }

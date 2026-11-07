@@ -123,6 +123,11 @@ templates](document-templates.md).
 The code never changes. Changing the prices replaces them all, and the change is recorded with the
 prices before and after.
 
+If you can see the sales reports, the list also shows **This year** for each item: what it sold in
+the financial year so far, in the base currency, with the quantity in its unit underneath. It counts
+invoices less credit notes, before GST, from the posted ledger, as the sales-by-item report does. An
+item with no sales this year shows **None sold**.
+
 ## Common problems
 
 | Message | What to do |

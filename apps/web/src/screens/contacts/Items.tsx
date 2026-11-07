@@ -8,6 +8,7 @@ import { Refusal } from "../../components/Refusal";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { formatAmount } from "../../format/amount";
+import { date } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
@@ -18,6 +19,15 @@ type Account = components["schemas"]["Account"];
 interface Price {
   currency: string;
   unit_price: string;
+}
+
+// yearSales is what each item sold in the financial year to date, from the sales-by-item report (FR-RPT-03) run from
+// the year's first month: quantity and base-currency sales net of credit notes and GST, by item ID. A role that does not
+// read the sales reports gets nothing, and the columns stay out.
+async function yearSales() {
+  const { data, error } = await api.GET("/v1/reports/sales-by-item", { params: { query: { from: "year" } } });
+  if (error) return null;
+  return data;
 }
 
 async function listItems(): Promise<Item[]> {
@@ -276,12 +286,14 @@ function ItemForm({ editing, accounts, onClose, onSaved }: { editing: Item | "ne
 }
 
 // Items (docs/design/screens Items; FR-ITM-01): the products and services the company sells, each with
-// its unit, revenue account, GST code and a unit price per currency, as exact decimals. The year's
-// quantity and sales join with the sales documents.
+// its unit, revenue account, GST code and a unit price per currency, as exact decimals, and what it sold
+// in the financial year to date (PRD-001 rev 0.187).
 export function Items() {
   const { session } = useSignedIn();
   const q = useQuery({ queryKey: ["items"], queryFn: listItems });
   const accounts = useQuery({ queryKey: ["accounts", "revenue"], queryFn: revenueAccounts });
+  const year = useQuery({ queryKey: ["items", "year-sales"], queryFn: yearSales });
+  const sold = new Map((year.data?.rows ?? []).filter((r) => r.id).map((r) => [r.id, r]));
   const [editing, setEditing] = useState<Item | "new" | null>(null);
   const [inactive, setInactive] = useState(false);
   const [status, setStatus] = useState("");
@@ -348,6 +360,11 @@ export function Items() {
                     <th scope="col" className="fy-num">
                       Prices
                     </th>
+                    {year.data && (
+                      <th scope="col" className="fy-num fy-from-medium">
+                        This year ({year.data.currency})
+                      </th>
+                    )}
                     <th scope="col" className="fy-from-expanded">
                       Revenue account
                     </th>
@@ -376,6 +393,20 @@ export function Items() {
                           </span>
                         ))}
                       </td>
+                      {year.data && (
+                        <td className="fy-num fy-from-medium">
+                          {sold.get(i.id) ? (
+                            <>
+                              {formatAmount(sold.get(i.id)?.amount.amount ?? "0")}
+                              <span className="fy-small fy-muted block">
+                                {sold.get(i.id)?.quantity ?? "0"} {i.unit}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="fy-muted">None sold</span>
+                          )}
+                        </td>
+                      )}
                       <td className="fy-from-expanded fy-secondary">{accountName(i.revenue_account_id)}</td>
                       <td className="fy-from-expanded fy-mono">{i.gst_code}</td>
                       <td>
@@ -390,6 +421,11 @@ export function Items() {
                 </tbody>
               </table>
             </div>
+            {year.data && (
+              <p className="fy-card__body fy-small fy-muted">
+                This year: sales from {date(year.data.from)} to {date(year.data.to)}, invoices less credit notes, before GST, from the posted ledger.
+              </p>
+            )}
           </section>
         </>
       )}

@@ -10121,7 +10121,7 @@ The invoices and credit notes of the run by customer, largest first, each with i
 
 - **Permission:** View on Reports, dashboards. A view of the reports limited to sales reads it; one limited to purchases, payroll, a department or the board pack is refused.
 - **Parameters:**
-  - `from` (query): The run's first month, YYYY-MM; left out, the last month's.
+  - `from` (query): The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's.
   - `to` (query): The run's last month, YYYY-MM; left out, the month of the organisation's today.
   - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
 - **Responses:**
@@ -10141,7 +10141,7 @@ The invoices' and credit notes' lines of the run by item, largest first, each wi
 
 - **Permission:** View on Reports, dashboards. A view of the reports limited to sales reads it; one limited to purchases, payroll, a department or the board pack is refused.
 - **Parameters:**
-  - `from` (query): The run's first month, YYYY-MM; left out, the last month's.
+  - `from` (query): The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's.
   - `to` (query): The run's last month, YYYY-MM; left out, the month of the organisation's today.
   - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
 - **Responses:**
@@ -10180,7 +10180,7 @@ The bills and suppliers' credit notes of the run by supplier, largest first, eac
 
 - **Permission:** View on Reports, dashboards. A view of the reports limited to purchases reads it; one limited to sales, payroll, a department or the board pack is refused.
 - **Parameters:**
-  - `from` (query): The run's first month, YYYY-MM; left out, the last month's.
+  - `from` (query): The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's.
   - `to` (query): The run's last month, YYYY-MM; left out, the month of the organisation's today.
   - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
 - **Responses:**
@@ -10252,7 +10252,7 @@ The P&L's expense accounts over the run, largest first: the top ten, and the res
 
 - **Permission:** View on Reports, dashboards. A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
 - **Parameters:**
-  - `from` (query): The run's first month, YYYY-MM; left out, the last month's.
+  - `from` (query): The run's first month, YYYY-MM; year for the first month of the financial year holding the last month (to's month when the years are not set; rev 0.187); left out, the last month's.
   - `to` (query): The run's last month, YYYY-MM; left out, the month of the organisation's today.
   - `as_at_revision` (query): Read as at this ledger revision (FR-RPT-08), as an earlier report recorded it; left out, the ledger as it stands.
 - **Responses:**
