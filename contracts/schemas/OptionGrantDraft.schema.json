@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "acceleration": {
+      "description": "Its acceleration on a change of control, as recorded: none, single or double trigger.",
+      "enum": [
+        "none",
+        "single",
+        "double"
+      ],
+      "examples": [
+        "double"
+      ],
+      "type": "string"
+    },
+    "class_account_id": {
+      "description": "The class's share-capital account: the pool's.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "cliff_months": {
+      "description": "Months before anything vests.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "maximum": 120,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "exercise_price": {
+      "description": "The price per share paid on exercise, in the base currency, from zero.",
+      "examples": [
+        "0.10"
+      ],
+      "pattern": "^[0-9]{1,10}(\\.[0-9]{1,6})?$",
+      "type": "string"
+    },
+    "expires_on": {
+      "description": "The day it lapses, after the grant date.",
+      "examples": [
+        "2036-10-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "granted_on": {
+      "description": "The grant date, from which it vests.",
+      "examples": [
+        "2026-10-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "holder_id": {
+      "description": "The person the options are granted to: a contact marked investor or shareholder. It stays once drafted.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "note": {
+      "description": "A note.",
+      "examples": [
+        "New hire grant"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "number": {
+      "description": "The options granted, a whole number above zero, at most what the pool leaves on the grant date.",
+      "examples": [
+        "48000"
+      ],
+      "pattern": "^[0-9]{1,14}$",
+      "type": "string"
+    },
+    "vesting_months": {
+      "description": "Months it vests over, evenly by month from the grant date; 0 vests it all at once.",
+      "examples": [
+        48
+      ],
+      "format": "int64",
+      "maximum": 120,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "holder_id",
+    "number",
+    "exercise_price",
+    "granted_on",
+    "cliff_months",
+    "vesting_months",
+    "acceleration",
+    "expires_on",
+    "class_account_id"
+  ],
+  "title": "OptionGrantDraft",
+  "type": "object"
+}

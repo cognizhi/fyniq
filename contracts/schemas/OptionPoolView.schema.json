@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at": {
+      "description": "The day it is read at, its end.",
+      "examples": [
+        "2026-10-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "class_account_id": {
+      "description": "The class the options are over, by the resolution in force.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "class_code": {
+      "description": "Its account code.",
+      "examples": [
+        "3010"
+      ],
+      "type": "string"
+    },
+    "granted": {
+      "description": "The options the recorded grants granted on or before the day.",
+      "examples": [
+        "68000"
+      ],
+      "type": "string"
+    },
+    "resolutions": {
+      "description": "Every resolution, drafts and recorded, the latest passed first.",
+      "items": {
+        "$ref": "PoolResolutionView.schema.json"
+      },
+      "type": "array"
+    },
+    "size": {
+      "description": "The shares set aside by the latest recorded resolution passed on or before the day; 0 while none is.",
+      "examples": [
+        "1000000"
+      ],
+      "type": "string"
+    },
+    "unallocated": {
+      "description": "What the pool leaves to grant: its size less what is granted.",
+      "examples": [
+        "932000"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "at",
+    "size",
+    "granted",
+    "unallocated",
+    "resolutions"
+  ],
+  "title": "OptionPoolView",
+  "type": "object"
+}

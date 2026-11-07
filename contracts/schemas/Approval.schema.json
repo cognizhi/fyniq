@@ -117,7 +117,9 @@
         "share_class",
         "equity_transaction",
         "instrument",
-        "instrument_template"
+        "instrument_template",
+        "option_pool",
+        "option_grant"
       ],
       "examples": [
         "organisation_setting"
@@ -179,7 +181,9 @@
         "share_class.record",
         "equity_transaction.approve",
         "instrument.record",
-        "instrument_template.enable"
+        "instrument_template.enable",
+        "option_pool.record",
+        "option_grant.record"
       ],
       "examples": [
         "organisation_setting.change"

@@ -311,7 +311,10 @@ double, recorded) and the expiry.
 is an issue (D4) whose movements add shares and whose event reduces the grant.
 
 **The pool's balance** is its size minus outstanding grants and exercises. The database refuses a grant beyond the
-unallocated pool.
+unallocated pool. (Slice 5a-i) It checks every day, not only the grant's: once a grant or a resolution is recorded, on
+each day from its date on that a grant was made or a resolution passed, the options granted by then are at most the
+latest resolution's size (FY293, under a lock on the organisation's pool). So an earlier-dated grant cannot take
+options a later one has, and a smaller resolution cannot leave the grants uncovered.
 
 **Access.** An employee reads only grants whose holder is the contact linked to them (Appendix D "V own grants").
 

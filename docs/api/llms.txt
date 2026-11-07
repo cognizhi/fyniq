@@ -154,7 +154,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/contacts/{contact_id}/bank-details` (getPayeeBankDetails): Get a vendor's bank details
 - `GET /v1/contacts/{contact_id}/document-templates` (listContactDocumentTemplates): List a contact's templates
 - `PUT /v1/contacts/{contact_id}/document-templates/{kind}/{document_type}` (setContactDocumentTemplate): Choose a contact's template
-- `PUT /v1/contacts/{contact_id}/member` (linkContactMember): Link a director or shareholder to the member who signs in as them
+- `PUT /v1/contacts/{contact_id}/member` (linkContactMember): Link a director, shareholder or investor to the member who signs in as them
 - `GET /v1/contacts/{contact_id}/statement` (getCustomerStatement): Work out a customer's statement
 - `GET /v1/contacts/{contact_id}/summary` (getContactSummary): Get a contact's balances and activity
 - `GET /v1/contacts/{contact_id}/withholding-decisions` (listWithholdingDecisions): List a supplier's withholding decisions
@@ -390,6 +390,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/me/director-account` (getMyDirectorAccount): Get your own director account
 - `POST /v1/me/director-account/confirmations` (confirmMyDirectorAccount): Confirm your balances at a year's end
 - `GET /v1/me/holding` (getMyHolding): Get my holding
+- `GET /v1/me/option-grants` (getMyOptionGrants): Get my grants of options
 - `GET /v1/members` (listMembers): List the members
 - `POST /v1/members` (acceptMemberInvitation): Join an organisation with an invitation
 - `GET /v1/members/invitations` (listMemberInvitations): List the pending invitations
@@ -429,6 +430,24 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/opening-balances/edit-approval` (requestOpeningBalancesEdit): Ask for approval to change the posted opening balances
 - `POST /v1/opening-balances/post` (postOpeningBalances): Post the opening balances
 - `GET /v1/operations/{operation_id}` (getOperation): Poll a long operation
+- `GET /v1/option-grants` (listOptionGrants): List grants of options
+- `POST /v1/option-grants` (createOptionGrant): Draft a grant of options
+- `GET /v1/option-grants/{grant_id}` (getOptionGrant): Get a grant of options
+- `PUT /v1/option-grants/{grant_id}` (replaceOptionGrant): Change a drafted grant of options
+- `POST /v1/option-grants/{grant_id}/approval` (requestOptionGrantApproval): Ask for approval to record a grant of options
+- `GET /v1/option-grants/{grant_id}/evidence` (listOptionGrantEvidence): List a grant's files
+- `POST /v1/option-grants/{grant_id}/evidence` (addOptionGrantEvidence): Attach a grant's letter
+- `GET /v1/option-grants/{grant_id}/evidence/{evidence_id}` (getOptionGrantEvidence): Get a grant's file
+- `DELETE /v1/option-grants/{grant_id}/evidence/{evidence_id}` (removeOptionGrantEvidence): Remove a file from a drafted grant
+- `GET /v1/option-pool` (getOptionPool): Get the option pool
+- `POST /v1/option-pool/resolutions` (createPoolResolution): Draft a resolution setting the option pool
+- `GET /v1/option-pool/resolutions/{resolution_id}` (getPoolResolution): Get a resolution setting the option pool
+- `PUT /v1/option-pool/resolutions/{resolution_id}` (replacePoolResolution): Change a drafted resolution setting the option pool
+- `POST /v1/option-pool/resolutions/{resolution_id}/approval` (requestPoolResolutionApproval): Ask for approval to record a resolution setting the option pool
+- `GET /v1/option-pool/resolutions/{resolution_id}/evidence` (listPoolResolutionEvidence): List a pool resolution's files
+- `POST /v1/option-pool/resolutions/{resolution_id}/evidence` (addPoolResolutionEvidence): Attach the resolution setting the option pool
+- `GET /v1/option-pool/resolutions/{resolution_id}/evidence/{evidence_id}` (getPoolResolutionEvidence): Get a pool resolution's file
+- `DELETE /v1/option-pool/resolutions/{resolution_id}/evidence/{evidence_id}` (removePoolResolutionEvidence): Remove a file from a drafted pool resolution
 - `GET /v1/organisation` (getOrganisation): Get your organisation
 - `GET /v1/organisation/accounting` (getAccounting): Get a year's accounting framework and policies
 - `POST /v1/organisation/accounting/framework` (recordAccountingFramework): Record the accounting framework

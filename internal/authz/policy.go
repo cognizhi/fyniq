@@ -1300,6 +1300,34 @@ var (
 	RemoveInstrumentTemplateEvidence = Policy{Operation: "removeInstrumentTemplateEvidence", Capability: CapTable, Need: Create}
 )
 
+// The option pool and its grants (FR-EQ-19; p1-equity-register slice 5, design D9): the Accountant drafts and asks (C/P),
+// an Owner or the Controller records, stepped up and never a grant they hold. An Employee reads their own grants and the
+// Board its own (Appendix D, "own grants", "own holding"), through getMyOptionGrants only.
+const optionNote = "Another person approves it, stepped up, never the grant's holder."
+
+var (
+	GetOptionPool                 = Policy{Operation: "getOptionPool", Capability: CapTable, Need: View, Unqualified: true}
+	CreatePoolResolution          = Policy{Operation: "createPoolResolution", Capability: CapTable, Need: Create}
+	GetPoolResolution             = Policy{Operation: "getPoolResolution", Capability: CapTable, Need: View, Unqualified: true}
+	ReplacePoolResolution         = Policy{Operation: "replacePoolResolution", Capability: CapTable, Need: Create}
+	RequestPoolResolutionApproval = Policy{Operation: "requestPoolResolutionApproval", Capability: CapTable, Need: Create, Note: "Another person approves it, stepped up."}
+	AddPoolResolutionEvidence     = Policy{Operation: "addPoolResolutionEvidence", Capability: CapTable, Need: Create}
+	ListPoolResolutionEvidence    = Policy{Operation: "listPoolResolutionEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	GetPoolResolutionEvidence     = Policy{Operation: "getPoolResolutionEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	RemovePoolResolutionEvidence  = Policy{Operation: "removePoolResolutionEvidence", Capability: CapTable, Need: Create}
+	ListOptionGrants              = Policy{Operation: "listOptionGrants", Capability: CapTable, Need: View, Unqualified: true}
+	CreateOptionGrant             = Policy{Operation: "createOptionGrant", Capability: CapTable, Need: Create}
+	GetOptionGrant                = Policy{Operation: "getOptionGrant", Capability: CapTable, Need: View, Unqualified: true}
+	ReplaceOptionGrant            = Policy{Operation: "replaceOptionGrant", Capability: CapTable, Need: Create}
+	RequestOptionGrantApproval    = Policy{Operation: "requestOptionGrantApproval", Capability: CapTable, Need: Create, Note: optionNote}
+	AddOptionGrantEvidence        = Policy{Operation: "addOptionGrantEvidence", Capability: CapTable, Need: Create}
+	ListOptionGrantEvidence       = Policy{Operation: "listOptionGrantEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	GetOptionGrantEvidence        = Policy{Operation: "getOptionGrantEvidence", Capability: CapTable, Need: View, Unqualified: true}
+	RemoveOptionGrantEvidence     = Policy{Operation: "removeOptionGrantEvidence", Capability: CapTable, Need: Create}
+	GetMyOptionGrants             = Policy{Operation: "getMyOptionGrants", Capability: CapTable, Need: View, Unqualified: true,
+		Qualified: []string{"own grants", "own holding; all if granted"}}
+)
+
 // GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
 // only the operations they asked for, so an operation is decided past this policy by its own record.
 var GetOperation = Policy{Operation: "getOperation", Capability: Membership, Need: View, ByRecord: true,
@@ -1475,7 +1503,10 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	CreateInstrument, ReplaceInstrument, RequestInstrumentApproval, AddInstrumentEvidence, ListInstrumentEvidence, GetInstrumentEvidence,
 	RemoveInstrumentEvidence, ListInstrumentTemplates, DraftInstrumentTemplateEnablement, RequestInstrumentTemplateApproval,
 	AddInstrumentTemplateEvidence, ListInstrumentTemplateEvidence, GetInstrumentTemplateEvidence, RemoveInstrumentTemplateEvidence,
-	DraftInstrumentConversions, PreviewInstrumentConversions)
+	DraftInstrumentConversions, PreviewInstrumentConversions, GetOptionPool, CreatePoolResolution, GetPoolResolution,
+	ReplacePoolResolution, RequestPoolResolutionApproval, AddPoolResolutionEvidence, ListPoolResolutionEvidence, GetPoolResolutionEvidence,
+	RemovePoolResolutionEvidence, ListOptionGrants, CreateOptionGrant, GetOptionGrant, ReplaceOptionGrant, RequestOptionGrantApproval,
+	AddOptionGrantEvidence, ListOptionGrantEvidence, GetOptionGrantEvidence, RemoveOptionGrantEvidence, GetMyOptionGrants)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

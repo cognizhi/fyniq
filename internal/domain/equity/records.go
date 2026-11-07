@@ -479,12 +479,25 @@ func RecordIn(ctx context.Context, u storage.UnitOfWork, t storage.DocumentType,
 	if n, err := attached(ctx, u, id); err != nil {
 		return doc, err
 	} else if n == 0 {
-		return doc, &Error{CodeNoEvidence, "it has no evidence attached", "Attach the identity document, or the constitution and the shareholders' agreement, then ask again"}
+		fix, ok := evidenceFix[t]
+		if !ok {
+			fix = "Attach the identity document, or the constitution and the shareholders' agreement"
+		}
+		return doc, &Error{CodeNoEvidence, "it has no evidence attached", fix + ", then ask again"}
 	}
 	if err := u.Documents().SetStatus(ctx, id, storage.DocumentPosted); err != nil {
 		return doc, err
 	}
 	return u.Documents().Get(ctx, id)
+}
+
+// evidenceFix is what each kind of record takes as its evidence (EQUITY-06), where it is not a holder's identity
+// document or a class's constitution.
+var evidenceFix = map[storage.DocumentType]string{
+	storage.DocumentInstrument:         "Attach the signed instrument",
+	storage.DocumentInstrumentTemplate: "Attach the lawyer's confirmation",
+	storage.DocumentOptionPool:         "Attach the resolution",
+	storage.DocumentOptionGrant:        "Attach the grant letter",
 }
 
 // attached counts the files attached to a document and not removed.
