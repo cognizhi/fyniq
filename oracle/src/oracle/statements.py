@@ -57,7 +57,8 @@ no section (``other_accounts``, p1-reports design D3, rev 0.159 [accountant to c
 always the operating entries' cash, ``ties`` always holds, and net burn is the true cash.
 An investing or financing entry with no line on a cash account moved no money: it is listed apart as
 non-cash, a conversion of a founder's balance labelled "Converted to shares", a waiver "Waived" (FR-EQ-10) and
-a cash issue allotted from share application monies "Allotted from share application monies" (rev 0.207).
+a cash issue or an exercise of options allotted from share application monies "Allotted from share application
+monies" (rev 0.207).
 The check ``ties`` is opening cash + net change = closing cash.
 
 **Movement in equity**: opening equity (the month before's closing), the month's net profit, the
@@ -116,6 +117,7 @@ DIRECTOR_ROLES = frozenset({"director-loan", "deferred-remuneration"})
 # The non-cash entries that say what they were, by their document's type (FR-EQ-10).
 NON_CASH_LABELS = {"director_conversion": "Converted to shares", "director_waiver": "Waived",
                    "share_issue_cash": "Allotted from share application monies",
+                   "option_exercise": "Allotted from share application monies",
                    "safe_conversion": "Converted to shares"}
 # The shares issued for non-cash consideration: a founder's balance, or a SAFE's money (FR-EQ-10, FR-EQ-18).
 NON_CASH_SHARES = frozenset({"director_conversion", "safe_conversion"})
