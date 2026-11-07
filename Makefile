@@ -19,8 +19,8 @@ GO_IMAGES := api ai mcp worker executor render migrate jobs
 # Mutation testing scope (QA-ENG-04): money, the rounding policies and the posting engine
 # Each Go test binary's limit: the API's authorisation matrix (20 roles × every operation) takes 20 to 25 minutes on a CI
 # runner beside the other database suites, and one run on a slow runner passed 30 (3 Nov 2026), past go test's default of
-# ten.
-GO_TEST_TIMEOUT := 45m
+# ten. With 630 operations it took 36 minutes on main and passed 45 on a slow runner (7 Nov 2026), so the limit is 90.
+GO_TEST_TIMEOUT := 90m
 MUTATION_PKGS := internal/domain/money internal/domain/rounding internal/domain/ledger
 # The P1 sources `make differential` draws beside manual journals, and the statements and KPIs over them: what
 # cmd/scenario-run reads and states (test/differential/README.md, "P1 sources", "Statements", "KPIs").
