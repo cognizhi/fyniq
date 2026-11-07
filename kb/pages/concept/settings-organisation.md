@@ -87,6 +87,8 @@ aliases:
 - **Warn when the year's taxable supplies reach** sets how early the monitor warns on Checks, before either test is met: 80% of the threshold unless changed, from 50 to 99.
 - Taxable supplies are the standard-rated and zero-rated sales; exempt and out-of-scope sales, and sales of the company's own assets, are left out.
 
+The monitor itself: [[compliance.gst]].
+
 (src: docs/user-guide/organisation-settings.md#gst-registration-monitor)
 
 ## Statutory calendar
@@ -95,6 +97,8 @@ aliases:
 - **Pays staff**: from the first month the company pays anyone, the calendar adds each month's CPF contributions, due by the 14th of the next month, and each year's employment income for IR8A and the Auto-Inclusion Scheme, due by 1 March; off unless turned on.
 - **Annual general meeting**: **hold** an AGM within six months after the year's end (the default), **send the financial statements** to every member within five months so no AGM is held, or **dispensed** when all members resolved to dispense with AGMs; a member may still ask for an AGM.
 - **Keeps a branch register outside Singapore**: the annual return is due eight months after the year's end instead of seven; off unless turned on.
+
+The calendar itself: [[compliance.calendar]].
 
 (src: docs/user-guide/organisation-settings.md#statutory-calendar)
 

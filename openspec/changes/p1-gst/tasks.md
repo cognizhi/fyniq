@@ -141,14 +141,14 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
 
 ## 5. The screens (slice 4)
 
-- [ ] 5.1 GstReturns' monitor (D12, `/compliance/gst`):
+- [x] 5.1 GstReturns' monitor (D12, `/compliance/gst`):
   - the card, the forecasts and their form with evidence;
   - the not-registered note;
   - the FR-UX-41 banner (the review register names the page).
 
   Registry tags (Expert), help keys, and tests: Vitest with axe; every figure from the server. `// req: FR-TAX-05`,
   `// req: QA-UI-05`
-- [ ] 5.2 StatutoryCalendar (D12, `/compliance/calendar`):
+- [x] 5.2 StatutoryCalendar (D12, `/compliance/calendar`):
   - the month and list views;
   - the area filter;
   - record as filed, or not required, with evidence;
@@ -157,10 +157,13 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
 
   Registry tags (Basic and Expert), help keys, and tests, including mode parity (QA-UI-04). `// req: FR-TAX-07`,
   `// req: CMP-02`, `// req: QA-UI-04`
-- [ ] 5.3 The Inbox's Deadlines section and the Compliance navigation entries. `// req: FR-TAX-07`
-- [ ] 5.4 Guide pages `docs/user-guide/statutory-calendar.md` and `docs/user-guide/gst-registration.md`, plus the new
+- [x] 5.3 The Inbox's Deadlines section and the Compliance navigation entries. `// req: FR-TAX-07`
+- [x] 5.4 Guide pages `docs/user-guide/statutory-calendar.md` and `docs/user-guide/gst-registration.md`, plus the new
   settings in `organisation-settings.md`. Compiled into `kb/pages/`, then `make kb-index`, `make kb-lint` and a log entry.
   `// req: QA-UI-05`
+  (7 Nov 2026, PRD-001 rev 0.213: tests in `compliance.test.tsx` with axe; the FR-UX-41 banner for the GST page goes with the
+  review register in its own pull request, as review-register changes wait for a person. The settings section of
+  `organisation-settings.md` was written with slices 2 and 3a.)
 
 ## 6. As built (slice 5)
 

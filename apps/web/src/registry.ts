@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, ChartColumn, ChartPie, ClipboardCheck, Contact, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, CalendarClock, ChartColumn, ChartPie, ClipboardCheck, Contact, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -145,6 +145,8 @@ export const routes = [
   { kind: "route", id: "pre-incorporation-costs", path: "/accounting/pre-incorporation", mode: "basic", signedIn: true, help: "accounting.pre-incorporation", guide: "equity.pre-incorporation-costs" },
   { kind: "route", id: "period-close", path: "/accounting/close/$periodId", mode: "expert", signedIn: true, help: "accounting.period-close", guide: "accounting.periods#close-a-month" },
   { kind: "route", id: "accountant-reviews", path: "/accounting/reviews", mode: "expert", signedIn: true, help: "accounting.reviews", guide: "accounting.reviews" },
+  { kind: "route", id: "compliance-calendar", path: "/compliance/calendar", mode: "basic", signedIn: true, help: "compliance.calendar", guide: "compliance.calendar" },
+  { kind: "route", id: "compliance-gst", path: "/compliance/gst", mode: "expert", signedIn: true, help: "compliance.gst", guide: "compliance.gst" },
   { kind: "route", id: "evidence-search", path: "/compliance/evidence", mode: "expert", signedIn: true, help: "compliance.evidence", guide: "compliance.evidence" },
   { kind: "route", id: "accountant-review", path: "/accounting/reviews/$reviewId", mode: "expert", signedIn: true, help: "accounting.review", guide: "accounting.reviews#raise-and-answer-queries" },
   { kind: "route", id: "reports", path: "/reports", mode: "basic", signedIn: true, help: "reports.index", guide: "reports.statements" },
@@ -333,6 +335,22 @@ export const actions = [
   { kind: "action", id: "option-event.draft", mode: "expert", help: "option-event.draft", guide: "equity.register#the-option-pool-and-grants" },
   { kind: "action", id: "option-event.ask", mode: "expert", help: "option-event.ask", guide: "equity.register#the-option-pool-and-grants" },
   { kind: "action", id: "option-event.attach-evidence", mode: "expert", help: "option-event.attach-evidence", guide: "equity.register#the-option-pool-and-grants" },
+  { kind: "action", id: "statutory-filing.record", mode: "basic", help: "statutory-filing.record", guide: "compliance.calendar#record-a-filing" },
+  { kind: "action", id: "statutory-filing.not-required", mode: "basic", help: "statutory-filing.not-required", guide: "compliance.calendar#not-required" },
+  { kind: "action", id: "statutory-filing.withdraw", mode: "basic", help: "statutory-filing.withdraw", guide: "compliance.calendar#withdraw-a-record" },
+  { kind: "action", id: "calendar.register", mode: "basic", help: "calendar.register", guide: "compliance.calendar#what-it-holds" },
+  { kind: "action", id: "calendar.tile-soon", mode: "basic", help: "calendar.tile-soon", guide: "compliance.calendar#reminders-and-checks" },
+  { kind: "action", id: "calendar.tile-overdue", mode: "basic", help: "calendar.tile-overdue", guide: "compliance.calendar#reminders-and-checks" },
+  { kind: "action", id: "calendar.tile-done", mode: "basic", help: "calendar.tile-done", guide: "compliance.calendar#record-a-filing" },
+  { kind: "action", id: "inbox.deadlines", mode: "basic", help: "inbox.deadlines", guide: "compliance.calendar#reminders-and-checks" },
+  { kind: "action", id: "statutory-filing.attach-evidence", mode: "basic", help: "statutory-filing.attach-evidence", guide: "compliance.calendar#record-a-filing" },
+  { kind: "action", id: "gst-forecast.attach-evidence", mode: "expert", help: "gst-forecast.attach-evidence", guide: "compliance.gst#record-a-forecast" },
+  { kind: "action", id: "gst-forecast.draft", mode: "expert", help: "gst-forecast.draft", guide: "compliance.gst#record-a-forecast" },
+  { kind: "action", id: "gst-forecast.record", mode: "expert", help: "gst-forecast.record", guide: "compliance.gst#record-a-forecast" },
+  { kind: "action", id: "gst.monitor", mode: "expert", help: "gst.monitor", guide: "compliance.gst#the-two-tests" },
+  { kind: "action", id: "gst-monitor.last-year", mode: "expert", help: "gst-monitor.last-year", guide: "compliance.gst#the-two-tests" },
+  { kind: "action", id: "gst-monitor.this-year", mode: "expert", help: "gst-monitor.this-year", guide: "compliance.gst#the-two-tests" },
+  { kind: "action", id: "gst-monitor.forecast", mode: "expert", help: "gst-monitor.forecast", guide: "compliance.gst#record-a-forecast" },
   { kind: "action", id: "acra-extract.draft", mode: "expert", help: "acra-extract.draft", guide: "equity.register#reconcile-the-register-to-acra" },
   { kind: "action", id: "acra-extract.record", mode: "expert", help: "acra-extract.record", guide: "equity.register#reconcile-the-register-to-acra" },
   { kind: "action", id: "acra-extract.attach-evidence", mode: "expert", help: "acra-extract.attach-evidence", guide: "equity.register#reconcile-the-register-to-acra" },
@@ -566,6 +584,7 @@ export const nav = [
   { kind: "nav", id: "nav.reports", route: "/reports", icon: ChartColumn, group: "main", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "auditor", "tax_agent", "dpo"], mode: "basic", help: "reports.index", guide: "reports.statements" },
   { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },
   { kind: "nav", id: "nav.equity", route: "/equity", icon: ChartPie, group: "main", roles: ["owner", "controller", "accountant", "auditor", "tax_agent", "dpo", "board_viewer", "company_secretary"], mode: "basic", help: "nav.equity", guide: "equity.register" },
+  { kind: "nav", id: "nav.compliance", route: "/compliance/calendar", icon: CalendarClock, group: "main", roles: ["owner", "administrator", "controller", "accountant", "auditor", "tax_agent", "dpo"], mode: "basic", help: "nav.compliance", guide: "compliance.calendar" },
   { kind: "nav", id: "nav.settings", route: "/settings", icon: Settings, group: "footer", roles: "all", mode: "basic", help: "settings.overview", guide: "home.overview#settings" },
 ] as const satisfies readonly NavFeature[];
 

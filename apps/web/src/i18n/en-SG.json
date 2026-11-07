@@ -1991,6 +1991,126 @@
     "expense-policy.load-starter": {
       "label": "Load the starter categories",
       "tooltip": "Start from Fyniq's categories, each on the standard chart's account: travel, meals, mileage and the rest. Check each one after."
+    },
+    "nav.compliance": {
+      "label": "Compliance",
+      "tooltip": "The statutory calendar of filing and payment deadlines, and GST registration."
+    },
+    "compliance.calendar": {
+      "label": "Statutory calendar",
+      "tooltip": "Every filing and payment deadline, worked out from your financial years, GST return periods and settings."
+    },
+    "compliance.gst": {
+      "label": "GST",
+      "tooltip": "Whether the company must register for GST, tested against IRAS's threshold, with the forecasts it rests on."
+    },
+    "statutory-filing.record": {
+      "label": "Record as filed",
+      "tooltip": "Record the day you filed or paid and its acknowledgement number, then attach the acknowledgement."
+    },
+    "statutory-filing.not-required": {
+      "label": "Not required",
+      "tooltip": "Record that the item needs nothing this time, and why, such as the ECI waiver."
+    },
+    "statutory-filing.withdraw": {
+      "label": "Withdraw",
+      "tooltip": "Take back a wrong record, with the reason: the item is open again and both stay in its history."
+    },
+    "calendar.register": {
+      "label": "Open its record",
+      "tooltip": "A register's own deadline: it is done, and checked, on its record."
+    },
+    "calendar.tile-soon": {
+      "label": "Due in the next 30 days",
+      "tooltip": "Items with nothing recorded yet that fall due in the next 30 days."
+    },
+    "calendar.tile-overdue": {
+      "label": "Overdue",
+      "tooltip": "Items past their due day with nothing recorded. They also show on Checks."
+    },
+    "calendar.tile-done": {
+      "label": "Recorded",
+      "tooltip": "Items recorded as filed, with their acknowledgement, or as not required, with the reason."
+    },
+    "calendar.open": {
+      "label": "Open",
+      "tooltip": "Due later than in 14 days."
+    },
+    "calendar.due_soon": {
+      "label": "Due soon",
+      "tooltip": "Due within 14 days, with nothing recorded."
+    },
+    "calendar.overdue": {
+      "label": "Overdue",
+      "tooltip": "Its due day has passed with nothing recorded."
+    },
+    "calendar.filed": {
+      "label": "Filed",
+      "tooltip": "Recorded as filed, with its acknowledgement."
+    },
+    "calendar.not_required": {
+      "label": "Not required",
+      "tooltip": "Recorded as not required, with the reason."
+    },
+    "calendar.not_assessed": {
+      "label": "Not assessed",
+      "tooltip": "An input is missing, which the item names: set it and the item is dated."
+    },
+    "inbox.deadlines": {
+      "label": "Deadlines",
+      "tooltip": "Statutory deadlines overdue or due in the next 30 days, from the statutory calendar."
+    },
+    "gst.monitor": {
+      "label": "Registration monitor",
+      "tooltip": "Last calendar year's taxable supplies and the forecast of the next 12 months against IRAS's threshold of $1 million."
+    },
+    "gst-monitor.last-year": {
+      "label": "Last calendar year",
+      "tooltip": "Its taxable supplies: more than the threshold means applying to register between 1 Jan and 30 Jan."
+    },
+    "gst-monitor.this-year": {
+      "label": "This year so far",
+      "tooltip": "Its taxable supplies to today, and the share of the threshold they reach."
+    },
+    "gst-monitor.forecast": {
+      "label": "The forecast",
+      "tooltip": "The latest forecast recorded for the next 12 months: more than the threshold means applying within 30 days."
+    },
+    "gst-monitor.below": {
+      "label": "Below the threshold",
+      "tooltip": "Neither test is met, and the year so far is below the warning."
+    },
+    "gst-monitor.near": {
+      "label": "Near the threshold",
+      "tooltip": "The year so far has reached the warning percentage of the threshold."
+    },
+    "gst-monitor.liable": {
+      "label": "Must register",
+      "tooltip": "A test is met: apply to register with IRAS by the day given."
+    },
+    "gst-monitor.registered": {
+      "label": "Registered",
+      "tooltip": "The company is registered for GST: there is nothing to test."
+    },
+    "gst-monitor.not_assessed": {
+      "label": "Not assessed",
+      "tooltip": "An input is missing, which the monitor names."
+    },
+    "gst-forecast.draft": {
+      "label": "Record a forecast",
+      "tooltip": "The taxable supplies you expect in the next 12 months, with what they rest on, such as signed contracts."
+    },
+    "gst-forecast.record": {
+      "label": "Record",
+      "tooltip": "Record the forecast with its evidence attached: the prospective test reads the latest one."
+    },
+    "statutory-filing.attach-evidence": {
+      "label": "Attach the acknowledgement",
+      "tooltip": "Attach IRAS's, CPF Board's or ACRA's acknowledgement, or the AGM's minutes, before you record the filing."
+    },
+    "gst-forecast.attach-evidence": {
+      "label": "Attach what it rests on",
+      "tooltip": "Attach the signed contracts, confirmed orders or letters of award the forecast rests on, as IRAS asks."
     }
   }
 }
