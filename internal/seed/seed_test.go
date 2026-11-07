@@ -105,8 +105,10 @@ func TestOnlySyntheticVocabulary(t *testing.T) {
 }
 
 // The default chart marks 3010 and 3020 as share capital, and no sample journal posts to them: share
-// capital changes only through the register of share issues or opening balances (INV-13, rev 0.24).
+// capital changes only through the register of share issues or opening balances (INV-13, rev 0.24). Nor does one post
+// to 2700, whose every line names a SAFE or note the sample company does not record (FR-EQ-18).
 // req: INV-13
+// req: FR-EQ-18
 // req: DEV-04
 func TestTheSampleJournalsLeaveShareCapitalAlone(t *testing.T) {
 	c := Generate(vocab(t), 7, 400)
@@ -121,8 +123,8 @@ func TestTheSampleJournalsLeaveShareCapitalAlone(t *testing.T) {
 	}
 	for _, j := range c.Journals {
 		for _, l := range j.Lines {
-			if marked[l.Account] {
-				t.Fatalf("%s posts to share capital %s", j.ID, l.Account)
+			if marked[l.Account] || l.Account == "2700" {
+				t.Fatalf("%s posts to %s", j.ID, l.Account)
 			}
 		}
 	}
