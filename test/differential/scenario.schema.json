@@ -92,6 +92,12 @@
       "uniqueItems": true,
       "items": {"$ref": "#/$defs/date"}
     },
+    "rounds": {
+      "description": "Optional (FR-EQ-21; README, \"Rounds\"). Priced rounds to model against the books once every document is posted: the result's rounds lists them in this order.",
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/round"}
+    },
     "dimensions": {
       "description": "Optional (FR-DIM-01; README, \"Dimensions\"). The organisation's dimensions, such as Department, each with its values: the only ones a line may name. Names are unique, and a value's code is unique within its dimension. Left out, there are none.",
       "type": "array",
@@ -710,6 +716,35 @@
         "account": {"description": "The director's account it is owed on (2500 or 2120).", "type": "string"},
         "instrument": {"description": "The SAFE an earlier instrument document recorded.", "$ref": "#/$defs/documentId"},
         "amount": {"description": "What turns into the SAFE's money, in the base currency.", "$ref": "#/$defs/money"}
+      }
+    },
+    "round": {
+      "description": "A priced round, modelled (FR-EQ-21): a price per share, or a pre-money valuation with price_decimals.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["on", "investors"],
+      "oneOf": [{"required": ["price"], "not": {"required": ["pre_money"]}}, {"required": ["pre_money", "price_decimals"], "not": {"required": ["price"]}}],
+      "properties": {
+        "on": {"description": "The day the round takes effect.", "$ref": "#/$defs/date"},
+        "price": {"description": "The price per share, a plain decimal above zero, at most 6 decimals.", "type": "string"},
+        "pre_money": {"description": "A pre-money valuation, an amount above zero.", "$ref": "#/$defs/money"},
+        "price_decimals": {"description": "The decimals a price from pre_money is cut down to, 0 to 6.", "type": "integer", "minimum": 0, "maximum": 6},
+        "investors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["person", "amount"],
+            "properties": {"person": {"$ref": "#/$defs/documentId"}, "amount": {"$ref": "#/$defs/money"}}
+          }
+        },
+        "instruments": {"type": "array", "items": {"$ref": "#/$defs/documentId"}},
+        "top_up": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["shares", "before"],
+          "properties": {"shares": {"description": "Whole shares added to the pool.", "type": "string"}, "before": {"type": "boolean"}}
+        }
       }
     },
     "optionPool": {

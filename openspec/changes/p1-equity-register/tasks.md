@@ -182,9 +182,16 @@ into the knowledge base, and the oracle's half where it computes a figure. Load 
 
 ## 7. Round modelling (slice 6)
 
-- [ ] 7.1 `round_scenario` (D8): inputs versioned and outputs computed on read; side by side; nothing posts; approving
+- [x] 7.1 `round_scenario` (D8): inputs versioned and outputs computed on read; side by side; nothing posts; approving
   creates the draft transactions. The oracle's `round_dilution` agrees on G.3. `// req: FR-EQ-21`,
   `// req: QA-ENG-02`
+  (Slice 6a: `equity.ModelRound`, pure, over the cap table fully diluted the day before; a price or a pre-money valuation
+  over the shares fully diluted before (with a top-up before the money) cut down to its decimals; RND-SHARE per investor;
+  the SAFEs converting by D6's `Convert`; each holder before and after with the points lost and a pro-rata entitlement
+  [accountant to confirm both]. The API's round scenarios, with the sandbox as `Prefer: return=preview`; approving one
+  drafts each investor's issue for cash and a top-up's pool resolution, while the conversions are drafted from the
+  round's issue once it is approved (D6). The oracle's side is `oracle/src/oracle/rounds.py`, agreeing on
+  `golden/rounds.json`.)
 - [ ] 7.2 Screen RoundSimulator: Basic with a few inputs, Expert with the pool top-up, conversions and pro-rata. Help
   keys and guide sections. Vitest and axe. `// req: FR-EQ-21`, `// req: FR-EQ-27`
 

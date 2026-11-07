@@ -299,6 +299,13 @@ The outputs are computed on read by the same engine as D6 and D7, and never stor
 instrument_conversion per converting instrument, and a pool resolution draft for a top-up. Nothing posts until each
 draft follows D4. Modelling never posts. The AI's "read lane" for scenarios waits for `p1-ai-assistant`.
 
+(Slice 6a, as built) The conversions are not drafted at the scenario's approval: D6 drafts them from an approved round,
+so they come from the round's issue once it is approved (draftInstrumentConversions), at the same price. A top-up's
+pool resolution is dated the round's day, so a scenario with one is approved on or after it; its resolutions must be
+named first. A pre-money valuation is of the shares fully diluted before the round (issued, options outstanding, the
+pool unallocated, and a top-up before the money), and a pro-rata entitlement is the round's new shares × the holder's
+part fully diluted before, rounded down [accountant to confirm both against the term sheet and the side letter].
+
 ### D9 The option pool and grants (FR-EQ-19, register part; the owner's decision)
 
 **The pool.** `option_pool` is versioned by resolution: size, resolution reference and date, with evidence.

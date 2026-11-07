@@ -641,6 +641,9 @@ const (
 	// DocumentOptionEvent is a forfeiture or expiry of a recorded grant's options (FR-EQ-19, design D9): recorded on
 	// another person's approval with its evidence, never changed; the options return to the pool.
 	DocumentOptionEvent DocumentType = "option_event"
+	// DocumentRoundScenario is a round modelled (FR-EQ-21, design D8): its inputs, versioned while a draft; its outcome
+	// is computed on read, and approving it drafts the round's issues. It never posts.
+	DocumentRoundScenario DocumentType = "round_scenario"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -890,6 +893,9 @@ const (
 	// CodeOption: a pool resolution or grant keeps its own keys, a size or number of whole shares above zero, a class of an
 	// active share-capital account and a holder in the contacts, and no grant takes more than the pool leaves (FY293).
 	CodeOption = "STORAGE-SHARE-07"
+	// CodeRoundScenario: a round scenario keeps its own inputs, a price or a pre-money valuation, and an active
+	// share-capital class (FY294).
+	CodeRoundScenario = "STORAGE-SHARE-08"
 	// CodeEquityRecord: a holder record keeps an individual's identifier to its type and last 4 characters and no full
 	// NRIC or FIN, and a share class belongs to an active share-capital account (FR-EQ-15, FR-EQ-16; FY285, FY286).
 	CodeEquityRecord = "STORAGE-SHARE-03"

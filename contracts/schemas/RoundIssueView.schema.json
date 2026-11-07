@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What those shares cost: round(shares × price)."
+    },
+    "holder_id": {
+      "description": "The investor.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "holder_name": {
+      "description": "Their name.",
+      "examples": [
+        "Seedling Ventures Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "left": {
+      "$ref": "Money.schema.json",
+      "description": "What of their money buys no whole share."
+    },
+    "shares": {
+      "description": "The whole shares their money buys (RND-SHARE).",
+      "examples": [
+        "200000"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "holder_id",
+    "holder_name",
+    "shares",
+    "amount",
+    "left"
+  ],
+  "title": "RoundIssueView",
+  "type": "object"
+}

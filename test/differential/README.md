@@ -1477,6 +1477,57 @@ Readings the PRD leaves open, each [accountant to confirm]:
 | Forfeited and expired options | Back in the pool from the event's day | FR-EQ-19: "forfeitures and expiries update the pool"; the plan's rules decide [accountant to confirm] |
 | A forfeiture's options not vested | The grant's options less every earlier event's, less what is vested on its day | A leaver forfeits what has not vested; what has vested and is not exercised lapses later, as an expiry [accountant to confirm] |
 
+## Rounds
+
+From FR-EQ-21, the equity register's design D8 and Appendix G.3, a scenario may have `rounds`: priced rounds to model
+against its books once every document is posted, each in the result's `rounds` in the same order
+(`result.schema.json`). Modelling posts nothing. `oracle/src/oracle/rounds.py` is the oracle's side, the engine's
+`equity.ModelRound` the engine's, and `golden/rounds.json` pins G.3's round.
+
+```text
+"rounds": [{"on": "2027-03-12", "price": "3.00", "investors": [{"person": "P0003", "amount": "600000.00"}],
+            "instruments": ["SAFE-0001"]}]
+```
+
+A round takes effect on `on`; it dilutes the cap table at the end of the day before (section "Cap tables"): each
+holder's `issued` and `fully_diluted` then, and the day's totals. It has a `price` per share (a plain decimal above zero,
+at most 6 decimals), or a `pre_money` valuation (an amount above zero) with `price_decimals` (0 to 6): then the price is
+`pre_money` ÷ the shares fully diluted before (with a `top_up` before the money), cut down to `price_decimals`. A
+`top_up` (`{"shares": …, "before": true|false}`) adds whole shares to the pool's unallocated options with the round.
+
+- Each investor (`person`, one of `people` or `subscribers`; each once) buys `RND-SHARE` of `amount` at the price:
+  `shares`, the `amount` they cost (round(shares × price, 2)) and what is `left`.
+- Each of `instruments` (an `instrument` document recorded and converted by no `safe_conversion`; each once) converts
+  as a `safe_conversion` at the round would (section "SAFEs and their conversion"), over the shares issued before.
+- `new_shares` are the investors' and the conversions' shares; `issued_after` and `fully_diluted_after` add them to the
+  day before's, and `fully_diluted_after` the top-up too; `unallocated_after` is `unallocated_before` and the top-up.
+- `pre_money` is round(price × the shares the valuation is of, 2) and `post_money` round(price × `fully_diluted_after`, 2).
+- `holders` are every holder before and every investor and converting holder, in code-point order: their shares issued
+  and fully diluted before and after, `ownership_*` and `diluted_*` as the cap table's percentages (`null` when the
+  total is zero), `dilution` the points fully diluted lost (before ÷ total before − after ÷ total after, × 100, exact,
+  then 2 decimals half away from zero; `null` when either total is zero), and `pro_rata`, the new shares × their part
+  fully diluted before, rounded down.
+
+Prices are plain decimals with no trailing zeros ("3", "2.4"); amounts have the base currency's minor units
+("600000.00"); shares are whole numbers.
+
+A round that cannot be worked out has `null` in its place: a `pre_money` with nothing fully diluted before, a price
+cut to zero, an investor whose amount buys no whole share or who is no person or subscriber, an instrument not recorded
+or already converted, or a conversion the section "SAFEs and their conversion" refuses (no share before, f of 1 or
+more).
+
+G.3's round (`golden/rounds.json`): 1,000,000 founder shares; the pre-money SAFE of S$125,000 with a S$2,500,000 cap
+and a 20% discount; S$600,000 at S$3.00 a share. The SAFE converts at S$2.40 into 52,083 shares, the investor takes
+200,000, of 1,252,083: the founder 79.87%, diluted by 20.13 points, the investor 15.97%, the SAFE's holder 4.16%;
+S$3,000,000.00 pre-money and S$3,756,249.00 post-money.
+
+Readings the PRD leaves open, each [accountant to confirm]:
+
+| Shape | Oracle | Why |
+|---|---|---|
+| What a pre-money valuation is of | The shares fully diluted before (issued, options outstanding, the pool unallocated), with a top-up before the money | D8 names a top-up "before or after the money"; a post-money SAFE's own shares are not counted in it |
+| A pro-rata entitlement | The round's new shares × the holder's part fully diluted before, rounded down | FR-EQ-21 names "pro-rata take-up"; the side letter decides its terms |
+
 ## Commands
 
 The comparison itself (QA-ENG-02): `make test` runs `TestTheEngineAgreesWithTheOracle`

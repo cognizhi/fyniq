@@ -227,6 +227,7 @@ class _Book:
         # grant -> [options it has left, whether they all vested on its day, its exercise price, holder, class]: the
         # others vest past every date drawn
         self.grants: dict[str, list[Any]] = {}
+        self.pay_next: str | None = None  # a vested grant's holder whose money comes in next, so they may exercise
 
     def credit(self, key: tuple[str, str], amount: Decimal) -> None:
         """A posted credit to the person on the account: owed, at least and at most."""
@@ -1082,6 +1083,7 @@ def _equity_document(
     if kind == "equity-exercise" and not any(book.grants[g][1] and book.monies.get(book.grants[g][3], Decimal(0)) >= book.grants[g][2]
                                              for g in left):
         kind = "equity-money-in"
+        book.pay_next = next((book.grants[g][3] for g in left if book.grants[g][1]), None)
     if kind == "equity-exercise-not-vested" and not any(not book.grants[g][1] for g in left):
         kind = "equity-grant" if book.pool is not None else "equity-pool"
     if kind == "equity-grant" and book.pool is not None and book.pool[0] == book.granted:
@@ -1119,6 +1121,8 @@ def _equity_document(
         return {"type": "safe_conversion", **base, "round": round_id}, meant, kind
     if kind in ("equity-money-in", "equity-refund"):
         person = draw(st.sampled_from(SUBSCRIBERS if kind == "equity-money-in" else paid))
+        if kind == "equity-money-in" and book.pay_next:
+            person, book.pay_next = book.pay_next, None
         amount = draw(_cents(2, 6)) if kind == "equity-money-in" else money.negate(draw(_part_of(book.monies[person])))
         book.monies[person] = money.EXACT.add(book.monies.get(person, Decimal(0)), amount)
         return {"type": "bank_transaction", **base, "account": "1010", "currency": "SGD", "amount": _text(amount, 2),
@@ -1203,6 +1207,26 @@ def _option_event(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book)
     event_kind = "forfeiture" if kind in ("equity-forfeiture", "equity-forfeit-vested") else draw(
         st.sampled_from(["forfeiture", "expiry"]) if kind == "equity-event-too-many" else st.just("expiry"))
     return {"type": "option_event", **base, "grant": grant, "kind": event_kind, "number": str(number)}
+
+
+@st.composite
+def _round(draw: st.DrawFn, when: st.SearchStrategy[date], book: _Book) -> dict[str, Any]:
+    """A priced round to model (README, "Rounds"): a price or a pre-money valuation, one or two investors, the SAFEs not
+    converted, and sometimes a top-up before or after the money."""
+    spec: dict[str, Any] = {"on": draw(when).isoformat()}
+    if draw(st.booleans()):
+        spec["price"] = draw(st.sampled_from(["0.10", "1", "3.00", "2.375", "0.000123"]))
+    else:
+        spec["pre_money"] = _text(Decimal(draw(st.integers(1, 10**9))), 2)
+        spec["price_decimals"] = draw(st.integers(0, 6))
+    investors = draw(st.lists(st.sampled_from(SUBSCRIBERS), min_size=1, max_size=2, unique=True))
+    spec["investors"] = [{"person": p, "amount": _text(draw(_cents(2, 7)), 2)} for p in investors]
+    open_safes = sorted(s for s in book.safes if s not in book.converted)
+    if open_safes and draw(st.booleans()):
+        spec["instruments"] = draw(st.lists(st.sampled_from(open_safes), min_size=1, max_size=len(open_safes), unique=True))
+    if draw(st.booleans()):
+        spec["top_up"] = {"shares": str(draw(st.integers(1, 10**6))), "before": draw(st.booleans())}
+    return spec
 
 
 def _exercise(draw: st.DrawFn, base: dict[str, Any], kind: str, book: _Book, day: date) -> dict[str, Any]:
@@ -1421,8 +1445,10 @@ def p1_scenarios_with_intent(
         _equity_accounts(draw, accounts)
         if "founders" in sources or "general-ledger" in sources:
             book.holders += PEOPLE  # the directors and shareholders may buy shares too
-        start = draw(st.integers(0, 3))
-        if start == 3:  # a SAFE recorded and paid in, then a round it converts at (README, "SAFEs and their conversion")
+        start = draw(st.integers(0, 4))
+        if start == 4:  # a pool, a grant, and its exercise once its holder's money is in (README, "The option pool and grants")
+            seeded = ["equity-money-in", "equity-issue", "equity-pool", "equity-grant", "equity-exercise", "equity-exercise"][:len(days) - 1]
+        elif start == 3:  # a SAFE recorded and paid in, then a round it converts at (README, "SAFEs and their conversion")
             seeded = ["equity-money-in", "equity-issue", "equity-safe", "equity-safe-money", "equity-money-in",
                       "equity-issue", "equity-safe-conversion"][:len(days) - 1]
         elif start > 0:
@@ -1499,6 +1525,9 @@ def p1_scenarios_with_intent(
         when = st.one_of(st.sampled_from([*days, as_of]), st.dates(days[0] - timedelta(days=30), as_of))
         days_asked = draw(st.lists(when, min_size=1, max_size=3, unique=True))
         scenario["cap_tables"] = [d.isoformat() for d in days_asked]
+        scenario["rounds"] = [draw(_round(when, book)) for _ in range(draw(st.integers(0, 2)))] or None  # README, "Rounds"
+        if scenario["rounds"] is None:
+            del scenario["rounds"]
     return scenario, Intent(intent, built, tuple(corrections))
 
 

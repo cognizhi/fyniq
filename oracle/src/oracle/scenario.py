@@ -225,6 +225,8 @@ class Scenario:
     subscribers: frozenset[str] = frozenset()
     # The days to compute the cap table at the end of, in the scenario's order (FR-EQ-20; README, "Cap tables").
     cap_tables: tuple[date, ...] = ()
+    # The rounds to model against the books once every document is posted, as given (FR-EQ-21; README, "Rounds").
+    rounds: tuple[dict[str, Any], ...] = ()
 
 
 # A role the statements read belongs to at most one account, of this type (README, "Statements").
@@ -523,8 +525,11 @@ def scenario_from_json(data: Any) -> Scenario:
     for i, person in enumerate(data.get("subscribers", ())):
         _shape(_DOCUMENT_ID, person, f"subscribers/{i}")
     cap_tables = tuple(_date(day, f"cap_tables/{i}") for i, day in enumerate(data.get("cap_tables", ())))
+    rounds = tuple(data.get("rounds", ()))
+    for i, spec in enumerate(rounds):
+        _date(spec["on"], f"rounds/{i}/on")
     return Scenario(data["name"], base, currencies, accounts, tuple(documents), tuple(reversals), as_of, settings,
-                    statements, kpis, people, dimensions, subscribers, cap_tables)
+                    statements, kpis, people, dimensions, subscribers, cap_tables, rounds)
 
 
 def _dimensions(raw: list[Any], accounts: dict[str, Account]) -> MappingProxyType[str, Dimension]:

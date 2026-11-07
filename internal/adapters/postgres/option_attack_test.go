@@ -318,3 +318,38 @@ VALUES ($1, 'issue', $2, $3, $4, $5, $6::numeric, '2026-10-14', $7, now())`, id,
 		t.Errorf("an expiry of 41 once 60 are exercised: %v", err)
 	}
 }
+
+// A round scenario keeps its rules whoever writes it (FR-EQ-21; FY294): its own inputs only, a price or a pre-money
+// valuation and never both, its investors and instruments as lists, and an active share-capital class.
+// req: FR-EQ-21
+// req: QA-ENG-05
+// asvs: V8.2.2
+func TestAttackRoundScenariosKeepTheirRules(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack round scenarios Pte Ltd")
+	class := shareCapital(t, d)
+	api := store(t, "fyniq_api")
+	scenario := func(account fmt.Stringer, extra string) string {
+		return fmt.Sprintf(`{"date":"2026-11-07","name":"Round","on":"2026-10-15","price_decimals":4,"class_account_id":%q,"investors":[],"instruments":[]%s}`, account, extra)
+	}
+	create := func(payload string) error {
+		return api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentRoundScenario, Payload: []byte(payload)})
+			return err
+		})
+	}
+	for name, payload := range map[string]string{
+		"a key of its own":               scenario(class, `,"price":"3.00","approved":true`),
+		"both a price and a valuation":   scenario(class, `,"price":"3.00","pre_money":"3000000"`),
+		"neither":                        scenario(class, ``),
+		"investors that are no list":     strings.Replace(scenario(class, `,"price":"3.00"`), `"investors":[]`, `"investors":{}`, 1),
+		"a class on the director's loan": scenario(d.loan, `,"price":"3.00"`),
+	} {
+		if err := create(payload); storage.CodeOf(err) != storage.CodeRoundScenario {
+			t.Errorf("a scenario with %s: %v", name, err)
+		}
+	}
+	if err := create(scenario(class, `,"pre_money":"3000000"`)); err != nil {
+		t.Errorf("a scenario by a pre-money valuation: %v", err)
+	}
+}

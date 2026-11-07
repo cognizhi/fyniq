@@ -11626,6 +11626,135 @@ Asks another person to approve a drafted pool resolution at the version read (FR
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-05`, `EQUITY-06`, `EQUITY-16`, `EQUITY-17`, `EQUITY-18`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-07`
 
+### `GET /v1/round-scenarios`
+
+**List the round scenarios, side by side** (`listRoundScenarios`)
+
+Every round scenario, drafts and approved, the latest first, each with its outcome against today's books (FR-EQ-21, design D8): the price per share, the pre-money and post-money valuations, each investor's shares, each instrument's conversion, and each holder before and after with the dilution in percentage points. Outcomes are computed on read and never stored. Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`RoundScenarioPage`](../../contracts/schemas/RoundScenarioPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/round-scenarios`
+
+**Model a round** (`createRoundScenario`)
+
+Saves a round scenario and answers with its outcome (FR-EQ-21, design D8): a price per share or a pre-money valuation, each investor's money (an existing holder's pro-rata take-up included), a pool top-up before or after the money, and the SAFEs and notes converting. With Prefer: return=preview it is a sandbox: the outcome comes back and nothing is saved. Nothing ever posts: approving the scenario with requestRoundScenarioApproval drafts the round's issues, which then follow FR-EQ-17. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`RoundScenarioDraft`](../../contracts/schemas/RoundScenarioDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`RoundScenarioView`](../../contracts/schemas/RoundScenarioView.schema.json)
+  - `201` Created [`RoundScenarioView`](../../contracts/schemas/RoundScenarioView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-14` The SAFE or note does not fit; `EQUITY-19` The round does not fit; `STORAGE-SHARE-08` The round scenario does not keep that.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-05`, `EQUITY-14`, `EQUITY-19`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-08`
+
+### `GET /v1/round-scenarios/{scenario_id}`
+
+**Get a round scenario** (`getRoundScenario`)
+
+Returns a round scenario with its ETag and its outcome against today's books (FR-EQ-21). Read-only; no side effects.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `scenario_id` (path, required): The round scenario.
+- **Responses:**
+  - `200` OK [`RoundScenarioView`](../../contracts/schemas/RoundScenarioView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PUT /v1/round-scenarios/{scenario_id}`
+
+**Change a round scenario** (`replaceRoundScenario`)
+
+Saves a new version of a scenario not approved yet, and answers with its outcome (FR-EQ-21). An approved one changes no more (EQUITY-05): model another. Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `scenario_id` (path, required): The round scenario.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`RoundScenarioDraft`](../../contracts/schemas/RoundScenarioDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`RoundScenarioView`](../../contracts/schemas/RoundScenarioView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-14` The SAFE or note does not fit; `EQUITY-19` The round does not fit; `STORAGE-SHARE-08` The round scenario does not keep that.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-05`, `EQUITY-14`, `EQUITY-19`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-08`
+
+### `POST /v1/round-scenarios/{scenario_id}/approval`
+
+**Ask for approval of a round scenario** (`requestRoundScenarioApproval`)
+
+Asks another person to approve a scenario at the version read (FR-EQ-21, FM-1). Approving it checks and models it again, then drafts an issue for cash per investor at the round's price with the scenario's resolutions, and for a top-up a pool resolution; each draft then follows FR-EQ-17. The instruments' conversions are drafted from the round's issue once it is approved (draftInstrumentConversions). It needs the resolutions named, and a top-up a round on or before today. The answer is 202 with an approval request, which a person who holds A on "Cap table, holders, investors, equity transactions" approves, stepped up, never the one who asked. Needs a person signed in who passed step-up, and If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+
+- **Permission:** Create on Cap table, holders, investors, equity transactions (rev 0.3). Another person approves it, stepped up.
+- **Parameters:**
+  - `scenario_id` (path, required): The round scenario.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `EQUITY-05` It is recorded; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EQUITY-14` The SAFE or note does not fit; `EQUITY-19` The round does not fit; `STORAGE-SHARE-08` The round scenario does not keep that.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQUITY-05`, `EQUITY-14`, `EQUITY-19`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-08`
+
 ### `GET /v1/share-classes`
 
 **List the share classes** (`listShareClasses`)
